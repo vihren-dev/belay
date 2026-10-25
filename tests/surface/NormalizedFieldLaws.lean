@@ -58,6 +58,46 @@ theorem five_value_kinds :
           [[.integer 1, value, mapText lowerByte value]]) =
       [[], [[.integer 1]], [[.integer 1]], [[.integer 1]], [[.integer 1]]] := by decide +kernel
 
+/-- Three stored rows whose rowid order differs from descending NOCASE key
+order. The flag chooses the original scan policy; neither policy uses list order. -/
+def scanInput (withoutRowid : Bool) : Table :=
+  { shape := {
+      columns := [{ name := name! "id", declaredType := some "INTEGER" },
+        { name := name! "email", declaredType := none, collation := .nocase }]
+      primaryKey := if withoutRowid then [1] else [0]
+      primaryKeyDescending := true
+      rowidAlias := if withoutRowid then none else some 0
+      withoutRowid }
+    rows := [{ rowid := 20, values := [.integer 20, .text (bytes! "a")] },
+      { rowid := 30, values := [.integer 30, .text (bytes! "c")] },
+      { rowid := 10, values := [.integer 10, .text (bytes! "B")] }] }
+
+/-- Under either scan policy, the actual UPDATE preserves the original scan
+order and appends each row's lowercase cell. Proof sketch: discharge wide-row,
+alias and key-position premises from the concrete nonempty schema. -/
+theorem scan_transport (withoutRowid : Bool) :
+    sourceRows (LiteralData.updated (EvalContext.plain 0)
+      ((scanInput withoutRowid).appendColumns [(lowered, .null)])
+      [(2, .scalar .lower (.cons (.column 1) .nil))] none) =
+      (sourceRows (scanInput withoutRowid)).map fun row =>
+        row ++ [mapText lowerByte (row.getD 1 .null)] := by
+  apply sourceRows_updated_lower (EvalContext.plain 0) (scanInput withoutRowid) lowered 1
+  · simp [Table.RowsWide, scanInput]
+  · cases withoutRowid <;> simp [Table.RowsAliased, Row.Aliased, scanInput]
+  · simp [scanInput]
+  · cases withoutRowid <;> simp [scanInput]
+  · simp [scanInput]
+  · rfl
+  · rfl
+
+/-- The two policies actually produce different ID sequences: rowids ascending
+versus email keys descending under NOCASE. Proof sketch: kernel evaluation of
+the existing scan, followed by its first-cell projection. -/
+theorem different_scan_orders :
+    ((sourceRows (scanInput false)).map (fun row => row.getD 0 .null),
+      (sourceRows (scanInput true)).map (fun row => row.getD 0 .null)) =
+      ([.integer 10, .integer 20, .integer 30], [.integer 30, .integer 10, .integer 20]) := by decide +kernel
+
 #print axioms store_lower
 #print axioms comparisonOperands_lower
 #print axioms eval_lower
@@ -72,5 +112,8 @@ theorem five_value_kinds :
 #print axioms backfill_for_every_value
 #print axioms lookup_for_every_parameter
 #print axioms five_value_kinds
+#print axioms sourceRows_updated_lower
+#print axioms scan_transport
+#print axioms different_scan_orders
 
 end NormalizedFieldFixture

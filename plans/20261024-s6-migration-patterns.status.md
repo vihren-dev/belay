@@ -394,8 +394,9 @@ Source commit `b81de67c757082a297184c2f82a431583ab246e8` received independent
 review `20261025T020558Z-b81de67c`: zero musts and two documentation shoulds.
 R6 asks the model module description to state its supplied-row boundary without
 referring to a migration user. R2 asks the appended-filter law's text to name
-the exact row-width premise. Both are open for correction in the next coherent
-proof unit and its mandatory checks; no formula or behavior issue was found.
+the exact row-width premise. Both corrections are included in the checked scan
+unit below, with resolution records and compiled documentation. No formula or
+behavior issue was found.
 
 This foundation is not the universal whole-expansion theorem. The reserved
 surface `NormalizedFieldExpansion.lean` is still unwritten. That theorem must
@@ -403,6 +404,50 @@ derive these input rows from the actual successful ADD COLUMN, backfill and
 trigger-registration effects, with concrete schema/effect premises, then lift
 the results to actual and every permitted branch over complete fresh
 environments. No row-map or desired query equality will be a domain premise.
-The later source-row bridge must also transport scan order, which is separate
-from the stored row-list order proved here. The whole second acceptance part
+The scan unit below supplies the source-row bridge, which is separate from
+the stored row-list order proved here. The whole second acceptance part
 and task-end checks remain unfinished.
+
+## Scan transport: focused checks complete
+
+The next unit starts at `ae0b3f80`, retaining the checked foundation and its
+review. Root reserved the new proof-only leaf
+`packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldScan.lean`, with
+its own Model barrel and Lake entry. Its public `sourceRows_updated_lower`
+statement transports the full scan of the actual appended-column UPDATE to
+the corresponding original scan with lowercase cells appended. It assumes
+wide aliased rows, in-range original primary-key/source positions and plain
+columns. It does not assume scan equality or input row order. Private helpers
+transport the existing stable sort using unchanged rowid or primary-key
+comparisons, including key directions and collations.
+
+The installed consumer now also supplies three unsorted stored rows whose
+rowid order differs from descending NOCASE primary-key order. It applies the
+new law under both scan policies and separately checks the two distinct
+original orders. The normalization test expects 17 theorem dependency reports;
+the retained counterexample still expects seven. The two earlier documentation
+shoulds are corrected in the same source batch.
+
+On 2026-10-25 the focused Nix check passed **2 tests, 95 deselected**, with zero
+JUnit failures, errors or skips. Output:
+`/nix/store/x8ixfbp21dnrrjqz569jgmm33vb087vl-sqlite-verifier-test-normalized-field-scan-1`.
+The disposable selector is `normalized_field or expansion_counter`. All 24
+theorem dependency reports contain only the named ordinary logical axioms, and
+the pinned native counter replay still agrees in both orders. The retained log
+is `build/agent-logs/normalized-field-scan-focused.log`.
+
+The mandatory development build preceded this Nix check. Its first attempt
+left one definitional-equality proof goal after key-cell rewriting; adding
+reflexivity closed it without a formula or runtime change. The failure and
+successful retry are retained in `build/agent-logs/normalized-field-scan-dev-build.log`
+and `build/agent-logs/normalized-field-scan-dev-build-retry.log`. Only the Nix
+report above is acceptance evidence. R3/R19 self-review checked the proof
+sketches, unchanged-key comparison argument, unsorted row fixtures and the
+limited source-row boundary. Independent review is pending.
+
+Whole statement effects, successful original migration, exact public query
+output and all raw/concrete branch correspondence remain unfinished. The next
+missing effect law must derive the stored rows from a successful plain UPDATE;
+its premise must not assume the desired row map. Any exclusion of preexisting
+UPDATE triggers must be structural or checked against the extended catalog:
+an old UPDATE OF name can become a column when ADD COLUMN introduces it.

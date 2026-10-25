@@ -32,12 +32,13 @@ def counter_cell(cell: object) -> str | int:
 def test_normalized_field_laws_cover_arbitrary_values(runtime_root: Path, tmp_path: Path) -> None:
     """Installed model laws derive the appended-field UPDATE row map and exact
     preservation/translation query results. Their universal Value parameters
-    and nonempty consumer cover NULL, integer, REAL, TEXT and BLOB inputs."""
+    and nonempty consumers cover all Value constructors and transport both
+    rowid order and descending NOCASE primary-key order through the UPDATE."""
     result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldLaws.lean", tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
-    assert len(reports) == 14, result.diagnostic()
+    assert len(reports) == 17, result.diagnostic()
     for report in reports:
         assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
 

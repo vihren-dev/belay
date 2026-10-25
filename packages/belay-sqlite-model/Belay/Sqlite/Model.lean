@@ -237,6 +237,7 @@ import Belay.Sqlite.Model.IntegerCompareLaws
 import Belay.Sqlite.Model.SimpleResultsLaws
 import Belay.Sqlite.Model.NormalizedFieldRows
 import Belay.Sqlite.Model.NormalizedFieldQueries
+import Belay.Sqlite.Model.NormalizedFieldScan
 import Belay.Sqlite.Model.InValueLaws
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput

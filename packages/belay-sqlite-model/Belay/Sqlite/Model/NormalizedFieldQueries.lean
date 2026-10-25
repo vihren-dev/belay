@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! Query-result laws for an appended lowercase field. Parameters retain every
 {name}`Belay.Sqlite.Model.Value` constructor. These laws describe the existing
-simple query evaluator; the migration proof must derive its input rows. -/
+simple query evaluator on explicitly supplied original and extended rows. -/
 
 namespace Belay.Sqlite.Model.NormalizedField
 open Resolved
@@ -24,8 +24,9 @@ def storedFilter (stored parameter : Nat) : Expr :=
   .compare .eq (some .text) (.column stored)
     (.scalar .lower (.cons (.parameter parameter) .nil))
 
-/-- For every context, row and parameter position, reading an appended lowercase
-cell gives the same predicate value as computing lowercase from its original
+/-- For every context, row with exactly {lit}`width` cells and parameter position,
+reading the appended lowercase cell at position {lit}`width` gives the same
+predicate value as computing lowercase from its original
 source value, which is NULL past the row's end. The parameter can be absent,
 NULL or any other value. Proof sketch:
 the appended cell is the lowercase result and TEXT affinity changes neither
