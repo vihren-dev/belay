@@ -1,6 +1,6 @@
 # Status: queries as sources
 
-Created 2026-10-24. Status: OPEN. Parts 1 and 2 DONE; views remain.
+Created 2026-10-24. Status: DONE (2026-10-25). Parts 1, 2 and 3 DONE.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
 The [part-1 record](20261024-query-sources-part1.status.md) retains its complete
@@ -43,7 +43,7 @@ Separate evidence/status head: `5d69e3fa8025ef51b7be11a7d41f6464bb942b51`.
   and four model restrictions. Every prior agreement and claim survives.
   The separate evidence report classifies all 76 changed historical records.
 
-Corpus v53 remains unpublished and mutable until CTE/view evidence is complete.
+Corpus v53 is now complete with CTE and view evidence (178 cases; see the last section).
 Frozen corpus, claims and lock changes stay in their separate owner-approved judge
 PR. Task-end Nix and scheduled checks remain required after all three parts.
 
@@ -193,7 +193,28 @@ S4 log archive and artifact roots after retirement of the publication workspace.
 
 ## Part 3 progress
 
-The [view record](20261024-query-sources-views.status.md) tracks the remaining part.
+The [view record](20261024-query-sources-views.status.md) holds the part-3 history. Part 3 is DONE.
+
+Task-end acceptance on the integration `431cdd16` (the v53 evidence line above the checked SQL doc blocks;
+parents `e32ae362` and `3d0ab903`), all through Nix:
+
+- `just test-full` exit 0: `/nix/store/q3dn28cw4b8bn44zfz6sl1zia94vpndz-sqlite-verifier-test-reports`.
+  The first run stopped at the 1500 s build limit without a failed test (log
+  `build/agent-logs/v53int-test-full-timeout1.log`); the rerun passed.
+- `just verdict` exit 0: `/nix/store/zv1wbwrzxkbiwcm8sqrnbjbgnfkazgcr-sqlite-verifier-verdict`.
+- `just test-nix`: 71 passed, 1,802 deselected.
+- `just test-scheduled-checks`: `/nix/store/wc4xld8whcxy3ida1gyj76951q7fcm1c-sqlite-verifier-scheduled-check-reports`.
+- The integration review `20261025T142047Z-431cdd16` had one should finding (the corpus-format document),
+  fixed with the prediction classification below.
+
+[The part-3 prediction classification](../reports/20261025-query-sources-part3/README.md) compares the view
+predictions `bi8dvn7z` against the accepted CTE baseline `wbpwn1x3`: 48 of 53 files are identical, 402 records
+change (97 unsupported to predicted: 93 AGREE and 4 declared out of scope; 305 only change their reason or
+restriction), and every previously predicted record is unchanged. The final v53 predictions differ from `bi8dvn7z`
+only in `corpus-v53.jsonl`.
+
+Accepted restrictions at completion: see the [task file](20261024-query-sources.task.md). The corpus, claim and lock
+changes (judge commits `2ffa2b19` and `f7cfc95b`) need owner approval in the separate judge PR before merge.
 
 ## Judge evidence for CTEs and views (corpus v53)
 

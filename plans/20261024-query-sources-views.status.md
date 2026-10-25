@@ -1,6 +1,6 @@
 # Status: query-source views
 
-Created 2026-10-24. Part 3 OPEN; the overall query-source task remains OPEN.
+Created 2026-10-24. Part 3 DONE; the overall query-source task is DONE (2026-10-25).
 Task: [queries as sources](20261024-query-sources.task.md).
 Main status: [accepted parts and publication](20261024-query-sources.status.md).
 Specs: ADR 0019 D5/slice 4 and ADR 0017 S6.
@@ -439,8 +439,8 @@ Nix checks (all pass):
 - Verdict `/nix/store/f25xpl7hn2ydpj05bbb5h4d5gq5xc7r8-sqlite-verifier-verdict`: no DISAGREE,
   no HARNESS_ERROR; AGREE 4,962, MODEL_UNSUPPORTED 2,410.
 
-Still OPEN: `pragma_table_info('view')` (table-valued) stays a restriction; the end-of-part
-`just test-full` and `just verdict`.
+`pragma_table_info('view')` (table-valued) stays a restriction; the owner accepted it. The end-of-part
+`just test-full` and `just verdict` are recorded below.
 
 ## Review round 2 fixes (`20261025T061047Z-d2b28206`)
 
@@ -497,3 +497,14 @@ Nix checks (all pass; final tree):
 - `just verdict` pass: `/nix/store/ndsqyfmx2i16r6ikj8r6aad55rgn8jvn-sqlite-verifier-verdict`. AGREE 4,962, MODEL_UNSUPPORTED 2,410, no DISAGREE, no HARNESS_ERROR.
 - `just test-nix` pass: 71 passed, 1567 deselected.
 - `just test-scheduled-checks` pass: `/nix/store/9srxkkbng50wcla2pq6x2am9myad2s31-sqlite-verifier-scheduled-check-reports`.
+
+## Completion (2026-10-25)
+
+Part 3 is DONE. The judge side (unreadable views, setup clock, corpus v53 with 84 view cases) is in the
+[task status](20261024-query-sources.status.md), with the Nix gates of integration `431cdd16`. The
+[prediction classification](../reports/20261025-query-sources-part3/README.md) lists every changed record.
+
+Known stale text, left unchanged on purpose: the reason of an INSTEAD OF trigger in
+`packages/belay-sqlite-text/Belay/Sqlite/Translation/Triggers.lean` still says "as the model has no views".
+Changing it would change the reason field of existing predictions (at least the 14 INSTEAD OF records of corpora v1 to v5). The INSTEAD OF restriction itself is
+current and documented.

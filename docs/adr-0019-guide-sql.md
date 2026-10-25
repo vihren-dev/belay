@@ -313,15 +313,20 @@ implementation found no issues. The combined S4 and foreign-key integration pass
 all 923 Nix-selected tests and the frozen verdict. Final publication checks passed
 36 selected cases, including both guide proofs and the S6/S7 prototypes; integration
 review found no issues. All previously predicted corpus records are unchanged.
-Views remain part 3, so D5 and slice 4 remain open.
+Views were part 3 (completed on 2026-10-25, below).
 
-2026-10-25, slice 4 part 3 remains open. Stored-view sources have focused kernel
-checks. DROP VIEW and DROP VIEW IF EXISTS now use the shared drop execution,
-including wrong-kind errors, changed catalog positions and rollback. The generic
-statement/run validity proofs cover the new syntax. Focused Nix surface, syntax
-and existing DROP mutation checks pass; frozen prediction outputs are unchanged.
-CREATE VIEW, complete view metadata/write errors and full part-3 acceptance
-remain unfinished. INSTEAD OF triggers remain excluded.
+2026-10-25, slice 4 part 3 complete, and with it D5 and slice 4. Views are catalog definitions that
+keep the written SELECT and resolve it at each use, through the same indexed query-source machinery as
+derived tables and CTEs. CREATE VIEW, CREATE VIEW IF NOT EXISTS, DROP VIEW and DROP VIEW IF EXISTS, optional
+column lists, shared object names, late binding, nested views, cycles, wrong-kind and write errors,
+PRAGMA table_info of a view, changed catalog positions and rollback follow SQLite. The generic validity
+proofs cover CREATE and DROP VIEW. Writes, indexes, ADD COLUMN and BEFORE or AFTER triggers on views give
+SQLite's prepare errors. The native recorder keeps an unreadable view as evidence, and the judge forwards the
+setup clock. Corpus v53 holds 178 authored native cases (158 agreements, 20 documented restrictions); its
+corpus, claim and lock changes await owner approval in the judge PR. Remaining restrictions: recursive CTEs, the
+RECURSIVE keyword, MATERIALIZED hints, INSTEAD OF triggers, TEMP views, the table-valued pragma_table_info of a
+view, errors that SQLite finds only when a statement runs a view, uncertain LIMIT membership and fallible source
+bodies. Task-end Nix checks passed on the integration `431cdd16`.
 
 ## Owner decisions
 

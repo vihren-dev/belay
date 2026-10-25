@@ -1,7 +1,7 @@
 # Queries as sources: derived tables, ordinary CTEs and views
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review and a clean
-S4 boundary with disjoint file ownership.
+Created 2026-10-24. Status: DONE (2026-10-25). All three acceptance parts passed; see the status file.
+Implementation followed task review and a clean S4 boundary with disjoint file ownership.
 Status: [status file](20261024-query-sources.status.md).
 Specs: [ADR 0019](../docs/adr-0019-guide-sql.md), D5 and slice 4, plus D3's
 compound-subquery metadata exception; ADR 0018 query semantics; ADR 0017 S6.
@@ -20,6 +20,12 @@ even without the `RECURSIVE` keyword, and retain the exclusion of that keyword
 even when a CTE is nonrecursive. SQLite's acceptance of recursion without the
 keyword is the reason for the semantic check. `MATERIALIZED` and
 `NOT MATERIALIZED` hints and `INSTEAD OF` triggers remain outside scope.
+
+Restrictions at completion (all documented, none open): recursive CTEs, the RECURSIVE keyword,
+MATERIALIZED hints, INSTEAD OF triggers, TEMP views, the table-valued `pragma_table_info` of a view
+(accepted by the owner), PRAGMA `table_xinfo` and `table_list`, errors that SQLite finds only when a
+statement runs a view (`view-body-check`), uncertain LIMIT or compound membership, fallible source
+bodies, and INSERT SELECT (slice 5).
 
 The owner also accepted explicit physical-table premises for the S4 unique-email
 and balance examples on 2026-10-24. Views can satisfy their prior query/schema

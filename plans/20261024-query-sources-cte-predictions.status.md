@@ -1,6 +1,6 @@
 # Status: CTE frozen-prediction classification
 
-Created 2026-10-24. Part 2 comparison DONE; the overall query-source task is OPEN.
+Created 2026-10-24. Part 2 comparison DONE; the overall query-source task is DONE.
 Parent record: [query-source status](20261024-query-sources.status.md).
 Reviewed source: `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d`.
 

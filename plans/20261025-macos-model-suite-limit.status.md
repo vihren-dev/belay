@@ -72,4 +72,6 @@ Relevant files: `conformance/model_check.py`,
   test-scheduled-checks` passed:
   `/nix/store/4awcmzn3qs6l9245gqpfj9c19sq5grdw-sqlite-verifier-scheduled-check-reports`.
   DONE. The hosted macOS `Check` job of a pull request is the last check; the owner runs it.
-
+- 2026-10-25: integration merge `48f54842` (this limit above the SQL doc blocks): `just test-full` passed at
+  `/nix/store/vqmd2nrczb21dgib16c5rf7vkhk5882z-sqlite-verifier-test-reports` (rerun after one stop at the 1500 s build
+  limit); `just verdict` passed at `/nix/store/s5vdvv5xshkazwhbccqxiwv26858q94f-sqlite-verifier-verdict`.

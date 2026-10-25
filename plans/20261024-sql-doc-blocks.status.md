@@ -202,3 +202,7 @@ gates on that source:
   `/nix/store/yxscwaji03qy583y9cm5l6y2dvc251rq-sqlite-verifier-scheduled-check-reports`.
 
 Logs are `build/agent-logs/integ-*`. The mutant suites were not run. Nothing was pushed.
+
+- Integration merge `e32ae362` (doc blocks below the corpus v53 line): `just test-full` passed at
+  `/nix/store/rqlrp7di0hcz6n0d3v60sliwbnw222ap-sqlite-verifier-test-reports`; `just verdict` passed at
+  `/nix/store/dk0iza6c8nwjgp1pfzfhx8vfmzn7mymp-sqlite-verifier-verdict`.
