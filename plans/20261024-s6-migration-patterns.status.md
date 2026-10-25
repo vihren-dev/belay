@@ -24,8 +24,8 @@ remain required.
 
 - 2026-10-24: specified view erasure/projection, exact pattern domains, contextual
   comparison laws and universal example acceptance. Review
-  20261024T152701Z-56b9f410 found no musts or shoulds. Implementation remains
-  unassigned pending the listed prerequisites.
+  20261024T152701Z-56b9f410 found no musts or shoulds. Implementation was then
+  unassigned; the assignment entry below supersedes this historical state.
 - 2026-10-24: readiness audit against complete execution source `5bc323f0`
   found the first acceptance part can start independently of the later FK,
   rebuild and assertion-notation work. Reuse `Sql.runFrom`, `Sql.Branch`, its
@@ -39,7 +39,8 @@ remain required.
   uses `Script.isQuery` and `Syntax.Statement.readsOnly`; the program `query`
   helper checks statement count and is not a read-only premise. New view and
   pattern modules can own separate fixtures and narrow manifest additions.
-  No implementation is assigned yet, and the whole task remains open.
+  Implementation was not yet assigned at this audit; the next entry supersedes
+  that historical state. The whole task remains open.
 - 2026-10-24: assigned the reviewed task to `s6_prerequisite_audit` in
   `sqlite-verifier-s6-migration-patterns`, based on immutable `5bc323f0`.
   The task text is byte-identical to reviewed source `56b9f410`.
@@ -79,7 +80,9 @@ supplies a continuation view for every possible output; successful outputs with
 equal values do not determine segment boundaries. The full reached index counts
 the original trace length, even when every successful output is hidden.
 
-Frozen source `95363cc66c75347338d56292e82a7436ee8d4ee9` passed the focused
+The checked implementation is carried by commit
+`504b819bbcd70e5802947b18db197bb33dd69498`. Its production/test files are unchanged
+from frozen source `95363cc66c75347338d56292e82a7436ee8d4ee9`, which passed the focused
 installed Nix check: two groups, 85 deselected, 13.56 seconds, at
 `/nix/store/3f2nwr14gs5wz0j4q1vhp3ix3xa50ayh-sqlite-verifier-test-execution-views-1`.
 The installed surface is
@@ -99,9 +102,11 @@ under `build/agent-logs/` as `execution-views-focused.log` and
 surface suite and unchanged timeouts; it adds no test runner.
 
 R3/R19 self-review checked the public formulas against their plain-words
-contracts and the exact existing branch/finish APIs. Independent review remains
-pending the owner's reviewer-login refresh; no retry is attempted while those
-credentials are unavailable. This first unit is frozen for that review.
+contracts and the exact existing branch/finish APIs. After the owner's login
+refresh, independent review `20261025T001307Z-504b819b` found zero musts and two
+status-only shoulds. Both are fixed here: historical assignment wording and the
+link from the checked source to its carrying commit. The review found no source,
+task, ADR or fixture issues. The descriptor implementation remains unchanged.
 The acceptance part is still OPEN: projected comparison relations, migration
 domains/patterns, their laws and later examples are unfinished. No full/verdict
 or task-end acceptance is claimed by this focused check.
