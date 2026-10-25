@@ -531,3 +531,30 @@ bounded build slot. Editor part 2 readiness identifies reuse of the existing
 real-server harness and a narrow shared resolution-observation boundary;
 no editor observer implementation is assigned yet. PR #250's general-mutant
 job remains running; its other Linux and Verdict successes are unchanged.
+
+
+S5 part 2 gate `41484` stopped before Nix full/verdict: its source diagnostics
+had 470 passes and two stale mutation-anchor failures inherited from view
+integration. They are `fromless_star_accepted` and `outer_row_dropped`. The
+command source remains `c13c9e20`; part 2 is not accepted. The worker merges
+reviewed repair `0ee899e6` without rewriting ancestors, then updates the two
+star predicates to `namesVisible` and the correlated-row anchor to
+`outer.take query.outer`. Replacements, targets and guard obligations remain
+unchanged. Protected production/evidence trees match `c13c9e20`. Local harness
+checks pass, but focused Nix acceptance and independent review are pending.
+The repair workspace on published #250 remains frozen and separate.
+
+Slot 2 now serves migration syntax/law validation. Preflight found and corrected
+an explanation path that could continue after a failed query-admission proof;
+the command disables error-to-sorry recovery while elaborating and synthesizing
+its claim. Fixtures also establish an inhabited composition domain and
+behaviorally distinguish the default SQL guard from the complete comparison
+environment. Explanations print the written claim and plain segment descriptions
+instead of model AST records. These changes stay within the existing task.
+Focused Nix acceptance and independent review are pending; the slot returns to
+S5's targeted mutation checks after that focused gate. No part is marked DONE.
+
+After S5 part 2 acceptance, the worker can merge reviewed editor `8ca6d7ae`
+(common ancestor `bf3fa71f`) and reuse its real-server harness for automatic
+checking. The editor's own required part 1 full/verdict gate remains queued;
+focused harness reuse does not discharge that separate acceptance obligation.
