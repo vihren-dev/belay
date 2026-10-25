@@ -89,3 +89,6 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   23 proof-cost tests (not a gate):
   `/nix/store/ydkfbhi16i15jdw994j3nqpq72nv8hgr-sqlite-verifier-test-surface-1`,
   23 passed.
+- 2026-10-25: Part 1, review round 2 (`20261025T195853Z-ad23bd8c`): one must
+  (R5), fixed. `withoutBodyNodesIn` had a catch-all case; it now names the three
+  leaf constructors, so a new `MessageData` constructor fails to compile.

@@ -93,7 +93,7 @@ partial def withoutBodyNodesIn : MessageData → Array MessageData
   | .compose first second =>
     let join (parts : Array MessageData) := parts.foldl (fun found part => .compose found part) MessageData.nil
     #[.compose (join (withoutBodyNodesIn first)) (join (withoutBodyNodesIn second))]
-  | message => #[message]
+  | message@(.ofFormatWithInfos _) | message@(.ofGoal _) | message@(.ofLazy _ _) => #[message]
 
 /-- The messages that replace one message: itself when it has no body node. -/
 def replacementMessages (message : MessageData) : Array MessageData :=
