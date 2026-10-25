@@ -24,6 +24,12 @@ therefore change semantics. Neither this task nor the guide may promise that
 such edits never rebuild importers. Source positions stay outside Script;
 semantically significant text stays inside it. No semantic cache is required.
 
+On 2026-10-25 the owner accepted an explicit package-root override alongside
+automatic discovery. Pinned Lake's module setup identifies the package but
+does not disambiguate two valid nested projects with the same package name.
+Keep these layouts supported through the explicit root; do not guess between
+roots or impose a restriction on nested projects.
+
 ## Required outcomes
 
 - **Files give ordinary scripts.** `sql_file "sql/schema.sql"` gives the same
@@ -32,6 +38,19 @@ semantically significant text stays inside it. No semantic cache is required.
   A nested source file or different process working directory does not change
   that root. Missing/unreadable files produce actionable errors at the form.
   Parsing and file I/O happen at elaboration, outside kernel reduction.
+- **Ambiguous ownership has an explicit path.** The option
+  `belay.sql.packageRoot : String` defaults to the empty string, which keeps
+  automatic discovery. A nonempty value is a relative path anchored to the
+  directory of the Lean source identified by `getFileName`, not the compiler's
+  working directory. Invalid or unreadable roots give actionable errors;
+  ambiguous automatic discovery points to the override. Expose
+  `readSqlFileSourceAtRoot (root : FilePath) (package : PkgId) (path : FilePath)`
+  as the explicit-root primitive beneath the convenient source loader. A root
+  controls current file access, not the compiled package identity. Persist only
+  package identity, package-relative SQL path/hash and module/declaration
+  associations. The checker resolves that identity through the current Lake
+  package mapping; an override does not bypass freshness checks or serialize
+  a machine-specific root.
 - **File parameters are explicit.** Every parameter, including `$name`, becomes
   a Value argument in first-appearance order. A same-named Lean local is never
   captured. Reuse the current parameter plan, number identity, sparse NULL slots,
@@ -124,6 +143,13 @@ restores success. Test missing sources, missing compiled modules, several
 libraries, shared source references and the library selector. With native needs,
 verify changed output after an SQL edit, added `.sql` discovery, unchanged
 non-SQL input and EOL normalization. Comparing TOML strings is insufficient.
+Include two valid nested projects with the same package name that can compile
+the same Lean file. Automatic discovery must report the ambiguity; explicit
+source-relative roots must select the requested SQL file from both compiler
+working directories and after relocation. Exercise the explicit-root primitive,
+invalid override paths and unchanged inline behavior. Imported records and
+freshness checks must still use the current package mapping and detect edits;
+the root override must not produce an unconditional fresh result.
 
 Tests use finite subprocess timeouts and the Nix surface harness. No network
 fetch is needed in the consumer fixture. Each coherent commit gets focused
@@ -144,8 +170,11 @@ literal source mapper and `$` capture policy need separation from shared term
 construction; file-specific forks of numbering or name resolution are excluded.
 
 The pinned Lake provides input_file/input_dir, text normalization and lean_lib
-needs. Its module setup gives package identity, not a package-root path: verify
-root discovery in the actual consumer fixture. The surface lakefile explicitly
+needs. Its module setup gives package identity, not a package-root path. The
+same-name ambiguity is reproduced in the S7 workspace's
+`build/agent-logs/package-root-probe/same-name-ambiguity.log`; the accepted
+override resolves that gap. Verify automatic and explicit roots in the actual
+consumer fixture. The surface lakefile explicitly
 lists modules. The Nix surface source filter currently selects Lean/manifest
 files; any shipped SQL fixture must be deliberately included in its proper input.
 

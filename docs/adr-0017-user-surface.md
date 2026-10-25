@@ -291,6 +291,14 @@ name. Keep that exact metadata and use ordinary Lake input dependency tracking
 and the freshness checker. Correct the guide's blanket rebuild promise; S7 is
 not deferred for a custom semantic cache.
 
+S7 package-root clarification, accepted 2026-10-25: retain automatic discovery
+and provide an explicit source-relative root when nested Lake projects make
+ownership ambiguous. An explicit-root file-reading primitive remains available.
+Compiled records retain package identity and relative SQL paths, not absolute
+roots. The freshness checker uses the current Lake package mapping. The exact
+option and consumer checks are in the
+[SQL-file task](../plans/20261024-surface-s7-files.task.md).
+
 The elaborated term holds the model's syntax of the SQL, and the kernel checks the
 model's semantics over that term; the kernel never runs the parser (guide "What is
 stored"). A wrong parser or translation therefore gives a true theorem about other SQL,
