@@ -271,7 +271,10 @@ theorems got docstrings.
 - Deviation: the guide's invariant query is `oneLive` with `GROUP BY` and a `WHERE` filter. The
   model's duplicate-key query law (`DuplicateKeyQuery`) supports only an unfiltered `GROUP BY`; the
   filtered form needs model query-resolution work owned by the views agent. The invariant is
-  therefore stated per email value `f` (equivalent to the global one when quantified over `f`).
+  therefore stated per email value `f`. Quantified over all non-NULL values it is equivalent to the
+  global invariant; it says nothing about live accounts with a NULL email (the guide's `GROUP BY`
+  groups NULLs, while `email = $f` never matches NULL), so the equivalence needs a non-NULL email
+  premise (for example `email TEXT NOT NULL`).
   Options: (a) keep the per-value form; (b) add a filtered duplicate-keys law later and restate
   `signup_keeps` globally. Recommendation: (a) now, (b) when the query context lands.
 
@@ -295,8 +298,9 @@ Sections: "Level 2/3 Triples", "Two states", "Invariants" and the complete examp
 - A claim about a fresh run is a `FreshTriple`/`ensures` (entry state is the initial one) or has an
   explicit entry premise; a default `Holds` precondition in an ordinary triple does not tie the
   database to the run.
-- Success: `ifOk`/`andOk` say "if the run succeeded"; `count_kept` needs `ifOk`, the site, and the
-  closed premise `(db.run expand).outputs.allOk = true`.
+- Success: `ifOk` is conditional (it asks nothing of a failed run); `andOk` requires that the run
+  succeeded and that the postcondition holds. `count_kept` uses `ifOk` with the site and the closed
+  premise `(db.run expand).outputs.allOk = true`.
 - `addCustomer_adds` is stated as two supported assertions (exactly one customer has the id; a
   customer has the id and name), not one two-subquery query.
 - `signup_keeps` is stated per email value with the filtered count query, with the partial unique

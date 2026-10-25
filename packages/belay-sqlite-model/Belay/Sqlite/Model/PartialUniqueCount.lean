@@ -16,8 +16,8 @@ namespace Belay.Sqlite.Model
 implies the filter of the key (as the key reads it, with the plain context), and the comparison
 {lit}`cell = value` has the affinity of the column and the collation of the key term, with a right operand that
 depends on no row, then at most one stored row makes {lit}`guard AND cell = value` true, so
-{name}`Resolved.countMatching` of the conjunction is at most one. A row for which the guard is false is not in
-the index and may repeat the value. Proof sketch: two rows that make the conjunction true are in the index
+{name}`Resolved.countMatching` of the conjunction is at most one. A row for which the guard is false is not counted,
+but it may still be in the index and subject to it. Proof sketch: two rows that make the conjunction true are in the index
 ({lit}`restricts`) and conflict on the key ({name}`Resolved.keyCellsEqual_of_accepted`), which the table forbids
 for rows in the list ({name}`filter_length_le_one_of_pairwise`). -/
 theorem Table.KeysUnique.countMatching_partial_le_one {keys : List UniqueKey} {table : Table}

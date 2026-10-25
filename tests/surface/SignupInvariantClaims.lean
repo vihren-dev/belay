@@ -168,6 +168,9 @@ def nullableUnique : Database := db! r"
   CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT NOT NULL, deleted_at TEXT, UNIQUE (email, deleted_at));
   INSERT INTO accounts (email) VALUES ('a@x');"
 
+/-- In {name}`nullableUnique` at most one live account has the email {lit}`a@x` before the signup of that email,
+the signup succeeds, and afterwards two live accounts have it: an ordinary {lit}`UNIQUE` over a column
+that can be NULL does not keep the invariant, which needs the partial unique index. -/
 theorem unique_with_null_does_not_keep_the_invariant :
     Holds (atMostOneLiveAccountWithEmail emailA) nullableUnique ∧
     (afterSignup nullableUnique "a@x").outputs.allOk = true ∧
