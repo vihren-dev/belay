@@ -108,12 +108,17 @@ theorem purge_frame_typed (c : Value) (now : Int64) :
 /-- The purge with OR for AND, the variant that the guide warns about. -/
 def purgeOr := sql r"DELETE FROM sessions WHERE customer_id = :c OR expires_at < :now"
 
-/-- The variant deletes the live session 3 of customer 1 and the expired session 2 of customer 2 too: the
-frame claim of the guide fails, with the same claim script as for the right purge. -/
-theorem or_variant_breaks_the_frame_claim : (purgeFinal sessions (.integer 1) (.integer 50)).outputs.allOk = true ∧
+/-- The final context of the variant {name}`purgeOr` from the fresh start of a database. -/
+def purgeOrFinal (db : Database) (c now : Value) : ExecutionContext :=
+  let start := ExecutionContext.initial db { counters := Counters.newConnection }
+  start.finish ((send (purgeOr c now)).runFrom none 0 start.connection)
+
+/-- The variant runs without an error and deletes the live session 3 of customer 1 and the expired session 2 of
+customer 2 too: the frame claim of the guide fails, with the same claim script as for the right purge. -/
+theorem or_variant_breaks_the_frame_claim :
+    (purgeOrFinal sessions (.integer 1) (.integer 50)).outputs.allOk = true ∧
     ¬ Holds.reachedSince (purgeKeeps (.integer 1) (.integer 50)) sessions
-      (let start := ExecutionContext.initial sessions { counters := Counters.newConnection }
-       start.finish ((send (purgeOr (.integer 1) (.integer 50))).runFrom none 0 start.connection)) := by decide +kernel
+      (purgeOrFinal sessions (.integer 1) (.integer 50)) := by decide +kernel
 
 /-- The condition with {lit}`NOT` instead of {lit}`IS NOT 1`, the trap that the guide describes. -/
 def purgeKeepsNot (c now : Value) : Script :=

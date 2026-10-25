@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T21:45:49+00:00",
+  "finding": "20261025T214355Z-8134b9e2#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The OR counterexample now checks allOk and the failed frame assertion on the same purgeOr final context (purgeOrFinal)."
+}

@@ -527,3 +527,7 @@ theorem purge_frame (c now : Value) :
   `text_time_deletes_every_session_of_the_customer` runs the purge with the text time and finds the live session
   deleted, while the frame claim still holds.
 - The `NOT (...)` trap: `not_instead_of_is_not_one_requires_nothing_for_null` shows it on the actual run.
+
+Review 20261025T214355Z-8134b9e2 (fixtures commit): exit 0, one should finding resolved. The OR counterexample
+`or_variant_breaks_the_frame_claim` now checks `allOk` and the failed frame assertion on the same final context of
+the OR purge (`purgeOrFinal`).
