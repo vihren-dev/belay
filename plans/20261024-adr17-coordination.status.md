@@ -630,3 +630,26 @@ PR #251 hosted mutation jobs are skipped by the existing change filter, despite
 their successful job status. This is not hosted mutation acceptance. The new
 diagnostics task requires the existing manual CI trigger after publication so
 the actual mutation commands execute. No change to CI routing is planned.
+
+The complete expansion counterexample is now checked and reviewed: source
+`5600ba9e`, evidence head `b967224a`, review `20261025T014239Z-5600ba9e`
+with no findings. Nix report `i2w0ml50phaipdzksffjd79sy4csszh2` contains one
+passing native/kernel fixture and no errors or skips. Seven kernel facts use
+only permitted axioms; both execution orders give equal complete databases and
+application outputs, with total-change counters 3 and 4. This establishes the
+concrete full-commutation refutation, not the remaining universal examples.
+
+The migration worker is preparing the separate normalization row/query lemmas:
+NULL/TEXT storage and comparison laws for every Value, the exact appended-cell
+update under structural premises, and old-versus-normalized query equality for
+arbitrary admitted rows and parameters. The complete expansion's successful
+effects and all branches still need to establish those premises. It has no
+heavy slot while the following two acceptance gates run.
+
+Diagnostics source `e148e0e4` has clean review `20261025T014300Z-e148e0e4`.
+Frozen evidence head `10aa47c3` runs full/verdict/prediction/Nix/scheduled-checks
+in slot 1, owned handle `11589`. All eleven ordinary suite commands are
+byte-identical; each mutant command gains only `--exitfirst`. Source inventories,
+limits and protected trees are unchanged. S5 `96340` remains live in slot 2,
+now in its surface suite. PR #251's hosted Verdict passed; its Linux API build
+remains in progress. Hosted mutant jobs for that PR were skipped as noted above.
