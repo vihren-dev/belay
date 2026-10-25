@@ -1,6 +1,6 @@
 # Status: keep the general mutant tests within their time limit
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE on 2026-10-25.
 Task: [task file](20261025-query-mutant-time-limit.task.md).
 
 ## Progress
@@ -48,3 +48,10 @@ Task: [task file](20261025-query-mutant-time-limit.task.md).
   log is `build/agent-logs/qm-test-full-attempt1-failed.log`, and the repeat
   passed. The hosted run of the `mutants`, `tableMutants` and `functionMutants`
   jobs is still to do (owner).
+- 2026-10-25: hosted validation. The owner started the manual CI run
+  `40174999810` on `tasks/query-mutant-time-limit` (PR #253, `8da7184e`).
+  All six mutant jobs executed all their tests and passed:
+  `mutants` (Linux 08:01–08:47, macOS 08:01–08:51), `tableMutants` and
+  `functionMutants` on both platforms. The task is DONE. In the same run the
+  macOS `Check` job failed in the `model` suite (not a mutant suite); that
+  failure is the task `20261025-macos-model-suite-limit`.
