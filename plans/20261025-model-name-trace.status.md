@@ -26,6 +26,32 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
   for the walk beside the resolver, the editor task gets a dated note, and the
   gap list no longer has compound ORDER BY.
 
+- 2026-10-25: the coordinator found that the walk beside the resolver weakens
+  the task's main guarantee, so it is the owner's decision. The "decision"
+  wording in both task files now reads "proposed, pending the owner's
+  decision". Until the answer arrives, only work that both designs need
+  continues: the data types, translator span parts and their path test,
+  kernel fixtures, the prediction baseline and the conformance-input
+  agreement harness. The walker modules (`NameTraceBinding` to
+  `NameTraceStatement`) are written but held back, not committed.
+
+- 2026-10-25: prediction baseline built from the base tree in a clean workspace
+  (`build/predictions-baseline`, Nix store output
+  `/nix/store/r1aksjg6av55bcs82fnlard7gsqi5ndk-sqlite-verifier-predictions`): 55 files
+  (`corpus-v1` to `corpus-v54` and `synthetic-workload`), not the 53 that the
+  coordinator named.
+- 2026-10-25: a probe of the translator's spans (both designs need it) shows that the
+  existing parts already select the name tokens at every path of the plan: unqualified
+  and qualified column names, schema parts, table, alias and schema parts of a table
+  reference, `x.*` qualifier, `USING` names, `ORDER BY`, `GROUP BY`, `HAVING`, write
+  assignment names, insert column list, conflict target and assignments, `RETURNING`
+  and the name and column list of a `WITH` definition at `[8, i, 12]`. No
+  `belay-sqlite-text` change is planned. Function names and collation names have a
+  span but are not traced.
+- 2026-10-25: data types `Resolution/NameTraceTypes.lean` imported from `Model.lean`.
+  The walkers were written and checked as a trial (about 900 lines in nine modules) and
+  are held back, uncommitted, until the owner decides between the two designs.
+
 ## Implementation plan (informal)
 
 - Do not change `resolveStatement` or the resolver functions that proofs unfold

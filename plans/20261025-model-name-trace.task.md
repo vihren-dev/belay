@@ -26,8 +26,8 @@ except where the translator's spans must locate a traced name (see below).
   gives exactly `resolveStatement`'s result, for success and for failure. This
   law is a theorem, not only a test. A script-level wrapper over the statement
   list is welcome where it is cheap.
-- **The trace uses the resolver's own decisions.** Decision of 2026-10-25,
-  which amends the editor task's wording "the trace comes from the resolver run
+- **The trace uses the resolver's own decisions.** Proposed 2026-10-25, pending the owner's decision
+  (the other option threads the trace through the resolver), which would amend the editor task's wording "the trace comes from the resolver run
   that decides the statement" (see the dated note in the editor task): the
   resolver is not threaded with a trace. `resolveStatement` and the functions
   that existing proofs unfold (`resolveStatement`: 57 places in 43 files;

@@ -172,7 +172,7 @@ disagree with execution. Producing it leaves every resolved statement and
 prediction byte-identical. The editor never rebuilds scopes or searches for the
 text of a name.
 
-Decision of 2026-10-25 (model name-trace task): the resolver is not threaded
+Proposed 2026-10-25, pending the owner's decision (model name-trace task): the resolver is not threaded
 with a trace, because that would change the definitions that about 90 existing
 proofs unfold. The trace is computed beside the resolver, from the resolver's
 own scope, lookup, affinity and collation functions. The guarantee that it

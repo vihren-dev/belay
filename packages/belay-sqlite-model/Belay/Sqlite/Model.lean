@@ -234,6 +234,7 @@ import Belay.Sqlite.Model.ForeignKeyCheckLaws
 import Belay.Sqlite.Model.Resolution
 import Belay.Sqlite.Model.Resolution.QuerySpec
 import Belay.Sqlite.Model.Resolution.ScopeLaws
+import Belay.Sqlite.Model.Resolution.NameTraceTypes
 import Belay.Sqlite.Model.OutputResultsLaws
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.QueryOutputOn
