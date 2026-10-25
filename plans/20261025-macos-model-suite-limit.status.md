@@ -20,3 +20,35 @@ Relevant files: `conformance/model_check.py`,
   Measurement tools: `build/agent-logs/focused-model.nix` and `.sh` (focused Nix
   run with a timer around each Lean process), logs `focused-baseline.log`
   and `focused-jsonb-b1.log`.
+- 2026-10-25: step 2, commit `108d6f62`. `model` is now three suites: `model` (206
+  tests), `coverageStatements` (28 coverage tests: case modules up to
+  `authored_drops`) and `coverageFeatures` (17 tests: from
+  `authored_text_functions`). Both coverage suites use
+  `tests/coverage_case_support.py`. Registered in `tests/nix_suites.json`,
+  `build-support/tests.nix`, `developmentTests` of `build-support/default.nix`,
+  `tests/test_nix_test_targets.py`, `tests/test_conformance_frontend.py`,
+  `docs/ci.md` and `build-support/README.md`. Focused Nix runs of the three
+  suites (`build/agent-logs/focused-split-*.log`; one heavy slot, max-jobs 1,
+  cores 2; load average 3 to 12 from other jobs, so each time is an upper
+  bound): `coverageStatements` 382.8 s, `coverageFeatures` 298.1 s, `model`
+  315.1 s, against 840.3 s for the old `model` suite (46 %, 35 % and 38 %;
+  the target was at most 60 %). Store paths:
+  `/nix/store/01d5a6l454xxc2x9bm9zvy5g7ahfnq0b-sqlite-verifier-test-focused-coverageStatements-1`,
+  `/nix/store/bjangqkl1jx3a3y8xzrgd74nhxv6zc1s-sqlite-verifier-test-focused-coverageFeatures-1`,
+  `/nix/store/03596ymca9lnfszvlhgibla5mzz58mja-sqlite-verifier-test-focused-model-1`.
+- 2026-10-25: step 3. The kernel evaluation of the JSON text reader was quadratic in
+  the length of a string, because the kernel reads an element of an `Array` by walking
+  its list (`Array.size` is `List.length`, `Array.get` is `List.get`), and the reader read
+  each byte of a string with `byteAt`, and copied the string with `slice`, which read
+  each byte again with `byteAt`. `slice` (`Json/Bytes.lean`) now takes the bytes with one
+  `List.drop` and `List.take`; `scanString` is now `scanStringFrom` (`Json/ReadScalar.lean`)
+  and walks the list of the remaining bytes; `hasHexDigits` uses the new
+  `startsWithHexDigits`. The semantics are the same: a position past the end is 0. Local
+  kernel time of the proof of `jsonb-header-sizes` (`lean` on `Case1.lean`): 56.6 s before,
+  7.7 s after (single-expression `jsonb('"<300 bytes>"')`: `readString` alone 7.5 s to 0.35 s).
+  `just dev-build` and `just dev-verdict` pass (no DISAGREE or HARNESS_ERROR). The
+  53 prediction files of `integrity/judge.nix -A predictions` are byte-identical: baseline
+  (commit `108d6f62`)
+  `/nix/store/hkvlvawsx4fk1zvcknmh5gn4m0kkynps-sqlite-verifier-predictions`, with the fix
+  `/nix/store/zfqa4kksx8v4ss4x3545gsdzh7kmlnh4-sqlite-verifier-predictions` (`diff -r`
+  empty). No mutant targets `Json/Bytes.lean` or `Json/ReadScalar.lean`.
