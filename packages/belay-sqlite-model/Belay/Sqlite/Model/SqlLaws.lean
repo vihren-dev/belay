@@ -80,7 +80,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
             state.database with
         | none => rfl
         | some source =>
-          have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
+          have clean := Resolved.source_fault_of_plain _ state.database none query.sources _ source noEach rfl found
           cases window : query.bindWindow parameters with
           | none => simp [Resolved.Query.run, single_select, window, clean]
           | some bound =>

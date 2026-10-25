@@ -68,7 +68,7 @@ resolves to a condition without a fallible call for every lowest position of a o
 with that condition and the literal one,
 and the simple query of the first source of the table with the condition of {lit}`p` and the column of {lit}`e` as its one subquery,
 and leaves the state as it is. The source reference has no indexed query.
-Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
 {name}`resolveSelect_noFrom_one_subquery`; the subquery resolves by {name}`resolveQueryBody_simple` in the scope of its table
 with the column of {name}`resolveColumns_scalar`, its shape is a one-column shape ({name}`subqueryShape_scalar`), and the
 statement's query resolves by {name}`resolveQueryBody_simple` in the empty scope with that shape. -/
@@ -77,7 +77,7 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (mainFilter : Syntax.Expr) (position : Nat) (table : CatalogTable) (subCondition : Option Resolved.Expr)
     (mainCondition : Resolved.Expr) (expression : Resolved.Expr) (affinity : Option Affinity)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand context.profile.dqsDml (tableScope state.catalog reference position table)
       { current := some 0 } false value = .ok (expression, affinity))
     (valuePlain : expression.any Resolved.Expr.isFallibleCall = false)
@@ -128,7 +128,7 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
     _ rfl rfl _ ?_
   refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
-    (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
+    (resolveSources_table state.catalog reference position table namedSource current arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ shapeIs.symm _ _ (by simpa using mainBody) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,
     Resolved.Output.operands, plain, Resolved.Expr.any, Resolved.Expr.isFallibleCall]

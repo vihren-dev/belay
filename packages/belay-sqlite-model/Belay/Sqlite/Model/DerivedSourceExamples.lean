@@ -88,20 +88,20 @@ example : (fromPairs.runOn 0 { changes := some 8 } [.integer 5] {}
 
 /-- A source receives the supplied statement clock instead of resetting it. -/
 example : let context := statementContext 212640249600000 {} [] {} [select [.scalar (.now .date)]]
-    (({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {}
+    (({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {} none
       { rows := [[]], width := 0, fault := .none }).map (·.rows) =
         some [[TimeKeyword.date.value 212640249600000]] := by decide +kernel
 
 /-- A source failure is a refused source, rather than a successful empty relation. -/
 example : let context : EvalContext :=
       { clock := 0, subqueries := fun _ _ => { rows := [], fault := .may } }
-    ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {}
+    ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {} none
       { rows := [[]], width := 0, fault := .none } = none := by decide +kernel
 
 /-- A non-success ending refuses a source even when its expression fault is clear. -/
 example : let context : EvalContext :=
       { clock := 0, subqueries := fun _ _ => { rows := [], fault := .none, ending := .mismatch } }
-    ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {}
+    ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {} none
       { rows := [[]], width := 0, fault := .none } = none := by decide +kernel
 
 end Belay.Sqlite.Model.Resolved.DerivedSourceExamples

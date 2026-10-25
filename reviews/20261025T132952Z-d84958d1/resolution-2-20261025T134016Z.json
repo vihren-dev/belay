@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T13:40:16+00:00",
+  "finding": "20261025T132952Z-d84958d1#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The observation primitive, which reads the supplied initial database, and its kernel and native tests are the next commit of this task; this commit adds only the resolver and evaluator parameter, which the next commit exercises."
+}

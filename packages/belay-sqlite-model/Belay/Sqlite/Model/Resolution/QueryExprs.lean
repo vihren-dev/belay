@@ -15,6 +15,11 @@ positions, and each comparison keeps the affinity and collation that evaluation 
 
 namespace Belay.Sqlite.Model
 
+/-- The name that an error message gives for the column {lit}`schema.source.column`, or
+{lit}`source.column` without a schema, as SQLite writes it. -/
+def qualifiedName (schema : Option Identifier) (source column : Identifier) : Identifier :=
+  ⟨(schema.map (·.bytes ++ [46])).getD [] ++ source.bytes ++ [46] ++ column.bytes⟩
+
 mutual
 /-- Resolve an expression over the sources in scope. An unqualified identifier is the
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
@@ -59,12 +64,12 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
       else .error (.prepare (.noSuchColumn name))
     | .ambiguous => .error (.prepare (.ambiguousColumn name))
-  | .qualified source column => match scope.resolveQualified source column with
+  | .qualified source column schema => match scope.resolveSchemaQualified source column schema with
     | .found _ reads => scope.nameRead reads
     | .missing =>
       if rowidName column && scope.rowidSource source then .error (.restriction [] .rowidName)
-      else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
-    | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
+      else .error (.prepare (.noSuchColumn (qualifiedName schema source column)))
+    | .ambiguous => .error (.prepare (.ambiguousColumn (qualifiedName schema source column)))
   | .compare operator left right => do
     let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [2])

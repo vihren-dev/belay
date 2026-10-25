@@ -37,6 +37,12 @@ def SourceIssue.under (path : List Nat) : SourceIssue → SourceIssue
   | .value issue => .value (issue.under path)
   | .noSuchTable name => .noSuchTable name
 
+/-- The issue of a table of the initial database: SQLite names a missing one with its schema, as in
+{lit}`no such table: before.t`; every other issue is unchanged. -/
+def initialIssue (reference : Syntax.TableReference) : SourceIssue → SourceIssue
+  | .noSuchTable name => .noSuchTable ⟨(reference.schema.map (·.bytes ++ bytes! ".")).getD [] ++ name.bytes⟩
+  | .value issue => .value issue
+
 /-- A value issue is a source issue ({name}`SourceIssue.value`), so the resolution of the
 sources can use the functions that give value issues. -/
 instance : MonadLift (Except ValueIssue) (Except SourceIssue) := ⟨Except.mapError .value⟩

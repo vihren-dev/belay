@@ -73,6 +73,10 @@ structure ScopeSource where
   /-- How many queries out the source is (ADR 0018, D1): 0 for a source of the query whose
   expressions resolution resolves, 1 for a source of the query around a subquery, and so on. -/
   depth : Nat := 0
+  /-- Whether the source is a table or view of the fixed initial database of a two-state query,
+  named as {lit}`before.t` ({name}`Syntax.initialSchemaName`). Only a schema-qualified name
+  ({lit}`Scope.inSchema`) tells such a source from a current one; false for every other source. -/
+  initial : Bool := false
   /-- Whether the source is a trigger's {lit}`NEW` or {lit}`OLD` row (ADR 0018, D5), which only a
   qualified name sees ({lit}`Scope.resolveQualified`); false for every other source. -/
   trigger : Bool := false

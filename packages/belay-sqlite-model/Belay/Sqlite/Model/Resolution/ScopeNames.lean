@@ -71,6 +71,14 @@ def Scope.hasSource (scope : Scope) (name : Identifier) : Bool :=
 def Scope.rowidSource (scope : Scope) (name : Identifier) : Bool :=
   scope.any fun source => source.named name && source.hasRowid
 
+/-- The sources that a schema qualifier names: all of them without a qualifier, and with
+{lit}`before.` ({name}`Syntax.initialSchemaName`) only the tables and views of the initial
+database ({name}`ScopeSource.initial`). Any other schema name names no source, as in SQLite,
+where a derived table, a CTE and a trigger's row belong to no schema. -/
+def Scope.inSchema (scope : Scope) : Option Identifier → Scope
+  | none => scope
+  | some schema => scope.filter fun source => schema.isInitialSchema && source.initial
+
 /-- Resolve the qualified name {lit}`source.column` as SQLite does (checked on native 3.51.0):
 as an unqualified name ({name}`Scope.resolveName`) over only the sources with the folded
 name {lit}`source`, so a column of two such sources that no join merged is SQLite's
@@ -92,6 +100,12 @@ def Scope.resolveQualified (scope : Scope) (source column : Identifier) : NameRe
       | .found first reads => .found first reads
     | .ambiguous => .ambiguous
     | .found first reads => .found first reads
+
+/-- Resolve the name {lit}`schema.source.column`, or {lit}`source.column` without a schema, over
+the sources that the qualifier names ({name}`Scope.inSchema`), as {name}`Scope.resolveQualified`. -/
+def Scope.resolveSchemaQualified (scope : Scope) (source column : Identifier) (schema : Option Identifier) :
+    NameResolution :=
+  (scope.inSchema schema).resolveQualified source column
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
 column that is not hidden ({name}`ScopeSource.hidden`) of every source of the query's own

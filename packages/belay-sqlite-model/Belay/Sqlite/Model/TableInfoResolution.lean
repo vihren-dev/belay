@@ -31,11 +31,11 @@ table or view with the name of the function and has rows for the table of the ar
 resolves to the one inner pragma source with those rows, and the scope of {name}`tableInfoScope`. The source reference has no indexed query.
 The result holds for every derived-source callback and diagnostic prefix; neither is read on this
 successful pragma path. Leave both at their defaults for a query without derived sources.
-Proof sketch: unfold
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: unfold
 {name}`resolveSources` and {name}`pragmaReference`; the reference has arguments and the prefix {lit}`pragma_`, so
 {name}`resolveReference` takes the pragma branch, and the scope of one source is placed at offset 0. -/
 theorem resolveSources_tableInfo (catalog : Catalog) (reference : Syntax.TableReference) (argument : List UInt8)
-    (rows : List (List Value)) (namedSource : reference.query = none) (arguments : reference.arguments = some [.string argument])
+    (rows : List (List Value)) (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = some [.string argument])
     (isFunction : reference.table.isKeyword (bytes! "pragma_table_info") = true)
     (notTable : catalog.findTable reference.table = none)
     (notView : catalog.findView reference.table = none)
@@ -46,7 +46,7 @@ theorem resolveSources_tableInfo (catalog : Catalog) (reference : Syntax.TableRe
         item := .pragma (pragmaSource reference argument tableInfoNames rows).1, kind := .inner, condition := .none }],
       tableInfoScope reference argument rows) := by
   have prefixed := Identifier.pragma_prefix_of_isKeyword _ isFunction
-  simp [resolveSources, resolveReference, namedSource, arguments, prefixed, pragmaReference, notTable, notView, isFunction, info, maximumJoinTables,
+  simp [resolveSources, resolveReference, namedSource, current, arguments, prefixed, pragmaReference, notTable, notView, isFunction, info, maximumJoinTables,
     mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError,
     joinOperator, tableInfoScope, Functor.map, Except.map, Scope.place]
 
@@ -68,12 +68,12 @@ is as in {name}`resolveSources_tableInfo` and whose condition resolves in the sc
 ({name}`tableInfoScope`) to a condition ({name}`FilterResolves`), resolution gives the simple query of the pragma
 source with the rows of {name}`resolveSources_tableInfo`, the literal one named {lit}`"1"`, and that condition, with no
 subquery, and leaves the state as it is. The source reference has no indexed query.
-Proof sketch: {name}`resolveStatement_select_simple` with the source of
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_simple` with the source of
 {name}`resolveSources_tableInfo`, the pending source of {name}`resolvePendingSources_pragma` and the column of
 {name}`resolveColumns_one`; the only column is not a star and calls no aggregate. -/
 theorem resolveStatement_select_one_tableInfo (context : ResolveContext) (state : ResolveState)
     (reference : Syntax.TableReference) (argument : List UInt8) (rows : List (List Value)) (filter : Option Syntax.Expr)
-    (condition : Option Resolved.Expr) (namedSource : reference.query = none) (arguments : reference.arguments = some [.string argument])
+    (condition : Option Resolved.Expr) (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = some [.string argument])
     (isFunction : reference.table.isKeyword (bytes! "pragma_table_info") = true)
     (notTable : state.catalog.findTable reference.table = none)
     (notView : state.catalog.findView reference.table = none)
@@ -89,7 +89,7 @@ theorem resolveStatement_select_one_tableInfo (context : ResolveContext) (state 
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have result := resolveStatement_select_simple context state
     (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none none false none none)
-    simple rfl _ _ _ condition _ (resolveSources_tableInfo state.catalog reference argument rows namedSource arguments isFunction notTable notView info)
+    simple rfl _ _ _ condition _ (resolveSources_tableInfo state.catalog reference argument rows namedSource current arguments isFunction notTable notView info)
     (by simp [starIssue]) columns (by simpa [resultAliases] using resolves)
     (resolvePendingSources_pragma context.profile.dqsDml _ _)
     (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall])

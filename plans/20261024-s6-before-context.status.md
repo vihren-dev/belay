@@ -39,3 +39,10 @@ primitive's meaning.
   Design fixed: the initial database and catalog are optional trailing arguments of
   resolution and evaluation; `Resolved.Source.initialTable` reads the initial database;
   one dispatch (`usesSchema`) makes ordinary queries use the unchanged path.
+- 2026-10-25, commit "model: read the fixed initial database through a before-qualified
+  source": `Syntax.TableReference.schema`, `Expr.qualified ... (schema)`, `ScopeSource.initial`,
+  `Resolved.Source.initialTable`, optional `initial` arguments of `resolveSelect` and of
+  the evaluator chain (`QuerySource.join` to `resolvedStepOutput`); restriction
+  `initial-database`; translator accepts `before` only. Checks: `just dev-build`,
+  Nix predictions equal to the baseline (one reason text restored), `tests/syntax_*`,
+  restriction tests. Local results are not evidence.

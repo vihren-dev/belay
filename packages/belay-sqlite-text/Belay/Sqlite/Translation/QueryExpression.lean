@@ -38,8 +38,16 @@ def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) 
   | ["nm", "DOT", "nm"] => do
     let source ← identifierName tree parts[0]!
     let column ← identifierName tree parts[2]!
-    return composite (.qualified source.value column.value) node.start node.stop #[source.span, column.span]
-  | ["nm", "DOT", "nm", "DOT", "nm"] => unsupported node "A schema-qualified column is not modeled; write source.column"
+    return composite (.qualified source.value column.value) node.start node.stop
+      #[source.span, column.span, (missing node.start node.stop : Located (Option Identifier)).span]
+  | ["nm", "DOT", "nm", "DOT", "nm"] => do
+    let schema ← identifierName tree parts[0]!
+    unless schema.value.isInitialSchema do
+      unsupported node "A schema-qualified column is not modeled; write source.column"
+    let source ← identifierName tree parts[2]!
+    let column ← identifierName tree parts[4]!
+    return composite (.qualified source.value column.value (some schema.value)) node.start node.stop
+      #[source.span, column.span, schema.span]
   | ["NOT", "expr"] => unary mappers tree node .not parts[1]!
   | ["expr", "ISNULL"] | ["expr", "NOTNULL"] | ["expr", "NOT", "NULL"] => do
     let operand ← mappers.expression tree parts[0]!

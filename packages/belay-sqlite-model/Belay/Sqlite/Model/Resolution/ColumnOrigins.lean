@@ -23,7 +23,7 @@ first result's origin. Other expressions, including CAST, COLLATE and unary
 plus, have no declaration to retain. -/
 def Syntax.Expr.originType (scope : Scope) (shapes : SubqueryShapes) : Syntax.Expr → Option String
   | .identifier name _ => scope.nameOriginType (scope.resolveName name)
-  | .qualified source column => scope.nameOriginType (scope.resolveQualified source column)
+  | .qualified source column schema => scope.nameOriginType (scope.resolveSchemaQualified source column schema)
   | .subquery index => (shapes.find index).bind (·.originType)
   | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..

@@ -12,6 +12,7 @@
     "tests/conformance_phase_test.py",
     "tests/conformance_queries_test.py",
     "tests/syntax_queries_test.py",
+    "tests/syntax_schema_test.py",
     "tests/syntax_subqueries_test.py",
     "tests/syntax_common_tables_test.py",
     "tests/syntax_compound_test.py",

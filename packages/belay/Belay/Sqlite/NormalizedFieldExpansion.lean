@@ -153,7 +153,7 @@ theorem queryTranslates (tableName : Identifier) (alias : Option Identifier)
     thirdValues fourthValues db env site _ _ value fun wide aliased aligned expanded after reached =>
     translate_step_outputs runContext env.clock 0 after (db.raw.connection env.counters) expanded
       (tableReference tableName alias) idName sourceName storedName text number value site.table site.position
-      site.source site.id first second rfl rfl site.found site.present aligned site.fresh site.idFound
+      site.source site.id first second rfl rfl rfl site.found site.present aligned site.fresh site.idFound
       site.sourceFound wide aliased site.keysInside site.plain reached
 
 /-- Preserved original lookup of a lowercase-field expansion: on every valid database that has a
@@ -174,7 +174,7 @@ theorem queryPreserves (tableName : Identifier) (alias : Option Identifier)
     thirdValues fourthValues db env site _ _ value fun wide aliased aligned expanded after reached =>
     preserve_step_outputs runContext env.clock 0 after (db.raw.connection env.counters) expanded
       (tableReference tableName alias) idName sourceName storedName text number value site.table site.position
-      site.source site.id first second rfl rfl site.found site.present aligned site.idFound
+      site.source site.id first second rfl rfl rfl site.found site.present aligned site.idFound
       site.sourceFound wide aliased site.keysInside site.plain reached
 
 end Belay.Sqlite.NormalizedFieldExpansion

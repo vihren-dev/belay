@@ -5,7 +5,7 @@ import Belay.Sqlite.Model.PragmaRun
 set_option doc.verso true
 
 /-! The source rows of a query (ADR 0013, D5): its sources joined in written order, as
-SQLite's nested loop does, from the one row with no cells. A table gives its rows in rowid
+SQLite's nested loop does, from the one row with no cells. A table, also one of the initial database, gives its rows in rowid
 order; {lit}`json_each` gives its rows over the values of its arguments on each row so far
 (ADR 0012, amendment 5, slice 6d). A {lit}`json_each` call that fails gives no rows here,
 and makes the fault of the source {lit}`may`: SQLite reports it when it scans the
@@ -32,19 +32,27 @@ structure SourceRows where
   A derived source reads these cells; an unmatched right row retains them. -/
   outer : List Value := []
 
-/-- The rows so far joined with one more source ({name}`joinRows`); none for a table that
-the database does not have, a derived source whose run fails or has uncertain complete rows,
-and a pragma whose rows the model does not give ({name}`PragmaRows.rowsOn`). A derived source
+/-- The rows so far joined with the rows of one table in rowid order ({name}`joinRows`): the
+rows and the width of the table come from the table itself, whichever database it is from. -/
+def QuerySource.joinTable (context : EvalContext) (state : SourceRows) (join : QuerySource) (table : Table) : SourceRows :=
+  { state with
+    rows := joinRows context state.width state.rows join table.shape.columns.length (sourceRows table) state.outer,
+    width := state.width + table.shape.columns.length }
+
+/-- The rows so far joined with one more source ({name}`QuerySource.joinTable`); none for a table that
+the database does not have, a table of the optional initial database {lit}`initial` that it does not have
+(none outside a two-state observation), a derived source whose run fails or has uncertain complete rows,
+and a pragma whose rows the model does not give ({name}`PragmaRows.rowsOn`). A table of the
+initial database never reads {lit}`database`, and a table of {lit}`database` never reads {lit}`initial`. A derived source
 uses the statement's indexed evaluator with the enclosing query's cells. The rows of
 a {lit}`json_each` source are its rows over each row so far ({name}`joinRow`); resolution
 refuses it as the right operand of a right or full join, where this gives the rows of an
 inner or left join. -/
-def QuerySource.join (context : EvalContext) (database : Database) (state : SourceRows) (join : QuerySource) : Option SourceRows :=
+def QuerySource.join (context : EvalContext) (database : Database) (initial : Option Database) (state : SourceRows)
+    (join : QuerySource) : Option SourceRows :=
   match join.source with
-  | .table position => (database.table position).map fun table =>
-    { state with
-      rows := joinRows context state.width state.rows join table.shape.columns.length (sourceRows table) state.outer,
-      width := state.width + table.shape.columns.length }
+  | .table position => (database.table position).map (QuerySource.joinTable context state join)
+  | .initialTable position => (initial.bind (·.table position)).map (QuerySource.joinTable context state join)
   | .each json path =>
     let results := state.rows.map fun row => (row, Json.eachRows (json.eval context row) (path.map (·.eval context row)))
     let failed := results.any fun (_, result) => match result with
@@ -67,17 +75,20 @@ def QuerySource.join (context : EvalContext) (database : Database) (state : Sour
 
 /-- The source rows of a query over a database: its sources joined in written order
 ({name}`QuerySource.join`) from the one row with no cells, which is the source of a query
-without {lit}`FROM`; none when a table is missing. -/
-def Query.source (context : EvalContext) (query : Query) (database : Database) : Option SourceRows :=
-  query.sources.foldlM (QuerySource.join context database) { rows := [[]], width := 0, fault := .none }
+without {lit}`FROM`; none when a table is missing. The optional {lit}`initial` database is the one that the
+sources of the initial origin read; use none outside a two-state observation. -/
+def Query.source (context : EvalContext) (query : Query) (database : Database) (initial : Option Database := none) :
+    Option SourceRows :=
+  query.sources.foldlM (QuerySource.join context database initial) { rows := [[]], width := 0, fault := .none }
 
-/-- For every context, database, list of sources without a {lit}`json_each` source and state whose
+/-- For every context, current database, optional initial database, list of sources without a
+{lit}`json_each` source and state whose
 fault is {lean}`Fault.none`, a successful fold of {name}`QuerySource.join` ends with the fault
 {lean}`Fault.none`. Proof sketch: induction on the sources; a table source keeps the fault,
 a pragma keeps the fault, and a subquery either stops the fold or keeps the fault. -/
-theorem source_fault_of_plain (context : EvalContext) (database : Database) :
+theorem source_fault_of_plain (context : EvalContext) (database : Database) (initial : Option Database) :
     ∀ (sources : List QuerySource) (state result : SourceRows), sources.all (!·.source.isEach) = true →
-      state.fault = .none → sources.foldlM (QuerySource.join context database) state = some result → result.fault = .none
+      state.fault = .none → sources.foldlM (QuerySource.join context database initial) state = some result → result.fault = .none
   | [], state, result, _, clean, done => by
     simp only [List.foldlM, pure] at done
     cases done
@@ -93,7 +104,15 @@ theorem source_fault_of_plain (context : EvalContext) (database : Database) :
       | none => simp [found] at done
       | some table =>
         simp only [found, Option.map_some] at done
-        refine source_fault_of_plain context database rest _ result plain.2 ?_ done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
+        exact clean
+    | initialTable position =>
+      simp only [QuerySource.join] at done
+      cases found : initial.bind (·.table position) with
+      | none => simp [found] at done
+      | some table =>
+        simp only [found, Option.map_some] at done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
         exact clean
     | each json path => simp [Source.isEach] at plain
     | subquery index width =>
@@ -102,7 +121,7 @@ theorem source_fault_of_plain (context : EvalContext) (database : Database) :
           !(context.subqueries index state.outer).sourceCertain) = true
       · simp [QuerySource.join, refused] at done
       · simp only [QuerySource.join, refused, ↓reduceIte, Option.bind_some] at done
-        refine source_fault_of_plain context database rest _ result plain.2 ?_ done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
         exact clean
     | pragma pragma =>
       simp only [QuerySource.join] at done
@@ -110,7 +129,7 @@ theorem source_fault_of_plain (context : EvalContext) (database : Database) :
       | none => simp [found] at done
       | some rows =>
         simp only [found, Option.map_some] at done
-        refine source_fault_of_plain context database rest _ result plain.2 ?_ done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
         exact clean
 
 end Belay.Sqlite.Model.Resolved

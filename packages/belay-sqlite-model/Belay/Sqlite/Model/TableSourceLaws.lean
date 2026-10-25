@@ -33,7 +33,7 @@ theorem Resolved.Query.source_first (context : Resolved.EvalContext) (query : Re
     query.source context database =
       some { rows := sourceRows table, width := table.shape.columns.length, fault := .none } := by
   have rows := Resolved.Query.source_single context query database position sources
-  simp only [Resolved.Query.source, sources, List.foldlM, Resolved.QuerySource.join, Resolved.QuerySource.first, present,
+  simp only [Resolved.Query.source, sources, List.foldlM, Resolved.QuerySource.join, Resolved.QuerySource.joinTable, Resolved.QuerySource.first, present,
     Option.map_some, bind, Option.bind, pure, Option.some.injEq] at rows ⊢
   rw [rows, Nat.zero_add]
 
