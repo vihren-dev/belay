@@ -304,6 +304,8 @@ corpus agreement gain. No corpus, claim or judge-lock file changes.
 
 Commands, selectors and logs are `build/agent-logs/view-drop-*`. The package dev
 build and development verdict are required local diagnostics, not acceptance
-citations. Independent review follows this coherent source commit. CREATE VIEW
-and the remaining view scope above still require their implementation and full
+citations. Independent review `20261025T022201Z-7ebea057` checked source
+`7ebea057f9ada581ad951a15efaf3ad045219553` and found zero musts and zero shoulds.
+The reviewer reported reading the diff and changed files, with no coverage limitation.
+CREATE VIEW and the remaining view scope above still require their implementation and full
 part-3 acceptance; neither this unit nor its focused checks completes the task.
