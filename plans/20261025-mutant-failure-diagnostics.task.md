@@ -48,10 +48,14 @@ mutation suite locally.
 
 The single acceptance part requires independent review, post-review
 `just test-full` and `just verdict`, then `just test-nix` and
-`just test-scheduled-checks`. Compare protected source trees and frozen
-predictions. Record only Nix results as acceptance evidence. After publication,
-inspect the hosted result separately and retain any newly exposed failure
-details; repairs for those causes are separate work.
+`just test-scheduled-checks`. The owner's standing instruction excludes broad
+local mutation runs, so this replaces `just test-scheduled` here. Compare
+protected source trees and frozen predictions. Record only Nix results as
+acceptance evidence. After publication, use the existing manual CI trigger to
+run the hosted mutation suites: the ordinary pull-request change filter skips
+them for this build-support change. Inspect actual test execution, not only job
+status, and retain any newly exposed failure details. Repairs for those causes
+are separate work.
 
 ## Relevant code and constraints
 
