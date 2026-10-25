@@ -42,15 +42,12 @@ structure ScalarRead where
   /-- Whether the value is canonical JSON (RFC 8259) for SQLite. -/
   standard : Bool
 
-/-- Scan a string body to the closing {lit}`delimiter`: {lit}`rest` is the text from
-{lit}`position` on. The result is the position of the delimiter and the escape class, or
-{lit}`none` for a syntax error. The escapes are
-those of the reader: canonical {lit}`\"`, {lit}`\\`, {lit}`\/`, {lit}`\b`, {lit}`\f`,
-{lit}`\n`, {lit}`\r`, {lit}`\t` and {lit}`\uXXXX`; JSON5 {lit}`\'`, {lit}`\v`, {lit}`\0`
-not before a digit, {lit}`\xXX` and line continuations. A NUL byte is an error. The scan
-walks the list, so each step reads a byte near the front: reading the byte at {lit}`position`
-of an {lit}`Array` walks the whole array in the kernel, which made a scan of a long string
-take a time quadratic in its length. -/
+/-- Scan a string body to the closing {lit}`delimiter`; {lit}`rest` is the text from
+{lit}`position`. The result is the position of the delimiter and the escape class, or
+{lit}`none` for a syntax error. The escapes are those of the reader: canonical {lit}`\"`,
+{lit}`\\`, {lit}`\/`, {lit}`\b`, {lit}`\f`, {lit}`\n`, {lit}`\r`, {lit}`\t` and {lit}`\uXXXX`; JSON5
+{lit}`\'`, {lit}`\v`, {lit}`\0` not before a digit, {lit}`\xXX` and line continuations. A NUL
+byte is an error. The scan walks a list: the kernel finds an {lit}`Array` element by a walk. -/
 def scanStringFrom (delimiter : UInt8) : Nat → Nat → StringKind → List UInt8 → Option (Nat × StringKind)
   | 0, _, _, _ => none
   | fuel + 1, position, kind, rest =>
@@ -81,8 +78,7 @@ def scanStringFrom (delimiter : UInt8) : Nat → Nat → StringKind → List UIn
 position after the closing delimiter. A single-quoted string and a JSON5 string
 ({lit}`JSONB_TEXT5`) are JSON5. -/
 def readString (text : Array UInt8) (position : Nat) : Option ScalarRead :=
-  match scanStringFrom (byteAt text position) (text.size + 1) (position + 1) .plain
-      (text.toList.drop (position + 1)) with
+  match scanStringFrom (byteAt text position) (text.size + 1) (position + 1) .plain (text.toList.drop (position + 1)) with
   | some (close, kind) =>
     some ⟨kind.node (slice text (position + 1) close), close + 1,
       byteAt text position == 34 && !(kind matches .json5)⟩

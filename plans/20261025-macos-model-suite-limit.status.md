@@ -46,7 +46,7 @@ Relevant files: `conformance/model_check.py`,
   `startsWithHexDigits`. The semantics are the same: a position past the end is 0. Local
   kernel time of the proof of `jsonb-header-sizes` (`lean` on `Case1.lean`): 56.6 s before,
   7.7 s after (single-expression `jsonb('"<300 bytes>"')`: `readString` alone 7.5 s to 0.35 s).
-  `just dev-build` and `just dev-verdict` pass (no DISAGREE or HARNESS_ERROR). The
+  The
   53 prediction files of `integrity/judge.nix -A predictions` are byte-identical: baseline
   (commit `108d6f62`)
   `/nix/store/hkvlvawsx4fk1zvcknmh5gn4m0kkynps-sqlite-verifier-predictions`, with the fix
