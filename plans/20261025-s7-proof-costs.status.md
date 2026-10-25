@@ -144,3 +144,10 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `writtenTheorems` names every constructor. Focused Nix run (not a gate):
   `/nix/store/kw4ribnjs2b8rbd0a06lb8dyd60sfxa2-sqlite-verifier-test-surface-1`,
   7 passed.
+- 2026-10-25: Part 2 gate, first run on `19b8a6ee`: `just verdict` passed
+  (`/nix/store/gz1wg4l0969wpihb402jjayih440m13x-sqlite-verifier-verdict`); `just
+  test-full` had one failure, `surface_layers_test.py` rule 3. The layer test
+  reads import lines with a regular expression, and a docstring line of
+  `ProofCostModuleData.lean` began with the word "import". The line is
+  reworded. The focused runs did not select the layer tests; the next gate
+  runs all of them.

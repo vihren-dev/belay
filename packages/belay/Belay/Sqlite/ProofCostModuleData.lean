@@ -6,8 +6,8 @@ set_option doc.verso true
 
 /-! Reading proof costs from a compiled module (ADR 0017, S7). The checker reads the module file
 and runs no elaboration. It takes the stored records, the theorems that the author wrote, and a
-comparison of the module's Lean file with the text that the collector hashed. This module does not
-import Lake: the checker gives it the paths. -/
+comparison of the module's Lean file with the text that the collector hashed. This module needs no
+Lake: the checker gives it the paths. -/
 
 namespace Belay.Sqlite
 
