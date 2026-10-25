@@ -497,3 +497,64 @@ catalogs, admitted rows within the explicit schema/effect conditions, arbitrary
 parameter Values, original migration success and every complete environment
 and raw/concrete branch. The already checked counterexample remains separate
 from the positive weak query comparisons.
+
+## Complete expansion state/query proof: focused checks complete
+
+The whole-expansion unit starts at clean effect-review head `cfbb5084`.
+Its first uncompiled batch adds `SuccessfulScriptEffects`,
+`NormalizedFieldResolution`, `NormalizedFieldUpdateResolution` and
+`NormalizedFieldDdlEffects`, with only their model barrel and Lake entries.
+These recover the actual successful effect and context, the plain TEXT ADD,
+the lower assignment, and the DDL effects around the backfill. The update
+trigger condition is exactly an empty `triggersFiring` list for UPDATE of the
+old width in the explicitly extended catalog. It does not ban unrelated
+triggers or assume a row relation. No execution or resolver definition changes.
+
+The first development compile is diagnostic within this whole-expansion unit.
+The composed four-statement state theorem, all-branch/public query consumers
+and installed acceptance are not complete. No helper-only acceptance is claimed.
+
+The first diagnostic build on `218d663d` failed in proof elaboration for the
+successful-step and resolution bridges. Its log remains at
+`build/agent-logs/normalized-expansion-bridges-dev-build.log`. The correction
+keeps the formulas and runtime definitions unchanged, fixes Boolean/equality
+rewrites and record layout, and clarifies that the ordinary-step law excludes
+connection-setting statements as well as transaction control. Dependent
+bridges have not compiled yet; no acceptance is claimed.
+
+The bridges compiled after the corrections above. The unit now adds, in the model package,
+`SimpleTableRowsOutput`, `NormalizedFieldSelectResolution`, `NormalizedFieldLookups`,
+`NormalizedFieldExpandedTable`, `NormalizedFieldLookupOutputs` and `NormalizedFieldExpansion`
+(the four-statement state theorem `expansion_state`). In the surface package it adds
+`SendStatementsBranches`, `SingleStatementObservations`, `MigrationPatternAfter` and
+`NormalizedFieldExpansion`, which holds the public `queryTranslates` and `queryPreserves`
+theorems. No execution or resolver definition changed, so the prediction baseline needs no
+re-run. Each file has fewer than 200 lines.
+
+The public theorems quantify over every valid database that has a `Site`, every complete
+environment and every bound value. A `Site` states that the target table is physical, found by
+name at a catalog position, has an id and a source column, has no column of the new name, has
+primary-key positions inside its columns and plain (not generated) columns, and that the
+catalog with the new field added selects no trigger for an UPDATE of that field. Other tables,
+indexes, triggers and rows are unrestricted. Wide and aliased rows come from the database
+validity proof. The original migration success, which is the domain of the law, removes the ADD,
+UPDATE and trigger-name failures. The foreign-key and recursive-trigger settings are those of
+the fresh initial context. The law covers the actual run and every raw and concrete branch,
+through the one connection and output count that all migration branches reach.
+
+`tests/surface/NormalizedFieldExpansionLaws.lean` shows that the retained customers expansion is
+an instance of the general script (`counter_expansion_is_general`), that its database has a
+site, and that both lookup laws give an observation equality at its initial context for every
+bound value. The migration-example test module registers it with eight theorem-dependency
+reports.
+
+On 2026-10-25 the focused Nix surface check passed **3 passed, 95 deselected**. Output:
+`/nix/store/f2dc49k5iyzinx3r5lhrsmi814w803zb-sqlite-verifier-test-surface-1`. The disposable
+selector is `normalized_field or expansion_counter`, applied to the existing surface suite with
+unchanged timeouts; it was reverted after the run. All eight new reports use only the ordinary
+logical axioms, and the retained counterexample and its native replay still pass. The log is
+`build/agent-logs/expansion-laws-focused.log`. The mandatory development build
+(`build/agent-logs/s6-devbuild-1.log`) preceded it. Only the Nix report is acceptance
+evidence. R3/R19 self-review checked the plain-words statements of `Site` and both public
+theorems, the proof sketches, and that the trigger premise is the exact structural
+`triggersFiring` condition and is not strengthened.

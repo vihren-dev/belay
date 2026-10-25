@@ -1,0 +1,131 @@
+import Belay
+
+/-! Installed consumers of the whole lowercase-field expansion laws. The concrete customers
+expansion of the counter example is an instance of the general four-statement script, its
+database has a site, and the public query laws give an observation equality at its initial
+context. -/
+
+set_option doc.verso true
+set_option maxRecDepth 8192
+set_option exponentiation.threshold 2048
+
+namespace NormalizedFieldExpansionFixture
+open Belay.Sqlite
+open Belay.Sqlite.Model hiding Database
+
+/-- One customer; the same database as in the counter example. -/
+def sample : Database := db! r"
+  CREATE TABLE customers(id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
+  INSERT INTO customers VALUES(1, 'Ada', 'Alpha@X');"
+
+/-- The environment of the counter example: all inputs known after the setup INSERT. -/
+def environment : Env :=
+  { clock := some (fun _ => 0)
+    counters := { changes := some 1, totalChanges := some 1, lastInsertRowid := some 1 } }
+
+/-- The initial execution context of the sample. -/
+def initial : ExecutionContext := ExecutionContext.initial sample environment
+
+/-- The four-statement expansion of the counter example. -/
+def expansion : Script := sql r"
+  ALTER TABLE customers ADD COLUMN email_lower TEXT;
+  UPDATE customers SET email_lower = lower(email);
+  CREATE TRIGGER customers_email_ins AFTER INSERT ON customers BEGIN
+    UPDATE customers SET email_lower=lower(NEW.email) WHERE id=NEW.id; END;
+  CREATE TRIGGER customers_email_upd AFTER UPDATE OF email ON customers BEGIN
+    UPDATE customers SET email_lower=lower(NEW.email) WHERE id=NEW.id; END;"
+
+/-- The environment is complete. Proof sketch: every field holds a value. -/
+theorem complete_environment : environment.Complete := ⟨rfl, rfl, rfl, rfl⟩
+
+/-- The expansion succeeds at the initial context on every branch, so it is inside the domain of
+the translation laws. Proof sketch: kernel evaluation of the public success predicate. -/
+theorem original_domain : Migration.Domain (send expansion) (fun _ => True) initial := by
+  exact ⟨True.intro, by decide +kernel⟩
+
+/-- The trigger that the statement at the given place of the counter example's expansion
+creates, as a name and a definition. The unused default is a placeholder for other places. -/
+def triggerAt (place : Nat) : Identifier × CatalogTrigger :=
+  match expansion.statements[place]? with
+  | some (.createTrigger name _ time event table condition body, _) =>
+    (name, { table, time, event, condition, body })
+  | _ => (name! "unused", { table := name! "unused", time := .after, event := .insert, body := [] })
+
+/-- The counter example's expansion is the general four-statement expansion of the table
+{lit}`customers` with the field {lit}`email_lower` over {lit}`email`, with its two CREATE
+TRIGGER statements and no bound values. Proof sketch: the parsed statements unfold to the
+general script's statements, so the equality holds by reflexivity. -/
+theorem counter_expansion_is_general :
+    expansion =
+      NormalizedFieldExpansion.expansion (name! "customers") (name! "email_lower") (name! "email")
+        (triggerAt 2) (triggerAt 3) [] [] [] [] := by
+  rfl
+
+/-- The table of the one-customer database at catalog position 0. -/
+def sampleTable : Table :=
+  (sample.raw.table 0).get (by decide +kernel)
+
+/-- The one-customer database has a site for the expansion: its table is found by name at
+position 0, the id is column 0, the email is column 2, no column is named {lit}`email_lower`, and
+no trigger exists. Proof sketch: each field is a closed fact about the parsed database, checked
+by kernel evaluation. -/
+theorem sample_has_site : Nonempty (NormalizedFieldExpansion.Site sample.raw
+    (name! "customers") (name! "id") (name! "email") (name! "email_lower")) :=
+  ⟨{ position := 0, table := sampleTable, id := 0, source := 2
+     found := by decide +kernel
+     present := (Option.some_get _).symm
+     fresh := by decide +kernel
+     idFound := by decide +kernel
+     sourceFound := by decide +kernel
+     keysInside := by decide +kernel
+     plain := by decide +kernel
+     noneFiring := by decide +kernel }⟩
+
+/-- At the counter example's initial context, the original lookup on the email before the expansion
+and the stored lookup after it have equal actual values, traces and branch observations, for every
+bound value. Plain words: in the one-customer database, looking up an id by the lowercase of the
+email before the expansion gives what looking it up by the new lowercase field gives after it.
+Proof sketch: the public translation law applies to the general form of the concrete expansion,
+with the site of the sample and its success at the initial context
+({name}`original_domain`). -/
+theorem sample_lookup_translates (value : Value) :
+    Migration.TranslatesAt (send expansion) (fun _ => True)
+      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+        (name! "email") "id" 1 value))
+      (send (NormalizedFieldExpansion.storedLookupScript (name! "customers") none (name! "id")
+        (name! "email_lower") "id" 1 value))
+      initial := by
+  obtain ⟨site⟩ := sample_has_site
+  rw [counter_expansion_is_general]
+  exact NormalizedFieldExpansion.queryTranslates (name! "customers") none (name! "id") (name! "email")
+    (name! "email_lower") "id" 1 value (triggerAt 2) (triggerAt 3) [] [] [] []
+    sample ⟨site⟩ environment
+    complete_environment
+
+/-- The same instance for the preserved original lookup. Plain words: looking up an id by the
+lowercase of the email gives the same result before and after the expansion. Proof sketch: as
+{name}`sample_lookup_translates`, with the public preservation law. -/
+theorem sample_lookup_preserved (value : Value) :
+    Migration.TranslatesAt (send expansion) (fun _ => True)
+      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+        (name! "email") "id" 1 value))
+      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+        (name! "email") "id" 1 value))
+      initial := by
+  obtain ⟨site⟩ := sample_has_site
+  rw [counter_expansion_is_general]
+  exact NormalizedFieldExpansion.queryPreserves (name! "customers") none (name! "id") (name! "email")
+    (name! "email_lower") "id" 1 value (triggerAt 2) (triggerAt 3) [] [] [] []
+    sample ⟨site⟩ environment
+    complete_environment
+
+#print axioms counter_expansion_is_general
+#print axioms sample_has_site
+#print axioms sample_lookup_translates
+#print axioms sample_lookup_preserved
+#print axioms NormalizedFieldExpansion.translatesAt_of_outputs
+#print axioms NormalizedFieldExpansion.queryTranslates
+#print axioms NormalizedFieldExpansion.queryPreserves
+#print axioms Model.NormalizedField.expansion_state
+
+end NormalizedFieldExpansionFixture

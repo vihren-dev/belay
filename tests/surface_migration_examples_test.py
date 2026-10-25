@@ -45,6 +45,20 @@ def test_normalized_field_laws_cover_arbitrary_values(runtime_root: Path, tmp_pa
         assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
 
 
+def test_normalized_field_expansion_laws_cover_concrete_expansion(runtime_root: Path, tmp_path: Path) -> None:
+    """The installed whole-expansion state theorem and the public query laws apply to the
+    retained customers expansion: it is an instance of the general four-statement script, its
+    database has a site, and the original and stored lookups give equal observations at its
+    initial context for every bound value. Every audited declaration uses only logical axioms."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldExpansionLaws.lean", tmp_path),
+                         cwd=tmp_path, timeout=180)
+    assert result.returncode == 0, result.diagnostic()
+    reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
+    assert len(reports) == 8, result.diagnostic()
+    for report in reports:
+        assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
+
+
 def test_expansion_counter_refutes_full_commutation(runtime_root: Path, tmp_path: Path) -> None:
     """The complete expansion has equal final rows/application observations in both
     public execution orders, but its maintenance trigger changes total_changes.
