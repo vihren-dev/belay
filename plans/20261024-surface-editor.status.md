@@ -379,3 +379,18 @@ Resolutions: the order-risk warning is in the inline `scriptTerm` of `SqlTerm.le
 record no table origins or hovers; the task scopes part 2a to `sql!`, `db!` and `#sql`.
 The review of the merge found two items, both documentation: the parameterized-script
 exception of `#sql` in the task file, and the acceptance line in the opening status.
+
+Gate results on the merge `99713acb` plus the documentation refactor (2026-10-25).
+All gates ran through `heavy.sh` and passed on the first run:
+
+- `just test-full`: 337 tests passed;
+  `/nix/store/djshh9r2jv947vhhi51q38mdl2jrvvjb-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/a6nvwbx7sb8lx6fwjpr28g512dx1awxz-sqlite-verifier-verdict`.
+- Predictions: the store path is `/nix/store/2c56akphxc884accaa9piqwgyhg3bpbq-sqlite-verifier-predictions`,
+  the same path as the predictions of the v54 pull request, so the content is identical
+  (55 files; `diff -r` shows no difference).
+- `just test-nix`: 71 tests passed.
+- `just test-scheduled-checks`:
+  `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
+- `just review`: the merge `99713acb` had two findings (task-file documentation), both fixed;
+  the refactor commit `798c25b3` has no findings.
