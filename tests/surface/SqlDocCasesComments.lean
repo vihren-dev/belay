@@ -9,6 +9,7 @@ line ends. -/
 
 open Belay.Sqlite
 
+/-- A database with one table and the row 1, which every case starts from. -/
 def start : Database := db! r"CREATE TABLE t(x INTEGER); INSERT INTO t VALUES(1)"
 
 --! case marker-inside-a-string-is-sql

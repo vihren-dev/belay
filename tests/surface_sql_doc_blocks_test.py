@@ -21,7 +21,8 @@ from tests.surface_support import FIXTURES, SUFFIX, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
-FIXTURE_NAMES = ("SqlDocCasesOutput", "SqlDocCasesInputs", "SqlDocCasesFailures", "SqlDocCasesComments")
+FIXTURE_NAMES = ("SqlDocCasesText", "SqlDocCasesTyped", "SqlDocCasesBindings", "SqlDocCasesExplicit",
+                 "SqlDocCasesFailures", "SqlDocCasesComments")
 """The fixtures with cases, without the suffix `.lean`."""
 DIAGNOSTIC = re.compile(r"^(?P<file>.+?):(?P<line>\d+):(?P<column>\d+): (?P<kind>error|warning)(\([^)]*\))?: (?P<text>.*)$")
 """One diagnostic header line of `lean`; the lines after it belong to the message."""
@@ -128,7 +129,7 @@ def case_text(fixture: str, name: str) -> tuple[str, str]:
 def test_mutating_a_passing_case_makes_it_fail(runtime_root: Path, tmp_path: Path, name: str, old: str, new: str) -> None:
     """A passing case elaborates, and the same case with a changed expected value or a changed SQL
     condition is an error of the block, so the check depends on both."""
-    header, body = case_text("SqlDocCasesOutput", name)
+    header, body = case_text("SqlDocCasesText", name)
     assert elaborate(runtime_root, tmp_path / "passing", header + body, "Passing") == []
     assert old in body
     mutated = elaborate(runtime_root, tmp_path / "mutated", header + body.replace(old, new), "Mutated")

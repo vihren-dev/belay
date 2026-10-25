@@ -87,6 +87,11 @@ INSERT INTO p VALUES (0);
 -- CHECK constraint failed: x > 0
 ```
 
+The expected lines repeat the message that the model gives. For most failures this is the message
+of SQLite. For a syntax error, a function failure and a constraint failure in a write that can
+fire a trigger or that checks foreign keys, the model gives its own text, and the block must repeat
+that text.
+
 # The clock
 
 A statement that reads the clock needs a closed environment, which {lit}`(env := noon)` gives.

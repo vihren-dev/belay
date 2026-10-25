@@ -116,11 +116,16 @@ Decisions inside the task. Header options are `db`, `env`, `values`, `expected` 
 `+error`. A convenience argument binds the parameter of its name (`?` and `?N` give `pN`); two
 signs with one name (`:x`, `@x`) are an error that names the explicit list, which is exact. The
 explicit list needs one list per statement and exactly the largest parameter number of values
-for each. `+error` compares the SQLite message without the model's action text. A syntax error has
-only the model's fixed text, because the parser library reports an offset and no SQLite message.
+for each. `+error` compares the message that the model gives for the failure, without the action text of
+`failureAction`. For most failures this is SQLite's message. Three existing limits of the model
+mean that it is the model's own text: a syntax error (the parser library reports an offset and no
+message), a function failure, and a constraint failure in a write that can fire a trigger or that
+checks foreign keys (`triggerOrKeyConstraintMessage`). The expected lines of such a block repeat
+that text. This is not a change of SQLite behavior; a model change that gives the SQLite message
+would make these blocks stricter and is outside this task. `SqlDocGuide` states the limit.
 A block with a wrong header is not run, so a header error adds no second error.
 
-Fixtures: `tests/surface/SqlDocCases{Output,Inputs,Failures,Comments}.lean` hold 67 cases with
+Fixtures: `tests/surface/SqlDocCases{Text,Typed,Bindings,Explicit,Failures,Comments}.lean` hold 67 cases with
 stated error positions. The tests elaborate each fixture with Unix and with Windows line ends.
 `tests/surface_sql_doc_blocks_test.py` also mutates a passing case and checks the missing parser
 library. `tests/surface_sql_docs_test.py` runs the `#guard` fixtures of the pure helpers.
@@ -130,3 +135,13 @@ check with `-k 'surface_sql_doc or surface_layers'` passed 154 tests with 76 des
 19.38 seconds. Report:
 `/nix/store/2a6bv6p69pkyq661sfr3gijrkp9m3aj1-sqlite-verifier-test-surface-1`. Logs and the
 command are under `build/agent-logs/docblocks-*`. No guide change is known.
+
+Review `20261025T093205Z-be8ff7ba` of `be8ff7ba` found 4 musts and 3 shoulds, all fixed in the
+following refactor commit: `explainStop` names every `Output` constructor; the error-mismatch and
+closed-evaluation messages give a recovery action; the six case fixtures are all under 200 lines
+(the old Output and Inputs fixtures are split into Text, Typed, Bindings and Explicit) and their
+setup definitions have docstrings; and the limits of `+error` messages (syntax, function and
+trigger or foreign-key constraint failures give the model's text) are stated above and in
+`SqlDocGuide`. Focused Nix check of that refactor snapshot (`-k 'surface_sql_doc or
+surface_layers'`): 154 passed, 76 deselected, 22.70 seconds; report
+`/nix/store/2c3j895qgphqdbfmdqqvbw3i89kgjg4s-sqlite-verifier-test-surface-1`.

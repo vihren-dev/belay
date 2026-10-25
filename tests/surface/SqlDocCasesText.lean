@@ -2,22 +2,22 @@ import Belay
 
 set_option doc.verso true
 
-/-! Cases of the {lit}`sql` documentation block for what a block observes: the rendered text of the
-results, the typed outputs, alternative results and the clock. -/
+/-! Cases of the {lit}`sql` documentation block for the text of the results: rows, write counts,
+NULL and blobs, alternative results, the clock, independent blocks and the retained documentation. -/
 
 open Belay.Sqlite
 
+/-- A database with one table and the row 1, which most cases start from. -/
 def start : Database := db! r"CREATE TABLE t(x INTEGER); INSERT INTO t VALUES(1)"
+
+/-- A database whose first row is not fixed by the model: the rows b and a. -/
 def names : Database := db! r"CREATE TABLE m(name); INSERT INTO m VALUES('b'); INSERT INTO m VALUES('a')"
+
+/-- A database with the rows 1 and '1', which differ in type and render alike. -/
 def sameText : Database := db! r"CREATE TABLE m(x); INSERT INTO m VALUES(1); INSERT INTO m VALUES('1')"
+
+/-- An environment with a fixed clock for the cases that read the time. -/
 def noon : Env := clockAt "2026-10-20 12:00:00"
-def nullOutputs : List Output := [.rows [[.null]]]
-def textOutputs : List Output := [.rows [["NULL"]]]
-def writeThenRows : List Output := [.done 1, .done 1, .rows [[7]]]
-def separateSets : List Output := [.rows [[1]], .rows [[2]]]
-def oneSet : List Output := [.rows [[1], [2]]]
-def noRows : List Output := [.rows []]
-def alternatives : List Output := [.oneOf [[[1]], [["1"]]]]
 
 --! case matching-update-then-select
 /-- An update, then a query: the write count is not part of the text.
@@ -92,68 +92,6 @@ SELECT x'00ff', ' a ', 'x' || char(10) || 'y';
 -/
 def blobAndSpaces : Unit := ()
 
---! case typed-null
-/-- A typed expectation separates NULL from text.
-```sql (db := start) (expected := nullOutputs)
-SELECT NULL;
-```
--/
-def typedNull : Unit := ()
-
---! case typed-null-is-not-text
---! error 4:0 expected outputs: [rows [["NULL"]]]
-/-- The typed expectation of the text NULL rejects a NULL.
-```sql (db := start) (expected := textOutputs)
-SELECT NULL;
-```
--/
-def typedNullIsNotText : Unit := ()
-
---! case typed-write-count-and-boundaries
-/-- A typed expectation states write counts and the end of each result set.
-```sql (db := start) (expected := writeThenRows)
-INSERT INTO t VALUES (9);
-UPDATE t SET x = 7 WHERE x = 9;
-SELECT x FROM t WHERE x = 7;
-```
--/
-def typedWriteCount : Unit := ()
-
---! case typed-separates-result-sets
-/-- The text of separate result sets equals the text of one set; typed outputs differ.
-```sql (db := start) (expected := separateSets)
-SELECT 1;
-SELECT 2;
-```
--/
-def typedSeparateSets : Unit := ()
-
---! case typed-one-set-is-not-two-sets
---! error 4:0 actual outputs: [rows [[1], [2]]]
-/-- One result set with two rows is not two result sets.
-```sql (db := start) (expected := separateSets)
-SELECT 1 UNION ALL SELECT 2;
-```
--/
-def typedOneSet : Unit := ()
-
---! case typed-empty-result
-/-- An empty result set is an output, and the text does not show it.
-```sql (db := start) (expected := noRows)
-SELECT x FROM t WHERE x = 5;
-```
--/
-def typedEmptyResult : Unit := ()
-
---! case typed-comments-stay-sql
-/-- All comments of a typed block are SQL, so a trailing line comment does not state text.
-```sql (db := start) (expected := nullOutputs)
-SELECT NULL;
--- this comment is not an expectation
-```
--/
-def typedCommentsStaySql : Unit := ()
-
 --! case equal-alternatives-pass-in-text-mode
 /-- The first row of an unordered query can differ, and both alternatives give the same text.
 ```sql (db := sameText)
@@ -172,23 +110,6 @@ SELECT name FROM m LIMIT 1;
 ```
 -/
 def distinctAlternatives : Unit := ()
-
---! case typed-alternatives-are-compared-whole
-/-- A typed expectation states the alternatives themselves.
-```sql (db := sameText) (expected := alternatives)
-SELECT x FROM m LIMIT 1;
-```
--/
-def typedAlternatives : Unit := ()
-
---! case typed-first-alternative-alone-fails
---! error 4:0 actual outputs: [oneOf
-/-- The first alternative alone is not the output.
-```sql (db := sameText) (expected := nullOutputs)
-SELECT x FROM m LIMIT 1;
-```
--/
-def typedFirstAlternative : Unit := ()
 
 --! case clock-from-environment
 /-- A closed environment gives the clock.

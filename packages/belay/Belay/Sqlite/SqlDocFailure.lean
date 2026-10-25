@@ -54,6 +54,6 @@ def explainStop (bytes : ByteArray) (database : Database) (environment : Env)
   | some (.unmodeled reason) =>
     let diagnostic := endedDiagnostic connection item (clockHint reason)
     some (.outsideModel diagnostic)
-  | _ => none
+  | some (.rows _) | some (.done _) | some (.oneOf _) | none => none
 
 end Belay.Sqlite.SqlDoc

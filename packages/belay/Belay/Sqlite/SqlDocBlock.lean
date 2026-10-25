@@ -60,7 +60,8 @@ def bindScript (source : BlockSource) (header : Header) (inputs : Inputs)
 
 /-- The message when an expected failure compares to a different one. -/
 def errorMismatch (expected actual : String) : String :=
-  s!"SQL error mismatch\nexpected message: {repr expected}\nactual message: {repr actual}"
+  s!"SQL error mismatch\nexpected message: {repr expected}\nactual message: {repr actual}\n\
+    Correct the SQL, or write the actual message in the comment lines at the end of the block"
 
 /-- Run the script and compare it with the block's expectation. The first statement that fails
 or is outside the model ends the check: with {lit}`+error` an SQL failure is compared with the

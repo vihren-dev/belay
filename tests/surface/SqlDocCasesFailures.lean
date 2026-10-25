@@ -7,7 +7,9 @@ expect with {lit}`+error`, and which errors stay errors of the file. -/
 
 open Belay.Sqlite
 
+/-- A database with a unique column and the row 1, so that a second 1 fails. -/
 def start : Database := db! r"CREATE TABLE t(x INTEGER UNIQUE); INSERT INTO t VALUES(1)"
+/-- The exact outputs of one query that returns 1, which a block with a failure cannot have. -/
 def outputsOfOne : List Output := [.rows [[1]]]
 
 --! case prepare-error-is-an-expected-failure

@@ -49,7 +49,8 @@ def closedValue (α : Type) [Nonempty α] (what : String) (type : Expr) (term : 
       while the file elaborates; use a definition that Lean can compute"
   try some <$> evaluateClosed α type value
   catch error =>
-    throwErrorAt term m!"Lean could not evaluate the {what}: {error.toMessageData}"
+    throwErrorAt term m!"Lean could not evaluate the {what}: {error.toMessageData}\nUse a closed \
+      definition that Lean can compute"
 
 /-- The name in a header argument that must be a definition, or an error at the argument. -/
 def definitionName (option : String) (argument : Doc.DocArg) : TermElabM Syntax :=
