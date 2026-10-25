@@ -83,3 +83,8 @@ broken line wrapping. The follow-up separates its edit format, grouped fault
 and fault list into three short sentences. Mutation values and assertions are
 unchanged from the focused Nix snapshot. The harness, full guard inventory and
 ownership tests cover this commit; final Nix acceptance uses the corrected text.
+The correction is `e4265048ea883ade3b2f794be20e53645a31165d`; review
+`20261025T004856Z-e4265048` is clean (0 must, 0 should). All source findings are
+resolved. The task-end full/verdict/prediction comparison/Nix/scheduled-check
+sequence is now assigned slot 1 on this reviewed source. It does not run the
+broad mutant suites.
