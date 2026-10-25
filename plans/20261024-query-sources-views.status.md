@@ -226,9 +226,27 @@ agreement and kill assertions are unchanged. No S5 frontend descendant is carrie
 
 The source and approved shell comparisons are recorded in
 `build/agent-logs/view-repair-integration.json`. The harness, full guard inventory
-and test-ownership checks are local diagnostics for this merge, not new Nix
-acceptance. Its focused Nix gate is queued while both heavy slots are occupied.
+and test-ownership checks are local diagnostics for this merge, not Nix acceptance.
 Model-edit prediction comparisons will use the accepted `lnz7y254` output above.
 The remaining CREATE/DROP VIEW, pragma metadata, write errors and preservation
 scope stays OPEN under the existing task. `text_build_boundaries` owns this work;
 the migration worker retains its separate normalized-field proof leaves.
+
+Integration `c3e4346f579d9bc34430b814b0e7c63897e584f6` has clean independent
+review `20261025T013259Z-c3e4346f` (0 must, 0 should). Its focused Nix evidence
+reuses checked `d280c408` under the coordinator's exact-input rule. Model, text
+and conformance sources are byte-identical. Instantiating the same focused
+selectors gives the exact already-realized derivations; no build was needed:
+
+- Harness: `qdzcv4580j47nvi4dp2iqrw8sms7xhnr`, **12 passed**, at
+  `/nix/store/mvcmxxkr5nnlaxdmid9zrg97pkzj08fp-sqlite-verifier-test-frontend-anchor-harness-1`.
+- Fromless/subquery groups and guard inventory: `z156psnyk8r8ijgrwb5j3rsll8xs9pwr`,
+  **52 passed**, at
+  `/nix/store/9v0kp2s6qbrhv6ksg52wf1simvabdccb-sqlite-verifier-test-frontend-anchor-mutants-1`.
+  All four fromless and four subquery faults retain baseline agreement and kill
+  assertions. The 50 guard-inventory cases pass.
+
+`build/agent-logs/view-repair-reused-nix.json` records the exact derivation/output
+identities and checked XML counts. The adjacent selector files and evaluation
+logs make the comparison reproducible. This completes the harness integration;
+the view feature and its full acceptance remain OPEN.
