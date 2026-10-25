@@ -8,6 +8,13 @@ supplies each use's outer columns; name lookup uses the definition's written par
 
 namespace Belay.Sqlite.Model
 
+/-- Whether a function name is one of the pragma table functions that the model reads in the current
+catalog ({lit}`pragma_table_info` and {lit}`pragma_foreign_key_list`). The body of a view of the initial database
+may not call them: SQLite refuses such a view as an unsafe use of a virtual table, and the model would read the
+wrong catalog. -/
+def isPragmaTableFunction (name : Identifier) : Bool :=
+  name.isKeyword (bytes! "pragma_table_info") || name.isKeyword (bytes! "pragma_foreign_key_list")
+
 /-- Copy one query and its ordinary children, expanding CTE and view sources in FROM order.
 The bounded walk follows the finite syntax graph; active definitions detect circular uses.
 The returned local mapping also rewrites expression indexes of a surrounding write.
@@ -76,7 +83,7 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
         match lookup.bind fun found => (found.findView source.table).map (found, ·) with
         | none =>
           if inInitial && source.arguments.isSome && source.schema.isNone && ((catalog.findView source.table).isSome
-              || source.table.isKeyword (bytes! "pragma_table_info") || source.table.isKeyword (bytes! "pragma_foreign_key_list")) then
+              || isPragmaTableFunction source.table) then
             throw (SourceIssue.value (.restriction usePath .initialDatabase))
           let _ ← liftM (resolveReference catalog usePath tagged (initial := initial))
           return tagged
