@@ -256,7 +256,7 @@ in {
     runtime = parserLibrary;
   };
   surface = suite "surface" {
-    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py) (root + /tests/two_state_support.py)
                (root + /tests/proof_cost_support.py)
                (root + /tests/shared_table_shape_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
