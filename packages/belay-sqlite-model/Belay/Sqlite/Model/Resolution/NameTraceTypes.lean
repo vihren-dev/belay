@@ -3,11 +3,9 @@ import Belay.Sqlite.Model.Resolution.SyntaxExpr
 
 set_option doc.verso true
 
-/-! The name trace: for each name of a statement, what the model's resolver decided (ADR 0017,
-S1; the editor task, "Part 2a and the model name trace"). A client, such as the editor, reads the
-trace to describe a name or to correct it; the trace changes no resolved statement. The data types
-of this file describe the result; the modules that fill them come after it. The trace of a statement lists
-the occurrences in the order in which the resolver reaches them. -/
+/-! The data types of the name trace: for each name of a statement, what the model's resolver
+decided. A client such as the editor reads the trace to describe a name; the trace changes no
+resolved statement. A trace lists the occurrences in the order in which the resolver reaches them. -/
 
 namespace Belay.Sqlite.Model
 
@@ -17,9 +15,9 @@ inductive SourceKind where
   | baseTable
   /-- A table of the fixed initial database of a two-state query, written {lit}`before.t`. -/
   | initialTable
-  /-- A stored view of the catalog, expanded for each use. -/
+  /-- A stored view of the catalog. -/
   | storedView
-  /-- A {lit}`WITH` definition of the statement, expanded for each use. -/
+  /-- A {lit}`WITH` definition of the statement. -/
   | commonTable
   /-- A subquery in {lit}`FROM`. -/
   | derivedTable
@@ -41,8 +39,7 @@ structure SourceRef where
   index : Nat
   /-- How many queries out the source is: 0 for a source of the query that holds the name. -/
   depth : Nat
-  /-- The position of the table or view in the catalog, for a base table, an initial table, a
-  stored view and the proposed row; none for any other source. -/
+  /-- The catalog position of a table or view; none for any other source. -/
   position : Option Nat := none
   /-- The index of the query that supplies a view, a {lit}`WITH` definition or a derived table. -/
   query : Option Nat := none
@@ -64,9 +61,7 @@ structure ColumnConstraints where
 inductive ColumnOrigin where
   /-- A column that a catalog table declares, with its constraints. -/
   | declared (constraints : ColumnConstraints)
-  /-- A column of a derived table, view or {lit}`WITH` definition: its facts are inferred from the
-  expression that supplies it. The original declared type is followed through plain column reads;
-  it is none for any other expression. -/
+  /-- A column of a derived table, view or {lit}`WITH` definition; the declared type is followed. -/
   | inferred (originType : Option String)
   deriving Repr, DecidableEq
 
@@ -78,9 +73,7 @@ structure BoundColumn where
   index : Nat
   /-- The name of the column in its source. -/
   name : Identifier
-  /-- The declared type text of the column in its source, or none. A column of a derived table, view or
-  {lit}`WITH` definition has the type text that the model gives it; the type of the table that
-  declares it is in {name}`ColumnOrigin.inferred`. -/
+  /-- The declared type text in its source, or none ({name}`ColumnOrigin.inferred`). -/
   declaredType : Option String
   /-- The affinity that a comparison uses for the column; none for an expression without one. -/
   affinity : Option Affinity
@@ -112,7 +105,7 @@ inductive Candidate where
 inductive MissingUse where
   /-- SQLite's {lit}`no such column`, or {lit}`no such table`. -/
   | error
-  /-- A name in double quotes that is a text literal, SQLite's double-quoted string fallback. -/
+  /-- A double-quoted name that is a text literal (the double-quoted string fallback). -/
   | textLiteral
   /-- The unquoted keywords {lit}`TRUE` and {lit}`FALSE`, which are integers. -/
   | booleanKeyword
@@ -138,7 +131,7 @@ inductive ComparisonForm where
 
 /-- Why a name has no result. -/
 inductive Unreached where
-  /-- The model refuses the form instead of resolving it: a restriction of the model. -/
+  /-- The model refuses the form: a restriction of the model. -/
   | refused
   deriving Repr, DecidableEq
 
@@ -152,8 +145,7 @@ inductive NameResult where
   | missing (use : MissingUse) (candidates : List Candidate)
   /-- The name is a table reference or a qualifier that resolved to a source. -/
   | source (source : SourceRef)
-  /-- The name is the schema of a qualified name; {lit}`known` is true for {lit}`before`, the only
-  schema the model has besides the current one. -/
+  /-- The schema of a qualified name; {lit}`known` is true for {lit}`before`. -/
   | schema (known : Bool)
   /-- The name is a result alias that an {lit}`ORDER BY` or {lit}`GROUP BY` term names. -/
   | resultColumn (index : Nat)
@@ -167,7 +159,7 @@ inductive NameResult where
 
 /-- The role of an occurrence. -/
 inductive NameRole where
-  /-- A table, view or {lit}`WITH` definition named in {lit}`FROM`, in a write or in {lit}`DROP`. -/
+  /-- A table, view or {lit}`WITH` definition named in {lit}`FROM` or a write. -/
   | tableReference
   /-- A column in an expression. -/
   | columnReference
@@ -179,17 +171,17 @@ inductive NameRole where
   | aliasDeclaration
   /-- The alias of a result column. -/
   | resultAlias
-  /-- A comparison, with no name of its own. -/
+  /-- A comparison, with no name. -/
   | comparisonSite
   deriving Repr, DecidableEq
 
 /-- One occurrence of a name in a statement. -/
 structure NameOccurrence where
-  /-- The node path of the occurrence in the statement as written, in the layout of
-  {lit}`NodeRestriction.path`. For a comparison, the path of the comparing expression. -/
+  /-- The node path in the statement as written ({lit}`NodeRestriction.path`); for a comparison,
+  the path of the comparing expression. -/
   path : List Nat
-  /-- Whether the path is the text of the name itself. It is false for a name inside a stored view,
-  which has the use site of the view as its path; a client must not edit it. -/
+  /-- Whether the path is the text of the name itself; false for a name inside a stored view, which
+  has the use site of the view as its path. -/
   exact : Bool := true
   /-- The role of the occurrence. -/
   role : NameRole

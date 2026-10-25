@@ -51,6 +51,8 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 - 2026-10-25: data types `Resolution/NameTraceTypes.lean` imported from `Model.lean`.
   The walkers were written and checked as a trial (about 900 lines in nine modules) and
   are held back, uncommitted, until the owner decides between the two designs.
+- 2026-10-25: review 5 (`4ddbbd41`, data types) gave one must: the file had 207
+  lines. It now has 199; recorded as fixed.
 
 ## Implementation plan (informal)
 
