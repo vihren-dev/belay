@@ -573,3 +573,8 @@ parsed triggers exactly. No formula changed. The development build
 `/nix/store/98s84xdk5k5snix7yywyp21y3g2l2s8k-sqlite-verifier-test-surface-1`, log
 `build/agent-logs/expansion-laws-focused-retry.log`. The eight new axiom reports still use only
 the ordinary logical axioms.
+
+The fix commit `7935fc9cae660c31e1aef099a5a10530607bc573` received independent review
+`20261025T054748Z-7935fc9c`: zero musts and zero shoulds. All three earlier findings are
+recorded as fixed. This completes the whole-expansion unit; the part-end `just test-full` and
+`just verdict` follow.
