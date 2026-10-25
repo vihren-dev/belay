@@ -17,6 +17,13 @@ PARENT = "CREATE TABLE p(k PRIMARY KEY); INSERT INTO p VALUES(1), (99); CREATE T
 """A parent with the keys 1 and 99, and a child table without a foreign key."""
 POPULATED = PARENT + "INSERT INTO c VALUES(5), (6);"
 """The child table with two rows."""
+ADD_REFERENCE = "R-47952-62498"
+"""SQLite: ALTER TABLE ADD COLUMN with a REFERENCES clause needs the default NULL (foreignkeys.html)."""
+ADD_REFERENCE_ENFORCED = "R-13876-13274"
+"""SQLite: with foreign keys enabled, a column added with a REFERENCES clause has the default NULL
+(lang_altertable.html)."""
+REQUIREMENTS = (ADD_REFERENCE, ADD_REFERENCE_ENFORCED)
+"""The requirements that every case of this module covers."""
 SHOW = " ALTER TABLE c ADD COLUMN z INTEGER DEFAULT 7; SELECT * FROM c;"
 """A control column after the statement under test, and the rows: they show whether the table is unchanged."""
 
@@ -25,19 +32,19 @@ def definitions() -> list[QueryCase]:
     """The cases of ADD COLUMN with REFERENCES: a refusal, an empty table, NULL defaults and no enforcement."""
     case = QueryCase
     return [
-        case("add-reference-refused", POPULATED, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW, (),
-             ("add-column", "references", "refused")),
-        case("add-reference-empty", PARENT, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW, (),
-             ("add-column", "references", "empty")),
-        case("add-reference-null", POPULATED, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT NULL;" + SHOW, (),
-             ("add-column", "references", "null")),
+        case("add-reference-refused", POPULATED, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW,
+             REQUIREMENTS, ("add-column", "references", "refused")),
+        case("add-reference-empty", PARENT, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW,
+             REQUIREMENTS, ("add-column", "references", "empty")),
+        case("add-reference-null", POPULATED, "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT NULL;" + SHOW,
+             REQUIREMENTS, ("add-column", "references", "null")),
         case("add-reference-last-default", POPULATED,
              "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99 DEFAULT NULL;"
-             " ALTER TABLE c ADD COLUMN x REFERENCES p(k) DEFAULT NULL DEFAULT 99;" + SHOW, (),
-             ("add-column", "references", "last-default")),
+             " ALTER TABLE c ADD COLUMN x REFERENCES p(k) DEFAULT NULL DEFAULT 99;" + SHOW,
+             REQUIREMENTS, ("add-column", "references", "last-default")),
         case("add-reference-unenforced", POPULATED,
-             "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW, (),
-             ("add-column", "references", "unenforced")),
+             "ALTER TABLE c ADD COLUMN y REFERENCES p(k) DEFAULT 99;" + SHOW,
+             REQUIREMENTS, ("add-column", "references", "unenforced")),
     ]
 
 
