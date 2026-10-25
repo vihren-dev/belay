@@ -454,3 +454,45 @@ missing effect law must derive the stored rows from a successful plain UPDATE;
 its premise must not assume the desired row map. Any exclusion of preexisting
 UPDATE triggers must be structural or checked against the extended catalog:
 an old UPDATE OF name can become a column when ADD COLUMN introduces it.
+
+## Exact UPDATE effects: focused checks complete
+
+The next proof-only unit starts at clean scan-review head `1d70b949`. Root
+reserved `Model/NormalizedFieldEffects.lean` and its narrow Model/Lake entries.
+The source adds a successful plain-UPDATE inversion to exact `setRows`, its
+table-lookup corollary, and the resulting lowercase table/scan laws. Existing
+row and scan theorems derive the result; no desired row relation is a premise.
+The formulas explicitly require the successful effect and a resolved UPDATE
+without a foreign-key or trigger plan. They do not claim that resolution chose
+that form or that the statement passes its support check.
+
+The existing installed consumer now checks a real nonempty successful UPDATE
+effect and a theorem for every source Value conditional on that effect's
+success. The ADD COLUMN operation supplies the starting extended table. Its
+23 dependency reports plus the retained counterexample's seven all use only
+the named ordinary logical axioms.
+
+On 2026-10-25 the focused Nix check passed **2 tests, 95 deselected**, with zero
+JUnit failures, errors or skips. Output:
+`/nix/store/9ssgny55hzqh9lvsc1r40zlga0fba65h-sqlite-verifier-test-normalized-field-effects-1`.
+The disposable selector is `normalized_field or expansion_counter`. The pinned
+native counter replay still agrees in both orders. The retained log is
+`build/agent-logs/normalized-field-effects-focused.log`. The mandatory
+development build preceded this Nix check; neither check required a source
+correction. Only the Nix result is acceptance evidence. R3/R19 self-review
+checked the proof sketches, successful-effect boundary, storage-slot premise,
+arbitrary Value consumer and actual nonempty success witness. Independent
+review is pending.
+
+The later public-run proof must derive these successful-effect premises from
+original migration success and must establish the plain resolved form against
+the extended catalog. Whole-script success, query output and all-branch closure
+remain unfinished. No execution definition changes in this unit.
+
+The next milestone is the complete four-statement expansion's state theorem
+and its public preservation/translation consumers. Add only resolution and
+run bridges needed by those theorems. They must retain arbitrary surrounding
+catalogs, admitted rows within the explicit schema/effect conditions, arbitrary
+parameter Values, original migration success and every complete environment
+and raw/concrete branch. The already checked counterexample remains separate
+from the positive weak query comparisons.

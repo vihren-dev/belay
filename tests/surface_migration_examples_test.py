@@ -33,12 +33,14 @@ def test_normalized_field_laws_cover_arbitrary_values(runtime_root: Path, tmp_pa
     """Installed model laws derive the appended-field UPDATE row map and exact
     preservation/translation query results. Their universal Value parameters
     and nonempty consumers cover all Value constructors and transport both
-    rowid order and descending NOCASE primary-key order through the UPDATE."""
+    rowid order and descending NOCASE primary-key order through the UPDATE.
+    Exact-effect laws derive the stored table from an actual successful UPDATE;
+    a nonempty successful effect witnesses that the conditional law is inhabited."""
     result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldLaws.lean", tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
-    assert len(reports) == 17, result.diagnostic()
+    assert len(reports) == 23, result.diagnostic()
     for report in reports:
         assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
 

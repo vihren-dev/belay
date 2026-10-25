@@ -98,6 +98,43 @@ theorem different_scan_orders :
       (sourceRows (scanInput true)).map (fun row => row.getD 0 .null)) =
       ([.integer 10, .integer 20, .integer 30], [.integer 30, .integer 10, .integer 20]) := by decide +kernel
 
+/-- A physical table with one storage slot, before its lowercase field is added. -/
+def initial (value : Value) : Belay.Sqlite.Model.Database :=
+  { catalog := [{ name := name! "customers", entry := .table (input value).shape }]
+    rows := [(input value).rows] }
+
+/-- The real ADD COLUMN database operation supplies NULL in the appended field. -/
+def extended (value : Value) : Belay.Sqlite.Model.Database :=
+  (initial value).addColumn 0 lowered .null
+
+/-- The resolved plain backfill, without a foreign-key or trigger program. -/
+def backfill : Statement :=
+  .update 0 [(2, .scalar .lower (.cons (.column 1) .nil))] none [] [] none
+
+/-- The actual statement effect succeeds on a nonempty table and stores the
+lowercase cell. Proof sketch: kernel evaluation of the real UPDATE effect. -/
+theorem backfill_effect_nonempty :
+    (runStatement 0 {} [] backfill (extended (.text (bytes! "ALPHA")))).effect =
+      .ok ((extended (.text (bytes! "ALPHA"))).setRows 0
+        [{ rowid := 1, values := [.integer 1, .text (bytes! "ALPHA"), .text (bytes! "alpha")] }]) := by decide +kernel
+
+/-- For every source Value and every successful real backfill effect, the stored
+table contains its original cells and computed lowercase cell. The result is
+derived from the effect rather than assumed as a row relation. Proof sketch:
+the exact effect law applies to the table supplied by the ADD COLUMN operation. -/
+theorem stored_table_for_every_value (value : Value) (after : Belay.Sqlite.Model.Database)
+    (success : (runStatement 0 {} [] backfill (extended value)).effect = .ok after) :
+    after.table 0 = some
+      { shape := { (input value).shape with columns := (input value).shape.columns ++ [lowered] }
+        rows := [{ rowid := 1, values := [.integer 1, value, mapText lowerByte value] }] } := by
+  have stored := table_after_lower_update 0 {} [] (input value) lowered 1
+    (Database.table_addColumn lowered .null (by rfl : (initial value).table 0 = some (input value)))
+    (by simp [extended, initial, Database.addColumn])
+    (by simp [Table.RowsWide, input])
+    (by simp [Table.RowsAliased, Row.Aliased, input])
+    (by simp [input]) (by simp [input]) rfl rfl success
+  simpa [input, Row.appendValues] using stored
+
 #print axioms store_lower
 #print axioms comparisonOperands_lower
 #print axioms eval_lower
@@ -115,5 +152,11 @@ theorem different_scan_orders :
 #print axioms sourceRows_updated_lower
 #print axioms scan_transport
 #print axioms different_scan_orders
+#print axioms runStatement_update_ok
+#print axioms table_after_update_ok
+#print axioms table_after_lower_update
+#print axioms sourceRows_after_lower_update
+#print axioms backfill_effect_nonempty
+#print axioms stored_table_for_every_value
 
 end NormalizedFieldFixture
