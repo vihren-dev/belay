@@ -67,6 +67,6 @@ The actual v53 shard also passed the complete Nix corpus validation at
 
 The current cases digest is
 `55a322349b037c52e3de15072eede75da30be53536fcb6a67dd29239d79e46d0`.
-This is an unpublished draft corpus. It remains mutable until the CTE and view
-parts add their evidence. Corpus, claim and lock changes are separate from the
+This text describes the first 42 inputs. The draft now also holds the CTE and view inputs (178 cases;
+see the [task status](../../plans/20261024-query-sources.status.md)). It remains mutable until publication. Corpus, claim and lock changes are separate from the
 implementation and need owner approval before merge.

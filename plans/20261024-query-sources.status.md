@@ -194,3 +194,54 @@ S4 log archive and artifact roots after retirement of the publication workspace.
 ## Part 3 progress
 
 The [view record](20261024-query-sources-views.status.md) tracks the remaining part.
+
+## Judge evidence for CTEs and views (corpus v53)
+
+The evidence workspace joins the draft v53 line (`5d69e3fa`) with the published view head
+(`6a0bc6be`, PR #255) by merge `18dcbaac`; it has two text conflicts (the module list of
+`build-support/tests.nix` and this status file) and no rebase. Corpus v54 is reserved by the FK work and
+is not used. Judge commits need owner approval: `2ffa2b19` (recorder, `judge/catalog.py`,
+`judge/records.py`, lock) and `f7cfc95b` (v53 corpus, claim, lock). The refactor and test commits between
+them follow reviews of these two.
+
+Recorder gaps closed (judge-side code, with tests):
+
+- A `CREATE VIEW` over a missing table, a cycle or `new.a` succeeds natively and fails only when the view is read.
+  The recorder keeps such a view as an `unreadable` entry with SQLite's primary code and message. Only SQL errors
+  count as evidence; a timeout or I/O failure is raised. `judge.catalog` compares the primary code. The model
+  predicts the same code (`ViewObservationIssue.failureCode`); a body that fails at run time stays unsupported.
+- `judge.records.subject_input` forwards `setupClockUnixMilliseconds`; the model uses it for the first observation.
+  Without it a view with a clock function stays unsupported.
+
+Corpus v53 now has 178 authored cases: 42 derived-source, 52 ordinary CTE (nine new: shadowing in compounds,
+IN subqueries, UPDATE and INSERT targets; an output alias; and four documented refusals of MATERIALIZED,
+NOT MATERIALIZED and the RECURSIVE keyword) and 84 view cases. The view cases cover CREATE and DROP VIEW with
+IF EXISTS and IF NOT EXISTS, name collisions, column lists, nested views, metadata through views, joins,
+aggregates, compounds, subqueries, CTEs, late binding, cycles, broken views, `table_info`, writes and their
+errors, and transactions. The claim forbids DISAGREE and HARNESS_ERROR and requires 158 agreements. The other
+20 cases are MODEL_UNSUPPORTED with a documented reason: recursion (5), RECURSIVE and hints (4), uncertain
+membership and fallible bodies (6), a written-table subquery (2), PRAGMA `table_xinfo` and `table_list` (2),
+and INSTEAD OF triggers (1).
+
+Nix evidence for the final source (`90399012`):
+
+- Full tests: 1,020 tests, no failure, `/nix/store/99wphi628c4l897r12q6wis9qclcw6y3-sqlite-verifier-test-reports`.
+  The first run failed one test: the frontend refuses the four new CTE refusal cases before the model, so the
+  kernel boundary check has no case for them. The test now asserts that refusal; the failed log is kept in
+  `build/agent-logs/failed1/`.
+- Verdict `/nix/store/11ha0p1bg9g6bkvf72mxcpqhdva1z271-sqlite-verifier-verdict`: no DISAGREE, no HARNESS_ERROR.
+  v53: AGREE 158, MODEL_UNSUPPORTED 20.
+- Predictions `/nix/store/cdglbidddydm09iw1i5hc7bdl2m51b0f-sqlite-verifier-predictions` against the baseline
+  `/nix/store/da3k2rw7vk2f8mqa7j3nzrs4wnwxmd0g-sqlite-verifier-predictions` (merge `18dcbaac`): the 53 other
+  files are byte-identical, and the 42 old v53 predictions are unchanged. Only v53 grows from 42 to 178 cases.
+- `just test-nix`: 71 passed, 1,590 deselected.
+- `just test-scheduled-checks`: 48 passed,
+  `/nix/store/c2yyckm3kdcrmm5aklgd5si3zwmszx6b-sqlite-verifier-scheduled-check-reports`.
+
+Reviews: `20261025T104917Z-2ffa2b19` (one must, one should, fixed), `20261025T105508Z-9fc379e3` (one must, fixed),
+`20261025T105615Z-cf8b7f97` (clean), `20261025T105903Z-f7cfc95b` (two shoulds, fixed),
+`20261025T110006Z-115c5e8e` (clean), `20261025T112338Z-90399012` (clean). The merge `18dcbaac` has no review.
+The stale reason "as the model has no views" of INSTEAD OF triggers
+(`packages/belay-sqlite-text/Belay/Sqlite/Translation/Triggers.lean`) is not changed here, because it would
+change existing predictions.
+

@@ -352,7 +352,7 @@ Nix evidence (all on this source tree):
 - `lake build` of `packages/verifier-conformance` and `packages/belay` both exit 0
   (local diagnostics, as the rules require; not cited as acceptance).
 
-Judge-side gaps, not changed here (judge files are locked): the recorder throws on a
+Judge-side gaps (closed in the evidence workspace; see the [task status](20261024-query-sources.status.md)): the recorder throws on a
 CREATE VIEW whose body names a missing table or is cyclic, and `judge.records.subject_input`
 does not forward `setupClockUnixMilliseconds`.
 
