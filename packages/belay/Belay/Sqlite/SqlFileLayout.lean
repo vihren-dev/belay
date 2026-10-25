@@ -54,7 +54,7 @@ private def directionMarkers (structure_ : FileStructure) :
     Array (SqlMarker × MigrationConvention × MigrationDirection) :=
   structure_.markers.filterMap fun marker => match marker.kind with
     | .direction convention direction => some (marker, convention, direction)
-    | _ => none
+    | .named .. | .malformedName _ => none
 
 /-- The whole file as one script. A file with migration directions is refused, because running
 both directions together would undo the migration it applies. -/
@@ -83,11 +83,11 @@ def selectSection (structure_ : FileStructure) (wanted : MigrationDirection) : E
   for index in [1:directions.size] do
     let (marker, _, direction) := directions[index]!
     if directions.extract 0 index |>.any (·.2.2 == direction) then
-      throw { range := some (marker.start, marker.stop), message := "this migration direction occurs more than once" }
+      throw { range := some (marker.start, marker.stop), message := "this migration direction occurs more than once; remove the repeated marker, or keep one marker for each of up and down" }
   if let some (start, stop) := structure_.statements.find? (·.1 < first.start) then
     throw { range := some (start, stop), message := "SQL before the first migration direction marker; only comments may come before it" }
   let some position := directions.findIdx? (·.2.2 == wanted)
-    | throw { message := "the file has no marker for the requested migration direction" }
+    | throw { message := "the file has no marker for the requested migration direction; add the missing marker, or select the direction that the file has" }
   let (marker, _, _) := directions[position]!
   let stop := (directions[position + 1]?.map (·.1.start)).getD structure_.bytes.size
   return { statements := statementsIn structure_ marker.stop stop, replayStart := marker.stop, replayStop := stop }
@@ -112,7 +112,7 @@ def selectNamed (structure_ : FileStructure) : Except FileProblem (Array NamedEn
   let named := structure_.markers.filterMap fun marker => match marker.kind with
     | .named name _ => some (marker, name)
     | .malformedName text => some (marker, s!"?{text}")
-    | _ => none
+    | .direction .. => none
   if let some (start, stop) := structure_.statements.find? (·.1 < (named[0]?.map (·.1.start)).getD structure_.bytes.size) then
     throw { range := some (start, stop), message := "SQL without a name; put a -- name: marker before it" }
   let mut entries := #[]
@@ -120,15 +120,15 @@ def selectNamed (structure_ : FileStructure) : Except FileProblem (Array NamedEn
     let (marker, name) := named[index]!
     if let .malformedName text := marker.kind then
       throw { range := some (marker.start, marker.stop), message :=
-        s!"the name marker \"{text.trimAscii}\" must be -- name: identifier, with an optional :suffix" }
+        s!"the name marker \"{text.trimAscii}\" must be -- name: identifier, with an optional :suffix; rewrite the comment in that form" }
     unless isLeanIdentifier name do
-      throw { range := some (marker.start, marker.stop), message := s!"the name {name} is not one Lean identifier" }
+      throw { range := some (marker.start, marker.stop), message := s!"the name {name} is not one Lean identifier; rename it to letters, digits and underscores that start with a letter or underscore" }
     if entries.any (·.name == name) then
-      throw { range := some (marker.start, marker.stop), message := s!"the name {name} is used by more than one entry" }
+      throw { range := some (marker.start, marker.stop), message := s!"the name {name} is used by more than one entry; rename one of the markers" }
     let owned := statementsIn structure_ marker.stop ((named[index + 1]?.map (·.1.start)).getD structure_.bytes.size)
     match owned.toList with
     | [statement] => entries := entries.push { name, marker, statement }
-    | [] => throw { range := some (marker.start, marker.stop), message := s!"the entry {name} has no SQL statement" }
+    | [] => throw { range := some (marker.start, marker.stop), message := s!"the entry {name} has no SQL statement; add the statement after the marker, or remove the marker" }
     | _ :: (second : Nat) :: _ =>
       let (start, stop) := structure_.statements[second]!
       throw { range := some (start, stop), message := s!"the entry {name} has more than one SQL statement; give each statement its own name" }

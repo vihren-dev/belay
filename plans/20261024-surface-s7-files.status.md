@@ -121,3 +121,10 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   `/nix/store/xvq8rwx1vp16a7g19v04wc2gqgw5n985-sqlite-verifier-test-surface-1`; the local
   dev-build passed (diagnostic). `just test-full` and `just verdict` have not run. The
   registry and checker (part 2) have not started.
+- 2026-10-25: review `20261025T054227Z-4381e26f` of the part 1 source had five musts
+  (two catch-all cases over marker kinds; repeated-direction, missing-direction,
+  name, empty-entry, duplicate-option and already-declared errors lacked a corrective
+  action) and one should (fixture declarations without docstrings). All are fixed:
+  every constructor is matched, each message names what to change, and the fixture
+  expects the new text. Focused Nix surface run (18 passed, 90 deselected, 6.43 seconds)
+  at `/nix/store/wbzz07xysl7gxm6bc8nkd2fjj6bi6q5m-sqlite-verifier-test-surface-1`.

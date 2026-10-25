@@ -51,14 +51,14 @@ def c5 := sql_file "sql_files/convention_mix.sql" (section := "up")
 
 -- a direction twice
 /--
-error: sql_files/two_ups.sql:3:1: this migration direction occurs more than once
+error: sql_files/two_ups.sql:3:1: this migration direction occurs more than once; remove the repeated marker, or keep one marker for each of up and down
 -/
 #guard_msgs in
 def c6 := sql_file "sql_files/two_ups.sql" (section := "up")
 
 -- a missing direction
 /--
-error: sql_files/only_up.sql: the file has no marker for the requested migration direction
+error: sql_files/only_up.sql: the file has no marker for the requested migration direction; add the missing marker, or select the direction that the file has
 -/
 #guard_msgs in
 def c7 := sql_file "sql_files/only_up.sql" (section := "down")
@@ -104,7 +104,7 @@ def c13 := sql_file "sql_files/bad_column.sql" (against := brokenShop)
 
 -- a setting given twice
 /--
-error: the database is given twice
+error: the database is given twice; remove one (against := ...) option
 -/
 #guard_msgs in
 def c14 := sql_file "sql_files/schema.sql" (against := shop) (against := shop)
@@ -132,28 +132,28 @@ sql_module M2 from "sql_files/unnamed.sql"
 
 -- an entry without SQL
 /--
-error: sql_files/empty.sql:1:1: the entry a has no SQL statement
+error: sql_files/empty.sql:1:1: the entry a has no SQL statement; add the statement after the marker, or remove the marker
 -/
 #guard_msgs in
 sql_module M3 from "sql_files/empty.sql"
 
 -- a duplicate name
 /--
-error: sql_files/dup.sql:3:1: the name a is used by more than one entry
+error: sql_files/dup.sql:3:1: the name a is used by more than one entry; rename one of the markers
 -/
 #guard_msgs in
 sql_module M4 from "sql_files/dup.sql"
 
 -- a dotted name
 /--
-error: sql_files/dotted.sql:1:1: the name a.b is not one Lean identifier
+error: sql_files/dotted.sql:1:1: the name a.b is not one Lean identifier; rename it to letters, digits and underscores that start with a letter or underscore
 -/
 #guard_msgs in
 sql_module M5 from "sql_files/dotted.sql"
 
 -- a malformed marker
 /--
-error: sql_files/malformed.sql:1:1: the name marker "name: a b c" must be -- name: identifier, with an optional :suffix
+error: sql_files/malformed.sql:1:1: the name marker "name: a b c" must be -- name: identifier, with an optional :suffix; rewrite the comment in that form
 -/
 #guard_msgs in
 sql_module M6 from "sql_files/malformed.sql"
@@ -165,9 +165,9 @@ error: sql_files/module_with_direction.sql:4:1: a named SQL module cannot have m
 #guard_msgs in
 sql_module M7 from "sql_files/module_with_direction.sql"
 
--- a name that is already declared
+-- a name that is already declared; rename the SQL entry, or choose another module name
 /--
-error: sql_files/queries.sql:1:1: in statement `findByEmail`: the name Queries.findByEmail is already declared
+error: sql_files/queries.sql:1:1: in statement `findByEmail`: the name Queries.findByEmail is already declared; rename the SQL entry, or choose another module name
 -/
 #guard_msgs in
 sql_module Queries from "sql_files/queries.sql"

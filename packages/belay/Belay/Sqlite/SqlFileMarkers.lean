@@ -119,6 +119,6 @@ def sqlMarkers (bytes : ByteArray) (comments : Array SqlComment) (contents : Arr
       match kind with
       | .named .. => { start := comment.start, stop := comment.stop, kind,
                        documentation := (documentationAfter bytes comments comment).1 }
-      | _ => { start := comment.start, stop := comment.stop, kind }
+      | .malformedName _ | .direction .. => { start := comment.start, stop := comment.stop, kind }
 
 end Belay.Sqlite

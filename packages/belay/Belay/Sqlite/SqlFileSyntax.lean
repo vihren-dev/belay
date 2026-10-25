@@ -39,10 +39,10 @@ private def fileOptions (options : Array Syntax) : TermElabM (Option Syntax × O
   for option in options do
     let setting := option[1]
     if setting.getKind == ``sqlFileSection then
-      if section_.isSome then throwErrorAt option "the section is given twice"
+      if section_.isSome then throwErrorAt option "the section is given twice; remove one (section := ...) option"
       section_ := some setting[2]
     else
-      if against.isSome then throwErrorAt option "the database is given twice"
+      if against.isSome then throwErrorAt option "the database is given twice; remove one (against := ...) option"
       against := some setting[2]
   return (section_, against)
 

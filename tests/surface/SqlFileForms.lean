@@ -18,16 +18,21 @@ example (a b : Value) : schema a b =
 
 -- A repeated parameter is one argument, and `$b` is an argument too: the file has no Lean variable `b`,
 -- so the inline script needs the variable to give the same script.
+/-- A repeated named parameter is one argument. -/
 def repeated := sql_file "sql_files/repeated.sql"
 example (a b : Value) : repeated a b = (sql "SELECT :a, :a, $b;\n") a := rfl
 
 -- Text that looks like a marker or tool syntax inside strings and comments is ordinary SQL.
+/-- A file whose strings and comments only look like tool syntax. -/
 def legal := sql_file "sql_files/legal.sql"
 example : legal = sql "SELECT '.mode', 'sqlc.arg(id)' -- .tables\n;\n" := rfl
 
 -- The sections of the two migration conventions select the statements of one direction.
+/-- The goose up section. -/
 def gooseUp := sql_file "sql_files/goose.sql" (section := "up")
+/-- The goose down section. -/
 def gooseDown := sql_file "sql_files/goose.sql" (section := "down")
+/-- The dbmate up section. -/
 def dbmateUp := sql_file "sql_files/dbmate.sql" (section := "up")
 example : gooseUp = sql "CREATE TABLE u(x);\n" := rfl
 example : gooseDown = sql "DROP TABLE u;\n" := rfl
@@ -37,6 +42,7 @@ example : dbmateUp = sql "CREATE TABLE u(x);" := rfl
 def shop : Database := db! r"CREATE TABLE users(email TEXT, name TEXT);"
 
 -- A database that knows the tables leaves the script as it is.
+/-- A file checked against a database that has its tables. -/
 def checked := sql_file "sql_files/checked.sql" (against := shop)
 example : checked = sql "INSERT INTO users(email, name) VALUES (:email, :name);\nSELECT name FROM users WHERE email = :email;\n" := rfl
 

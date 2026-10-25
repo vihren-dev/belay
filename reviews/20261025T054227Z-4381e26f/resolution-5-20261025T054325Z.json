@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T05:43:25+00:00",
+  "finding": "20261025T054227Z-4381e26f#5",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the message now names the corrective action; the fixture expects the new text"
+}

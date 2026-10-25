@@ -55,7 +55,7 @@ def elabSqlModule : CommandElab := fun stx => do
     for entry in entries do
       if (← getEnv).contains (prefix_ ++ Name.mkSimple entry.name) then
         file.fail stx { range := some (entry.marker.start, entry.marker.stop), message :=
-          s!"the name {prefix_ ++ Name.mkSimple entry.name} is already declared" } (some entry.name)
+          s!"the name {prefix_ ++ Name.mkSimple entry.name} is already declared; rename the SQL entry, or choose another module name" } (some entry.name)
     let database ← match stx[4].getOptional? with
       | some option => evaluateDatabase option[1][2]
       | none => pure none
