@@ -1,6 +1,6 @@
 # Status: checked SQL documentation blocks
 
-Created 2026-10-24. Status: OPEN. Implementation is assigned.
+Created 2026-10-24. Status: OPEN. Implementation of the public handler is checked; the task stays open for part and task acceptance.
 Task: [task file](20261024-sql-doc-blocks.task.md).
 Specs: ADR17's checked SQL docstrings and ADR16 layer boundaries.
 
@@ -93,3 +93,40 @@ that finding is recorded fixed. Logs and exact command are under
 complete convenience/explicit bindings and environment inputs, typed headers,
 expected SQL failures, lexical expected-comment extraction, original source
 positions and final full/verdict/Nix/scheduled acceptance remain outstanding.
+
+## Public `sql` handler
+
+2026-10-25 R19 check of the task against the current code: it matches. `failureDiagnostic`
+binds no values or clock, `planParameters` and `Script.withValues` exist, and the native
+raw-expander path is the one the first unit used. No owner decision is needed. The S7
+`ParameterMode` is not needed: a doc block treats `$name` like every other name, because it takes
+the value from the header argument and never from a binder.
+
+The public `sql` block is now registered by `import Belay` (`Belay/Sqlite.lean` imports
+`SqlDocBlock`). New modules, each under 200 lines: `SqlDocComments` (lexical expected-text reader),
+`SqlDocSource` (map from the de-indented body to original file positions), `SqlDocBindings`
+(convenience and explicit binding plans and their problems), `SqlDocHeader`, `SqlDocClosed`
+(closed values by evaluation), `SqlDocInputs`, `SqlDocFailure`, `SqlDocReport`, `SqlDocBlock`
+(expander and registration) and `SqlDocGuide` (checked examples, documentation only). The shared
+`DbDiagnostics` edit splits `failureDiagnostic` into `failureParts`, which takes the clock and the
+bound values, and a `failureDiagnostic` with the old behavior for `db!`. The fixture-only
+`sql_probe` expander and its test are deleted.
+
+Decisions inside the task. Header options are `db`, `env`, `values`, `expected` and the flag
+`+error`. A convenience argument binds the parameter of its name (`?` and `?N` give `pN`); two
+signs with one name (`:x`, `@x`) are an error that names the explicit list, which is exact. The
+explicit list needs one list per statement and exactly the largest parameter number of values
+for each. `+error` compares the SQLite message without the model's action text. A syntax error has
+only the model's fixed text, because the parser library reports an offset and no SQLite message.
+A block with a wrong header is not run, so a header error adds no second error.
+
+Fixtures: `tests/surface/SqlDocCases{Output,Inputs,Failures,Comments}.lean` hold 67 cases with
+stated error positions. The tests elaborate each fixture with Unix and with Windows line ends.
+`tests/surface_sql_doc_blocks_test.py` also mutates a passing case and checks the missing parser
+library. `tests/surface_sql_docs_test.py` runs the `#guard` fixtures of the pure helpers.
+
+Nix acceptance for source snapshot of change `wqtnqpwy` (committed below): the focused surface
+check with `-k 'surface_sql_doc or surface_layers'` passed 154 tests with 76 deselected in
+19.38 seconds. Report:
+`/nix/store/2a6bv6p69pkyq661sfr3gijrkp9m3aj1-sqlite-verifier-test-surface-1`. Logs and the
+command are under `build/agent-logs/docblocks-*`. No guide change is known.
