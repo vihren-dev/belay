@@ -278,3 +278,9 @@ stored rows; the test adds a view dropped before a populated table.
   `tests/surface_support.py` and `tests/lean_server_support.py` got the module
   name, the helper-module compile and `LEAN_SRC_PATH` for it. Nix results follow
   at the end of part 2a.
+
+### Part 2a, refactor after review 2 — 2026-10-25
+
+Two musts fixed: the origin recorder lists every statement form (`isRollback`,
+`stepCreatedSlots`), and the alias chain limit is the named `aliasChainLimit`.
+The table-hover test expects the owner now shown in the hover (commit 2 added it).

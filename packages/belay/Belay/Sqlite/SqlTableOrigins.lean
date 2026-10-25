@@ -57,18 +57,30 @@ def databaseLiteral? (database : Expr) : Option Expr :=
   | (``Database.mk, #[literal, _]) => some literal
   | _ => none
 
+/-- Whether the statement is {lit}`ROLLBACK`, which may undo any creation of a table. -/
+def isRollback : Syntax.Statement → Bool
+  | .rollback => true
+  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
+  | .dropIndex .. | .begin | .commit | .insert .. | .update .. | .delete .. | .select .. | .pragma _
+  | .createTrigger .. | .dropTrigger .. => false
+
+/-- The places after one more statement of a script: a {lit}`CREATE TABLE` replaces the place of
+its name, and a {lit}`DROP TABLE` removes it. Every other statement keeps the places. -/
+def stepCreatedSlots (bytes : ByteArray) (slots : List TableSlot) (item : Located Syntax.Statement) :
+    List TableSlot :=
+  match item.value with
+  | .createTable name .. =>
+    slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
+  | .dropTable name _ => slots.filter (·.name.folded != name.folded)
+  | .createView .. | .createIndex .. | .addColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
+  | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
+  | .dropTrigger .. => slots
+
 /-- The places of the {lit}`CREATE TABLE` statements that make the tables a script leaves, in the
-order of the script. A later statement that creates the name again replaces the place, and a
-{lit}`DROP TABLE` removes it. A script with a {lit}`ROLLBACK` gives none, because the rollback may
-undo any creation. -/
+order of the script ({name}`stepCreatedSlots`). A script with a {lit}`ROLLBACK` gives none
+({name}`isRollback`). -/
 def createdTableSlots (bytes : ByteArray) (items : List (Located Syntax.Statement)) : List TableSlot :=
-  if items.any (fun item => match item.value with | .rollback => true | _ => false) then []
-  else items.foldl (init := []) fun slots item =>
-    match item.value with
-    | .createTable name .. =>
-      slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
-    | .dropTable name _ => slots.filter (·.name.folded != name.folded)
-    | _ => slots
+  if items.any (isRollback ·.value) then [] else items.foldl (stepCreatedSlots bytes) []
 
 /-- Record the origins of the tables that a {lit}`db!` script leaves, for the declaration that
 holds the term. A place enters the record only when the source maps its bytes exactly
@@ -89,10 +101,15 @@ def registerTableOrigins (source : SqlEditorSource) (items : List (Located Synta
   modifyEnv fun environment =>
     tableOriginsExtension.addEntry environment { declaration, literalHash := literal.hash, origins := origins.toArray }
 
+/-- The longest chain of constants that stand for each other ({lit}`def c := b`, {lit}`def b := a`)
+that {lit}`originsOf` follows from the database term to a {lit}`db!` declaration. A chain that is
+longer gives no origin, so the table names of that database get no jump. -/
+def aliasChainLimit : Nat := 64
+
 /-- The origins of the database that a term names: the term is a constant, or constants that
 stand for each other ({lit}`def b := a`), whose value holds the literal that a {lit}`db!` recorded. A
-term of any other form, and a declaration with a changed value, has none. The fuel bounds a chain of
-constants. -/
+term of any other form, and a declaration with a changed value, has none. The fuel bounds the
+chain of constants; use {name}`aliasChainLimit`. -/
 def originsOf (environment : Environment) : Nat → Expr → Option DatabaseOrigins
   | 0, _ => none
   | fuel + 1, database =>

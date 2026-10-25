@@ -32,7 +32,7 @@ declaration that holds a {lit}`db!` term ({name}`originsOf`), and the declaratio
 A term with no recorded origin, such as a computed database, keeps its constant as the owner and
 gets no jump. -/
 def KnownDatabase.ofTerm (environment : Lean.Environment) (term : Lean.Expr) : KnownDatabase :=
-  match originsOf environment 64 term with
+  match originsOf environment aliasChainLimit term with
   | some entry =>
     { owner := some entry.declaration,
       origin? := fun name => (entry.origins.find? (·.table == name.folded)).map (·.location) }

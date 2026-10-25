@@ -59,7 +59,7 @@ def test_sql_bang_table_hovers(runtime_root: Path, tmp_path: Path, newline: str)
         uri = server.open(source)
         tokens = semantic_tokens(server, uri)
         first = table_hover(server, uri, source, "orders;", 0, "orders")
-        assert first.startswith("Table `orders`."), first
+        assert first.startswith("Table `orders` of `shop`."), first
         assert "`id`: INTEGER, PRIMARY KEY" in first, first
         assert "`label`: TEXT, NOT NULL, COLLATE NOCASE" in first, first
         assert "2 rows at this point of the script." in first, first
