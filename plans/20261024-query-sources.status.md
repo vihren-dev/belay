@@ -201,9 +201,9 @@ parents `e32ae362` and `3d0ab903`), all through Nix:
 - `just test-full` exit 0: `/nix/store/q3dn28cw4b8bn44zfz6sl1zia94vpndz-sqlite-verifier-test-reports`.
   The first run stopped at the 1500 s build limit without a failed test (log
   `build/agent-logs/v53int-test-full-timeout1.log`); the rerun passed.
-- `just verdict` exit 0: `/nix/store/zv1wbwrzxkbiwcm8sqrnbjbgnfkazgcr-sqlite-verifier-verdict`.
+- `just verdict` exit 0: `/nix/store/gz1wg4l0969wpihb402jjayih440m13x-sqlite-verifier-verdict`.
 - `just test-nix`: 71 passed, 1,802 deselected.
-- `just test-scheduled-checks`: `/nix/store/wc4xld8whcxy3ida1gyj76951q7fcm1c-sqlite-verifier-scheduled-check-reports`.
+- `just test-scheduled-checks`: `/nix/store/j4lq1v2g0x3gns40acg8xsbzfgfy6lzx-sqlite-verifier-scheduled-check-reports`.
 - The integration review `20261025T142047Z-431cdd16` had one should finding (the corpus-format document),
   fixed with the prediction classification below.
 

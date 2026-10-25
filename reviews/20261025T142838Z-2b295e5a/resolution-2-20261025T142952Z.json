@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T14:29:52+00:00",
+  "finding": "20261025T142838Z-2b295e5a#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "cited the store output, not the derivation"
+}
