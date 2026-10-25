@@ -474,3 +474,16 @@ Both tasks remain OPEN. The worker is assigned the reviewed fromless mutant
 repair at `plans/20261025-fromless-mutant-repair.task.md`, independently on
 published #250. Slot 1 is now available to the migration law worker's focused
 gate; mutant repair follows. S5 frontends retain slot 2.
+
+
+The migration composition/frame boundary is checked and reviewed at `6da0f67b`
+(implementation `c398676a`). Its focused Nix check passes three groups and
+201 standard-only axiom reports at `x6cp3k3a7vlx9z8k0jrhdzcllm4bls22`. The
+worker continues the remaining public law and notation unit under the existing
+task; universal model-dependent examples remain deferred. It has no heavy slot.
+
+The fromless mutant repair now owns slot 1 for the bounded harness and relevant
+mutation checks. S5 frontends retain slot 2 for their 14 selected Nix checks.
+The copied proof script has also been checked with a user binder named kernel;
+this local diagnostic is not Nix acceptance. PR #250 hosted Verdict is green,
+and its Linux API-reference build passed. Other CI jobs remain running.
