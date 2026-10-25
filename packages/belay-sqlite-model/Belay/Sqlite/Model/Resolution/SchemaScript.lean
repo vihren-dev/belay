@@ -38,11 +38,11 @@ structure ResolvedScript where
   nextCatalog : Catalog
   deriving Repr, BEq
 
-/-- Whether a schema statement can describe a catalog: CREATE TABLE, CREATE INDEX or CREATE
+/-- Whether a schema statement can describe a catalog: CREATE TABLE, CREATE VIEW, CREATE INDEX or CREATE
 TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
-  | .createTable .. | .createIndex .. | .createTrigger .. => true
-  | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. => true
+  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
@@ -53,7 +53,7 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 /-- The prepare error of a resolved statement, if it is one. -/
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
   | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting .. => none
 
 /-- Whether two triggers of a schema may both fire for one write, so that their order matters:
@@ -75,7 +75,7 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       let trigger : CatalogTrigger := { table, time, event, condition, body }
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
-    | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin
+    | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
     | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 
@@ -88,7 +88,7 @@ def firstPrepareErrorFrom (index : Nat) : List Resolved.Statement → Option (Na
     | none => firstPrepareErrorFrom (index + 1) rest
 
 /-- Resolve a schema to the catalog that it describes. The schema statements resolve in
-description mode against the empty catalog; each must be CREATE TABLE, CREATE INDEX or CREATE
+description mode against the empty catalog; each must be CREATE TABLE, CREATE VIEW, CREATE INDEX or CREATE
 TRIGGER and must prepare without an error. Two triggers that overlap in the schema are a
 restriction ({name}`schemaTriggerRestriction`). The result is never
 {name}`ScriptIssue.scriptRestricted`. -/

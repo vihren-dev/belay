@@ -98,7 +98,7 @@ def prediction(given: dict[str, Json], script: list[Located], model: dict[str, J
         return {"name": given["name"], "status": "error", "reason": str(model["error"])}
     if "restricted" in model:
         return {"name": given["name"], "status": "unsupported", "reason": str(model["restricted"]),
-                "restriction": str(model["restriction"])}
+                **({"restriction": str(model["restriction"])} if "restriction" in model else {})}
     steps = [{"visible": view_record(step["visible"]), "persisted": view_record(step["persisted"]),
               "transactionOpen": step["transactionOpen"], "primaryCode": step["primaryCode"],
               "phase": step["phase"], **({"start": script[index - 1].start} if index else {})}

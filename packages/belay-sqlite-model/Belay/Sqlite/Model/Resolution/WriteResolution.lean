@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.SubqueryResolution
+import Belay.Sqlite.Model.Resolution.ViewColumns
 
 set_option doc.verso true
 
@@ -19,13 +20,14 @@ child {lit}`field`, around the scope that {lit}`scopeOf` gives for the table, th
 with them ({lit}`resolveWrite`). The optional {lit}`columnNames` supplies explicit CTE/view
 output names; use the empty default for ordinary subqueries. Optional {lit}`viewRoots`
 identify stored definitions whose outer names and column counts need view checks. A subquery that reads the written table directly is
-{name}`RestrictionKind.subqueryReadsTarget`. An unexpanded view target is restricted
-before the write's subqueries can produce an error with the wrong precedence. -/
+{name}`RestrictionKind.subqueryReadsTarget`. A view target is not
+writable: its subqueries are not resolved, so that they cannot give an error before the error of
+the view, and the write itself reports that error ({name}`resolveViewTarget`). -/
 def resolveWriteSubqueries (context : ResolveContext) (catalog : Catalog) (field : Nat) (tableName : Identifier)
     (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
     (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution)
     (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) : StatementResolution :=
-  if (catalog.findView tableName).isSome then restrict [0] .subqueryHere else
+  if (catalog.findView tableName).isSome then resolveViewTarget context catalog tableName (resolveWrite [] {}) else
   let target := catalog.findTable tableName
   let scope := (target.map fun (_, table) => scopeOf table).getD []
   match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries columnNames viewRoots with

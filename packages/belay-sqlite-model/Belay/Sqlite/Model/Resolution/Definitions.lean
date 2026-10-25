@@ -172,12 +172,13 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
 table, its reserved name, the index name, the name in use, the key terms
 ({name}`indexKeys`, path 3) and the filter ({name}`indexFilter`, path 4), both over the
 table alone and under the profile's {lit}`DQS_DDL`. A CREATE INDEX that runs builds the
-index over the existing rows in execution. A view target is currently {name}`RestrictionKind.subqueryHere`. -/
+index over the existing rows in execution. A view target is {name}`PrepareError.viewNotIndexed`, without a look at the view's query or at
+the other names. -/
 def resolveCreateIndex (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr) : StatementResolution :=
   match catalog.findTable tableName with
-  | none => if (catalog.findView tableName).isSome then restrict [2] .subqueryHere
+  | none => if (catalog.findView tableName).isSome then prepareError catalog .viewNotIndexed
       else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeIndexed tableName))

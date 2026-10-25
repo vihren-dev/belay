@@ -1,4 +1,4 @@
-import VerifierConformance.Json
+import VerifierConformance.PredictTables
 
 /-! The subject's side of ADR 0011's judge: predict what SQLite observes, without seeing it.
 
@@ -43,47 +43,6 @@ structure PredictInput where
   counters : Option Counters
   deriving FromJson
 
-/-- A catalog column as {lit}`PRAGMA table_xinfo` reports it. Defaults retain
-source spelling independently of their evaluated value. -/
-def nativeColumn (column : CatalogColumn) : NativeColumn :=
-  { name := column.name, declaredType := column.declaredType.getD "", notNull := column.notNull,
-    defaultValue := column.defaultValue.map (·.sourceText), hidden := columnHidden column }
-
-/-- The table at a catalog position, under its catalog object name, as native metadata. -/
-def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (table : Table) : NativeTable where
-  name := name
-  columns := table.shape.columns.map nativeColumn
-  primaryKey := table.shape.primaryKey
-  uniqueKeys := table.shape.uniqueKeys
-  indexes := catalogIndexes catalog position
-  rows := table.rows
-  withoutRowid := table.shape.withoutRowid
-
-/-- A foreign key of a table in the terms of {lit}`PRAGMA foreign_key_list`: the referenced
-table, the names of its columns, the referenced columns, and the names of its actions. -/
-def foreignKeyJson (columns : List CatalogColumn) (key : ForeignKey) : Json :=
-  Json.mkObj [("table", toJson key.table),
-    ("columns", toJson (key.columns.filterMap fun position => columns[position]?.map (·.name))),
-    ("referenced", toJson key.referenced), ("onDelete", toJson key.onDelete.sqlName),
-    ("onUpdate", toJson key.onUpdate.sqlName)]
-
-/-- The table at a catalog position in SQLite's catalog terms, whether its primary key
-is the rowid, which decides whether SQLite makes an index for that key, whether that
-key is descending, which the index records, the collation name of each column, which
-the indexes of the primary key and of UNIQUE constraints record, and its foreign keys in
-the order in which SQLite creates them ({name}`CatalogTable.allForeignKeys`).
-{lit}`collations` and {lit}`foreignKeys` are present only when a column is not
-{lit}`BINARY` or the table has a foreign key, so other predictions keep their form. -/
-def predictedTable (catalog : Catalog) (position : Nat) (table : Table) : Option Json :=
-  let collations := collationNames (table.shape.columns.map (·.collation.sqlName))
-  let foreignKeys := table.shape.allForeignKeys.map (foreignKeyJson table.shape.columns)
-  catalog[position]?.map fun object => Json.mkObj ([
-    ("table", toJson (nativeTableOf catalog position object.name table)),
-    ("rowidPrimaryKey", toJson table.shape.rowidAlias.isSome),
-    ("primaryKeyDescending", toJson table.shape.primaryKeyDescending)] ++
-    (if collations.isEmpty then [] else [("collations", toJson collations)]) ++
-    (if foreignKeys.isEmpty then [] else [("foreignKeys", toJson foreignKeys)]))
-
 /-- Starting rows as a native table without metadata: {name}`databaseOf` reads only
 the name and the rows. -/
 def NamedRows.native (table : NamedRows) : NativeTable where
@@ -93,20 +52,6 @@ def NamedRows.native (table : NamedRows) : NativeTable where
   uniqueKeys := []
   indexes := []
   rows := table.rows
-
-/-- Every table of one database, under its catalog, in catalog order. -/
-def predictedTables (database : Database) : Json :=
-  toJson ((List.range database.catalog.length).filterMap fun position =>
-    (database.table position).bind (predictedTable database.catalog position))
-
-/-- One predicted step: both databases, the transaction state and SQLite's primary
-code. -/
-def stepJson (observation : Observation) : Json :=
-  Json.mkObj [("visible", predictedTables observation.visible),
-    ("persisted", predictedTables observation.persisted),
-    ("transactionOpen", toJson observation.transactionOpen),
-    ("phase", toJson (errorPhase observation.error)),
-    ("primaryCode", toJson (primaryCode observation.error))]
 
 /-- The prediction of a model restriction: the case is out of scope, with the reason and the
 kind of the restriction. -/
@@ -134,12 +79,15 @@ def predictHalting (p : PredictInput) : Json :=
   | .ok resolution =>
     let clock : Clock := fun position => p.clocks.getD position 0
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native),
-                              clock := scriptClock clock resolution.resolved }
+                              clock := scriptClock clock resolution.resolved, counters := p.counters.getD {} }
     let pass := passFrom 0 (bindValues resolution.resolved p.parameters) start
-    let steps := pass.observations.map stepJson
+    let steps := predictionSteps p.profile p.clocks pass.counters pass.observations
     let supported := !(p.clocks.isEmpty && scriptReadsClock resolution.resolved) &&
       pass.supported && !pass.observations.any invalidObservation
-    Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
+    match steps with
+    | .error issue => observationIssueJson issue
+    | .ok steps =>
+      Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 
 /-- The prediction of a case whose recorder runs on after an SQL error, the rule that
 {name}`classifyRunCase` applies: the schema resolves as in {name}`predictHalting`, then the
@@ -155,8 +103,10 @@ def predictRun (p : PredictInput) : Json :=
       (bindValues p.script p.parameters)
     let observations := observeState connection.state :: pass.observations
     let supported := pass.supported && !observations.any invalidObservation
-    Json.mkObj [("supported", toJson supported), ("steps", toJson (observations.map stepJson)),
-      ("outputs", toJson pass.outputs)]
+    match predictionSteps p.profile p.clocks (connection.state.counters :: pass.counters) observations with
+    | .error issue => observationIssueJson issue
+    | .ok steps =>
+      Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 
 /-- The model's prediction: {name}`predictRun` for a case whose recorder ran on after an error
 ({lit}`PredictInput.continues`), and {name}`predictHalting` otherwise. -/

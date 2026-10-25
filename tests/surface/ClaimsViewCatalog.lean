@@ -1,8 +1,8 @@
 import Belay
 
 /-! Manually supplied view definitions exercise the catalog boundary before SQL view
-DDL is enabled. Uses resolve the stored SELECT; remaining write and metadata
-boundaries stay unmodeled until their view semantics are implemented. -/
+DDL is enabled. Uses resolve the stored SELECT; a write, an index, an added column or a trigger
+on a view is a prepare error, and a table-valued metadata function stays unmodeled. -/
 
 set_option doc.verso true
 set_option maxRecDepth 4000
@@ -60,7 +60,7 @@ example : database.catalog.parentLink {
     table := name! "v", columns := [0], referenced := [], onDelete := .noAction, onUpdate := .noAction} =
     .mismatch 0 := by decide +kernel
 
-/-- Every statement listed here requires view expansion at this interim catalog boundary. -/
+/-- Every statement listed here is a write or schema change of a view. -/
 def deferred : List Syntax.Statement := [
   .insert (name! "v") none [[.numeric "1"]] [],
   .insert (name! "v") none [[.numeric "1"]] [] (subqueries := [late.query]),
@@ -68,14 +68,23 @@ def deferred : List Syntax.Statement := [
   .delete (name! "v") none,
   .createIndex (name! "i") false (name! "v") [⟨.identifier (name! "x") .none, false⟩] none,
   .addColumn (name! "v") {name := name! "y", declaredType := none, constraints := []},
-  .dropTable (name! "v") false,
-  .dropTable (name! "v") true,
-  .createTrigger (name! "tr") false .before .insert (name! "v") none [],
-  .pragma (.tableInfo (name! "v")) ]
+  .createTrigger (name! "tr") false .before .insert (name! "v") none [] ]
 
-/-- None of these paths fabricates a native prepare error for the unresolved view. -/
+/-- Each of them is a prepare error: a write reads the view's query first, which names the missing
+table, and the others refuse the view without reading it. -/
 example : deferred.all (fun statement => match resolveStatement runContext
-    {catalog := database.catalog} statement with | .error _ => true | .ok _ => false) = true := by decide +kernel
+    {catalog := database.catalog} statement with
+      | .ok (.prepareError _, _) => true
+      | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
+      | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
+      | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _)
+      | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => false)
+      = true := by
+  decide +kernel
+
+/-- {lit}`PRAGMA table_info` of a view expands its query, so it is no longer a restriction. -/
+example : (match resolveStatement runContext {catalog := database.catalog}
+    (.pragma (.tableInfo (name! "v"))) with | .ok _ => true | .error _ => false) = true := by decide +kernel
 
 /-- The table-only metadata primitive refuses a view instead of reporting no columns. -/
 example : database.catalog.tableInfoRows (name! "v") = none := by decide +kernel

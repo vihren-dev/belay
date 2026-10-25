@@ -315,6 +315,14 @@ all 923 Nix-selected tests and the frozen verdict. Final publication checks pass
 review found no issues. All previously predicted corpus records are unchanged.
 Views remain part 3, so D5 and slice 4 remain open.
 
+2026-10-25, slice 4 part 3 remains open. Stored-view sources have focused kernel
+checks. DROP VIEW and DROP VIEW IF EXISTS now use the shared drop execution,
+including wrong-kind errors, changed catalog positions and rollback. The generic
+statement/run validity proofs cover the new syntax. Focused Nix surface, syntax
+and existing DROP mutation checks pass; frozen prediction outputs are unchanged.
+CREATE VIEW, complete view metadata/write errors and full part-3 acceptance
+remain unfinished. INSTEAD OF triggers remain excluded.
+
 ## Owner decisions
 
 Decided on 2026-10-22:

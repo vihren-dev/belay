@@ -3,6 +3,7 @@ import Belay.Sqlite.ParserLibrary
 import Belay.Sqlite.Translation.Schema
 import Belay.Sqlite.Translation.Tables
 import Belay.Sqlite.Translation.Triggers
+import Belay.Sqlite.Translation.Views
 
 set_option doc.verso true
 
@@ -37,9 +38,11 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
   let symbols := tree.symbols command
   if symbols == ["create_table", "create_table_args"] then return ← createTable tree command
   if symbols.take 3 == ["createkw", "uniqueflag", "INDEX"] then return ← createIndex tree command
+  if symbols.take 3 == ["createkw", "temp", "VIEW"] then return ← createView tree command
   if symbols.take 2 == ["ALTER", "TABLE"] then return ← addColumn tree command
   if symbols == ["createkw", "trigger_decl", "BEGIN", "trigger_cmd_list", "END"] then return ← createTrigger tree command
-  if [["DROP", "TABLE"], ["DROP", "INDEX"], ["DROP", "TRIGGER"]].contains (symbols.take 2) then return ← drop tree command
+  if [["DROP", "TABLE"], ["DROP", "VIEW"], ["DROP", "INDEX"], ["DROP", "TRIGGER"]].contains (symbols.take 2) then
+    return ← drop tree command
   if [["BEGIN"], ["COMMIT"], ["END"], ["ROLLBACK"]].contains (symbols.take 1) then return ← transaction tree command
   if symbols.take 2 == ["with", "insert_cmd"] then return ← insert tree command
   if symbols.take 2 == ["with", "UPDATE"] then return ← update tree command
@@ -52,8 +55,8 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
         clauses.having.value clauses.distinct.value clauses.compound.value)
       command.start command.stop (clauses.selectSpans subqueries)
   if symbols.take 1 == ["PRAGMA"] then return ← pragma tree command
-  unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, " ++
-    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
+  unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE VIEW, CREATE INDEX, " ++
+    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
     "ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys")
 
 /-- One command as a statement with its parameter tokens: the tokens are numbered first

@@ -283,3 +283,22 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   passed at `/nix/store/gldj7zm5hv9zah0jjif51dqzsdzyrhy3-sqlite-verifier-verdict`;
   `just test-nix` passed (71 passed, 1579 deselected); `just test-scheduled-checks` passed at
   `/nix/store/yxscwaji03qy583y9cm5l6y2dvc251rq-sqlite-verifier-scheduled-check-reports`.
+- 2026-10-25: integration above the S5 and views publication (#256, `064719ed`): a merge of
+  `77c17f02` (S7 with S5) and `064719ed`, with no rebase. The new material is the views line
+  and the mutant split and S6 migration part 1. Conflicts and resolutions:
+  - `packages/belay/lakefile.lean`: the `Belay` library glob keeps the S7 modules (record,
+    report and the SQL-file modules) and the view and migration modules of `064719ed`.
+  - `docs/adr-0017-user-surface.md`: both sides added the same migration-view and
+    full-state paragraphs after a common paragraph; one copy is kept.
+  - `plans/20261024-s6-migration-patterns.status.md`: the S7 line held an earlier 52-line
+    version; the full version of `064719ed` is kept.
+  - Merged without a conflict and checked: the `belay-sqlite-model` lakefile, `Belay/Sqlite.lean`,
+    `tests/nix_suites.json` (the view, migration and S7 tests all appear),
+    `build-support/tests.nix`, `packages/belay/README.md`.
+  - SQL files against view statements: `tests/surface/sql_files/views.sql` has a goose file
+    with `CREATE VIEW` in the up section and `DROP VIEW` in the down section.
+    `tests/surface/SqlFileForms.lean` checks each section against a database
+    (`against :=`) that has the table or the view, and shows each equal to the inline script.
+  Checks: `just dev-build` and `lake build belay-sql-check` passed; focused Nix surface run
+  (59 passed, 113 deselected, 329.08 s) at
+  `/nix/store/hx2z9c1z1mdavhg2dk2wl23zmg1rrif6-sqlite-verifier-test-surface-1`.

@@ -17,7 +17,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 def test_view_catalog_keeps_unresolved_definitions_and_refuses_unexpanded_uses(runtime_root: Path, tmp_path: Path) -> None:
     """The view catalog stores written queries, owns no rows, distinguishes FK mismatch,
-    and refuses unexpanded uses instead of fabricating missing-table or empty-metadata results."""
+    a write or schema change of a view is a prepare error, and a table-valued metadata function of
+    a view is refused instead of fabricating an empty result."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsViewCatalog.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()

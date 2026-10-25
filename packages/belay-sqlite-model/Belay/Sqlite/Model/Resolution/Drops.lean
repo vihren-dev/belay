@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Resolution.CatalogDrop
 
 set_option doc.verso true
 
-/-! Name resolution of DROP TABLE and DROP INDEX (ADR 0014, D7), in the order of SQLite
+/-! Name resolution of DROP TABLE, DROP VIEW and DROP INDEX, in the order of SQLite
 3.51.0's {lit}`sqlite3DropTable` and {lit}`sqlite3DropIndex`, with names compared with ASCII
 case ignored. Checked natively with 3.51.0. -/
 
@@ -35,7 +35,8 @@ def constraintIndexName (name : Identifier) : Bool := (bytes! "sqlite_autoindex_
 /-- Resolve DROP TABLE: a schema table is {name}`PrepareError.tableMayNotBeDropped`; a
 table drops with its indexes ({name}`Catalog.tableObjects`); a name that is no table, also
 the name of an index, is {name}`PrepareError.noSuchTable`, and with {lit}`IF EXISTS` a DROP
-of nothing. An unexpanded view is restricted, including with IF EXISTS. For example, {lit}`DROP TABLE IF EXISTS x` of a catalog without {lit}`x` is
+of nothing. A view reports {name}`PrepareError.useDropView`, also with IF EXISTS,
+without resolving its definition. For example, {lit}`DROP TABLE IF EXISTS x` of a catalog without {lit}`x` is
 {lean}`Resolved.Statement.drop []`. -/
 def resolveDropTable (catalog : Catalog) (name : Identifier) (ifExists : Bool) : StatementResolution :=
   match schemaTableName? name with
@@ -44,8 +45,26 @@ def resolveDropTable (catalog : Catalog) (name : Identifier) (ifExists : Bool) :
     | some (position, _) =>
       let positions := catalog.tableObjects position
       .ok (.drop positions, catalog.drop positions)
-    | none => if (catalog.findView name).isSome then restrict [0] .subqueryHere
-      else if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)
+    | none => match catalog.findView name with
+      | some (position, _) =>
+        prepareError catalog (.useDropView ((catalog[position]?.map (·.name)).getD name))
+      | none => if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)
+
+/-- Resolve DROP VIEW without expanding its stored definition. A view drops its
+single catalog position. A physical table reports {name}`PrepareError.useDropTable`,
+even with IF EXISTS; schema tables report {name}`PrepareError.tableMayNotBeDropped`
+first. An absent view reports {name}`PrepareError.noSuchView`, or drops nothing
+with IF EXISTS. For example, {lit}`DROP VIEW IF EXISTS missing` succeeds when the
+name is absent or names only an index or trigger. -/
+def resolveDropView (catalog : Catalog) (name : Identifier) (ifExists : Bool) : StatementResolution :=
+  match schemaTableName? name with
+  | some reported => prepareError catalog (.tableMayNotBeDropped reported)
+  | none => match catalog.findView name with
+    | some (position, _) => .ok (.drop [position], catalog.drop [position])
+    | none => match catalog.findTable name with
+      | some (position, _) =>
+        prepareError catalog (.useDropTable ((catalog[position]?.map (·.name)).getD name))
+      | none => if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchView name)
 
 /-- Resolve DROP INDEX: an index drops alone; a name that is no index, also the name of a
 table, is {name}`PrepareError.noSuchIndex`, and with {lit}`IF EXISTS` a DROP of nothing. The

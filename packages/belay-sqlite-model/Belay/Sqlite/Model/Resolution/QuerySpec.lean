@@ -42,7 +42,7 @@ theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog)
     (ordinary : querySourceCopiesNeeded catalog query subqueries = false) :
     resolveSelect context catalog query subqueries = .ok (.prepareError (.noSuchTable source.table), catalog) := by
   have notMore : ¬ query.joins.length + 1 > maximumJoinTables := by omega
-  simp [resolveSelect, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, application, table,
+  simp [resolveSelect, resolveSelectDetails, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, application, table,
     notMore, Except.mapError, SourceIssue.under, prepareError, Functor.map, Except.map, bind, Except.bind]
 
 end Belay.Sqlite.Model

@@ -19,7 +19,7 @@ def possibleOutput (clock : Int) (parameters : List Value) (statement : Resolved
   | .query query subqueries, .next _ =>
     query.possibleOn clock (before.counters.view statement.counterReads) parameters before.database subqueries
   | .query .., .halt _ => none
-  | .createTable .., _ | .createIndex .., _ | .createTrigger .., _ | .addColumn .., _ | .drop .., _ | .begin, _
+  | .createTable .., _ | .createView .., _ | .createIndex .., _ | .createTrigger .., _ | .addColumn .., _ | .drop .., _ | .begin, _
   | .commit, _ | .rollback, _ | .insert .., _ | .upsert .., _ | .update .., _ | .delete .., _ | .prepareError _, _
   | .setting .., _ => none
 

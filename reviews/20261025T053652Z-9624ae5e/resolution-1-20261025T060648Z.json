@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T06:06:48+00:00",
+  "finding": "20261025T053652Z-9624ae5e#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Table_info now reads the columns as SQLite does (ViewColumns, ExprError.seenWhenViewRead): a scalar subquery of the wrong width in a view body is the restriction view-body-check, and the surface fixture pins it."
+}

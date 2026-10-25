@@ -49,6 +49,17 @@ def unchecked := sql_file "sql_files/checked.sql"
 example : checked = unchecked := rfl
 example : checked = sql "INSERT INTO users(email, name) VALUES (:email, :name);\nSELECT name FROM users WHERE email = :email;\n" := rfl
 
+-- View statements in the sections of a migration file, checked against databases that know the table or the view.
+/-- The database that already has the view, for the down section. -/
+def shopWithView : Database :=
+  db! r"CREATE TABLE users(email TEXT, name TEXT); CREATE VIEW active AS SELECT email FROM users;"
+/-- The up section creates a view; the database check leaves the script as it is. -/
+def viewUp := sql_file "sql_files/views.sql" (section := "up") (against := shop)
+/-- The down section drops it. -/
+def viewDown := sql_file "sql_files/views.sql" (section := "down") (against := shopWithView)
+example : viewUp = sql "CREATE VIEW active AS SELECT email FROM users WHERE name IS NOT NULL;\n" := rfl
+example : viewDown = sql "DROP VIEW active;\n" := rfl
+
 -- The statements of a module are definitions named by their markers.
 sql_module Queries from "sql_files/queries.sql"
 

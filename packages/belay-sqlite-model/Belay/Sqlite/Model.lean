@@ -130,6 +130,7 @@ import Belay.Sqlite.Model.ResolveStatementApplied
 import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.ResolveStatementLink
 import Belay.Sqlite.Model.ResolveStatementForms
+import Belay.Sqlite.Model.ResolveStatementPragmaLink
 import Belay.Sqlite.Model.ScriptRunDerived
 import Belay.Sqlite.Model.RunHoldsReady
 import Belay.Sqlite.Model.AdmittedRowLaws
@@ -165,6 +166,7 @@ import Belay.Sqlite.Model.ResolveAddColumnCatalog
 import Belay.Sqlite.Model.ResolveDropValid
 import Belay.Sqlite.Model.ResolveDropCatalog
 import Belay.Sqlite.Model.ResolveCreateTriggerCatalog
+import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.ResolveCreateIndexCatalog
 import Belay.Sqlite.Model.ResolveCreateTableCatalog
 import Belay.Sqlite.Model.ResolveCreateTableValid
@@ -236,6 +238,21 @@ import Belay.Sqlite.Model.CountStatementResolution
 import Belay.Sqlite.Model.CountMatchingLaws
 import Belay.Sqlite.Model.IntegerCompareLaws
 import Belay.Sqlite.Model.SimpleResultsLaws
+import Belay.Sqlite.Model.NormalizedFieldRows
+import Belay.Sqlite.Model.NormalizedFieldQueries
+import Belay.Sqlite.Model.NormalizedFieldScan
+import Belay.Sqlite.Model.NormalizedFieldEffects
+import Belay.Sqlite.Model.SuccessfulScriptEffects
+import Belay.Sqlite.Model.NormalizedFieldResolution
+import Belay.Sqlite.Model.NormalizedFieldUpdateResolution
+import Belay.Sqlite.Model.NormalizedFieldDdlEffects
+import Belay.Sqlite.Model.NormalizedFieldBackfillStep
+import Belay.Sqlite.Model.NormalizedFieldExpansion
+import Belay.Sqlite.Model.SimpleTableRowsOutput
+import Belay.Sqlite.Model.NormalizedFieldSelectResolution
+import Belay.Sqlite.Model.NormalizedFieldLookups
+import Belay.Sqlite.Model.NormalizedFieldExpandedTable
+import Belay.Sqlite.Model.NormalizedFieldLookupOutputs
 import Belay.Sqlite.Model.InValueLaws
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput

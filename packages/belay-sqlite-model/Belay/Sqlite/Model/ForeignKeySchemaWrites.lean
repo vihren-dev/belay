@@ -36,7 +36,7 @@ not meet this sufficient condition. -/
 def Resolved.Statement.KeepsParentSchema : Resolved.Statement → Prop
   | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete ..
   | .prepareError _ | .query .. | .setting _ _ => True
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. => False
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. => False
 
 /-- Whether a statement meets the catalog-preserving condition is decidable from its form. -/
 instance (statement : Resolved.Statement) : Decidable statement.KeepsParentSchema := by
@@ -53,7 +53,7 @@ theorem runStatement_parentSchemasCompatible (mapping : ForeignKeyMapping) (cloc
     (runStatement clock counters parameters statement database).effect.Satisfies
       (Database.ParentSchemasCompatible mapping) := by
   cases statement with
-  | createTable | createIndex | createTrigger | addColumn | drop => exact False.elim met
+  | createTable | createView | createIndex | createTrigger | addColumn | drop => exact False.elim met
   | begin | commit | rollback | prepareError | query | setting =>
     apply Effect.satisfies_of_database holds
     apply runStatement_keeps_database

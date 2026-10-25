@@ -28,6 +28,7 @@ theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Cat
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr ⟨_, rfl⟩, rfl⟩
     | (simp_all; done)
 
 /-- For every CREATE TABLE of a name that SQLite does not reserve: when the catalog
@@ -49,8 +50,8 @@ theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog)
 
 /-- For every INSERT, with any subqueries and shapes, whose resolution is a prepare error that
 names a catalog object:
-the error is {lit}`no such table` for the statement's table, no table has the folded
-name, and the catalog is unchanged. Proof sketch: split every branch of the
+the error is {lit}`no such table` for the statement's table, and no table has the folded
+name, or it is {lit}`cannot modify %s because it is a view`; the catalog is unchanged. Proof sketch: split every branch of the
 resolver; the branches after the table lookup give errors that name no catalog
 object, by the lemmas on column lists, values and full rows. -/
 theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
@@ -60,7 +61,8 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (.prepareError error, after)) :
-    error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
+    ((error = .noSuchTable tableName ∧ catalog.findTable tableName = none) ∨ ∃ name, error = .viewModify name) ∧
+      after = catalog := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
   repeat' split at ok
@@ -68,6 +70,7 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr ⟨_, rfl⟩, rfl⟩
     | (simp_all; done)
 
 /-- For every INSERT, with any subqueries and shapes, whose VALUES rows all have the width of

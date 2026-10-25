@@ -1,6 +1,6 @@
 # Retain the first hosted mutation failure
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE.
 Audience: implementers and reviewers.
 Progress: [status](20261025-mutant-failure-diagnostics.status.md).
 Inspected base: published PR #251, `fe169099`.
