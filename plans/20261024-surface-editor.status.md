@@ -357,3 +357,16 @@ After the final review of the part (no findings on the last commit) at
 
 Part 2a is complete. Part 2b (column and affinity hovers, derived-column facts,
 typo corrections, DQS warnings) waits for the model name trace.
+
+### Coordinator decisions on part 2a — 2026-10-25
+
+Part 2a is accepted. The coordinator decided:
+
+1. Navigation keeps the environment extension (`db!` source metadata is not used).
+2. `db!` keeps the second model run (`executedContexts`) after the run that finds errors.
+3. The syntactic risk warning also applies to one-row aggregates with `LIMIT`;
+   `sql.orderWarnings` turns it off.
+4. `sql!` keeps the risk warning only; it gives no evidence warning.
+
+Part 2b waits for the model name-trace task. The coordinator integrates part 2a
+into the stack after the FK pull requests and runs the gates on that merge.
