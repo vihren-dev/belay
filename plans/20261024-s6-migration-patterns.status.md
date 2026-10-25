@@ -332,7 +332,11 @@ no model or package definition changed. The failed result is retained in
 `build/agent-logs/expansion-counter-focused-retry.log`. Only the Nix retry above
 is acceptance evidence. R3/R19 self-review checked the concrete domain witness,
 public support checks, full-context refutation, original-SQL replay validation
-and theorem proof sketches. Independent review remains pending for this unit.
+and theorem proof sketches. Implementation is immutable
+`5600ba9e4620a2fc9e81e5aaac2d8b2a910f6a25`. Independent review
+`20261025T014239Z-5600ba9e` found zero musts and zero shoulds. This completes
+the separate counter-refutation unit; the universal normalization proofs and
+the remainder of the second acceptance part are still unfinished.
 
 The universal normalization proofs can proceed independently of table rebuilds.
 All required SQL execution features already exist. Their remaining work is
