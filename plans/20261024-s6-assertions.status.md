@@ -342,3 +342,11 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
   for all databases, because the readiness of an insert depends on the id (a rowid bound and the
   stored form). Options: (a) keep it as a site field (kernel-discharged on concrete databases),
   (b) prove it from aggregate-max and rowid-bound laws for the query result. Recommendation: (a).
+
+### Review of units 4 and 5
+
+- `320c3ef5` (diagnostics): review 20261025T102714Z-320c3ef5, one `should` (the status cited a local
+  result), fixed by this commit chain.
+- `9678b4af` (unit 5): review 20261025T102600Z-9678b4af, one `must` (R3: proof sketch of
+  `connection_resolveState`), fixed in `e3304c3b`; re-review 20261025T103132Z-e3304c3b has no
+  findings.
