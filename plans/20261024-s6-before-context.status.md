@@ -46,3 +46,22 @@ primitive's meaning.
   `initial-database`; translator accepts `before` only. Checks: `just dev-build`,
   Nix predictions equal to the baseline (one reason text restored), `tests/syntax_*`,
   restriction tests. Local results are not evidence.
+- 2026-10-25, commit "model: observe a query over the initial and the current database":
+  `observeTwoState`, `resolveTwoState`, `usesSchema`, `Syntax.Statement.asQuery?`; laws
+  `*_initial_irrelevant` and `*_current_irrelevant` from `QuerySource.join` to
+  `resolvedStepOutput`; conservative extension `observeTwoState_ordinary`; kernel
+  fixtures `TwoStateExamples` and `TwoStateViewExamples`; surface entry
+  `Script.observeTwoState`; `tests/surface_two_state_test.py` (native differential
+  oracle with the pinned sqlite3 and an attached read-only copy, mutation check, refusal
+  checks, modeled write between observations, axiom audit). Names and rowid: the model
+  refuses `rowid`, `_rowid_` and `oid`, so the rowid fixture reads the alias name.
+  The native oracle finds unqualified names in an attached database when the main
+  database lacks the table, which the model (correctly) does not; the cases keep a
+  current table whenever they query an unqualified name.
+- 2026-10-25, review of the first commit: four rounds, each with new "must" findings, all
+  fixed except one "should" finding that is rejected with a reason. The fixes: `CREATE VIEW`
+  with a `before` source is refused (`initial-database`) because SQLite refuses it; error
+  text of a three-part column keeps the schema name; the expansion of an initial view does
+  not tag a function call as `before`; examples for initial views, subqueries and
+  `Scope.resolveSchemaQualified_below`. The review rule for four rounds applies: the
+  owner decides how to continue before the second commit is reviewed.
