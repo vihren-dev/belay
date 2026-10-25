@@ -1,0 +1,60 @@
+{
+  "caller": "claude",
+  "commit": "0101de9e8120cc976e581876f81c8d0d51315e5c",
+  "date": "2026-10-25T09:05:49+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261025-macos-model-suite-limit.status.md",
+    "plans/20261025-macos-model-suite-limit.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261025T090549Z-0101de9e#1",
+      "line": 29,
+      "path": "plans/20261025-macos-model-suite-limit.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The document says every suite has a 1200-second limit, but `build-support/tests.nix` gives mutant suites 2700 seconds. Fix: qualify the statement as applying to non-mutant suites."
+    },
+    {
+      "id": "20261025T090549Z-0101de9e#2",
+      "line": 35,
+      "path": "plans/20261025-macos-model-suite-limit.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The document says macOS checks run only on manual and scheduled runs, but `.github/workflows/ci.yml` also runs them on pushes to `main`. Fix: include pushes to `main`."
+    },
+    {
+      "id": "20261025T090549Z-0101de9e#3",
+      "line": 38,
+      "path": "plans/20261025-macos-model-suite-limit.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The cited report records increasing the model deadline from 420 to 600 seconds, not splitting the suite. Fix: cite `plans/20261007-ci-suite-split.status.md` for the suite split."
+    }
+  ],
+  "id": "20261025T090549Z-0101de9e",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -82,7 +82,7 @@ the actual verification evidence.
 `tests.model`, `tests.frozen`, `tests.harness`, `tests.sample`, `tests.upstream`,
 `tests.corpora`, `tests.parserLibrary`, `tests.packages`, `tests.documentation` and
 `tests.surface` are independent pytest derivations declared in `tests.nix`. `tests/nix_suites.json` gives their test-file ownership and also
-drives the host `--source-checks` exclusions. The model, frozen and
+drives the host `--source-checks` exclusions. The model, coverage, frozen and
 harness inputs are shared pytest support, pinned Python/pytest, their explicit
 conformance helpers, the SQL frontend modules in `tests/conformance_frontend.json`,
 parsers and pinned SQLite; only frozen adds the frozen corpora and retained reports.
@@ -90,7 +90,8 @@ Conformance targets exclude unrelated tests and documentation. Changes to shared
 pytest support invalidate every suite. Nix owns all result reuse.
 The sample owns the frozen v4 and synthetic inputs plus their shared replay and
 validation helpers. Full-only historical evidence and tests do not invalidate it.
-`developmentTests` selects every target except `tests.model` and `tests.frozen`;
+`developmentTests` selects every target except `tests.model`, the coverage suites
+(`tests.coverageStatements`, `tests.coverageFeatures`), `tests.frozen` and `tests.corpora`;
 the full target set remains in CI.
 
 `publicDocumentation` checks the compiled public import closure against its

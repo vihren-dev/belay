@@ -46,14 +46,24 @@ def hexValue (byte : UInt8) : UInt32 :=
   let h := byte.toUInt32
   (h + (9 : UInt32) * ((h >>> 6) &&& 1)) &&& 0xf
 
+/-- Whether the first {lit}`count` bytes of a list are hexadecimal digits; a byte past the end
+counts as 0, which is no digit. -/
+def startsWithHexDigits (bytes : List UInt8) (count : Nat) : Bool :=
+  (List.range count).all fun offset => isHexDigit (bytes.getD offset 0)
+
 /-- Whether the text has a hexadecimal digit at each of {lit}`count` positions from
 {lit}`start` ({lit}`jsonIs2Hex`, {lit}`jsonIs4Hex`). -/
 def hasHexDigits (text : Array UInt8) (start count : Nat) : Bool :=
-  (List.range count).all fun offset => isHexDigit (byteAt text (start + offset))
+  startsWithHexDigits (text.toList.drop start) count
 
-/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`. -/
+/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`, with 0 for each
+position past the end of the text. The kernel finds the bytes of an {lit}`Array` by walking its
+list, so this takes the bytes with one walk: reading each byte with {name}`byteAt` would walk
+the text once for each byte, which takes a time quadratic in the length of the text (about 4 s
+of 7 s for a string of 300 bytes). -/
 def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
-  (List.range (stop - start)).map fun offset => byteAt text (start + offset)
+  let available := (text.toList.drop start).take (stop - start)
+  available ++ List.replicate (stop - start - available.length) 0
 
 /-- The first position at or after {lit}`position` that is not a hexadecimal digit. -/
 def hexDigitsEnd (text : Array UInt8) : Nat → Nat → Nat

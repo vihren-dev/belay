@@ -1,6 +1,6 @@
 # Keep the general mutant tests within their time limit
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE on 2026-10-25.
 Audience: implementers and reviewers.
 Progress: [status](20261025-query-mutant-time-limit.status.md).
 Inspected base: PR #252, `296f3a57`.

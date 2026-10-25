@@ -18,7 +18,6 @@
     "tests/syntax_drops_test.py",
     "tests/syntax_views_test.py",
     "tests/conformance_authored_resolution_test.py",
-    "tests/conformance_query_coverage_test.py",
     "tests/shared_table_shape_test.py",
     "tests/query_claims_theorems_test.py",
     "tests/column_default_resolution_test.py",
@@ -30,6 +29,12 @@
     "tests/add_column_defaults_test.py",
     "tests/conformance_query_sources_test.py",
     "tests/foreign_key_atoms_native_test.py"
+  ],
+  "coverageStatements": [
+    "tests/conformance_query_coverage_test.py"
+  ],
+  "coverageFeatures": [
+    "tests/conformance_feature_coverage_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",
