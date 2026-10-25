@@ -1,9 +1,13 @@
 # Status: foreign-key facts and preservation
 
 Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
-corrections) is accepted. Part 2's enforced-DROP proof unit is checked and reviewed;
-the new-row, update, action and trigger invariants, DDL/mapping conditions, combined
-laws and separate corpus-v54 evidence remain open.
+corrections) is accepted. Part 2's row/action/trigger induction and conditional
+DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
+Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
+Part 2 is implemented and passed `just test-full` and `just verdict` (section "Part-2 acceptance"
+at the end): the ADD COLUMN execution correction, the ADD COLUMN preservation laws, the run
+contracts of the schema statements, the matrix in ADR 0022 and the action and DDL necessity
+fixtures. Separate corpus-v54 evidence (the judge change) and the whole-task checks remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -13,12 +17,14 @@ REFERENCES defaults, including empty/nonempty tables, enforcement on/off and
 literal-NULL versus NULL-valued expression distinctions. ADR22 and the task are
 amended together. Native evidence is retained in the FK workspace's
 `build/agent-logs/add-reference-{native.json,model.log,default-spelling-native.json}`.
-The enforced-DROP unit is already checked/reviewed at `ffe4d749`; this new
-execution correction has no implementation or acceptance claim yet. The task
-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should:
-name the new correction in the acceptance-part list. The list now places it
-with the remaining DDL/run part. The amended task awaits final review before
-implementation resumes in an available slot.
+The enforced-DROP unit is checked and reviewed at `ffe4d749`. The execution
+correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES column with
+a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
+correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
+preservation laws (unit 2), the unified DDL/run contract (unit 3) and the matrix with the action
+fixtures (unit 4) are implemented and part 2 is accepted. The
+task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
+(name the correction in the acceptance-part list); that is done and is historical.
 
 Prior scope decision, 2026-10-24: the owner accepted selected action targets
 for CASCADE/SET NULL/SET DEFAULT and their assigned/changed-column effects.
@@ -653,3 +659,588 @@ Independent review `20261024T195955Z-a390edf3` found zero musts and one R19
 status-wording should. This record replaces the pending-results wording with
 the completed results. The reviewer checked both inventories and found no
 production-source issue. The complete FK preservation task remains OPEN.
+
+## Actual row-engine counter induction
+
+The `fk-engine-counter` unit adds 14 proof modules, each below 200 lines, and two
+focused fixtures. The shared invariant combines admission, unique keys and a bound
+on all catalog-selected FK violations by the immediate counter. The proofs follow
+the existing row engine through DELETE, UPDATE, INSERT, replacement deletion,
+credited nested calls, foreign-key actions, trigger steps/programs and the full fuel
+induction. No interpreter or execution definition is added or changed. The final
+`rowsKeys_rowReferences` theorem applies the counter-zero publication rule to
+successful writes and retained partial FAIL states. Rollback carriers retain the
+input database facts, but the later SQL bridge must establish row validity on the
+saved snapshot that it restores.
+
+The conditions remain explicit. Catalog comparison facts quantify future stored
+values, including intermediate action and trigger writes. UPDATE coverage applies
+to actual assignment constructors and their changed-column closure. A continuing
+BEFORE UPDATE sequence must retain the target rows; the row wrapper derives old-row
+retention from that named frame. Empty BEFORE programs are a sufficient helper.
+Generated UPDATE work has its own cell/rowid coverage and stale-self-scan conditions;
+none of these premises asserts the desired final row-reference atom. The existing
+mixed-affinity, stale-self-scan and raw stale-generated-cell witnesses still explain
+the substantive restrictions. Generic result/fold helpers use the existing monadic
+execution and admission/write laws.
+
+The engine fixture proves the closed theorem for a parent UPDATE with a real
+CASCADE child update, then checks both actual success and an AFTER child trigger's
+FAIL result that retains the changed parent and child. Structural BLOB comparison
+and assignment lemmas discharge its universal conditions; final row validity is not
+a premise. A separate fixture audits all 33 new exported theorems. The six concrete
+fixture laws also have axiom audits. Direct Lean and layer checks were diagnostics;
+they are not acceptance evidence.
+
+The sequential gate completed on 2026-10-24 with exit 0 (owned process 51552).
+Command: `direnv exec . bash build/agent-logs/fk-engine-gates.sh`. It ran
+`timeout 1200 just dev-build` and then the sandboxed focused Nix surface expression
+with `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`, timeout 1800 and command-local
+max-jobs=1. The Nix suite passed 11 fixtures, 52 deselected, in 13.62 seconds:
+`/nix/store/grsxi5rjsqz0w3311nf5xv3l2yiilv6m-sqlite-verifier-test-surface-1`.
+All 203 reports use only `propext`, `Classical.choice` and `Quot.sound`. Logs are
+`build/agent-logs/fk-engine-{dev-build,nix-surface}-1.log`. The development build
+passed as a local diagnostic; the Nix result establishes this unit's acceptance.
+Slot 2 returned to the coordinator at terminal completion. Independent review
+follows this commit.
+
+This is an intermediate part-2 boundary. The actual statement/run bridges,
+enforcement-off frames, DDL/mapping-transport conditions, combined atom laws and
+atom-by-statement matrix remain open. Ignored local probes continue in the separate
+`fk-statement-preservation` workspace; no task-end acceptance is claimed here.
+
+Independent review `20261024T194322Z-a4521575` covered the 14 new modules, model
+barrel/lake registration, status, fixtures and their parametrized audit counts. It
+found zero musts and zero shoulds. Source commit:
+`a4521575ed4d1693680dd6fa527bfbbe8b62f2d3`. No correction was needed. The reviewer
+did not rerun the checks or independently sum the 203 reports; the passing Nix
+fixture assertions enforce the exact per-case counts
+`14+6+13+8+20+34+30+6+33+6+33 = 203`. This accepted source is at rest while the
+statement/run and enforcement-off frame probes continue separately. The later
+statement matrix will distinguish successful enforced UPSERT DO NOTHING from the
+current undescribed DO UPDATE path; the wrapper theorem does not promise a
+successful result in that excluded branch.
+
+## Conditional statements and transaction runs
+
+The `fk-statement-preservation` unit adds four proof modules, each below 200 lines:
+ForeignKeyPlainFrame, ForeignKeyWriteConditions, ForeignKeyStatement and
+ForeignKeyRuns. The public statement law follows the actual row engine under its
+input, comparison, generated-work and BEFORE-target conditions. Resolved UPDATE
+constructs its changed-cell coverage from the assignment list and generated-column
+closure; callers supply structural schema/scan conditions, not final row truth.
+Plain writes with enforcement off have a separate sufficient condition: the target
+is outside all selected FK child/parent reads. The raw execution API is unchanged.
+
+The individual row and combined-atom laws cover `runStatement`, `runSqlFrom`,
+`runSql` and `runScriptFrom`. The combined property uses one supplied mapping for
+both atoms; compatibility equates it with the catalog-selected comparison. The
+run entry condition includes the saved snapshot, and the conditions concern only
+reached statements. Success, retained FAIL rows, pending transactions and rollback
+therefore use the existing run invariant machinery. Catalog edits are explicitly
+excluded from this unit's statement condition and remain open work.
+
+Three new fixtures check 33 reports: all 15 exported proof declarations, nine
+statement laws and nine run laws. They apply the public theorem to successful
+cascading UPDATE, INSERT, DELETE and UPSERT DO NOTHING; enforced UPSERT DO UPDATE
+retains its current undescribed result. They also check actual outside-footprint
+partial FAIL, rollback restoration, the necessity of a valid saved snapshot and
+an enforcement-off parsed surface INSERT. No interpreter or execution definition
+changes. No prediction change is expected from these proof-only additions.
+
+The sequential gate completed with exit 0 on 2026-10-24 (owned process 44603):
+`direnv exec . bash build/agent-logs/fk-statement-gates.sh` ran
+`timeout 1200 just dev-build` and then the sandboxed focused Nix surface expression
+with timeout 1800 and command-local max-jobs=1. The Nix suite passed 14 fixtures,
+52 deselected, in 17.29 seconds:
+`/nix/store/04dmvlj39cmypsa26ia21rhnskqxsjp1-sqlite-verifier-test-surface-1`.
+All 236 axiom reports use only the three standard logical axioms. Logs:
+`build/agent-logs/fk-statement-{dev-build,nix-surface}-1.log`. The development build
+is diagnostic evidence; the Nix suite is acceptance evidence. Slot 1 returned to
+the coordinator after terminal completion. Independent review follows this commit.
+The separate `fk-ddl-preservation` workspace holds the next CREATE proofs; the
+DROP/ADD COLUMN families, full matrix and part-2 acceptance remain OPEN.
+
+Independent review `20261024T201858Z-ea40e905` checked source commit
+`ea40e905be6e484b73cc3358bbcddb3093092e59`: all four proof modules, barrel and
+package registration, the three fixtures, test parametrization and status. It
+found zero musts and one R19 status should: the top summary still described
+completed row/action/trigger invariants as open. The summary now lists the actual
+remaining DDL/mapping, matrix, acceptance and corpus work. No source correction
+was needed. This accepted statement/run checkpoint is at rest; the DDL unit
+continues in its separate workspace.
+
+
+## CREATE and plain DROP preservation
+
+This proof-only unit adds ForeignKeyCreateFrame, ForeignKeyCreateSelection,
+ForeignKeyCreate, ForeignKeyDropSchema and ForeignKeyDdlDrop, each below 200 lines.
+CREATE keeps supplied old row comparisons when mappings agree; compatible input
+schemas prove that existing parent selections remain stable under append. New
+foreign-key declarations need their own located selected parent for the schema
+atom, even when the new table has no rows. The separate row-only law remains usable
+for a successful empty forward-reference table.
+
+Plain DROP has independent supplied-row and schema-selection transport laws plus
+a selected-mapping convenience theorem. Both parent and child positions may move.
+The existing row-drop frame now asks its mapping and parent-retention premises only
+for surviving child tables. Thus removing a child together with its parent has no
+surviving declaration obligation. CatalogValidDrop's existing first-match proof is
+strengthened to expose the exact transported lookup as Catalog.findTable_drop_kept;
+its sole old consumer now uses that result. The replaced weaker name is removed.
+The schema frame reuses this exact lookup and the existing parent-key selector;
+it does not implement a new selection algorithm.
+
+Two new surface fixtures apply the public laws to all three CREATE forms, a failing
+unique-index creation, forward references, a DROP that moves both table identities,
+a removed parent/child family, and successful supporting-index loss that preserves
+supplied row truth while breaking schema compatibility. The existing DROP fixture
+is adapted to the weaker premise. All new exported theorems, the strengthened
+lookup theorem and the changed row frame have axiom reports. The Nix suite enforces
+238 reports across 13 fixtures (the prior 203 plus 19 CREATE and 16 DROP reports),
+allowing only propext, Classical.choice and Quot.sound.
+
+The sequential gate completed on 2026-10-24 with exit 0.
+Command: `direnv exec . bash build/agent-logs/fk-ddl-create-drop-gates.sh`.
+It ran `timeout 1200 just dev-build`, then the sandboxed Nix surface expression
+with `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`, timeout 1800 and
+command-local max-jobs=1. The development build passed as a local diagnostic.
+Nix acceptance: 13 passed, 52 deselected, in 15.65 seconds:
+`/nix/store/gxxxsp08l7ncq2hmd1fs9r33ylingvb2-sqlite-verifier-test-surface-1`.
+Independent review follows this commit; no task-end acceptance is claimed.
+
+The CREATE/plain-DROP checkpoint started from the accepted engine unit, while
+statement/run source `a8bf73ae` was on a separate branch. The integrated unit
+below merges those branches and proves the implicit DELETE of enforced DROP.
+The earlier plain-DROP theorem itself does not cover that implicit DELETE.
+A separate ADD COLUMN execution audit is with the coordinator for an owner scope
+decision. No ADD execution definition changed in this unit.
+
+Independent review 20261024T204324Z-135b8338 found zero musts and three shoulds.
+The non-CREATE constructors are now listed explicitly in CreatesObject and its
+frame proof, so a future constructor requires classification. The top status
+clarifies that the accepted DML statement/run unit is on a separate branch.
+This acceptance record omits process coordination and external diagnostic claims;
+the named Nix result establishes acceptance. The integrated unit below reran
+the focused gates with the constructor-only proof correction included.
+
+## Integrated enforced-DROP proof unit
+
+The `fk-enforced-ddl` workspace merges accepted statement checkpoint `a8bf73ae`
+and checked CREATE/plain-DROP source `135b8338`. Four conflicts were resolved in
+the model barrel, Lake manifest, fixture inventory and this status record, retaining
+both branches' formulas and acceptance records. The exhaustive CREATE classification
+and all three review corrections from `20261024T204324Z-135b8338` are carried here
+with their resolution records. The focused Nix gate now covers the merge and
+these corrections together.
+
+
+Three new proof modules separate the implicit DELETE and catalog removal:
+`ForeignKeyDropRows` gives the supplied-mapping NULL-or-retained-parent frame;
+`ForeignKeyDropEngine` applies the actual row/action/trigger invariant before
+catalog removal and retains partial FAIL states; `ForeignKeyDropCatalog` proves
+independent schema transport and the conditional combined law. The combined law
+requires retained parents and selected-link transport. Dropping a referenced
+parent can preserve only row truth through NULL, while schema compatibility fails.
+No execution definition or prediction input changed in this proof unit.
+
+The new `ForeignKeyEnforcedDrop` and `ForeignKeyDropOutcomes` fixtures exercise
+populated SET NULL and CASCADE, an AFTER-trigger FAIL that retains child changes
+while keeping the parent catalog, NO ACTION rejection, rollback restoration and
+separate row/schema outcomes. Their public-law applications use the explicit
+comparison, action, BEFORE-trigger and catalog-frame premises. The existing
+fixtures retain CREATE, plain DROP, DML, run and mapping-transport coverage.
+
+Nix acceptance on 2026-10-24: the sandboxed surface suite with
+`PYTEST_ADDOPTS="-k independent_foreign_key_atoms"` passed 18 fixtures, with 52
+other tests deselected, in 20.10 seconds. Its output is
+`/nix/store/s5r4vk09sydz5wk93ypa0dzl8g9fwcr6-sqlite-verifier-test-surface-1`.
+The fixture driver checks 293 axiom reports and permits only `propext`,
+`Classical.choice` and `Quot.sound`. Each fixture has a 90-second subprocess
+bound; the Nix invocation has an 1800-second bound. The required development
+build was completed before the Nix check, but is not acceptance evidence.
+
+Independent review `20261025T001914Z-dd60f94c` checked this coherent source and
+its merge resolutions after reviewer access was restored. It found zero musts
+and two shoulds about stale status text; both descriptions are corrected here.
+No production source changed after the Nix gate. The source is frozen at this boundary.
+The three shoulds from review `20261024T204324Z-135b8338` are recorded as fixed.
+The task remains OPEN: ADD COLUMN and the complete DDL/run contract, final matrix,
+part-2 full/verdict acceptance and task-end checks still remain.
+
+## ADD COLUMN default decision merged
+
+2026-10-25: the reviewed spec commit `cc10366a` (task, status and ADR 0022 text for
+the ADD COLUMN REFERENCES default contract) is merged into this line by a new merge
+commit, not a rebase. Conflicts in the ADR, this task and this status were resolved
+by keeping both sides' text. Three planning-only files (prediction-source-filter
+task/status and query-sources status) keep this line's later DONE or part-1 state,
+because the planning line carried older versions. No source changed in the merge.
+
+## Planning-line records carried by the cc10366a merge
+
+These entries come from the planning line that held the ADD COLUMN decision. They
+record the original assignment history; the sections above are the current record.
+
+- 2026-10-24: follow-up review `20261024T122324Z-cf7aa9a6` had no findings.
+  Assigned part 1 to agent `foreign_key_atoms` in workspace `fk-atoms`, based on
+  `cf7aa9a6`. S4 confirmed the FK files and surface database export are disjoint
+  from its remaining part 1. Model barrels remain reserved to S4 until a clean
+  boundary. Heavy builds are coordinated with S4 and the build-boundary task.
+- 2026-10-24: the owner accepted the mapped-NULL engine correction after native
+  evidence showed the old helper accepted `(99,NULL)` for the repeated `(a,a)`
+  parent key and omitted its pragma violation. The revised task corrects the
+  shared helper first, updates default mappings/proofs, and requires native
+  regressions. Selected child columns determine NULL exemption; missing or
+  mismatched targets retain the declaration-column fallback. The working API
+  split is preserved in `sqlite-verifier-fk-atoms`. Agent `text_build_boundaries`
+  has resumed it and adapted the helper, mapping proofs and native cases;
+  model/Nix checks remain. Native-only replay is diagnostic, not acceptance.
+- 2026-10-24: pinned native replay found an enforced parent replacement that
+  leaves an orphan because child-scan and parent-lookup affinities differ.
+  Added the necessity example and explicit comparison-consistency premise to
+  the existing conditional preservation contract. This is within the accepted
+  schema/mapping/effect conditions, not another engine change or an assumed
+  final atom. The owner was informed; part 1 and independent work continue.
+- The accepted action scope is carried at `1a10a3c8`, with clean follow-up
+  review `20261024T152329Z-01a02bef`. Resolution and execution share the selected
+  child projection. Trigger preparation reads assigned columns; generated
+  dependencies feed FK constraint checks. The Nix native gate passed all 35
+  differential/kernel cases at
+  `/nix/store/mhvsqdz6wnx66s0rr80a12yp5xam6hif-sqlite-verifier-test-model-1`.
+  Surface/mutant Nix gates and part-1 full/verdict remain open. Part 2's global
+  counter invariant and statement/run preservation are still implementation work.
+
+## ADD COLUMN execution correction (part 2, unit 1)
+
+2026-10-25. Native SQLite 3.51.0 refuses `ALTER TABLE ... ADD COLUMN` of a
+`REFERENCES` column with a non-NULL default when foreign keys are on and the table has
+rows, even when the parent row exists. The model did not refuse it. This unit adds the
+refusal; the preservation laws for ADD COLUMN are the next unit.
+
+- Resolution marks the statement: `Resolved.Statement.addColumn` has a third field
+  `refusesPopulated`, true when enforcement is on, the column has a foreign key and its
+  written default (the last DEFAULT) is not a literal NULL (`literalNullDefault`).
+- `step` checks it first, before the NOT NULL, CHECK and clock-default checks, and gives the
+  new `ExecutionError.referenceColumnDefault` (primary code 1, database unchanged). An
+  empty table, enforcement off and a NULL or absent default are accepted as before.
+  The same error is added to messages, output names, failing constraints, the conformance
+  case reader and the `DbDiagnostics` reader.
+- Laws that mention ADD COLUMN take the new field. The refused branch keeps the database, so
+  keys-unique, row-local, extension and run-step laws gain one trivial case.
+- Finding: native accepts a bare `DEFAULT +NULL` as a NULL default. It refuses `-NULL`,
+  `(+NULL)` and `(1)`. The model leaves `+NULL`, `-NULL` and parenthesized defaults
+  unsupported, so `literalNullDefault` is equal to the native rule but the unsupported forms
+  never reach it. The ADR and task text say this.
+- Tests: `tests/add_column_references_test.py` compares the model with native for the
+  default, empty-table, NULL, last-default, enforcement-off, error-precedence and
+  unchanged-state controls, and checks that the unsupported forms are outside the model.
+  `tests/surface/DbBangChecks.lean` checks the message.
+- Mutants: `conformance/add_reference_mutants.py` (5 mutants, all killed), authored cases in
+  `conformance/authored_add_references.py`.
+- Predictions: all 53 prediction files are identical before and after (0 differences). The
+  corpus v54 judge change must add the native regression cases for ADD COLUMN REFERENCES
+  defaults; this line does not edit judge, corpus or lock files.
+- Nix results (focused groups):
+  - model `add_column_references or add_column_defaults or foreign_key_atom_execution`:
+    43 passed, `/nix/store/0v8fyn3nf94plfx1vjbdx1xdkqzna50q-sqlite-verifier-test-model-1`.
+  - surface `db_bang_messages or independent_foreign_key_atoms`: 19 passed,
+    `/nix/store/j9qrv7kfy0xamakgqqxk5jal4cia2mdj-sqlite-verifier-test-surface-1`.
+  - mutants `add_reference or foreign_key`: 2 passed,
+    `/nix/store/0gp4p5q78rgz7h05w7mziqwqzxvbzfn8-sqlite-verifier-test-mutants-1`.
+- Review `20261025T063516Z-43e19791` found four musts (R5 catch-all patterns, R2 plain-words
+  statements without the refusal flag, R12 file length, R19 stale status summary). The refactor
+  commit fixes all four: `literalNullDefault` lists every constraint constructor, the ADD COLUMN
+  laws say that they hold for either value of the flag, `Execution.lean` is 199 lines, and the
+  summary above is corrected. The first Nix run of the refactor failed: replacing the final
+  `match` of `literalNullDefault` with `==` on `Syntax.Expr` stopped `decide` in the authored
+  cases from reducing (a `sorryAx` axiom report). The refactor keeps the pattern match there.
+  Nix results of the refactor (same focused groups): model 43 passed,
+  `/nix/store/5daqjw19jahx1l6h5qgvgfwlal1qnm3a-sqlite-verifier-test-model-1`; surface 19 passed,
+  `/nix/store/jdb7jnqy243n75d6m9q3gk76ywwnwh2v-sqlite-verifier-test-surface-1`; mutants 2 passed,
+  `/nix/store/fcbqflf4kaivva1wwj36visiy6m9j92z-sqlite-verifier-test-mutants-1`.
+- Review `20261025T070529Z-b520f373` of that refactor found one must (R5): the final `match` of
+  `literalNullDefault` still ended in `some _`. The second refactor lists every `Syntax.Expr`
+  constructor, with the helper `isNullKeyword` for the operand of the unary plus, so a new
+  expression form needs a decision. The mutant `add_reference_null_refused` changes the new text.
+  Nix results (the same focused groups; the working tree also held the unit 2 files. The surface
+  group ran the unit 2 fixture `ForeignKeyAddColumn.lean` as well, the model and mutants groups
+  do not exercise them): model 43 passed,
+  `/nix/store/fibp443s8gb65g2gd6yq28fayxlgqsj7-sqlite-verifier-test-model-1`; surface 20 passed,
+  `/nix/store/x3ffc4dg3x15ab5sjs2b38z5nc4jhap1-sqlite-verifier-test-surface-1`; mutants 2 passed,
+  `/nix/store/7z3if3ip2c7laf40mdlnlvahgjq78502-sqlite-verifier-test-mutants-1`.
+- Remaining in part 2: ADD COLUMN preservation laws and fixtures, the unified DDL run contract,
+  RESTRICT / SET DEFAULT / deferred coverage with the final matrix, then part-2 full and verdict.
+
+## ADD COLUMN preservation laws (part 2, unit 2)
+
+2026-10-25. Both atoms now have laws for the resolved ADD COLUMN statement, with the refusal of
+unit 1. New files in `packages/belay-sqlite-model/Belay/Sqlite/Model/`, each below 200 lines:
+
+- `CatalogAddColumnSearch`: the table search and parent indexes of a catalog after
+  `Catalog.addColumn`.
+- `ForeignKeyAddColumnLink`: a link reads only the cells below the old width, so appending the
+  new cell, or adding a column to the parent, changes no comparison
+  (`ForeignKeyLink.satisfied_append`, `ForeignKeyLink.satisfied_addColumn`).
+- `ForeignKeyAddColumnSelection` and `ForeignKeyAddColumnPairs`: a foreign key that selects its
+  parent key selects it again after the column is added, when the selection reads only columns
+  below the old width (`CatalogTable.SelectionBelow`, `Catalog.parentLink_addColumn`).
+- `ForeignKeyAddColumnReads` and `ForeignKeyAddColumnValid`: the reads of the selected mapping
+  from wide rows, declarations below the width and `SelectionBelowAt`; the last follows from an
+  admitted database (`Database.selectionBelowAt_of_admitted`).
+- `ForeignKeyAddColumnDatabase`: the laws on a database for an arbitrary pair of mappings
+  (`Database.RowReferencesHold.addColumn`, `Database.ParentSchemasCompatible.addColumn`).
+- `ForeignKeyAddColumn`: the statement laws `runStatement_addColumn_rowReferences`,
+  `runStatement_addColumn_parentSchemasCompatible` and the combined
+  `runStatement_addColumn_foreignKeyAtoms`, with `runStatement_addColumn_cases` (the statement
+  keeps the database, or adds one `AddedCell`; a refusing statement on a table with rows keeps it).
+
+Premises of the combined law, none of which states the final atom: wide rows
+(`Database.RowsWideAt`), declarations below the width (`Database.DeclarationsBelowAt`), selection
+below the width (`Database.SelectionBelowAt`), a located parent for each declaration of the column,
+and, for each added cell of a statement that does not refuse a populated table, that each
+declaration of the column is satisfied by each old row with the cell appended. A column without
+`REFERENCES`, an empty table, a refusing statement on a populated table and a NULL cell meet the
+last item. The primitives take the explicit selection and read premises, so the combined law is
+sugar over them.
+
+Fixture `tests/surface/ForeignKeyAddColumn.lean` (41 axiom reports, none non-standard): a plain
+column and a reference without default keep both atoms on a populated child; a default 99 with no
+parent row 99 succeeds without the refusal and breaks the row atom, the refusing statement
+fails and keeps the input, and on an empty child table the refusing statement succeeds and keeps
+both atoms.
+
+Nix results (focused groups), run on the tree that held this unit together with the second
+refactor of unit 1: model 43 passed,
+`/nix/store/fibp443s8gb65g2gd6yq28fayxlgqsj7-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 20 passed (includes the new fixture),
+`/nix/store/x3ffc4dg3x15ab5sjs2b38z5nc4jhap1-sqlite-verifier-test-surface-1`; mutants 2 passed,
+`/nix/store/7z3if3ip2c7laf40mdlnlvahgjq78502-sqlite-verifier-test-mutants-1`.
+The unit changes only theorems, so it cannot change a prediction.
+Review `20261025T072343Z-21967ea0` of the second refactor: 0 musts, 1 should (R19, the status
+text on the surface group), fixed in this commit.
+
+
+## Run contracts of the schema statements (part 2, unit 3)
+
+2026-10-25. The run contracts of the selected mapping now cover CREATE, ADD COLUMN and DROP.
+The mapping `Catalog.foreignKeyMapping` of a catalog reads the parent link of that catalog, so it
+follows a statement that changes the catalog. A fixed mapping cannot describe the database after
+such a statement; it stays only for the statements that keep the catalog
+(`Resolved.Statement.KeepsParentSchema`).
+
+New files in `packages/belay-sqlite-model/Belay/Sqlite/Model/`, each below 200 lines (the barrel
+`Model.lean` and the lakefile list them):
+
+- `ForeignKeyDdlConditions`: the conditions, each a fact about catalogs or about the database and
+  the rules of the statement, never the atoms after the statement: `Catalog.CreateKeepsSelection`,
+  `Catalog.CreateLocatesNewKeys`, `Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`,
+  `Catalog.AddColumnKeepsSelection`, `Catalog.AddColumnLocatesNewKeys`,
+  `Database.AddColumnRowsCondition` and `Database.EnforcedDropFrames`.
+- `ForeignKeyDdlSelected`: the selected-mapping statement laws for CREATE, ADD COLUMN and DROP, plain
+  and enforced (`runStatement_create_rowReferencesSelected` and its five neighbors).
+- `ForeignKeySelectedStatement`: `Resolved.Statement.ForeignKeyAtomsCondition`,
+  `runStatement_parentSchemasCompatibleSelected` and `runStatement_foreignKeyAtomsSelected` for
+  every statement form.
+- `ForeignKeySelectedRuns`: the run laws `runSqlFrom_`, `runSql_` and `runScriptFrom_` of
+  `parentSchemasCompatibleSelected` and `foreignKeyAtomsSelected`.
+
+Changed: `ForeignKeyStatement` (the row condition `Resolved.Statement.ForeignKeyRowsCondition` has
+the schema arms and `runStatement_rowReferences` proves them; the lemma
+`ForeignKeyRowsCondition.keepsParentSchema` is deleted) and `ForeignKeyRuns` (the supplied-mapping
+atoms laws take `statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition`; their docstrings
+point to the selected-mapping laws). The primitive laws for the catalog-changing statements are
+unchanged; the new laws are sugar over them.
+
+Fixtures: `tests/surface/ForeignKeyDdlRuns.lean` (19 axiom reports) runs a CREATE TABLE, an ADD
+COLUMN without constraints and a refused ADD COLUMN through `runSql_foreignKeyAtomsSelected`, and
+shows for the conditions a statement outside it: a forward reference breaks schema compatibility
+and the default 99 without the refusal breaks row truth. `tests/surface/ForeignKeyDdlDropRuns.lean`
+(27 reports, none non-standard) runs a DROP of the child through the same law, shows that the DROP
+of the parent leaves the child rows without a parent, and lists every theorem of the new
+contracts.
+`ForeignKeyStatement`, `ForeignKeyRuns` and `ForeignKeyStatementAxioms` (now 14 reports) use the
+new condition shape.
+
+Nix results (focused groups), on the tree of this unit: model
+`add_column_references or add_column_defaults or foreign_key_atom_execution` 43 passed,
+`/nix/store/wwb87i0zg36nlpy6hz1qyp0dy5rgjqyc-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 21 passed (includes the 20 registered
+fixtures), `/nix/store/c3znp8c4shhkpfh3rgbg9r6hcgwpjvxm-sqlite-verifier-test-surface-1`. No mutant
+text changes: no mutant targets these proof files. The unit changes only theorems, so it cannot
+change a prediction.
+Review `20261025T072815Z-442c93d8` of the refactor answering review `20261025T072539Z-d6a6feb4`:
+no findings. That review had one must (R3, proof sketch of `getD_append_below`) and one should
+(R19, the opening summaries); both are fixed in `442c93d8`.
+
+Fixture split and review of unit 3 (`2eb055ee`): review `20261025T074024Z-2eb055ee` had one must
+(R2, the plain-words statement of the `newKeys` field of `Database.AddColumnRowsCondition`) and three
+shoulds (R5 explicit `Outcome` cases in the fixture, R12 the fixture was 262 lines, R19 the opening
+summaries). All four are fixed in `46b7db1e`; the fixture is now `ForeignKeyDdlRuns.lean` (199 lines) and
+`ForeignKeyDdlDropRuns.lean` (109 lines).
+
+## Statement matrix and action coverage (part 2, unit 4)
+
+2026-10-25. ADR 0022 now records the atom-by-statement matrix (after the part 1 record): for each
+statement family, what the row law alone needs, what the combined law needs, and the fixture
+theorem that shows a statement outside the condition. New fixtures in `tests/surface/`, all with
+standard axioms only:
+
+- `ForeignKeyActionRuns.lean` (8 reports): RESTRICT against NO ACTION with an AFTER DELETE trigger
+  that puts the parent row back (NO ACTION succeeds, RESTRICT fails with code 19 and keeps the
+  input); RESTRICT with foreign keys off (the delete runs and only the row atom fails); SET DEFAULT
+  on DELETE and on UPDATE of the parent (the child gets the default 0) and SET DEFAULT whose default
+  has no parent (fails, keeps the input); a DEFERRABLE INITIALLY DEFERRED key with foreign keys on
+  (the write is a resolver restriction, the run stops, the database is the input) and off (the
+  orphan is stored, only the row atom fails). Every database after a run is checked for both atoms.
+- `ForeignKeyDdlNecessity.lean` (6 reports): a unique index over `p(a,a)` on a parent without a key
+  changes the selected child projection of the declaration `FOREIGN KEY(x,y) REFERENCES p(a,b)`
+  from the declared columns to `x` twice, so the child row `(99,NULL)` becomes an orphan: the
+  statement succeeds and the row atom fails, and the appended object does not meet
+  `Catalog.CreateKeepsSelection`. An index over `p(a,b)` keeps the row atom. An ADD COLUMN that
+  references an absent table succeeds and breaks only the schema atom
+  (`Catalog.AddColumnLocatesNewKeys`).
+
+Review `20261025T075218Z-46b7db1e` of the refactor `46b7db1e` had one must (R19: the opening
+summaries claimed the matrix before it existed). It is fixed in the status-only commit `460d7fe3`, which
+marks the matrix as pending; this unit makes the summaries true again.
+
+Native comparison (SQLite 3.51.0, probes retained in the FK workspace as
+`build/agent-logs/unit4-native.txt`): NO ACTION with the repairing trigger keeps one parent row and
+reports no violation; RESTRICT fails with `FOREIGN KEY constraint failed (19)`; with foreign keys off
+the delete runs and `foreign_key_check` reports the child; SET DEFAULT on DELETE and UPDATE gives
+child 0 and no violation; SET DEFAULT without a parent for the default fails with code 19; a
+deferred orphan insert fails natively at the commit, and the model stops the run at a resolver
+restriction (the "retain the current result" rule of the task: no law claims that outcome); the
+`(99,NULL)` child is reported only after the index over `p(a,a)`, and the ALTER TABLE of a column that
+references an absent table succeeds and the next write with foreign keys on fails with
+`no such table: main.missing`. The corpus cases for these probes belong to the separate judge
+change (see the open items of the final report).
+
+Findings of the matrix work: a CREATE INDEX over repeated parent columns can break the row atom
+while the statement is accepted, so `Catalog.CreateKeepsSelection` is needed for the row law and not
+only convenient; the combined law derives it from the schema atom. Conditions without a run
+witness: the width, declaration and selection fields of `Database.AddColumnRowsCondition` describe
+admitted databases and the first and the last follow from admission, so no admitted database
+breaks them; `CreateKeepsSelection` has a witness for an index but none for a table or a trigger,
+which append after every old object.
+
+Nix results (focused groups), on the tree that held the refactor `46b7db1e` and this unit: model
+`add_column_references or add_column_defaults or foreign_key_atom_execution` 43 passed,
+`/nix/store/l42q22crvjkvhmr5lfff353f30a08apr-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 24 passed (23 registered fixtures and the
+`db!` messages), `/nix/store/vbgzwahvw612ahhdvbdn9m9w55kydpvz-sqlite-verifier-test-surface-1`.
+The unit changes no Lean package text, so it cannot change a prediction.
+
+Review `20261025T075538Z-778b5bf2` of unit 4 (`778b5bf2`) had two musts and one should, all R19
+on the matrix: the plain-write row must exclude writes with trigger programs and foreign keys off
+(their rules have `keys = false` and no law covers them), the DROP rows are classified by the
+presence of rules and not by the foreign-key setting (DROP INDEX has no rules), and the native
+agreement claim excludes the deferred key. All three are fixed in the refactor that follows the
+unit.
+
+## Part-2 acceptance
+
+2026-10-25. After the review of unit 4 and its refactor (`b6aced3e`, no findings), `just test-full`
+failed twice on checks that Unit 1 had left stale, because the unit-1 gate selected tests by name:
+`tests/admitted_atoms_resolver_facts_test.py` and `tests/column_default_resolution_test.py` still
+called `resolveAddColumn` and its laws with the old signatures (the enforcement flag, and the
+refusal flag in the result). Commits `587bb8f0` and `17664660` update both (reviews
+`20261025T082325Z-587bb8f0` and `20261025T084338Z-17664660`: no findings). The first failed run kept
+`build/agent-logs/p2-first/p2-test-full.log` and the second `build/agent-logs/p2-second/`.
+
+Final Nix results on the tree after `17664660`:
+
+- `just test-full` exit 0: source 473 passed (70 deselected, 49 subtests), model 245 passed,
+  and the groups of 23, 3, 75 and 117 passed; reports
+  `/nix/store/gqgn1gwcc93y6cfpishbbp9zcjvy3xxq-sqlite-verifier-test-reports`. The log is
+  `build/agent-logs/p2-test-full.log`.
+- `just verdict` exit 0: `/nix/store/m7kkwp8cbbnyl2vcpqvxk2iwcldh8i3a-sqlite-verifier-verdict`.
+- Frozen predictions `/nix/store/aksmzw42waxr53g21m6h8nz16hnp3r26-sqlite-verifier-predictions`
+  against the baseline `build/predictions-baseline`
+  (`/nix/store/a54s3ncjxq74zzj0hb3qrc3k9mahlx5b-sqlite-verifier-predictions`, taken before the part-2
+  model edits): 53 files, 0 differences (`diff -r`). The only execution change of
+  part 2, the refusal of a REFERENCES column with a non-NULL default on a populated table, changes
+  no frozen prediction, because no frozen case has that statement.
+
+Open for the judge change (corpus v54, not edited here): native regression cases for ADD COLUMN
+REFERENCES defaults (omitted, `NULL`, `+NULL`, `(NULL)`, `(+NULL)`, `-NULL`, a cast NULL, numbers,
+CURRENT_TIMESTAMP, empty and populated tables, enforcement on and off), mapped-NULL and mapped
+actions, and the probes of unit 4 (RESTRICT against NO ACTION, SET DEFAULT, the repeated-column
+index, ADD COLUMN to an absent table), with their claims and the new lock.
+
+Whole-task checks on the same tree (2026-10-25): `just test-nix` exit 0, 70 passed (1477 deselected),
+log `build/agent-logs/wt-test-nix.log`; `just test-scheduled-checks` exit 0, 47 passed in the last
+suite listed in `build/agent-logs/wt-scheduled-checks.log`, reports
+`/nix/store/3477i9gzhsp4nqiihpmgj5llzh3hzsx9-sqlite-verifier-scheduled-check-reports`.
+The task stays OPEN only for the separate judge change with the corpus-v54 evidence.
+
+## Follow-up A: spellings of a NULL default for a NOT NULL ADD COLUMN (2026-10-25)
+
+The coordinator asked to make the model agree with native SQLite on `NOT NULL` columns with `-NULL`,
+`+NULL` and a cast of NULL. The probes of SQLite 3.51.0
+(`build/agent-logs/nulldefault-native.txt`, `nulldefault-native2.txt`, `nulldefault-native3.txt`)
+show the native rule, and the model needs no change:
+
+- Native refuses a populated table ("Cannot add a NOT NULL column with default value NULL") for the
+  literal spellings `NULL`, `(NULL)`, `((NULL))`, `NULL COLLATE nocase` (the COLLATE is a separate
+  column constraint) and the bare `+NULL`, `+ NULL` (the grammar drops a plus before a bare term).
+- Native adds the column and stores NULL in the existing rows for the expressions `-NULL`, `- NULL`,
+  `(+NULL)`, `(-NULL)`, `(+(NULL))` and `(CAST(NULL AS INT))`. It reports "Cannot add a column with
+  non-constant default" for `(NULL COLLATE nocase)`, `(NULL+0)` and similar expressions. An empty
+  table accepts every spelling. `DEFAULT CAST(NULL AS INT)` without parentheses is a syntax error.
+- The model never reports `nullColumnDefault` for the signed or cast spellings of NULL. The
+  translation maps a bare term, `+term`, `-term` and `?` after DEFAULT, and no other parenthesized
+  default (`Translation/Columns.lean`). `literalDefault` gives the value NULL only for `.null`, and
+  `.positive .null` and `.negate .null` are the model restriction `unmodeledDefault`. The
+  parenthesized spellings of NULL are not translated. The earlier note in this file's open problems, that the
+  model gives `nullColumnDefault` for `-NULL`, was wrong: `-NULL` is outside the model, as the
+  task file says.
+- Supporting the bare `+NULL` would give a correct answer for the translated SQL text, but the syntax
+  tree cannot tell it from `(+NULL)`, where native adds the column. The model keeps both outside its
+  scope, which is the state that the task file and ADR 0022 describe.
+
+The new test `tests/add_column_not_null_default_test.py` records the seven spellings natively on an
+empty and a populated table and checks the refusal, the model verdict (AGREE with a kernel proof
+for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
+`tests/nix_suites.json`. Its Nix validation is pending: the Nix results above concern the tree
+before this follow-up, and the final Nix results of the follow-up are recorded in the last section.
+
+## Integration above the views PR (2026-10-25)
+
+The merge `integrate: foreign-key DDL part 2 above views` joins the foreign-key line (`7259329c`) with the head of PR #255, `tasks/query-sources-views` (`6a0bc6be`). Neither line was rebased.
+
+Conflicts and how they were resolved:
+
+- Plans of other tasks (14 files): the foreign-key side held older copies of files that their task lines keep editing. The views side was taken whole.
+- `docs/adr-0017-user-surface.md`: three-way merge against `9350aa31`. It keeps the foreign-key side's S6 trigger and foreign-key premise bullet, the S7 metadata clarification and the task allocation. It also keeps the views side's completion updates (S4, the execution task). The paragraph on S6 tasks is combined and now says the execution task is done.
+- `packages/belay-sqlite-model/lakefile.toml`: the `globs` line was merged three-way. The new module `ForeignKeyCreateView` was added.
+- `tests/conformance_query_mutants_test.py`: the views line split the file. Take its version. `test_every_add_reference_mutant_changes_a_verdict` and its imports now live in `tests/conformance_query_feature_mutants_test.py`.
+- Lean sources: both sides edited the statement sums. Each sum now has the trigger position of the foreign-key line and the `addColumn target column refuses` arm of the foreign-key line, plus the `createView` arm of the views line (`AdmittedDistinctStatement`, `AdmittedTableAtomStatement`, `AtomsConditionsOfLink`, `StatementOutput`, `ValidAtomsStatement`, `Resolution/AddColumn`, `Resolution/DefinitionSpec`, `Execution`).
+- `tests/nix_suites.json`, `build-support/tests.nix`: no textual conflict. Both suites are present.
+
+What the views line changes for the foreign-key proofs:
+
+- `Catalog.parentLink` returns `.mismatch position` for a foreign key that names a view. Before, it returned `.missing`.
+- `CREATE VIEW` therefore keeps the generic `Catalog.CreateKeepsSelection` condition for the row laws. A view that takes the name of a missing parent changes the link from missing to mismatch. New lemma file `ForeignKeyCreateView.lean` proves that a view keeps the selection when no table declaration names it (`Catalog.createKeepsSelection_view`).
+- The both-atoms law needs no condition for `CREATE VIEW`: the schema atom already makes every selected parent a located table.
+- `DROP VIEW` resolves to `.drop positions` without rules. The existing `DropKeepsSelection` and `DropKeepsParents` conditions apply. A kept declaration naming a dropped view goes from mismatch to missing, so it is refused (fixture `droppedViewNotKept`).
+- Writes and ADD COLUMN on a view are prepare errors. `CREATE VIEW` and `DROP VIEW` are the only view statements that change the catalog.
+- `findView_addColumn` (new, `CatalogAddColumnSearch`) shows that ADD COLUMN keeps view lookups. `parentLink_addColumn` uses it.
+- The new matrix row CREATE VIEW and the extended DROP row are in `docs/adr-0022-database-validity.md`.
+- Fixture `tests/surface/ForeignKeyDdlViews.lean` (8 axiom reports) shows the view cases. `tests/surface_foreign_key_atoms_test.py` lists it.
+
+Two older fixtures needed a change after the merge. `ForeignKeyCreate.lean` lacked the `createView` case in its `create` match. `ForeignKeyEngine.lean` named a theorem `preserves`, which the views line made a keyword (`MigrationPatternSyntax`). The theorem is now `rowReferencesPreserved`.
+
+Local evidence only so far (not evidence for the record): `just dev-build` and the `belay` and `verifier-conformance` builds pass; all 24 foreign-key fixtures run with no errors. Nix results follow in later sections.
+
+### Nix results of the integration merge `53c76a6a` (2026-10-25)
+
+Review: two rounds on the merge (`reviews/20261025T120038Z-c0b53f10`, `reviews/20261025T120418Z-234b73a6`). The first round had one must (ADR 0017 was taken whole from the views side and lost accepted clarifications) and one should (module text said three CREATE forms). Both are fixed inside the merge, which was not pushed. The second round has no must; its one should (status wording) is fixed.
+
+Nix gates on the tree of `53c76a6a` (the following status-only commit changes no source):
+
+- `just test-full`: pass, `/nix/store/mzgmxhk09fzg4x623wnz03r1zw7nv1py-sqlite-verifier-test-reports`. The first run stopped at the 1500 s `suite_build_limit` (exit 124, no test failure, log `build/agent-logs/int-test-full-timeout1.log`); the cold rebuild of the merged model and a busy host were the cause. The limit was not changed. The rerun reused the finished derivations.
+- `just verdict`: pass, `/nix/store/b2sqcc93lswl0cf60l3d2kvw869v9jjn-sqlite-verifier-verdict`. Every corpus up to v52 is unchanged (AGREE or MODEL_UNSUPPORTED counts as before).
+- Predictions: `/nix/store/7s4byx2yc1kxrc8km2lcrknw8f2bl2vr-sqlite-verifier-predictions`. Compared with `/nix/store/bi8dvn7zxjwgrcn0mggw7zy5jpq8ay3m-sqlite-verifier-predictions` (the views integration predictions, 53 files): no record changed (`diff -r` identical). The own predictions path of the #255 head is not recorded; the baseline is the nearest recorded one.
+- `just test-nix` and `just test-scheduled-checks` are not run for this merge; the coordinator runs them on the judge merge.

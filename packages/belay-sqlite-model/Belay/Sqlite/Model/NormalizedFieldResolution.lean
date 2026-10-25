@@ -21,15 +21,16 @@ def textColumn (name : Identifier) (strict : Bool) : CatalogColumn :=
 
 /-- A plain TEXT addition to a present table either gives a prepare error or
 adds precisely the declared column at that table's position. A model restriction
-cannot satisfy the successful-resolution premise. Proof sketch: reduce the
+cannot satisfy the successful-resolution premise. The column has no {lit}`REFERENCES`, so the
+statement does not refuse a populated table, whatever {lit}`enforced` is. Proof sketch: reduce the
 empty constraint list, then split the remaining name and width checks. -/
-theorem addColumn_resolution_cases {context : ResolveContext} {catalog : Catalog}
+theorem addColumn_resolution_cases {context : ResolveContext} {enforced : Bool} {catalog : Catalog}
     {tableName name : Identifier} {position : Nat} {table : CatalogTable}
     {resolved : Resolved.Statement} {next : Catalog}
     (found : catalog.findTable tableName = some (position, table))
-    (ok : resolveAddColumn context catalog tableName (textDefinition name) = .ok (resolved, next)) :
+    (ok : resolveAddColumn context catalog enforced tableName (textDefinition name) = .ok (resolved, next)) :
     (∃ error, resolved = .prepareError error ∧ next = catalog) ∨
-      (resolved = .addColumn position (textColumn name table.strict) ∧
+      (resolved = .addColumn position (textColumn name table.strict) false ∧
         next = catalog.addColumn position (textColumn name table.strict)) := by
   have metadata : addedColumn table.strict (textDefinition name) = some (textColumn name table.strict) := by
     cases table.strict <;> rfl
@@ -46,7 +47,7 @@ theorem addColumn_resolution_cases {context : ResolveContext} {catalog : Catalog
   repeat' split at ok
   all_goals first
     | (cases ok; exact .inl ⟨_, rfl, rfl⟩)
-    | (cases ok; exact .inr ⟨rfl, rfl⟩)
+    | (cases ok; exact .inr ⟨by simp [textColumn], rfl⟩)
     | cases ok
 
 /-- Appending columns keeps every already resolved column position. The first

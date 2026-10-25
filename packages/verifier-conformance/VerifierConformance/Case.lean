@@ -77,7 +77,8 @@ def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
   | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
   | some (_, .constraintViolation) | some (_, .constraintFail) | some (_, .constraintRollback)
   | some (_, .integerOverflow) | some (_, .datatypeMismatch) | some (_, .functionError)
-  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault) =>
+  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault)
+  | some (_, .referenceColumnDefault) =>
     some .step
 
 /-- Compare the visible and committed databases, each with its own catalog, the

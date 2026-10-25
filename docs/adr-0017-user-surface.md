@@ -156,11 +156,12 @@ foundations prototype:
 
 The [initial/current query task](../plans/20261024-s6-before-context.task.md)
 specifies the fixed `before` observation through the existing model. The
-[execution task](../plans/20261024-s6-execution-contracts.task.md) supplies the
-production branch/WP/equivalence contracts, and the
-[assertion task](../plans/20261024-s6-assertions.task.md) supplies fresh-run
-notation and proof rules. The foundations task is a completed prototype;
-these production tasks remain open.
+[execution task](../plans/20261024-s6-execution-contracts.task.md) supplied the
+production branch/WP/equivalence contracts and is done (2026-10-25); its work does
+not complete the later public assertion, migration-pattern or automation
+interfaces. The [assertion task](../plans/20261024-s6-assertions.task.md) supplies
+fresh-run notation and proof rules. The foundations task is a completed
+prototype; the query and assertion tasks remain open.
 
 ### D2. S1: SQL text in Lean, measured before it is built
 

@@ -66,8 +66,11 @@ inductive Statement where
   /-- Create the named trigger at the catalog position, which is the end of the catalog
   (ADR 0018, D5). -/
   | createTrigger (position : Nat) (name : Identifier) (trigger : CatalogTrigger)
-  /-- Append the column to the table at the catalog position. -/
-  | addColumn (table : Nat) (column : CatalogColumn)
+  /-- Append the column to the table at the catalog position. With {lit}`refusesPopulated`,
+  which resolution sets when foreign keys are on and the column has a {lit}`REFERENCES`
+  constraint whose written default is not a literal NULL, a table with rows is refused with
+  {lit}`ExecutionError.referenceColumnDefault` (SQLite's {lit}`sqlite3AlterFinishAddColumn`). -/
+  | addColumn (table : Nat) (column : CatalogColumn) (refusesPopulated : Bool := false)
   /-- Remove the catalog objects at the positions, with their rows ({lit}`Catalog.drop`):
   DROP TABLE removes its table and the indexes on it, DROP INDEX one index, and a DROP
   with {lit}`IF EXISTS` of a missing object none. With {lit}`rules`, DROP TABLE of a table

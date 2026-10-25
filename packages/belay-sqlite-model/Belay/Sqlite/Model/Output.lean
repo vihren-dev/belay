@@ -88,7 +88,8 @@ def Output.ofStep (clock : Int) (parameters : List Value) (statement : Resolved.
   | some failure@(.prepare _) | some failure@.transactionAlreadyActive | some failure@.noActiveTransaction
   | some failure@.constraintViolation | some failure@.constraintFail | some failure@.constraintRollback
   | some failure@.integerOverflow | some failure@.datatypeMismatch | some failure@.functionError
-  | some failure@.nullColumnDefault | some failure@.nonConstantColumnDefault | some failure@.checkColumnDefault =>
+  | some failure@.nullColumnDefault | some failure@.nonConstantColumnDefault | some failure@.checkColumnDefault
+  | some failure@.referenceColumnDefault =>
     .error failure.primaryCode
   | none => match statement with
     | .query .. => match possibleOutput clock parameters statement before transition with

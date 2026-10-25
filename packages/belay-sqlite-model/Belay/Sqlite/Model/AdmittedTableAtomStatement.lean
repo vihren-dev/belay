@@ -34,12 +34,13 @@ covers every form of {name}`Resolved.Statement`. Proof sketch: a case for each f
 DELETE without rules, use the frame facts of the atom ({name}`runStatement_create_tableAtom`,
 {name}`runStatement_drop_rowLocal`, {name}`runStatement_delete_tableAtom`), a statement without writes keeps the
 database, ADD COLUMN is {name}`runStatement_addColumn_rowLocal`, and a write with rules is a write of the
-row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`). -/
+row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`).
+The ADD COLUMN premise covers either value of the refusal flag. -/
 theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom atom)
     (laws : WriteLaws fun database => database.EachTable atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
     (every : database.EachTable atom)
-    (addColumn : ∀ target column table value, statement = .addColumn target column →
+    (addColumn : ∀ target column refuses table value, statement = .addColumn target column refuses →
       database.table target = some table → AddedCell table column value → atom (table.appendColumns [(column, value)]))
     (writes : ((∃ target rows returning subqueries, statement = .insert target rows returning subqueries none) ∨
       (∃ target assignments filter returning subqueries,
@@ -60,9 +61,9 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
   | createTrigger target name trigger =>
     exact runStatement_create_tableAtom tableAtom clock counters parameters _ every
       (.inr (.inr (.inl ⟨target, name, trigger, rfl⟩)))
-  | addColumn target column =>
-    exact runStatement_addColumn_rowLocal clock counters parameters target column every
-      fun table value found added => addColumn target column table value rfl found added
+  | addColumn target column refuses =>
+    exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every
+      fun table value found added => addColumn target column refuses table value rfl found added
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal clock counters parameters positions every

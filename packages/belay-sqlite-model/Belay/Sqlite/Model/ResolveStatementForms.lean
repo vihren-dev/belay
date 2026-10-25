@@ -21,7 +21,7 @@ namespace Belay.Sqlite.Model
 
 For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
-  | .addColumn _ column => strictDefaultFits column = true
+  | .addColumn _ column _ => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True

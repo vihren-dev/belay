@@ -24,16 +24,17 @@ theorem Database.table_drop_kept (database : Database) (positions : List Nat) {p
   rw [rows]
 
 /-- A drop preserves row references under the supplied transported mapping if every located
-parent read by every declared key is kept. The condition covers mappings supplied by callers,
+parent read by every surviving child's declared key is kept. Removed child tables impose no
+condition. The condition covers mappings supplied by callers,
 even when their targets do not name tables. Supporting indexes may be removed. Proof sketch:
 each remaining child is the old table at its new position, and every mapped parent retains its
 column definitions and rows. The independent row frame then applies. -/
 theorem Database.RowReferencesHold.drop {database : Database} {mapping : ForeignKeyMapping}
     (holds : database.RowReferencesHold mapping) (positions : List Nat) (transported : ForeignKeyMapping)
-    (mappingMoved : ∀ child table, database.table child = some table →
+    (mappingMoved : ∀ child table, database.table child = some table → !positions.contains child →
       ∀ key ∈ table.shape.allForeignKeys,
         transported.parent (keptBelow positions child) key = (mapping.parent child key).transport (keptBelow positions))
-    (parentsKept : ∀ child table, database.table child = some table →
+    (parentsKept : ∀ child table, database.table child = some table → !positions.contains child →
       ∀ key ∈ table.shape.allForeignKeys, ∀ parent comparison,
         mapping.parent child key = .located parent comparison → !positions.contains parent) :
     (database.drop positions).RowReferencesHold transported := by
@@ -42,13 +43,13 @@ theorem Database.RowReferencesHold.drop {database : Database} {mapping : Foreign
   obtain ⟨old, kept, moved, found⟩ := Database.table_drop_cases present
   subst position
   refine ⟨old, table, found, ⟨fun _ member => member, fun _ member => member,
-    mappingMoved old table found, ?_⟩⟩
+    mappingMoved old table found kept, ?_⟩⟩
   intro key declared
   cases selected : mapping.parent old key with
   | missing => trivial
   | mismatch _ => trivial
   | located parent comparison =>
-    have kept := parentsKept old table found key declared parent comparison selected
+    have kept := parentsKept old table found kept key declared parent comparison selected
     constructor
     · exact congrArg (Option.map CatalogTable.columns) (database.catalog.tableAt_drop_kept kept)
     · exact congrArg (fun table => (table.map Table.rows).getD []) (database.table_drop_kept positions kept)

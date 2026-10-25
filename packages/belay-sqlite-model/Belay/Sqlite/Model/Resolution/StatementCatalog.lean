@@ -19,7 +19,7 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .createTable _ name table, catalog => catalog.createTable name table
   | .createIndex _ name index, catalog => catalog.createIndex name index
   | .createTrigger _ name trigger, catalog => catalog.createTrigger name trigger
-  | .addColumn position column, catalog => catalog.addColumn position column
+  | .addColumn position column _, catalog => catalog.addColumn position column
   | .drop positions _, catalog => catalog.drop positions
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
   | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog

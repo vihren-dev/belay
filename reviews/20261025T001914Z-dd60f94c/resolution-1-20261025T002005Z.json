@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T00:20:05+00:00",
+  "finding": "20261025T001914Z-dd60f94c#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Marked the earlier split-branch state as historical and identified the completed merge and enforced DROP unit."
+}

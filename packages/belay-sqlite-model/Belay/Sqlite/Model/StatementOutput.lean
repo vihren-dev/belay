@@ -32,7 +32,7 @@ def ExecutionError.primaryCode : ExecutionError → Nat
   | .constraintViolation | .constraintFail | .constraintRollback => 19
   | .datatypeMismatch => 20
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow | .functionError
-  | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault => 1
+  | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault | .referenceColumnDefault => 1
 
 /-- The {lit}`RETURNING` rows of a write: each {lit}`RETURNING` expression evaluated over
 each written row in the statement's evaluation context, in order. A write without
@@ -54,10 +54,13 @@ a rowid alias mismatch. -/
 def ExecutionError.failsWrite : ExecutionError → Bool
   | .constraintViolation | .constraintFail | .constraintRollback | .datatypeMismatch => true
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
-  | .functionError | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault => false
+  | .functionError | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault
+  | .referenceColumnDefault => false
 
 /-- Output names of ADD COLUMN's empty-table check. SQLite's
-{lit}`sqlite3AlterFinishAddColumn` calls {lit}`sqlite3ErrorIfNotEmpty` for a column with a
+{lit}`sqlite3AlterFinishAddColumn` calls {lit}`sqlite3ErrorIfNotEmpty` first for a statement that
+resolution marked {lit}`refusesPopulated` (checked natively: its name is the one reported, also
+for an empty table, before any later check's name), then for a column with a
 time default ({name}`CatalogColumn.clockDefault`), and for a NOT NULL column without a
 non-NULL default. That helper compiles a SELECT of a RAISE expression (pinned SQLite
 {lit}`alter.c`), whose name is exposed even when the table is empty. Otherwise a column with
@@ -65,8 +68,9 @@ a CHECK constraint, and a column of a {lit}`STRICT` table ({name}`CatalogColumn.
 has the column of SQLite's SELECT over {lit}`pragma_quick_check`, which checks the existing
 rows (ADR 0014, slices 4 and 6; checked natively). Other modeled additions
 have no output columns. -/
-def addColumnOutputNames (column : CatalogColumn) : List String :=
-  if column.clockDefault then ["raise(ABORT,'Cannot add a column with non-constant default')"]
+def addColumnOutputNames (column : CatalogColumn) (refusesPopulated : Bool) : List String :=
+  if refusesPopulated then ["raise(ABORT,'Cannot add a REFERENCES column with non-NULL default value')"]
+  else if column.clockDefault then ["raise(ABORT,'Cannot add a column with non-constant default')"]
   else if column.notNull && (readDefaultValue column).toOption == some .null then
     ["raise(ABORT,'Cannot add a NOT NULL column with default value NULL')"]
   else if !column.checks.isEmpty || column.strictType.isSome then
@@ -165,7 +169,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
     if successful then
       some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some (run.counts.changes.getD 0)⟩
     else if constraintFailure then some ⟨returning.map (·.2), [], some (run.counts.changes.getD 0)⟩ else none
-  | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
+  | .addColumn _ column refuses => some ⟨addColumnOutputNames column refuses, [], none⟩
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting .. =>
     some ⟨[], [], none⟩
 

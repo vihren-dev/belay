@@ -98,7 +98,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
     { effect := queryEffect database ran,
       ready := Resolved.subqueriesPlain (query.nestedSubqueries subqueries) && ran.all fun (source, run) => source.fault != .may && run.fault != .may }
   | .createTable .. => { effect := step clock counters parameters statement database, ready := true }
-  | .addColumn _ column =>
+  | .addColumn _ column _ =>
     { effect := step clock counters parameters statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
   | .drop positions rules =>

@@ -34,7 +34,7 @@ before it (owner decision of 2026-10-23 in the keys-unique status file):
 def Resolved.Statement.RunCondition (database : Database) : Resolved.Statement → Prop
   | .createIndex _ _ index =>
     ((database.catalog.tableAt index.table).any fun table => index.supported table.columns.length) = true
-  | .addColumn target _ => database.AddColumnCondition target
+  | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
   | .createTable .. | .createView .. | .createTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True

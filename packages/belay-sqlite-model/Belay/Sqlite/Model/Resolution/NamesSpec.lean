@@ -53,10 +53,11 @@ theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Cata
 /-- For every successful resolution of ADD COLUMN, the catalog changes by one
 {name}`CatalogStep`: unchanged after a prepare error, else the table's object gets a
 new entry and keeps its name. Proof sketch: split every branch; the successful branch
-replaces the object that {name}`Catalog.findTable_some` gives at the table's position. -/
-theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalog)
+replaces the object that {name}`Catalog.findTable_some` gives at the table's position.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
+theorem resolveAddColumn_step (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -127,7 +128,7 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveAddColumn_step _ _ _ _ _ _ (by assumption))
+    exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_step _ _ _ _ _ found
