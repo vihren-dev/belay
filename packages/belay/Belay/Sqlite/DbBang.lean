@@ -1,6 +1,7 @@
 import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.SqlTableOrigins
+import Belay.Sqlite.SqlEditorInfo
 
 set_option doc.verso true
 
@@ -60,14 +61,16 @@ is a {lit}`sorry` that Lean shows no second error for. Otherwise the term is
 {name}`databaseTerm` of the database, and its error is an error at the literal. A successful value retains its source text as
 replay metadata, which replay consumers validate against the actual database. It also records, for the
 declaration that holds the term, where each table of the final catalog is created
-({name}`registerTableOrigins`), outside the value. -/
+({name}`registerTableOrigins`), outside the value, and gives the table names editor information with the
+rows that the run reached ({name}`executedContexts`). -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
   let some text := literal.isStrLit? | throwUnsupportedSyntax
   let items ← literalStatements literal
+  let statements := items.toList.map (·.statement)
   let parameters := items.toList.flatMap (·.parameters)
-  let (diagnostics, connection) := if parameters.isEmpty then runDiagnostics text.toUTF8 (items.toList.map (·.statement))
+  let (diagnostics, connection) := if parameters.isEmpty then runDiagnostics text.toUTF8 statements
     else (parameters.map parameterDiagnostic, Database.empty.raw.connection)
   for diagnostic in diagnostics do
     logErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
@@ -76,7 +79,8 @@ def elabDbBang : TermElab := fun term _ => do
   match databaseTerm connection.state.database with
   | .error message => throwErrorAt literal message
   | .ok database =>
-    registerTableOrigins (.literal literal text) (items.toList.map (·.statement)) connection.state.database.catalog database
+    registerTableOrigins (.literal literal text) statements connection.state.database.catalog database
+    emitSqlEditorInfo (.literal literal text) statements {} (executedContexts 0 Database.empty.raw.connection statements).1
     return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite

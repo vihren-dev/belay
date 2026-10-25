@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.lean_server_support import LeanServer, hover, position, semantic_tokens
+from tests.lean_server_support import LeanServer, hover, position, semantic_tokens, table_hover
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -24,18 +24,6 @@ def plain := sql r"SELECT * FROM orders WHERE 1"
 def escaped := sql! shop "SELECT * FROM orders; SELECT 'a\\nb'"
 def finished : Nat := 0
 '''
-
-
-def table_hover(server: LeanServer, uri: str, source: str, spelling: str, occurrence: int,
-                token: str) -> str:
-    """The hover text of one table occurrence; the hover range must be exactly the written token."""
-    start = position(source, spelling, occurrence)
-    result = hover(server, uri, start)
-    contents = result["contents"]
-    assert isinstance(contents, dict) and isinstance(contents["value"], str), result
-    end = {**start, "character": start["character"] + len(token)}
-    assert result["range"] == {"start": start, "end": end}, result
-    return contents["value"]
 
 
 def no_table_information(server: LeanServer, uri: str, source: str, spelling: str, occurrence: int,

@@ -284,3 +284,19 @@ stored rows; the test adds a view dropped before a populated table.
 Two musts fixed: the origin recorder lists every statement form (`isRollback`,
 `stepCreatedSlots`), and the alias chain limit is the named `aliasChainLimit`.
 The table-hover test expects the owner now shown in the hover (commit 2 added it).
+
+### Part 2a, commit 3: rows of a run in `db!` and `#sql` — 2026-10-25
+
+- `db!` runs its statements again with `executedContexts` after the run that
+  finds the errors, and gives its table names the rows that the run reached before
+  each statement. The second run is the same deterministic model run, so no
+  second definition of execution exists.
+- `#sql` is now a command elaborator, not a macro. It evaluates the database term
+  and runs the script in a trial (`sqlCommandInformation`) whose messages and
+  information it drops, so Lean shows each error once, at the `#eval` of
+  `Database.tables` that it still elaborates. The trial keeps nothing when the
+  database has no value or the text has an error. Then it emits the table
+  information with the actual rows.
+- Test: `tests/surface_editor_executed_test.py` (real server): counts before and
+  after an insert and a delete in `db!` and `#sql`, an unrun `sql!` after a write with no count, and
+  only information messages. `table_hover` moved to `tests/lean_server_support.py`.

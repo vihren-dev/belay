@@ -158,6 +158,18 @@ def hover(server: LeanServer, uri: str, start: dict[str, int]) -> dict[str, obje
     return result
 
 
+def table_hover(server: LeanServer, uri: str, source: str, spelling: str, occurrence: int,
+                token: str) -> str:
+    """The hover text of one table occurrence; the hover range must be exactly the written token."""
+    start = position(source, spelling, occurrence)
+    result = hover(server, uri, start)
+    contents = result["contents"]
+    assert isinstance(contents, dict) and isinstance(contents["value"], str), result
+    end = {**start, "character": start["character"] + len(token)}
+    assert result["range"] == {"start": start, "end": end}, result
+    return contents["value"]
+
+
 def semantic_tokens(server: LeanServer, uri: str) -> list[tuple[int, int, int, str]]:
     """Decode the real server's relative token positions and advertised legend."""
     result = server.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri}})
