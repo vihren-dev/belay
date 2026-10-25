@@ -1,6 +1,7 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Implementation is assigned.
+Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is in progress;
+part 2b waits for the model name trace.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -206,3 +207,15 @@ document-edit cancellation cases) passed in the focused Nix gate
 `/nix/store/11rz63050cnrdwl6wpkk2fdc6jib0q7x-sqlite-verifier-test-automatic-1`
 (54 passed, 70 deselected). See the S5 status file for the cancellation limit.
 Editor part 2 remains open.
+
+## Part 2 split — 2026-10-25
+
+The R19 check of the task against the current model found that no resolver
+output says which name occurrence resolved to which catalog object: resolved
+statements hold catalog positions, prepare errors hold only a name, and
+`Span.leaves` is not a role trace. A surface-side walk would be a second
+resolver over the rewritten CTE and view copies. The coordinator decided that a
+model-side name trace becomes its own model task. The task file now states the
+trace and splits part 2 into part 2a (table-level behavior, no trace) and part
+2b (column, affinity, correction and DQS behavior, which consumes the trace).
+Part 2a progress is recorded below, one entry per commit.
