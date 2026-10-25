@@ -191,3 +191,14 @@ parser entry that this line changed.
 Checks of the merge: `just dev-build`, `lake build` and `lake build belay-sql-check` pass (local,
 diagnostic). The whole Nix surface suite passed 300 tests in 1031 seconds, report
 `/nix/store/l0g82jvd1i3sdvqqbqj4pwrkr35gp0h7-sqlite-verifier-test-surface-1`.
+
+Review `20261025T110511Z-9582cee2` of the merge commit `9582cee2` found nothing. Post-review Nix
+gates on that source:
+
+- `just test-full`: `/nix/store/xlsm624i0sn1jis8h5y30j6xj8s7psbh-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/gldj7zm5hv9zah0jjif51dqzsdzyrhy3-sqlite-verifier-verdict`.
+- `just test-nix`: 71 passed, 1723 deselected.
+- `just test-scheduled-checks`:
+  `/nix/store/yxscwaji03qy583y9cm5l6y2dvc251rq-sqlite-verifier-scheduled-check-reports`.
+
+Logs are `build/agent-logs/integ-*`. The mutant suites were not run. Nothing was pushed.
