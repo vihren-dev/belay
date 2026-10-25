@@ -1,8 +1,7 @@
 # S7: proof-cost reporting, production
 
-Created 2026-10-25. Status: OPEN. The outcomes below assume the recommended
-answers to the owner decisions at the end; implementation waits for those
-answers.
+Created 2026-10-25. Status: OPEN. The six decisions at the end were answered
+on 2026-10-25; the outcomes below follow them.
 Status: [progress](20261025-s7-proof-costs.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), D1, the S7 row and the
 "S7 cost clarification" paragraph; the completed
@@ -63,7 +62,7 @@ those is outside the owner's request.
 Cost data is exact internal heartbeat units (1000 internal units are one Lean
 budget unit). No outcome may turn missing data into zero.
 
-1. **Collection is optional, and "off" is a bypass.** A user turns collection
+1. **Collection is optional, and "off" is a bypass.** (Coordinator decision, 2026-10-25.) A user turns collection
    on with a `Bool` option (default false) that works in a lakefile through the
    `weak.` prefix and with `set_option ... in`. With the option off, the
    declaration and `mutual` handlers run the native handler with no changed
@@ -71,7 +70,7 @@ budget unit). No outcome may turn missing data into zero.
    same declarations (types and values) and the same compiler output as one
    compiled without the collector module. A module that does not import the
    collector module has no handler of ours at all (decision 1).
-2. **Named proof bodies are measured, including mutual blocks.** A completed
+2. **Named proof bodies are measured, including mutual blocks.** (Owner decision, 2026-10-25.) A completed
    record exists for each named theorem and each named definition whose value is a
    proof (its type is a proposition), in ordinary declarations and in native
    `mutual` blocks (all peers). A definition whose type is not a proposition
@@ -80,23 +79,23 @@ budget unit). No outcome may turn missing data into zero.
    generated helpers get no separate record, and the report says so in its
    header. A theorem inside `namespace` or `section`, and a `where` or `let rec`
    body, belong to their parent record.
-3. **Identity is stable or marked.** A record is identified by module name and
+3. **Identity is stable or marked.** (Owner decision, 2026-10-25.) A record is identified by module name and
    qualified declaration name, with no absolute path. Private and anonymous
    (`example`) declarations are recorded with a class that says that their identity
    changes with edits. The report lists them in their own section, and the
    comparison does not use them (ADR 0017, accepted contract).
-4. **A record carries what makes it comparable.** Compiler version, the boundary
+4. **A record carries what makes it comparable.** (Coordinator decision, 2026-10-25.) Compiler version, the boundary
    scheme including the async mode (`Elab.async`), the unit, the exact count and the
    status (`completed`, `failed`, `precision-unavailable`). Counts that Lean's
    `Float` trace endpoints cannot represent exactly become `precision-unavailable`.
-5. **Usable only after a successful compile.** Records come from the compiled
+5. **Usable only after a successful compile.** (Coordinator decision, 2026-10-25.) Records come from the compiled
    module file. A module with an error has no compiled file, and the tool reports
    that and exits 2. The tool does not build. A module whose Lean file changed
    after its compiled file was made is reported as stale, not as measured
    (decision 4). The README says to run the tool after a successful `lake build`;
    a failed build caused by something other than that file's text (an import or a
    compiler option) is not detected.
-6. **Missing coverage is explicit.** For every library module that the tool
+6. **Missing coverage is explicit.** (Coordinator decision, 2026-10-25.) For every library module that the tool
    reads, each named theorem that has no completed record is listed as
    `unmeasured`, including every theorem of a module compiled without
    collection. Lean-generated helper declarations are not listed. A proof-valued
@@ -278,10 +277,11 @@ the S6 assertion and before-context modules, the editor modules (`SqlTable*`,
 `Belay/Sqlite.lean` under decision 1 (the collector is not part of `import Belay`).
 Shared registration files get minimal append-only edits.
 
-## Decisions awaiting the owner (2026-10-25)
+## Decisions (answered 2026-10-25)
 
-Each outcome above uses the recommended option. A different answer changes the
-named outcome.
+Decisions 2 and 3 are the owner's. Decisions 1, 4, 5 and 6 are the coordinator's;
+each takes the recommended option. The alternative that was not taken stays
+listed to show what the outcome excludes.
 
 1. **How a user installs the collector.** Recommended: a separate module that
    `import Belay` does not import, plus the option (outcomes 1, 9). Alternative:

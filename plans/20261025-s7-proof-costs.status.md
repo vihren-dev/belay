@@ -44,3 +44,11 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `Name`. The task text now states each point.
 - 2026-10-25: review `20261025T160932Z-b6ce3490` of the corrected task file has
   no findings. The task waits for the owner's answers to its six decisions.
+- 2026-10-25: decisions answered. Owner: 2 (the `--json` report is the baseline)
+  and 3 (exit 1 for growth, a baseline entry without a completed record and a
+  failed record; exit 2 for incompatible data, unreadable libraries and usage
+  errors; new entries exit 0; `--costs` runs alone). Coordinator: 1, 4, 5 and 6,
+  all as recommended. The owner also approved changing `CLAUDE.md` to name
+  `just test-scheduled-checks`; the coordinator makes that change in a separate
+  pull request, so this task does not edit `CLAUDE.md`. Phase 2 starts with the
+  mutual-block evidence.
