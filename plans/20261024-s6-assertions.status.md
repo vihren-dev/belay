@@ -189,3 +189,51 @@ Part 1 is complete. Not done, by task design: part 1b (two-state `before`
 assertions, which wait for the initial/current query context), part 2 (universal
 guide examples, remaining frontend diagnostics, private guide integration), and
 the task-end `just test-nix` and `just test-scheduled-checks`.
+
+## Part 2 (universal examples and diagnostics), started 2026-10-25
+
+Scope from the coordinator: universal examples and the remaining frontend
+diagnostics that do not need the initial/current query context; no private guide
+edit (the guide change is written down below); do not edit the views agent's
+files (`tests/surface/DbBangErrors.lean`, `tests/surface/SuccessUniqueEmail.lean`,
+the balance success fixture, `tests/surface_guide_test.py`,
+`tests/surface_success_test.py`); new examples live in new fixture files and the
+new test `tests/surface_assertion_examples_test.py`.
+
+### Unit 1: insert then lookup over every database
+
+- Library: `packages/belay/Belay/Sqlite/PlainInsertEffect.lean` (a plain insert
+  that is modeled has an explicit reached database and the fresh `ifOk` shape
+  `Sql.ifOk_send_plainInsert`) and `PlainInsertRows.lean` (the inserted rows are
+  the old rows plus one appended row; counting and membership laws).
+- Fixtures: `CustomerInsertSite` (the explicit `CustomerInsertSite` structure of
+  schema, resolution, affinity and modeledness conditions, and the fresh
+  reduction `insert_then_holds`), `CustomerInsertQueries` (the two lookup
+  queries as row facts), `InsertLookupClaims` (universal theorems
+  `inserted_customer_is_unique` and `inserted_customer_has_the_name`, a positive
+  example, and kernel counterexamples: an after-insert trigger that removes the
+  inserted row, a table without key (two customers share the id), and a `UNIQUE`
+  name that makes the insert fail).
+- Decision: the guide's single lookup query with two subqueries and the
+  filtered GROUP BY invariant query are not supported by the model's evaluator
+  laws (one subquery per statement), so the lookup claim is two supported
+  assertions (exactly one customer has the id; one customer has the id and the
+  name). Extending the evaluator is a model change shared with other agents.
+- Decision: "the INSERT is modeled" is an explicit premise of the site (it
+  depends on the database, for example the rowid bound). For concrete databases
+  it is discharged for every clock and counter by kernel reduction.
+
+### Unit 2: preserved count over every database
+
+- Library: `packages/belay/Belay/Sqlite/SendSuccessIfOk.lean`. `Sql.ifOk_send_of_success`: a script that
+  succeeds from the fresh start has every branch at the connection of the model run, with a valid database;
+  `NormalizedFieldExpansion.ifOk_send_expansion`: for a `Site` of the lowercase-field expansion the
+  reached database is `expandedDatabase`.
+- Fixtures: `ExpansionCountQueries` (the count query holds exactly when the table has `n` rows) and
+  `ExpansionCountClaims` (universal `expansion_keeps_the_customer_count` for every `n`, every pair of
+  triggers and every bound values; the guide's `count_kept` is its instance for `expand`; instance on a
+  database with two customers; counterexample: an `AFTER UPDATE` trigger that existed before the
+  expansion removes the customers when the backfill fires it, so the database has no site).
+- Decision: the premise of the claim is `(db.run expand).outputs.allOk = true`. The default-environment
+  success gives success from every complete environment (`Script.allOk_env`), and a kernel evaluation with an
+  open environment is too slow (about a minute), so the closed form is also what the kernel checks.
