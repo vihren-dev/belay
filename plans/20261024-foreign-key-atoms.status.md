@@ -1,12 +1,24 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API, mapped-NULL and action-target work
-is active in the FK workspace; focused Nix acceptance is in progress.
+Created 2026-10-24. Status: OPEN. The enforced-DROP proof unit is checked and
+reviewed; remaining DDL/run work and complete acceptance are unfinished.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
 
-Latest scope decision, 2026-10-24: the owner accepted selected action targets
+Latest scope decision, 2026-10-25: the owner accepted correcting ADD COLUMN
+REFERENCES defaults, including empty/nonempty tables, enforcement on/off and
+literal-NULL versus NULL-valued expression distinctions. ADR22 and the task are
+amended together. Native evidence is retained in the FK workspace's
+`build/agent-logs/add-reference-{native.json,model.log,default-spelling-native.json}`.
+The enforced-DROP unit is already checked/reviewed at `ffe4d749`; this new
+execution correction has no implementation or acceptance claim yet. The task
+amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should:
+name the new correction in the acceptance-part list. The list now places it
+with the remaining DDL/run part. The amended task awaits final review before
+implementation resumes in an available slot.
+
+Prior scope decision, 2026-10-24: the owner accepted selected action targets
 for CASCADE/SET NULL/SET DEFAULT and their assigned/changed-column effects.
 Native diagnostics show repeated-key actions leave an unused child column
 unchanged and do not fire its UPDATE OF trigger. The earlier model wrote that
