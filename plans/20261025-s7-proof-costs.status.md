@@ -137,3 +137,10 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `docs/adr-0017-user-surface.md` are written. Focused Nix run (not a gate):
   `/nix/store/vraggxhp3znizyrxy0yig0l237jjci27-sqlite-verifier-test-surface-1`,
   7 passed (report and comparison tests).
+- 2026-10-25: Part 2, review of `17e08d7f` (`20261025T203944Z-17e08d7f`): one
+  must (R19) and two shoulds, fixed. A baseline library that the run does not
+  select counts as a library with no proofs (exit 1), and the README and the
+  findings say so; a baseline that cannot be read gives an error with its path;
+  `writtenTheorems` names every constructor. Focused Nix run (not a gate):
+  `/nix/store/kw4ribnjs2b8rbd0a06lb8dyd60sfxa2-sqlite-verifier-test-surface-1`,
+  7 passed.

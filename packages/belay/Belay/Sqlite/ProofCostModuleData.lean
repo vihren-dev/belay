@@ -53,7 +53,7 @@ private def writtenTheorems (data : ModuleData) : Array String :=
   (data.constNames.zip data.constants).filterMap fun (name, info) =>
     match info with
     | .thmInfo _ => if written.contains name then some name.toString else none
-    | _ => none
+    | .axiomInfo _ | .defnInfo _ | .opaqueInfo _ | .quotInfo _ | .inductInfo _ | .ctorInfo _ | .recInfo _ => none
 
 /-- Read the compiled module {lit}`olean`. The Lean file {lit}`source` is the file that the module
 was compiled from; it tells whether the records are stale. A module without records cannot be stale. -/

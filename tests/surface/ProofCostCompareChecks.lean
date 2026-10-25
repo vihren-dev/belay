@@ -48,6 +48,10 @@ def inexact : LibraryCosts := library #[entry "M" "a" 0 .precisionUnavailable, e
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "b" 5000])] == 1
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .precisionUnavailable, entry "M" "b" 5000])] == 1
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 3, entry "M" "b" 5000])] == 0
+-- a baseline library that is not selected now has all its proofs missing, so the run fails
+#guard (compareCosts 0 #[baseline, { baseline with name := "Other" }] #[baseline]).size == 2
+#guard comparisonExit (compareCosts 0 #[baseline, { baseline with name := "Other" }] #[baseline]) == 1
+#guard comparisonExit (compareCosts 0 #[baseline] #[baseline, { baseline with name := "Other" }]) == 0
 -- exit codes
 #guard comparisonExit #[compare' 0 baseline] == 0
 #guard comparisonExit #[compare' 0 (library #[entry "M" "a" 10001, entry "M" "b" 5000])] == 1

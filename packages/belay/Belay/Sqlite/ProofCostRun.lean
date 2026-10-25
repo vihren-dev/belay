@@ -43,7 +43,9 @@ def libraryCosts (name : String) (modules : Array ModuleFiles) : IO (LibraryCost
 def readBaseline (file : String) : IO (Except String (Array LibraryCosts)) := do
   let advice := s!"; create it with lake exe belay-sql-check --costs --json > {file}"
   unless ← (FilePath.mk file).pathExists do return .error s!"the baseline {file} does not exist{advice}"
-  match Json.parse (← IO.FS.readFile file) with
+  let text ← try IO.FS.readFile file catch error =>
+    return .error s!"the baseline {file} cannot be read: {error}{advice}"
+  match Json.parse text with
   | .error message => return .error s!"the baseline {file} is not JSON: {message}{advice}"
   | .ok json => return (costsOfJson json).mapError fun message => s!"the baseline {file} has an unexpected shape: {message}{advice}"
 

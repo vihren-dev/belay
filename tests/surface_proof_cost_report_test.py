@@ -169,6 +169,13 @@ def test_baseline_sections_are_separate(runtime_root: Path, tmp_path: Path) -> N
         assert result.returncode == 2 and message in result.stderr, result.diagnostic()
     result = run_checker(installed, package, "--costs", "--baseline", "absent.json", "--allowance", "0")
     assert result.returncode == 2 and "does not exist" in result.stderr
+    (package / "folder.json").mkdir()
+    result = run_checker(installed, package, "--costs", "--baseline", "folder.json", "--allowance", "0")
+    assert result.returncode == 2 and "folder.json cannot be read" in result.stderr, result.diagnostic()
+    dropped = json.loads(json.dumps(baseline))
+    dropped["libraries"].append({"name": "Gone", "records": [{**cheap, "module": "Gone"}], "unmeasured": [], "stale": []})
+    result = compare(installed, package, dropped)
+    assert result.returncode == 1 and "Library Gone" in result.stdout and "no such theorem now" in result.stdout
 
 
 def test_changed_source_is_stale_and_a_failed_recompile_leaves_nothing_to_read(runtime_root: Path, tmp_path: Path) -> None:

@@ -251,7 +251,8 @@ baseline file; to accept the new costs, save a new report. The exit code is:
 
 A proof that you rename or remove is a baseline proof with no completed count, and a new proof
 under the new name. Save a new baseline after such a change. Use `--library NAME` the same way
-for the baseline and the comparison.
+for the baseline and the comparison: a library that the baseline has and the comparison does not
+select counts as a library with no proofs, so the run fails.
 
 ## Claims about every database
 

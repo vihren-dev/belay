@@ -194,7 +194,8 @@ differs from the experiment. The user guide is the "Proof costs" section of
   a missing file and never old counts.
 - **Comparison.** The comparison follows the proposal above with exact internal units. The
   baseline is the `--json` report; the tool never writes it. Growth, a baseline proof with no
-  completed count now and a failed proof give exit 1. Records of another compiler or scheme, an
+  completed count now and a failed proof give exit 1. A baseline library that the run does not select
+  counts as a library with no proofs, so use the same `--library` for the baseline and the check. Records of another compiler or scheme, an
   unreadable baseline or library and a stale module give exit 2.
 - **Overhead.** In a sample of three proof commands, collection raised the work from 6,676,554 to
   7,261,970 internal heartbeats (about 9 percent). This sample is not a general bound.

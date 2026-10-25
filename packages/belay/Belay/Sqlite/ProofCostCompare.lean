@@ -90,9 +90,15 @@ def compareLibrary (allowance : Nat) (baseline : Option LibraryCosts) (current :
       | .precisionUnavailable => found) compared
 
 /-- Compare every selected library with the baseline library of the same name. A library that the
-baseline does not have has only added proofs. -/
+baseline does not have has only added proofs. A baseline library that is not selected now is compared
+as a library with no proofs, so its proofs are missing and the run fails: the baseline must be made with
+the same selection as the comparison. -/
 def compareCosts (allowance : Nat) (baseline current : Array LibraryCosts) : Array LibraryComparison :=
-  current.map fun library => compareLibrary allowance (baseline.find? (·.name == library.name)) library
+  let selected := current.map fun library =>
+    compareLibrary allowance (baseline.find? (·.name == library.name)) library
+  let dropped := baseline.filter (fun old => !current.any (·.name == old.name)) |>.map fun old =>
+    compareLibrary allowance (some old) { name := old.name, records := #[], unmeasured := #[], stale := #[] }
+  selected ++ dropped
 
 /-- The exit code of a comparison: 2 when some records are incompatible, 1 when a proof grew, has no
 completed count or failed, and 0 otherwise. Proofs that were added do not change the code. -/
