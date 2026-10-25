@@ -13,7 +13,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 QUERIES = '''import Belay
 open Belay.Sqlite
 
+/-- The first use of the schema file. -/
 def schema := sql_file "sql/schema.sql"
+/-- A second declaration that uses the same file. -/
 def sameFile := sql_file "sql/schema.sql"
 sql_module Named from "sql/named.sql"
 '''
@@ -50,15 +52,16 @@ check_imported_records
 
 
 def test_pure_record_checks(runtime_root: Path, tmp_path: Path) -> None:
-    """Hash normalization and source identity over small values."""
+    """`sqlTextHash`, `SqlSourceUse.sameSource` and `dedupeSqlSourceUses` (`SqlSourceRecord.lean`) over small values."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SqlSourceRecordChecks.lean", tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
 
 def test_records_survive_an_import(runtime_root: Path, tmp_path: Path) -> None:
-    """A module that imports the compiled one sees one record per use, with the package, the relative path and the
-    line-ending-normalized hash, and the same source counted once."""
+    """`loadSqlFileSource` and `defineEntry` (`SqlFileLoad.lean`, `SqlModule.lean`) add `SqlSourceUse` records to the
+    extension of `SqlSourceRecord.lean`; a module that imports the compiled one sees one record per use, with the
+    package, the relative path and the line-ending-normalized hash, and the same source counted once."""
     installed = installed_layout(runtime_root, tmp_path)
     package = tmp_path / "records"
     write_package(package, "SqlRecords", installed)

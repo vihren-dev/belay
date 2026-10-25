@@ -104,7 +104,9 @@ in rec {
     directory = "packages/belay";
     source = sources.surface;
     # The shared library is what Lake loads for a file that imports `Belay`, after the text package's.
-    targets = [ "Belay" "Belay:shared" ];
+    # The SQL-file checker is the only executable (ADR 0017, S7); it is not part of the conformance runtime.
+    targets = [ "Belay" "Belay:shared" "belay-sql-check" ];
+    executables = true;
     requires."packages/belay-sqlite-model" = modelPackage;
     requires."packages/belay-sqlite-text" = textPackage;
     requires."packages/belay/.lake/packages/plausible" = plausiblePackage;

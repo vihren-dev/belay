@@ -152,7 +152,8 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   accepts additions from any elaboration branch (`asyncMode := .sync`; it is never read
   during elaboration). `loadSqlFileSource` adds a record with the declaration being
   elaborated, and `sql_module` adds one per generated definition. Fixtures now check
-  that `(against := db)` leaves a file and every module definition definitionally equal
+  that `(against := db)` leaves a file and the module definitions `findByEmail`, `insertUser`,
+  `trig` and `last` definitionally equal
   to the unchecked form. Focused Nix surface run (35 passed, 75 deselected, 54.01 s) at
   `/nix/store/v2ihkpky37iwvld5f6xji2m6p4izwc33-sqlite-verifier-test-surface-1` covers
   the pure checks and a real Lake build where an importing module reads the records of
@@ -160,3 +161,26 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   declaration per module entry, distinct sources counted once). The checker, its report
   and the Lake input fixtures are next. Review of the planning amendment `a613a42e` and
   of `561834a0` found no musts (one should about a stale status phrase, fixed).
+- 2026-10-25: the checker. `lake exe belay-sql-check [--library NAME]` (`BelaySqlCheck.lean`,
+  the only module that imports Lake; `lean_exe` with `supportInterpreter` because loading a
+  lakefile runs the interpreter) loads the workspace from the existing manifest (a missing
+  manifest is an error, so it never writes one), walks the compiled modules of each library
+  of the root package and every module they import (the workspace decides the olean file,
+  because the model, text and surface packages share the root `Belay`), decodes the stored
+  `SqlSourceUse` records, compares each distinct source with the file in its owning package
+  (`pkg.dir / path`, found by the package's original name), and prints
+  `library L: N modules, M SQL sources, K stale`, one line for each stale source with its
+  package, path, declarations and `lake build L`, and a note that `lake build` rebuilds after
+  an SQL edit only if the library lists the SQL files as `needs`. Exit 0 is all fresh; 1 a
+  changed or missing source; 2 a library that could not be read (missing compiled module,
+  unknown library, unknown package, no manifest). The pure report is
+  `Belay/Sqlite/SqlCheckReport.lean`. The surface derivation now builds and installs the
+  executable. The layer test allows Lake only in `BelaySqlCheck`. Focused Nix surface run
+  (17 passed, 97 deselected, 41.29 s) at
+  `/nix/store/bywr7f1nfj8p7zvdgzxg5c9l6w5k6nm7-sqlite-verifier-test-surface-1`: totals by
+  library with a shared source counted once and a library without SQL at zero, the library
+  selector and an unknown library, a stale source reported with no artifact touched and
+  before any rebuild, a line-ending-only edit staying fresh, rebuild restoring success,
+  a deleted file, a deleted compiled module as an error, records reached through a
+  dependency import, and a relocated tree that checks its own dependency file. The native
+  `input_dir`/`needs` fixtures are next.

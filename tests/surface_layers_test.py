@@ -7,7 +7,8 @@ from the import lines of every Lean package and from the Nix build.
    and the text package imports a module of `packages/belay-sqlite-text`, and no lakefile other
    than the surface's requires it.
 3. The surface imports only its own modules, the text package's, the model's roots (the roots of
-   the libraries in the model's `lakefile.toml`), Plausible, `Init`, `Std` and `Lean`; the text package
+   the libraries in the model's `lakefile.toml`), Plausible, `Init`, `Std` and `Lean`, and the
+   checker also Lake; the text package
    imports only its own modules, the model's roots and Lean's libraries.
 4. The conformance runtime contains the text package's program but not the surface: in
    `build-support/`, only the surface's own derivation and the `surface` test suite name the
@@ -37,6 +38,8 @@ import: the roots of each library of the model, or its name for a library that l
 by globs."""
 EXTERNAL_ROOTS = {"Init", "Std", "Lean"}
 """The Lean libraries that the surface and the text package may import."""
+CHECKER_MODULE = "BelaySqlCheck"
+"""The module of the SQL-file checker executable, the only surface module that may import Lake."""
 SURFACE_NAMES = re.compile(r"surfacePackage|sources\.surface|packages/belay\b(?!-)")
 """The ways that a Nix file names the surface package."""
 
@@ -124,7 +127,8 @@ def test_imports_are_own_modules_model_roots_and_lean(package: Path) -> None:
              for name in imports(path)
              if name not in allowed and name not in MODEL_ROOTS
              and name.split(".")[0] not in EXTERNAL_ROOTS
-             and not (package == SURFACE and name.split(".")[0] == "Plausible")]
+             and not (package == SURFACE and name.split(".")[0] == "Plausible")
+             and not (module_name(package, path) == CHECKER_MODULE and name.split(".")[0] == "Lake")]
     assert found == []
 
 
@@ -166,10 +170,6 @@ def test_plausible_is_only_a_surface_dependency() -> None:
     build = (ROOT / "build-support/default.nix").read_text()
     requirements = re.findall(r'requires\."([^"]*plausible[^\"]*)"\s*=\s*plausiblePackage', build)
     assert requirements == ["packages/belay/.lake/packages/plausible"]
-
-
-CHECKER_MODULE = "BelaySqlCheck"
-"""The module of the SQL-file checker executable, the only surface module that may import Lake."""
 
 
 def lake_or_checker_imports(imports_by_module: dict[str, list[str]]) -> list[str]:

@@ -56,3 +56,25 @@ def configured_command(runtime_root: Path, source: Path, directory: Path) -> lis
     setup["package"] = "fixture"
     setup_path.write_text(json.dumps(setup))
     return command
+
+
+def write_lean_package(folder: Path, name: str, installed: Path, libraries: list[str], inputs: str = "",
+                       needs: str = "") -> None:
+    """Create a package with a `lakefile.lean`, so that it can declare `input_dir` inputs and library `needs`.
+
+    Each library has its root module in `lean/<library>.lean`."""
+    folder.mkdir(parents=True)
+    body = (f'import Lake\nopen Lake DSL\n\npackage {name}\n\nrequire belay from {json.dumps(str(installed / "packages/belay"))}\n'
+            f'\n{inputs}\n')
+    for library in libraries:
+        body += f'\nlean_lib {library} where\n  srcDir := "lean"\n  roots := #[`{library}]\n{needs}\n'
+    (folder / "lakefile.lean").write_text(body)
+    (folder / "lean-toolchain").write_text((installed / "packages/belay/lean-toolchain").read_text())
+    (folder / "lean").mkdir()
+    (folder / "sql").mkdir()
+
+
+def run_checker(installed: Path, package: Path, *arguments: str) -> CommandResult:
+    """Run the installed `belay-sql-check` through `lake exe` in `package`, with a finite timeout."""
+    return run_command([str(installed / "lean/bin/lake"), "exe", "--no-ansi", "belay-sql-check", *arguments],
+                       cwd=package, timeout=120, environment=toolchain_environment(installed))

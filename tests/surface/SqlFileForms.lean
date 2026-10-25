@@ -59,6 +59,7 @@ sql_module CheckedQueries from "sql_files/queries.sql" (against := shop)
 example : CheckedQueries.findByEmail = Queries.findByEmail := rfl
 example : CheckedQueries.insertUser = Queries.insertUser := rfl
 example : CheckedQueries.last = Queries.last := rfl
+example : CheckedQueries.trig = Queries.trig := rfl
 
 -- A marker inside a trigger body, a string or a comment names nothing.
 elab "check_module_names" : command => do
