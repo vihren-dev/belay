@@ -7,7 +7,8 @@ import pytest
 from conformance.corpus import native_replay, replay
 from conformance.native_connection import Connection, NativeError, library_path, load_library
 from conformance.native_record import execute, record_sql
-from conformance.native_replay import OBSERVED_VIEW_REASON, prepare
+from conformance.native_replay import prepare
+from conformance.replay_scope import OBSERVED_VIEW_REASON
 from conformance.model_check import compiled
 from conformance.sql_text import runtime_translator
 
@@ -16,8 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
 
 
 def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Constraints, WITHOUT ROWID, views and triggers are observable before model support. The replay
-    stops at the view, which it does not compare (`conformance.native_replay.ObservedView`)."""
+    """Constraints, WITHOUT ROWID, views and triggers are observable before model support."""
     def reject(*args: object, **kwargs: object) -> None:
         """Recording must not invoke frontend parsing even indirectly."""
         raise AssertionError("translator invoked by native recording")
@@ -33,8 +33,7 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
     assert record["trace"][1]["persisted"] == record["initial"]["visible"]
     assert record["trace"][-1]["visible"] == record["initial"]["visible"]
     case, result = prepare(record, runtime_translator(runtime_root))
-    assert case is None and result["verdict"] == "MODEL_UNSUPPORTED"
-    assert result["reason"] == OBSERVED_VIEW_REASON, result
+    assert case is None and result["verdict"] == "MODEL_UNSUPPORTED" and result["reason"] == OBSERVED_VIEW_REASON
     assert record["migrationSql"] and record["trace"]
 
 

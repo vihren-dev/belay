@@ -1,6 +1,7 @@
 """Derive the version 5 model case from frozen translator-independent evidence."""
 
 from conformance.record_parser import NO_PARSER_REASON, record_parser
+from conformance.replay_scope import HIDDEN_ROWID_REASON, OBSERVED_VIEW_REASON, HiddenRowid, ObservedView
 
 from conformance.case_format import CASE_VERSION, UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
 from conformance.profile_scope import foreign_key_scope, modeled_profile
@@ -57,25 +58,6 @@ def output_wire(event: dict[str, Json]) -> dict[str, Json]:
         if position != len(rows):
             raise ValueError("Native tie group window size differs")
     return {"result": {"columns": columns, "rows": event["rows"], "changes": changes}, "groups": groups}
-
-
-HIDDEN_ROWID_REASON = "column names rowid, _rowid_ and oid are not modeled; rename the column"
-"""The reason of a case whose table hides its rowid, as the model's restriction of these names says."""
-
-
-OBSERVED_VIEW_REASON = ("the record replay compares tables only; a record with a view is judged through its predictions "
-                        "(`conformance.predict`)")
-"""The reason of a replayed case whose native observation lists a view."""
-
-
-class ObservedView(ValueError):
-    """A recorded observation that lists a view. The replay comparison has no view type: the
-    model's view rows are observations, which the prediction path compares."""
-
-
-class HiddenRowid(ValueError):
-    """A recorded table whose columns take every rowid name, so SQLite's rowid has none and the
-    recorder keys the rows by all columns; the model refuses the names, so the case is out of scope."""
 
 
 def native_tables(observation: dict[str, Json]) -> list[Json]:
