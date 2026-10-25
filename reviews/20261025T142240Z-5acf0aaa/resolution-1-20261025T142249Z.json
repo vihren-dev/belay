@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T14:22:49+00:00",
+  "finding": "20261025T142240Z-5acf0aaa#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The document now says that a missing function in a view body is recorded as unreadable-view evidence"
+}
