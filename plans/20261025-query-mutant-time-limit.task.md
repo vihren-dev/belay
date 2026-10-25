@@ -19,9 +19,10 @@ did not run on the hosted runners. The logs are in the diagnostics workspace,
 The test is one measurement of all 16 query mutants (eight model files). A
 focused local Nix run on this VM took 160.60 s. Each mutant suite now has its
 own hosted job (`.github/workflows/ci.yml`), so the current factor is the
-speed of a hosted runner: the same test took more than 300 s there, at least
-1.9 times the local time. A local time of at most about 125 s therefore gives
-a hosted time of about 240 s, below the limit.
+speed of a hosted runner: the same test took more than 300 s there, so the
+hosted time is at least 1.9 times the local time. The timeouts give only this
+lower bound, not a measured ratio. The local target of about 125 s below is
+therefore a provisional splitting target; only the hosted run validates it.
 
 The module docstring of `tests/conformance_query_mutants_test.py` records an
 earlier, similar failure of the number and query-without-FROM mutants. Its
@@ -37,7 +38,8 @@ corrects the historical reason where it describes the current layout.
   `mutants` suite within its unchanged suite limit.
 - The query mutants are measured in two or more measurements, each a group of
   related mutants (for example by model file), so that each takes at most
-  about 125 s alone in a focused local Nix run. Each measurement is one test
+  about 125 s alone in a focused local Nix run (a provisional target; the
+  hosted run is the required validation). Each measurement is one test
   with a docstring that names its subject, as the existing number split does.
 - Every mutant, target and guard is kept. No mutant is removed or weakened, no
   limit is increased, and no test is skipped or marked as allowed to fail.
