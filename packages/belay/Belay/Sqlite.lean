@@ -57,6 +57,9 @@ import Belay.Sqlite.MigrationApplicationViews
 import Belay.Sqlite.MigrationApplicationLaws
 import Belay.Sqlite.MigrationPatternSyntax
 import Belay.Sqlite.MigrationExplanation
+import Belay.Sqlite.ContextObservation
+import Belay.Sqlite.ContextObservationLaws
+import Belay.Sqlite.ContextObservationBridge
 import Belay.Sqlite.MigrationExplainCommand
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success

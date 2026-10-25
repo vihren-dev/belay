@@ -88,3 +88,28 @@ names of the context-aware assertion, the fresh notation and the value-aware
 3. Fresh composition rules and use of ordinary triples inside a fresh run.
 4. Assertion-level `ifOk`/`andOk`, assertion terms, fresh notation.
 5. `#explain` for fresh triples, ordinary triples and `Succeeds`.
+
+## Part 1 progress
+
+Evidence below names local checks only as development steps. Nix acceptance for
+the part is recorded in the closing entry.
+
+- 2026-10-25, unit 1 (context observation): `Script.outputIn` is the public
+  real-context output (the first output of the existing `runScriptFrom` from the
+  context's clock, next index and connection; no second interpreter).
+  `Holds.inContext` is the real-context assertion and `Holds.reached` the default
+  assertion at a context (`Holds.inContext` at the context's default observation,
+  `ExecutionContext.defaultObservation`). Proved: `Holds.reached_initial`,
+  `Holds.reached_iff_holds(_of_valid)`, `Script.outputOn_eq_outputIn`, and the
+  independence bridge `Script.outputIn_eq_of_independent` /
+  `Holds.inContext_iff_reached` for resolved queries without clock or counter
+  reads over equal databases. Modules: `ContextObservation`,
+  `ContextObservationLaws`, `ContextObservationBridge`. Fixture
+  `tests/surface/AssertionContexts.lean` (kernel): default and real-context
+  assertions disagree on a clock read, on `changes()` after a write and, for the
+  pragma setting query, on the observed outputs (`rows [[1]]` against
+  `rows [[0]]`); the default assertion follows an open transaction and a
+  rollback; the clock read depends on the next index; a default assertion does
+  not imply a fresh entry. Test: `tests/surface_assertions_test.py`
+  (registered in `tests/nix_suites.json`, suite `surface`).
+
