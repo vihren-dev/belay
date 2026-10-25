@@ -119,3 +119,18 @@ the part is recorded in the closing entry.
   fact is proved inside its single user instead of as a model-only lemma in the
   surface (R6), the three modules have module docstrings, and this summary is
   current.
+- 2026-10-25, unit 2 (fresh rules and assertion terms): `FreshTriple.pure_iff`,
+  `bind_iff`, `mono`, `and_iff`, `of_triple` (ordinary triple at the initial
+  context) and `bind_triple` (ordinary continuation specification inside a fresh
+  run) in `FreshRules`. `AssertionTerms`: `ContextAssertion`, `holds` (default),
+  `holdsInContext` (real context), `ifOk`/`andOk` and the value-aware
+  `ifOkWith`/`andOkWith` as Std.Do postconditions, proved equal to `Sql.ifOk` and
+  `Sql.andOk` (`triple_ifOkWith_iff`, `triple_andOkWith_iff`), `FreshEnsures` with
+  the same equalities and `Succeeds.iff_ensures` (S4 success equals the fresh
+  claim with `andOk ⌜True⌝`, by `Sql.andOk_complete_iff`). Fixtures
+  `FreshAssertionRules` (pure bind keeps the start; consequence; conjunction; two
+  steps and a nested specification keep the captured database and environment; a
+  fresh claim is refuted as an arbitrary-context triple) and `AssertionPolicies`
+  (prefix error and prefix unmodeled stop under both policies, error then write,
+  error then unmodeled step, every `oneOf` choice, returned outputs, `holds` and
+  `holdsInContext` as postconditions).

@@ -1,4 +1,4 @@
-"""Query assertions in real execution contexts agree with existing execution."""
+"""Fresh-run claims, query assertions and their explanations agree with existing execution."""
 
 import json
 from pathlib import Path
@@ -22,13 +22,14 @@ def axiom_reports(stdout: str) -> list[set[str]]:
 
 
 def test_assertion_kernel_fixtures(runtime_root: Path, tmp_path: Path) -> None:
-    """Context observations are proved against the existing execution implementation. The real-context
-    and default assertions disagree on a clock, on counters and on a pragma setting, the default one
-    follows rollback and open transactions, and a default assertion does not fix the entry of an
-    ordinary triple."""
+    """Context observations, fresh composition rules and assertion policies are proved against the
+    existing execution implementation. The real-context and default assertions disagree on a clock,
+    on counters and on a pragma setting, the default one follows rollback and open transactions, and
+    neither a default assertion nor a fresh claim fixes the entry of an ordinary triple. The policies
+    cover errors and unmodeled stops before and in the program, every oneOf choice and returned outputs."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
-    for module, count in (("AssertionContexts", 12),):
+    for module, count in (("AssertionContexts", 12), ("FreshAssertionRules", 6), ("AssertionPolicies", 9)):
         configuration["name"] = module
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"
