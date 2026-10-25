@@ -52,3 +52,28 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `just test-scheduled-checks`; the coordinator makes that change in a separate
   pull request, so this task does not edit `CLAUDE.md`. Phase 2 starts with the
   mutual-block evidence.
+- 2026-10-25: Part 1, collector. New modules `Belay/Sqlite/ProofCost{Record,Trace,Pending}.lean`
+  and `ProofCost.lean` (the module that a user imports; `import Belay` does not
+  import it). The two handlers (`declaration`, `mutual`) carry `incremental`,
+  run the handlers registered before them in Lean's order, and restore the
+  state when one answers `unsupportedSyntax`. With the option `belay.proofCosts`
+  off they call the next handler and store nothing. With it on, they set the
+  native body trace options, take the body nodes, strip them from the command
+  trace state and from the messages and traces of the proof tasks, and store a
+  `Pending` entry. Records are made at export, so the compiled file exists only
+  after a successful compile. Decision in the work: the names of a command's
+  declarations come from the module's constants (`getLocalConstantInfos`
+  before and after the command), not from the info trees, because the info
+  tree of an asynchronous theorem is not complete when the command returns
+  (bare `lean` probe: the binder list was empty in async mode and complete in
+  sync mode). A pending entry keeps only the body nodes of a proof task, not
+  its snapshot tree, so the trees can be freed. The prototype's test-only
+  collector, reader and tests are replaced by `tests/surface/ProofCost{Reader,
+  OtherHandler,Cases,Surface,TraceChecks}.lean`, `tests/proof_cost_support.py`
+  and `tests/surface_proof_cost_collect_test.py`; layer rule 7 says that the
+  closure of `Belay` does not contain the collector.
+  Focused Nix run of the 21 proof-cost tests (`-k proof_cost` on the `surface`
+  suite, not a gate): `/nix/store/l7cfpi1qdnnasx13rby3v4zq3dw0y4w0-sqlite-verifier-test-surface-1`,
+  21 passed. The mutual block gives a record for each peer, in async and sync
+  mode, in both orders; the overhead sample (three surface proof commands, sync)
+  is 6,676,554 internal heartbeats without and 7,261,970 with collection.

@@ -1,9 +1,12 @@
 import Belay
-import ProofCostCollector
+import Belay.Sqlite.ProofCost
+import ProofCostReader
 
-/-! Three existing surface proof patterns provide the fixed overhead sample.
-The control imports only the reader/timer module; proof text and compiler match. -/
+/-! Three existing surface proof patterns provide the fixed overhead sample. The control compile
+turns the option off; its proof text, positions and compiler are the same. -/
 open Belay.Sqlite
+
+set_option belay.proofCosts true
 
 #proof_cost_begin
 
@@ -27,5 +30,4 @@ theorem default_query (db : Database) (q : Script) (query : q.isQuery = true) :
 #print axioms supplied_success
 #print axioms default_query
 #proof_cost_records
-#proof_cost_commands
 #proof_cost_snapshot

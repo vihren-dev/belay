@@ -17,6 +17,8 @@ from the import lines of every Lean package and from the Nix build.
    so its syntax translation does not depend on that root's proof and example imports.
 6. Only the SQL-file checker (ADR 0017, S7) imports Lake, and no module of the surface imports
    the checker: the Lean files that users elaborate never depend on the build system.
+7. The proof-cost collector (ADR 0017, S7) installs command handlers, so `import Belay` does
+   not import it, directly or indirectly: a user imports it to opt in.
 """
 
 from pathlib import Path
@@ -191,3 +193,12 @@ def test_only_the_sql_checker_imports_lake() -> None:
     imports_by_module = {module_name(SURFACE, path): imports(path)
                          for path in lean_files(SURFACE) if path.name != "lakefile.lean"}
     assert lake_or_checker_imports(imports_by_module) == []
+
+
+def test_import_belay_does_not_install_the_proof_cost_collector() -> None:
+    """Rule 7: the import closure of the `Belay` root does not contain the collector module, which
+    registers command handlers."""
+    dependencies = {module_name(SURFACE, path): imports(path)
+                    for path in lean_files(SURFACE) if path.name != "lakefile.lean"}
+    assert "Belay.Sqlite.ProofCost" in dependencies and "Belay" in dependencies
+    assert "Belay.Sqlite.ProofCost" not in import_closure("Belay", dependencies)
