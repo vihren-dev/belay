@@ -608,3 +608,25 @@ three checked anchor spellings. It owns remaining view DDL, pragma metadata,
 write errors and statement/catalog preservation. It has no heavy slot while
 S5 and migration full acceptance run. The migration worker's separately reserved
 normalization proof leaves and registration entries remain disjoint.
+
+Migration part 1 full/verdict gate `18258` passed: 946 full Nix tests and
+4,869 AGREE / 2,503 MODEL_UNSUPPORTED. Evidence head is `467cdde5`.
+The example workspace carries that status-only descendant and now uses slot 1
+for bounded counter development/focused Nix gate `45610`, source `402cf053`.
+Its fixture compares complete public runs, proves an inhabited migration domain,
+and checks both retained-trigger scripts against pinned native SQLite. Acceptance
+is still pending. S5 gate `96340` remains live in slot 2; its model suite passed
+all 251 tests, with package, sample and surface groups remaining at this update.
+
+View integration `c3e4346f`, recorded as `05c4d214`, has clean review and exact
+Nix derivation reuse for the 12 harness and 52 mutation/inventory checks. No view
+production edits followed it. That worker now owns the immediately reviewed
+`20261025-mutant-failure-diagnostics` task in an isolated workspace on published
+`fe169099`; carried task/review head is `a2f68a27`. It can edit and review while
+both heavy slots are occupied. The task keeps passing coverage and all limits,
+and exposes an already reported failure before later groups consume the budget.
+
+PR #251 hosted mutation jobs are skipped by the existing change filter, despite
+their successful job status. This is not hosted mutation acceptance. The new
+diagnostics task requires the existing manual CI trigger after publication so
+the actual mutation commands execute. No change to CI routing is planned.
