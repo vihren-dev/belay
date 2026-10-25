@@ -370,10 +370,13 @@ to either implementation workspace.
 
 The complete integration review failed twice because the Claude CLI OAuth
 token expired, not because of source findings. Both failure records are retained
-in `c19670b0`. The owner has been asked to refresh the VM login. Retry the
-explicit source revision `5bc323f0` after that refresh; publication waits for
-the required independent review. Existing checks and independent diagnostics
-can continue.
+in `c19670b0`. On 2026-10-25 the credential metadata showed a refresh, and the
+retry succeeded: review `20261025T001053Z-5bc323f0` has no findings for the empty
+merge of the previously reviewed parents. Reviewer access is restored for the
+pending source units above. Complete S6 full/verdict/prediction and task-end
+checks are running as root session `24501` in `s6-complete-publication`, using
+slot 1. Shared S5 search review is running as root session `85770` against
+`efa0d465`; its result remains pending. The S5 instance repair uses slot 2.
 
 On 2026-10-25 the editor compatibility check exposed an S5 import regression:
 the global `ToExpr Output` instance in `CheckReplayData` changes the existing
