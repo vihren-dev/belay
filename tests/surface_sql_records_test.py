@@ -24,6 +24,7 @@ sql_module Named from "sql/named.sql"
 PROBE = '''import Lean
 import SqlRecords.Queries
 import Belay.Sqlite.SqlSourceRecord
+import Belay.Sqlite.SqlCheckReport
 open Belay.Sqlite Lean Elab Command
 
 /-- The text of each file with `\n` line ends, as Lake would hash it. -/
@@ -43,7 +44,8 @@ elab "check_imported_records" : command => do
   for expected in [some `schema, some `sameFile, some `Named.q] do
     unless names.contains expected do throwError "no record for {expected} in {repr uses}"
   unless (uses.filter fun use => use.path == "sql/schema.sql").size >= 2 do throwError "uses were merged: {repr uses}"
-  unless (uses.foldl (fun sources use => if sources.any use.sameSource then sources else sources.push use) #[]).size == 2 do
+  let resolved := uses.map fun use => ({ use, file := use.path, shown := use.path : ResolvedUse }, some use.hash)
+  unless (groupSources resolved).size == 2 do
     throwError "sources were counted per declaration: {repr uses}"
   logInfo "imported records passed"
 
@@ -52,7 +54,7 @@ check_imported_records
 
 
 def test_pure_record_checks(runtime_root: Path, tmp_path: Path) -> None:
-    """`sqlTextHash`, `SqlSourceUse.sameSource` and `dedupeSqlSourceUses` (`SqlSourceRecord.lean`) over small values."""
+    """`sqlTextHash` and `dedupeSqlSourceUses` (`SqlSourceRecord.lean`), and `groupSources` (`SqlCheckReport.lean`), over small values."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SqlSourceRecordChecks.lean", tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()

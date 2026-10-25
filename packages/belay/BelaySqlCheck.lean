@@ -75,15 +75,6 @@ private def pathBelow (directory file : FilePath) : Option FilePath :=
     some ⟨"/".intercalate (target.drop base.length)⟩
   else none
 
-/-- A record with the file it names, found in the current workspace. -/
-private structure ResolvedUse where
-  /-- The record. -/
-  use : SqlSourceUse
-  /-- The file, with its directory resolved, so two ways to name one file give one value. -/
-  file : FilePath
-  /-- The path to show: relative to the owning package when the file is inside it. -/
-  shown : String
-
 /-- The file that a record names. Without an explicit root it is below the owning package. With
 one it is below the Lean file of the module that set the option. -/
 private def resolveUse (workspace : Workspace) (library : String) (use : SqlSourceUse) :
@@ -105,22 +96,6 @@ private def resolveUse (workspace : Workspace) (library : String) (use : SqlSour
     else pure file
   let shown := ((pathBelow (← IO.FS.realPath package.dir) resolved).map (·.toString)).getD use.path
   return .ok { use, file := resolved, shown }
-
-/-- The distinct sources of the records: one for each file and text hash, however many declarations
-or modules read it. A source keeps the declarations of all its records. -/
-private def groupSources (resolved : Array (ResolvedUse × Option UInt64)) : Array CheckedSource := Id.run do
-  let mut groups : Array (FilePath × UInt64 × CheckedSource) := #[]
-  for (item, current) in resolved do
-    let declarations := item.use.declaration.toArray
-    match groups.findIdx? fun (file, hash, _) => file == item.file && hash == item.use.hash with
-    | some index =>
-      groups := groups.modify index fun (file, hash, source) =>
-        (file, hash, { source with declarations := source.declarations ++ declarations })
-    | none =>
-      let state := sourceState item.use.hash current
-      let source : CheckedSource := { package := item.use.package, path := item.shown, state, declarations }
-      groups := groups.push (item.file, item.use.hash, source)
-  return groups.map (·.2.2)
 
 /-- Check one library: read its compiled modules, then compare each distinct source with its file. -/
 private def checkLibrary (workspace : Workspace) (library : LeanLib) : IO (LibraryCheck × Array String) := do

@@ -47,8 +47,9 @@ roots or impose a restriction on nested projects.
   `readSqlFileSourceAtRoot (root : FilePath) (package : PkgId) (path : FilePath)`
   as the explicit-root primitive beneath the convenient source loader. A root
   controls current file access, not the compiled package identity. Persist only
-  package identity, package-relative SQL path/hash and module/declaration
-  associations. The checker resolves that identity through the current Lake
+  package identity, package-relative SQL path/hash, module/declaration
+  associations and, when the option chose the root, its relative value with the
+  module that set it. The checker resolves that identity through the current Lake
   package mapping; an override does not bypass freshness checks or serialize
   a machine-specific root.
 - **File parameters are explicit.** Every parameter, including `$name`, becomes

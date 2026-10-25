@@ -9,7 +9,7 @@ without a Lake workspace. -/
 
 namespace Belay.Sqlite
 
-open Lean
+open Lean System
 
 /-- What the current file says about a recorded source. -/
 inductive SourceState where
@@ -37,6 +37,32 @@ structure CheckedSource where
   state : SourceState
   /-- The declarations that used this source, in record order. -/
   declarations : Array Name
+
+/-- A record with the file it names, found in the current workspace. The checker resolves the
+file; this module only groups the results. -/
+structure ResolvedUse where
+  /-- The record. -/
+  use : SqlSourceUse
+  /-- The file, with its directory resolved, so two ways to name one file give one value. -/
+  file : FilePath
+  /-- The path to show: relative to the owning package when the file is inside it. -/
+  shown : String
+
+/-- The distinct sources of the records: one for each file and text hash, however many declarations
+or modules read it. A source keeps the declarations of all its records. -/
+def groupSources (resolved : Array (ResolvedUse × Option UInt64)) : Array CheckedSource := Id.run do
+  let mut groups : Array (FilePath × UInt64 × CheckedSource) := #[]
+  for (item, current) in resolved do
+    let declarations := item.use.declaration.toArray
+    match groups.findIdx? fun (file, hash, _) => file == item.file && hash == item.use.hash with
+    | some index =>
+      groups := groups.modify index fun (file, hash, source) =>
+        (file, hash, { source with declarations := source.declarations ++ declarations })
+    | none =>
+      let state := sourceState item.use.hash current
+      let source : CheckedSource := { package := item.use.package, path := item.shown, state, declarations }
+      groups := groups.push (item.file, item.use.hash, source)
+  return groups.map (·.2.2)
 
 /-- The check of one library: how many compiled modules were inspected, and its distinct sources. -/
 structure LibraryCheck where

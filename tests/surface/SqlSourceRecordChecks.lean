@@ -15,14 +15,20 @@ record (`Belay/Sqlite/SqlSourceRecord.lean`) and of the checker's report (`Belay
 def used (declaration : Option Name) : SqlSourceUse :=
   { package := "pkg", path := "sql/a.sql", hash := sqlTextHash "SELECT 1;", declaration }
 
--- Several declarations that use one file are several records of one source.
-#guard (used (some `a)).sameSource (used (some `b))
-#guard !(used none).sameSource { used none with path := "sql/b.sql" }
-#guard !(used none).sameSource { used none with hash := 0 }
-#guard !(used none).sameSource { used none with package := "other" }
-#guard !(used none).sameSource { used none with rootOverride := some ⟨`M, ".."⟩ }
-#guard !({ used none with rootOverride := some ⟨`M, ".."⟩ }).sameSource { used none with rootOverride := some ⟨`N, ".."⟩ }
 #guard (dedupeSqlSourceUses [used none, used (some `a), used none, used (some `a)]).size == 2
+
+/-- The record resolved to a file; `shown` is the path that the report prints. -/
+def resolvedAt (use : SqlSourceUse) (file : String) : ResolvedUse × Option UInt64 :=
+  ({ use, file, shown := use.path }, some use.hash)
+
+-- Several declarations that use one file are one source, which keeps all their declarations.
+#guard (groupSources #[resolvedAt (used (some `a)) "/p/a.sql", resolvedAt (used (some `b)) "/p/a.sql"]).size == 1
+#guard (groupSources #[resolvedAt (used (some `a)) "/p/a.sql", resolvedAt (used (some `b)) "/p/a.sql"]).map (·.declarations) == #[#[`a, `b]]
+-- Records from different modules or options that resolve to one file are one source.
+#guard (groupSources #[resolvedAt (used none) "/p/a.sql", resolvedAt { used none with rootOverride := some ⟨`M, ".."⟩ } "/p/a.sql"]).size == 1
+-- Another file, or the same file with another hash, is another source.
+#guard (groupSources #[resolvedAt (used none) "/p/a.sql", resolvedAt (used none) "/p/b.sql"]).size == 2
+#guard (groupSources #[resolvedAt (used none) "/p/a.sql", resolvedAt { used none with hash := 0 } "/p/a.sql"]).size == 2
 
 -- A file is fresh only with the recorded hash; a file that is gone is missing.
 #guard sourceState 5 (some 5) == .fresh

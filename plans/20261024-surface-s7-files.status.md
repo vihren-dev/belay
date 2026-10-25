@@ -230,3 +230,9 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   one source and one stale report names both declarations (new fixture in
   `tests/surface_sql_check_roots_test.py`). Nix surface run (11 passed, 107 deselected,
   72.50 s) at `/nix/store/8klpbwk58bwck39c859rr39y6gp0a6aj-sqlite-verifier-test-surface-1`.
+- 2026-10-25: review `20261025T075410Z-d34b1e68` found two musts. The persistence sentence in
+  the task text now lists the option value and its module. `SqlSourceUse.sameSource` is
+  deleted; `groupSources` moved into the pure `SqlCheckReport.lean` and is the one rule for
+  source identity (resolved file plus text hash), tested by `#guard`s and by the records
+  test. Nix surface run (22 passed, 96 deselected, 71.59 s) at
+  `/nix/store/pvsk1q34r0npmprd11nrxr532fzzimgm-sqlite-verifier-test-surface-1`.

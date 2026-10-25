@@ -42,12 +42,6 @@ structure SqlSourceUse where
 {lit}`text = true` inputs, so an edit that only changes line endings is not an edit. -/
 def sqlTextHash (text : String) : UInt64 := hash text.crlfToLf
 
-/-- Whether two records name the same source, so that a source used by several declarations counts
-once. -/
-def SqlSourceUse.sameSource (left right : SqlSourceUse) : Bool :=
-  left.package == right.package && left.path == right.path && left.hash == right.hash &&
-    left.rootOverride == right.rootOverride
-
 /-- The records without exact repeats, in first-seen order. -/
 def dedupeSqlSourceUses (uses : List SqlSourceUse) : Array SqlSourceUse :=
   uses.foldl (fun seen use => if seen.contains use then seen else seen.push use) #[]
