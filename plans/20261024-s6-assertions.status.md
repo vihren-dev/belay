@@ -167,3 +167,25 @@ the part is recorded in the closing entry.
   copy of the instance or an expression that only mentions it is not explained;
   `tests/surface_assertions_test.py` rejects an `Id` triple and a copied
   transformer and checks the fallback policy text.
+
+## Part 1 acceptance, 2026-10-25
+
+Source commit `05b1db63` (review 20261025T074937Z-05b1db63: no findings). Nix
+results (shared settings max-jobs 1, cores 2; logs in
+`build/agent-logs/s6-test-full.log` and `s6-verdict.log`):
+
+- `just test-full`: exit 0, output
+  `/nix/store/mqcib6r6a7y2g1wzwkz66ihilg4csgya-sqlite-verifier-test-reports`.
+  Host source checks 472 passed (71 deselected, 49 subtests). Suites: corpora 54,
+  documentation 12, frozen 153, harness 246, model 251, packages 3,
+  parserLibrary 4, sample 23, surface 108, upstream 117, all passed. The ten
+  cases of `tests/surface_assertions_test.py` are in the surface suite and passed.
+  The public documentation inventory is part of the documentation phase.
+- `just verdict`: exit 0, output
+  `/nix/store/jvm10nn3zb4ibcnk41c4cqpplyg5i6fp-sqlite-verifier-verdict`; every
+  corpus reports AGREE and MODEL_UNSUPPORTED counts only.
+
+Part 1 is complete. Not done, by task design: part 1b (two-state `before`
+assertions, which wait for the initial/current query context), part 2 (universal
+guide examples, remaining frontend diagnostics, private guide integration), and
+the task-end `just test-nix` and `just test-scheduled-checks`.
