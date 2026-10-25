@@ -99,3 +99,12 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   286 passed). `just verdict`:
   `/nix/store/gz1wg4l0969wpihb402jjayih440m13x-sqlite-verifier-verdict`.
   Part 1 (outcomes 1-9 and 13) is done; Part 2 (outcomes 10-12) is next.
+- 2026-10-25: Part 2, pure report modules. New `Belay/Sqlite/ProofCost{Units,
+  Report,Compare,Arguments}.lean`: budget units with three exact decimal places,
+  the report of a library (`LibraryCosts.ofModules`, its JSON form that serves as
+  the baseline, its text), the comparison with a baseline (exit codes 0, 1, 2),
+  and the command line. None imports Lake or the collector, so
+  `tests/surface/ProofCostCompareChecks.lean` runs them with `#guard`s, compiled
+  by `tests/surface_proof_cost_compare_test.py`. Focused Nix run (not a gate):
+  `/nix/store/ziklmsnchlh389zs9pvdql9balyzsski-sqlite-verifier-test-surface-1`,
+  1 passed.
