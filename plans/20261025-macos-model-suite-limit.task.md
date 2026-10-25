@@ -26,17 +26,19 @@ Two limits fail:
   process. The first `authored_jsonb` batch took more than 120 s on hosted
   macOS. The whole `authored_jsonb` test took 121.6 s on macOS and 51.5 s and
   58.5 s on hosted Linux. The next slowest coverage test took 39 s on macOS.
-- **Suite limit.** `build-support/tests.nix` gives each suite 1200 s
-  (`suiteTimeoutSeconds`). Its comment says that each test has its own limit
+- **Suite limit.** `build-support/tests.nix` gives each suite that is not a
+  mutant suite 1200 s (`suiteTimeoutSeconds`; mutant suites have 2700 s). Its comment says that each test has its own limit
   and that the suite limit only guards against a hang outside a test. The
   hosted macOS `model` suite (28 test files, 251 tests) now takes about
   1160 s or more, so the suite limit binds. Hosted Linux took 714 s and 887 s.
 
-The hosted macOS `Check` job runs on manual and scheduled runs only; PR runs
-skip it. The scheduled `main` runs pass, so the stack, not `main`, makes the
-suite too slow. This is the precedent of
-`reports/20261006-hosted-model-timeout/README.md`, whose fix split the old
-single model suite into suites.
+The hosted macOS `Check` job runs on manual runs, scheduled runs and pushes to
+`main`; PR runs skip it. The scheduled `main` runs pass, so the stack, not
+`main`, makes the suite too slow. Two earlier fixes of hosted suite time are
+recorded: `reports/20261006-hosted-model-timeout/README.md` raised the model
+deadline from 420 to 600 s, and `plans/20261007-ci-suite-split.status.md`
+split the CI suites by their dependencies. This task keeps the limits and
+splits the work.
 
 ## Required outcomes
 
