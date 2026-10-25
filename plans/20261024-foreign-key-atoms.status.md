@@ -1067,3 +1067,10 @@ Nix results (focused groups), on the tree that held the refactor `46b7db1e` and 
 `db_bang_messages or independent_foreign_key_atoms` 24 passed (23 registered fixtures and the
 `db!` messages), `/nix/store/vbgzwahvw612ahhdvbdn9m9w55kydpvz-sqlite-verifier-test-surface-1`.
 The unit changes no Lean package text, so it cannot change a prediction.
+
+Review `20261025T075538Z-778b5bf2` of unit 4 (`778b5bf2`) had two musts and one should, all R19
+on the matrix: the plain-write row must exclude writes with trigger programs and foreign keys off
+(their rules have `keys = false` and no law covers them), the DROP rows are classified by the
+presence of rules and not by the foreign-key setting (DROP INDEX has no rules), and the native
+agreement claim excludes the deferred key. All three are fixed in the refactor that follows the
+unit.
