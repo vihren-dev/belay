@@ -88,7 +88,8 @@ def tableSlotsOf (bytes : ByteArray) (item : Located Syntax.Statement) : List Ta
     | .createTrigger (table := table) .. => (target [4] table, [])
     | .createView (query := query) (subqueries := subqueries) .. =>
       (querySlots bytes span [3] query.source query.joins ++ subquerySlots bytes span 4 subqueries, subqueries)
-    | _ => ([], [])
+    | .createTable .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback | .pragma _
+    | .dropTrigger .. => ([], [])
   found.filter fun slot => !(definitionNames subqueries).contains slot.name.folded
 
 end Belay.Sqlite

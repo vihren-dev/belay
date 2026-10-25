@@ -242,3 +242,11 @@ Part 2a progress is recorded below, one entry per commit.
   non-BMP character). The helpers `position`, `hover` and `semantic_tokens` moved
   to `tests/lean_server_support.py`. The test is in the `surface` suite of
   `tests/nix_suites.json`. Nix results follow at the end of part 2a.
+
+### Part 2a, refactor after review 1 — 2026-10-25
+
+The review of commit 1 gave two musts, both fixed. `tableSlotsOf` now lists every
+statement form, so a new form fails to compile instead of getting no information.
+`mayChangeRows` now counts every statement that creates, drops or alters a catalog
+object, because a dropped view or index moves the catalog positions that index the
+stored rows; the test adds a view dropped before a populated table.

@@ -17,6 +17,8 @@ def reads := sql! shop r##"SELECT '😀' FROM orders;
   INSERT INTO orders VALUES (3, 'c');
   SELECT * FROM orders; DELETE FROM orders"##
 def schema := sql! shop r"CREATE TABLE extra(x); SELECT * FROM extra; DROP TABLE extra"
+def viewed : Database := db! r"CREATE VIEW v AS SELECT 1; CREATE TABLE stock(n); INSERT INTO stock VALUES (1)"
+def views := sql! viewed r"SELECT * FROM stock; DROP VIEW v; SELECT * FROM stock"
 def shadowed := sql! shop r"WITH orders AS (SELECT 1) SELECT * FROM orders AS shade"
 def plain := sql r"SELECT * FROM orders WHERE 1"
 def escaped := sql! shop "SELECT * FROM orders; SELECT 'a\\nb'"
@@ -67,10 +69,13 @@ def test_sql_bang_table_hovers(runtime_root: Path, tmp_path: Path, newline: str)
             assert "2 rows at this point" in table_hover(server, uri, source, spelling, 0, token), spelling
         for spelling in ("orders; DELETE", 'orders"##'):
             text = table_hover(server, uri, source, spelling, 0, "orders")
-            assert "rows at this point" not in text and "`id`: INTEGER" in text, text
+            assert "at this point of the script" not in text and "`id`: INTEGER" in text, text
         created = table_hover(server, uri, source, "extra;", 0, "extra")
-        assert "`x`: no declared type" in created and "rows at this point" not in created, created
+        assert "`x`: no declared type" in created and "at this point of the script" not in created, created
         assert "`x`: no declared type" in table_hover(server, uri, source, 'extra"', 0, "extra")
+        assert "1 row at this point of the script." in table_hover(server, uri, source, "stock;", 0, "stock")
+        dropped = table_hover(server, uri, source, "stock\"", 0, "stock")
+        assert "`n`: no declared type" in dropped and "at this point of the script" not in dropped, dropped
         for spelling in ("orders AS (SELECT", "orders AS shade", "orders WHERE 1", "orders; SELECT 'a"):
             no_table_information(server, uri, source, spelling, 0, tokens)
         diagnostics = [message for message in server.notifications

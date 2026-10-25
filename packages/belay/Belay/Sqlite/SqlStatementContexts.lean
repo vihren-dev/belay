@@ -26,14 +26,16 @@ structure StatementContext where
   earlier statement may have changed them and no run measured them. -/
   rows? : Option (List (List Row))
 
-/-- Whether the statement can change the stored rows of a table, or the tables themselves, so
-that rows known before it are not known after it. The test is the form of the statement: a
-write, a drop, a created table or an added column. A transaction statement changes no row on its
-own, and a later {lit}`ROLLBACK` follows the write that it undoes. Every other statement reads. -/
+/-- Whether the statement can change the stored rows of a table, or the catalog positions that
+index them, so that rows known before it are not known after it. Every statement that writes, and
+every statement that creates, drops or alters a catalog object, counts: a dropped view or index
+moves the positions of the objects after it. Only a query, a transaction statement and a pragma
+leave the rows as they were; a later {lit}`ROLLBACK` follows the write that it undoes. -/
 def mayChangeRows : Syntax.Statement → Bool
-  | .insert .. | .update .. | .delete .. | .dropTable .. | .createTable .. | .addColumn .. => true
-  | .createView .. | .createIndex .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback
-  | .select .. | .pragma _ | .createTrigger .. | .dropTrigger .. => false
+  | .select .. | .begin | .commit | .rollback | .pragma _ => false
+  | .insert .. | .update .. | .delete .. | .dropTable .. | .createTable .. | .addColumn ..
+  | .createView .. | .createIndex .. | .dropView .. | .dropIndex .. | .createTrigger ..
+  | .dropTrigger .. => true
 
 /-- The contexts of the statements of a script that resolves without running, each from the
 resolution of the statements before it ({name}`resolveStatement`, as {name}`scriptDiagnostics`
