@@ -5,10 +5,10 @@ corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
 The ADD COLUMN execution correction, the ADD COLUMN preservation laws and the run
-contracts of the schema statements are implemented and Nix-checked. The matrix record in
-ADR 0022 and the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
-examples (unit 4) are pending, as are part-2 acceptance (`just test-full`, `just verdict`)
-and separate corpus-v54 evidence.
+contracts of the schema statements are implemented and Nix-checked. The matrix is recorded in
+ADR 0022 with the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
+examples (unit 4). Part-2 acceptance (`just test-full`, `just verdict`) and separate
+corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -23,7 +23,7 @@ correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES colum
 a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
 correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
 preservation laws (unit 2) and the unified DDL/run contract (unit 3) are implemented. The matrix
-and the action fixtures (unit 4) are pending. The
+is recorded in unit 4. The
 task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
 (name the correction in the acceptance-part list); that is done and is historical.
 
@@ -1014,3 +1014,56 @@ Fixture split and review of unit 3 (`2eb055ee`): review `20261025T074024Z-2eb055
 shoulds (R5 explicit `Outcome` cases in the fixture, R12 the fixture was 262 lines, R19 the opening
 summaries). All four are fixed in `46b7db1e`; the fixture is now `ForeignKeyDdlRuns.lean` (199 lines) and
 `ForeignKeyDdlDropRuns.lean` (109 lines).
+
+## Statement matrix and action coverage (part 2, unit 4)
+
+2026-10-25. ADR 0022 now records the atom-by-statement matrix (after the part 1 record): for each
+statement family, what the row law alone needs, what the combined law needs, and the fixture
+theorem that shows a statement outside the condition. New fixtures in `tests/surface/`, all with
+standard axioms only:
+
+- `ForeignKeyActionRuns.lean` (8 reports): RESTRICT against NO ACTION with an AFTER DELETE trigger
+  that puts the parent row back (NO ACTION succeeds, RESTRICT fails with code 19 and keeps the
+  input); RESTRICT with foreign keys off (the delete runs and only the row atom fails); SET DEFAULT
+  on DELETE and on UPDATE of the parent (the child gets the default 0) and SET DEFAULT whose default
+  has no parent (fails, keeps the input); a DEFERRABLE INITIALLY DEFERRED key with foreign keys on
+  (the write is a resolver restriction, the run stops, the database is the input) and off (the
+  orphan is stored, only the row atom fails). Every database after a run is checked for both atoms.
+- `ForeignKeyDdlNecessity.lean` (6 reports): a unique index over `p(a,a)` on a parent without a key
+  changes the selected child projection of the declaration `FOREIGN KEY(x,y) REFERENCES p(a,b)`
+  from the declared columns to `x` twice, so the child row `(99,NULL)` becomes an orphan: the
+  statement succeeds and the row atom fails, and the appended object does not meet
+  `Catalog.CreateKeepsSelection`. An index over `p(a,b)` keeps the row atom. An ADD COLUMN that
+  references an absent table succeeds and breaks only the schema atom
+  (`Catalog.AddColumnLocatesNewKeys`).
+
+Review `20261025T075218Z-46b7db1e` of the refactor `46b7db1e` had one must (R19: the opening
+summaries claimed the matrix before it existed). It is fixed in the status-only commit `460d7fe3`, which
+marks the matrix as pending; this unit makes the summaries true again.
+
+Native comparison (SQLite 3.51.0, probes retained in the FK workspace as
+`build/agent-logs/unit4-native.txt`): NO ACTION with the repairing trigger keeps one parent row and
+reports no violation; RESTRICT fails with `FOREIGN KEY constraint failed (19)`; with foreign keys off
+the delete runs and `foreign_key_check` reports the child; SET DEFAULT on DELETE and UPDATE gives
+child 0 and no violation; SET DEFAULT without a parent for the default fails with code 19; a
+deferred orphan insert fails natively at the commit, and the model stops the run at a resolver
+restriction (the "retain the current result" rule of the task: no law claims that outcome); the
+`(99,NULL)` child is reported only after the index over `p(a,a)`, and the ALTER TABLE of a column that
+references an absent table succeeds and the next write with foreign keys on fails with
+`no such table: main.missing`. The corpus cases for these probes belong to the separate judge
+change (see the open items of the final report).
+
+Findings of the matrix work: a CREATE INDEX over repeated parent columns can break the row atom
+while the statement is accepted, so `Catalog.CreateKeepsSelection` is needed for the row law and not
+only convenient; the combined law derives it from the schema atom. Conditions without a run
+witness: the width, declaration and selection fields of `Database.AddColumnRowsCondition` describe
+admitted databases and the first and the last follow from admission, so no admitted database
+breaks them; `CreateKeepsSelection` has a witness for an index but none for a table or a trigger,
+which append after every old object.
+
+Nix results (focused groups), on the tree that held the refactor `46b7db1e` and this unit: model
+`add_column_references or add_column_defaults or foreign_key_atom_execution` 43 passed,
+`/nix/store/l42q22crvjkvhmr5lfff353f30a08apr-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 24 passed (23 registered fixtures and the
+`db!` messages), `/nix/store/vbgzwahvw612ahhdvbdn9m9w55kydpvz-sqlite-verifier-test-surface-1`.
+The unit changes no Lean package text, so it cannot change a prediction.

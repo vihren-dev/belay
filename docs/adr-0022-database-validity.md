@@ -190,6 +190,47 @@ execution distinguish assigned columns from generated-column dependencies. The n
 conditions and a checked mixed-affinity counterexample. Statement/run preservation remains
 part 2, including the global immediate-counter invariant; part 1 does not claim those laws.
 
+Slice 5, part 2 implementation (2026-10-25, same task file). Both atoms have laws for every resolved
+statement form. The laws exist for a statement (`runStatement_rowReferences`,
+`runStatement_parentSchemasCompatibleSelected`, `runStatement_foreignKeyAtomsSelected`) and for
+`runSqlFrom`, `runSql` and `runScriptFrom`. They use the mapping that the catalog of the database
+selects (`Catalog.foreignKeyMapping`), so the mapping follows a statement that changes the catalog.
+The laws with a supplied fixed mapping remain for the statements that keep the catalog. No
+condition states an atom of the database after the statement. A schema condition is a fact about the
+catalog before the statement and the catalog after it, or about the rules and the database before it. ADD COLUMN
+of a REFERENCES column with a default other than a literal NULL is refused on a table with rows
+when foreign keys are on, as in SQLite 3.51.0.
+
+The matrix lists, for each statement family, what each law needs. "Row atom alone" is the law
+for `RowReferencesHold`. "Both atoms" is the combined law, which has the schema atom as a premise
+and so derives some of the conditions. A fixture name has the form `Fixture.theorem`, in
+`tests/surface/`.
+
+| Statement family | Row atom alone needs | Both atoms need | Without the condition |
+| --- | --- | --- | --- |
+| INSERT, UPSERT, UPDATE, DELETE, foreign keys on | The database is admitted with unique keys; the rules meet the five rule conditions (comparison consistency, safe programs, safe actions, BEFORE frame). UPDATE also needs complete changed-column coverage and no stale self scan. | The same. The schema atom needs nothing, because the statement keeps the catalog. | Duplicate parent keys: `ForeignKeyInsert.duplicateNeedsUniqueness`. Lookup and scan differ: `ForeignKeyComparison.mixedInconsistent`. Stale self scan: `ForeignKeyUpdateNecessity.staleScanLeavesOrphan`. Stale generated cell: `ForeignKeyUpdateNecessity.staleGeneratedLeavesOrphan`. Uncovered changed column: `ForeignKeyCounter.uncheckedUpdateNeedsCoverage`. |
+| The same, foreign keys off | The target is outside every child and parent read (`Catalog.ForeignKeyOutside`). | The same. | A write inside the footprint: `ForeignKeyAtoms` (`orphan`), `ForeignKeyActionRuns.restrictOff`, `ForeignKeyActionRuns.deferredOff`. |
+| BEGIN, COMMIT, ROLLBACK, queries, settings, prepare errors | None. ROLLBACK needs both atoms in the saved snapshot. | The same. | A snapshot with an orphan: `ForeignKeyRuns.snapshotRequired`. |
+| CREATE TABLE | Every old declaration keeps its selected parent (`Catalog.CreateKeepsSelection`). | Every new declaration has a located parent (`Catalog.CreateLocatesNewKeys`); the first condition follows from the schema atom. | A forward reference: `ForeignKeyCreate.forwardNeedsSchemaPremise`, `ForeignKeyDdlRuns.forwardBreaksSchema`. |
+| CREATE INDEX, CREATE TRIGGER | `Catalog.CreateKeepsSelection`. | None: the schema atom gives it. | A repeated-column index selects another child projection: `ForeignKeyDdlNecessity.repeatedIndexBreaksRows` and `repeatedIndexNotKept`. |
+| ADD COLUMN | Wide rows, declarations and selection below the old width, and each new declaration satisfied by the old rows with the new cell (`Database.AddColumnRowsCondition`). A refusing statement on a table with rows keeps the database. | The same, and a located parent for each new declaration (`Catalog.AddColumnLocatesNewKeys`). Wide rows and selection below the width follow from an admitted database; the declarations below the width are a fact of the catalog. | Default 99 without the refusal: `ForeignKeyAddColumn.numberNeedsRefusal`. Absent parent table: `ForeignKeyDdlNecessity.absentParentBreaksSchema`. |
+| DROP, foreign keys off | Every kept declaration keeps its selected parent, moved, and its located parents are kept (`Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`). | The same. | A supporting index: `ForeignKeyDdlDrop.indexDropNeedsSelection`. A parent with a child: `ForeignKeyDdlDropRuns.dropParentBreaksRows`. |
+| DROP, foreign keys on (implicit DELETE) | Admitted with unique keys, the rule conditions, and the frames of the implicit DELETE at every clock (`Database.EnforcedDropFrames`). | Admitted with unique keys, the rule conditions, and the two DROP conditions above. | The row atom survives the removal of a parent whose rows were deleted, the schema atom does not: `ForeignKeyEnforcedDrop.dropSeparatesAtoms`. NO ACTION refuses: `ForeignKeyDropOutcomes.rejected`. |
+
+Actions need no condition of their own. The rule conditions cover CASCADE, SET NULL and SET DEFAULT
+through the selected child columns of the key. NO ACTION and RESTRICT write nothing. They differ in
+time: RESTRICT fails as soon as the parent row goes, while NO ACTION checks at the end of the
+statement (`ForeignKeyActionRuns.noActionRepairs`, `restrictRefuses`). SET DEFAULT writes the
+default, and the write fails when the default has no parent (`setDefaultDelete`,
+`setDefaultUpdate`, `setDefaultWithoutParent`). A key that is DEFERRABLE INITIALLY DEFERRED is a
+restriction of the resolver when foreign keys are on, so no resolved statement reaches the laws.
+The run stops and keeps the database (`deferredStops`); with foreign keys off the key is not
+processed (`deferredOff`). Conflict outcomes and explicit transactions use the run laws: a partial
+FAIL keeps both atoms (`ForeignKeyRuns.partialPreserves`) and ROLLBACK restores the snapshot
+(`ForeignKeyRuns.rollbackPreserves`). The run laws of a statement with a condition quantify over
+the statements that the run reaches. The model results of the DDL and action fixtures agree with
+the pinned SQLite 3.51.0; the probes are listed in the status file of the task. Authored corpus cases belong to the separate judge change.
+
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
 with a condition only for ADD COLUMN (`Database.AddColumnCondition`) and DROP
