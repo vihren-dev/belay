@@ -337,3 +337,23 @@ The source-position test (`test_source_positions_and_failures`) adds an ordinary
 literal without escapes, a multi-line raw literal with repeated occurrences, a
 literal with an escape (no information), text that the parser rejects (only the
 existing error), and the check that a keyword gets no semantic token.
+
+### Part 2a, Nix results — 2026-10-25
+
+After the final review of the part (no findings on the last commit) at
+`db34f58e`:
+
+- `just test-full` passed. The surface group, with the four new editor test
+  files and the changed guide fixtures, is
+  `/nix/store/yn5lyy6qhyv2bv823hdyzcpf3vl3wjcc-sqlite-verifier-test-surface-1`
+  (146 passed). The source-check group had 469 passed. The conformance runtime is
+  `/nix/store/qx367sqwhxgwcxp1hz7qplns2gb6rmv7-sqlite-verifier-conformance`, the
+  public documentation `/nix/store/xvs1d5nniq5c7dvgpgcak85jmvzbkbrl-sqlite-verifier-public-documentation-1`
+  and the report `/nix/store/96crr0c22qhwqn1q5rl0mzv1nw4384s6-sqlite-verifier-test-reports`.
+- `just verdict` passed:
+  `/nix/store/ndsqyfmx2i16r6ikj8r6aad55rgn8jvn-sqlite-verifier-verdict`. Part 2a
+  changed no model file, no judge file and no prediction input.
+- `just test-nix` and `just test-scheduled-checks` run at the end of the whole task, after part 2b.
+
+Part 2a is complete. Part 2b (column and affinity hovers, derived-column facts,
+typo corrections, DQS warnings) waits for the model name trace.

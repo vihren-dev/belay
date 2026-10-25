@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is in progress; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is implemented and checked, and waits for acceptance; part 2b waits for the model name trace.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
