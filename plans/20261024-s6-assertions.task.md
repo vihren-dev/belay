@@ -190,8 +190,10 @@ specification. Include prior SQL errors in ordinary contexts, error then write,
 error then unmodeled, all `oneOf` continuations, returned-output inspection,
 changing clock and index, connection counters, pragma settings and rollback.
 Default and context-aware query assertions must disagree on an appropriate
-counter or clock example and on a pragma-setting example, with proved bridges
-for admitted independent queries. A default assertion at a context with a
+counter or clock example. For a pragma-setting query, which returns one row for
+either setting, the two observed outputs (not the non-empty-result assertions)
+must disagree on the setting's value. Prove bridges for admitted independent
+queries. A default assertion at a context with a
 nonzero index or an open transaction must not imply a fresh entry.
 
 Installed-library fixtures exercise the actual notation, parameter
