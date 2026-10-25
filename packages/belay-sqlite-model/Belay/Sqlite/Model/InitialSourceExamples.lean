@@ -36,8 +36,11 @@ def rowsOf (source : Source) (initial : Option Database) : Option (List (List Va
 /-- The sources of the resolved query of a {lit}`SELECT`, or none when the resolution is no query: a prepare
 error or a restriction. -/
 def sourcesOf : StatementResolution → Option (List Source)
-  | .ok (.query found _, _) => some (found.sources.map (·.source))
-  | _ => none
+  | .error _ => none
+  | .ok (statement, _) => match statement with
+    | .query found _ => some (found.sources.map (·.source))
+    | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
+    | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _ | .setting .. => none
 
 /-- The sources of a query that reads a column of the one given source, resolved against the current catalog and the
 catalog of the given initial database. -/

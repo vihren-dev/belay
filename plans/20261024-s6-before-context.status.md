@@ -71,8 +71,8 @@ primitive's meaning.
   deferred); `InitialSourceGuardExamples` adds the regression, a three-part column fixture
   with `before.t.a` and the same-name `t`, and `CREATE VIEW` refusals for a direct source,
   a joined source and a subquery source. Native finding: a view over `pragma_table_info`
-  in an attached database is refused by SQLite ("unsafe use of virtual table"); the model
-  does not model that and the case stays open.
+  in an attached database is refused by SQLite ("unsafe use of virtual table"); the merge
+  review made the model refuse it too (see the integration entry).
 - 2026-10-25, fix of the first review of the observation commit (`20261025T191255Z-83a4451f`):
   plain-words statements say "no source with a schema name"; `asQuery?` and
   `Resolved.Statement.readsInitial` list their constructors; proof sketches for the
@@ -95,8 +95,9 @@ primitive's meaning.
     against the baseline `/nix/store/764gd728p06g20x9kfq29c1vrmdgjhqf-sqlite-verifier-predictions`:
     53 files, 0 changed records.
 - Open points (not blocking): a function call in an initial view that names a view of the
-  current catalog is refused with `initial-database`, not resolved; views over
-  `pragma_*` in an attached database are not modeled; metadata compared is column names
+  current catalog is refused with `initial-database`, not resolved; a call of
+  `pragma_table_info` or `pragma_foreign_key_list` in an initial view is refused too, as in
+  SQLite; metadata compared is column names
   only; JSON codecs now include `"schema": null`; the oracle finds unqualified names in the
   attached database when the main database lacks them. Part 1b of S6 needs corpus cases
   for `SELECT ... FROM before.t` against an attached read-only copy.

@@ -56,7 +56,7 @@ theorem Resolved.Query.possibleOn_initial_irrelevant (query : Resolved.Query) (c
       (second := second) (own := own)]
 
 /-- For every query, clock value, counters, values, two databases, subqueries and optional initial database,
-a query and subqueries with no source in the current database give the same results that SQLite may
+a query and subqueries with no current table and no pragma source give the same results that SQLite may
 give whichever current database is given. In plain words: the rows of {lit}`before.t` do not
 change when the current database changes. -/
 theorem Resolved.Query.possibleOn_current_irrelevant (query : Resolved.Query) (clock : Int) (counters : Counters)

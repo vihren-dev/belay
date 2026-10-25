@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.InitialSourceExamples
 set_option doc.verso true
 
 /-! Regression examples for the guards of the initial-database source (ADR 0017, S6): a function call in
-the body of an initial view looks up its name in the initial catalog, a three-part column name picks the
+the body of an initial view looks up its name in the initial catalog (a pragma function is refused), a three-part column name picks the
 source of its schema, and a stored view body never names the initial database. -/
 
 namespace Belay.Sqlite.Model.TwoStateFixtures
@@ -35,6 +35,19 @@ def selectRefusal (source : Syntax.TableReference) (initial current : Database) 
 #guard (resolvedSources (before "w") { viewsInitial with
     catalog := viewsInitial.catalog ++ [{ name := name! "json_each", entry := .view { query := subqueryOf [cell "a"] (now "t") } }],
     rows := [[], [], [], []] } "key").isNone
+
+/-- The source {lit}`pragma_table_info('t')`. -/
+def pragmaTableInfoOfT : Syntax.TableReference := { now "pragma_table_info" with arguments := some [.string [116]] }
+
+/-- The initial database of {lit}`viewsInitial` with a view {lit}`p` over {lit}`pragma_table_info('t')`. SQLite refuses a
+view over a pragma function in an attached database (unsafe use of a virtual table). -/
+def pragmaViewInitial : Database :=
+  { viewsInitial with
+    catalog := viewsInitial.catalog ++ [{ name := name! "p", entry := .view { query := subqueryOf [cell "name"] pragmaTableInfoOfT } }],
+    rows := viewsInitial.rows ++ [[]] }
+
+-- The model refuses the view instead of reading the current catalog for the pragma rows.
+#guard selectRefusal (before "p") pragmaViewInitial currentT "name" == some .initialDatabase
 
 /-- {lit}`SELECT before.t.a, c.a FROM before.t, t AS c`: the three-part name reads the initial {lit}`t`. -/
 def threePartQuery : Syntax.Subquery :=

@@ -26,7 +26,9 @@ its table names that no WITH definition of the body hides read the initial catal
 schema name {lit}`before` and never captures a current table. A function call such as {lit}`json_each('[1]')`
 is no table name: it keeps no mark, and a view with its name is looked up in the initial catalog only. The
 later resolution of the copy reads a function call in the current catalog, so a call whose name is a view
-of the current catalog only is the restriction {name}`RestrictionKind.initialDatabase`. An active view is its position with the
+of the current catalog only, and a call of {lit}`pragma_table_info` or {lit}`pragma_foreign_key_list`, is the
+restriction {name}`RestrictionKind.initialDatabase` (SQLite refuses a view over a pragma function in an
+attached database as an unsafe use of a virtual table). An active view is its position with the
 database that it is in, so equal positions of the two catalogs are not one view. -/
 def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Catalog := none) (inInitial : Bool := false) :
     List Syntax.Subquery → Nat → Option Nat → Option Nat → List (Nat × CommonTableError) →
@@ -73,7 +75,8 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
         let lookup : Option Catalog := if reads then initial else if source.schema.isSome then none else ownCatalog
         match lookup.bind fun found => (found.findView source.table).map (found, ·) with
         | none =>
-          if inInitial && source.arguments.isSome && source.schema.isNone && (catalog.findView source.table).isSome then
+          if inInitial && source.arguments.isSome && source.schema.isNone && ((catalog.findView source.table).isSome
+              || source.table.isKeyword (bytes! "pragma_table_info") || source.table.isKeyword (bytes! "pragma_foreign_key_list")) then
             throw (SourceIssue.value (.restriction usePath .initialDatabase))
           let _ ← liftM (resolveReference catalog usePath tagged (initial := initial))
           return tagged
