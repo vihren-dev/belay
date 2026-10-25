@@ -443,7 +443,10 @@ successful retry are retained in `build/agent-logs/normalized-field-scan-dev-bui
 and `build/agent-logs/normalized-field-scan-dev-build-retry.log`. Only the Nix
 report above is acceptance evidence. R3/R19 self-review checked the proof
 sketches, unchanged-key comparison argument, unsorted row fixtures and the
-limited source-row boundary. Independent review is pending.
+limited source-row boundary. Source commit
+`90635a75844b8fc9ced6db06ccb1238a36e5f1fb` received independent review
+`20261025T022246Z-90635a75`: zero musts and zero shoulds. The reviewer read every
+changed file; it did not run tests. This completes the separate scan unit.
 
 Whole statement effects, successful original migration, exact public query
 output and all raw/concrete branch correspondence remain unfinished. The next
