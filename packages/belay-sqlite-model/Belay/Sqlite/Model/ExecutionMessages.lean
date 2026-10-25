@@ -74,5 +74,6 @@ def ExecutionError.message (clock : Int) (counters : Counters) (parameters : Lis
   | .nullColumnDefault => "Cannot add a NOT NULL column with default value NULL"
   | .nonConstantColumnDefault => "Cannot add a column with non-constant default"
   | .checkColumnDefault => "CHECK constraint failed"
+  | .referenceColumnDefault => "Cannot add a REFERENCES column with non-NULL default value"
 
 end Belay.Sqlite.Model

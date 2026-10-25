@@ -44,7 +44,7 @@ unrestricted; the empty script satisfies it. -/
 def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
     | .createTable .. => True
-    | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
+    | .addColumn _ column _ => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
     | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _

@@ -53,16 +53,18 @@ of {name}`step` for ADD COLUMN is the database, or it is {name}`Database.addColu
 a target that holds a table, and the value is an added cell of the table ({name}`AddedCell`).
 Proof sketch: case analysis of the steps of {name}`step`; a default that reads the clock succeeds
 only on a table without rows, and the other successes passed the three checks. -/
-theorem step_addColumn_cases (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (column : CatalogColumn)
+theorem step_addColumn_cases (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (column : CatalogColumn) (refuses : Bool)
     (database : Database) :
-    effectDatabase (step clock counters parameters (.addColumn target column) database) = database ∨
+    effectDatabase (step clock counters parameters (.addColumn target column refuses) database) = database ∨
       ∃ table value, database.table target = some table ∧ AddedCell table column value ∧
-        effectDatabase (step clock counters parameters (.addColumn target column) database) =
+        effectDatabase (step clock counters parameters (.addColumn target column refuses) database) =
           database.addColumn target column value := by
   cases found : database.table target with
   | none => left; simp [step, found, effectDatabase]
   | some table =>
     simp only [step, found]
+    split
+    · left; simp [effectDatabase]
     split
     · split
       · right

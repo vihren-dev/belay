@@ -463,7 +463,11 @@ read the default under the column affinity. Without a default they read NULL.
 NOT NULL with NULL succeeds on an empty table and fails during execution on a
 populated table, retaining the prior catalog and rows. A time keyword default
 succeeds on an empty table and fails during execution on a populated table with
-SQLite's `Cannot add a column with non-constant default` (slice 6e2). Other
+SQLite's `Cannot add a column with non-constant default` (slice 6e2). With
+foreign keys enforced, a REFERENCES column with a default other than an absent default or the
+literal NULL fails on a populated table with SQLite's
+`Cannot add a REFERENCES column with non-NULL default value`; resolution decides this from the
+written default and the foreign-key setting, and an empty table succeeds. Other
 nonconstant defaults remain unsupported. Old-row readback can differ from INSERT default
 evaluation: TEXT DEFAULT 1.50 reads as 1.50 for old rows.
 

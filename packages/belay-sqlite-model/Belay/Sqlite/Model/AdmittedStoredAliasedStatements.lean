@@ -27,7 +27,7 @@ theorem runStatement_rowsStored (clock : Int) (counters : Counters) (parameters 
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsStored :=
   runStatement_tableAtom Table.rowsStoredAtom rowsStoredLaws clock counters parameters statement stored
-    (fun target _ table _ _ found _ => Table.RowsStored.appendColumns (wide target table found)
+    (fun target _ _ table _ _ found _ => Table.RowsStored.appendColumns (wide target table found)
       (stored target table found) _) fun writes => by
       rcases writes with ⟨target, rows, returning, subqueries, rfl⟩ | ⟨target, assignments, filter, returning, subqueries, rfl⟩ |
         ⟨target, rows, clauses, returning, algorithm, subqueries, rfl⟩
@@ -50,7 +50,7 @@ theorem runStatement_rowsAliased (limits : Limits) (clock : Int) (counters : Cou
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsAliased :=
   runStatement_tableAtom Table.rowsAliasedAtom rowsAliasedLaws clock counters parameters statement aliased
-    (fun target _ table _ _ found _ => Table.RowsAliased.appendColumns (aliased target table found) _) fun writes => by
+    (fun target _ _ table _ _ found _ => Table.RowsAliased.appendColumns (aliased target table found) _) fun writes => by
       rcases writes with ⟨target, rows, returning, subqueries, rfl⟩ | ⟨target, assignments, filter, returning, subqueries, rfl⟩ |
         ⟨target, rows, clauses, returning, algorithm, subqueries, rfl⟩
       · exact runStatement_insert_rowsAliased limits clock counters parameters target rows returning subqueries aliased

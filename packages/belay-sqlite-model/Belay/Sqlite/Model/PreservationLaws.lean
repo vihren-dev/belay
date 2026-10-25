@@ -97,12 +97,14 @@ theorem step_extends (clock : Int) (counters : Counters) (parameters : List Valu
     split
     · exact DatabaseExtends.create database name table
     · exact DatabaseExtends.refl database
-  | addColumn target column =>
+  | addColumn target column _ =>
     simp only [step]
     cases h : database.table target with
     | none => exact DatabaseExtends.refl database
     | some table =>
       simp only []
+      split
+      · exact DatabaseExtends.refl database
       split
       · split
         · exact DatabaseExtends.add database target table column .null h

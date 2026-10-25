@@ -33,7 +33,7 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          distinct_having_mutants, authored_foreign_keys, foreign_key_mutants,
                          authored_triggers, trigger_mutants, authored_possible_results, possible_result_mutants,
                          authored_parameters, parameter_mutants, authored_compound, compound_mutants,
-                         authored_pragmas, pragma_mutants)
+                         authored_pragmas, pragma_mutants, authored_add_references, add_reference_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import Mutants, Targets, measure_set
 
@@ -144,6 +144,14 @@ def test_every_foreign_key_mutant_changes_a_verdict(runtime_root: Path) -> None:
     column, `SET NULL` that deletes the child row, `CASCADE` on update that keeps the old child
     key, and a lookup that compares the child value without the parent key's affinity."""
     measure_set(runtime_root, [authored_foreign_keys], [(foreign_key_mutants.MUTANTS, foreign_key_mutants.TARGETS)])
+
+
+def test_every_add_reference_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of ADD COLUMN with REFERENCES and a default (`conformance.add_reference_mutants`)
+    notice every changed rule: a refusal that never happens, a refusal on an empty table or without
+    enforcement, a refusal of the NULL default, and a first DEFAULT that decides instead of the last."""
+    measure_set(runtime_root, [authored_add_references],
+                [(add_reference_mutants.MUTANTS, add_reference_mutants.TARGETS)])
 
 
 def test_every_trigger_mutant_changes_a_verdict(runtime_root: Path) -> None:

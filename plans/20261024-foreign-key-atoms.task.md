@@ -37,7 +37,10 @@ Further accepted on 2026-10-25: correct ADD COLUMN's REFERENCES default check.
 With enforcement on, a nonempty table rejects a REFERENCES column whose default
 is neither absent nor a literal NULL. An empty table can accept it. Preserve
 SQLite's default-form distinction: `NULL` and `(NULL)` qualify, but `(+NULL)`
-does not qualify merely because it evaluates to NULL. This correction, with
+does not qualify merely because it evaluates to NULL. Pinned native also
+accepts the bare `+NULL` (grammar literal); the last DEFAULT of a column decides.
+The model leaves `+NULL`, `-NULL` and parenthesized defaults unsupported, so
+the proven cases are the absent default, `NULL` and the non-NULL spellings. This correction, with
 native regressions and updated preservation laws, joins the planned execution
 changes. Do not replace the correction with a NULL-only proof restriction.
 

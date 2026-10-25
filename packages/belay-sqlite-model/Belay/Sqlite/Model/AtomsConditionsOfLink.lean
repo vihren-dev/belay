@@ -25,7 +25,7 @@ theorem Resolved.Statement.runCondition_of_link {profile : Profile} {database : 
     (link : statement.SchemaLink database.catalog) : statement.RunCondition database := by
   cases statement with
   | createIndex target name index => exact Catalog.createIndex_supported applied
-  | addColumn target column => exact database.addColumnCondition_of_admitted admitted target
+  | addColumn target column _ => exact database.addColumnCondition_of_admitted admitted target
   | drop positions rules => exact Catalog.DropClosed.dropCondition link
   | createTable | createTrigger | begin | commit | rollback | insert | update | upsert
   | delete | prepareError | query | setting => trivial
@@ -37,7 +37,7 @@ theorem Resolved.Statement.notNullCondition_of_admitted {profile : Profile} {dat
     (admitted : database.Admitted profile) (statement : Resolved.Statement) :
     statement.NotNullCondition database := by
   cases statement with
-  | addColumn target column => exact database.rowsWideAt_of_admitted admitted target
+  | addColumn target column _ => exact database.rowsWideAt_of_admitted admitted target
   | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert
   | update | upsert | delete | prepareError | query | setting => trivial
 
@@ -50,7 +50,7 @@ theorem Resolved.Statement.typesFitCondition_of_link {profile : Profile} {databa
     (admitted : database.Admitted profile) {statement : Resolved.Statement}
     (link : statement.SchemaLink database.catalog) : statement.TypesFitCondition database := by
   cases statement with
-  | addColumn target column =>
+  | addColumn target column _ =>
     exact ⟨database.rowsWideAt_of_admitted admitted target, Database.strictDefaultFitsAt_of_fits link⟩
   | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert
   | update | upsert | delete | prepareError | query | setting => trivial
@@ -63,7 +63,7 @@ theorem Resolved.Statement.checksHoldCondition_of_admitted {profile : Profile} {
     (admitted : database.Admitted profile) (statement : Resolved.Statement) :
     statement.ChecksHoldCondition database := by
   cases statement with
-  | addColumn target column =>
+  | addColumn target column _ =>
     exact ⟨database.rowsWideAt_of_admitted admitted target,
       Database.checksReadBelowAt_of_valid admitted.catalogSupported target⟩
   | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert

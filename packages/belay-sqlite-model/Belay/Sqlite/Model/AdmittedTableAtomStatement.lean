@@ -39,7 +39,7 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
     (laws : WriteLaws fun database => database.EachTable atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
     (every : database.EachTable atom)
-    (addColumn : ∀ target column table value, statement = .addColumn target column →
+    (addColumn : ∀ target column refuses table value, statement = .addColumn target column refuses →
       database.table target = some table → AddedCell table column value → atom (table.appendColumns [(column, value)]))
     (writes : ((∃ target rows returning subqueries, statement = .insert target rows returning subqueries none) ∨
       (∃ target assignments filter returning subqueries,
@@ -57,9 +57,9 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
   | createTrigger target name trigger =>
     exact runStatement_create_tableAtom tableAtom clock counters parameters _ every
       (.inr (.inr ⟨target, name, trigger, rfl⟩))
-  | addColumn target column =>
-    exact runStatement_addColumn_rowLocal clock counters parameters target column every
-      fun table value found added => addColumn target column table value rfl found added
+  | addColumn target column refuses =>
+    exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every
+      fun table value found added => addColumn target column refuses table value rfl found added
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal clock counters parameters positions every

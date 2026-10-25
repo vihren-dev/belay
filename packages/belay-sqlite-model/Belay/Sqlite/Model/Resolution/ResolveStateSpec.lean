@@ -74,9 +74,9 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 /-- For every successful resolution of ADD COLUMN, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
-theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog)
+theorem resolveAddColumn_applyCatalog (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -128,7 +128,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok

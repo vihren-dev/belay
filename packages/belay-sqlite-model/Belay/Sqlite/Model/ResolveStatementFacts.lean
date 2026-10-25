@@ -35,7 +35,7 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
   | createIndex name unique table terms filter =>
     exact plain _ ok fun _ _ found => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found
   | addColumn table column =>
-    exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ found
+    exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ _ found
   | dropTable name ifExists =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
   | dropIndex name ifExists =>

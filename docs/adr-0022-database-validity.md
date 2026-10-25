@@ -108,7 +108,11 @@ On 2026-10-25 the owner also accepted correcting ADD COLUMN REFERENCES defaults.
 With foreign-key enforcement on, a nonempty table rejects a new REFERENCES
 column unless its default is absent or literal NULL. The native check observes
 default syntax: `(NULL)` qualifies, while `(+NULL)` does not become acceptable
-because its computed value is NULL. Empty-table and enforcement-off cases retain
+because its computed value is NULL. Pinned native SQLite 3.51.0 also accepts the
+bare `DEFAULT +NULL`, because its grammar gives the literal; the model decides
+neither that spelling nor `-NULL` (no column default value exists for a signed
+NULL, with or without REFERENCES), so the model leaves them unsupported. The
+last DEFAULT of a column decides. Empty-table and enforcement-off cases retain
 their native behavior and other ADD COLUMN checks. Slice 5 includes the execution
 correction, pinned-native regressions and updated conditional preservation laws.
 

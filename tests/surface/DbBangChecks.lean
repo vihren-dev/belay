@@ -24,6 +24,7 @@ open Belay.Sqlite.Model (ExecutionError ValidityAtom LiteralData.tableFailures k
 #guard ExecutionError.nullColumnDefault.message 0 {} [] .commit {} == "Cannot add a NOT NULL column with default value NULL"
 #guard ExecutionError.nonConstantColumnDefault.message 0 {} [] .commit {} == "Cannot add a column with non-constant default"
 #guard ExecutionError.checkColumnDefault.message 0 {} [] .commit {} == "CHECK constraint failed"
+#guard ExecutionError.referenceColumnDefault.message 0 {} [] .commit {} == "Cannot add a REFERENCES column with non-NULL default value"
 -- The texts that are not SQLite's message for the statement. A write with rules (a trigger or a
 -- foreign key) does not name the constraint; a statement that does not fail a constraint has no
 -- candidate, which names a defect.

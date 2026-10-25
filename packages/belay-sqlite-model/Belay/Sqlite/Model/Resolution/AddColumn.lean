@@ -50,6 +50,26 @@ def strictDefaultFits (column : CatalogColumn) : Bool :=
   | some strictType, .ok value => strictType.fits value
   | some _, .error _ | none, _ => true
 
+/-- Whether SQLite treats the written default of an added column as no default for the
+{lit}`REFERENCES` check of {lit}`sqlite3AlterFinishAddColumn`: no DEFAULT is written, or the
+last written DEFAULT (each replaces the preceding one) is the literal {lit}`NULL`, also with
+the unary plus that the grammar admits before a bare term ({lit}`DEFAULT +NULL`). The check reads
+this syntax, not the value: {lit}`-NULL`, a cast or any other expression that evaluates to NULL
+is a non-NULL default. Parenthesized defaults other than a parameter are not translated, so
+{lit}`DEFAULT (NULL)` and {lit}`DEFAULT (+NULL)` never reach this function. The model has no column
+default value for a signed NULL, so a signed NULL default is unsupported anyway; the unary plus
+case only keeps this function equal to SQLite's rule. For example, the column
+{lit}`c DEFAULT NULL` gives
+{lean}`literalNullDefault { name := Identifier.ofString "c", declaredType := none, constraints := [.default .null "NULL"] }`. -/
+def literalNullDefault (definition : Syntax.ColumnDefinition) : Bool :=
+  let written : Option Syntax.Expr := definition.constraints.reverse.findSome? fun constraint =>
+    match constraint with
+    | .default expression _ => some expression
+    | _ => none
+  match written with
+  | none | some .null | some (.positive .null) => true
+  | some _ => false
+
 /-- The foreign keys of a column added at the position, from its constraints in written order:
 each {lit}`REFERENCES` adds one, and a deferral clause sets whether the last of them so far is
 deferred. -/
@@ -67,7 +87,7 @@ statement runs. A default that does not fit the column's strict type
 ({name}`strictDefaultFits`) is {name}`RestrictionKind.addColumnStrictType`. Its
 {lit}`REFERENCES` constraints are its foreign keys, and a deferral clause sets whether the last
 of them so far is deferred. -/
-def resolveAddColumn (context : ResolveContext) (catalog : Catalog)
+def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (enforced : Bool)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
@@ -99,6 +119,7 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog)
         | .error (.restriction path reason) => restrict (1 :: path) reason
         | .ok checks =>
           let column := { column with checks, foreignKeys := addedForeignKeys table.columns.length definition.constraints }
-          .ok (.addColumn position column, catalog.addColumn position column)
+          .ok (.addColumn position column (enforced && !column.foreignKeys.isEmpty && !literalNullDefault definition),
+            catalog.addColumn position column)
 
 end Belay.Sqlite.Model

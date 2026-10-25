@@ -60,8 +60,8 @@ theorem advance_effect (position : Nat) (statement : Resolved.Statement) (parame
 
 /-- For every position, list of values, state and ADD COLUMN, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_addColumn (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (column : CatalogColumn) :
-    advance step (.addColumn target column) parameters state = state.publish step ((state.statementRun (state.clock step) parameters (.addColumn target column)).effect) := by
+@[simp] theorem advance_addColumn (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (column : CatalogColumn) (refuses : Bool) :
+    advance step (.addColumn target column refuses) parameters state = state.publish step ((state.statementRun (state.clock step) parameters (.addColumn target column refuses)).effect) := by
   simp [advance, advanceRun, advanceWith, SqlState.statementRun, runStatement]
 
 /-- For every position, list of values, state and INSERT with any subqueries, {name}`advance` publishes its effect and applies its counts

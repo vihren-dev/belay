@@ -68,7 +68,7 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveAddColumn_valid _ _ _ _ _ _ current (by assumption))
+    exact keep _ (resolveAddColumn_valid _ _ _ _ _ _ _ current (by assumption))
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found

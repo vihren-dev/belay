@@ -38,7 +38,7 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) :
     state.withCatalog (resolveCreateTable context state.catalog name columns constraints options)
   | .createIndex name unique table terms filter =>
     state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter)
-  | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog table column)
+  | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog state.foreignKeys table column)
   | .dropTable name ifExists => state.withWrite context (resolveDropTable state.catalog name ifExists)
   | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog name ifExists)
   | .createTrigger name ifNotExists time event table condition body =>

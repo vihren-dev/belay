@@ -11,10 +11,10 @@ namespace Belay.Sqlite.Model
 /-- For every ADD COLUMN whose resolution is a prepare error that names a catalog
 object: the error is {lit}`no such table` for the statement's table, no table has the
 folded name, and the catalog is unchanged. -/
-theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catalog)
+theorem resolveAddColumn_named (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (error : PrepareError)
     (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (.prepareError error, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -27,10 +27,10 @@ theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catal
 
 /-- For every ADD COLUMN: when no table has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
-theorem resolveAddColumn_missing (context : ResolveContext) (catalog : Catalog)
+theorem resolveAddColumn_missing (context : ResolveContext) (enforced : Bool) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition)
     (missing : catalog.findTable tableName = none) :
-    resolveAddColumn context catalog tableName definition =
+    resolveAddColumn context catalog enforced tableName definition =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveAddColumn
   simp [missing, prepareError]
@@ -60,12 +60,12 @@ theorem findSome_parseError_ne_duplicate (column name : Identifier) (constraints
 table that the folded name finds, whose name SQLite does not reserve and with fewer
 columns than the profile limit, the resolution is {lit}`duplicate column name` exactly
 when a column of the table has the folded name of the new column. -/
-theorem resolveAddColumn_duplicate (context : ResolveContext) (catalog : Catalog)
+theorem resolveAddColumn_duplicate (context : ResolveContext) (enforced : Bool) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable tableName = some (position, table))
     (notReserved : reservedName tableName = false)
     (room : table.columns.length + 1 ≤ context.profile.limits.columns) :
-    resolveAddColumn context catalog tableName definition =
+    resolveAddColumn context catalog enforced tableName definition =
         .ok (.prepareError (.expression (.duplicateColumn definition.name)), catalog) ↔
       (columnPosition table.columns definition.name).isSome = true := by
   unfold resolveAddColumn

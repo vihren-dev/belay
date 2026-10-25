@@ -42,7 +42,7 @@ table keeps the database. -/
 theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
     (every : database.EachTable atom)
-    (appended : ∀ target column, statement = .addColumn target column → ∀ table value,
+    (appended : ∀ target column refuses, statement = .addColumn target column refuses → ∀ table value,
       database.table target = some table → AddedCell table column value →
         atom (table.appendColumns [(column, value)])) :
     (runStatement clock counters parameters statement database).effect.Satisfies fun after => after.EachTable atom := by
@@ -51,8 +51,8 @@ theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
   | createIndex target name index => exact runStatement_createIndex_rowLocal rowLocal clock counters parameters target name index every
   | createTrigger target name trigger =>
     exact runStatement_createTrigger_rowLocal rowLocal clock counters parameters target name trigger every
-  | addColumn target column =>
-    exact runStatement_addColumn_rowLocal clock counters parameters target column every (appended target column rfl)
+  | addColumn target column refuses =>
+    exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every (appended target column refuses rfl)
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal clock counters parameters positions every

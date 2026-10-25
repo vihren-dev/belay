@@ -58,6 +58,11 @@ inductive ExecutionError where
   primary code 1, not as a constraint error; an empty table permits the addition (ADR 0014,
   slice 4). -/
   | checkColumnDefault
+  /-- ADD COLUMN of a {lit}`REFERENCES` column whose written default is not a literal NULL, with
+  foreign keys on, on a table with rows: SQLite's {lit}`Cannot add a REFERENCES column with
+  non-NULL default value`, reported while the statement runs with primary code 1, even when a
+  parent row would match the default. An empty table permits the addition. -/
+  | referenceColumnDefault
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`
@@ -124,7 +129,10 @@ def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.
 input database for every error here. SQLite refuses a statement with its prepare
 error. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
 rows. ADD COLUMN reads the literal default and appends
-its affinity-applied value to each existing row. A NOT NULL column with a NULL
+its affinity-applied value to each existing row. A statement that resolution marked
+{lit}`refusesPopulated` (foreign keys on, a {lit}`REFERENCES` column, a default that is not a literal
+NULL) fails first, on a table with rows, with {lean}`ExecutionError.referenceColumnDefault`;
+SQLite compiles that check before the others. A NOT NULL column with a NULL
 default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, one with
 a time default with {lean}`ExecutionError.nonConstantColumnDefault`, and one whose CHECK
 constraint an existing row with the default fails with
@@ -156,10 +164,11 @@ def step (clock : Int) (counters : Counters) (parameters : List Value) (statemen
     if target == database.catalog.length && database.rows.length == database.catalog.length then
       .ok { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
-  | .addColumn target column => match database.table target with
+  | .addColumn target column refusesPopulated => match database.table target with
     | none => .error (.unmodeled, database)
     | some table =>
-      if column.clockDefault then
+      if refusesPopulated && !table.rows.isEmpty then .error (.referenceColumnDefault, database)
+      else if column.clockDefault then
         if table.rows.isEmpty then .ok (database.addColumn target column .null)
         else .error (.nonConstantColumnDefault, database)
       else match readDefaultValue column with

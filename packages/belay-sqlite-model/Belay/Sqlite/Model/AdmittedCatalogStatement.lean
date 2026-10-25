@@ -50,9 +50,9 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
     split
     · exact Effect.satisfies_of_effectDatabase next
     · exact Effect.satisfies_of_database valid rfl
-  | addColumn target column =>
+  | addColumn target column refuses =>
     simp only [runStatement]
-    rcases step_addColumn_cases clock counters parameters target column database with kept | ⟨table, value, found, _, eq⟩
+    rcases step_addColumn_cases clock counters parameters target column refuses database with kept | ⟨table, value, found, _, eq⟩
     · exact Effect.satisfies_of_database valid kept
     · refine Effect.satisfies_of_effectDatabase ?_
       show (effectDatabase _).catalog.Valid limits

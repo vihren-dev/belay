@@ -841,3 +841,43 @@ record the original assignment history; the sections above are the current recor
   `/nix/store/mhvsqdz6wnx66s0rr80a12yp5xam6hif-sqlite-verifier-test-model-1`.
   Surface/mutant Nix gates and part-1 full/verdict remain open. Part 2's global
   counter invariant and statement/run preservation are still implementation work.
+
+## ADD COLUMN execution correction (part 2, unit 1)
+
+2026-10-25. Native SQLite 3.51.0 refuses `ALTER TABLE ... ADD COLUMN` of a
+`REFERENCES` column with a non-NULL default when foreign keys are on and the table has
+rows, even when the parent row exists. The model did not refuse it. This unit adds the
+refusal; the preservation laws for ADD COLUMN are the next unit.
+
+- Resolution marks the statement: `Resolved.Statement.addColumn` has a third field
+  `refusesPopulated`, true when enforcement is on, the column has a foreign key and its
+  written default (the last DEFAULT) is not a literal NULL (`literalNullDefault`).
+- `step` checks it first, before the NOT NULL, CHECK and clock-default checks, and gives the
+  new `ExecutionError.referenceColumnDefault` (primary code 1, database unchanged). An
+  empty table, enforcement off and a NULL or absent default are accepted as before.
+  The same error is added to messages, output names, failing constraints, the conformance
+  case reader and the `DbDiagnostics` reader.
+- Laws that mention ADD COLUMN take the new field. The refused branch keeps the database, so
+  keys-unique, row-local, extension and run-step laws gain one trivial case.
+- Finding: native accepts a bare `DEFAULT +NULL` as a NULL default. It refuses `-NULL`,
+  `(+NULL)` and `(1)`. The model leaves `+NULL`, `-NULL` and parenthesized defaults
+  unsupported, so `literalNullDefault` is equal to the native rule but the unsupported forms
+  never reach it. The ADR and task text say this.
+- Tests: `tests/add_column_references_test.py` compares the model with native for the
+  default, empty-table, NULL, last-default, enforcement-off, error-precedence and
+  unchanged-state controls, and checks that the unsupported forms are outside the model.
+  `tests/surface/DbBangChecks.lean` checks the message.
+- Mutants: `conformance/add_reference_mutants.py` (5 mutants, all killed), authored cases in
+  `conformance/authored_add_references.py`.
+- Predictions: all 53 prediction files are identical before and after (0 differences). The
+  corpus v54 judge change must add the native regression cases for ADD COLUMN REFERENCES
+  defaults; this line does not edit judge, corpus or lock files.
+- Nix results (focused groups):
+  - model `add_column_references or add_column_defaults or foreign_key_atom_execution`:
+    43 passed, `/nix/store/0v8fyn3nf94plfx1vjbdx1xdkqzna50q-sqlite-verifier-test-model-1`.
+  - surface `db_bang_messages or independent_foreign_key_atoms`: 19 passed,
+    `/nix/store/j9qrv7kfy0xamakgqqxk5jal4cia2mdj-sqlite-verifier-test-surface-1`.
+  - mutants `add_reference or foreign_key`: 2 passed,
+    `/nix/store/0gp4p5q78rgz7h05w7mziqwqzxvbzfn8-sqlite-verifier-test-mutants-1`.
+- Remaining in part 2: ADD COLUMN preservation laws and fixtures, the unified DDL run contract,
+  RESTRICT / SET DEFAULT / deferred coverage with the final matrix, then part-2 full and verdict.

@@ -93,10 +93,10 @@ theorem Catalog.Valid.addColumnResolved {limits : Limits} {dqs : Bool} {catalog 
 after the resolution is valid. Proof sketch: split every branch of the resolver. A prepare error
 returns the catalog, and a model restriction is no success. The branch that adds the column is
 {name}`Catalog.Valid.addColumnResolved`. -/
-theorem resolveAddColumn_valid (context : ResolveContext) (catalog after : Catalog) (tableName : Identifier)
+theorem resolveAddColumn_valid (context : ResolveContext) (enforced : Bool) (catalog after : Catalog) (tableName : Identifier)
     (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (valid : catalog.Valid context.profile.limits)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     after.Valid context.profile.limits := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -114,9 +114,9 @@ of the column fits its strict type ({name}`strictDefaultFits`). Proof sketch: sp
 resolver. The branch that adds the column is the one that did not refuse
 {lit}`!strictDefaultFits`, and the CHECK constraints and foreign keys do not change the answer
 ({name}`strictDefaultFits_with`). -/
-theorem resolveAddColumn_strictDefaultFits (context : ResolveContext) (catalog after : Catalog)
-    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (position : Nat) (column : CatalogColumn)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (.addColumn position column, after)) :
+theorem resolveAddColumn_strictDefaultFits (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (position : Nat) (column : CatalogColumn) (refuses : Bool)
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (.addColumn position column refuses, after)) :
     strictDefaultFits column = true := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -124,7 +124,7 @@ theorem resolveAddColumn_strictDefaultFits (context : ResolveContext) (catalog a
   all_goals first
     | (cases ok; done)
     | (simp only [Except.ok.injEq, Prod.mk.injEq, Resolved.Statement.addColumn.injEq] at ok
-       obtain ⟨⟨_, rfl⟩, _⟩ := ok
+       obtain ⟨⟨_, rfl, _⟩, _⟩ := ok
        rw [strictDefaultFits_with]
        simpa using (by assumption : ¬(!strictDefaultFits _) = true))
 
