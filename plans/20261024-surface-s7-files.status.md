@@ -1,6 +1,7 @@
 # Status: S7 SQL files and build freshness
 
-Created 2026-10-24. Status: OPEN. Assigned for implementation.
+Created 2026-10-24. Status: DONE on 2026-10-25 (both acceptance parts; integration with S5
+is open, see the `SqlTerm.variableValue` entry).
 Task: [task file](20261024-surface-s7-files.task.md).
 Specs: ADR17 S7/D6; ADR16 surface/tool boundary.
 
@@ -242,3 +243,12 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   `needs` lakefile lines, and `lake exe belay-sql-check` with its output and exit codes. The
   public declarations already carry Verso docstrings. No check reads this README (the link
   check does not scan package READMEs); a reviewer read the commands against the fixtures.
+- 2026-10-25: DONE. Part 2 and task-end gates on the line ending at `393cec35`, all through
+  Nix: `just test-full` passed (main suite 472 passed, 71 deselected, 49 subtests; surface
+  suite 118 passed) with reports at
+  `/nix/store/n22ha5qs5qwly4gb5bhahsinxyhf3mcv-sqlite-verifier-test-reports`; `just verdict`
+  passed at
+  `/nix/store/fdyxvw89hvk8i7sa232c6is81sczb24d-sqlite-verifier-verdict` (unchanged, because
+  the frozen predictions and judge lock are unchanged); `just test-nix` passed (71 passed,
+  1529 deselected); `just test-scheduled-checks` passed at
+  `/nix/store/j37adzg25s32slqy03advda9hfd02dwx-sqlite-verifier-scheduled-check-reports`.

@@ -1,6 +1,6 @@
 # S7: SQL files, named statements and build freshness
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: DONE on 2026-10-25.
 Status: [progress](20261024-surface-s7-files.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), D1/S7 and D6;
 [ADR 0016](../docs/adr-0016-model-and-surface.md), surface/tool boundaries.
