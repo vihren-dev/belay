@@ -12,4 +12,4 @@ elab "file_probe " path:str : term => do
   let items ← match ← (translateText source.text : IO _) with
     | .ok items => pure items
     | .error error => throwErrorAt path (source.diagnostic ⟨error.start, error.stop, error.message⟩)
-  fileScriptTerm path source items
+  fileScriptTerm path source source.text items

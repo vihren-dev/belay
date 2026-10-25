@@ -94,3 +94,30 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   (a missing return annotation; a stale status entry). All four are fixed. The repeated
   focused Nix surface run passed 28 tests (72 deselected, 33.48 seconds) at
   `/nix/store/yl9vrf7m795jx6g517z61nk113zz1f8y-sqlite-verifier-test-surface-1`.
+- 2026-10-25: review `20261025T052543Z-3ec66599` of the refactor had no musts and one
+  should (R11: no assertion for the guidance text); the root and file tests now require
+  the full guidance, and a focused Nix run passed 28 tests (72 deselected, 32.31 seconds)
+  at `/nix/store/avm4lbjribzp4gj7srk47lfmylgix36d-sqlite-verifier-test-surface-1`.
+- 2026-10-25: part 1 source (file elaboration and named statements). `sql_file "path"`
+  gives the script that `sql` gives for the same text (`$name` is an argument in a file,
+  and a Lean variable only inline), with `(section := "up"|"down")` for goose and dbmate
+  files and `(against := db)` for the resolution errors of `sql!`. `sql_module Name from
+  "path"` defines one declaration per `-- name: ident` marker, documented with the marker
+  comment lines and `SQL source: path:line:col`. Comments and quoted text are found with a
+  byte lexer that follows SQLite's tokenizer, so a marker inside a string, a block comment,
+  a trigger body or a statement's own trailing comment names nothing. Refusals give one
+  error at the form with the SQL position: direction markers without a section, a section
+  without markers, unknown section, mixed conventions, a repeated or missing direction,
+  SQL before the first marker, unnamed SQL, empty or multi-statement entries, malformed,
+  dotted and duplicate names, already declared names, and a parse failure. The parse
+  failure explains sqlite3 dot commands and sqlc macros at the refused offset; `:v*:ids`
+  parses as multiplication and cannot be recognized. A file with only comments declares
+  nothing. Fixtures: `tests/surface/SqlFileForms.lean`, `SqlFileErrors.lean` (checked
+  with `#guard_msgs`, which also rejects extra messages, such as a cascade from a broken
+  database), `SqlFileLayoutChecks.lean`, over `tests/surface/sql_files/`; CRLF, non-BMP
+  and Unicode positions in `tests/surface_sql_file_forms_test.py`. The layer test now
+  rejects Lake and checker imports from ordinary modules. Focused Nix surface run (36 passed,
+  72 deselected, 44.51 seconds) at
+  `/nix/store/xvq8rwx1vp16a7g19v04wc2gqgw5n985-sqlite-verifier-test-surface-1`; the local
+  dev-build passed (diagnostic). `just test-full` and `just verdict` have not run. The
+  registry and checker (part 2) have not started.

@@ -14,6 +14,8 @@ from the import lines of every Lean package and from the Nix build.
    surface, and the runtime's derivation names the text package.
 5. The translation program does not import the model's umbrella root, even indirectly,
    so its syntax translation does not depend on that root's proof and example imports.
+6. Only the SQL-file checker (ADR 0017, S7) imports Lake, and no module of the surface imports
+   the checker: the Lean files that users elaborate never depend on the build system.
 """
 
 from pathlib import Path
@@ -164,3 +166,28 @@ def test_plausible_is_only_a_surface_dependency() -> None:
     build = (ROOT / "build-support/default.nix").read_text()
     requirements = re.findall(r'requires\."([^"]*plausible[^\"]*)"\s*=\s*plausiblePackage', build)
     assert requirements == ["packages/belay/.lake/packages/plausible"]
+
+
+CHECKER_MODULE = "BelaySqlCheck"
+"""The module of the SQL-file checker executable, the only surface module that may import Lake."""
+
+
+def lake_or_checker_imports(imports_by_module: dict[str, list[str]]) -> list[str]:
+    """The imports of Lake or of the checker by any module other than the checker itself."""
+    return [f"{module}: {name}" for module, names in sorted(imports_by_module.items())
+            if module != CHECKER_MODULE for name in names
+            if name.split(".")[0] == "Lake" or name.split(".")[0] == CHECKER_MODULE]
+
+
+def test_the_layer_check_finds_lake_and_checker_imports() -> None:
+    """Rule 6's traversal reports ordinary modules that import Lake or the checker, and allows the checker."""
+    found = lake_or_checker_imports({"Belay.Sqlite.Files": ["Lake"], "Belay.Sqlite.Other": [CHECKER_MODULE],
+                                     "Belay.Sqlite.Fine": ["Lean"], CHECKER_MODULE: ["Lake", "Belay"]})
+    assert found == ["Belay.Sqlite.Files: Lake", f"Belay.Sqlite.Other: {CHECKER_MODULE}"]
+
+
+def test_only_the_sql_checker_imports_lake() -> None:
+    """Rule 6: no ordinary module of the surface imports Lake, and none imports the checker."""
+    imports_by_module = {module_name(SURFACE, path): imports(path)
+                         for path in lean_files(SURFACE) if path.name != "lakefile.lean"}
+    assert lake_or_checker_imports(imports_by_module) == []

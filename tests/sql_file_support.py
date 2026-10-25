@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from tests.runtime_support import CommandResult, run_command
+from tests.surface_support import surface_command
 
 
 def installed_layout(runtime_root: Path, tmp_path: Path) -> Path:
@@ -45,3 +46,13 @@ def lake_build(installed: Path, package: Path, target: str) -> CommandResult:
     """Build `target` in `package` with the installed Lake, with a finite timeout."""
     return run_command([str(installed / "lean/bin/lake"), "build", "--no-ansi", target], cwd=package,
                        timeout=180, environment=toolchain_environment(installed))
+
+
+def configured_command(runtime_root: Path, source: Path, directory: Path) -> list[str]:
+    """The surface command with a package identity but no Lake workspace, so only the option can locate SQL."""
+    command = surface_command(runtime_root, source, directory)
+    setup_path = directory / "setup.json"
+    setup = json.loads(setup_path.read_text())
+    setup["package"] = "fixture"
+    setup_path.write_text(json.dumps(setup))
+    return command

@@ -103,3 +103,7 @@ def test_sql_file_load_errors(runtime_root: Path, tmp_path: Path, configured: bo
     result = run_command(command, cwd=tmp_path, timeout=60)
     assert result.returncode == 1, result.diagnostic()
     assert message in result.stdout and result.stdout.count(": error:") == 1, result.diagnostic()
+    if message.startswith("cannot read"):
+        assert "the file exists and is readable" in result.stdout, result.diagnostic()
+    if message.startswith("cannot find"):
+        assert "set belay.sql.packageRoot" in result.stdout, result.diagnostic()

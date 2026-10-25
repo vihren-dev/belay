@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.sql_file_support import installed_layout, lake_build, write_package
+from tests.sql_file_support import configured_command, installed_layout, lake_build, write_package
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -23,16 +23,6 @@ def test_explicit_root_primitive(runtime_root: Path, tmp_path: Path) -> None:
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "explicit root checks passed" in result.stdout, result.diagnostic()
-
-
-def configured_command(runtime_root: Path, source: Path, directory: Path) -> list[str]:
-    """The surface command with a package identity but no Lake workspace, so only the option can locate SQL."""
-    command = surface_command(runtime_root, source, directory)
-    setup_path = directory / "setup.json"
-    setup = json.loads(setup_path.read_text())
-    setup["package"] = "fixture"
-    setup_path.write_text(json.dumps(setup))
-    return command
 
 
 def test_option_root_is_anchored_at_the_lean_file(runtime_root: Path, tmp_path: Path) -> None:
@@ -51,9 +41,9 @@ def test_option_root_is_anchored_at_the_lean_file(runtime_root: Path, tmp_path: 
 
 
 @pytest.mark.parametrize(("root", "message"), [
-    ("/", "is absolute"),
-    ("missing", "not a directory"),
-    ("Q.lean", "not a directory"),
+    ("/", "is absolute; use a path relative to the Lean file's directory"),
+    ("missing", "not a directory; set it to an existing directory, written relative to the Lean file's directory"),
+    ("Q.lean", "not a directory; set it to an existing directory, written relative to the Lean file's directory"),
 ])
 def test_invalid_option_roots_report_one_error(runtime_root: Path, tmp_path: Path, root: str, message: str) -> None:
     """Absolute, missing and non-directory roots fail at the form with the option's name."""

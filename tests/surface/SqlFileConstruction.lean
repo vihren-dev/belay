@@ -10,7 +10,7 @@ elab "file_parameters " literal:str : term => do
   let text := literal.getString
   let source : SqlFileSource := ⟨"fixture", ".", "sql/queries.sql", text⟩
   let .ok items ← (translateText text : IO _) | throwError "fixture SQL failed to translate"
-  fileScriptTerm literal source items
+  fileScriptTerm literal source text items
 
 /-- The file's dollar parameter stays an argument beside a same-named Lean local. -/
 def explicitDollar (x : Value) := file_parameters "SELECT $x, ?3, :tail; SELECT $x"
