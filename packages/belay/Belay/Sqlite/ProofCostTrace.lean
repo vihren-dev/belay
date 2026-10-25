@@ -72,12 +72,39 @@ partial def mentionsBody : MessageData → Bool
   | .compose first second => mentionsBody first || mentionsBody second
   | .ofFormatWithInfos _ | .ofGoal _ | .ofLazy _ _ => false
 
-/-- The elements of a persistent array without those that fail the test, from index {lit}`first`
-on; earlier elements stay. -/
-def keepFrom {α : Type} (items : PersistentArray α) (first : Nat) (keep : α → Bool) :
+/-- The messages that stand for a message once its body nodes are gone. A body node is replaced by
+its children: the traces of other classes that the user enabled and Lean recorded inside it. So a
+trace that the user asked for stays in the output, as it is without the collector. -/
+partial def withoutBodyNodesIn : MessageData → Array MessageData
+  | .trace data message children =>
+    let inner := children.flatMap withoutBodyNodesIn
+    if data.cls == bodyClass then inner
+    -- The anonymous root that Lean puts around the top-level traces of a message disappears with
+    -- its last child: an empty message would print as an empty line.
+    else if data.cls.isAnonymous && inner.isEmpty && !children.isEmpty then #[]
+    else #[.trace data message inner]
+  | .withContext context inner => (withoutBodyNodesIn inner).map (.withContext context ·)
+  | .withNamingContext context inner => (withoutBodyNodesIn inner).map (.withNamingContext context ·)
+  | .nest indent inner => (withoutBodyNodesIn inner).map (.nest indent ·)
+  | .group inner => (withoutBodyNodesIn inner).map .group
+  | .tagged tag inner => (withoutBodyNodesIn inner).map (.tagged tag ·)
+  | .ofOriginatingSyntax origin inner => (withoutBodyNodesIn inner).map (.ofOriginatingSyntax origin ·)
+  | .ofWidget widget inner => (withoutBodyNodesIn inner).map (.ofWidget widget ·)
+  | .compose first second =>
+    let join (parts : Array MessageData) := parts.foldl (fun found part => .compose found part) MessageData.nil
+    #[.compose (join (withoutBodyNodesIn first)) (join (withoutBodyNodesIn second))]
+  | message => #[message]
+
+/-- The messages that replace one message: itself when it has no body node. -/
+def replacementMessages (message : MessageData) : Array MessageData :=
+  if mentionsBody message then withoutBodyNodesIn message else #[message]
+
+/-- The elements of a persistent array, with each element from index {lit}`first` on replaced by
+the elements that {lit}`replace` gives. Earlier elements stay. -/
+def replaceFrom {α : Type} (items : PersistentArray α) (first : Nat) (replace : α → Array α) :
     PersistentArray α :=
   (items.foldl (fun (kept, index) item =>
-    (if index < first || keep item then kept.push item else kept, index + 1)) ({}, 0)).1
+    (if index < first then kept.push item else (replace item).foldl (·.push ·) kept, index + 1)) ({}, 0)).1
 
 /-- The body nodes of every message and trace of a snapshot. -/
 def snapshotNodes (snapshot : Snapshot) : Array BodyNode :=
@@ -85,16 +112,19 @@ def snapshotNodes (snapshot : Snapshot) : Array BodyNode :=
   snapshot.diagnostics.msgLog.reportedPlusUnreported.foldl
     (fun found message => found ++ bodyNodes message.data) fromTraces
 
-/-- A snapshot without the messages and traces that contain a body node. A snapshot without
-such a message is returned as it is. -/
+/-- A snapshot without body nodes in its messages and traces. A snapshot without such a node is
+returned as it is. -/
 def withoutBodyNodes (snapshot : Snapshot) : BaseIO Snapshot := do
   let log := snapshot.diagnostics.msgLog
+  let replaceMessage (message : Message) :=
+    (replacementMessages message.data).map ({ message with data := · })
   let clean : MessageLog := { log with
-    reported := keepFrom log.reported 0 (!mentionsBody ·.data)
-    unreported := keepFrom log.unreported 0 (!mentionsBody ·.data) }
-  let traces := keepFrom snapshot.traces.traces 0 (!mentionsBody ·.msg)
-  if clean.reported.size == log.reported.size && clean.unreported.size == log.unreported.size &&
-      traces.size == snapshot.traces.traces.size then return snapshot
+    reported := replaceFrom log.reported 0 replaceMessage
+    unreported := replaceFrom log.unreported 0 replaceMessage }
+  let traces := replaceFrom snapshot.traces.traces 0 fun trace =>
+    (replacementMessages trace.msg).map ({ trace with msg := · })
+  if !(log.reportedPlusUnreported.any (mentionsBody ·.data)) &&
+      !(snapshot.traces.traces.any (mentionsBody ·.msg)) then return snapshot
   return { snapshot with diagnostics := ← Snapshot.Diagnostics.ofMessageLog clean
                          traces := { snapshot.traces with traces } }
 

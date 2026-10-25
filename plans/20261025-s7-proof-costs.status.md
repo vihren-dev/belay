@@ -77,3 +77,15 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   21 passed. The mutual block gives a record for each peer, in async and sync
   mode, in both orders; the overhead sample (three surface proof commands, sync)
   is 6,676,554 internal heartbeats without and 7,261,970 with collection.
+- 2026-10-25: Part 1, review round 1 of 2fc6ae23 (`20261025T194925Z-2fc6ae23`):
+  one must and two should, all fixed. Must (R11): the collector removed whole
+  body subtrees, so traces that the user enabled (for example
+  `trace.Meta.Tactic.simp.rewrite`) disappeared. It now splices each body node
+  out and keeps its children, and drops the empty anonymous trace root; the test
+  `test_traces_that_the_user_asked_for_stay` checks it in async and sync mode.
+  Should (R12): the collect test and `tests/surface_layers_test.py` were over
+  200 lines; the tests are split in collect, compat, automatic and layers files,
+  and `tests/surface_layers_test.py` is as on the base. Focused Nix run of the
+  23 proof-cost tests (not a gate):
+  `/nix/store/ydkfbhi16i15jdw994j3nqpq72nv8hgr-sqlite-verifier-test-surface-1`,
+  23 passed.

@@ -81,7 +81,8 @@ private def hideBodyNodes (marks : Marks) :
       (SnapshotTask.finished task.stx? ·) <$> withoutBodyNodesTree tree
   modify fun state => { state with
     traceState := { state.traceState with
-      traces := keepFrom state.traceState.traces marks.traces (!mentionsBody ·.msg) }
+      traces := replaceFrom state.traceState.traces marks.traces fun trace =>
+        (replacementMessages trace.msg).map ({ trace with msg := · }) }
     snapshotTasks := state.snapshotTasks.extract 0 marks.tasks ++ hidden }
   return (immediate, later)
 

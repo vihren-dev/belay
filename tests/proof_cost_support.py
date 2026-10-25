@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import cast
 
+import pytest
+
 from tests.runtime_support import CommandResult, run_command
 from tests.surface_support import FIXTURES, module_setup
 
@@ -14,8 +16,6 @@ MARKERS = ("PROOF_COSTS", "DECLARATIONS", "WINDOW_HEARTBEATS", "INCREMENTAL")
 """The first words of the lines that the reader fixture prints; they are not compiler output."""
 COLLECTOR_IMPORT = "import Belay.Sqlite.ProofCost\n"
 """The line that installs the collector."""
-READER_IMPORT = "import Belay.Sqlite.ProofCostPending\nimport ProofCostReader\n"
-"""The lines of a control compile: the reader and the data module, without the handlers."""
 
 
 def payload(result: CommandResult, marker: str) -> object:
@@ -103,3 +103,46 @@ class Compiler:
     def artifact(self, name: str) -> Path:
         """The compiled file of a module, which exists only after a successful compile."""
         return self.directory / f"{name}.olean"
+
+
+ASYNCHRONOUS = pytest.mark.parametrize("asynchronous", [True, False], ids=["async", "sync"])
+"""Lean elaborates proofs in the background (`Elab.async`) or in the command; both are measured."""
+
+
+@pytest.fixture(scope="module")
+def runtime_modules(runtime_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    """Compile the reader and the third-party handler fixtures once; tests import them by name."""
+    compiler = Compiler(runtime_root, tmp_path_factory.mktemp("proof-cost-fixtures"))
+    for name in ("ProofCostReader", "ProofCostOtherHandler"):
+        checked(compiler.compile_fixture(name))
+    return dict(compiler.modules)
+
+
+@pytest.fixture
+def compiler(runtime_root: Path, tmp_path: Path, runtime_modules: dict[str, Path]) -> Compiler:
+    """A compiler whose modules include the reader and the third-party handler."""
+    return Compiler(runtime_root, tmp_path, dict(runtime_modules))
+
+
+def pair(size: int, *, reverse: bool = False, mutual: bool = False) -> str:
+    """A cheap and a costly theorem, in the given order, alone or in one mutual block."""
+    cheap = "theorem cheap : True := True.intro\n"
+    costly = f"theorem costly : (List.range {size}).length = {size} := by decide\n"
+    body = costly + cheap if reverse else cheap + costly
+    return (COLLECTOR_IMPORT + "import ProofCostReader\nset_option belay.proofCosts true\n"
+            + ("mutual\n" + body + "end\n" if mutual else body) + "#proof_cost_records\n")
+
+
+EXPECTED = {
+    "Coverage.tactic": ("thm", "stable"), "Coverage.term": ("thm", "stable"),
+    "Coverage.proofDefinition": ("proofDefinition", "stable"),
+    "Coverage.recursive": ("thm", "stable"), "Coverage.withWhere": ("thm", "stable"),
+    "Coverage.fromMacro": ("thm", "stable"),
+    "Coverage.evenPeer": ("thm", "stable"), "Coverage.oddPeer": ("thm", "stable"),
+    "Coverage.mutualProofOne": ("proofDefinition", "stable"),
+    "Coverage.mutualProofTwo": ("proofDefinition", "stable"),
+    "_private.ProofCostCases.0.Coverage.hidden": ("thm", "privateName"),
+}
+"""The named proofs of `ProofCostCases.lean`, with their kind and identity. Four more records are
+anonymous examples; a predicate, a data definition, an embedded proof and a theorem with the
+option off have none."""

@@ -1,10 +1,8 @@
 """S7 proof-cost collector next to the S5 automatic SQL check: the check keeps its result and its cost stays out of the records."""
 
-from pathlib import Path
-
 import pytest
 
-from tests.proof_cost_support import COLLECTOR_IMPORT, Compiler, checked, compiler_output, counts
+from tests.proof_cost_support import COLLECTOR_IMPORT, Compiler, compiler, compiler_output, counts, runtime_modules  # noqa: F401
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -23,19 +21,9 @@ def source(option: str) -> str:
             f"set_option belay.proofCosts {option}\n" + STATEMENTS + "#proof_cost_records\n")
 
 
-@pytest.fixture(scope="module")
-def reader_modules(runtime_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    """The compiled reader fixture, shared by the tests of this file."""
-    compiler = Compiler(runtime_root, tmp_path_factory.mktemp("proof-cost-automatic-reader"))
-    checked(compiler.compile_fixture("ProofCostReader"))
-    return dict(compiler.modules)
-
-
-def test_automatic_check_gives_the_same_result_with_collection(
-        runtime_root: Path, tmp_path: Path, reader_modules: dict[str, Path]) -> None:
+def test_automatic_check_gives_the_same_result_with_collection(compiler: Compiler) -> None:
     """The collector's handlers leave the S5 linter (`automaticLinter`) its errors and suggestions, and
     the time the linter spends is not in the record of the proof it checks."""
-    compiler = Compiler(runtime_root, tmp_path, dict(reader_modules))
     measured = compiler.compile("Automatic", source("true"), automatic_check=True)
     control = compiler.compile("Automatic", source("false"), automatic_check=True)
     unchecked = compiler.compile("Automatic", source("true"), automatic_check=False)
