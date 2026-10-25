@@ -31,7 +31,9 @@ def test_query_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path: 
     records = source.records()
     unsupported = ({"cte-recursive", "cte-recursive-union", "cte-recursive-inner-name",
                     "cte-recursive-empty-arguments", "cte-recursive-arguments",
-                    "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write"}
+                    "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write",
+                    "cte-materialized", "cte-not-materialized", "cte-with-recursive-nonrecursive",
+                    "cte-with-recursive-circular"}
                    if common_tables else UNMODELED)
     assert [record["name"] for record in records] == [case.name for case in source.definitions()]
     resolved_ids(records, json.loads((ROOT / "conformance/requirements-3.51.0.json").read_text()))

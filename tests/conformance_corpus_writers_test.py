@@ -39,7 +39,7 @@ from conformance import (after_error_evidence, authored_after_error, algorithm_e
                          distinct_having_evidence, authored_foreign_keys, foreign_key_evidence,
                          authored_triggers, trigger_evidence, authored_possible_results, possible_result_evidence,
                          authored_parameters, parameter_evidence, authored_compound, compound_evidence,
-                         authored_pragmas, pragma_evidence, authored_query_sources, query_source_evidence)
+                         authored_pragmas, pragma_evidence, authored_query_source_set, query_source_evidence)
 from conformance.authored_resolution import definitions as resolution_definitions
 from conformance.corpus import load
 
@@ -92,7 +92,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
                                                             (parameter_evidence, authored_parameters, 48),
                                                             (compound_evidence, authored_compound, 49),
                                                             (pragma_evidence, authored_pragmas, 50),
-                                                            (query_source_evidence, authored_query_sources, 53)],
+                                                            (query_source_evidence, authored_query_source_set, 53)],
                          ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins", "using",
                               "right", "merged", "keys", "aliases", "upserts", "algorithms", "fromless", "json",
                               "json-functions", "json-each", "default-writes", "clock",
