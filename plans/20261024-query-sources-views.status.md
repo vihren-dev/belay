@@ -459,17 +459,21 @@ Still OPEN: `pragma_table_info('view')` (table-valued) stays a restriction; the 
   (`ResolveStatementForms.lean` is under 200 lines again), and `Restrictions.lean` is 199 lines.
   The `resolveCreateIndex_named` docstring names the `viewNotIndexed` case.
 
-Nix checks (all pass):
+Review `20261025T065042Z-54349b3e` (round 3) found one R5 must: `viewBodyWrite` used a variable
+pattern for the other `ExprError` values. The class `ViewReadClass.column` now separates a missing
+column, and the match lists every class.
+
+Nix checks (all pass; final tree):
 - Focused harness: **118 passed**, 156 deselected,
-  `/nix/store/6iybn553yl6ggq49dhp8lgm918vn8yih-sqlite-verifier-test-view-observation-harness-1`.
-- Surface cases (`ClaimsViewWrites` now has the nested and trigger-body claims and native pins):
+  `/nix/store/0a9c2aic4sp0x8cwshp9raxnrzwi5dfq-sqlite-verifier-test-view-observation-harness-1`.
+- Surface cases (`ClaimsViewWrites` has the nested and trigger-body claims and native pins):
   **28 passed**, 66 deselected,
-  `/nix/store/g3xiy7sykdhwcjnwjs1h75qj7p4qm7pz-sqlite-verifier-test-view-create-surface-1`.
+  `/nix/store/85cs0njf0j9qvq8f63hnd4ampz4pvkky-sqlite-verifier-test-view-create-surface-1`.
   The first run (`build/agent-logs/view-write-r2-surface-1.log`) failed on a claim that used
   a trigger-creation statement; the claim now uses the write that fires the trigger.
 - Syntax cases: **6 passed**,
-  `/nix/store/91bmrsqx2kvviz57662a0qjqzxqdwdn9-sqlite-verifier-test-view-create-model-1`.
-- Predictions `/nix/store/0zmcmfi1ra21l982x2w71nkx1b4wpi1l-sqlite-verifier-predictions` are
+  `/nix/store/53pxkkg9kb46wl9wiravwalrawc927gs-sqlite-verifier-test-view-create-model-1`.
+- Predictions `/nix/store/bi8dvn7zxjwgrcn0mggw7zy5jpq8ay3m-sqlite-verifier-predictions` are
   byte-identical to `gwcwwarb7` (all 53 files).
-- Verdict `/nix/store/670sxdapjv5vvk1fvlhllv2mv15azkkd-sqlite-verifier-verdict`: AGREE 4,962,
+- Verdict `/nix/store/hw3mi62val62xbxbjqsaksnf7ki4siim-sqlite-verifier-verdict`: AGREE 4,962,
   MODEL_UNSUPPORTED 2,410; no DISAGREE, no HARNESS_ERROR.

@@ -116,8 +116,9 @@ def viewBodyWrite (context : ResolveContext) (catalog : Catalog) (view : Identif
   if rowsDiffer then .ok (.error (.expression .valuesDiffer))
   else match viewColumns context catalog view with
     | .ok _ => .ok (.error (.viewModify (viewCatalogName catalog view)))
-    | .error (.value (.prepare (.noSuchColumn _))) => .error (triggerRestriction .viewBodyCheck)
-    | .error (.value (.prepare error)) => .ok (.error (.expression error))
+    | .error (.value (.prepare error)) => match error.viewReadClass with
+      | .column => .error (triggerRestriction .viewBodyCheck)
+      | .found | .later | .width _ => .ok (.error (.expression error))
     | .error (.noSuchTable name) => .ok (.error (.noSuchTable name))
     | .error (.value (.restriction path kind)) => .error { path, kind }
 

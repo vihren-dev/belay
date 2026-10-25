@@ -18,6 +18,9 @@ def CommonTableError.seenWhenViewRead : CommonTableError → Bool
 inductive ViewReadClass where
   /-- SQLite reports the error while it reads the columns. -/
   | found
+  /-- A column that the model cannot find. SQLite reports it while it reads the columns, but a
+  trigger program can supply a {lit}`new.a` or {lit}`old.a` column that the plain read lacks. -/
+  | column
   /-- SQLite finds the error only when a statement runs the view, or the model cannot tell. -/
   | later
   /-- The width check of the explicit name list of the named view, which the read does not make. -/
@@ -34,7 +37,8 @@ SQLite 3.51.0, and the errors that no view query can give are {name}`ViewReadCla
 def ExprError.viewReadClass : ExprError → ViewReadClass
   | .commonTable error => if error.seenWhenViewRead then .found else .later
   | .view (.columns name _ _) => .width name
-  | .view (.circular _) | .view (.functionCall _) | .noSuchColumn _ | .aggregateInGroupBy
+  | .noSuchColumn _ => .column
+  | .view (.circular _) | .view (.functionCall _) | .aggregateInGroupBy
   | .orderByOutOfRange .. | .groupByOutOfRange .. | .wrongArgumentCount _ | .noSuchFunction _
   | .likelihoodArgument | .ambiguousColumn _ | .noSuchSource _ | .joinUsingColumn _
   | .naturalJoinCondition | .noTablesSpecified | .havingNonAggregate | .compoundColumns _

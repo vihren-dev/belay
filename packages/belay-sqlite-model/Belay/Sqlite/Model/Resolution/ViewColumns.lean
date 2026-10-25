@@ -42,7 +42,7 @@ SQLite finds only when a statement runs the view. Any other error stays the erro
 def viewPrepareFailure (context : ResolveContext) (catalog : Catalog) (view : Identifier) (error : ExprError) :
     Except SourceIssue (List CatalogColumn) :=
   match error.viewReadClass with
-  | .found => .error (.value (.prepare error))
+  | .found | .column => .error (.value (.prepare error))
   | .later => .error viewBodyCheck
   | .width name =>
     match (catalog.findView view).bind (·.2.columns) with
