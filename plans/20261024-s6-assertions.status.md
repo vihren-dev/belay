@@ -153,3 +153,8 @@ the part is recorded in the closing entry.
   checks the messages and five negative diagnostics (query not one read-only
   statement in `ensures where`, `holds` and `holdsInContext`; unsupported
   proposition in `#explain`).
+- 2026-10-25, review of unit 3 (71dee9bd): the error policy comes from the head of
+  the postcondition itself, not from any constant in the claim (a negated or nested
+  `andOk` is not reported as a policy); an ordinary triple is explained only for the
+  `Sql` monad (a triple over `Id` is reported as unsupported); the recognized
+  policy and observation names are named, documented lists.

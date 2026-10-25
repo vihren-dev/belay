@@ -30,7 +30,7 @@ def elabExplainMigration : CommandElab := fun command => do
       | some explanation =>
         let written := claim.raw.reprint.getD "<generated migration claim>"
         logInfo m!"Claim: {written}\n{explanation}"
-      | none => throwError "Cannot explain this proposition. Use a migration preserves, translates, or commutes with pattern (or its Migration.QueryPreserves, QueryTranslates, Commutes, or CommutesAs primitive), a fresh-run claim (ensures, FreshEnsures or FreshTriple), a Std.Do triple, or Succeeds."
+      | none => throwError "Cannot explain this proposition. Use a migration preserves, translates, or commutes with pattern (or its Migration.QueryPreserves, QueryTranslates, Commutes, or CommutesAs primitive), a fresh-run claim (ensures, FreshEnsures or FreshTriple), a Std.Do triple about a Sql program, or Succeeds."
   | _ => throwUnsupportedSyntax
 
 end Belay.Sqlite

@@ -59,18 +59,19 @@ def test_fresh_notation_expands_to_primitives(runtime_root: Path, tmp_path: Path
 
 def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path, tmp_path: Path) -> None:
     """The actual #explain command states entry assumptions, the captured start, the error policy and
-    the observation context of fresh, ordinary and success claims, without an invented meaning."""
+    the observation context of fresh, ordinary and success claims. It takes the policy from the
+    postcondition itself, not from a constant nested in it, and gives no invented meaning."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimExplanationExamples.lean", tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     expected = {
-        "Fresh-run claim.": 5, "Ordinary triple.": 1, "Success claim.": 1,
-        "Every permitted branch must return a value and stay modeled": 6,
-        "The initial database is captured once and stays fixed": 5,
-        "Error policy andOk:": 3, "Error policy ifOk:": 1, "Error policy: neither ifOk nor andOk": 2,
+        "Fresh-run claim.": 6, "Ordinary triple.": 1, "Success claim.": 1,
+        "Every permitted branch must return a value and stay modeled": 7,
+        "The initial database is captured once and stays fixed": 6,
+        "Error policy andOk:": 3, "Error policy ifOk:": 1, "Error policy: not stated by ifOk or andOk": 3,
         "makes the claim false": 1,
         "Default query assertions (Holds, holds)": 4, "holdsInContext reads the actual clock": 1,
-        "The claim states no query assertion.": 2, "is not a fresh-run claim": 1,
+        "The claim states no query assertion.": 3, "is not a fresh-run claim": 1,
     }
     for text, count in expected.items():
         assert result.stdout.count(text) == count, f"{text!r}\n{result.diagnostic()}"
@@ -88,6 +89,7 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
     ('#check holds (sql r"DELETE FROM t")', "holds (sql", "one read-only statement"),
     ('#check holdsInContext (sql r"SELECT 1; SELECT 2")', "holdsInContext (sql", "one read-only statement"),
     ('#explain (1 = 1)', "(1 = 1)", "Cannot explain this proposition"),
+    ('#explain (⦃⌜True⌝⦄ (pure 1 : Id Nat) ⦃⇓ value => ⌜value = 1⌝⦄)', "(⦃", "Cannot explain this proposition"),
 ])
 def test_assertion_diagnostics_reject_unadmitted_input(
     runtime_root: Path, tmp_path: Path, claim: str, at: str, message: str,

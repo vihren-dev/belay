@@ -12,3 +12,4 @@ open Belay.Sqlite Std.Do
 #explain FreshTriple (Sql.pure 1) (fun _ => True) (fun _ _ _ _ => True)
 #explain (⦃fun _ : ExecutionContext => ⌜True⌝⦄ Sql.pure (1 : Nat) ⦃andOk (holds (sql r"SELECT 1"))⦄)
 #explain ((Sql.pure 1) succeeds where sql r"SELECT 1")
+#explain ((Sql.pure 1) ensures (⇓ value context => ⌜¬ ((andOk ⌜True⌝ : PostCond Nat (.arg ExecutionContext .pure)).1 value context).down⌝))
