@@ -312,7 +312,7 @@ part-3 acceptance; neither this unit nor its focused checks completes the task.
 
 ## CREATE VIEW and view observation: checked
 
-CREATE VIEW stores the resolved view body, and the predicted catalog and native
+CREATE VIEW stores the unresolved view body, and the predicted catalog and native
 observation list views like tables. A view row is an observation, never a stored row.
 `observeView` resolves `SELECT * FROM view` with `resolveSelectDetails` and runs the
 result with `resolvedStepOutput`; there is no second query interpreter. An unreadable

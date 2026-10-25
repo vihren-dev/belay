@@ -103,7 +103,9 @@ theorem runStatement_createTable_keysUnique (clock : Int) (counters : Counters) 
 
 /-- For every clock value, counters, parameter list, CREATE VIEW and database: if the database
 satisfies {name}`Database.KeysUnique`, the effect of {name}`runStatement` satisfies
-{name}`Effect.KeysUnique`. A view has no stored keys. Proof sketch:
+{name}`Effect.KeysUnique`. That is: if the effect succeeds, or fails with
+{name}`ExecutionError.constraintFail`, its database has unique keys; an error with another reason
+requires nothing. A view has no stored keys. Proof sketch:
 {name}`Database.KeysUnique.append` of a view entry, which is no index. -/
 theorem runStatement_createView_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier)
     (view : CatalogView) {database : Database} (unique : database.KeysUnique) :

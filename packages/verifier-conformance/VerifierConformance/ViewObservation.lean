@@ -19,6 +19,8 @@ inductive ViewObservationIssue where
   | output (output : Output)
   /-- The observer received an unexpected source shape. -/
   | shape
+  /-- An issue of the named view; the report names the view so that the user can repair it. -/
+  | named (view : Identifier) (issue : ViewObservationIssue)
   deriving DecidableEq
 
 /-- Rows of a readable view. All alternatives must have the same complete multiset;

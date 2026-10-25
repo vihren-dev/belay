@@ -91,7 +91,7 @@ The frontend maps these statements, and refuses every other statement as
   Nested WITH also resolves in supported trigger expressions. Execution remains
   unmodeled when a trigger body both writes and uses a subquery; successful
   preparation does not remove that existing runtime restriction.
-  Views remain outside the implemented part of ADR 0019 slice 4.
+  Views are query sources too; see the paragraph on `CREATE VIEW` below.
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
@@ -204,7 +204,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
-options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
+options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
@@ -218,7 +218,7 @@ and trigger bodies cannot split commands. An empty starting schema is allowed.
 ## Schema description
 
 `schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`,
-`CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
+`CREATE INDEX` and `CREATE TRIGGER`, not `CREATE VIEW`, in an order that SQLite can run: an index or a trigger
 follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
@@ -400,8 +400,20 @@ may not be dropped` for SQLite's schema tables under any of their names, also wi
 EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
 DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
 (`drop-constraint-index`). With foreign keys on, `DROP TABLE` first deletes the rows of a table
-that foreign keys reference, with their actions, and fails when a violation remains. The model
-has no views.
+that foreign keys reference, with their actions, and fails when a violation remains.
+
+`CREATE VIEW [IF NOT EXISTS] name [(columns)] AS select` and `DROP VIEW [IF EXISTS] name`
+(ADR 0019, D5) keep the view in the catalog as the `SELECT` syntax, not as resolved rows. SQLite
+reads the view when a statement uses it, so the view can name a table that does not exist yet,
+and a later `DROP TABLE` or `CREATE TABLE` changes what the view reads. A use of the view in
+`FROM` expands the stored query like a derived table, with the column names of the optional
+list or of the query. Names of tables, views and indexes share one namespace, so `already
+exists`, `use DROP VIEW to delete view` and `use DROP TABLE to delete table` apply as in SQLite.
+A view that names a missing table or reads itself fails when a statement uses it, with SQLite's
+preparation error. A view has no stored rows: the observation of the catalog reads them by
+running `SELECT * FROM view`. Not modeled, and refused as model restrictions: `TEMP` views,
+schema-qualified view names, `INSERT`, `UPDATE` and `DELETE` on a view, `INSTEAD OF` triggers, a view as the argument of a
+table-valued pragma, and `PRAGMA table_info` of a view.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...

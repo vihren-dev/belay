@@ -60,7 +60,7 @@ def predictedTables (profile : Profile) (clock : Option Int) (counters : Counter
     match object.entry with
     | .table _ => pure ((database.table position).bind (predictedTable database.catalog position))
     | .view _ => do
-      let view ← observeView profile clock counters database object.name
+      let view ← (observeView profile clock counters database object.name).mapError (.named object.name)
       pure (some (Json.mkObj [("table", toJson view), ("kind", toJson "view"),
         ("rowidPrimaryKey", toJson false), ("primaryKeyDescending", toJson false)]))
     | .index _ | .trigger _ => pure none
@@ -89,20 +89,35 @@ def predictionSteps (profile : Profile) (clocks : List Int) (counters : List Cou
     stepJson profile (if index == 0 then none else clocks[index - 1]?)
       (counters.getD index {}) observation
 
-/-- Report an unavailable observation. A model restriction or unmodeled output is out
-of scope; an SQL preparation/execution error is a failed observation, never an empty
-snapshot or a model restriction. Such a failure also prevents the native recorder
-from recording a snapshot. -/
-def observationIssueJson : ViewObservationIssue → Json
+/-- The text " in view NAME" for an error message, or nothing without a view. -/
+def viewSuffix : Option Identifier → String
+  | some name => s!" in view {name.text}"
+  | none => ""
+
+/-- The advice that ends the error text of a view that SQLite cannot read. -/
+def repairAdvice : String := "Change the view or drop it, so that the statement can read it."
+
+/-- Report an unavailable observation of the view {lit}`view`, if known. A model restriction or
+unmodeled output is out of scope; an SQL preparation/execution error is a failed observation,
+never an empty snapshot or a model restriction. Such a failure also prevents the native recorder
+from recording a snapshot. Each error text names the view and says how to repair it. -/
+def observationIssueAt (view : Option Identifier) : ViewObservationIssue → Json
+  | .named name issue => observationIssueAt (some name) issue
   | .resolution (.value (.restriction _ kind)) =>
     Json.mkObj [("restricted", toJson kind.message), ("restriction", toJson kind.id)]
   | .resolution (.value (.prepare error)) =>
-    Json.mkObj [("error", toJson ("view observation prepare error: " ++ error.message))]
+    Json.mkObj [("error", toJson (s!"view observation prepare error{viewSuffix view}: {error.message}. " ++ repairAdvice))]
   | .resolution (.noSuchTable name) =>
-    Json.mkObj [("error", toJson s!"view observation prepare error: no such table: {name.text}")]
-  | .output (.unmodeled reason) => Json.mkObj [("restricted", toJson ("view observation: " ++ reason))]
-  | .output (.error code) => Json.mkObj [("error", toJson s!"view observation execution error: {code}")]
+    Json.mkObj [("error", toJson (s!"view observation prepare error{viewSuffix view}: no such table: {name.text}. " ++ repairAdvice))]
+  | .output (.unmodeled reason) =>
+    Json.mkObj [("restricted", toJson s!"view observation{viewSuffix view}: {reason}")]
+  | .output (.error code) =>
+    Json.mkObj [("error", toJson (s!"view observation execution error{viewSuffix view}: code {code}. " ++ repairAdvice))]
   | .output (.rows _) | .output (.oneOf _) | .output (.done _) | .shape =>
-    Json.mkObj [("error", toJson "view observation has an unexpected query shape or output")]
+    Json.mkObj [("error", toJson s!"view observation has an unexpected query shape or output{viewSuffix view}. Report this case.")]
+
+/-- Report an unavailable observation whose view is named by the issue, if known
+({name}`observationIssueAt`). -/
+def observationIssueJson (issue : ViewObservationIssue) : Json := observationIssueAt none issue
 
 end Belay.Sqlite.Model.Conformance
