@@ -360,3 +360,6 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
   the 3000 s limit of the gate script at 97% because the machine was loaded by other gates. The surface
   modules `PlainInsertEffect` and `SingleStatementChecks` now import no single model module; the gate
   script limit for the next run is 5400 s.
+- `0b0b11fa`: surface imports only the model root; review 20261025T121135Z-0b0b11fa has no
+  findings. The 1500 s limit of the Nix test build in `just test-full` is the one that stopped the
+  second attempt (exit 124); the gate script itself has a 5400 s limit.
