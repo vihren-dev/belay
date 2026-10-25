@@ -159,6 +159,9 @@ Review `20261025T093900Z-5d6de3ca` of the refactor commit `5d6de3ca` found nothi
   `/nix/store/j37adzg25s32slqy03advda9hfd02dwx-sqlite-verifier-scheduled-check-reports`.
 
 Logs are `build/agent-logs/docblocks-*`. The judge lock and the frozen predictions are unchanged.
-The task is DONE. Needed outside this task: none known in the private guide; the guide text about
-`+error` messages should say what `SqlDocGuide` says (syntax, function and trigger or
-foreign-key constraint failures give the model's own text).
+The task is DONE. By the owner's rule for this work the mutant suites are not run locally
+(`just test-scheduled` and `just test-mutants` were not run; CI runs them daily), so the scheduled
+gate here is `just test-scheduled-checks`. No mutant test touches the files of this task.
+Outstanding outside this task: the private guide needs one correction. Its text about `+error`
+messages should say what `SqlDocGuide` says: syntax, function and trigger or foreign-key
+constraint failures give the model's own text, and the expected lines repeat it.
