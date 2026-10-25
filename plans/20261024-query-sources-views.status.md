@@ -161,7 +161,7 @@ Repair source `a890097fe76f92529517393bd5ba904f1a8853d9` passed independent
 review `20261024T215844Z-a890097f` with zero must and zero should findings.
 The catalog foundation and its five mutation repairs are now checked and reviewed.
 
-## Stored source expansion: focused check, review pending
+## Stored source expansion: focused checks and review passed
 
 The source workspace preserves checked expansion snapshot `700bd0d2` and merges
 complete S6/native source `5bc323f0` without rewriting either ancestor. Stored
@@ -198,8 +198,9 @@ comparison remain in this workspace's `build/agent-logs/` as
 `view-integration-focused.log`, `view-integration-focused-retry.log`,
 `view-integration-predictions.log` and `view-integration-prediction-comparison.json`.
 
-Independent review is pending the owner's reviewer-login refresh. These focused
-checks do not complete part 3 or replace its post-review full/verdict and
+Independent review `20261025T001433Z-694d0790` checked frozen source
+`694d0790117126afd07fa8cb9add72065988c6bb` and found zero musts and zero shoulds.
+These focused checks do not complete part 3 or replace its post-review full/verdict and
 task-end acceptance. The existing result-alias limitation is recorded separately;
 this unit makes no unrelated resolver or mutant-harness correction.
 
@@ -207,7 +208,7 @@ this unit makes no unrelated resolver or mutant-harness correction.
 
 CREATE/DROP VIEW, complete pragma metadata, write errors and catalog/statement
 preservation remain OPEN under the existing task. Stored-source expansion has
-the focused evidence above and awaits independent review. FK proof leaves are
+the focused checks and independent review above. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53
 remains unpublished and mutable in the separate evidence workspace. No corpus,
 claim or judge-lock file changes in the foundation.
