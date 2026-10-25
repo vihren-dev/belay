@@ -110,11 +110,28 @@ known editor implementation, task and review records. Both fixture registrations
 are retained. The comparison record is
 `build/agent-logs/editor-repair-merge-equality.json`.
 
-The combined development build and focused Nix check of the editor, guide
-parameters, replay/search and layers are queued. No combined acceptance is claimed
-yet. No process is live and no heavy slot is reserved. Root's source read found
-no semantic issue, but it is not independent review. Reviewer access is restored;
-the coherent source commit and its independent review follow the combined checks.
+The second conflict-free merge `4f65073e` joins the unchanged first merge/status
+`3d803229` with accepted S5 policy/review head
+`bf3fa71fec3bf604b057a17141c50a2832b7aebf`. This adds only the reviewed
+`CheckClaim` policy extraction, its S5 status and three review records. Eight
+editor/configuration/test files remain byte-identical to `3d803229`; the exact
+comparison is in `build/agent-logs/editor-query-policy-merge-equality.json`.
+Neither prior editor parent was amended.
+
+The combined Nix check passed on snapshot `67c2e611`: 23 passed, 72 deselected
+in 104.15 seconds, report
+`/nix/store/pfqbwzf1dvcfbdjzhl2fyavl3fwca3dv-sqlite-verifier-test-surface-1`.
+It covers both real-server newline cases, the unchanged guide parameters and
+parameter diagnostics, replay, all three shared-search checks, parser behavior
+and the ten layer checks. The original guide-parameter printing regression is
+resolved in this combined tree. The mandatory development build passed; it is
+a local diagnostic, not acceptance evidence. The sequential gate is terminal;
+logs and its exact command are in `build/agent-logs/editor-combined-*`.
+
+Root's source read found no semantic issue, but it is not independent review.
+Reviewer access is restored. Explicit review of frozen source `31f35d22` will
+cover its complete editor diff; a separate merge review covers integration and
+this acceptance record without amending either parent. These reviews are next.
 First-part full/verdict acceptance follows its independent review. Schema facts,
 table origins, corrections and warnings remain in the second part, together
 with completed query-source integration. The overall task remains OPEN.

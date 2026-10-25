@@ -24,6 +24,14 @@ private def dataOnlyNames : Array Name :=
   #[``Sampling.scriptHints, ``Sampling.SchemaHints.schema, ``Sampling.schema,
     ``Sampling.validated, ``Database.empty, ``Database.rows]
 
+/-- Query predicates whose first two arguments give the script and observed database. -/
+private def directQueryNames : Array Name :=
+  #[``Holds, ``Empty, ``Fails]
+
+/-- Inspect proposition arguments of these constructors without unfolding their definitions. -/
+private def logicalConstructorNames : Array Name :=
+  #[``Eq, ``HEq, ``And, ``Or, ``Iff, ``True, ``False]
+
 /-- Look for a query operation or SQL source annotation, following definition bodies.
 The inspection does not follow constant types, so merely using the Database type does not
 trigger SQL checking. None means that the finite declaration budget ran out; it is not a
@@ -109,7 +117,7 @@ where
       | _ => pure ()
       let head := expression.getAppFn
       let arguments := expression.getAppArgs
-      if #[``Holds, ``Empty, ``Fails].any head.isConstOf && arguments.size >= 2 then
+      if directQueryNames.any head.isConstOf && arguments.size >= 2 then
         return { sites := #[{ script := arguments[0]!, database := arguments[1]! }] }
       if head.isConstOf ``Succeeds && arguments.size == 5 then
         let program := arguments[3]!
@@ -122,7 +130,7 @@ where
       if head.isLambda then return ← visit fuel (head.beta arguments)
       if let .const name levels := head then
         -- Logical constructors are inspected by their proposition arguments below.
-        unless #[``Eq, ``HEq, ``And, ``Or, ``Iff, ``True, ``False].contains name do
+        unless logicalConstructorNames.contains name do
           if let some info := (← getEnv).find? name then
             if let some body := info.value? then
               if ← isProp expression then
