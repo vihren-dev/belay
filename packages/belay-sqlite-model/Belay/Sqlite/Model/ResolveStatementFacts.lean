@@ -38,6 +38,8 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
     exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ found
   | dropTable name ifExists =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
+  | dropView name ifExists =>
+    exact plain _ ok fun _ _ found => resolveDropView_schemaLink _ _ _ valid found
   | dropIndex name ifExists =>
     exact plain _ ok fun _ _ found => resolveDropIndex_schemaLink _ _ _ valid found
   | createTrigger name ifNotExists time event table condition body =>

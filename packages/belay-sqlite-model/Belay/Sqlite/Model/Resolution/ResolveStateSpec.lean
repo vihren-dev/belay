@@ -133,6 +133,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_applyCatalog _ _ _ _ _ found
+  | dropView name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropView_applyCatalog _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

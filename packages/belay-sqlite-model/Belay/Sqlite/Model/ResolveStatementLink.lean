@@ -109,4 +109,21 @@ theorem ResolveState.withWrite_schemaLink {context : ResolveContext} {state next
       | (cases ok; exact Resolved.Statement.schemaLink_withRules _ (each _ _ rfl))
       | cases ok
 
+/-- Every DROP VIEW resolution from a valid catalog meets the resolved
+statement's schema link. Proof sketch: errors are trivial; a found view is a
+non-table position for {name}`Catalog.DropClosed.single`, and IF EXISTS can drop nothing. -/
+theorem resolveDropView_schemaLink {limits : Limits} {catalog after : Catalog} (name : Identifier)
+    (ifExists : Bool) (statement : Resolved.Statement) (valid : catalog.Valid limits)
+    (ok : resolveDropView catalog name ifExists = .ok (statement, after)) : statement.SchemaLink catalog := by
+  unfold resolveDropView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact Catalog.DropClosed.nil catalog)
+    | (cases ok
+       obtain ⟨object, atPosition, entry⟩ := Catalog.findView_some (by assumption)
+       exact Catalog.DropClosed.single valid atPosition (by simp [entry]))
+    | cases ok
+
 end Belay.Sqlite.Model

@@ -46,7 +46,8 @@ foreign key; a tool then shows the error at the statement. For example
 {assert}`(PrepareError.noSuchTable (name! "u")).name? = some (name! "u")`. -/
 def PrepareError.name? : PrepareError → Option Identifier
   | .tableExists name | .viewExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
-  | .noSuchTable name | .noSuchIndex name | .tableMayNotBeDropped name
+  | .noSuchTable name | .noSuchView name | .useDropTable name | .useDropView name
+  | .noSuchIndex name | .tableMayNotBeDropped name
   | .noSuchReferencedTable name | .foreignKeyMismatch name _ | .noSuchTrigger name
   | .triggerExists name => some name
   | .expression error => error.name?

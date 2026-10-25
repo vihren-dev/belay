@@ -68,8 +68,6 @@ def deferred : List Syntax.Statement := [
   .delete (name! "v") none,
   .createIndex (name! "i") false (name! "v") [⟨.identifier (name! "x") .none, false⟩] none,
   .addColumn (name! "v") {name := name! "y", declaredType := none, constraints := []},
-  .dropTable (name! "v") false,
-  .dropTable (name! "v") true,
   .createTrigger (name! "tr") false .before .insert (name! "v") none [],
   .pragma (.tableInfo (name! "v")) ]
 

@@ -126,6 +126,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_step _ _ _ _ _ found
+  | dropView name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropView_step _ _ _ _ _ (by assumption))
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

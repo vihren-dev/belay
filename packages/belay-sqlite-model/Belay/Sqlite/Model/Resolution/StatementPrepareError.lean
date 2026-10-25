@@ -24,6 +24,14 @@ inductive PrepareError where
   | indexExists (name : Identifier)
   /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
   | noSuchTable (name : Identifier)
+  /-- {lit}`no such view: %s` ({lit}`sqlite3LocateTable` for DROP VIEW). -/
+  | noSuchView (name : Identifier)
+  /-- {lit}`use DROP TABLE to delete table %s`: DROP VIEW names a physical table.
+  The name keeps the catalog's declared spelling. -/
+  | useDropTable (name : Identifier)
+  /-- {lit}`use DROP VIEW to delete view %s`: DROP TABLE names a view.
+  The name keeps the catalog's declared spelling. -/
+  | useDropView (name : Identifier)
   /-- {lit}`no such index: %S` ({lit}`sqlite3DropIndex`). -/
   | noSuchIndex (name : Identifier)
   /-- {lit}`table %s may not be dropped` ({lit}`sqlite3DropTable`), for SQLite's schema

@@ -21,7 +21,7 @@ def definition (script : Script) (columns : Option (List Identifier) := none) : 
         limit, offset, having, distinct, compound, parent := none }
       subqueries }
   | none | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..)
-  | some (.dropTable ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
+  | some (.dropTable ..) | some (.dropView ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
   | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.pragma ..)
   | some (.createTrigger ..) | some (.dropTrigger ..) => {query := commonTablePlaceholder}
 

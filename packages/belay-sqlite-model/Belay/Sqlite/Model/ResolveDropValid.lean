@@ -140,4 +140,37 @@ theorem resolveDropTrigger_closed (limits : Limits) (catalog after : Catalog) (n
        exact Catalog.DropClosed.single valid atPosition (by simp [entry]))
     | (cases ok; done)
 
+/-- Every DROP VIEW resolution from a valid catalog leaves a valid catalog.
+Proof sketch: errors keep the input, and a successful drop removes no table,
+so {name}`Catalog.DropClosed.single` preserves every index and trigger target. -/
+theorem resolveDropView_valid (limits : Limits) (catalog after : Catalog) (name : Identifier)
+    (ifExists : Bool) (statement : Resolved.Statement) (valid : catalog.Valid limits)
+    (ok : resolveDropView catalog name ifExists = .ok (statement, after)) : after.Valid limits := by
+  unfold resolveDropView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first
+    | (cases ok; exact valid)
+    | (cases ok; exact valid.drop (Catalog.DropClosed.nil catalog))
+    | (cases ok
+       obtain ⟨object, atPosition, entry⟩ := Catalog.findView_some (by assumption)
+       exact valid.drop (Catalog.DropClosed.single valid atPosition (by simp [entry])))
+    | cases ok
+
+/-- Every DROP VIEW resolution to removed positions from a valid catalog keeps
+all table dependencies closed. Proof sketch: a found view is not a physical
+table; an absent view with IF EXISTS removes nothing. -/
+theorem resolveDropView_closed (limits : Limits) (catalog after : Catalog) (name : Identifier)
+    (ifExists : Bool) (positions : List Nat) (valid : catalog.Valid limits)
+    (ok : resolveDropView catalog name ifExists = .ok (.drop positions, after)) : catalog.DropClosed positions := by
+  unfold resolveDropView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first
+    | (cases ok; exact Catalog.DropClosed.nil catalog)
+    | (cases ok
+       obtain ⟨object, atPosition, entry⟩ := Catalog.findView_some (by assumption)
+       exact Catalog.DropClosed.single valid atPosition (by simp [entry]))
+    | cases ok
+
 end Belay.Sqlite.Model

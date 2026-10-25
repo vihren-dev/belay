@@ -42,7 +42,7 @@ structure ResolvedScript where
 TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createIndex .. | .createTrigger .. => true
-  | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
+  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
@@ -75,7 +75,7 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       let trigger : CatalogTrigger := { table, time, event, condition, body }
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
-    | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin
+    | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
     | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 

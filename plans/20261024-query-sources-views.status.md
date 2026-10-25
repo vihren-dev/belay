@@ -206,8 +206,9 @@ this unit makes no unrelated resolver or mutant-harness correction.
 
 ## Remaining view scope
 
-CREATE/DROP VIEW, complete pragma metadata, write errors and catalog/statement
-preservation remain OPEN under the existing task. Stored-source expansion has
+CREATE VIEW, complete pragma metadata, write errors and the remaining preservation
+closure remain OPEN under the existing task. DROP VIEW is checked in the unit below.
+Stored-source expansion has
 the focused checks and independent review above. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53
 remains unpublished and mutable in the separate evidence workspace. No corpus,
@@ -250,3 +251,59 @@ selectors gives the exact already-realized derivations; no build was needed:
 identities and checked XML counts. The adjacent selector files and evaluation
 logs make the comparison reproducible. This completes the harness integration;
 the view feature and its full acceptance remain OPEN.
+
+
+## DROP VIEW: focused checks passed
+
+The syntax and text layers now accept DROP VIEW and DROP VIEW IF EXISTS. The
+resolver uses the existing resolved drop execution. It removes the view's catalog
+position and empty storage without resolving its definition. Existing physical
+rows remain intact, later catalog positions shift, and rollback restores the
+original catalog and rows. The public runner's generic validity proof covers the
+new syntax constructor; new resolution laws establish the catalog step, resulting
+catalog, dependency closure and schema link.
+
+DROP VIEW against a table and DROP TABLE against a view produce SQLite's
+wrong-kind messages, including with IF EXISTS and with the declared object's
+spelling. Missing names, indexes and protected schema tables retain native error
+precedence. A valid catalog requires every trigger to name a physical table
+(`CatalogObject.supported`); triggers attached to views are not admitted, and
+INSTEAD OF remains excluded. Removing only the view position is correct within
+that scope. No foreign-key formula or file changes in this unit.
+
+The first Nix surface attempt on `d6e049f9` passed 24 of 25 selected cases,
+including the new DROP VIEW fixture's nine axiom-audited kernel claims and eleven
+native message comparisons. Its only failure was the existing trigger fixture's
+exhaustive helper, which needed the new syntax case. The correction adds only
+that non-body case and clarifies the Python test documentation. Production
+package sources are identical between that attempt and corrected `2a3f14a9`.
+The retained first-attempt log is `build/agent-logs/view-drop-surface.log`.
+Per coordinator approval, passed unrelated fixtures were not repeated.
+
+Focused Nix evidence:
+
+- Corrected trigger fixture: **1 passed**, 90 deselected, at
+  `/nix/store/p4d5asbk3a1dp8w79vh7xfdw69wb0g5w-sqlite-verifier-test-view-drop-surface-retry-1`.
+- DROP syntax and schema-qualification boundaries: **4 passed**, 251 deselected,
+  at `/nix/store/i7289fwx5vkxfm515w7i06q17rnyykd5-sqlite-verifier-test-view-drop-model-1`.
+- Existing named DROP mutant group: **1 passed**, 9 deselected, at
+  `/nix/store/47kn6iiinwh59di6ix5gm074vqkmshyl-sqlite-verifier-test-view-drop-mutants-1`.
+  All three faults retain unchanged-model agreement and mutant-kill assertions.
+  The IF EXISTS source anchor follows the new nested match; its fault and target
+  are unchanged.
+
+Predictions at
+`/nix/store/xi0rgkd2nfxfilb63wygqxdxswjbd7kv-sqlite-verifier-predictions`
+contain the same 53 files and 7,372 cases as accepted `lnz7y254`. All output and
+modeled-status fields are unchanged. Exactly 387 records in corpus v1–v5 differ
+only in the unsupported-statement reason, which adds DROP VIEW to the supported
+statement list; 48 files are byte-identical. The exact per-record comparison and
+verified single replacement are in
+`build/agent-logs/view-drop-prediction-comparison.json`. This is no claimed
+corpus agreement gain. No corpus, claim or judge-lock file changes.
+
+Commands, selectors and logs are `build/agent-logs/view-drop-*`. The package dev
+build and development verdict are required local diagnostics, not acceptance
+citations. Independent review follows this coherent source commit. CREATE VIEW
+and the remaining view scope above still require their implementation and full
+part-3 acceptance; neither this unit nor its focused checks completes the task.
