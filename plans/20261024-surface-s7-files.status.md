@@ -302,3 +302,10 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   Check: focused Nix surface run
   (59 passed, 113 deselected, 329.08 s) at
   `/nix/store/hx2z9c1z1mdavhg2dk2wl23zmg1rrif6-sqlite-verifier-test-surface-1`.
+- 2026-10-25: post-review gates of the integration above S5 and views (merge `b3af6c57`, record
+  fixed in `f8edf378`), all through Nix: `just test-full` passed (main suite 469 passed, 71
+  deselected, 49 subtests; surface suite 172 passed) with reports at
+  `/nix/store/bgy13iqwk3c1r054m8cw38rxm8a2x31g-sqlite-verifier-test-reports`; `just verdict`
+  passed at `/nix/store/ndsqyfmx2i16r6ikj8r6aad55rgn8jvn-sqlite-verifier-verdict`;
+  `just test-nix` passed (71 passed, 1633 deselected); `just test-scheduled-checks` passed at
+  `/nix/store/9srxkkbng50wcla2pq6x2am9myad2s31-sqlite-verifier-scheduled-check-reports`.
