@@ -448,10 +448,9 @@ limited source-row boundary. Source commit
 `20261025T022246Z-90635a75`: zero musts and zero shoulds. The reviewer read every
 changed file; it did not run tests. This completes the separate scan unit.
 
-Whole statement effects, successful original migration, exact public query
-output and all raw/concrete branch correspondence remain unfinished. The next
-missing effect law must derive the stored rows from a successful plain UPDATE;
-its premise must not assume the desired row map. Any exclusion of preexisting
+At this scan boundary, statement effects, successful original migration, exact
+public query output and all raw/concrete branch correspondence were unfinished.
+The successful-UPDATE effect gap is closed by the next unit below. Any exclusion of preexisting
 UPDATE triggers must be structural or checked against the extended catalog:
 an old UPDATE OF name can become a column when ADD COLUMN introduces it.
 
@@ -481,8 +480,10 @@ native counter replay still agrees in both orders. The retained log is
 development build preceded this Nix check; neither check required a source
 correction. Only the Nix result is acceptance evidence. R3/R19 self-review
 checked the proof sketches, successful-effect boundary, storage-slot premise,
-arbitrary Value consumer and actual nonempty success witness. Independent
-review is pending.
+arbitrary Value consumer and actual nonempty success witness. Source commit
+`090d363bdf7057689ac4f678a2b40513f67d230b` received independent review
+`20261025T024024Z-090d363b`: zero musts and zero shoulds. The reviewer read every
+changed file and did not run tests. This completes the exact-effect unit.
 
 The later public-run proof must derive these successful-effect premises from
 original migration success and must establish the plain resolved form against
