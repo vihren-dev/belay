@@ -16,9 +16,11 @@ simulation because its write order changes total_changes.
 The production execution prerequisite is present at immutable `5bc323f0`, the
 base of this implementation workspace. Final table-rebuild and FK work is still
 needed for the cascade example. Existing reviewed native diagnostics inform
-these contracts but are not implementation acceptance. The descriptors, comparison/pattern primitives and composition/frame laws have
-the focused evidence below. Public notation, named commutation-law closure,
-later examples and acceptance-part checks remain required.
+these contracts but are not implementation acceptance. The descriptors,
+comparison/pattern primitives, composition/frame laws, named commutation laws
+and pattern frontend have the focused evidence below. The fourth unit awaits
+independent review. Universal examples, private-guide corrections and the
+acceptance-part checks remain required.
 
 ## Progress
 
@@ -201,10 +203,64 @@ uses the existing suite and unchanged timeouts. R3/R19 self-review checked raw
 reachability, actual/all-branch correspondence and noncircular frame premises.
 Independent review `20261025T004439Z-c398676a` read the complete diff and found
 zero musts and zero shoulds. This checked boundary remains separate from whole
-acceptance-part completion. Remaining work includes named commutation identity
-and application-composition conveniences over the proved full bind law, pattern
-notation/guards/explanations and source diagnostics, and universal migration
-examples with their private guide integration. Rebuild/trigger/INSERT SELECT
+acceptance-part completion. At that boundary, named commutation identity and
+application-composition conveniences, pattern notation/guards/explanations and
+source diagnostics were still pending; the fourth unit supplies them. Universal
+migration examples with their private guide integration remain required. Rebuild/trigger/INSERT SELECT
 examples still depend on their separately owned model work and pending order
 decision. Both acceptance parts still require their post-review full/verdict
 gates; task end requires Nix and scheduled checks. No such completion is claimed.
+
+
+## Fourth unit: application composition and pattern frontend
+
+The implementation is in Jujutsu change `ytvpyvlvtswvqvromlvvxyyuqwszzlkx`,
+with source and fixtures unchanged from frozen checked revision
+`68527f2d3cfc44f358a9cf44042ba5f8b25b60fe`. It adds pure-migration/application commutation, named
+application-bind commutation and its same-application/unrestricted conveniences.
+The sufficient premise observes every returning first-application branch's raw
+reached context and includes migration success there. The target proposition
+still uses the original-context success domain. Annotated associativity and the
+existing full bind law retain return values and actual/raw/concrete outcomes.
+
+The pattern frontend exposes all four guide spellings, with optional default
+`Holds` guards, through the existing fresh primitives and `Runnable`. `quiet`
+produces an explicit view descriptor. The minimal `#explain` command elaborates
+supported fresh pattern heads before explaining their original-success domain,
+vacuity, compared segments, errors and weak/full scope. Unsupported claims receive
+an actionable diagnostic. No editor hook, sampler or execution definition changes.
+
+Frozen source passed the installed Nix check at
+`/nix/store/wc3x8mr5lynvf1k6620wjcnzjy3b4bzk-sqlite-verifier-test-migration-notation-1`:
+10 tests passed, 85 deselected, in 33.72 seconds. The installed surface is
+`/nix/store/hm7nvqg5zaaqv2ijxbjyd48h64mifmc5-belay-0.1.0`. The selected tests
+check 87 pattern-law, 10 notation, 27 descriptor and 101 execution proof-dependency
+reports: all 225 use only permitted ordinary logical axioms. The disposable Nix
+selector preserves existing suite timeouts. Log: `build/agent-logs/migration-notation-focused.log`.
+
+The fixtures cover all eight syntax forms, parameterized query admission,
+source locations and quiet-action rejection. An explicit original-success
+witness makes the nonempty application-composition case nonvacuous and both
+orders return its continuation value 8. Raw and concrete LIMIT choices retain
+result-dependent tails. A counter guard distinguishes default unknown-counter
+observation from a complete zero-counter environment. Actual explanations keep
+the written terms and guard, distinguish weak/full context, and retain errors,
+stops and vacuity. Failed query admission produces no explanation body.
+
+Mandatory development builds and fixture diagnostics completed before Nix.
+Earlier attempts failed on proof-goal ordering, dependent annotation rewriting,
+a missing command import, and fixture proof elaboration/reduction bounds; those
+were corrected without changing the formulas. Read-only preflight also found
+Lean error recovery could leave a failed admission proof in the explanation;
+the command now disables that recovery through elaboration and synthesis.
+Only the Nix result above is acceptance evidence. Earlier diagnostic logs remain
+in `build/agent-logs/migration-notation-*`.
+
+R3/R19 self-review checked proof sketches, raw reached-domain premises, unchanged
+original-success domains, retained application values and actual/all-branch
+coverage. The frontend reuses the exact fresh predicates and default Holds;
+its small explanation function classifies only supported elaborated heads.
+Independent review is pending. No model, text-parser, sampler, editor hook or
+existing execution definition changed. Universal examples and private-guide
+corrections remain unfinished. Neither acceptance part is complete; post-review
+full/verdict and task-end Nix/scheduled checks remain required.

@@ -49,6 +49,11 @@ import Belay.Sqlite.MigrationPatternSuccess
 import Belay.Sqlite.MigrationPatternQuiet
 import Belay.Sqlite.MigrationPatternComposition
 import Belay.Sqlite.MigrationPatternFrames
+import Belay.Sqlite.MigrationApplicationViews
+import Belay.Sqlite.MigrationApplicationLaws
+import Belay.Sqlite.MigrationPatternSyntax
+import Belay.Sqlite.MigrationExplanation
+import Belay.Sqlite.MigrationExplainCommand
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
