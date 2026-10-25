@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
 
 
 def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Constraints, WITHOUT ROWID, views and triggers are observable before model support."""
+    """`record_sql` keeps constraints, WITHOUT ROWID, views and triggers; `prepare` reports the view as unsupported."""
     def reject(*args: object, **kwargs: object) -> None:
         """Recording must not invoke frontend parsing even indirectly."""
         raise AssertionError("translator invoked by native recording")
@@ -30,8 +30,7 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
             "BEGIN; INSERT INTO t VALUES('a',1); ROLLBACK;", name="out-of-subset")
     assert len(record["initial"]["visible"]["schema"]) == 3
     assert record["trace"][1]["visible"]["tables"][0]["rows"][0]["values"][1] == {"integer": {"value": 2}}
-    assert record["trace"][1]["persisted"] == record["initial"]["visible"]
-    assert record["trace"][-1]["visible"] == record["initial"]["visible"]
+    assert record["trace"][1]["persisted"] == record["initial"]["visible"] == record["trace"][-1]["visible"]
     case, result = prepare(record, runtime_translator(runtime_root))
     assert case is None and result["verdict"] == "MODEL_UNSUPPORTED" and result["reason"] == OBSERVED_VIEW_REASON
     assert record["migrationSql"] and record["trace"]
