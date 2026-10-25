@@ -89,3 +89,8 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   only on a fixture import (`build/agent-logs/s7-unit1-nix-surface-1.log`). The local
   dev-build passed (diagnostic). Public syntax, sections, registry and checker, and the
   full/verdict gates, have not run.
+- 2026-10-25: review `20261025T052312Z-2e0045b5` of the first unit had two musts
+  (root and unreadable-file messages lacked a corrective action) and two shoulds
+  (a missing return annotation; a stale status entry). All four are fixed. The repeated
+  focused Nix surface run passed 28 tests (72 deselected, 33.48 seconds) at
+  `/nix/store/yl9vrf7m795jx6g517z61nk113zz1f8y-sqlite-verifier-test-surface-1`.

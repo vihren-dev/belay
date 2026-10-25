@@ -23,7 +23,7 @@ def sqlOverrideRoot (leanFile : FilePath) (override : String) : IO FilePath := d
   let source ← IO.FS.realPath leanFile
   let root := (source.parent.getD ".") / path
   unless ← root.isDir do
-    throw <| IO.userError s!"belay.sql.packageRoot {override} selects {root}, which is not a directory"
+    throw <| IO.userError s!"belay.sql.packageRoot {override} selects {root}, which is not a directory; set it to an existing directory, written relative to the Lean file's directory"
   return root
 
 /-- Load a SQL file at a Lean elaboration form. Lake supplies the owning package identity.

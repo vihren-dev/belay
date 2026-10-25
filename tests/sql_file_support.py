@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 
-from tests.runtime_support import run_command
+from tests.runtime_support import CommandResult, run_command
 
 
 def installed_layout(runtime_root: Path, tmp_path: Path) -> Path:
@@ -41,7 +41,7 @@ def toolchain_environment(installed: Path) -> dict[str, str]:
     return {"PATH": str(installed / "lean/bin"), "BELAY_PARSER_LIBRARY": os.environ["BELAY_PARSER_LIBRARY"]}
 
 
-def lake_build(installed: Path, package: Path, target: str):
+def lake_build(installed: Path, package: Path, target: str) -> CommandResult:
     """Build `target` in `package` with the installed Lake, with a finite timeout."""
     return run_command([str(installed / "lean/bin/lake"), "build", "--no-ansi", target], cwd=package,
                        timeout=180, environment=toolchain_environment(installed))

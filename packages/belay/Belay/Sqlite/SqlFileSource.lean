@@ -96,10 +96,10 @@ def readSqlFileSourceAtRoot (root : FilePath) (package : PkgId) (path : FilePath
   if relative.components.contains ".." then
     throw <| IO.userError s!"SQL path {path} leaves the package; use a path below the package root"
   unless ← root.isDir do
-    throw <| IO.userError s!"the SQL package root {root} is not a directory"
+    throw <| IO.userError s!"the SQL package root {root} is not a directory; correct the root, or set belay.sql.packageRoot to the package directory relative to the Lean file's directory"
   let root ← IO.FS.realPath root
   let text ← try IO.FS.readFile (root / relative)
-    catch error => throw <| IO.userError s!"cannot read SQL file {path} in package {root}: {error}"
+    catch error => throw <| IO.userError s!"cannot read SQL file {path} in package {root}: {error}; check that the path is relative to the package root and that the file exists and is readable"
   return { package, root, path := relative, text }
 
 /-- Read a package-relative SQL file for the supplied Lean source and compiler package, using
