@@ -349,8 +349,55 @@ fresh-environment quantification and an inhabited migration-success domain.
 Root reserved these proof-only surfaces, with their own narrow registrations:
 `packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldRows.lean`,
 `packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldQueries.lean`, and
-`packages/belay/Belay/Sqlite/NormalizedFieldExpansion.lean`. They have not been
-written yet. Execution definitions remain unchanged. Complete rebuild cascade,
+`packages/belay/Belay/Sqlite/NormalizedFieldExpansion.lean`. The two model leaves
+are checked below; the surface leaf remains unwritten. Execution definitions
+remain unchanged. Complete rebuild cascade,
 safe-rebuild preservation and affinity examples still require the separately
 owned INSERT SELECT, rename and final FK contracts; their earlier prerequisite
 status does not block normalization or the counter example.
+
+## Normalization row/query foundation: focused checks complete
+
+This source unit starts at clean counter-review head `b967224a`. It adds
+the two reserved model leaves `NormalizedFieldRows.lean` and
+`NormalizedFieldQueries.lean`, with only their Model barrel and Lake entries.
+The row laws derive the exact result of the existing appended-cell assignment
+and UPDATE evaluator under wide-row, no-generated-column and rowid-alias facts.
+They preserve old cells, rowids and row order. The query laws compare the
+existing simple-query result function, including TEXT comparison affinity for
+NULL and every nontext parameter Value. They do not change execution.
+
+`tests/surface/NormalizedFieldLaws.lean` consumes the exported laws with an
+arbitrary Value in a nonempty table and an arbitrary parameter Value, plus a
+five-storage-class result check. The existing migration-example test module
+registers its 14 theorem-dependency audits. On 2026-10-25 the focused Nix surface
+check passed both this consumer and the retained expansion counterexample:
+**2 passed, 95 deselected**, with zero JUnit failures, errors or skips. Output:
+`/nix/store/izbhclljyz1lsgwzysxlbs039q44jkqi-sqlite-verifier-test-normalized-field-1`.
+The disposable selector is `normalized_field or expansion_counter`; the existing
+suite supplies installed libraries, pinned native SQLite and finite timeouts.
+All 21 theorem dependency reports use only the named ordinary logical axioms.
+The native counter replay still agrees in both execution orders.
+
+The mandatory development build preceded this Nix check. Its two proof-local
+elaboration failures were corrected by an explicit Value.null annotation and
+staged simplification; no theorem formula changed. The first Nix attempt passed
+the counterexample but failed on a record-layout error in the new consumer.
+The fixture correction and axiom-policy/module-documentation cleanup changed
+no package source. The final Nix retry reused the exact installed runtime
+`/nix/store/hklfgmsd20fnys98grs74aphk54ca7j4-sqlite-verifier-test-surface`.
+Failure and retry logs remain in `build/agent-logs/normalized-field-focused.log`
+and `build/agent-logs/normalized-field-focused-retry.log`. Only the final Nix
+report above is acceptance evidence. R3/R19 self-review checked the proof
+sketches, arbitrary Value quantification and supplied-row/result boundary.
+Independent review is pending for this coherent source commit.
+
+This foundation is not the universal whole-expansion theorem. The reserved
+surface `NormalizedFieldExpansion.lean` is still unwritten. That theorem must
+derive these input rows from the actual successful ADD COLUMN, backfill and
+trigger-registration effects, with concrete schema/effect premises, then lift
+the results to actual and every permitted branch over complete fresh
+environments. No row-map or desired query equality will be a domain premise.
+The later source-row bridge must also transport scan order, which is separate
+from the stored row-list order proved here. The whole second acceptance part
+and task-end checks remain unfinished.

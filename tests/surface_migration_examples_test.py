@@ -13,6 +13,9 @@ from tests.surface_support import FIXTURES, surface_command
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3")]
 
+LOGICAL_AXIOMS: frozenset[str] = frozenset({"propext", "Classical.choice", "Quot.sound"})
+"""The ordinary Lean logical axioms allowed in the migration example proofs."""
+
 
 def counter_cell(cell: object) -> str | int:
     """Decode the integer/text cells used by the checked customer example."""
@@ -26,6 +29,19 @@ def counter_cell(cell: object) -> str | int:
     return bytes(value["bytes"]).decode("utf-8")
 
 
+def test_normalized_field_laws_cover_arbitrary_values(runtime_root: Path, tmp_path: Path) -> None:
+    """Installed model laws derive the appended-field UPDATE row map and exact
+    preservation/translation query results. Their universal Value parameters
+    and nonempty consumer cover NULL, integer, REAL, TEXT and BLOB inputs."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldLaws.lean", tmp_path),
+                         cwd=tmp_path, timeout=120)
+    assert result.returncode == 0, result.diagnostic()
+    reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
+    assert len(reports) == 14, result.diagnostic()
+    for report in reports:
+        assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
+
+
 def test_expansion_counter_refutes_full_commutation(runtime_root: Path, tmp_path: Path) -> None:
     """The complete expansion has equal final rows/application observations in both
     public execution orders, but its maintenance trigger changes total_changes.
@@ -37,8 +53,7 @@ def test_expansion_counter_refutes_full_commutation(runtime_root: Path, tmp_path
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
     assert len(reports) == 7, result.diagnostic()
     for report in reports:
-        assert set(filter(None, map(str.strip, report.split(",")))) <= {
-            "propext", "Classical.choice", "Quot.sound"}, result.diagnostic()
+        assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
     lines = [line.removeprefix("MIGRATION-COUNTER:") for line in result.stdout.splitlines()
              if line.startswith("MIGRATION-COUNTER:")]
     assert len(lines) == 1, result.diagnostic()
