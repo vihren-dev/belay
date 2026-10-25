@@ -1,7 +1,7 @@
 # Status: S7 proof-cost reporting, production
 
-Created 2026-10-25. Status: task file written; waiting for the owner's answers
-to its six decisions. Implementation has not started.
+Created 2026-10-25. Status: IN PROGRESS. The six decisions were answered on
+2026-10-25. Part 1 (collector) is the current work.
 Task: [task file](20261025-s7-proof-costs.task.md).
 Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
 [findings](../docs/s7-proof-cost-findings.md); the completed
