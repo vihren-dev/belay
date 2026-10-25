@@ -85,6 +85,7 @@ theorem resolveWriteSubqueries_same {columnNames : List (Nat × List Identifier)
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
     | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ h; exact ⟨rfl, rfl, rfl⟩)
     | exact each _ _ _ _ ok
 
 /-- For every write callback whose successful resolution keeps the catalog for every
@@ -108,6 +109,7 @@ theorem resolveCommonTableWrite_same (context : ResolveContext) (catalog after :
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
     | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ _ h; exact ⟨rfl, rfl, rfl⟩)
     | exact each _ _ _ _ _ ok
   all_goals
     rename_i found
@@ -115,6 +117,7 @@ theorem resolveCommonTableWrite_same (context : ResolveContext) (catalog after :
     all_goals first
       | (cases found; exact ⟨rfl, rfl, rfl⟩)
       | (cases found)
+      | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases found; exact each _ _ _ _ _ h; exact ⟨rfl, rfl, rfl⟩)
       | exact each _ _ _ _ _ found
 
 end Belay.Sqlite.Model

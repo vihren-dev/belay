@@ -1,6 +1,6 @@
 # Mutation failure diagnostics status
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE.
 Task: [required outcomes](20261025-mutant-failure-diagnostics.task.md).
 
 The published #250 hosted log reports three failed groups before outer timeout
@@ -88,3 +88,16 @@ mutation execution and any exposed failure details must be inspected before
 completion. Skipped PR mutation jobs and these ordinary acceptance gates do not
 replace that requirement. The unconfirmed query/JSON causes remain separate
 investigations.
+
+## Hosted mutation run
+
+The owner started the manual CI run `40156468777` on `296f3a57`. The mutation
+commands executed. `functionMutants` and `tableMutants` passed on Linux.
+The `mutants` suite failed on both platforms at its second test,
+`test_every_query_mutant_changes_a_verdict`, with
+`Timeout (>300.0s) from pytest-timeout` (Linux 300 s, macOS 319 s); the first
+test passed (228 s and 209 s). `--exitfirst` ended the suite with its pytest
+summary and JUnit report, as this task requires. The job logs are retained as
+`build/agent-logs/ci252-manual-job-{linux,darwin}.log`. The repair is the
+separate task [query mutant time limit](20261025-query-mutant-time-limit.task.md).
+This task's required outcomes are met; it is DONE.

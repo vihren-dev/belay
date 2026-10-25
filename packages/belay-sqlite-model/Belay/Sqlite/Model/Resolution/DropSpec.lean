@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Resolution.StatementCatalog
 
 set_option doc.verso true
 
-/-! The resolution laws of DROP TABLE and DROP INDEX (ADR 0014, D7): each changes the catalog
+/-! The resolution laws of DROP TABLE, DROP VIEW and DROP INDEX: each changes the catalog
 by one {name}`Belay.Sqlite.Model.CatalogStep`, and the catalog after it is the catalog change of its resolved
 statement. {lit}`NamesSpec.lean` and {lit}`ResolveStateSpec.lean` use them for every
 statement. -/
@@ -57,5 +57,27 @@ theorem resolveDropIndex_applyCatalog (catalog after : Catalog) (name : Identifi
   simp only [prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
+
+/-- Every successful DROP VIEW resolution removes catalog positions or keeps the
+catalog after a prepare error. Proof sketch: split the resolver branches and use
+{name}`CatalogStep.remove` or {name}`CatalogStep.same`. -/
+theorem resolveDropView_step (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropView catalog name ifExists = .ok (statement, after)) :
+    CatalogStep catalog after := by
+  unfold resolveDropView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact .same) | (cases ok; exact .remove _) | cases ok
+
+/-- Every successful DROP VIEW resolution gives the catalog change of its
+resolved statement, which is not transaction control. Proof sketch: each branch
+returns a prepare error or a drop with exactly its removed positions. -/
+theorem resolveDropView_applyCatalog (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropView catalog name ifExists = .ok (statement, after)) :
+    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
+  unfold resolveDropView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | cases ok
 
 end Belay.Sqlite.Model

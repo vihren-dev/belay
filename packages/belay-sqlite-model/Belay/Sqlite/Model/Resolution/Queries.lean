@@ -127,6 +127,10 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     | some term =>
       if namesAlias scope visibleAliases term then throw (aliasInExpression.under [3])
       else some <$> condition [3] (resolveOperand dqs scope shapes true term)
+  -- SQLite resolves a result column alias in an ON condition as it does in WHERE.
+  if let some item := (query.joins.zipIdx.find? fun (join, _) =>
+      join.condition.any (namesAlias scope visibleAliases)).map (·.2) then
+    throw (aliasInExpression.under [2, item, 2])
   let sources ← resolvePendingSources dqs scope pending
   let collations := resultCollations scope query.columns
   let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy

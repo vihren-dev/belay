@@ -2,8 +2,8 @@ import Belay
 
 set_option doc.verso true
 
-/-! Fixture constructors for unresolved view definitions. SQL view DDL remains a
-later task unit; these helpers exercise the catalog primitive through public queries. -/
+/-! Fixture constructors for unresolved view definitions. The explicit helpers exercise
+the catalog primitive separately from SQL DDL, through public queries. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -20,8 +20,8 @@ def definition (script : Script) (columns : Option (List Identifier) := none) : 
         columns := result, source, joins, filter, groupBy, orderBy,
         limit, offset, having, distinct, compound, parent := none }
       subqueries }
-  | none | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..)
-  | some (.dropTable ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
+  | none | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.addColumn ..)
+  | some (.dropTable ..) | some (.dropView ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
   | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.pragma ..)
   | some (.createTrigger ..) | some (.dropTrigger ..) => {query := commonTablePlaceholder}
 
@@ -37,7 +37,7 @@ def prepareMessage (script : Script) (database : Database) : Option String := do
   let (statement, _) ← script.statements.head?
   match resolveStatement runContext database.raw.connection.resolveState statement with
   | .ok (.prepareError error, _) => some error.message
-  | .error _ | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
+  | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
   | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
   | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _) | .ok (.upsert .., _)
   | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => none
@@ -58,7 +58,7 @@ def queryRows (script : Script) (database : Database) (clock : Int) (counters : 
   match resolveStatement runContext database.raw.connection.resolveState statement with
   | .ok (.query query subqueries, _) =>
     (query.runOn clock counters parameters database.raw subqueries).map (·.2.rows)
-  | .error _ | .ok (.prepareError .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
+  | .error _ | .ok (.prepareError .., _) | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
   | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
   | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _)
   | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.setting .., _) => none

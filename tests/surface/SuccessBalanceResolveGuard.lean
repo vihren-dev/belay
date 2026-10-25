@@ -90,7 +90,7 @@ theorem guard_select (catalog : Catalog) (position index : Nat) (table : Catalog
   dsimp only [around] at scopes bodies
   dsimp only [mainSyntax, guardShapes, rangeShape, balanceCountShape] at main
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect
+  unfold resolveSelect resolveSelectDetails
   simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   simp only [mainSyntax, noMain]
   simp [CommonTableCopies.recursionIssue, dqs, scopes, bodies, main, around, mainSyntax, starIssue, resultAliases,

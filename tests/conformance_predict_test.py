@@ -69,7 +69,7 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     with the frontend's reason, and a restricted one also names the restriction's stable id."""
     admitted = record_sql("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (7);", "INSERT INTO t(a) VALUES (1);",
                           name="admitted")
-    refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE VIEW v AS SELECT a FROM t;", name="refused")
+    refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE TABLE u AS SELECT a FROM t;", name="refused")
     restricted = record_sql("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;", name="restricted")
     first, second, third = predict(runtime_root, admitted, refused, restricted)
     assert first["status"] == "predicted" and first["supported"] and len(first["steps"]) == 2

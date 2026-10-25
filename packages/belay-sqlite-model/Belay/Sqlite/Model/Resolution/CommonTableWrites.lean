@@ -12,11 +12,12 @@ namespace Belay.Sqlite.Model
 /-- Resolve a write after instantiating its used CTEs and view sources. The callback receives the index
 mapping for its VALUES, SET and WHERE expressions, then the same resolved queries and
 shapes as {name}`resolveWriteSubqueries`. With no needed copies the mapping is identity.
-An unexpanded view target is restricted before a source body can determine a competing error. -/
+A view target is not writable: the write reports that error ({name}`resolveViewTarget`) before the
+body of any source can give an error. -/
 def resolveCommonTableWrite (context : ResolveContext) (catalog : Catalog) (field : Nat)
     (tableName : Identifier) (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
     (resolveWrite : (Nat → Nat) → List Resolved.Query → SubqueryShapes → StatementResolution) : StatementResolution :=
-  if (catalog.findView tableName).isSome then restrict [0] .subqueryHere else
+  if (catalog.findView tableName).isSome then resolveViewTarget context catalog tableName (resolveWrite id [] {}) else
   if !querySourceCopiesNeeded catalog commonTablePlaceholder subqueries then
     resolveWriteSubqueries context catalog field tableName scopeOf subqueries (resolveWrite id)
   else match expandCommonTables catalog field commonTablePlaceholder subqueries with

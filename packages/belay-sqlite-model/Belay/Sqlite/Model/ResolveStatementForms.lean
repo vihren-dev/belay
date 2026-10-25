@@ -23,7 +23,7 @@ For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
   | .addColumn _ column => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
-  | .createTable .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every successful resolution of CREATE TABLE, the resolved statement meets
@@ -114,7 +114,7 @@ theorem resolveSelect_schemaLink (context : ResolveContext) (catalog after : Cat
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     statement.SchemaLink catalog := by
-  unfold resolveSelect at ok
+  unfold resolveSelect resolveSelectDetails at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
@@ -143,7 +143,12 @@ theorem resolveWriteSubqueries_schemaLink {columnNames : List (Nat × List Ident
   unfold resolveWriteSubqueries at ok
   simp only [prepareError, restrict, issueResolution] at ok
   repeat' split at ok
-  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ ok
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact Catalog.DropClosed.nil _)
+    | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ h; trivial)
+    | exact each _ _ _ _ ok
 
 /-- For every write resolution that meets the schema-link predicate for every copied
 query mapping, successful WITH expansion and write resolution also meet that predicate.
@@ -160,10 +165,20 @@ theorem resolveCommonTableWrite_schemaLink (context : ResolveContext) (catalog a
   unfold resolveCommonTableWrite at ok
   simp only [resolveWriteSubqueries, prepareError, restrict, issueResolution, Except.mapError] at ok
   repeat' split at ok
-  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ _ ok
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact Catalog.DropClosed.nil _)
+    | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ _ h; trivial)
+    | exact each _ _ _ _ _ ok
   all_goals
     rename_i found
     repeat' split at found
-    all_goals first | (cases found; trivial) | (cases found; exact Catalog.DropClosed.nil _) | (cases found) | exact each _ _ _ _ _ found
+    all_goals first
+      | (cases found; trivial)
+      | (cases found; exact Catalog.DropClosed.nil _)
+      | (cases found)
+      | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases found; exact each _ _ _ _ _ h; trivial)
+      | exact each _ _ _ _ _ found
 
 end Belay.Sqlite.Model

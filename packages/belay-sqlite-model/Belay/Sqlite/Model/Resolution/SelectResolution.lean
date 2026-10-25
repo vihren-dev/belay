@@ -10,7 +10,9 @@ terms among its subqueries (ADR 0019, D3). -/
 
 namespace Belay.Sqlite.Model
 
-/-- Resolve a {lit}`SELECT` with its subqueries: the statement's
+/-- Resolve a {lit}`SELECT` with its subqueries and retain the refreshed source scope:
+its columns supply the same metadata to query execution and catalog observation.
+For an ordinary statement use {lit}`resolveSelect`. The result contains the statement's
 query and its subqueries, or SQLite's {lit}`no such table: %s`, a prepare error or a
 restriction. Used WITH and stored-view definitions are copied before ordinary
 resolution; unused definitions do not enter the executable query list. Stored views
@@ -19,16 +21,16 @@ its subqueries. A compound query resolves from its terms ({name}`resolveCompound
 without {lit}`FROM`, or a term of the compound without {lit}`FROM`, that has a call that can
 fail, in a statement with a subquery that is no term, is
 {name}`RestrictionKind.subqueryFallibleCall`. -/
-def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
-    (subqueries : List Syntax.Subquery) : StatementResolution :=
+def resolveSelectDetails (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
+    (subqueries : List Syntax.Subquery) : Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
   let dqs := context.profile.dqsDml
-  let resolved : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
+  do
     let expanded ← prepareQuerySources catalog 8 query subqueries
     let query := expanded.query
     let subqueries := expanded.copies.queries.toList
     let columnNames := expanded.copies.columnNames
     let viewRoots := expanded.copies.viewRoots
-    let result : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
+    let result : Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) := do
       let (pending, scope) ← resolveSources catalog query.source query.joins 0
         (fun index => sourceExpansion catalog 8 subqueries none index columnNames)
       if let some issue := starIssue scope query.columns then throw (.value issue)
@@ -53,10 +55,17 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax
       if (List.range subqueries.length).any (!terms.contains ·) &&
           ran.any fun (ran : Resolved.Query) => ran.sources.isEmpty && ran.expressions.any (·.any Resolved.Expr.isFallibleCall) then
         throw (SourceIssue.value (ValueIssue.restriction [] .subqueryFallibleCall))
-      pure (resolvedQuery, resolvedSubqueries)
+      pure (resolvedQuery, resolvedSubqueries, scope)
     result.mapError (expanded.copies.originalIssue 8)
-  match resolved with
-  | .ok (resolvedQuery, resolvedSubqueries) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
+
+/-- Resolve a SELECT to its query statement or prepare error, with the input catalog unchanged.
+Model restrictions retain their original syntax paths. This uses the same query and source
+metadata resolution as {name}`resolveSelectDetails`; the statement needs only its executable
+queries. -/
+def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
+    (subqueries : List Syntax.Subquery) : StatementResolution :=
+  match resolveSelectDetails context catalog query subqueries with
+  | .ok (resolvedQuery, resolvedSubqueries, _) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
   | .error (.value issue) => issueResolution catalog [] issue
 
@@ -69,7 +78,7 @@ theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveSelect at ok
+  unfold resolveSelect resolveSelectDetails at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl, rfl⟩) | (cases ok)

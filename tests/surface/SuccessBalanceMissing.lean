@@ -65,7 +65,7 @@ theorem guard_select_shadow (catalog : Catalog) (position : Nat) (table : Catalo
   dsimp only [around] at scopes
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect
+  unfold resolveSelect resolveSelectDetails
   simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   by_cases view : (catalog.findView pragmaRef.table).isSome = true <;>
     simp [CommonTableCopies.originalIssue, CommonTableCopies.originalPath, mainSyntax, noMain, starIssue, resultAliases,
@@ -129,7 +129,7 @@ theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table :
   have dqs : runContext.profile.dqsDml = true := rfl
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect
+  unfold resolveSelect resolveSelectDetails
   simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]

@@ -1,0 +1,56 @@
+{
+  "caller": "codex",
+  "commit": "838aa29e3057c196187b5c5964cab6b890e0b633",
+  "date": "2026-10-25T00:25:22+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay/Belay/Sqlite/ExecutionViewEquivalence.lean",
+    "packages/belay/Belay/Sqlite/ExecutionViewEquivalenceLaws.lean",
+    "packages/belay/Belay/Sqlite/ExecutionViewIdentity.lean",
+    "packages/belay/Belay/Sqlite/MigrationPattern.lean",
+    "packages/belay/Belay/Sqlite/MigrationPatternFresh.lean",
+    "packages/belay/Belay/Sqlite/MigrationPatternLaws.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "plans/20261024-s6-migration-patterns.status.md",
+    "tests/nix_suites.json",
+    "tests/surface/ExecutionViewChoices.lean",
+    "tests/surface/ExecutionViewComparisons.lean",
+    "tests/surface/MigrationPatterns.lean",
+    "tests/surface_migration_patterns_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261025T002522Z-838aa29e#1",
+      "line": 131,
+      "path": "plans/20261024-s6-migration-patterns.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The second unit cites frozen source `bce35aae…` as the checked evidence but never names the commit that carries it (`838aa29e`). The first unit does name its carrying commit, and a past review flagged the same gap. Fix: add one sentence saying that commit `838aa29e3057c196187b5c5964cab6b890e0b633` carries the frozen source, and which of its files are unchanged from it."
+    }
+  ],
+  "id": "20261025T002522Z-838aa29e",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

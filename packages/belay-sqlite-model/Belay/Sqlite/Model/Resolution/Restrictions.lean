@@ -10,7 +10,7 @@ namespace Belay.Sqlite.Model
 /-- A model restriction of name resolution. The comment of each constructor says what
 the model does not describe and which decision introduced the restriction. -/
 inductive RestrictionKind where
-  /-- A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
+  /-- A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
   | schemaStatement
   /-- Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled (ADR 0008). -/
   | engineTable
@@ -71,8 +71,7 @@ inductive RestrictionKind where
   /-- UPDATE of a table with a constraint algorithm other than ABORT: {lit}`UPDATE OR` and the algorithms of UPDATE are
   not modeled (ADR 0012, amendment 4). -/
   | constraintAlgorithmUpdate
-  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, and the model does not
-  evaluate defaults in writes. -/
+  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, which the model does not evaluate. -/
   | replaceDefault
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
@@ -100,6 +99,8 @@ inductive RestrictionKind where
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
+  /-- A view body error that SQLite finds only when a statement runs the view, or that the model cannot place before (ADR 0017). -/
+  | viewBodyCheck
   /-- Only a column name or a result column number is modeled in GROUP BY (ADR 0012 slice 1). -/
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/
@@ -178,8 +179,7 @@ inductive RestrictionKind where
   does is not modeled: an aggregate, an expression that is a result expression of a term after resolution but not as
   written, or a {lit}`COLLATE` term after which SQLite gives a result column a random name (ADR 0019, D3). -/
   | compoundOrderByTerm
-  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled.
-  Give these columns distinct aliases (ADR 0019, D5). -/
+  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled; give distinct aliases (ADR 0019, D5). -/
   | sourceColumnName
   /-- A valid recursive CTE, including recursion without the RECURSIVE keyword.
   Ordinary nonrecursive definitions use the normal query-source evaluator. -/

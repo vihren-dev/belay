@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T06:06:49+00:00",
+  "finding": "20261025T053652Z-9624ae5e#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docs/semantic-subset.md now describes the column read separately, the explicit-column-list exception, and the view-body-check restriction."
+}

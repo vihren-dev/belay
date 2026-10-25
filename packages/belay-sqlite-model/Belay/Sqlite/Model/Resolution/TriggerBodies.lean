@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.CommonTableWrites
 import Belay.Sqlite.Model.Resolution.SelectResolution
 import Belay.Sqlite.Model.Resolution.TriggerRaise
+import Belay.Sqlite.Model.Resolution.ViewColumns
 import Belay.Sqlite.Model.StatementClock
 
 set_option doc.verso true
@@ -40,7 +41,7 @@ def bodyStep : StatementResolution → Except NodeRestriction (Except PrepareErr
   | .ok (.update table assignments filter _ subqueries _, _) => writeStep (.update table assignments filter subqueries)
   | .ok (.delete table filter _ subqueries _, _) => writeStep (.delete table filter subqueries)
   | .ok (.query query subqueries, _) => queryStep (.query query subqueries)
-  | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
+  | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
   | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
     .error (triggerRestriction .triggerForm)
 
@@ -105,6 +106,22 @@ def resolveRaiseSelect (context : ResolveContext) (catalog : Catalog) (row : Tri
   | .ok (.ok (.insert ..)) | .ok (.ok (.update ..)) | .ok (.ok (.delete ..)) | .ok (.ok (.raise ..)) =>
     .error (triggerRestriction .triggerForm)
 
+/-- The step of a write in a body whose target is a view. SQLite reads the view's query with the
+rows of the trigger in sight, so a column that the model cannot find, such as {lit}`new.a`, may be
+a column that SQLite finds: that is the restriction {name}`RestrictionKind.viewBodyCheck`. Any other
+failed read is the error of the read, and a readable view is the error
+{name}`PrepareError.viewModify`. The parse error of rows of different widths comes first. -/
+def viewBodyWrite (context : ResolveContext) (catalog : Catalog) (view : Identifier) (rowsDiffer : Bool) :
+    Except NodeRestriction (Except PrepareError Resolved.Step) :=
+  if rowsDiffer then .ok (.error (.expression .valuesDiffer))
+  else match viewColumns context catalog view with
+    | .ok _ => .ok (.error (.viewModify (viewCatalogName catalog view)))
+    | .error (.value (.prepare error)) => match error.viewReadClass with
+      | .column => .error (triggerRestriction .viewBodyCheck)
+      | .found | .later | .width _ => .ok (.error (.expression error))
+    | .error (.noSuchTable name) => .ok (.error (.noSuchTable name))
+    | .error (.value (.restriction path kind)) => .error { path, kind }
+
 /-- Resolve one statement of a trigger's body over the catalog, with
 the trigger's rows: an INSERT around no table, with {lit}`ON CONFLICT DO UPDATE` the restriction
 of a trigger form; an UPDATE and a DELETE around the written table; a SELECT whose one result
@@ -116,16 +133,20 @@ def resolveBodyStatement (context : ResolveContext) (catalog : Catalog) (row : T
     Syntax.BodyStatement → Except NodeRestriction (Except PrepareError Resolved.Step)
   | .insert table columns rows conflicts algorithm subqueries =>
     if conflicts.any (·.action matches .update ..) then .error (triggerRestriction .triggerForm)
+    else if (catalog.findView table).isSome then
+      viewBodyWrite context catalog table (rows.any fun row => row.length != (rows.head?.map List.length).getD 0)
     else bodyStep (resolveCommonTableWrite context catalog 6 table (fun _ => row.scope 0) subqueries
       fun index resolved shapes => resolveInsert context catalog table columns
         (rows.map (List.map (Syntax.Expr.reindex index))) conflicts algorithm [] resolved shapes (some row))
   | .update table assignments filter subqueries =>
+    if (catalog.findView table).isSome then viewBodyWrite context catalog table false else
     bodyStep (resolveCommonTableWrite context catalog 4 table
       (fun shape => writtenScope table shape ++ row.scope shape.columns.length) subqueries
       fun index resolved shapes => resolveUpdate context catalog table
         (assignments.map fun (name, value) => (name, value.reindex index))
         (filter.map (Syntax.Expr.reindex index)) [] resolved shapes (some row))
   | .delete table filter subqueries =>
+    if (catalog.findView table).isSome then viewBodyWrite context catalog table false else
     bodyStep (resolveCommonTableWrite context catalog 3 table
       (fun shape => writtenScope table shape ++ row.scope shape.columns.length) subqueries
       fun index resolved shapes => resolveDelete context catalog table
