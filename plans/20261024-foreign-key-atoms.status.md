@@ -1244,3 +1244,25 @@ Nix gates on the tree of `53c76a6a` (the following status-only commit changes no
 - `just verdict`: pass, `/nix/store/b2sqcc93lswl0cf60l3d2kvw869v9jjn-sqlite-verifier-verdict`. Every corpus up to v52 is unchanged (AGREE or MODEL_UNSUPPORTED counts as before).
 - Predictions: `/nix/store/7s4byx2yc1kxrc8km2lcrknw8f2bl2vr-sqlite-verifier-predictions`. Compared with `/nix/store/bi8dvn7zxjwgrcn0mggw7zy5jpq8ay3m-sqlite-verifier-predictions` (the views integration predictions, 53 files): no record changed (`diff -r` identical). The own predictions path of the #255 head is not recorded; the baseline is the nearest recorded one.
 - `just test-nix` and `just test-scheduled-checks` are not run for this merge; the coordinator runs them on the judge merge.
+
+## Integration above the v53 judge PR #260 (2026-10-25)
+
+Merge `uwpuvkwm` / `74cd2378`, "integrate: foreign-key DDL part 2 above the v53 judge PR": parents `e384c875` (bookmark `tasks/query-sources-v53-judge`, PR #260) and `ed055e0d` (the foreign-key line above the views PR). No rebase.
+
+Conflicts and resolutions:
+
+- Plans of other tasks (17 files, among them the model-native-artifacts, prediction-source-filter, query-sources, S6, S7 and mutant tasks): the v53 side is newer. It was taken whole.
+- `plans/20261024-foreign-key-atoms.status.md` and `.task.md`: my side was taken at the conflicting hunks. The v53 side held older foreign-key text. The task keeps the NULL-spelling statement of Follow-up A.
+- `docs/adr-0017-user-surface.md`: three-way merge against `6a0bc6be`. It keeps my S6 task paragraph (execution task done) and adds the v53 side's new S7 package-root clarification.
+- `docs/adr-0022-database-validity.md`: my side at the one conflicting hunk (the bare `DEFAULT +NULL` text).
+- `packages/belay/Belay/Sqlite/DbDiagnostics.lean`: the v53 side rewrote `failureParts` with a clock. I re-applied the one change of mine, the `referenceColumnDefault` alternative.
+- `docs/adr-0019-guide-sql.md`: jj merged it cleanly but against another base and reverted the v53 line's 2026-10-24 amendment (the review found it as a must). It is restored from `e384c875`. I then audited all 546 files that either side changed against the three-way expectation with base `6a0bc6be`: no other single-sided mismatch. The registration files (`lakefile.toml`, `tests/nix_suites.json`, `build-support/tests.nix`) equal a `git merge-file` three-way result and hold both sides.
+- New keywords made by the merged syntax (`sql_file`, `sql_module`, `sql_refute`, `#sql_check`, `preserves`): no foreign-key source or fixture uses them as identifiers.
+
+Review: round 1 had one must (the adr-0019 revert, fixed in the merge). Round 2 (`reviews/20261025T144629Z-85ec2398`) has no findings.
+
+Nix gates on the tree of `74cd2378`:
+
+- `just test-full`: pass, `/nix/store/kqlz0s21a43rn4qd67bqdd7808b70v43-sqlite-verifier-test-reports`. The first run hit the 1500 s `suite_build_limit` (exit 124, no failed test; log `build/agent-logs/a-test-full-timeout1.log`). The one allowed rerun passed. The limit was not changed.
+- `just verdict`: pass, `/nix/store/y90zwjkgq92q8hvwryxpcsr7brh350ma-sqlite-verifier-verdict`. No corpus has a result other than AGREE or MODEL_UNSUPPORTED; corpus-v53 is 158 AGREE and 20 MODEL_UNSUPPORTED.
+- Predictions: `/nix/store/j2dg6jq8z4bxvkxcxb0fffydzqxldw36-sqlite-verifier-predictions` (54 files). Compared with the v53 predictions `/nix/store/cdglbidddydm09iw1i5hc7bdl2m51b0f-sqlite-verifier-predictions`: byte-identical (`diff -r`). The foreign-key work changes no prediction record.
