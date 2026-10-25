@@ -164,7 +164,11 @@ table gives, and not more frequently.
 | Each edit of `packages/` | `just dev-build`. Also `just dev-verdict` when the edit can change a prediction. |
 | Each commit | The tests that touch the change, for example its test files with `python3 -m pytest`, then `just review`. The status file names the tests. |
 | End of each slice of the task file | After the review of the slice's last commit: `just test-full` and `just verdict`. |
-| End of the task, before its pull requests | `just test-nix` and `just test-scheduled`, once. |
+| End of the task, before its pull requests | `just test-nix` and `just test-scheduled-checks`, once. |
+
+Do not run the mutant suites locally (`just test-scheduled`, `just test-mutants`). CI runs
+them every day. When a change touches a mutant target, run only the mutant tests of that
+target, by name with `-k`.
 
 Rules for the time while checks run:
 
