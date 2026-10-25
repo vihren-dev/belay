@@ -1,6 +1,6 @@
 # S6: the fixed initial database in read-only postconditions
 
-Created 2026-10-24. Status: IN PROGRESS. The query-source/CTE/view representation is complete.
+Created 2026-10-24. Status: DONE (2026-10-25). The query-source/CTE/view representation is complete.
 Status: [progress](20261024-s6-before-context.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 and its two-state guide
 requirements; [S6 foundations](20261024-surface-s6-foundations.task.md).

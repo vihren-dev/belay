@@ -1,6 +1,6 @@
 # Status: S6 initial/current query context
 
-Created 2026-10-24. Status: IN PROGRESS.
+Created 2026-10-24. Status: DONE (2026-10-25).
 Task: [task file](20261024-s6-before-context.task.md).
 Specs: ADR17 S6 and the checked foundations prototype.
 
@@ -83,3 +83,20 @@ primitive's meaning.
   `reference.schema = none` and the optional `initial` argument of `subqueryContext` shift
   the arguments of the fixtures in `tests/surface`; fixed in the fixtures). The failed log
   of the second run is `build/agent-logs/gate-full-2-failed.log`.
+- 2026-10-25, gates on the tree of the commit "Record review results of the surface fixture
+  update" (all through the Nix targets; paths are store outputs):
+  - `just test-full`: passed. test reports
+    `/nix/store/v68lj4lic229x9ahy3arsrdwbjya7yf2-sqlite-verifier-test-reports`.
+  - `just verdict`: passed. `/nix/store/fb0n1z24ww009ks678zrbd2qvg8rjji4-sqlite-verifier-verdict`.
+  - `just test-nix`: passed, 71 tests (pytest `requires_nix`).
+  - `just test-scheduled-checks`: passed.
+    `/nix/store/ifmfp2dvlz4pi3f0vy3xjc6wcnzjnd9j-sqlite-verifier-scheduled-check-reports`.
+  - Predictions: `/nix/store/i80d2crp94q05llk5qgx61dac4hhmqd3-sqlite-verifier-predictions`
+    against the baseline `/nix/store/764gd728p06g20x9kfq29c1vrmdgjhqf-sqlite-verifier-predictions`:
+    53 files, 0 changed records.
+- Open points (not blocking): a function call in an initial view that names a view of the
+  current catalog is refused with `initial-database`, not resolved; views over
+  `pragma_*` in an attached database are not modeled; metadata compared is column names
+  only; JSON codecs now include `"schema": null`; the oracle finds unqualified names in the
+  attached database when the main database lacks them. Part 1b of S6 needs corpus cases
+  for `SELECT ... FROM before.t` against an attached read-only copy.
