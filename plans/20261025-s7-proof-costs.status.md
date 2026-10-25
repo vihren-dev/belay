@@ -1,8 +1,8 @@
 # Status: S7 proof-cost reporting, production
 
-Created 2026-10-25. Status: IN PROGRESS. The six decisions were answered on
-2026-10-25. Part 1 (collector) is done and gated; Part 2 (checker `--costs`,
-baseline comparison, documentation) is the current work.
+Created 2026-10-25. Status: DONE (2026-10-25). The six decisions were answered on
+2026-10-25. Part 1 (collector) and Part 2 (checker `--costs`, baseline comparison,
+documentation) are done and gated.
 Task: [task file](20261025-s7-proof-costs.task.md).
 Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
 [findings](../docs/s7-proof-cost-findings.md); the completed
@@ -151,3 +151,11 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `ProofCostModuleData.lean` began with the word "import". The line is
   reworded. The focused runs did not select the layer tests; the next gate
   runs all of them.
+- 2026-10-25: DONE. Part 2 gate on `87af1243` and the review record after it:
+  `just test-full` test reports
+  `/nix/store/39brmckx9dd69js89q481p3ym7f2l4cb-sqlite-verifier-test-reports`
+  (surface suite 339 passed, other suites 480 and 286 passed); `just verdict`
+  `/nix/store/gz1wg4l0969wpihb402jjayih440m13x-sqlite-verifier-verdict`. Task
+  end: `just test-nix` 71 passed (local pytest of the Nix-marked tests, no store
+  output); `just test-scheduled-checks`
+  `/nix/store/j4lq1v2g0x3gns40acg8xsbzfgfy6lzx-sqlite-verifier-scheduled-check-reports`.

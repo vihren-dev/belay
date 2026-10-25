@@ -1,6 +1,6 @@
 # S7: proof-cost reporting, production
 
-Created 2026-10-25. Status: OPEN. The six decisions at the end were answered
+Created 2026-10-25. Status: DONE (2026-10-25). The six decisions at the end were answered
 on 2026-10-25; the outcomes below follow them.
 Status: [progress](20261025-s7-proof-costs.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), D1, the S7 row and the
