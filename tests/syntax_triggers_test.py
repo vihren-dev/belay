@@ -28,7 +28,7 @@ def column(name: str) -> dict[str, object]:
 
 def qualified(source: str, name: str) -> dict[str, object]:
     """The JSON of `source.name`."""
-    return {"qualified": {"source": source, "column": name}}
+    return {"qualified": {"source": source, "column": name, "schema": None}}
 
 
 def test_trigger_keeps_time_event_condition_and_body(parse_sql: Callable[..., Translation]) -> None:

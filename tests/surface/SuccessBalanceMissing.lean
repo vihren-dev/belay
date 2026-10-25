@@ -22,7 +22,7 @@ theorem guard_scopes_shadow (catalog : Catalog) (position : Nat) (table : Catalo
       .error (.value (if (catalog.findView pragmaRef.table).isSome then
         .prepare (.view (.functionCall pragmaRef.table)) else
         .restriction [8, 2, 1] .tableFunction)) := by
-  have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl found queries prefix_
+  have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl rfl found queries prefix_
   have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
   have refused : ∀ queries prefix_, resolveSources catalog (some pragmaRef) [] 0 queries prefix_ =
       .error (.value (if (catalog.findView pragmaRef.table).isSome then

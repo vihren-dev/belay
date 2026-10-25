@@ -26,7 +26,7 @@ def Syntax.Expr.sourceAffinity (scope : Scope) (shapes : SubqueryShapes) : Synta
   | .identifier name _ => match scope.resolveName name with
     | .found _ reads => (scope.nameOperand reads).2
     | .missing | .ambiguous => none
-  | .qualified source column => match scope.resolveQualified source column with
+  | .qualified source column schema => match scope.resolveSchemaQualified source column schema with
     | .found _ reads => (scope.nameOperand reads).2
     | .missing | .ambiguous => none
   | .cast _ typeName => some (affinityOf (some typeName))
@@ -49,8 +49,8 @@ def Syntax.Expr.sourceTypes (scope : Scope) (shapes : SubqueryShapes) : Syntax.E
     match scope.resolveName name with
     | .found .. => affinityTypes (value.sourceAffinity scope shapes)
     | .missing | .ambiguous => if quote == .double then (false, true) else (true, false)
-  | value@(.qualified source column) =>
-    match scope.resolveQualified source column with
+  | value@(.qualified source column schema) =>
+    match scope.resolveSchemaQualified source column schema with
     | .found _ reads => if reads.any scope.triggerCell then (true, false)
       else affinityTypes (value.sourceAffinity scope shapes)
     | .missing | .ambiguous => (true, true)

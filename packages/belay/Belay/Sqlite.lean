@@ -11,6 +11,7 @@ import Belay.Sqlite.SqlBang
 import Belay.Sqlite.SqlFileSyntax
 import Belay.Sqlite.SqlModule
 import Belay.Sqlite.Run
+import Belay.Sqlite.TwoStateObservation
 import Belay.Sqlite.Program
 import Belay.Sqlite.Env
 import Belay.Sqlite.ValueDisplay

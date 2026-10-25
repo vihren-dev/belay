@@ -26,12 +26,16 @@ inductive JoinKind where
   | full
   deriving Repr, DecidableEq
 
-/-- A source of a {lit}`FROM` clause (ADR 0013, D5): a table, a {lit}`json_each(json [, path])`
+/-- A source of a {lit}`FROM` clause (ADR 0013, D5): a table, a table of the initial database, a {lit}`json_each(json [, path])`
 call whose arguments read the joined row before it, a subquery, or the rows of a pragma
 (ADR 0019, D2). -/
 inductive Source where
   /-- The table at the catalog position, with its rows in rowid order. -/
   | table (position : Nat)
+  /-- The table at the position of the catalog of the fixed initial database, with its rows in
+  rowid order: {lit}`before.t` in a two-state query (ADR 0017, S6). It never reads the current
+  database, whatever the names and positions of its tables. -/
+  | initialTable (position : Nat)
   /-- {lit}`json_each` with its JSON argument and optional path, over the row before it
   (ADR 0012, amendment 5, slice 6d). -/
   | each (json : Expr) (path : Option Expr)
@@ -46,7 +50,20 @@ inductive Source where
 /-- Whether the source is {lit}`json_each`. -/
 def Source.isEach : Source → Bool
   | .each .. => true
-  | .table _ | .subquery .. | .pragma _ => false
+  | .table _ | .initialTable _ | .subquery .. | .pragma _ => false
+
+/-- Whether the source reads the fixed initial database of a two-state query
+({name}`Source.initialTable`). -/
+def Source.isInitial : Source → Bool
+  | .initialTable _ => true
+  | .table _ | .each .. | .subquery .. | .pragma _ => false
+
+/-- Whether the source reads the rows of the current database: a table, or the rows of a table-valued
+pragma over it. The sources {lit}`json_each` and a derived table read only the rows so far and the
+subqueries, and a table of the initial database never reads the current database. -/
+def Source.readsCurrent : Source → Bool
+  | .table _ | .pragma _ => true
+  | .initialTable _ | .each .. | .subquery .. => false
 
 /-- One source of {lit}`FROM` in written order: how it joins the row so far, the source,
 and its {lit}`ON` condition over the row so far and its cells; {lean}`(none : Option Expr)`

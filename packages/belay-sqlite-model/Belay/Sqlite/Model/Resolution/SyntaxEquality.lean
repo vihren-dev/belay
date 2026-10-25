@@ -17,7 +17,7 @@ def Syntax.Expr.same : Syntax.Expr → Syntax.Expr → Bool
   | .numeric a, .numeric b | .currentTime a, .currentTime b | .callStar a, .callStar b => a == b
   | .string a, .string b | .blob a, .blob b => a == b
   | .identifier a q, .identifier b r => a == b && q == r
-  | .qualified s c, .qualified t d => s == t && c == d
+  | .qualified s c a, .qualified t d b => s == t && c == d && a == b
   | .negate a, .negate b | .positive a, .positive b | .not a, .not b => a.same b
   | .compare o a b, .compare p c d => o == p && a.same c && b.same d
   | .arithmetic o a b, .arithmetic p c d => o == p && a.same c && b.same d

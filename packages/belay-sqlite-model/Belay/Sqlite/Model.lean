@@ -318,6 +318,7 @@ import Belay.Sqlite.Model.SumRangeLaws
 import Belay.Sqlite.Model.SumValueLaws
 
 import Belay.Sqlite.Model.QueryStepOutput
+import Belay.Sqlite.Model.TwoStateQuery
 import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.QueryOutputCases
 import Belay.Sqlite.Model.OutputResultsLaws

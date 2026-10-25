@@ -15,21 +15,26 @@ theorem resolveReference_noView (catalog : Catalog) (path : List Nat)
     (reference : Syntax.TableReference) (queries : Nat → Except SourceIssue ScopeSource)
     (prefix_ : List Nat) (resolved : SourceItem × ScopeSource)
     (ok : resolveReference catalog path reference queries prefix_ = .ok resolved) :
-    (reference.query.isNone && reference.arguments.isNone && (catalog.findView reference.table).isSome) = false := by
+    reference.namesStoredView catalog none = false := by
+  unfold Syntax.TableReference.namesStoredView
   cases named : reference.query with
   | some index => simp
   | none =>
-    cases table : catalog.findTable reference.table with
-    | some found =>
-      obtain ⟨position, shape⟩ := found
-      simp [Catalog.findView_none_of_table table]
+    cases schema : reference.schema with
+    | some name => simp
     | none =>
-      cases view : catalog.findView reference.table with
-      | none => simp
+      show (true && reference.arguments.isNone && (catalog.findView reference.table).isSome) = false
+      cases table : catalog.findTable reference.table with
       | some found =>
-        cases arguments : reference.arguments <;>
-          simp [resolveReference, named, arguments, resolveTableReference, table, view,
-            Except.mapError, SourceIssue.under, Except.map, Functor.map] at ok
+        obtain ⟨position, shape⟩ := found
+        simp [Catalog.findView_none_of_table table]
+      | none =>
+        cases view : catalog.findView reference.table with
+        | none => simp
+        | some found =>
+          cases arguments : reference.arguments <;>
+            simp [resolveReference, named, schema, arguments, resolveTableReference, table, view,
+              Except.mapError, SourceIssue.under, Except.map, Functor.map] at ok
 
 /-- If all FROM references resolve, none of its named sources without arguments
 is an unexpanded stored view. No FROM has no references, as in {name}`resolveSources`.
@@ -39,8 +44,7 @@ theorem resolveSources_noView (catalog : Catalog) (source : Option Syntax.TableR
     (joins : List Syntax.Join) (start : Nat) (queries : Nat → Except SourceIssue ScopeSource)
     (prefix_ : List Nat) (pending : List PendingSource) (scope : Scope)
     (ok : resolveSources catalog source joins start queries prefix_ = .ok (pending, scope)) :
-    (source.any fun first => (first :: joins.map (·.source)).any fun reference =>
-      reference.query.isNone && reference.arguments.isNone && (catalog.findView reference.table).isSome) = false := by
+    (source.any fun first => (first :: joins.map (·.source)).any (·.namesStoredView catalog none)) = false := by
   cases source with
   | none => rfl
   | some source =>
@@ -51,8 +55,7 @@ theorem resolveSources_noView (catalog : Catalog) (source : Option Syntax.TableR
     split at ok <;> try contradiction
     rename_i joined joinedOk
     have firstNoView := resolveReference_noView catalog [1] source queries prefix_ first firstOk
-    have joinNoView : ∀ join ∈ joins,
-        (join.source.query.isNone && join.source.arguments.isNone && (catalog.findView join.source.table).isSome) = false := by
+    have joinNoView : ∀ join ∈ joins, join.source.namesStoredView catalog none = false := by
       intro join member
       obtain ⟨index, atIndex⟩ := List.getElem?_of_mem member
       have pairAt : (joins.zip (joins.map (joinOperator ·.operator)))[index]? =

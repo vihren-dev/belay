@@ -102,11 +102,12 @@ def Outcome.persistedDatabase : Outcome → Database
 values bound to the parameters and the
 subqueries of its statement: its source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
 both in the statement's context ({name}`Resolved.statementContext`); none when a table is
-missing. -/
+missing. The optional {lit}`initial` database is the one that the sources of the initial origin read in a
+two-state observation; use none otherwise. -/
 def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
-    (subqueries : List Resolved.Query) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  let context := Resolved.statementContext clock counters parameters database subqueries
-  (query.source context database).map fun source => (source, query.run context source.rows)
+    (subqueries : List Resolved.Query) (initial : Option Database := none) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
+  let context := Resolved.statementContext clock counters parameters database subqueries initial
+  (query.source context database initial).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
 fails with {lean}`ExecutionError.datatypeMismatch` when a value of its window is not an integer

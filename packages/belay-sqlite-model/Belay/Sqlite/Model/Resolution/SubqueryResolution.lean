@@ -30,7 +30,7 @@ def subqueryShape (scope : Scope) (shapes : SubqueryShapes) (subquery : Syntax.S
     lowest := query.expressions.foldl (fun lowest expression => minPosition lowest (expression.lowestRead shapes))
       (query.sources.foldl (fun lowest source => match source.source with
         | .subquery index _ => minPosition lowest ((shapes.find index).bind (·.lowest))
-        | .table _ | .each .. | .pragma _ => lowest) none) }
+        | .table _ | .initialTable _ | .each .. | .pragma _ => lowest) none) }
 
 /-- The order of body resolution: derived sources in FROM order, then expression subqueries
 in written order, each after its own children; compound terms go right to left. The bounded
@@ -52,13 +52,13 @@ def subqueryBodyOrder (main : QueryScope) (compound : Option Syntax.Compound)
 /-- Refresh a query scope after its derived sources resolve. Their column types also rebuild
 USING/NATURAL equalities. The outer sources retain their existing cell positions and depths. -/
 def QueryScope.refresh (catalog : Catalog) (shapes : List SubqueryShape) (query : Syntax.Subquery)
-    (around : QueryScope) : Except ValueIssue QueryScope := do
+    (around : QueryScope) (initial : Option Catalog := none) : Except ValueIssue QueryScope := do
   let scope := around.scope.refreshSources shapes
   if scope = around.scope then pure around else do
     let callback := fun index => match shapes[index]?.bind (·.source) with
       | some source => Except.ok source
       | none => Except.error (SourceIssue.value (.restriction [] .subqueryHere))
-    let sources := resolveSources catalog query.source query.joins around.outer callback
+    let sources := resolveSources catalog query.source query.joins around.outer callback [] initial
     let (pending, inner) ← sources.mapError fun
       | .value issue => issue
       | .noSuchTable name => .prepare (.noSuchSource name)
@@ -69,10 +69,12 @@ Returned queries and shapes retain their syntax indexes. A FROM source adds the 
 all its output columns to its shape; expression subqueries keep first-column metadata only.
 Each body issue is located at its subquery's syntax path. Optional {lit}`columnNames`
 retain explicit CTE/view names without changing the expressions inside the body.
-For {lit}`viewRoots`, resolve the expressions before checking the declared column count. -/
+For {lit}`viewRoots`, resolve the expressions before checking the declared column count.
+The optional {lit}`initial` is the catalog of the initial database of a two-state query. -/
 def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
     (compound : Option Syntax.Compound) (scopes : List QueryScope) (subqueries : List Syntax.Subquery)
-    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) :
+    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) :
     Except ValueIssue (List Resolved.Query × List SubqueryShape) := do
   let missing : SubqueryShape :=
     { parent := some subqueries.length, columns := 0,
@@ -90,7 +92,7 @@ def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main :
       let body : Except ValueIssue (Resolved.Query × SubqueryShape) := do
         let some subquery := subqueries[index]? | throw (.restriction [] .subqueryHere)
         let some around := scopes[index]? | throw (.restriction [] .subqueryHere)
-        let around ← around.refresh catalog shapes subquery
+        let around ← around.refresh catalog shapes subquery initial
         let current : SubqueryShapes :=
           { current := some index, later := shapes.drop (index + 1), outer := around.outer }
         let (query, shape, columns) ← match subquery.compound with
@@ -112,7 +114,7 @@ def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main :
           | none => main.sourceIndexes.contains index
           | some parent => (scopes[parent]?).any (·.sourceIndexes.contains index)
         let shape ← if !isSource then pure shape else do
-          let expanded ← (sourceExpansion catalog field subqueries subquery.parent index columnNames).mapError fun
+          let expanded ← (sourceExpansion catalog field subqueries subquery.parent index columnNames initial).mapError fun
             | .value issue => issue
             | .noSuchTable name => .prepare (.noSuchSource name)
           let columns := (columns.zip expanded.columns).map fun (column, named) =>
@@ -135,10 +137,11 @@ statement's syntax holding them at child {lit}`field`. Explicit CTE names use
 {lit}`columnNames`; its empty default keeps ordinary derived-source names.
 The optional {lit}`viewRoots` identify stored definitions for scope and count checks. -/
 def resolveSubqueries (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
-    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) :
+    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) :
     Except SourceIssue (List Resolved.Query × List SubqueryShape) := do
-  let scopes ← subqueryScopes catalog field main none subqueries columnNames viewRoots
-  (resolveSubqueryBodies dqs catalog field main none scopes subqueries columnNames viewRoots).mapError .value
+  let scopes ← subqueryScopes catalog field main none subqueries columnNames viewRoots initial
+  (resolveSubqueryBodies dqs catalog field main none scopes subqueries columnNames viewRoots initial).mapError .value
 
 /-- Whether a subquery reads the table at the catalog position directly. -/
 def Resolved.Query.readsTable (position : Nat) (query : Resolved.Query) : Bool :=

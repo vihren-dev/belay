@@ -43,7 +43,7 @@ def Syntax.Expr.columnCollation (scope : Scope) : Syntax.Expr → Option Collati
   | .identifier name _ => match scope.resolveName name with
     | .found _ [position] => scope.columns[position]?.map (·.collation)
     | .found _ _ | .missing | .ambiguous => none
-  | .qualified source column => match scope.resolveQualified source column with
+  | .qualified source column schema => match scope.resolveSchemaQualified source column schema with
     | .found _ [position] => scope.columns[position]?.map (·.collation)
     | .found _ _ | .missing | .ambiguous => none
   | .positive operand | .cast operand _ | .collate operand _ => operand.columnCollation scope

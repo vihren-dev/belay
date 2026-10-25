@@ -38,7 +38,7 @@ def Expr.reindexM [Monad m] (index : Nat → m Nat) : Expr → m Expr
   | .parameter number => pure (.parameter number)
   | .currentTime keyword => pure (.currentTime keyword)
   | .identifier name quote => pure (.identifier name quote)
-  | .qualified source column => pure (.qualified source column)
+  | .qualified source column schema => pure (.qualified source column schema)
   | .callStar name => pure (.callStar name)
   | .raise kind none => pure (.raise kind none)
 

@@ -14,10 +14,10 @@ namespace Belay.Sqlite.Model
 for a query that succeeds
 ({name}`Resolved.Query.possibleOn`); none for every other statement and for a query that fails. -/
 def possibleOutput (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
-    (transition : SqlTransition) : Option (List (List ResultRow)) :=
+    (transition : SqlTransition) (initial : Option Database := none) : Option (List (List ResultRow)) :=
   match statement, transition with
   | .query query subqueries, .next _ =>
-    query.possibleOn clock (before.counters.view statement.counterReads) parameters before.database subqueries
+    query.possibleOn clock (before.counters.view statement.counterReads) parameters before.database subqueries initial
   | .query .., .halt _ => none
   | .createTable .., _ | .createView .., _ | .createIndex .., _ | .createTrigger .., _ | .addColumn .., _ | .drop .., _ | .begin, _
   | .commit, _ | .rollback, _ | .insert .., _ | .upsert .., _ | .update .., _ | .delete .., _ | .prepareError _, _

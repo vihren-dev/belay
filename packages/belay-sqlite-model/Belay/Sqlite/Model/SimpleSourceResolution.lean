@@ -23,14 +23,14 @@ scope of the table ({name}`tableScope`). The catalog may be any catalog.
 The source reference has no indexed query. The result holds for every derived-source callback
 and diagnostic prefix; neither is read on this successful named-table path. Leave both at their defaults
 for a query without derived sources.
-Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the hypotheses. -/
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the hypotheses. -/
 theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table))
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table))
     (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
     (prefix_ : List Nat := []) :
     resolveSources catalog (some reference) [] 0 queries prefix_ = .ok ([{ item := .table position, kind := .inner, condition := .none }],
       tableScope catalog reference position table) := by
-  simp [resolveSources, resolveReference, namedSource, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
+  simp [resolveSources, resolveReference, namedSource, current, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
 
 /-- No pending source resolves to no source, for any scope and quote setting. Proof sketch: there is no
 condition and no argument to resolve. -/

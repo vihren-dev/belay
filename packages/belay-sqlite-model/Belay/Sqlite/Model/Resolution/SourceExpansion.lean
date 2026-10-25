@@ -36,9 +36,10 @@ def expandedSource (index : Nat) (path : List Nat) (scope : Scope) (results : Li
 The fuel bounds nesting by the statement's number of subqueries. A compound expands its
 terms right to left, but its column names come from the left-most term. A source may name
 only a later query with this query as parent, as the frontend records it. {lit}`columnNames`
-gives the explicit output names of expanded CTE/view uses; use its empty default otherwise. -/
+gives the explicit output names of expanded CTE/view uses; use its empty default otherwise. The optional
+{lit}`initial` is the catalog of the initial database of a two-state query ({name}`resolveReference`). -/
 def expandQuerySources (catalog : Catalog) (field : Nat) (subqueries : List Syntax.Subquery)
-    (columnNames : List (Nat × List Identifier) := []) :
+    (columnNames : List (Nat × List Identifier) := []) (initial : Option Catalog := none) :
     Nat → Nat → Except SourceIssue (Scope × List Syntax.ResultColumn × List String)
   | 0, index => .error (.value (.restriction [field, index] .subqueryHere))
   | fuel + 1, index => do
@@ -48,27 +49,28 @@ def expandQuerySources (catalog : Catalog) (field : Nat) (subqueries : List Synt
     | some compound =>
       let terms ← compound.terms.reverse.mapM fun child => do
         if child ≤ index || (subqueries[child]?.map (·.parent)) != some (some index) then throw refused
-        expandQuerySources catalog field subqueries columnNames fuel child
+        expandQuerySources catalog field subqueries columnNames initial fuel child
       let some first := terms.getLast? | throw refused
       pure first
     | none =>
       let (_, scope) ← resolveSources catalog query.source query.joins 0 (fun child => do
         if child ≤ index || (subqueries[child]?.map (·.parent)) != some (some index) then throw refused
-        let (scope, results, names) ← expandQuerySources catalog field subqueries columnNames fuel child
-        expandedSource child [field, child] scope results names (columnNames.lookup child)) [field, index]
+        let (scope, results, names) ← expandQuerySources catalog field subqueries columnNames initial fuel child
+        expandedSource child [field, child] scope results names (columnNames.lookup child)) [field, index] initial
       if let some issue := starIssue scope query.columns then throw (.value (issue.under [field, index]))
       pure (scope, query.columns, sourceOutputNames scope query.columns)
 
 /-- The source callback for the query at {lit}`parent`, or the statement's query when absent.
 It checks the indexed-parent relation before expanding names. The optional name overrides
-come from expanded CTE/view definitions; the empty default keeps derived-query names. -/
+come from expanded CTE/view definitions; the empty default keeps derived-query names. The optional
+{lit}`initial` is the catalog of the initial database of a two-state query. -/
 def sourceExpansion (catalog : Catalog) (field : Nat) (subqueries : List Syntax.Subquery)
-    (parent : Option Nat) (index : Nat) (columnNames : List (Nat × List Identifier) := []) :
-    Except SourceIssue ScopeSource := do
+    (parent : Option Nat) (index : Nat) (columnNames : List (Nat × List Identifier) := [])
+    (initial : Option Catalog := none) : Except SourceIssue ScopeSource := do
   if subqueries.isEmpty then throw (.value (.restriction [] .subqueryHere))
   if (subqueries[index]?.map (·.parent)) != some parent || parent.any (index ≤ ·) then
     throw (.value (.restriction [field, index] .subqueryHere))
-  let (scope, results, names) ← expandQuerySources catalog field subqueries columnNames (subqueries.length + 1) index
+  let (scope, results, names) ← expandQuerySources catalog field subqueries columnNames initial (subqueries.length + 1) index
   expandedSource index [field, index] scope results names (columnNames.lookup index)
 
 /-- Refresh derived columns from already resolved source bodies while retaining placement,

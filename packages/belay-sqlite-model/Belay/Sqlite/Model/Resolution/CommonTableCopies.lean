@@ -69,17 +69,17 @@ def CommonTableCopies.originalIssue (copies : CommonTableCopies) (field : Nat) :
 
 /-- Inspect the names produced by a completed query copy, using the ordinary source
 expander and any already completed explicit source column lists. -/
-def commonTableOutput (catalog : Catalog) (field index : Nat) :
+def commonTableOutput (catalog : Catalog) (field index : Nat) (initial : Option Catalog := none) :
     CommonTableCopyM (Scope × List Syntax.ResultColumn × List String) := do
   let copies ← get
-  liftM ((expandQuerySources catalog field copies.queries.toList copies.columnNames
+  liftM ((expandQuerySources catalog field copies.queries.toList copies.columnNames initial
     (copies.queries.size + 1) index).mapError (copies.originalIssue field))
 
 /-- Check an explicit CTE column count after its body expands, and retain its names.
 An absent column list keeps the query's ordinary derived-column names. -/
 def nameCommonTableCopy (catalog : Catalog) (field index : Nat)
-    (definition : Syntax.CommonTable) : CommonTableCopyM Unit := do
-  let (_, _, names) ← commonTableOutput catalog field index
+    (definition : Syntax.CommonTable) (initial : Option Catalog := none) : CommonTableCopyM Unit := do
+  let (_, _, names) ← commonTableOutput catalog field index initial
   if let some columns := definition.columns then
     if names.length != columns.length then
       throw (.value (.prepare (.commonTable (.columns definition.name names.length columns.length))))
@@ -112,21 +112,31 @@ def checkCommonTableSyntax (field : Nat) (written : List Syntax.Subquery) : Exce
     if (written[index]?.bind (·.parent)).any (index ≤ ·) then
       throw (.value (.restriction [field, index] .subqueryHere))
 
+/-- Whether a written source names a stored view that expansion must copy: it has no indexed query and
+no function arguments, and its name is a view of the catalog, or, with the schema name {lit}`before`, a
+view of the optional catalog {lit}`initial` of the initial database. -/
+def Syntax.TableReference.namesStoredView (catalog : Catalog) (initial : Option Catalog)
+    (source : Syntax.TableReference) : Bool :=
+  source.query.isNone && source.arguments.isNone &&
+    (match source.schema with
+      | none => (catalog.findView source.table).isSome
+      | some _ => source.readsInitial && (initial.bind (·.findView source.table)).isSome)
+
 /-- Whether expansion must copy this statement: it has WITH definitions or a written
 FROM/JOIN name without function arguments finds a stored view. Unrelated catalog
-views and invalid function calls keep the ordinary source-resolution path. -/
+views and invalid function calls keep the ordinary source-resolution path. A source with the schema name
+{lit}`before` looks for its view in the optional catalog {lit}`initial` of the initial database. -/
 def querySourceCopiesNeeded (catalog : Catalog) (query : Syntax.Subquery)
-    (written : List Syntax.Subquery) : Bool :=
+    (written : List Syntax.Subquery) (initial : Option Catalog := none) : Bool :=
   written.any (·.commonTable.isSome) || (query :: written).any fun query =>
     query.source.any fun first =>
-      (first :: query.joins.map (·.source)).any fun source =>
-        source.query.isNone && source.arguments.isNone && (catalog.findView source.table).isSome
+      (first :: query.joins.map (·.source)).any (·.namesStoredView catalog initial)
 
 /-- A bound on a query-source nesting path: the statement's indexed syntax plus one
-root, and each stored view's indexed syntax plus its root. Active definition checks
+root, and each stored view's indexed syntax plus its root, also in the optional initial catalog. Active definition checks
 reject repeated views and CTEs before any cycle can exhaust this finite bound. -/
-def querySourceDepth (catalog : Catalog) (written : List Syntax.Subquery) : Nat :=
-  catalog.foldl (fun total object => match object.entry with
+def querySourceDepth (catalog : Catalog) (written : List Syntax.Subquery) (initial : Option Catalog := none) : Nat :=
+  (catalog ++ initial.getD []).foldl (fun total object => match object.entry with
     | .view view => total + view.subqueries.length + 1
     | .table _ | .index _ | .trigger _ => total) (written.length + 1)
 

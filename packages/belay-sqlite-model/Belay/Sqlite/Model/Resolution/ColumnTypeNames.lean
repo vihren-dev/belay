@@ -45,7 +45,7 @@ theorem Scope.nameFlexibleNumeric_single (name : Identifier) (columns : List Cat
 the operand's affinity. CAST and unary plus do not inherit this flag. -/
 def Syntax.Expr.flexibleNumeric (scope : Scope) (shapes : SubqueryShapes) : Syntax.Expr → Bool
   | .identifier name _ => scope.nameFlexibleNumeric (scope.resolveName name)
-  | .qualified source column => scope.nameFlexibleNumeric (scope.resolveQualified source column)
+  | .qualified source column schema => scope.nameFlexibleNumeric (scope.resolveSchemaQualified source column schema)
   | .subquery index => (shapes.find index).any (·.flexibleNumeric)
   | .collate operand _ => operand.flexibleNumeric scope shapes
   | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _

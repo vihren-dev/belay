@@ -257,6 +257,7 @@ in {
   };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (root + /tests/two_state_support.py)
                (root + /tests/lean_server_support.py) (root + /tests/proof_cost_support.py)
                (root + /tests/sql_file_support.py)
                (root + /tests/shared_table_shape_test.py)

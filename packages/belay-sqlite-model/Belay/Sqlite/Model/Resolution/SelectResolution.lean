@@ -20,25 +20,28 @@ resolve against the current catalog and hide ordinary caller names. SQLite expan
 its subqueries. A compound query resolves from its terms ({name}`resolveCompoundBody`). A query
 without {lit}`FROM`, or a term of the compound without {lit}`FROM`, that has a call that can
 fail, in a statement with a subquery that is no term, is
-{name}`RestrictionKind.subqueryFallibleCall`. -/
+{name}`RestrictionKind.subqueryFallibleCall`. The optional {lit}`initial` is the catalog of the initial database
+of a two-state query: a source {lit}`before.t` resolves there ({name}`resolveReference`); without it such a
+source is {name}`RestrictionKind.initialDatabase`. -/
 def resolveSelectDetails (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
-    (subqueries : List Syntax.Subquery) : Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
+    (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) :
+    Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
   let dqs := context.profile.dqsDml
   do
-    let expanded ← prepareQuerySources catalog 8 query subqueries
+    let expanded ← prepareQuerySources catalog 8 query subqueries initial
     let query := expanded.query
     let subqueries := expanded.copies.queries.toList
     let columnNames := expanded.copies.columnNames
     let viewRoots := expanded.copies.viewRoots
     let result : Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) := do
       let (pending, scope) ← resolveSources catalog query.source query.joins 0
-        (fun index => sourceExpansion catalog 8 subqueries none index columnNames)
+        (fun index => sourceExpansion catalog 8 subqueries none index columnNames initial) [] initial
       if let some issue := starIssue scope query.columns then throw (.value issue)
       let main : QueryScope := { scope, pending, outer := 0, outerAliases := [],
                                  aliases := (resultAliases scope query.columns).filterMap id }
-      let scopes ← subqueryScopes catalog 8 main query.compound subqueries columnNames viewRoots
-      let (resolvedSubqueries, shapes) ← (resolveSubqueryBodies dqs catalog 8 main query.compound scopes subqueries columnNames viewRoots).mapError .value
-      let main ← (main.refresh catalog shapes query).mapError .value
+      let scopes ← subqueryScopes catalog 8 main query.compound subqueries columnNames viewRoots initial
+      let (resolvedSubqueries, shapes) ← (resolveSubqueryBodies dqs catalog 8 main query.compound scopes subqueries columnNames viewRoots initial).mapError .value
+      let main ← (main.refresh catalog shapes query initial).mapError .value
       let scope := main.scope
       let pending := main.pending
       let scopes := scopes.map fun scope => { scope with scope := scope.scope.refreshSources shapes }
@@ -63,8 +66,8 @@ Model restrictions retain their original syntax paths. This uses the same query 
 metadata resolution as {name}`resolveSelectDetails`; the statement needs only its executable
 queries. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
-    (subqueries : List Syntax.Subquery) : StatementResolution :=
-  match resolveSelectDetails context catalog query subqueries with
+    (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) : StatementResolution :=
+  match resolveSelectDetails context catalog query subqueries initial with
   | .ok (resolvedQuery, resolvedSubqueries, _) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
   | .error (.value issue) => issueResolution catalog [] issue

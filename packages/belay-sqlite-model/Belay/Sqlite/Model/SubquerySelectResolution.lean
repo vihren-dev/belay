@@ -46,7 +46,7 @@ theorem resolveSelect_noFrom_one_subquery (context : ResolveContext) (catalog : 
   have noSource : (subqueryShape inner { current := some 0 } sub subQuery affinity).source = none := rfl
   have subNoView := resolveSources_noView catalog sub.source sub.joins 0 _ [] pending inner subSources
   have noCopies : querySourceCopiesNeeded catalog main [sub] = false := by
-    simpa [querySourceCopiesNeeded, ordinary, mainNoFrom] using subNoView
+    simpa [querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, ordinary, mainNoFrom] using subNoView
   subst shapeIs
   unfold resolveSelect resolveSelectDetails
   simp [prepareQuerySources, noCopies, ordinary, CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopes, order, subqueryScope,

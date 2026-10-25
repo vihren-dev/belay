@@ -20,7 +20,7 @@ expression, whose name is its text. For example,
 def Syntax.Expr.writtenName : Syntax.Expr → Option String
   | .collate operand _ => operand.writtenName
   | .identifier name _ => some name.text
-  | .qualified _ column => some column.text
+  | .qualified _ column _ => some column.text
   | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
   | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none

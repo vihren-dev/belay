@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.Context
 import Belay.Sqlite.Model.Resolution.CatalogDrop
 import Belay.Sqlite.Model.Resolution.SyntaxParameters
+import Belay.Sqlite.Model.Resolution.SyntaxSchema
 
 set_option doc.verso true
 
@@ -9,14 +10,17 @@ name now; referenced objects and output-column counts are checked when the view 
 
 namespace Belay.Sqlite.Model
 
-/-- Resolve CREATE VIEW: parameters anywhere in the stored body are a SQLite error,
-then reserved names and existing objects are checked. IF NOT EXISTS keeps an existing
+/-- Resolve CREATE VIEW: parameters anywhere in the stored body are a SQLite error, and a source
+with a schema name in the body, as {lit}`before.t` has, is the restriction
+{name}`RestrictionKind.initialDatabase` because SQLite refuses it; then reserved names and existing objects are checked. IF NOT EXISTS keeps an existing
 table or view, but an index with the name remains an error. A fresh name appends the
 unresolved definition; missing references and cycles do not prevent creation. -/
 def resolveCreateView (catalog : Catalog) (name : Identifier) (ifNotExists : Bool)
     (view : CatalogView) : StatementResolution :=
   if view.query.hasParameter || view.subqueries.any Syntax.Subquery.hasParameter then
     prepareError catalog .viewVariables
+  else if view.query.hasSchemaSource || view.subqueries.any Syntax.Subquery.hasSchemaSource then
+    restrict [] .initialDatabase
   else if reservedName name then prepareError catalog (.expression (.reservedName name))
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) =>

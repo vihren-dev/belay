@@ -1,7 +1,6 @@
 # S6: the fixed initial database in read-only postconditions
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review and the
-completed query-source/CTE/view representation.
+Created 2026-10-24. Status: DONE (2026-10-25). The query-source/CTE/view representation is complete.
 Status: [progress](20261024-s6-before-context.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 and its two-state guide
 requirements; [S6 foundations](20261024-surface-s6-foundations.task.md).
@@ -32,7 +31,8 @@ two-state observation without introducing general connection attachments.
 - **Resolution preserves origin through the whole query.** Supported aliases,
   joins, scalar/IN/EXISTS subqueries, correlations, compounds, ordinary CTEs and
   views retain each source's catalog and row origin. Three-part column names
-  resolve against the intended qualified table. A table alias named `before`
+  resolve against the intended qualified table; native SQLite has no three-part
+  star, so `before.t.*` stays a syntax error. A table alias named `before`
   remains an alias in a two-part column reference; a quoted identifier containing
   a dot remains one name. CTE shadowing follows the existing scope rules.
   Expanding a view from the initial database uses that definition's original
@@ -48,7 +48,8 @@ two-state observation without introducing general connection attachments.
   Reading `before.t` does not reset them to values from an earlier statement.
   The initial snapshot supplies catalog/rows, not an independent runtime clock.
   Function and pragma-source forms retain their existing admitted scope;
-  extra schema-argument forms are not implied by this task.
+  extra schema-argument forms are not implied by this task and stay refused,
+  as do references to `before` inside view and trigger bodies.
 - **The same evaluator performs the observation.** Resolve and evaluate the
   extended query through the existing query pipeline. No concatenated untagged
   catalog, copied query interpreter or textual substitution stands in for source

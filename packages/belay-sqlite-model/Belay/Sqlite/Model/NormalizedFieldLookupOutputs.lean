@@ -39,7 +39,7 @@ theorem step_output_of_simple_query (context : ResolveContext) (clock : Option C
 lookup on a connection with the expanded database give the same step output, at any clocks and
 indexes. The surrounding catalog, table shape, rows and stored values are arbitrary within the
 premises: the table is physical with wide aliased rows, in-range primary-key, source and id
-positions, plain original columns and an absent stored name. Proof sketch: both statements resolve
+positions, plain original columns and an absent stored name. The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: both statements resolve
 to simple table queries ({name}`resolve_original_lookup`, {name}`resolve_stored_lookup`); their
 outputs are the normal forms of query results, and {name}`results_translate` equates the results
 over the two scans related by {name}`sourceRows_expandedTable`. -/
@@ -47,7 +47,7 @@ theorem translate_step_outputs (context : ResolveContext) (clock : Option Clock)
     (connection expanded : Connection) (reference : Syntax.TableReference)
     (idName sourceName storedName : Identifier) (text : String) (number : Nat) (value : Value)
     (table : Table) (position source id : Nat) (first second : Identifier × CatalogTrigger)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : connection.state.database.catalog.findTable reference.table = some (position, table.shape))
     (present : connection.state.database.table position = some table)
     (aligned : position < connection.state.database.rows.length)
@@ -65,13 +65,13 @@ theorem translate_step_outputs (context : ResolveContext) (clock : Option Clock)
   have inside := columnPosition_lt sourceFound
   have idInside := columnPosition_lt idFound
   obtain ⟨names, original⟩ := resolve_original_lookup context connection.resolveState reference position table.shape
-    idName sourceName text number namedSource arguments found idFound sourceFound
+    idName sourceName text number namedSource current arguments found idFound sourceFound
   have extendedFound : expanded.state.database.catalog.findTable reference.table =
       some (position, (expandedTable table storedName source).shape) := by
     rw [reached]; exact expandedDatabase_findTable storedName first second found
   have storedFound := columnPosition_new fresh table.shape.strict
   obtain ⟨storedNames, stored⟩ := resolve_stored_lookup context expanded.resolveState reference position
-    (expandedTable table storedName source).shape idName storedName text number namedSource arguments extendedFound
+    (expandedTable table storedName source).shape idName storedName text number namedSource current arguments extendedFound
     (columnPosition_append idFound _) storedFound
     (by simp [expandedTable, textColumn]; cases table.shape.strict <;> rfl) (by simp [expandedTable, textColumn])
   have presentAfter : expanded.state.database.table position = some (expandedTable table storedName source) := by
@@ -88,13 +88,13 @@ theorem translate_step_outputs (context : ResolveContext) (clock : Option Clock)
 /-- For every parameter value, the original lookup gives the same step output on the original
 connection and on a connection with the expanded database, at any clocks and indexes. The
 premises are those of {name}`translate_step_outputs` except that the stored name need not be absent
-from the columns: preservation never reads the new field. Proof sketch: as there, with
+from the columns: preservation never reads the new field. The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: as there, with
 {name}`results_preserve` in place of {name}`results_translate`. -/
 theorem preserve_step_outputs (context : ResolveContext) (clock : Option Clock) (before after : Nat)
     (connection expanded : Connection) (reference : Syntax.TableReference)
     (idName sourceName storedName : Identifier) (text : String) (number : Nat) (value : Value)
     (table : Table) (position source id : Nat) (first second : Identifier × CatalogTrigger)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : connection.state.database.catalog.findTable reference.table = some (position, table.shape))
     (present : connection.state.database.table position = some table)
     (aligned : position < connection.state.database.rows.length)
@@ -111,12 +111,12 @@ theorem preserve_step_outputs (context : ResolveContext) (clock : Option Clock) 
   have inside := columnPosition_lt sourceFound
   have idInside := columnPosition_lt idFound
   obtain ⟨names, original⟩ := resolve_original_lookup context connection.resolveState reference position table.shape
-    idName sourceName text number namedSource arguments found idFound sourceFound
+    idName sourceName text number namedSource current arguments found idFound sourceFound
   have extendedFound : expanded.state.database.catalog.findTable reference.table =
       some (position, (expandedTable table storedName source).shape) := by
     rw [reached]; exact expandedDatabase_findTable storedName first second found
   obtain ⟨extendedNames, extended⟩ := resolve_original_lookup context expanded.resolveState reference position
-    (expandedTable table storedName source).shape idName sourceName text number namedSource arguments extendedFound
+    (expandedTable table storedName source).shape idName sourceName text number namedSource current arguments extendedFound
     (columnPosition_append idFound _) (columnPosition_append sourceFound _)
   have presentAfter : expanded.state.database.table position = some (expandedTable table storedName source) := by
     rw [reached]; exact expandedDatabase_table storedName first second present aligned
