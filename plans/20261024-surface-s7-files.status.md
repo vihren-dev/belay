@@ -130,7 +130,7 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   at `/nix/store/wbzz07xysl7gxm6bc8nkd2fjj6bi6q5m-sqlite-verifier-test-surface-1`.
 - 2026-10-25: review `20261025T054500Z-f420fa5b` of the corrective-action refactor had
   no musts and one should (no test for the duplicate-section message); the errors fixture
-  now checks it with `#guard_msgs`. Checked by the part-end gate below.
+  now checks it with `#guard_msgs`; the part 1 acceptance entry below records the gates.
 - 2026-10-25: part 1 acceptance (file elaboration and named statements) after the
   reviews above: `just test-full` passed (472 passed, 71 deselected, 49 subtests in
   165.41 seconds for the main suite; 108 passed in 327.35 seconds for the surface suite;
