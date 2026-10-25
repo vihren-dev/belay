@@ -63,6 +63,16 @@ HIDDEN_ROWID_REASON = "column names rowid, _rowid_ and oid are not modeled; rena
 """The reason of a case whose table hides its rowid, as the model's restriction of these names says."""
 
 
+OBSERVED_VIEW_REASON = ("the record replay compares tables only; a record with a view is judged through its predictions "
+                        "(`conformance.predict`)")
+"""The reason of a replayed case whose native observation lists a view."""
+
+
+class ObservedView(ValueError):
+    """A recorded observation that lists a view. The replay comparison has no view type: the
+    model's view rows are observations, which the prediction path compares."""
+
+
 class HiddenRowid(ValueError):
     """A recorded table whose columns take every rowid name, so SQLite's rowid has none and the
     recorder keys the rows by all columns; the model refuses the names, so the case is out of scope."""
@@ -75,6 +85,8 @@ def native_tables(observation: dict[str, Json]) -> list[Json]:
     result: list[Json] = []
     for item in observation["tables"]:
         without_rowid = bool(item["withoutRowid"])
+        if item["kind"] == "view":
+            raise ObservedView(f"view {item['name']} is not a table")
         if item["kind"] != "table":
             raise ValueError("Unexpected row identity in an observed table")
         if not without_rowid and item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:
@@ -159,6 +171,8 @@ def prepare(record: dict[str, Json], translator: Translator) -> tuple[dict[str, 
                                and bool(record.get("trace")) and record["trace"][-1].get("primaryCode") == 1)
         return None, {"verdict": "MODEL_UNSUPPORTED" if error.status == "UNSUPPORTED" or native_syntax_error else "HARNESS_ERROR",
                       "frontendStatus": error.status, "error": str(error)}
+    except ObservedView as error:
+        return None, {"verdict": "MODEL_UNSUPPORTED", "reason": OBSERVED_VIEW_REASON, "error": str(error)}
     except HiddenRowid as error:
         return None, {"verdict": "MODEL_UNSUPPORTED", "reason": HIDDEN_ROWID_REASON, "error": str(error)}
     except (ValueError, KeyError, TypeError, IndexError, OSError, RuntimeError) as error:
