@@ -433,9 +433,9 @@ kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (ten reports) w
 two-state claims is optional and not done. Nix verification: pending until the Part 1b end gates.
 
 Guide change to make (not edited): the paragraph about `before` says the library "fixes the start
-in the precondition"; for a fresh run the claim `program ensuresFrom start => post` captures the
-start, and an ordinary triple cannot name it. A `holds` that names `before` is a compile error, and
-the two-state assertion is `holdsSince start`.
+in the precondition"; for a fresh run the claim `program ensuresFrom start => post` (the primitive
+`FreshEnsuresFrom`) captures the start, and an ordinary triple cannot name it. A `holds` that names
+`before` is a compile error, and the two-state assertion is `holdsSince start`.
 
 ### Part 1b unit 3: model laws for the purge frame
 
@@ -467,3 +467,63 @@ files and the S4 files are not edited):
 Belay package: `Sql.ifOk_send_plainDelete` (`PlainDeleteEffect.lean`, the mirror of `Sql.ifOk_send_plainInsert`)
 and `FreshEnsuresFrom.ifOk_iff` (in `TwoStateAssertions.lean`). Nix verification: pending until the Part 1b end
 gates.
+
+### Part 1b unit 4: the purge frame claim and its fixtures
+
+Fixtures (chain `PurgeFrameQueries`, `PurgeFrameSite`, `PurgeFrameClaims`, `PurgeFrameInstances`; test
+`test_purge_frame_claim_over_every_database` in `tests/surface_assertion_examples_test.py`; 4, 0, 2 and 12 axiom
+reports, each with the ordinary axioms only):
+
+- `PurgeFrameQueries`: `purge` (the guide's text with `:c`, `:now`; each named parameter is an argument),
+  `purgeKeeps c now` (the guide's claim text), the resolved forms the model gives (`purgeFilter`,
+  `purgeKeepsCondition`, `purgeKeepsCompound`), and their row-wise and shape facts.
+- `PurgeFrameSite`: `PurgeFrameSite db c now`: position and catalog entry of `sessions`, its rowid alias is the
+  first column, the purge resolves to a plain delete `[] [] none` (no trigger or foreign-key rule), the claim
+  resolves (against the catalog of the start and the same catalog) to the compound EXCEPT statement, and the model
+  runs the purge for every clock and every counter. The final property is not a field.
+- `PurgeFrameClaims`: `purge_keeps_rows` (the two-state observation over the start and the reached database has
+  rows) and `purge_frame (c now : Value)`: `FreshEnsuresFrom (send (purge c now)) (Nonempty site) (fun start =>
+  ifOk (holdsSince start (purgeKeeps c now)))`, for all values (NULL and text too). Proof: `Sql.ifOk_send_plainDelete`
+  for the final database, `resolvedStepOutput_notExistsExcept_hasRows` with `notExistsExcept_subset` (complement
+  law of `IS NOT 1`) and `notExistsExcept_identical` (rowid alias, `Table.RowidsDistinct.row_eq`).
+- `PurgeFrameInstances`: the site on a three-session database (`sessionsSite`, whose fields hold by `decide +kernel`
+  for any values; only the modeled field depends on the values and is checked by `rfl` for each pair), the typed
+  corollary `purge_frame_typed (c : Value) (now : Int64)`, and the actual runs: integer time, NULL customer, NULL
+  time, a text time that deletes the live session too ("only expired sessions are deleted" is false), the OR variant
+  that breaks the claim, `NOT` instead of `IS NOT 1` that requires nothing for a NULL parameter, and an aborted
+  purge (trigger with `RAISE(ABORT)`) whose rollback leaves the start. The delete-trigger counterexample
+  (`PurgeTriggerCounterexample`) stays.
+
+Global invariant restatement (Part 2 decision 1b): NOT done. The query context of the before-context task does not
+give it. It needs a filtered duplicate-keys law (S4 has `SELECT 1 FROM t GROUP BY k HAVING count(*) > 1` only, 635
+lines in four modules: query form, resolution, output laws, belay lemma), the query `SELECT email FROM accounts WHERE
+deleted_at IS NULL GROUP BY email HAVING count(*) > 1` with its resolution, and a bridge from the partial unique
+index to "no live duplicates" (group equality by collation against the index key). That is well over 200 lines of
+new work that the task does not list. The per-value `signup_keeps` stays. Options: (1) a separate task for the
+filtered duplicate-keys law, then the global `signup_keeps`; (2) keep the per-value form as the final one.
+Recommendation: (1) only if the owner wants the guide's exact invariant text; otherwise (2).
+
+Guide changes to make (not edited):
+
+- `purge_frame` (both places, lines near 997 and 1620): `holds` refuses `before`, so the claim is written with the
+  two-state assertion and the captured start:
+
+```lean
+def purge := sql r"DELETE FROM sessions WHERE customer_id = :c AND expires_at < :now"
+def purgeKeeps (c now : Value) := sql r"SELECT 1 WHERE NOT EXISTS (
+    SELECT * FROM before.sessions
+    WHERE (customer_id = $c AND expires_at < $now) IS NOT 1
+    EXCEPT SELECT * FROM sessions)"
+theorem purge_frame (c now : Value) :
+    FreshEnsuresFrom (send (purge c now)) (fun db => Nonempty (PurgeFrameSite db c now))
+      (fun start => ifOk (holdsSince start (purgeKeeps c now)))
+```
+
+  with the sentence: the claim holds for every start whose `sessions` table has the rowid alias as its first column,
+  with no trigger or foreign-key rule on the delete; a purge that fails requires nothing; a trigger that deletes
+  more is outside the site (the delete-trigger counterexample). The typed form `(now : Int64)` follows by
+  `purge_frame_typed`.
+- The false second claim ("only expired sessions are deleted"): the kernel example
+  `text_time_deletes_every_session_of_the_customer` runs the purge with the text time and finds the live session
+  deleted, while the frame claim still holds.
+- The `NOT (...)` trap: `not_instead_of_is_not_one_requires_nothing_for_null` shows it on the actual run.

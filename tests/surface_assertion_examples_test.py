@@ -99,3 +99,18 @@ def test_added_customer_claim_over_every_database(runtime_root: Path, tmp_path: 
     because the kernel evaluates the model's run of the insert for every environment (about 40 s)."""
     check_module_chain(runtime_root, tmp_path, (
         ("AddCustomerQueries", 0), ("AddCustomerClaims", 1), ("AddCustomerInstances", 2)), timeout=300)
+
+
+def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Path) -> None:
+    """The guide's purge frame claim is proved for every admitted database with the stated site (the
+    schema with a rowid alias, the resolution of the purge as a plain delete and of the claim as a compound
+    EXCEPT against `before`, and a modeled purge), for every pair of values, NULL and text included: a purge
+    that succeeds leaves every session that is not an expired session of the customer. The condition is
+    the NULL-aware `IS NOT 1`. The fixture shows the site and the actual run for NULL parameters, for a text
+    time that deletes every session of the customer, and for an integer time; it keeps the counterexamples
+    that the claim and its form exclude: the variant of the purge with OR for AND, the claim with NOT
+    instead of IS NOT 1 that requires nothing for a NULL parameter, and an aborted purge whose rollback
+    leaves the start."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("PurgeFrameQueries", 4), ("PurgeFrameSite", 0), ("PurgeFrameClaims", 2), ("PurgeFrameInstances", 12)),
+        timeout=300)
