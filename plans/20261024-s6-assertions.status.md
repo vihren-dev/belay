@@ -158,3 +158,7 @@ the part is recorded in the closing entry.
   `andOk` is not reported as a policy); an ordinary triple is explained only for the
   `Sql` monad (a triple over `Id` is reported as unsupported); the recognized
   policy and observation names are named, documented lists.
+- 2026-10-25, second review of unit 3 (3b563bca): an ordinary triple is explained
+  only for `Sql` with the standard transformer `sqlWPMonad`; the fallback policy
+  text no longer says that a postcondition must inspect the trace to reject
+  errors.

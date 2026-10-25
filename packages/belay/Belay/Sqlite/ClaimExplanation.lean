@@ -48,9 +48,9 @@ def policyExplanation (post : Option Expr) (ordinary : Bool) : MessageData :=
     else if conditionalPolicyNames.contains name then
       m!"Error policy ifOk: the final property is required only when the whole trace has no modeled SQL error. A modeled error removes the obligation. An unmodeled stop in the run of the program is never excused.{prefixText "removes the obligation"}"
     else
-      m!"Error policy: not stated by ifOk or andOk. The postcondition states its own behavior for errors; a modeled SQL error does not fail the claim unless it inspects the trace. Every branch must still stay modeled."
+      m!"Error policy: not stated by ifOk or andOk. The postcondition determines how a modeled SQL error affects the claim. Every branch must still stay modeled."
   | none =>
-    m!"Error policy: not stated by ifOk or andOk. The postcondition states its own behavior for errors; a modeled SQL error does not fail the claim unless it inspects the trace. Every branch must still stay modeled."
+    m!"Error policy: not stated by ifOk or andOk. The postcondition determines how a modeled SQL error affects the claim. Every branch must still stay modeled."
 
 /-- The query observations that a claim mentions, found from the constants it uses
 ({name}`defaultObservationNames`, {name}`contextObservationNames`). The default assertions read
@@ -67,10 +67,18 @@ def observationExplanation (claim : Expr) : MessageData :=
   | [] => m!"The claim states no query assertion."
   | texts => MessageData.joinSep texts "\n"
 
+/-- Whether the arguments of a Std.Do triple are those of a {name}`Sql` program with the
+standard execution transformer {name}`sqlWPMonad`. Only then the contexts and branches of the
+explanation are those of the SQL execution model; a triple over another monad or with another
+instance is not explained. -/
+def standardTransformer (arguments : Array Expr) : Bool :=
+  arguments[0]?.bind (·.constName?) == some ``Sql &&
+    (arguments[2]?.map (·.getUsedConstants.contains ``sqlWPMonad)).getD false
+
 /-- Explain a fresh-run claim, an ordinary Std.Do triple about a {name}`Sql` program or a success
 claim after elaboration. The message states the entry assumptions, the scope of the captured
 start, the error policy and the observation context. It returns none for any other proposition,
-including a triple about another monad, so the caller reports it as unsupported instead of
+including a triple about another monad or with another transformer, so the caller reports it as unsupported instead of
 inventing a meaning. -/
 def freshExplanation (claim : Expr) : Option MessageData :=
   let branches := m!"Every permitted branch must return a value and stay modeled: the actual output and, for a oneOf output, each concrete choice of its rows."
@@ -81,7 +89,7 @@ def freshExplanation (claim : Expr) : Option MessageData :=
   | some ``FreshEnsures => some
     m!"Fresh-run claim. It covers every valid bundled database that satisfies the precondition and every complete environment (a clock and all three counters known). Each run starts at statement index 0 with an empty trace, on the idle connection that is built from that database and the environment's counters, with foreign keys off. The initial database is captured once and stays fixed for the whole claim, also after a bind. A database that fails the precondition adds no obligation.\n{branches} The postcondition holds at the final context of each branch.\n{policyExplanation arguments.back? false}\n{observationExplanation claim}"
   | some ``Std.Do.Triple =>
-    if arguments[0]?.bind (·.constName?) == some ``Sql then some
+    if standardTransformer arguments then some
       m!"Ordinary triple. It covers every execution context that satisfies the precondition, whatever its clock, next statement index, counters, settings, open transaction and earlier trace. It is not a fresh-run claim: a precondition such as holds does not fix the starting context.\n{branches} The postcondition holds at the final context of each branch.\n{policyExplanation arguments.back? true}\n{observationExplanation claim}"
     else none
   | some ``Succeeds => some
