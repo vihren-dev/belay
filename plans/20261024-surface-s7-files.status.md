@@ -240,5 +240,5 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   files": `sql_file`, sections, `against`, `sql_module`, the package-root option, the note that
   an external SQL edit needs a restart of the Lean file or `lake build`, the `input_dir` and
   `needs` lakefile lines, and `lake exe belay-sql-check` with its output and exit codes. The
-  public declarations already carry Verso docstrings. The `just test-full` run at the end of
-  part 2 checks the links of the page.
+  public declarations already carry Verso docstrings. No check reads this README (the link
+  check does not scan package READMEs); a reviewer read the commands against the fixtures.
