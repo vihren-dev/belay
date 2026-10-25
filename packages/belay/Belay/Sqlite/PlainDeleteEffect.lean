@@ -15,8 +15,8 @@ open Belay.Sqlite Model
 /-- For every database, environment, plain delete that resolves from the initial connection and is
 modeled, and post: a program that sends the delete checks the post at its fresh start when the post
 holds for every error-free final context whose connection sees the database in which the target table
-keeps the rows that {name}`LiteralData.deleted` keeps, and that database is valid. The post sees only that
-database, so a claim about the rows that the delete keeps needs no engine reasoning. Proof sketch:
+keeps the rows that {name}`LiteralData.deleted` keeps, and that database is valid. The premise is about the database
+only, so a claim about the rows that the delete keeps needs no engine reasoning. Proof sketch:
 {name}`check_send_single_of_step` with the step of the model; {name}`plainDelete_database` gives the
 database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_delete_ne_oneOf` rules out a
 choice. -/

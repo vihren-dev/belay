@@ -134,8 +134,8 @@ theorem Query.PlainExcept.ending {query : Query} {first later : Nat} {collations
 
 /-- For every query of the shape {name}`Query.PlainExcept`, context, database and optional initial database in which
 both terms end done and the rows of the first term are identical where they compare equal
-({name}`equalRowsIdentical`): the run of the query as a subquery has as rows the first term without the rows that
-equal a row of the second term, and it has no fault. In plain words: a compound that SQLite runs without failure and
+({name}`equalRowsIdentical`): the run of the query as a subquery has as rows the distinct rows of the first term that
+equal no row of the second term ({name}`CompoundOperator.combine`), and it has no fault. In plain words: a compound that SQLite runs without failure and
 whose kept rows do not depend on the plan has exactly the rows of the model. Proof sketch: {name}`Query.PlainExcept.results`
 for the rows; the compound ends done ({name}`Query.PlainExcept.ending`), and the rows are certain because the first
 term is identical, so the fault is none. -/

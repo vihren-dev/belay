@@ -40,8 +40,9 @@ theorem Resolved.notExistsExcept_calm (compound : Resolved.Query) (position : Na
 values and initial database such that the initial table and the current table are present, every row of the first
 term is a row of the second term (in the context of the values), and the rows of the first term are identical where
 they compare equal: the output of the step of the statement, observed with the initial database, has rows. In plain
-words: when each row that the first term reads from the initial database also exists in the reached database, the
-guide's check {lit}`NOT EXISTS (… EXCEPT …)` passes. Proof sketch: subquery 0 of the context has no row and no fault
+words: the query {lit}`SELECT 1 WHERE NOT EXISTS (… EXCEPT …)` returns its row when the compound is empty, and the
+compound is empty when each row of the first term, which reads the initial table, is a row of the second term, which
+reads the current table. Proof sketch: subquery 0 of the context has no row and no fault
 ({name}`Resolved.notExistsExcept_context_zero`), so {lit}`NOT EXISTS` is true over the one row with no cells and has no
 fault, and {name}`resolvedStepOutput_simple_hasRows_of_kept_from` gives the rows. -/
 theorem resolvedStepOutput_notExistsExcept_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
