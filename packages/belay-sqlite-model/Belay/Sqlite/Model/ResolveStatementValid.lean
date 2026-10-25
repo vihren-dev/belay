@@ -106,7 +106,7 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
+    rcases resolveStatementPragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> exact ⟨current, saved⟩
     · exact ⟨current, saved⟩
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>

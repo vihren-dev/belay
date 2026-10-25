@@ -178,7 +178,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
         (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨_, _, rfl, rfl⟩ | ⟨rfl, unchanged, control⟩
+    rcases resolveStatementPragma_cases ok with ⟨_, _, rfl, rfl⟩ | ⟨rfl, unchanged, control⟩
     · rfl
     · exact ordinary _ control unchanged.symm
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>

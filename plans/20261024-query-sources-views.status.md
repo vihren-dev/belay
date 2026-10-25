@@ -359,3 +359,44 @@ does not forward `setupClockUnixMilliseconds`.
 Logs: `build/agent-logs/view-observation-*`. The remaining view scope (PRAGMA
 table_info on views, broken-view errors, unsafe pragma use in view bodies, write errors,
 catalog closure) stays OPEN.
+
+## CREATE VIEW reviews and PRAGMA table_info on views
+
+Review records: `20261025T041942Z-13f91f89` (1 must, 3 should, all fixed in
+`refactor: address CREATE VIEW review findings`), `20261025T043718Z-d9905385` (1 must,
+1 should, all fixed in `refactor: list CREATE VIEW in the schema description and test view
+diagnostics`) and `20261025T045718Z-163924e3` (0 musts, 0 shoulds).
+
+`PRAGMA table_info(view)` is now modeled (`Resolution/ViewTableInfo.lean`). The rows are the
+columns of `SELECT * FROM view`, resolved by `resolveSelectDetails`: names, normalized types,
+notnull 0, default NULL and pk 0. A missing table or a cycle in the view is the prepare
+error of the pragma, as in native SQLite. The one difference from a query is the width check
+of the explicit column list: native `table_info` does not fail on it, so the rows use the
+names of the list and no types (`widthMismatchColumns`). A view as the argument of the
+table-valued `pragma_table_info` stays a restriction, because native gives a step error for a
+broken view there and a condition can suppress it. `PRAGMA foreign_key_list(view)` and
+`foreign_key_check(view)` already gave no rows and no error.
+
+Correction to the handoff: native SQLite reports "unsafe use of virtual table" for a pragma
+function in a view body only with `PRAGMA trusted_schema=OFF`. The profile and the corpora
+use the default (trusted), where the view works. The model is correct as it is; a native
+comparison case and a paragraph in `docs/semantic-subset.md` pin the trusted behavior.
+
+Nix checks (all pass):
+- Focused harness: **47 passed**, 216 deselected,
+  `/nix/store/3xfr0ij2pva1v9qli2yhf0n0cixsib4p-sqlite-verifier-test-view-observation-harness-1`
+  (5 new `table_info` native cases and 1 trusted-pragma case).
+- Surface cases (including the new `ClaimsViewTableInfo` fixture checked against the native
+  CLI): **27 passed**, 66 deselected,
+  `/nix/store/6q70xq822hgr7j7cjm9fb7ks5apkjcqn-sqlite-verifier-test-view-create-surface-1`.
+- Syntax cases: **6 passed**, `/nix/store/5fqm9f57j22g11j3v0byd8zkv1psb9z1-sqlite-verifier-test-view-create-model-1`.
+- Predictions `/nix/store/0a320ncd99kyvy1m4m38r1jkyvr2d597-sqlite-verifier-predictions`:
+  53 files, 7,372 cases; the comparison with the accepted baseline is the same as for the
+  CREATE VIEW unit (402 changed records, all previously predicted records unchanged), so
+  no corpus case depends on this unit.
+- Verdict `/nix/store/bmin66zl61bqjkldv8n22kw1xp51hd7p-sqlite-verifier-verdict`: no
+  DISAGREE, no HARNESS_ERROR; AGREE 4,962, MODEL_UNSUPPORTED 2,410.
+- `just dev-build` and `just dev-verdict` pass (local, not evidence); the law modules build.
+
+Still OPEN: write-error and catalog closure for views (INSERT/UPDATE/DELETE, CREATE INDEX,
+ALTER, triggers on a view).

@@ -14,7 +14,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 @pytest.mark.parametrize("fixture", ["ClaimsViews", "ClaimsViewScope", "ClaimsViewTriggers",
     pytest.param("ClaimsViewDrop", marks=pytest.mark.requires_native("sqlite3")),
-    pytest.param("ClaimsViewCreate", marks=pytest.mark.requires_native("sqlite3"))])
+    pytest.param("ClaimsViewCreate", marks=pytest.mark.requires_native("sqlite3")),
+    pytest.param("ClaimsViewTableInfo", marks=pytest.mark.requires_native("sqlite3"))])
 def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_path: Path, fixture: str) -> None:
     """QuerySourceExpansion preserves late lookup, metadata, closed names and trigger-cell
     offsets through kernel claims. Sampling checks view storage and kernel validity;
@@ -37,6 +38,9 @@ def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_pat
     if fixture == "ClaimsViewCreate":
         assert result.stdout.count("depends on axioms") == 11, result.stdout
         check_create_messages(result.stdout, tmp_path)
+    if fixture == "ClaimsViewTableInfo":
+        assert result.stdout.count("depends on axioms") == 4, result.stdout
+        check_table_info_messages(result.stdout, tmp_path)
 
 
 def check_drop_messages(output: str, directory: Path) -> None:
@@ -67,6 +71,20 @@ def check_create_messages(output: str, directory: Path) -> None:
                "CREATE INDEX idx ON MixedT(x); CREATE VIEW MixedV AS SELECT x FROM MixedT;"
                "CREATE TRIGGER tr AFTER INSERT ON MixedT BEGIN SELECT 1; END;")
     check_messages(output, "create-messages:", statements, prelude, directory)
+
+
+def check_table_info_messages(output: str, directory: Path) -> None:
+    """Compare PRAGMA table_info of readable and unreadable views with pinned SQLite."""
+    statements = ["PRAGMA table_info(v)", "PRAGMA table_info(broken)", "PRAGMA table_info(cycle)",
+                  "PRAGMA table_info(narrow)", "PRAGMA table_info(wide)", "PRAGMA table_info(twin)",
+                  "PRAGMA table_info(badnarrow)", "PRAGMA table_info(nested)", "PRAGMA table_info(missing)"]
+    prelude = ("CREATE TABLE t(a INTEGER PRIMARY KEY, b VARCHAR(4) NOT NULL DEFAULT 'x');"
+               "CREATE VIEW v(x, y) AS SELECT a, b FROM t; CREATE VIEW broken AS SELECT * FROM missing;"
+               "CREATE VIEW cycle AS SELECT * FROM cycle; CREATE VIEW narrow(a, b) AS SELECT 1;"
+               "CREATE VIEW wide(a) AS SELECT * FROM t; CREATE VIEW twin(z, z) AS SELECT a, b FROM t;"
+               "CREATE VIEW badnarrow(a, b) AS SELECT * FROM missing;"
+               "CREATE VIEW nested AS SELECT * FROM broken;")
+    check_messages(output, "table-info-messages:", statements, prelude, directory)
 
 
 def check_messages(output: str, prefix: str, statements: list[str], prelude: str, directory: Path) -> None:

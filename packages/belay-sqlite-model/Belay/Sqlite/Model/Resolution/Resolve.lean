@@ -9,6 +9,7 @@ import Belay.Sqlite.Model.Resolution.ViewDefinitions
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.TriggerDefinitions
 import Belay.Sqlite.Model.Resolution.PragmaResolution
+import Belay.Sqlite.Model.Resolution.ViewTableInfo
 
 set_option doc.verso true
 
@@ -27,7 +28,7 @@ inside the statement ({name}`NodeRestriction`). BEGIN in an open transaction and
 COMMIT or ROLLBACK without one fail when SQLite runs them, not when it prepares
 them, so they resolve and leave the error to the execution semantics: such a BEGIN
 keeps the first saved catalog, and such a ROLLBACK keeps the current catalog.
-A pragma resolves with {name}`resolvePragma`: {lit}`PRAGMA foreign_keys = value` changes the
+A pragma resolves with {name}`resolveStatementPragma`: {lit}`PRAGMA foreign_keys = value` changes the
 state's setting outside a transaction and nothing inside one, as SQLite does, and
 {lit}`PRAGMA recursive_triggers = value` changes it also inside one. SELECT and supported
 writes expand ordinary WITH definitions before their expressions resolve. -/
@@ -36,7 +37,7 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) :
   | .begin => .ok (.begin, { state with saved := state.saved.getD state.catalog })
   | .commit => .ok (.commit, { state with saved := none })
   | .rollback => .ok (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none })
-  | .pragma pragma => resolvePragma state pragma
+  | .pragma pragma => resolveStatementPragma context state pragma
   | .createTable name columns constraints options =>
     state.withCatalog (resolveCreateTable context state.catalog name columns constraints options)
   | .createView name ifNotExists columns query subqueries =>

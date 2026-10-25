@@ -57,7 +57,7 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
   | delete table filter returning subqueries =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveDelete_schemaLink _ _ _ _ _ _ _ _ _ h) found
-  | pragma pragma => exact resolvePragma_schemaLink ok
+  | pragma pragma => exact resolveStatementPragma_schemaLink ok
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
     exact plain _ ok fun _ _ found => resolveSelect_schemaLink _ _ _ _ _ _ found
 

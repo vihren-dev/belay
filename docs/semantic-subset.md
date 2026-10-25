@@ -319,6 +319,11 @@ their cells have no affinity. A name of their hidden columns `arg` and `schema` 
 restriction `table-function`, because SQLite gives a condition on such a column to the pragma
 as an argument.
 
+A view body may call `pragma_table_info` and `pragma_foreign_key_list`. The model treats the
+schema as trusted, the default of the profile, so these calls work in a view. Native SQLite
+refuses them as an unsafe use of a virtual table only after `PRAGMA trusted_schema=OFF`, which
+the model does not support.
+
 `PRAGMA integrity_check` and `PRAGMA quick_check` (ADR 0019, D2), alone or with a value in
 parentheses or after `=`, check the rows of every table, or of the named table. A decimal
 integer is a row limit, without its sign, and 0 is the default limit 100; a name or a string
@@ -413,7 +418,12 @@ A view that names a missing table or reads itself fails when a statement uses it
 preparation error. A view has no stored rows: the observation of the catalog reads them by
 running `SELECT * FROM view`. Not modeled, and refused as model restrictions: `TEMP` views,
 schema-qualified view names, `INSERT`, `UPDATE` and `DELETE` on a view, `INSTEAD OF` triggers, a view as the argument of a
-table-valued pragma, and `PRAGMA table_info` of a view.
+table-valued pragma.
+
+`PRAGMA table_info(view)` lists the columns of `SELECT * FROM view` as the catalog defines the
+view now: the name, the normalized declared type or the empty text, `notnull` 0, `dflt_value`
+NULL and `pk` 0. A view that SQLite cannot read, such as one that names a missing table, gives
+the preparation error of that query. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...

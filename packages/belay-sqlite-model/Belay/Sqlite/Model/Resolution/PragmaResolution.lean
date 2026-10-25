@@ -63,7 +63,8 @@ def Catalog.keyMismatch (catalog : Catalog) (position : Nat) : Option PrepareErr
   {name}`RestrictionKind.foreignKeyMismatchOrder`.
 
 A named view has no stored table rows for check pragmas or foreign-key listing.
-Its {lit}`table_info` metadata needs query expansion and remains a restriction at this boundary.
+Its {lit}`table_info` metadata needs query expansion, so this function restricts it; the statement resolver
+{lit}`resolveStatementPragma` expands the view first.
 Every form except a setting with a value keeps the state. -/
 def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestriction (Resolved.Statement × ResolveState)
   | .setting .foreignKeys (some on) =>

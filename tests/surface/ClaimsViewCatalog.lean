@@ -60,7 +60,7 @@ example : database.catalog.parentLink {
     table := name! "v", columns := [0], referenced := [], onDelete := .noAction, onUpdate := .noAction} =
     .mismatch 0 := by decide +kernel
 
-/-- Every statement listed here requires view expansion at this interim catalog boundary. -/
+/-- Every statement listed here is a write or schema change of a view, which this boundary refuses. -/
 def deferred : List Syntax.Statement := [
   .insert (name! "v") none [[.numeric "1"]] [],
   .insert (name! "v") none [[.numeric "1"]] [] (subqueries := [late.query]),
@@ -68,12 +68,15 @@ def deferred : List Syntax.Statement := [
   .delete (name! "v") none,
   .createIndex (name! "i") false (name! "v") [⟨.identifier (name! "x") .none, false⟩] none,
   .addColumn (name! "v") {name := name! "y", declaredType := none, constraints := []},
-  .createTrigger (name! "tr") false .before .insert (name! "v") none [],
-  .pragma (.tableInfo (name! "v")) ]
+  .createTrigger (name! "tr") false .before .insert (name! "v") none [] ]
 
 /-- None of these paths fabricates a native prepare error for the unresolved view. -/
 example : deferred.all (fun statement => match resolveStatement runContext
     {catalog := database.catalog} statement with | .error _ => true | .ok _ => false) = true := by decide +kernel
+
+/-- {lit}`PRAGMA table_info` of a view expands its query, so it is no longer a restriction. -/
+example : (match resolveStatement runContext {catalog := database.catalog}
+    (.pragma (.tableInfo (name! "v"))) with | .ok _ => true | .error _ => false) = true := by decide +kernel
 
 /-- The table-only metadata primitive refuses a view instead of reporting no columns. -/
 example : database.catalog.tableInfoRows (name! "v") = none := by decide +kernel

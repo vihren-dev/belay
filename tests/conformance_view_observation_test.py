@@ -46,6 +46,27 @@ def test_view_observations_match_native(runtime_root: Path, setup: str, migratio
     assert case_verdict(record, answer).name == "AGREE", answer
 
 
+@pytest.mark.parametrize("setup,migration", [
+    ("CREATE TABLE t(a INTEGER PRIMARY KEY, b VARCHAR(4) NOT NULL DEFAULT 'x', c);"
+     "CREATE VIEW v AS SELECT a,b,c,a+1,CAST(b AS TEXT) AS e FROM t;", "PRAGMA table_info(v);"),
+    ("CREATE TABLE t(a INT, b TEXT); CREATE VIEW v(x,y) AS SELECT * FROM t;", "PRAGMA table_info(V);"),
+    ("CREATE VIEW v AS SELECT 1, 'x', NULL;", "PRAGMA table_info(v); PRAGMA table_info(v);"),
+    ("CREATE TABLE t(a); CREATE VIEW v AS SELECT a,a FROM t; CREATE VIEW w AS SELECT * FROM v;",
+     "PRAGMA table_info(w);"),
+    ("CREATE TABLE t(a INT);", "CREATE VIEW v AS SELECT a FROM t; PRAGMA table_info(v); DROP VIEW v;"),
+    # A pragma table function in a view body works when the schema is trusted, the default of
+    # the profile; native SQLite refuses it as unsafe only after PRAGMA trusted_schema=OFF.
+    ("CREATE TABLE t(a INT);", "CREATE VIEW v AS SELECT name FROM pragma_table_info('t');"
+     "SELECT * FROM v; PRAGMA table_info(v);"),
+])
+def test_view_table_info_matches_native(runtime_root: Path, setup: str, migration: str) -> None:
+    """PRAGMA table_info of a view gives the current names and normalized types of its
+    query, with notnull 0, dflt_value NULL and pk 0, like native SQLite."""
+    record = record_sql(setup, migration, name="view-table-info", outputs=True)
+    [answer] = predictions(runtime_root, [subject_input(record)])
+    assert case_verdict(record, answer).name == "AGREE", answer
+
+
 def test_view_observation_counter_context(runtime_root: Path) -> None:
     """The pass preserves writer counters; an open snapshot's independent reader has zeros."""
     record = record_sql("CREATE TABLE t(a); INSERT INTO t VALUES(1),(2);"
