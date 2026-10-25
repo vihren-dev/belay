@@ -493,3 +493,7 @@ Nix checks (all pass; final tree):
 - All 239 mutant edits still apply once to the merged sources. No mutant file changed.
 - Review `20261025T084309Z-b89a335d`: 0 musts, 0 shoulds.
 - Nix surface group on the merge: `/nix/store/n0m04vmvm0d0pg2x409hwzc04b1y8k6m-sqlite-verifier-test-surface-1`.
+- `just test-full` pass: `/nix/store/k5hxk2izi5ci4i8l7kv20jmlizqh566a-sqlite-verifier-test-reports` (surface group: 106 passed, 0 failed).
+- `just verdict` pass: `/nix/store/ndsqyfmx2i16r6ikj8r6aad55rgn8jvn-sqlite-verifier-verdict`. AGREE 4,962, MODEL_UNSUPPORTED 2,410, no DISAGREE, no HARNESS_ERROR.
+- `just test-nix` pass: 71 passed, 1567 deselected.
+- `just test-scheduled-checks` pass: `/nix/store/9srxkkbng50wcla2pq6x2am9myad2s31-sqlite-verifier-scheduled-check-reports`.
