@@ -14,7 +14,7 @@ Relevant files: `conformance/model_check.py`,
   case, `jsonb-header-sizes`, takes 50 s alone, so batching cannot meet outcome
   1. The task file now records the measurements. The coordinator decided: step
   1 amend the task (this commit); step 2 split `model` into three suites (the
-  rest, the first 29 coverage case modules, the later 16); step 3 make the
+  rest, the first 28 coverage case modules, the later 17); step 3 make the
   kernel evaluation of the JSONB text encoding cheaper, with byte-identical
   predictions; step 4 the Nix gates.
   Measurement tools: `build/agent-logs/focused-model.nix` and `.sh` (focused Nix

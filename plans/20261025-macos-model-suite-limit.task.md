@@ -88,11 +88,13 @@ average 4 to 5 from other agents, so each time is an upper bound).
 | All other files | 100.5 s | |
 
 The coverage tests are 69 % of the suite. Their case modules up to
-`authored_drops` (29 modules) take 296 s; the later 16 modules take 280 s.
+`authored_drops` (28 modules) take 296 s; the later 17 modules take 280 s.
 
 The slowest Lean proof processes of the coverage tests are `authored_jsonb`
-`Cases0.lean` (55.8 s), `authored_numeric_functions` (22.8 s) and two others
-at 19.8 s and 18.2 s. All other processes take 16 s or less. With one case for
+`Cases0.lean` (55.8 s), then `authored_numeric_functions` (22.8 s),
+`authored_json_edits` (19.8 s), `authored_text_functions` (19.5 s),
+`authored_date_functions` (18.2 s) and `authored_pragmas` (16.1 s). All other
+processes take 14.4 s or less. With one case for
 each process, `authored_jsonb` takes 50.5 s for the case `jsonb-header-sizes`
 and 2.9 to 6.4 s for each other case. Hosted Linux took 51.5 s and 58.5 s for
 the whole test. A batch of any size therefore cannot go below about 50 s for
