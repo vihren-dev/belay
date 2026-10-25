@@ -74,6 +74,14 @@ def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path
     check_module_chain(runtime_root, tmp_path, (("AccountSignupQueries", 1), ("SignupInvariantClaims", 2)))
 
 
+def test_two_state_assertions_follow_the_start_and_the_reached_database(runtime_root: Path, tmp_path: Path) -> None:
+    """A source that names `before` reads the initial database that the assertion is given, a plain source
+    reads the reached database, and a query with no `before` source is the one-state assertion whatever the
+    start is. The default and the real-context observation differ on a clock, a compound EXCEPT compares the
+    start with the reached rows, and the `ensuresFrom` notation is the primitive claim."""
+    check_module_chain(runtime_root, tmp_path, (("TwoStateAssertionExamples", 9),))
+
+
 def test_delete_trigger_removes_an_unrelated_row(runtime_root: Path, tmp_path: Path) -> None:
     """A delete trigger may remove a row of another customer: the kernel confirms, from the actual run of
     the delete, that a session of another customer exists before and is gone after the successful

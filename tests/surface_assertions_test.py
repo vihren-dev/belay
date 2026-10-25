@@ -95,6 +95,17 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
     ('#check holds (sql r"SELECT 1 WHERE $missing = 1")', "$missing", "the Lean variable missing"),
     ('#check holdsInContext (sql r"SELECT 1 FROM")', '")', "grammar rejects the SQL"),
     ('#check holds (sql r"EXPLAIN SELECT 1")', "EXPLAIN", "Unsupported command wrapper"),
+    ('#check holds (sql r"SELECT a FROM before.t")', "holds (sql", "names a schema"),
+    ('#check holdsInContext (sql r"SELECT a FROM before.t")', "holdsInContext (sql", "names a schema"),
+    ('#check Holds (sql r"SELECT a FROM before.t") (db! r"CREATE TABLE t(a)")', "Holds (sql", "names a schema"),
+    ('#check ((Sql.pure ()) ensures andOk ⌜True⌝ where sql r"SELECT 1 FROM before.t")', 'sql r"SELECT',
+     "names a schema"),
+    ('#check ((Sql.pure ()) ensuresFrom s => ifOk (holds (sql r"SELECT 1 FROM before.t")))', "holds (sql",
+     "initial database"),
+    ('#check holdsSince (db! r"CREATE TABLE t(a)") (sql r"PRAGMA foreign_keys")', "holdsSince (db!",
+     "reads one SELECT statement"),
+    ('#check holdsInContextSince (db! r"CREATE TABLE t(a)") (sql r"DELETE FROM t")', "holdsInContextSince (db!",
+     "one read-only statement"),
     ('#explain (1 = 1)', "(1 = 1)", "Cannot explain this proposition"),
     ('#explain (⦃⌜True⌝⦄ (pure 1 : Id Nat) ⦃⇓ value => ⌜value = 1⌝⦄)', "(⦃", "Cannot explain this proposition"),
     ('#explain (@Std.Do.Triple Sql (.arg ExecutionContext .pure) { sqlWPMonad with }.toWP Nat (Sql.pure 1) '
@@ -104,7 +115,9 @@ def test_assertion_diagnostics_reject_unadmitted_input(
     runtime_root: Path, tmp_path: Path, claim: str, at: str, message: str,
 ) -> None:
     """Fresh notation and both assertion terms report a query that is not one read-only statement at
-    its source (an empty script, a comment, a set PRAGMA, a DELETE, several statements), an unbound
+    its source (an empty script, a comment, a set PRAGMA, a DELETE, several statements), a one-state assertion
+    or guard whose query names the schema `before`, which has no initial database, a two-state assertion
+    of a PRAGMA, an unbound
     Lean variable of a parameter, a grammar error and an EXPLAIN wrapper at the offending source
     position, and #explain reports an unsupported proposition instead of inventing a meaning,
     including a triple over another monad and a triple with a copy of the SQL transformer."""

@@ -324,7 +324,7 @@ more cases, each checked at its source position with the real compiler output: a
 comment-only script, `PRAGMA foreign_keys = 1` (a set PRAGMA) all report that the script must be one
 read-only statement at the assertion term; `$missing` reports the Lean variable at the `$`; a grammar
 error is reported at the offset of the string; `EXPLAIN` reports the unsupported command wrapper at
-the start of the SQL. Nix verification of these cases: pending until the Part 2 end gates. Not done: diagnostics for `before` (Part 1b).
+the start of the SQL. Nix verification of these cases: pending until the Part 2 end gates. The diagnostics for `before` are done in Part 1b (unit 2 below).
 
 ### Unit 5: a program that uses a result (`addCustomer_adds`)
 
@@ -399,3 +399,42 @@ union. Adaptations for the before-context changes: my fixtures call the S4 query
 `before` (a `guard_msgs` example) is now a plain example from the before-context line; its docstring
 says that the observation reads `before` and the ordinary run refuses it. Local checks for this merge
 (development only): `just dev-build` exit 0 and all earlier fixture chains elaborate.
+
+### Part 1b unit 1: the two-state assertion layer
+
+New modules `Belay/Sqlite/TwoStateAssertions.lean` and `Belay/Sqlite/FreshFromNotation.lean`; no
+change to the before-context files. Names:
+
+- `Script.observeTwoStateIn script initial context` observes a one-SELECT script over the initial
+  database and the clock, next index and connection of a context (it calls
+  `Model.observeTwoState`, the shared query implementation; `Script.observeTwoState` is the case
+  of index zero, `Script.observeTwoState_eq_in`).
+- `Holds.inContextSince script initial context` (real context) and `Holds.reachedSince script
+  initial context` (default observation of the reached database, as `Holds.reached`); the
+  initial database is a plain argument, so any start can be used. Decidable.
+- `holdsSince start q` and `holdsInContextSince start q` are the assertions on a context.
+- Bridges `Holds.inContextSince_iff_inContext` and `Holds.reachedSince_iff_reached`: a SELECT that
+  names no schema ignores the start.
+- `FreshEnsuresFrom program pre post` is a fresh triple whose postcondition gets the captured start
+  (`post : Database -> PostCond`); `FreshEnsuresFrom.iff_ensures` shows it extends `FreshEnsures`.
+  Notation: `program ensuresFrom start => post [where guard]`.
+
+### Part 1b unit 2: diagnostics for `before`
+
+`check_query` (the default proof of every one-state assertion: `Holds`, `Empty`, `Fails`, `holds`,
+`holdsInContext`, the `ensures ... where` guard) now refuses a query with a source that names a
+schema. The message says that a one-state assertion has no initial database and names
+`holdsSince`, `holdsInContextSince` and `ensuresFrom`. `check_two_state_query` is the check of the
+two-state assertions; it requires a SELECT (a PRAGMA read is a query but is not observed over two
+databases). Both share `check_query_shape`. The new cases are in
+`tests/surface_assertions_test.py` (seven rows, at the source position of the assertion); the
+kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (nine reports) with the test
+`test_two_state_assertions_follow_the_start_and_the_reached_database`. `#explain` knowledge of the
+two-state claims is optional and not done. Local development checks: `just dev-build` exit 0; the
+fixture chain and the seven diagnostic cases were run with the local compiler. Nix: pending until
+the Part 1b end gates.
+
+Guide change to make (not edited): the paragraph about `before` says the library "fixes the start
+in the precondition"; for a fresh run the claim `program ensuresFrom start => post` captures the
+start, and an ordinary triple cannot name it. A `holds` that names `before` is a compile error, and
+the two-state assertion is `holdsSince start`.

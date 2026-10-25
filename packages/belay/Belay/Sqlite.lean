@@ -10,6 +10,7 @@ import Belay.Sqlite.EvalDatabase
 import Belay.Sqlite.SqlBang
 import Belay.Sqlite.Run
 import Belay.Sqlite.TwoStateObservation
+import Belay.Sqlite.TwoStateAssertions
 import Belay.Sqlite.Program
 import Belay.Sqlite.Env
 import Belay.Sqlite.ValueDisplay
@@ -64,6 +65,7 @@ import Belay.Sqlite.ContextObservationBridge
 import Belay.Sqlite.FreshRules
 import Belay.Sqlite.AssertionTerms
 import Belay.Sqlite.FreshNotation
+import Belay.Sqlite.FreshFromNotation
 import Belay.Sqlite.ClaimExplanation
 import Belay.Sqlite.PlainInsertEffect
 import Belay.Sqlite.SingleStatementChecks
