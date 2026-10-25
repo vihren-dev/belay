@@ -1,7 +1,7 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is in progress;
-part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is implemented and
+checked, and waits for acceptance; part 2b waits for the model name trace.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
