@@ -92,7 +92,8 @@ an additive allowance chosen by the user; missing data never means zero. The gui
 measurement overhead and count variation. The prototype measured about 9%
 heartbeat overhead in its sample (commit `489b22f6`,
 `docs/s7-proof-cost-findings.md`); this is not a general bound. Production
-collection and native mutual coverage remain implementation work.
+collection, native mutual coverage and the baseline comparison are implemented
+(`import Belay.Sqlite.ProofCost`, `lake exe belay-sql-check --costs`).
 
 S6 clarification, accepted by the owner on 2026-10-24 after the checked
 foundations prototype:

@@ -162,6 +162,43 @@ Proposed baseline comparison, with no implementation in this prototype:
    private/anonymous identities separately unless the owner accepts their
    edit-sensitive identity policy.
 
-Production implementation, the focused mutual-declaration probe and baseline
-comparison remain pending. The accepted contract is a requirement for that work;
-this completed prototype supplies evidence, not a production cost API.
+## Production implementation (2026-10-25)
+
+The production collector replaces the prototype. This section records what it found and how it
+differs from the experiment. The user guide is the "Proof costs" section of
+`packages/belay/README.md`.
+
+- **Installation.** `Belay.Sqlite.ProofCost` is a module that `import Belay` does not import. The
+  option `belay.proofCosts` is false by default; with it off, the two handlers run the handler that
+  Lean would run and store nothing. A library turns it on with `weak.belay.proofCosts` in
+  `leanOptions`.
+- **Mutual blocks.** The probe found that Lean's `mutual` command is a separate handler that does
+  not call `elabDeclaration`. The collector registers on both commands. Each peer of a native
+  mutual block gets its own record, in async and sync mode, in both orders of the peers.
+- **Other handlers.** The handlers run the handlers registered before them, in Lean's order, and
+  restore the command state when one answers `unsupportedSyntax`. A third-party handler that claims
+  a command is not measured and leaves no record; one that declines is measured. Both orders of
+  registration are tested.
+- **Names of the measured proofs.** The info trees of an asynchronous theorem are not complete when
+  the command returns, so the names come from the new constants of the module, not from the trees.
+  A pending entry keeps only the body nodes, so Lean can free the snapshot trees.
+- **Output.** The body node is read from Lean's own trace and then spliced out of the messages.
+  Traces of other classes that the user enabled stay.
+- **Stored data.** A record has the compiler version, the measurement scheme with the async mode,
+  the unit and a hash of the module source. The records are made when the module is exported, so a
+  failed compile leaves no file.
+- **Checker.** `lake exe belay-sql-check --costs` reads the stored records and the module data. A
+  theorem is "written by the author" when it has a declaration range that no other range encloses,
+  which leaves out generated lemmas and `where` helpers. A theorem without a completed record is
+  listed as unmeasured. When a recompile fails, Lake deletes the compiled file, so the tool reports
+  a missing file and never old counts.
+- **Comparison.** The comparison follows the proposal above with exact internal units. The
+  baseline is the `--json` report; the tool never writes it. Growth, a baseline proof with no
+  completed count now and a failed proof give exit 1. A baseline library that the run does not select
+  counts as a library with no proofs, so use the same `--library` for the baseline and the check. Records of another compiler or scheme, an
+  unreadable baseline or library and a stale module give exit 2.
+- **Overhead.** In a sample of three proof commands, collection raised the work from 6,676,554 to
+  7,261,970 internal heartbeats (about 9 percent). This sample is not a general bound.
+- **Limit.** A definition that is a proof appears in the report only when collection was on when
+  it was compiled. The list of unmeasured proofs comes from the theorems of the module data and
+  does not look for definitions of proofs.

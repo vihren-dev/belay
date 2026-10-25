@@ -1,18 +1,25 @@
-"""Bounded compiler probes for S7's test-only completed-body collector."""
+"""Bounded compiler runs for the S7 proof-cost tests: fixtures are compiled against the installed surface."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 from typing import cast
 
+import pytest
+
 from tests.runtime_support import CommandResult, run_command
-from tests.surface_support import module_setup
+from tests.surface_support import FIXTURES, module_setup
 
 Record = dict[str, str | int | None]
 
+MARKERS = ("PROOF_COSTS", "DECLARATIONS", "WINDOW_HEARTBEATS", "INCREMENTAL")
+"""The first words of the lines that the reader fixture prints; they are not compiler output."""
+COLLECTOR_IMPORT = "import Belay.Sqlite.ProofCost\n"
+"""The line that installs the collector."""
+
 
 def payload(result: CommandResult, marker: str) -> object:
-    """Read one structured experiment report, retaining compiler failures in diagnostics."""
+    """Read the one JSON report that the reader fixture printed after `marker`."""
     lines = [line.removeprefix(marker + " ") for line in result.stdout.splitlines()
              if line.startswith(marker + " ")]
     assert len(lines) == 1, result.diagnostic()
@@ -20,22 +27,22 @@ def payload(result: CommandResult, marker: str) -> object:
 
 
 def records(result: CommandResult) -> list[Record]:
-    """Check the collector's serialized record shape before using measurements."""
+    """The printed records, after a check of the field types that the checker relies on."""
     values = payload(result, "PROOF_COSTS")
     assert isinstance(values, list), result.diagnostic()
     for value in values:
         assert isinstance(value, dict), value
-        for field in ("moduleName", "declaration", "status", "compiler", "scheme", "unit"):
-            assert isinstance(value.get(field), str), value
+        for name in ("module", "declaration", "kind", "identity", "status", "unit", "compiler",
+                     "scheme", "sourceHash"):
+            assert isinstance(value.get(name), str), value
         assert value.get("heartbeats") is None or isinstance(value["heartbeats"], int), value
     return cast(list[Record], values)
 
 
 def counts(result: CommandResult) -> dict[str, int]:
-    """Require unique, completed identities; missing measurements never become zero."""
-    values = records(result)
+    """The completed counts by declaration; a repeated name or a missing count fails the test."""
     found: dict[str, int] = {}
-    for value in values:
+    for value in records(result):
         name, heartbeats = value["declaration"], value["heartbeats"]
         assert isinstance(name, str) and isinstance(heartbeats, int), value
         assert value["status"] == "completed" and name not in found, value
@@ -43,56 +50,99 @@ def counts(result: CommandResult) -> dict[str, int]:
     return found
 
 
-@dataclass
-class Compiler:
-    """Compile isolated modules against the exact installed surface runtime."""
-
-    runtime: Path
-    directory: Path
-    collector: Path
-
-    def compile(self, name: str, source: str, *, asynchronous: bool = True,
-                enabled: bool = True, imports: dict[str, Path] | None = None,
-                timeout: float = 40) -> CommandResult:
-        """Use ordinary Lean compilation, preserving output and a finite command timeout."""
-        self.directory.mkdir(parents=True, exist_ok=True)
-        path = self.directory / f"{name}.lean"
-        if not enabled:
-            # Keep downstream SQL provenance positions identical in the control and measured source.
-            source = source.replace("import ProofCostCollector", "import ProofCostRecords  ")
-        path.write_text(source)
-        artifact = self.directory / f"{name}.olean"
-        artifact.unlink(missing_ok=True)
-        setup_path = module_setup(self.runtime, self.directory)
-        setup = json.loads(setup_path.read_text())
-        setup["name"] = name
-        extra = {"ProofCostCollector": self.collector,
-                 "ProofCostRecords": self.collector.with_name("ProofCostRecords.olean"),
-                 **(imports or {})}
-        setup["importArts"].update({key: [[str(value)]] for key, value in extra.items()})
-        setup_path.write_text(json.dumps(setup))
-        return run_command([str(self.runtime / "lean/bin/lean"), f"--setup={setup_path}",
-                            f"-DElab.async={str(asynchronous).lower()}",
-                            f"-Dweak.proofCost.enabled={str(enabled).lower()}",
-                            "-o", str(artifact), str(path)], cwd=self.directory,
-                           timeout=timeout, artifacts=self.directory / "logs")
-
-    def artifact(self, name: str) -> Path:
-        """Name the compiled artifact for an explicit import mapping."""
-        return self.directory / f"{name}.olean"
+def compiler_output(result: CommandResult) -> str:
+    """The messages of the compiler: the output without the lines of the reader fixture."""
+    return "\n".join(line for line in result.stdout.splitlines()
+                     if not line.startswith(MARKERS))
 
 
 def checked(result: CommandResult) -> None:
-    """Require successful compilation with no admitted or native-reduction proof axiom."""
+    """Require a successful compile with no admitted or native-reduction axiom."""
     assert result.returncode == 0, result.diagnostic()
     assert all(term not in result.stdout for term in
                ("sorryAx", "ofReduceBool", "_native")), result.diagnostic()
 
 
-def pair(size: int, reverse: bool = False) -> str:
-    """Change actual kernel-checked proof work while keeping the cheap theorem fixed."""
+@dataclass
+class Compiler:
+    """Compile isolated modules with the installed `lean`, against the installed surface runtime."""
+
+    runtime: Path
+    directory: Path
+    modules: dict[str, Path] = field(default_factory=dict)
+    """The compiled modules that the next compile can import, by module name."""
+
+    def compile(self, name: str, source: str, *, asynchronous: bool = True,
+                weak_option: bool | None = None, automatic_check: bool = False,
+                timeout: float = 90) -> CommandResult:
+        """Compile `source` as module `name`; on success the module can be imported afterwards. The
+        automatic SQL check (S5) is off unless `automatic_check` is set."""
+        self.directory.mkdir(parents=True, exist_ok=True)
+        path = self.directory / f"{name}.lean"
+        path.write_text(source)
+        artifact = self.artifact(name)
+        artifact.unlink(missing_ok=True)
+        setup_path = module_setup(self.runtime, self.directory, automatic_check=automatic_check)
+        setup = json.loads(setup_path.read_text())
+        setup["name"] = name
+        setup["importArts"].update({key: [[str(value)]] for key, value in self.modules.items()})
+        setup_path.write_text(json.dumps(setup))
+        options = [] if weak_option is None else [f"-Dweak.belay.proofCosts={str(weak_option).lower()}"]
+        result = run_command([str(self.runtime / "lean/bin/lean"), f"--setup={setup_path}",
+                              f"-DElab.async={str(asynchronous).lower()}", *options,
+                              "-o", str(artifact), str(path)], cwd=self.directory,
+                             timeout=timeout, artifacts=self.directory / "logs")
+        if result.returncode == 0:
+            self.modules[name] = artifact
+        return result
+
+    def compile_fixture(self, name: str) -> CommandResult:
+        """Compile the Lean file `tests/surface/NAME.lean` as module NAME."""
+        return self.compile(name, (FIXTURES / f"{name}.lean").read_text())
+
+    def artifact(self, name: str) -> Path:
+        """The compiled file of a module, which exists only after a successful compile."""
+        return self.directory / f"{name}.olean"
+
+
+ASYNCHRONOUS = pytest.mark.parametrize("asynchronous", [True, False], ids=["async", "sync"])
+"""Lean elaborates proofs in the background (`Elab.async`) or in the command; both are measured."""
+
+
+@pytest.fixture(scope="module")
+def runtime_modules(runtime_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    """Compile the reader and the third-party handler fixtures once; tests import them by name."""
+    compiler = Compiler(runtime_root, tmp_path_factory.mktemp("proof-cost-fixtures"))
+    for name in ("ProofCostReader", "ProofCostOtherHandler"):
+        checked(compiler.compile_fixture(name))
+    return dict(compiler.modules)
+
+
+@pytest.fixture
+def compiler(runtime_root: Path, tmp_path: Path, runtime_modules: dict[str, Path]) -> Compiler:
+    """A compiler whose modules include the reader and the third-party handler."""
+    return Compiler(runtime_root, tmp_path, dict(runtime_modules))
+
+
+def pair(size: int, *, reverse: bool = False, mutual: bool = False) -> str:
+    """A cheap and a costly theorem, in the given order, alone or in one mutual block."""
     cheap = "theorem cheap : True := True.intro\n"
-    costly = (f"theorem costly : (List.range {size}).length = {size} := by decide\n")
-    return ("import ProofCostCollector\n" + (costly + cheap if reverse else cheap + costly)
-            + "#proof_cost_records\n#proof_cost_commands\n"
-              "#proof_cost_snapshot\n#print axioms cheap\n#print axioms costly\n")
+    costly = f"theorem costly : (List.range {size}).length = {size} := by decide\n"
+    body = costly + cheap if reverse else cheap + costly
+    return (COLLECTOR_IMPORT + "import ProofCostReader\nset_option belay.proofCosts true\n"
+            + ("mutual\n" + body + "end\n" if mutual else body) + "#proof_cost_records\n")
+
+
+EXPECTED = {
+    "Coverage.tactic": ("thm", "stable"), "Coverage.term": ("thm", "stable"),
+    "Coverage.proofDefinition": ("proofDefinition", "stable"),
+    "Coverage.recursive": ("thm", "stable"), "Coverage.withWhere": ("thm", "stable"),
+    "Coverage.fromMacro": ("thm", "stable"),
+    "Coverage.evenPeer": ("thm", "stable"), "Coverage.oddPeer": ("thm", "stable"),
+    "Coverage.mutualProofOne": ("proofDefinition", "stable"),
+    "Coverage.mutualProofTwo": ("proofDefinition", "stable"),
+    "_private.ProofCostCases.0.Coverage.hidden": ("thm", "privateName"),
+}
+"""The named proofs of `ProofCostCases.lean`, with their kind and identity. Four more records are
+anonymous examples; a predicate, a data definition, an embedded proof and a theorem with the
+option off have none."""
