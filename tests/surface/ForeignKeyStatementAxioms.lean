@@ -6,7 +6,6 @@ import Belay.Sqlite.Model.ForeignKeyRuns
 #print axioms Belay.Sqlite.Model.Database.RowReferencesHold.rowsOnlyAt
 #print axioms Belay.Sqlite.Model.ForeignKeyAssignmentConditions.work
 #print axioms Belay.Sqlite.Model.runStatement_rowReferences
-#print axioms Belay.Sqlite.Model.Resolved.Statement.ForeignKeyRowsCondition.keepsParentSchema
 #print axioms Belay.Sqlite.Model.rowReferences_statementKeeps
 #print axioms Belay.Sqlite.Model.runSqlFrom_rowReferences
 #print axioms Belay.Sqlite.Model.runSql_rowReferences

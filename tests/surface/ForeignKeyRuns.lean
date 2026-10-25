@@ -40,7 +40,7 @@ theorem partialPreserves : (runSql [(partialWrite, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) := by
   apply runSql_foreignKeyAtoms Profile.pinned _ _ (by decide +kernel)
-  exact ⟨outside, by trivial⟩
+  exact ⟨⟨by trivial, outside⟩, by trivial⟩
 
 /-- The run really fails and retains the first inserted row, so the theorem is nonvacuous. -/
 theorem partialRows : (match runSql [(partialWrite, [])] input.raw with
@@ -61,7 +61,7 @@ theorem rollbackPreserves : (runSqlFrom 4 [(.rollback, [])] transaction).Holds
     · intro snapshot same
       cases same
       decide +kernel
-  · exact ⟨True.intro, by trivial⟩
+  · exact ⟨⟨True.intro, True.intro⟩, by trivial⟩
 
 /-- Rollback restores the snapshot, including the auxiliary row removed from the current view. -/
 theorem rollbackRestores : runSqlFrom 4 [(.rollback, [])] transaction = .success input.raw := by rfl
@@ -83,13 +83,13 @@ def connection : Connection := { state := {database := input.raw} }
 
 /-- Successful resolution supplies the plain INSERT condition; the script has no later statement. -/
 theorem scriptConditions : ScriptConditionsWith
-    (fun statement database => statement.ForeignKeyRowsCondition Profile.pinned database)
+    (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition Profile.pinned database)
     runContext none 0 connection script.statements := by
   constructor
   · intro resolved after equal
     change Except.ok (.upsert 2 [[.value (.integer 2)]] [] [] none [] none, connection.resolveState) = .ok (resolved, after) at equal
     cases equal
-    exact outside
+    exact ⟨by trivial, outside⟩
   · trivial
 
 /-- The public surface-run theorem preserves both atoms after a real parsed statement. -/

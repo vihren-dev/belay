@@ -954,3 +954,53 @@ The unit changes only theorems, so it cannot change a prediction.
 Review `20261025T072343Z-21967ea0` of the second refactor: 0 musts, 1 should (R19, the status
 text on the surface group), fixed in this commit.
 
+
+## Run contracts of the schema statements (part 2, unit 3)
+
+2026-10-25. The run contracts of the selected mapping now cover CREATE, ADD COLUMN and DROP.
+The mapping `Catalog.foreignKeyMapping` of a catalog reads the parent link of that catalog, so it
+follows a statement that changes the catalog. A fixed mapping cannot describe the database after
+such a statement; it stays only for the statements that keep the catalog
+(`Resolved.Statement.KeepsParentSchema`).
+
+New files in `packages/belay-sqlite-model/Belay/Sqlite/Model/`, each below 200 lines (the barrel
+`Model.lean` and the lakefile list them):
+
+- `ForeignKeyDdlConditions`: the conditions, each a fact about catalogs or about the database and
+  the rules of the statement, never the atoms after the statement: `Catalog.CreateKeepsSelection`,
+  `Catalog.CreateLocatesNewKeys`, `Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`,
+  `Catalog.AddColumnKeepsSelection`, `Catalog.AddColumnLocatesNewKeys`,
+  `Database.AddColumnRowsCondition` and `Database.EnforcedDropFrames`.
+- `ForeignKeyDdlSelected`: the selected-mapping statement laws for CREATE, ADD COLUMN and DROP, plain
+  and enforced (`runStatement_create_rowReferencesSelected` and its five neighbors).
+- `ForeignKeySelectedStatement`: `Resolved.Statement.ForeignKeyAtomsCondition`,
+  `runStatement_parentSchemasCompatibleSelected` and `runStatement_foreignKeyAtomsSelected` for
+  every statement form.
+- `ForeignKeySelectedRuns`: the run laws `runSqlFrom_`, `runSql_` and `runScriptFrom_` of
+  `parentSchemasCompatibleSelected` and `foreignKeyAtomsSelected`.
+
+Changed: `ForeignKeyStatement` (the row condition `Resolved.Statement.ForeignKeyRowsCondition` has
+the schema arms and `runStatement_rowReferences` proves them; the lemma
+`ForeignKeyRowsCondition.keepsParentSchema` is deleted) and `ForeignKeyRuns` (the supplied-mapping
+atoms laws take `statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition`; their docstrings
+point to the selected-mapping laws). The primitive laws for the catalog-changing statements are
+unchanged; the new laws are sugar over them.
+
+Fixtures: `tests/surface/ForeignKeyDdlRuns.lean` (44 axiom reports, none non-standard) runs a
+CREATE TABLE, an ADD COLUMN without constraints, a refused ADD COLUMN and a DROP of the child
+through `runSql_foreignKeyAtomsSelected`, and for each condition shows a statement outside it
+that breaks an atom: a forward reference breaks schema compatibility, the default 99 without the
+refusal breaks row truth, and the DROP of the parent leaves the child rows without a parent.
+`ForeignKeyStatement`, `ForeignKeyRuns` and `ForeignKeyStatementAxioms` (now 14 reports) use the
+new condition shape.
+
+Nix results (focused groups), on the tree of this unit: model
+`add_column_references or add_column_defaults or foreign_key_atom_execution` 43 passed,
+`/nix/store/wwb87i0zg36nlpy6hz1qyp0dy5rgjqyc-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 21 passed (includes the 20 registered
+fixtures), `/nix/store/c3znp8c4shhkpfh3rgbg9r6hcgwpjvxm-sqlite-verifier-test-surface-1`. No mutant
+text changes: no mutant targets these proof files. The unit changes only theorems, so it cannot
+change a prediction.
+Review `20261025T072815Z-442c93d8` of the refactor answering review `20261025T072539Z-d6a6feb4`:
+no findings. That review had one must (R3, proof sketch of `getD_append_below`) and one should
+(R19, the opening summaries); both are fixed in `442c93d8`.

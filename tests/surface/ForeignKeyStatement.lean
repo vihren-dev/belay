@@ -125,7 +125,7 @@ theorem updateCondition : update.ForeignKeyRowsCondition Profile.pinned input.ra
 theorem updatePreserves : (runStatement 0 {} [] update input.raw).effect.Satisfies
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) :=
-  runStatement_foreignKeyAtoms Profile.pinned _ 0 {} [] update (by decide +kernel) updateCondition
+  runStatement_foreignKeyAtoms Profile.pinned _ 0 {} [] update (by decide +kernel) ⟨by trivial, updateCondition⟩
 
 /-- The preserved UPDATE is successful and changes both stored key cells. -/
 theorem updateRows : (match (runStatement 0 {} [] update input.raw).effect with

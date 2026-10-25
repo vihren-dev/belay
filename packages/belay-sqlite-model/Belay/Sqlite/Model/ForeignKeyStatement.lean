@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.ForeignKeyPlainFrame
 import Belay.Sqlite.Model.ForeignKeyWriteConditions
-import Belay.Sqlite.Model.ForeignKeySchemaWrites
+import Belay.Sqlite.Model.ForeignKeyDdlSelected
 
 set_option doc.verso true
 
@@ -11,9 +11,15 @@ namespace Belay.Sqlite.Model
 * UPDATE with rules also requires structural assignment conditions.
 * Those four plain forms without rules require a target outside every FK child/parent read.
 * Queries, settings, preparation errors and transaction controls require nothing here.
-* CREATE, ADD COLUMN and DROP do not meet this condition; their mapping changes need
-  separate transport laws. Rule-based UPSERT DO UPDATE still has its current undescribed
-  result; this condition does not promise successful execution of that branch. -/
+* CREATE requires that every old declaration keeps its selected parent
+  ({name}`Catalog.CreateKeepsSelection`). New declarations have no rows to check.
+* ADD COLUMN requires {name}`Database.AddColumnRowsCondition`.
+* DROP without rules requires that every kept declaration keeps its selected parent, moved, and its
+  located parents ({name}`Catalog.DropKeepsSelection`, {name}`Catalog.DropKeepsParents`).
+* DROP with rules requires admission, unique keys, the FK rule conditions of its implicit DELETE
+  and {name}`Database.EnforcedDropFrames`.
+Rule-based UPSERT DO UPDATE still has its current undescribed result; this condition does not
+promise successful execution of that branch. -/
 def Resolved.Statement.ForeignKeyRowsCondition (profile : Profile) (database : Database) : Resolved.Statement → Prop
   | .insert target _ _ _ rules | .upsert target _ _ _ _ _ rules | .delete target _ _ _ rules =>
       match rules with
@@ -25,14 +31,20 @@ def Resolved.Statement.ForeignKeyRowsCondition (profile : Profile) (database : D
       | some rules => database.ForeignKeyReady profile ∧ rules.ForeignKeyConditions profile database.catalog ∧
           ForeignKeyAssignmentConditions database.catalog target assignments
   | .begin | .commit | .rollback | .query .. | .prepareError _ | .setting .. => True
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. => False
+  | .createTable _ name shape => database.catalog.CreateKeepsSelection {name, entry := .table shape}
+  | .createIndex _ name index => database.catalog.CreateKeepsSelection {name, entry := .index index}
+  | .createTrigger _ name trigger => database.catalog.CreateKeepsSelection {name, entry := .trigger trigger}
+  | .addColumn target column refuses => database.AddColumnRowsCondition target column refuses
+  | .drop positions none => database.catalog.DropKeepsSelection positions ∧ database.catalog.DropKeepsParents positions
+  | .drop positions (some rules) => database.ForeignKeyReady profile ∧
+      rules.ForeignKeyConditions profile database.catalog ∧ database.EnforcedDropFrames rules positions
 
 /-- For every clock, counters, parameters and input with selected row references, a
 statement meeting its FK conditions retains that row fact on success and partial FAIL.
 Other error carriers impose nothing here; SQL restores the input or saved snapshot.
 Proof sketch: plain writes use the outside-footprint frame. Enforced writes use the actual
 row-engine theorem, and UPDATE derives complete coverage from its assignment constructor.
-Nonwriting forms keep the input database; catalog-changing forms are outside this law. -/
+Nonwriting forms keep the input database; the schema forms use their selected-mapping laws. -/
 theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters : Counters) (parameters : List Value)
     (statement : Resolved.Statement) {database : Database}
     (holds : database.RowReferencesHold database.catalog.foreignKeyMapping)
@@ -40,7 +52,21 @@ theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters :
     (runStatement clock counters parameters statement database).effect.Satisfies
       (fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) := by
   cases statement with
-  | createTable | createIndex | createTrigger | addColumn | drop => exact False.elim condition
+  | createTable _ name shape =>
+    exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .table shape} rfl holds condition
+  | createIndex _ name index =>
+    exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .index index} rfl holds condition
+  | createTrigger _ name trigger =>
+    exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .trigger trigger} rfl holds condition
+  | addColumn target column refuses =>
+    exact runStatement_addColumn_rowReferencesSelected clock counters parameters target column refuses holds condition
+  | drop positions rules =>
+    cases rules with
+    | none => exact runStatement_drop_rowReferencesSelected clock counters parameters positions holds condition.1 condition.2
+    | some rules =>
+      obtain ⟨ready, conditions, frames⟩ := condition
+      exact runStatement_drop_enforced_rowReferences rules clock counters parameters positions ready holds conditions
+        (frames.1 clock) frames.2
   | begin | commit | rollback | prepareError | query | setting =>
     apply Effect.satisfies_of_database (property := fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) holds
     apply runStatement_keeps_database
@@ -102,13 +128,5 @@ theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters :
         exact rowsKeys_rowReferences value _ target _ ready holds facts.enforced facts.comparisons
           facts.programs facts.actions facts.before
           (by exact changes.work table.shape (KeyState.table_shape (state := {rows := database.rows}) found) _ (·.values)) _ _
-
-/-- Every statement meeting the row-preservation condition retains its catalog and so
-meets the schema-preservation condition. Proof sketch: inspect its form; catalog-changing
-forms contradict the supplied row condition. -/
-theorem Resolved.Statement.ForeignKeyRowsCondition.keepsParentSchema {profile : Profile} {database : Database}
-    {statement : Resolved.Statement} (condition : statement.ForeignKeyRowsCondition profile database) :
-    statement.KeepsParentSchema := by
-  cases statement <;> first | trivial | exact False.elim condition
 
 end Belay.Sqlite.Model
