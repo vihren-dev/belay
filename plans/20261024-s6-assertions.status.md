@@ -162,3 +162,8 @@ the part is recorded in the closing entry.
   only for `Sql` with the standard transformer `sqlWPMonad`; the fallback policy
   text no longer says that a postcondition must inspect the trace to reject
   errors.
+- 2026-10-25, third review of unit 3 (d06b0d47): the transformer check requires
+  the projection `WPMonad.toWP` applied to the constant `sqlWPMonad` itself, so a
+  copy of the instance or an expression that only mentions it is not explained;
+  `tests/surface_assertions_test.py` rejects an `Id` triple and a copied
+  transformer and checks the fallback policy text.

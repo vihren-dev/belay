@@ -68,12 +68,19 @@ def observationExplanation (claim : Expr) : MessageData :=
   | texts => MessageData.joinSep texts "\n"
 
 /-- Whether the arguments of a Std.Do triple are those of a {name}`Sql` program with the
-standard execution transformer {name}`sqlWPMonad`. Only then the contexts and branches of the
-explanation are those of the SQL execution model; a triple over another monad or with another
-instance is not explained. -/
+standard execution transformer {name}`sqlWPMonad`: the monad is {name}`Sql`, and the weakest
+precondition instance is the projection {lit}`WPMonad.toWP` applied to the constant
+{name}`sqlWPMonad` itself. Only then the contexts and branches of the explanation are those of the
+SQL execution model. A triple over another monad, a copy of the instance or an instance that
+merely mentions it is not explained. -/
 def standardTransformer (arguments : Array Expr) : Bool :=
   arguments[0]?.bind (·.constName?) == some ``Sql &&
-    (arguments[2]?.map (·.getUsedConstants.contains ``sqlWPMonad)).getD false
+    match arguments[2]? with
+    | some weakest =>
+      let weakest := weakest.consumeMData
+      weakest.getAppFn.constName? == some ``Std.Do.WPMonad.toWP &&
+        (weakest.getAppArgs.back?.bind fun last => last.consumeMData.constName?) == some ``sqlWPMonad
+    | none => false
 
 /-- Explain a fresh-run claim, an ordinary Std.Do triple about a {name}`Sql` program or a success
 claim after elaboration. The message states the entry assumptions, the scope of the captured

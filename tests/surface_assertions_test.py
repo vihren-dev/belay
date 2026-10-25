@@ -69,6 +69,7 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
         "Every permitted branch must return a value and stay modeled": 7,
         "The initial database is captured once and stays fixed": 6,
         "Error policy andOk:": 3, "Error policy ifOk:": 1, "Error policy: not stated by ifOk or andOk": 3,
+        "The postcondition determines how a modeled SQL error affects the claim": 3,
         "makes the claim false": 1,
         "Default query assertions (Holds, holds)": 4, "holdsInContext reads the actual clock": 1,
         "The claim states no query assertion.": 3, "is not a fresh-run claim": 1,
@@ -90,12 +91,15 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
     ('#check holdsInContext (sql r"SELECT 1; SELECT 2")', "holdsInContext (sql", "one read-only statement"),
     ('#explain (1 = 1)', "(1 = 1)", "Cannot explain this proposition"),
     ('#explain (⦃⌜True⌝⦄ (pure 1 : Id Nat) ⦃⇓ value => ⌜value = 1⌝⦄)', "(⦃", "Cannot explain this proposition"),
+    ('#explain (@Std.Do.Triple Sql (.arg ExecutionContext .pure) { sqlWPMonad with }.toWP Nat (Sql.pure 1) '
+     '(fun _ => ⌜True⌝) (⇓ _ => ⌜True⌝))', "(@Std", "Cannot explain this proposition"),
 ])
 def test_assertion_diagnostics_reject_unadmitted_input(
     runtime_root: Path, tmp_path: Path, claim: str, at: str, message: str,
 ) -> None:
     """Fresh notation and both assertion terms report a query that is not one read-only statement at
-    its source, and #explain reports an unsupported proposition instead of inventing a meaning."""
+    its source, and #explain reports an unsupported proposition instead of inventing a meaning,
+    including a triple over another monad and a triple with a copy of the SQL transformer."""
     source = tmp_path / "AssertionFailure.lean"
     source.write_text(f"import Belay\nopen Belay.Sqlite Std.Do\n{claim}\n")
     result = run_command(surface_command(runtime_root, source, tmp_path), cwd=tmp_path, timeout=120)
