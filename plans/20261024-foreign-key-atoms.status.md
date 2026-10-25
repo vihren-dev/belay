@@ -892,5 +892,14 @@ refusal; the preservation laws for ADD COLUMN are the next unit.
   `/nix/store/5daqjw19jahx1l6h5qgvgfwlal1qnm3a-sqlite-verifier-test-model-1`; surface 19 passed,
   `/nix/store/jdb7jnqy243n75d6m9q3gk76ywwnwh2v-sqlite-verifier-test-surface-1`; mutants 2 passed,
   `/nix/store/fcbqflf4kaivva1wwj36visiy6m9j92z-sqlite-verifier-test-mutants-1`.
+- Review `20261025T070529Z-b520f373` of that refactor found one must (R5): the final `match` of
+  `literalNullDefault` still ended in `some _`. The second refactor lists every `Syntax.Expr`
+  constructor, with the helper `isNullKeyword` for the operand of the unary plus, so a new
+  expression form needs a decision. The mutant `add_reference_null_refused` changes the new text.
+  Nix results (the same focused groups; the working tree also held the unit 2 files, which the
+  groups do not exercise): model 43 passed,
+  `/nix/store/fibp443s8gb65g2gd6yq28fayxlgqsj7-sqlite-verifier-test-model-1`; surface 20 passed,
+  `/nix/store/x3ffc4dg3x15ab5sjs2b38z5nc4jhap1-sqlite-verifier-test-surface-1`; mutants 2 passed,
+  `/nix/store/7z3if3ip2c7laf40mdlnlvahgjq78502-sqlite-verifier-test-mutants-1`.
 - Remaining in part 2: ADD COLUMN preservation laws and fixtures, the unified DDL run contract,
   RESTRICT / SET DEFAULT / deferred coverage with the final matrix, then part-2 full and verdict.
