@@ -1,6 +1,9 @@
 # Status: S6 fresh-run triples and assertions
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Task refreshed 2026-10-25 and assigned for
+implementation of part 1 in workspace `sqlite-verifier-s6-assertions`, based on
+`e3baff02` (published PR #254, above the S6 execution contracts of PR #250).
+No implementation or Nix acceptance is claimed yet.
 Task: [task file](20261024-s6-assertions.task.md).
 Specs: ADR17 S6; accepted fresh-run and explicit effect-premise decisions.
 
@@ -12,11 +15,12 @@ complete environment, initial connection, index zero and empty trace. Existing
 Holds retains its default observation; context-aware assertions have a separate
 name. Before always refers to the captured start, including after bind.
 
-Execution contracts and the initial/current query task are prerequisites. The
-checked S6 prototype established the candidate transformer and soundness route,
-but supplied neither production assertions nor before-query semantics. The
-universal guide examples need the accepted schema and trigger/FK conditions;
-native trigger counterexamples remain required negative fixtures.
+Execution contracts are DONE (2026-10-25). The initial/current query task has
+no implementation; it waits for the query-source and view work. The checked S6
+prototype established the candidate transformer and soundness route, but
+supplied no production assertions and no before-query semantics. The universal
+guide examples need the accepted schema and trigger/FK conditions; native
+trigger counterexamples remain required negative fixtures.
 
 ## Progress
 
@@ -27,32 +31,60 @@ native trigger counterexamples remain required negative fixtures.
   This task now explicitly supplies ifOk/andOk over those policies. No
   implementation or Nix acceptance is claimed.
 - Follow-up review 20261024T152713Z-33693f10 has no musts or shoulds.
+- 2026-10-25: carried the reviewed task and status into the implementation
+  workspace (commit "docs: carry the reviewed S6 assertions task").
 
-## Readiness audit against production execution contracts
+## Readiness refresh, 2026-10-25
 
-The 2026-10-24 audit of accepted `52cd08bf` found no new owner decision.
-Refresh the task immediately before assignment to reuse the completed
-`FreshTriple` bridges, `Sql.andOk`/`Sql.ifOk`, transformer laws and standard
-specification rules. Fresh composition conveniences and assertion syntax remain
-new work; do not duplicate the existing execution implementation.
+The readiness audit of 2026-10-24 (accepted `52cd08bf`) found no new owner
+decision. The refresh against the production tree at `e3baff02` changed the task
+as follows. It adds no scope and needs no owner choice.
 
-Fresh entry uses `ExecutionContext.initial db env`, including the supplied
-complete environment's counters. It does not force zero counters. The context
-stores a raw connection. Default query assertions can use the existing raw
-query observation and prove agreement with `Holds` under supplied validity;
-`Branch.valid` provides reached validity for fresh runs. No new runtime validity
-test or context field is needed. Context observations use the actual clock,
-next-statement index and connection, and discard the observed step's resulting
-connection. Equality bridges must account for pragma settings as well as clocks
-and counters.
+- **Reuse list added.** The task lists `FreshTriple` and its four theorems,
+  `Sql.andOk`/`Sql.ifOk` and their laws, `sqlWPMonad`, the triple soundness
+  theorems, the `send`/`query`/`single` specifications and `Sql.Branch.valid`.
+  These are complete. Remaining new work is fresh composition rules, assertions
+  and their bridges, assertion-level `ifOk`/`andOk`, fresh notation, `#explain`
+  coverage and the universal examples.
+- **Counter and validity wording corrected.** Fresh entry uses
+  `ExecutionContext.initial db env`, so it takes the supplied environment's
+  counters; it does not force zero or default counters. The context stores a raw
+  connection. The default assertion agrees with `Holds` under a validity proof of
+  the visible database; `Sql.Branch.valid` gives it for the final context of a
+  fresh run. No runtime validity test and no context field is added. Context
+  observations use the actual clock at the next index, the actual counters, the
+  settings and the connection, and discard the observed step's connection.
+  Equality bridges must account for pragma settings as well as clocks and
+  counters.
+- **`#explain` is extended, not created.** The 2026-10-24 audit said that the
+  task's mention of an existing explanation path was stale because only the guide
+  promised `#explain`. That was true on the S4/S6-execution line. Migration
+  patterns part 1 (PR #254, `MigrationExplainCommand.lean`) now provide the
+  command for the four migration primitives. This task extends the same command
+  to fresh-run triples, ordinary triples and `Succeeds`, as the guide
+  promises (S4 deferred it to S6). Authorized by the owner's request; no further
+  choice is needed.
+- **Two-state assertions marked dependent.** The initial/current query
+  context is unimplemented. The task marks every `before` outcome and fixture
+  (two-state assertions, the purge frame example, `before` diagnostics) as
+  depending on it, and keeps them in acceptance as part 1b. Part 1 and part 2 are
+  otherwise as before.
+- **Stale input text replaced.** The task no longer says that the production S6
+  contracts are absent from the tree. The link to the before-context task file is
+  now a plain reference, because that file stays in the planning workspace.
+- **Success equivalence narrowed.** `FreshTriple.succeeds_iff` and
+  `Sql.andOk_complete_iff` already prove the S4 bridge. The task asks only for
+  the form in the new notation and the proof that `S succeeds where G` equals it.
 
-The task's reference to an existing explanation path is stale. The private
-guide already promises `#explain`; S4 explicitly deferred it to S6 and the
-editor task assigns it here. Providing that command is authorized work, with
-later patterns and simulation extending it. This does not require another owner
-choice. The before-context prerequisite remains unimplemented; full two-state
-assertion acceptance still depends on it. Assign reusable effect/frame laws
-once during the universal examples, then let the automation task consume them.
+Design decisions that the task leaves to the implementation, recorded when made:
+names of the context-aware assertion, the fresh notation and the value-aware
+`ifOk`/`andOk` variants.
 
-No assertion implementation or acceptance is claimed. Task-source edits remain
-deferred until assignment, as requested by the owner.
+## Part 1 plan (informal, one coherent unit per commit)
+
+1. Context observation: the real-context output of a query, the default
+   assertion, the context-aware assertion and their correspondence theorems.
+2. Independence bridge and disagreement examples (clock, counters, pragma).
+3. Fresh composition rules and use of ordinary triples inside a fresh run.
+4. Assertion-level `ifOk`/`andOk`, assertion terms, fresh notation.
+5. `#explain` for fresh triples, ordinary triples and `Succeeds`.
