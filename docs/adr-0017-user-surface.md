@@ -110,6 +110,23 @@ foundations prototype:
   not extra observations beyond the raw outputs already retained.
 - Separately named weaker visible comparisons remain available. Their use does
   not imply the stronger bind/append congruence without the required premises.
+- Migration output suppression is an explicit observation view, accepted on
+  2026-10-24. It describes which segment's outputs a named pattern compares;
+  it does not change SQL execution, return values, errors, unmodeled termination,
+  counters or clock advancement. Ordinary `≈` retains the complete-execution
+  contract above. Query preservation/translation may use a separately named
+  output comparison; migration commutation compares the projected observation
+  and complete final context. Correct guide formulas that treated quiet as an
+  ordinary action able to erase the trace from every comparison.
+- S8's full-state program theorem requires a contextual commuting condition for
+  every paired interface call, including queries, accepted on 2026-10-24.
+  Moving the old call before a migration must agree with moving its partner
+  after it under the explicit migration view, including return values, complete
+  final context and all actual/concrete outcomes. A query advances the statement
+  clock too. Weak output translation alone cannot establish this condition.
+  Keep the weak relation available, with sufficient context/frame premises for
+  a bridge to the stronger call condition. Restricted simulations preserve their
+  invariant at every reached call, including result-dependent continuations.
 - A fresh-run helper is accepted on 2026-10-24. It fixes a valid starting
   database, complete environment, empty trace and initial connection, and
   captures that start for postconditions. Prove its equivalence to ordinary
@@ -118,6 +135,17 @@ foundations prototype:
   fresh entry. The guide uses the explicit helper for fresh-run claims and
   the exact success bridge. Existing `Holds` keeps its default observation;
   an assertion that observes the execution clock/counters is named separately.
+- S8 also has explicit interface-scoped simulation, accepted on 2026-10-24
+  after a pinned native counterexample. A field-normalizing expansion and a
+  write can have identical final rows but different total-change counters
+  depending on their order (3 versus 4 in the one-row example). The guide's
+  expansion therefore does not establish full-state simulation. Retain that
+  counterexample and the full-state relation. The scoped variant names a
+  relation on execution contexts and proves equivalent observations and
+  preservation of that relation for every permitted call, argument and branch.
+  Counter/clock-sensitive calls need the same obligations; no hidden field is
+  ignored by default. Its whole-application theorem states the weaker scoped
+  conclusion explicitly, with the invariant conditions needed for composition.
 
 The [execution task](../plans/20261024-s6-execution-contracts.task.md)
 supplies these production execution contracts. Its work does not complete

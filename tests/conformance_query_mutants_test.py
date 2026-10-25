@@ -1,7 +1,8 @@
 """Each mutant of the query, number, key, alias, UPSERT, algorithm, query-without-FROM, JSON,
-JSON function, `json_each`, clock, date function, date modifier, subquery, expression form,
-DISTINCT and HAVING, foreign key, trigger, possible result, parameter and compound mutant tables changes the verdict
-of an authored case.
+JSON function, `json_each`, clock, date function and date modifier mutant tables changes the verdict
+of an authored case. The mutants of subqueries, expression forms, DISTINCT and HAVING, foreign keys,
+triggers, possible results, parameters, compound SELECT and pragmas are in
+`tests/conformance_query_feature_mutants_test.py`, so that each file stays short.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
 resolution, and its slices add the number, write, join and key rules: a changed copy of the
@@ -9,16 +10,36 @@ model that no case notices shows a missing case. The cases are the authored case
 `conformance.authored_*` module of each table, recorded natively with their outputs. The mutants
 of writes, joins and table forms are in `tests/conformance_table_mutants_test.py`, a separate Nix
 suite, so that each suite stays within its time limit on a hosted runner. Each test is one
-measurement of at most 16 mutants, which builds one base copy for its mutants (`measure_set`)
-and then the mutant copies in parallel. The two Nix suites of mutants run at the same time on a
-hosted runner, which slows each test about twice. The number and query-without-FROM mutants (17)
-were one measurement until it took 176 seconds alone on eight cores (October 2026) and more than
-its limit of 300 seconds beside the other suite, as the base copy and most of these mutant copies
-build almost every module. As three measurements, of the 6 mutants of arithmetic, the other 7
-number mutants and the 4 mutants of queries without FROM, each took at most 124 seconds alone. Every case must agree with the base copy. Each mutant copy then classifies the case
-that the mutant names as its target, which keeps the elaboration of case terms short.
+measurement, which builds one base copy for its mutants (`measure_set`) and then the mutant
+copies in parallel. Each of the three Nix suites of mutants has its own job on its own hosted
+runner (`.github/workflows/ci.yml`). A hosted runner is slower than this development machine: a
+measurement that took 160.6 seconds here took more than the limit of 300 seconds there, so the
+local target for a measurement is about 125 seconds. The base copy and most mutant copies build
+almost every module, so the time of a measurement grows with the number of mutant copies that
+build many modules.
+
+Three groups of mutants were each one measurement that was too slow, and are now split:
+
+- The number and query-without-FROM mutants (17) took 176 seconds alone on eight cores (October
+  2026). As three measurements, of the 6 mutants of arithmetic, the other 7 number mutants and
+  the 4 mutants of queries without FROM, each took at most 124 seconds alone.
+- The 16 query mutants took 160.6 seconds in a focused local run, and more than 300 seconds on a
+  hosted runner. As three measurements by model file, of the 3 mutants of `Comparison.lean`, the
+  7 mutants of `QueryEval.lean` and `QueryResults.lean`, and the 6 mutants of the `Resolution`
+  folder, they took 109.5, 82.9 and 72.5 seconds.
+- The 14 JSON mutants took 194.1 seconds in a focused local run. As two measurements, of the 8
+  mutants of JSON reading and the 6 mutants of the JSON functions, they took 122.8 and 112.5
+  seconds.
+
+The measurements of the query and JSON splits ran while another Nix build used the same eight
+cores (load average about 14), so each is an upper bound of its time alone. The hosted run is
+the validation of the limits.
+
+Every case must agree with the base copy. Each mutant copy then classifies the case that the
+mutant names as its target, which keeps the elaboration of case terms short.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -28,22 +49,47 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_json_each, authored_json_functions, authored_keys, authored_numbers,
                          authored_queries, authored_upserts, clock_mutants, date_function_mutants,
                          date_modifier_mutants, fromless_mutants, json_each_mutants, json_function_mutants,
-                         json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
-                         authored_expression_forms, expression_form_mutants, authored_distinct_having,
-                         distinct_having_mutants, authored_foreign_keys, foreign_key_mutants,
-                         authored_triggers, trigger_mutants, authored_possible_results, possible_result_mutants,
-                         authored_parameters, parameter_mutants, authored_compound, compound_mutants,
-                         authored_pragmas, pragma_mutants)
+                         json_mutants, upsert_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
+from conformance.mutation_edits import source_edits
 from tests.mutant_sets import Mutants, Targets, measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
-def test_every_query_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query cases notice every changed rule of query semantics
-    (`conformance.query_mutants`), so these rules are tested."""
-    measure_set(runtime_root, [authored_queries], [(query_mutants.MUTANTS, query_mutants.TARGETS)])
+def query_mutant_table(selected: Callable[[str], bool]) -> tuple[Mutants, Targets]:
+    """The query mutants of `conformance.query_mutants` whose edited model file satisfies
+    `selected`, with their targets: three measurements, each within the time limit."""
+    mutants = {name: mutant for name, mutant in query_mutants.MUTANTS.items()
+               if selected(source_edits(mutant)[0][0])}
+    return mutants, {name: query_mutants.TARGETS[name] for name in mutants}
+
+
+def is_resolution_file(path: str) -> bool:
+    """Whether a query mutant edits a file of the resolution of names and clauses."""
+    return path.startswith(query_mutants.SQLITE + "Resolution/")
+
+
+def test_every_comparison_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every changed rule of the comparison of two values
+    (the mutants of `conformance.query_mutants` in `Comparison.lean`)."""
+    measure_set(runtime_root, [authored_queries],
+                [query_mutant_table(lambda path: path == query_mutants.COMPARISON)])
+
+
+def test_every_query_evaluation_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every changed rule of ordering, aggregates, `LIMIT` and
+    `OFFSET` (the mutants of `conformance.query_mutants` in `QueryEval.lean` and
+    `QueryResults.lean`)."""
+    measure_set(runtime_root, [authored_queries],
+                [query_mutant_table(lambda path: path != query_mutants.COMPARISON and not is_resolution_file(path))])
+
+
+def test_every_query_resolution_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every removed prepare error of the resolution of
+    queries (the mutants of `conformance.query_mutants` in the `Resolution` folder of the
+    model)."""
+    measure_set(runtime_root, [authored_queries], [query_mutant_table(is_resolution_file)])
 
 
 def number_mutant_table(arithmetic: bool) -> tuple[Mutants, Targets]:
@@ -72,12 +118,17 @@ def test_every_fromless_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_fromless], [(fromless_mutants.MUTANTS, fromless_mutants.TARGETS)])
 
 
+def test_every_json_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSON cases notice every changed rule of JSON reading and `json_extract`
+    (`conformance.json_mutants`)."""
+    measure_set(runtime_root, [authored_json], [(json_mutants.MUTANTS, json_mutants.TARGETS)])
+
+
 def test_every_json_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored JSON and JSON function cases notice every changed rule of the JSON functions
-    (`conformance.json_mutants`, `conformance.json_function_mutants`)."""
-    measure_set(runtime_root, [authored_json, authored_json_functions],
-                [(json_mutants.MUTANTS, json_mutants.TARGETS),
-                 (json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
+    """The authored JSON function cases notice every changed rule of `json_type`, `json_valid`,
+    `json_array_length` and `json` (`conformance.json_function_mutants`)."""
+    measure_set(runtime_root, [authored_json_functions],
+                [(json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
 
 
 def test_every_json_each_and_clock_mutant_changes_a_verdict(runtime_root: Path) -> None:
@@ -110,78 +161,3 @@ def test_every_upsert_and_algorithm_mutant_changes_a_verdict(runtime_root: Path)
     measure_set(runtime_root, [authored_upserts, authored_algorithms],
                 [(upsert_mutants.MUTANTS, upsert_mutants.TARGETS),
                  (algorithm_mutants.MUTANTS, algorithm_mutants.TARGETS)])
-
-
-def test_every_subquery_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored subquery cases notice every changed rule of subqueries
-    (`conformance.subquery_mutants`): `NOT IN` that ignores a NULL, a correlated reference that
-    does not read the outer row, a scalar subquery that gives its last row, and a name that
-    resolves outward first (ADR 0018, slice 1)."""
-    measure_set(runtime_root, [authored_subqueries], [(subquery_mutants.MUTANTS, subquery_mutants.TARGETS)])
-
-
-def test_every_expression_form_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of the expression forms notice every changed rule
-    (`conformance.expression_form_mutants`): an `IN` list under a right column's collation,
-    `BETWEEN` that gives NULL before it checks for false, `CASE` whose NULL base matches a NULL
-    `WHEN`, and `||` that skips a NULL operand (ADR 0018, slice 2)."""
-    measure_set(runtime_root, [authored_expression_forms],
-                [(expression_form_mutants.MUTANTS, expression_form_mutants.TARGETS)])
-
-
-def test_every_distinct_having_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of DISTINCT, HAVING and aggregates inside expressions notice every
-    changed rule (`conformance.distinct_having_mutants`): `HAVING` that keeps a NULL group, an
-    aggregate over the first row of its group only, and `DISTINCT` that keeps every NULL row
-    (ADR 0018, slice 3)."""
-    measure_set(runtime_root, [authored_distinct_having],
-                [(distinct_having_mutants.MUTANTS, distinct_having_mutants.TARGETS)])
-
-
-def test_every_foreign_key_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of enforced foreign keys (ADR 0018, slice 4) notice every changed
-    rule (`conformance.foreign_key_mutants`): a check of a composite child key with one NULL
-    column, `SET NULL` that deletes the child row, `CASCADE` on update that keeps the old child
-    key, and a lookup that compares the child value without the parent key's affinity."""
-    measure_set(runtime_root, [authored_foreign_keys], [(foreign_key_mutants.MUTANTS, foreign_key_mutants.TARGETS)])
-
-
-def test_every_trigger_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of triggers (ADR 0018, slice 5) notice every changed rule
-    (`conformance.trigger_mutants`): triggers that run oldest first, `WHEN` that a NULL passes,
-    `RAISE(IGNORE)` in an `AFTER` trigger that still runs the later triggers of the row, `UPDATE OF`
-    that runs for every `UPDATE`, and a trigger that fires itself."""
-    measure_set(runtime_root, [authored_triggers], [(trigger_mutants.MUTANTS, trigger_mutants.TARGETS)])
-
-
-def test_every_possible_result_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of the results that SQLite may give (ADR 0018, slice 6) notice every
-    changed rule (`conformance.possible_result_mutants`): a list that ignores `OFFSET`, a list with
-    only the choice of `Query.results`, a list that cuts a group with one row too many, and groups
-    that `DESC` does not reverse."""
-    measure_set(runtime_root, [authored_possible_results],
-                [(possible_result_mutants.MUTANTS, possible_result_mutants.TARGETS)])
-
-
-def test_every_parameter_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of parameters (ADR 0019, slice 1) notice every changed rule of the model
-    (`conformance.parameter_mutants`): a parameter with an affinity, `ORDER BY ?` as a column
-    number, and a `LIMIT ?` that accepts a real with a fraction."""
-    measure_set(runtime_root, [authored_parameters], [(parameter_mutants.MUTANTS, parameter_mutants.TARGETS)])
-
-
-def test_every_compound_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of compound SELECT (ADR 0019, slice 3) notice every changed rule of the
-    model (`conformance.compound_mutants`): operators that group from the right, `EXCEPT` with
-    duplicates, NULL unequal to NULL, the compound collation from the right-most term or always
-    `BINARY`, `IN` with the compound collation, the right term of `EXCEPT` run after empty left
-    rows, and an `ORDER BY` term sorted under `BINARY`."""
-    measure_set(runtime_root, [authored_compound], [(compound_mutants.MUTANTS, compound_mutants.TARGETS)])
-
-
-def test_every_pragma_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored cases of pragmas (ADR 0019, slice 2) notice every changed rule of the model
-    (`conformance.pragma_mutants`): `fkid` in declaration order, `foreign_key_check` that skips a
-    missing parent table, `table_info` with the `cid` of every column, and REPLACE deletes that
-    fire no trigger with recursive triggers on."""
-    measure_set(runtime_root, [authored_pragmas], [(pragma_mutants.MUTANTS, pragma_mutants.TARGETS)])

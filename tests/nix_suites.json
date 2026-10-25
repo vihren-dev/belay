@@ -111,6 +111,7 @@
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
     "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py"
   ],
   "tableMutants": [
@@ -130,6 +131,9 @@
     "tests/surface_success_test.py",
     "tests/surface_s6_foundations_test.py",
     "tests/surface_execution_test.py",
+    "tests/surface_execution_views_test.py",
+    "tests/surface_migration_patterns_test.py",
+    "tests/surface_migration_examples_test.py",
     "tests/success_theorems_test.py",
     "tests/surface_parameters_test.py",
     "tests/surface_programs_test.py",
