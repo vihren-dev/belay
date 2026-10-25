@@ -76,3 +76,10 @@ The original survivor was measured separately on published PR #249 source
 `f808a41a69b9cb2e0f5541e0a5a51362e4a713d1`; its failure is not a result of the
 new grouped implementation. Independent source review and full/verdict/Nix/
 scheduled task acceptance remain pending. Slot 1 was released after the gate.
+
+Independent review `20261025T004802Z-32198b21` of source commit `32198b21`
+found no must findings and one R9 should: the fromless table's docstring had
+broken line wrapping. The follow-up separates its edit format, grouped fault
+and fault list into three short sentences. Mutation values and assertions are
+unchanged from the focused Nix snapshot. The harness, full guard inventory and
+ownership tests cover this commit; final Nix acceptance uses the corrected text.

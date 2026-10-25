@@ -32,10 +32,9 @@ MUTANTS: dict[str, Mutation] = {
     )),
 }
 """Each edit names the file under `packages/`, the exact text and its replacement.
-The star fault changes both the early expansion check and result-column resolution. The names follow the list in the task of slice 6a: the
-source has no row;
-the source has two rows; the WHERE of a query without FROM is ignored; `*` without FROM
-is accepted."""
+The star fault changes both the early expansion check and result-column resolution.
+The names follow the slice 6a task: the source has no row; the source has two rows;
+WHERE without FROM is ignored; and `*` without FROM is accepted."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
     "fromless_no_row": ("fromless-values",), "fromless_two_rows": ("fromless-count",),
