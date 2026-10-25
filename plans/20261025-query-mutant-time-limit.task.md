@@ -17,11 +17,18 @@ did not run on the hosted runners. The logs are in the diagnostics workspace,
 `build/agent-logs/ci252-manual-job-{linux,darwin}.log`.
 
 The test is one measurement of all 16 query mutants (eight model files). A
-focused local Nix run took 160.60 s alone. The module docstring of
-`tests/conformance_query_mutants_test.py` already records the same failure
-for the number and query-without-FROM mutants: two mutant suites run at the
-same time on a hosted runner, which slows each test about twice, and that
-measurement was split into measurements of at most 124 s alone.
+focused local Nix run on this VM took 160.60 s. Each mutant suite now has its
+own hosted job (`.github/workflows/ci.yml`), so the current factor is the
+speed of a hosted runner: the same test took more than 300 s there, at least
+1.9 times the local time. A local time of at most about 125 s therefore gives
+a hosted time of about 240 s, below the limit.
+
+The module docstring of `tests/conformance_query_mutants_test.py` records an
+earlier, similar failure of the number and query-without-FROM mutants. Its
+reason, two mutant suites at the same time on one hosted runner, is
+historical, but its fix is the pattern for this task: that measurement was
+split into measurements of at most 124 s alone. The new docstring text
+corrects the historical reason where it describes the current layout.
 
 ## Required outcomes
 
