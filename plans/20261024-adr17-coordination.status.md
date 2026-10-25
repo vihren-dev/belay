@@ -653,3 +653,16 @@ byte-identical; each mutant command gains only `--exitfirst`. Source inventories
 limits and protected trees are unchanged. S5 `96340` remains live in slot 2,
 now in its surface suite. PR #251's hosted Verdict passed; its Linux API build
 remains in progress. Hosted mutant jobs for that PR were skipped as noted above.
+
+S5 gate `96340` ended with exit 124 at the unchanged 1500-second full-suite
+limit. No test reported a failure; surface reached 89%, after the frozen,
+harness, model, sample and package groups passed. The original log is retained.
+One sequential cached retry, `20553`, now owns slot 2 at the same frozen
+`1fb9c741`, with unchanged source and limits and separate `*-cached.log` files.
+
+At the owner's request, the three still-pending decisions were restated together:
+extend FK execution for non-NULL ADD COLUMN defaults; keep automatic SQL-file
+root discovery with an explicit relative override; and represent plan-dependent
+INSERT SELECT outcomes. These are the recommendations, not accepted decisions.
+Affected work remains paused pending the owner's answers; independent tasks
+continue. The accepted named proof-body cost contract is not an open question.
