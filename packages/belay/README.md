@@ -85,6 +85,56 @@ example : (start.run (env := Env.newConnection) do
 `Script.run_env` states that a run in which no statement reads the clock and no statement ends at
 a counter that the run does not know is the same in every environment.
 
+## SQL in separate files
+
+`sql_file "sql/schema.sql"` reads a file at compile time and gives the same `Script` as `sql r"..."`
+for the same text. The path is relative to the package that owns the Lean file, so the form works
+from any folder and after the package moves. Every parameter of the file, including `$name`,
+becomes an argument of the definition, in the order of its first appearance:
+
+```lean
+def schema := sql_file "sql/schema.sql"
+```
+
+- `sql_file "sql/m.sql" (section := "up")` selects one direction of a migration file. The
+  `-- +goose Up` and `-- +goose Down` markers and the dbmate `-- migrate:up` and `-- migrate:down`
+  markers are known. A file with direction markers needs a section.
+- `sql_file "sql/seed.sql" (against := db)` also checks each statement against the database `db`
+  and reports the problems at the form. The value of the form does not change.
+- `sql_module Queries from "sql/queries.sql"` defines `Queries.name` for each statement that
+  follows a `-- name: name` marker. The ordinary comment lines after the marker become the
+  docstring, and the docstring ends with the SQL location. A suffix such as `:one` is ignored.
+  `(against := db)` works as for `sql_file`.
+- A marker or tool syntax inside a string, a comment or a trigger body is ordinary SQL text and
+  names nothing.
+
+An external SQL edit is not seen by a Lean file that is already open: restart the Lean file, or
+run `lake build`. If the compiler cannot decide which package owns the Lean file, for example
+with two nested Lake projects of one name, write `set_option belay.sql.packageRoot ".." in`
+before the form. The value is a path relative to the folder of the Lean file.
+
+### Check that a build is fresh
+
+Lake rebuilds a library after an SQL edit only when the lakefile lists the SQL files as inputs
+of the library:
+
+```lean
+input_dir sqlFiles where
+  path := "sql"
+  text := true
+  filter := .extension "sql"
+
+lean_lib App where
+  needs := #[sqlFiles]
+```
+
+`lake exe belay-sql-check` compares the SQL files that the compiled libraries of the current
+package read with the files on disk. It builds nothing. It prints, for each library, the number
+of modules and SQL sources and the number of stale sources, and for each stale source its package,
+path, declarations and the `lake build` command. `--library App` checks one library. The exit code
+is 0 when all sources are fresh, 1 when a source changed or is missing, and 2 when a library could
+not be read, for example because it is not built. Line-ending changes are not edits.
+
 ## Claims about every database
 
 `Holds q db` says that every possible result of the query has a row. `Empty q db` says that

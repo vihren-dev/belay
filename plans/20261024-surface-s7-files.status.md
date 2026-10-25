@@ -236,3 +236,9 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   source identity (resolved file plus text hash), tested by `#guard`s and by the records
   test. Nix surface run (22 passed, 96 deselected, 71.59 s) at
   `/nix/store/pvsk1q34r0npmprd11nrxr532fzzimgm-sqlite-verifier-test-surface-1`.
+- 2026-10-25: user documentation. `packages/belay/README.md` has a section "SQL in separate
+  files": `sql_file`, sections, `against`, `sql_module`, the package-root option, the note that
+  an external SQL edit needs a restart of the Lean file or `lake build`, the `input_dir` and
+  `needs` lakefile lines, and `lake exe belay-sql-check` with its output and exit codes. The
+  public declarations already carry Verso docstrings. The `just test-full` run at the end of
+  part 2 checks the links of the page.
