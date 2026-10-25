@@ -172,6 +172,13 @@ disagree with execution. Producing it leaves every resolved statement and
 prediction byte-identical. The editor never rebuilds scopes or searches for the
 text of a name.
 
+Decision of 2026-10-25 (model name-trace task): the resolver is not threaded
+with a trace, because that would change the definitions that about 90 existing
+proofs unfold. The trace is computed beside the resolver, from the resolver's
+own scope, lookup, affinity and collation functions, and agreement theorems and
+a test over the frozen conformance inputs check that it does not disagree with
+the resolver. Part 2b consumes the trace as specified above.
+
 Part 2a covers the outcomes that a fixed syntax slot decides. A table
 reference slot (statement target, `FROM` source or join source, in a statement
 or in an indexed subquery) is located by its syntax path, checked against the

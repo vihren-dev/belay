@@ -26,19 +26,28 @@ except where the translator's spans must locate a traced name (see below).
   gives exactly `resolveStatement`'s result, for success and for failure. This
   law is a theorem, not only a test. A script-level wrapper over the statement
   list is welcome where it is cheap.
-- **The trace uses the resolver's own decisions.** The traced entry point does
-  not change `resolveStatement` or any function that existing proofs unfold
-  (see "Existing interfaces and tricky points"). So the trace code walks the
-  statement beside the resolver and builds each scope with the resolver's own
-  scope functions (CTE and view expansion, source lists, subquery scopes, upsert
-  and `before.t` scopes), with the same catalog and state. It decides every name
-  with the resolver's own lookup, affinity and collation functions, and it takes
-  the operand affinity from the resolver's own `resolveOperand`. The model gets
-  no second lookup rule and no second scope rule. Agreement theorems state, for
-  the decision points that can be stated alone (an identifier that is found,
-  missing or ambiguous; a comparison's affinity and collation), that the trace
-  and the resolver's result say the same. The editor never rebuilds scopes or
-  searches for the text of a name.
+- **The trace uses the resolver's own decisions.** Decision of 2026-10-25,
+  which amends the editor task's wording "the trace comes from the resolver run
+  that decides the statement" (see the dated note in the editor task): the
+  resolver is not threaded with a trace. `resolveStatement` and the functions
+  that existing proofs unfold (`resolveStatement`: 57 places in 43 files;
+  `resolveOperand`: 35) stay as they are, because a traced version of them
+  would break those proofs. The trace code instead walks the statement beside
+  the resolver, in the resolver's order, and builds each scope with the
+  resolver's own scope functions (CTE and view expansion, source lists, subquery
+  scopes, upsert and `before.t` scopes) over the same catalog and state. It
+  decides every name with the resolver's own lookup, affinity and collation
+  functions, and takes the operand affinity from the resolver's own
+  `resolveOperand`. The model gets no second lookup rule and no second scope
+  rule. The editor's need, that the trace cannot disagree with execution, is
+  met by checks instead of by construction: agreement theorems for the decision
+  points that can be stated alone (an identifier is found, missing or ambiguous;
+  a comparison's affinity and collation), and a test over every statement of the
+  frozen conformance inputs. The test checks that a statement which resolves has
+  no missing or ambiguous name in its trace (except a DQS text literal, a
+  boolean keyword and a rowid restriction, which the trace marks), and that a
+  prepare error for a column has a trace record of the same name and kind. The
+  editor never rebuilds scopes or searches for the text of a name.
 - **Every name occurrence gets one record.** A `NameOccurrence` holds:
   - `path`, the occurrence's node path in the statement as written, in the
     layout of `Restriction.path`, which `Translation.Span.select` maps to a

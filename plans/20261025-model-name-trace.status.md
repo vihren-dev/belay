@@ -20,6 +20,12 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
   prediction-file comparison). The task file now states each of them as the code
   has it. Findings are recorded as fixed.
 
+- 2026-10-25: review 2 (`c088b934`) gave two musts: the trace is computed
+  beside the resolver, not in its run, which the editor task states otherwise;
+  and compound ORDER BY must be covered. The task file now records the decision
+  for the walk beside the resolver, the editor task gets a dated note, and the
+  gap list no longer has compound ORDER BY.
+
 ## Implementation plan (informal)
 
 - Do not change `resolveStatement` or the resolver functions that proofs unfold
@@ -40,4 +46,6 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 
 - CREATE TABLE, CREATE INDEX, CREATE VIEW, CREATE TRIGGER and ALTER bodies.
 - Unused WITH definitions (the resolver never resolves them).
-- Compound ORDER BY terms.
+
+Compound ORDER BY terms are in the coverage (`resolveCompoundOrderBy` resolves
+them through result-alias lookup and `resolveOperand`).
