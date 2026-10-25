@@ -40,6 +40,15 @@ import Belay.Sqlite.ExecutionViewIdentity
 import Belay.Sqlite.MigrationPattern
 import Belay.Sqlite.MigrationPatternFresh
 import Belay.Sqlite.MigrationPatternLaws
+import Belay.Sqlite.ExecutionViewFrames
+import Belay.Sqlite.ExecutionViewBindFrames
+import Belay.Sqlite.ExecutionViewEquivalenceBind
+import Belay.Sqlite.ExecutionViewObservationBind
+import Belay.Sqlite.ExecutionViewMonad
+import Belay.Sqlite.MigrationPatternSuccess
+import Belay.Sqlite.MigrationPatternQuiet
+import Belay.Sqlite.MigrationPatternComposition
+import Belay.Sqlite.MigrationPatternFrames
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess

@@ -156,3 +156,48 @@ source. That provenance is recorded above, and the finding is resolved without
 changing production or test files. Later composition/frame bridges, notation,
 universal guide examples and whole-task checks remain required; this is not
 completion of either acceptance part.
+
+## Third unit: composition and sufficient full-context frames
+
+Jujutsu change `sryuxykuqtvllozsqtwoprummxowquun` carries this unit; its
+production, fixture and registration files are unchanged from frozen checked
+source `b3125854f4278c7b9fd633c64ebd3934f6f99190`. The independent review record
+will identify the exact carrying commit. This unit adds nine proof leaves,
+without changing any existing execution, comparison or domain definition.
+
+Full projected bind composition uses existing raw `Sql.ReturnsIn` premises.
+The proof transports a tail comparison across prior traces only after checking
+it at the left raw reached context; it never transports the trace-sensitive
+precondition. A separate weak rule replaces tails after the same raw prefix.
+Success of a combined migration supplies both component success obligations
+through a proved bind-success equivalence. Translation and preservation compose
+when the first migration preserves the second pattern's explicit raw domain.
+
+The sufficient translation-to-full-commutation bridge requires success of the
+migration after every returning application branch, equality of complete
+connections for matching observed branches, and equality of their raw step
+counts. These are explicit theorem premises, not changes to the original
+migration-success domain. Connection equality includes counters, settings,
+snapshots, stored clock assignments and the catalogs used for resolution.
+
+Frozen source passed the installed Nix check at
+`/nix/store/x6cp3k3a7vlx9z8k0jrhdzcllm4bls22-sqlite-verifier-test-migration-composition-1`:
+three groups, 85 deselected, 24.23 seconds. The installed surface is
+`/nix/store/nylj3627c7ygx75jih41hymqxjxpqfym-belay-0.1.0`. Pattern fixtures now
+check 73 proof-dependency reports, with 27 descriptor and 101 execution reports;
+all 201 use only permitted ordinary logical axioms. The positive bridge and
+migration composition execute nonempty SQL segments and discharge their frame
+premises from branch execution. The tests include raw-trace-sensitive domains,
+different hidden prefixes, result-dependent raw/concrete choices, and independent
+clock, counter, snapshot and raw-index negatives. The clock case proves weak
+preservation on an inhabited domain before refuting full commutation.
+
+The mandatory development build and fixture diagnostics completed before Nix.
+Their earlier failures were proof elaboration and fixture syntax issues; no
+contract was weakened. Only the Nix result above is acceptance evidence. Logs
+remain in `build/agent-logs/migration-composition-*.log`. The focused selector
+uses the existing suite and unchanged timeouts. R3/R19 self-review checked raw
+reachability, actual/all-branch correspondence and noncircular frame premises.
+Independent review follows. Public notation/explanation, any remaining named
+pattern laws, universal examples and the two acceptance-part gates remain open;
+no full/verdict or task-end completion is claimed here.
