@@ -52,17 +52,17 @@ example (limits : Limits) (catalog after : Catalog) (name : Identifier) (ifNotEx
     (trigger : CatalogTrigger) (statement : Resolved.Statement) (valid : catalog.Valid limits)
     (ok : resolveCreateTrigger catalog name ifNotExists trigger = .ok (statement, after)) : after.Valid limits :=
   resolveCreateTrigger_valid limits catalog after name ifNotExists trigger statement valid ok
-example (context : ResolveContext) (catalog after : Catalog) (tableName : Identifier)
+example (context : ResolveContext) (catalog after : Catalog) (enforced : Bool) (tableName : Identifier)
     (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (valid : catalog.Valid context.profile.limits)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     after.Valid context.profile.limits :=
-  resolveAddColumn_valid context catalog after tableName definition statement valid ok
-example (context : ResolveContext) (catalog after : Catalog) (tableName : Identifier)
-    (definition : Syntax.ColumnDefinition) (position : Nat) (column : CatalogColumn)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (.addColumn position column, after)) :
+  resolveAddColumn_valid context enforced catalog after tableName definition statement valid ok
+example (context : ResolveContext) (catalog after : Catalog) (enforced : Bool) (tableName : Identifier)
+    (definition : Syntax.ColumnDefinition) (position : Nat) (column : CatalogColumn) (refuses : Bool)
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (.addColumn position column refuses, after)) :
     strictDefaultFits column = true :=
-  resolveAddColumn_strictDefaultFits context catalog after tableName definition position column ok
+  resolveAddColumn_strictDefaultFits context enforced catalog after tableName definition position column refuses ok
 example (limits : Limits) (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
     (statement : Resolved.Statement) (valid : catalog.Valid limits)
     (ok : resolveDropTable catalog name ifExists = .ok (statement, after)) : after.Valid limits :=
