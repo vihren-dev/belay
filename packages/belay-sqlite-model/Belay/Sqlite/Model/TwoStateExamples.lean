@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.TwoStateFixtures
+import Belay.Sqlite.Model.TwoStateFixtureExamples
 
 set_option doc.verso true
 

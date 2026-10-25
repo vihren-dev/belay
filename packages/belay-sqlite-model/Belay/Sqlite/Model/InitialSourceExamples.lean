@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.InitialSourceFixtures
+import Belay.Sqlite.Model.InitialSourceFixtureExamples
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.QueryStepOutput
 
