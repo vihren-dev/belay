@@ -1,4 +1,5 @@
-import Belay.Sqlite.Model
+import Belay.Sqlite.Model.UniqueLookupCount
+import Belay.Sqlite.Model.KeysUniqueLookup
 
 set_option doc.verso true
 
