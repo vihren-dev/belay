@@ -101,6 +101,12 @@ hold for what remains: nothing below the surface imports it (the model, the text
 conformance runner), and the conformance runtime, which is the judge's subject, does not contain
 the surface. `belaySqliteText` serves the conformance harness only.
 
+S7 tooling boundary, 2026-10-24: the standalone SQL-file checker may import Lake
+to inspect the package and its existing build. This exception applies only to
+its separate tool modules, not to `Belay` or its elaborators. The library must
+not import the checker; the conformance runtime contains neither. The layer
+test checks this boundary with the [S7 task](../plans/20261024-surface-s7-files.task.md).
+
 ### D3. The names
 
 Users import `Belay`. Everything specific to one engine lives under that engine's name,

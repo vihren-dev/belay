@@ -6,6 +6,15 @@ Specs: ADR17 S7/D6; ADR16 surface/tool boundary.
 
 ## Decisions and evidence
 
+On 2026-10-25 the owner accepted the explicit package-root override. The task
+and ADR17 now retain automatic discovery with source-relative
+`belay.sql.packageRoot`, plus the explicit-root reader. Current file access
+does not change persistent package/path identity or bypass the freshness
+checker. The existing same-name nested-package probe supplies the observed
+ambiguity; the amendment adds end-to-end override and relocation acceptance.
+Review is pending. The S7 workspace's first unit remains at rest; no override
+implementation or acceptance is claimed by this decision record.
+
 The 2026-10-24 owner decision keeps exact SQLite result-column metadata and
 native Lake tracking, and corrects the guide's blanket importer-rebuild claim.
 The source audit establishes available native Lake input and needs APIs.
@@ -57,7 +66,6 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   the outer consumer's actual build then finds two roots. The Lake-generated
   manifest and both command results are retained in
   `build/agent-logs/package-root-probe/same-name-ambiguity.log` as diagnostic
-  evidence. The owner is deciding the proposed source-relative root option and
-  explicit-root reader. No option or restriction has been added. First-unit
-  source commit/review remains pending this decision and the already-reported
-  reviewer OAuth login failure; no review retry has been started.
+  evidence. The owner accepted the proposed source-relative root option and
+  explicit-root reader on 2026-10-25 (decision above). First-unit source
+  commit/review was pending that decision and the reviewer OAuth login failure.
