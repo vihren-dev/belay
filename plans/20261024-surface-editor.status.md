@@ -22,7 +22,8 @@ probe has run; compiler-source inspection alone is not acceptance evidence.
 
 The owner kept the current DQS-on/FK-off defaults. The separate private guide
 correction implements that decision. Doc-block syntax and S7 formatting have
-their own pending decisions; this task changes neither contract.
+their own accepted tasks; S7 package-root ambiguity remains a separate owner
+decision. This task changes none of those contracts.
 
 ## Progress
 
@@ -52,3 +53,57 @@ their own pending decisions; this task changes neither contract.
   the completed query-source interfaces. The first coherent checked commit
   will await independent review after the reviewer login refresh. No editor
   implementation or acceptance result is claimed here.
+- 2026-10-25: carried the exact reviewed task/status and all three review records
+  in `7bd4adde`, on immutable `3a632d10987e232ccbf818ce49b1936b2758c969`.
+  The four shell files match the approved doc-block workspace; standing dev-shell
+  authorization applies. The other task workspaces remain frozen.
+- 2026-10-25: implemented the first source/parameter unit in the isolated editor
+  workspace. `SqlEditorSource` supplies an explicit byte-range map and checks
+  source-byte agreement before creating original-source information.
+  `SqlParameterInfo` consumes existing plan slots and translator numbers; it adds
+  native term/hover information without another numbering rule. `SqlTerm` retains
+  each captured expression before coercion, uses its coerced value in the original
+  script construction, and leaves source/replay annotations intact. The changed
+  `variableValue` pair return needs a mechanical adaptation when the frozen S7
+  shared builder is later integrated; no old workspace was edited.
+
+## First-unit evidence and remaining acceptance
+
+The production source is frozen at `a075cb27a400e89cb2fafa6298e9d56ef113a450`.
+The test runtime correction is in snapshot
+`44b4286cd2fd710a26ce0e174102823523f0fc8c`, with identical production files.
+
+- Focused Nix real-server checks passed: 2 passed, 89 deselected, report
+  `/nix/store/8d538sd8bf49gx9qqnrd8rimpcaxbs27-sqlite-verifier-test-surface-1`.
+  They run the actual pinned `lean --server`, supplying installed artifacts via
+  the existing module-setup contract. LF and CRLF fixtures check exact UTF-16
+  hover ranges after non-BMP text, 19 parameter occurrences, pre-coercion
+  `String`/`Int64`/`Value` types, do locals and constants, generated names/numbers,
+  repeated parameters and per-statement slot changes, aliases and sparse slots.
+  Native definition requests identify captured binders/constants/do locals.
+  Local and generated arguments receive native variable semantic tokens;
+  constants retain native constant behavior. SQL keywords and uncertain escaped
+  mappings receive no extra tokens.
+- The earlier selected Nix run had 17 passing compatibility/layer checks and
+  two failed server starts. Pinned Lean's watchdog reads the UTC zone file;
+  the suite lacked timezone data in the sandbox. The corrected surface test
+  derivation sets `TZDIR` to pinned `pkgs.tzdata`, without a host dependency.
+  The two-case retry above is successful acceptance evidence for the server.
+- The development build and local diagnostics are not acceptance evidence.
+  Local compatibility exposed an independent baseline S5 regression:
+  `CheckReplayData` globally registers `ToExpr Output`, so `#eval` selects Lean
+  constructor printing instead of the existing custom `Repr`. A diagnostic
+  control removes only that instance attribute and restores `[done 1]`.
+  Root confirmed the baseline cause and assigned its repair to the S5 owner.
+  Existing `GuideParameters` expectations are unchanged. Logs and the control
+  are under `build/agent-logs/`.
+
+The first coherent source commit awaits integration of that S5 repair and a
+combined focused Nix check of the editor, guide parameters and replay/search
+compatibility. Root has authorized a new merge of the frozen snapshots, without
+rebasing shared ancestors. No process is live; the heavy slot is released.
+Root's source read found no semantic issue, but it is not independent review.
+Claude review remains blocked by the reported expired login; no retry was made.
+First-part full/verdict acceptance follows its independent review. Schema facts,
+table origins, corrections and warnings remain in the second part, together
+with completed query-source integration. The overall task remains OPEN.
