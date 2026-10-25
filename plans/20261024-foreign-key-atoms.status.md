@@ -896,10 +896,60 @@ refusal; the preservation laws for ADD COLUMN are the next unit.
   `literalNullDefault` still ended in `some _`. The second refactor lists every `Syntax.Expr`
   constructor, with the helper `isNullKeyword` for the operand of the unary plus, so a new
   expression form needs a decision. The mutant `add_reference_null_refused` changes the new text.
-  Nix results (the same focused groups; the working tree also held the unit 2 files, which the
-  groups do not exercise): model 43 passed,
+  Nix results (the same focused groups; the working tree also held the unit 2 files. The surface
+  group ran the unit 2 fixture `ForeignKeyAddColumn.lean` as well, the model and mutants groups
+  do not exercise them): model 43 passed,
   `/nix/store/fibp443s8gb65g2gd6yq28fayxlgqsj7-sqlite-verifier-test-model-1`; surface 20 passed,
   `/nix/store/x3ffc4dg3x15ab5sjs2b38z5nc4jhap1-sqlite-verifier-test-surface-1`; mutants 2 passed,
   `/nix/store/7z3if3ip2c7laf40mdlnlvahgjq78502-sqlite-verifier-test-mutants-1`.
 - Remaining in part 2: ADD COLUMN preservation laws and fixtures, the unified DDL run contract,
   RESTRICT / SET DEFAULT / deferred coverage with the final matrix, then part-2 full and verdict.
+
+## ADD COLUMN preservation laws (part 2, unit 2)
+
+2026-10-25. Both atoms now have laws for the resolved ADD COLUMN statement, with the refusal of
+unit 1. New files in `packages/belay-sqlite-model/Belay/Sqlite/Model/`, each below 200 lines:
+
+- `CatalogAddColumnSearch`: the table search and parent indexes of a catalog after
+  `Catalog.addColumn`.
+- `ForeignKeyAddColumnLink`: a link reads only the cells below the old width, so appending the
+  new cell, or adding a column to the parent, changes no comparison
+  (`ForeignKeyLink.satisfied_append`, `ForeignKeyLink.satisfied_addColumn`).
+- `ForeignKeyAddColumnSelection` and `ForeignKeyAddColumnPairs`: a foreign key that selects its
+  parent key selects it again after the column is added, when the selection reads only columns
+  below the old width (`CatalogTable.SelectionBelow`, `Catalog.parentLink_addColumn`).
+- `ForeignKeyAddColumnReads` and `ForeignKeyAddColumnValid`: the reads of the selected mapping
+  from wide rows, declarations below the width and `SelectionBelowAt`; the last follows from an
+  admitted database (`Database.selectionBelowAt_of_admitted`).
+- `ForeignKeyAddColumnDatabase`: the laws on a database for an arbitrary pair of mappings
+  (`Database.RowReferencesHold.addColumn`, `Database.ParentSchemasCompatible.addColumn`).
+- `ForeignKeyAddColumn`: the statement laws `runStatement_addColumn_rowReferences`,
+  `runStatement_addColumn_parentSchemasCompatible` and the combined
+  `runStatement_addColumn_foreignKeyAtoms`, with `runStatement_addColumn_cases` (the statement
+  keeps the database, or adds one `AddedCell`; a refusing statement on a table with rows keeps it).
+
+Premises of the combined law, none of which states the final atom: wide rows
+(`Database.RowsWideAt`), declarations below the width (`Database.DeclarationsBelowAt`), selection
+below the width (`Database.SelectionBelowAt`), a located parent for each declaration of the column,
+and, for each added cell of a statement that does not refuse a populated table, that each
+declaration of the column is satisfied by each old row with the cell appended. A column without
+`REFERENCES`, an empty table, a refusing statement on a populated table and a NULL cell meet the
+last item. The primitives take the explicit selection and read premises, so the combined law is
+sugar over them.
+
+Fixture `tests/surface/ForeignKeyAddColumn.lean` (41 axiom reports, none non-standard): a plain
+column and a reference without default keep both atoms on a populated child; a default 99 with no
+parent row 99 succeeds without the refusal and breaks the row atom, the refusing statement
+fails and keeps the input, and on an empty child table the refusing statement succeeds and keeps
+both atoms.
+
+Nix results (focused groups), run on the tree that held this unit together with the second
+refactor of unit 1: model 43 passed,
+`/nix/store/fibp443s8gb65g2gd6yq28fayxlgqsj7-sqlite-verifier-test-model-1`; surface
+`db_bang_messages or independent_foreign_key_atoms` 20 passed (includes the new fixture),
+`/nix/store/x3ffc4dg3x15ab5sjs2b38z5nc4jhap1-sqlite-verifier-test-surface-1`; mutants 2 passed,
+`/nix/store/7z3if3ip2c7laf40mdlnlvahgjq78502-sqlite-verifier-test-mutants-1`.
+The unit changes only theorems, so it cannot change a prediction.
+Review `20261025T072343Z-21967ea0` of the second refactor: 0 musts, 1 should (R19, the status
+text on the surface group), fixed in this commit.
+

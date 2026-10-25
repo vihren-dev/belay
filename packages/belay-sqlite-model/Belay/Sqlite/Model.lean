@@ -98,6 +98,14 @@ import Belay.Sqlite.Model.ForeignKeyRuns
 import Belay.Sqlite.Model.ForeignKeyCreateFrame
 import Belay.Sqlite.Model.ForeignKeyCreateSelection
 import Belay.Sqlite.Model.ForeignKeyCreate
+import Belay.Sqlite.Model.CatalogAddColumnSearch
+import Belay.Sqlite.Model.ForeignKeyAddColumnLink
+import Belay.Sqlite.Model.ForeignKeyAddColumnSelection
+import Belay.Sqlite.Model.ForeignKeyAddColumnPairs
+import Belay.Sqlite.Model.ForeignKeyAddColumnReads
+import Belay.Sqlite.Model.ForeignKeyAddColumnValid
+import Belay.Sqlite.Model.ForeignKeyAddColumnDatabase
+import Belay.Sqlite.Model.ForeignKeyAddColumn
 import Belay.Sqlite.Model.ForeignKeyDropSchema
 import Belay.Sqlite.Model.ForeignKeyDdlDrop
 import Belay.Sqlite.Model.ForeignKeyDropRows

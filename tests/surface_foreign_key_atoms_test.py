@@ -22,7 +22,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
                                          ("ForeignKeyEngineAxioms.lean", 33), ("ForeignKeyStatement.lean", 9),
                                          ("ForeignKeyRuns.lean", 9), ("ForeignKeyStatementAxioms.lean", 15),
                                          ("ForeignKeyCreate.lean", 19), ("ForeignKeyDdlDrop.lean", 16),
-                                         ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4)])
+                                         ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4),
+                                         ("ForeignKeyAddColumn.lean", 41)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
     """ForeignKeyFacts, mapping transport and pragma laws compile through Belay's exported API.
 
@@ -47,7 +48,10 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     from parent-schema compatibility, transport shifted positions, and permit removal
     of children together with parents. Enforced DROP uses the actual implicit DELETE and
     checks SET NULL, CASCADE, retained FAIL rows, NO ACTION rejection and rollback. Its
-    separate catalog transport can fail even when the row atom holds. Every displayed law
+    separate catalog transport can fail even when the row atom holds. The ADD COLUMN fixture
+    keeps both atoms for a column without constraints and for a reference without default,
+    shows that a default of 99 breaks the row atom unless the statement refuses it, and
+    accepts that default on a table without rows. Every displayed law
     excludes native-computation or admission axioms.
     """
     result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path),
