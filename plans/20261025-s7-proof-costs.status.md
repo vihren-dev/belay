@@ -42,3 +42,5 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `CLAUDE.md` (`just test-scheduled`) and the owner's rule
   (`just test-scheduled-checks`); the trace label is a formatted message, not a
   `Name`. The task text now states each point.
+- 2026-10-25: review `20261025T160932Z-b6ce3490` of the corrected task file has
+  no findings. The task waits for the owner's answers to its six decisions.
