@@ -61,7 +61,7 @@ theorem expansion_keeps_the_customer_count (n : Int64) (first second : Identifie
     (expandedTable site.table (name! "email_lower") site.source).shape
     (expandedDatabase_findTable _ first second site.found)
   rw [expandedDatabase_table (name! "email_lower") first second site.present
-    (Database.position_lt_rows db.valid.admitted.rowsShaped site.found)] at newTable
+    (Model.Database.position_lt_rows db.valid.admitted.rowsShaped site.found)] at newTable
   have newRows : (expandedDatabase db.raw site.position site.source site.table (name! "email_lower") first
       second).rows.getD site.position [] = (expandedTable site.table (name! "email_lower") site.source).rows :=
     (congrArg Table.rows (Option.some.inj newTable)).symm
@@ -142,6 +142,8 @@ def purging : Database := db! r"
   INSERT INTO customers VALUES (1, 'Ada', 'Alpha@X');
   CREATE TRIGGER purge AFTER UPDATE ON customers BEGIN DELETE FROM customers WHERE id = OLD.id; END;"
 
+/-- In {name}`purging` one customer exists before and the expansion succeeds, but afterwards the count is not
+one: the old delete trigger removes the customers, so the claim needs the premise about the triggers. -/
 theorem an_old_trigger_removes_the_customers :
     Holds (customerCountIs 1) purging ∧ (afterExpansion purging).outputs.allOk = true ∧
     ¬ Holds.reached (customerCountIs 1) (afterExpansion purging) := by

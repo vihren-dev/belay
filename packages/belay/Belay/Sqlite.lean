@@ -65,7 +65,6 @@ import Belay.Sqlite.AssertionTerms
 import Belay.Sqlite.FreshNotation
 import Belay.Sqlite.ClaimExplanation
 import Belay.Sqlite.PlainInsertEffect
-import Belay.Sqlite.PlainInsertRows
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand
 import Belay.Sqlite.ExecutionSpecifications

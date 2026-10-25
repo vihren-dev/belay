@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T09:35:30+00:00",
+  "finding": "20261025T092136Z-ed9cb8b6#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "moved or documented in the refactor commit after this review"
+}

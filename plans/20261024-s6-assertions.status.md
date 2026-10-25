@@ -202,10 +202,13 @@ new test `tests/surface_assertion_examples_test.py`.
 
 ### Unit 1: insert then lookup over every database
 
-- Library: `packages/belay/Belay/Sqlite/PlainInsertEffect.lean` (a plain insert
-  that is modeled has an explicit reached database and the fresh `ifOk` shape
-  `Sql.ifOk_send_plainInsert`) and `PlainInsertRows.lean` (the inserted rows are
-  the old rows plus one appended row; counting and membership laws).
+- Library: `packages/belay/Belay/Sqlite/PlainInsertEffect.lean` (the fresh `ifOk`
+  shape `Sql.ifOk_send_plainInsert` of a plain insert that is modeled) over the
+  model laws in `packages/belay-sqlite-model/Belay/Sqlite/Model/PlainInsertEffect.lean`
+  (the reached database of a plain insert) and `Model/PlainInsertRows.lean` (the
+  inserted rows are the old rows plus one appended row; counting and membership
+  laws). The model-only laws were first in the surface package and moved after
+  the review of `ed9cb8b6`.
 - Fixtures: `CustomerInsertSite` (the explicit `CustomerInsertSite` structure of
   schema, resolution, affinity and modeledness conditions, and the fresh
   reduction `insert_then_holds`), `CustomerInsertQueries` (the two lookup
@@ -237,3 +240,67 @@ new test `tests/surface_assertion_examples_test.py`.
 - Decision: the premise of the claim is `(db.run expand).outputs.allOk = true`. The default-environment
   success gives success from every complete environment (`Script.allOk_env`), and a kernel evaluation with an
   open environment is too slow (about a minute), so the closed form is also what the kernel checks.
+
+### Review of unit 1 (`ed9cb8b6`, review 20261025T092136Z-ed9cb8b6)
+
+Three musts and three shoulds. Model-only declarations (`insertOutcome_ok`,
+`plainInsert_database`, `Output.ofStep_insert_ne_oneOf`, `RunStep.continues(_iff)`,
+`runScriptStep_insert_ne_oneOf`, the row, scan, count and comparison laws) moved to
+`Belay/Sqlite/Model/PlainInsertEffect.lean` and `PlainInsertRows.lean` in the model package,
+registered in its `lakefile.toml` (they are not in the umbrella `Belay.Sqlite.Model`; the surface
+modules import them). The two simp proofs that used the surface-only `sql_simp` set now list the
+model lemmas. The duplicate `LiteralData.generatedCells_plain` was dropped for the existing
+`NormalizedField.generatedCells_plain`. The wording "complete environments" of
+`Sql.ifOk_send_plainInsert` is corrected (it holds for every environment), and the counterexample
+theorems got docstrings.
+
+### Unit 3: invariant with a partial unique index, delete-trigger counterexample
+
+- Library: `Model/PartialUniqueCount.lean` (model package):
+  `Table.KeysUnique.countMatching_partial_le_one`, at most one stored row satisfies
+  `guard AND column = value` when a unique key with a filter implied by the guard exists.
+- Fixtures: `AccountSignupQueries` (the query `SELECT 1 WHERE (SELECT count(*) FROM accounts WHERE
+  deleted_at IS NULL AND email = $f) <= 1` and its row-count form), `SignupInvariantClaims`
+  (structure `AccountSignupSite`, universal `signup_keeps` for every email value `f`: a
+  successful signup keeps at most one live account with that email; kernel examples for a new email,
+  a live email that fails and rolls back with the invariant intact, a deleted account whose email is
+  reused; counterexample `nullableUnique`: with an ordinary `UNIQUE (email, deleted_at)` two live
+  accounts share the email), `PurgeTriggerCounterexample` (a delete trigger removes another
+  customer's session: the session exists before, the delete succeeds, and it is gone after; without
+  the trigger it stays). Tests: `tests/surface_assertion_examples_test.py`.
+- Deviation: the guide's invariant query is `oneLive` with `GROUP BY` and a `WHERE` filter. The
+  model's duplicate-key query law (`DuplicateKeyQuery`) supports only an unfiltered `GROUP BY`; the
+  filtered form needs model query-resolution work owned by the views agent. The invariant is
+  therefore stated per email value `f` (equivalent to the global one when quantified over `f`).
+  Options: (a) keep the per-value form; (b) add a filtered duplicate-keys law later and restate
+  `signup_keeps` globally. Recommendation: (a) now, (b) when the query context lands.
+
+### Skipped for part 1b (they depend on the initial/current query context)
+
+- The purge-frame claim `purge_frame` (reads `before`) and its NULL-aware `IS NOT 1` condition,
+  with the nullable-parameter and non-numeric-text tests.
+- Diagnostics about `before` (unbound `before`, `before` in a one-state assertion).
+- Two-state assertions and fixtures; the universal positive purge-frame/delete-effect law (only the
+  delete-trigger counterexample is done, because it needs one state).
+
+### Guide change to make (not done here; the coordinator edits the private guide)
+
+Sections: "Level 2/3 Triples", "Two states", "Invariants" and the complete example
+(`addCustomer_adds`, `count_kept`, `purge_frame`, `signup_keeps`).
+
+- Correction: "The triple covers every database of every schema" is false. A claim covers every
+  admitted database that satisfies the stated conditions: the schema (columns, affinities, a
+  rowid-alias id), resolution of the statement without trigger or foreign-key rules, that the
+  statement is modeled, and for the invariant a partial unique index.
+- A claim about a fresh run is a `FreshTriple`/`ensures` (entry state is the initial one) or has an
+  explicit entry premise; a default `Holds` precondition in an ordinary triple does not tie the
+  database to the run.
+- Success: `ifOk`/`andOk` say "if the run succeeded"; `count_kept` needs `ifOk`, the site, and the
+  closed premise `(db.run expand).outputs.allOk = true`.
+- `addCustomer_adds` is stated as two supported assertions (exactly one customer has the id; a
+  customer has the id and name), not one two-subquery query.
+- `signup_keeps` is stated per email value with the filtered count query, with the partial unique
+  index `WHERE deleted_at IS NULL`; the ordinary nullable `UNIQUE (email, deleted_at)` is the
+  counterexample.
+- A successful trigger may remove the inserted row; a delete trigger may remove an unrelated row
+  (two kernel counterexamples). Explain default versus context-aware assertions and `#explain`.

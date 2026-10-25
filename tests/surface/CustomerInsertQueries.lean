@@ -60,6 +60,9 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   exact ⟨fun h => by exact_mod_cast h, fun h => by exact_mod_cast h⟩
 
+/-- For every database, id, name, and catalog entry of {lit}`customers` with its first two columns: the
+assertion {name}`aCustomerHasTheIdAndName` holds exactly when a scanned row satisfies the id and the name
+conditions. Proof sketch: the resolution of the query, then the laws of the row count. -/
 theorem a_customer_has_the_id_and_name_iff (db : Database) (id : Int64) (name : String) (position : Nat) (table : CatalogTable)
     (idCell nameCell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -90,7 +93,7 @@ theorem rows_after_insert {db : Database} {id : Int64} {name : String} (site : C
     (row : Row) :
     (db.raw.setRows site.position (db.raw.rows.getD site.position [] ++ [row])).rows.getD site.position [] =
       db.raw.rows.getD site.position [] ++ [row] :=
-  Database.rows_getD_setRows _ (Database.position_lt_rows db.valid.admitted.rowsShaped site.found)
+  Model.Database.rows_getD_setRows _ (Model.Database.position_lt_rows db.valid.admitted.rowsShaped site.found)
 
 #print axioms no_customer_has_the_id_iff
 #print axioms one_customer_has_the_id_iff

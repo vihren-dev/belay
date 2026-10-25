@@ -1,30 +1,17 @@
-import Belay.Sqlite.CountQuery
-import Belay.Sqlite.SqlSimpLaws
+import Belay.Sqlite.Model
+import Belay.Sqlite.Model.NormalizedFieldRows
 
 set_option doc.verso true
 
 /-!
-The queries of a table after a plain INSERT adds one row (ADR 0017, S6). A scan of a table
+The rows of a table after a plain INSERT adds one row (ADR 0017, S6). A scan of a table
 sees its rows in some order, so the claims here speak of membership and counts, which do not
 depend on the order. They serve the universal claims about an INSERT: a row that no earlier row
-matches and that the new row matches is the only match.
+matches and that the new row matches is the only match. The module also states what the resolved
+row of a two-parameter INSERT is and when the condition {lit}`column = ?n` holds for a row.
 -/
 
 namespace Belay.Sqlite.Model
-
-/-- For every columns without a generated column and every cells: computing the generated cells
-changes nothing. Proof sketch: no column gives a generated position, so the fold has no step. -/
-theorem LiteralData.generatedCells_plain (columns : List CatalogColumn) (values : List Value)
-    (noGenerated : ∀ column ∈ columns, column.generated = none) :
-    LiteralData.generatedCells columns values = values := by
-  unfold LiteralData.generatedCells
-  have empty : columns.zipIdx.filterMap (fun (column, position) =>
-      column.generated.map fun how => (position, column.affinity, how.expression)) = [] := by
-    rw [List.filterMap_eq_nil_iff]
-    intro pair mem
-    have := noGenerated pair.1 (List.fst_mem_of_mem_zipIdx mem)
-    simp [this]
-  simp [empty]
 
 /-- For every table without a generated column whose rowid alias is absent or the first column, and
 every row whose first cell is an integer: the rows after inserting it are the old rows and one row
@@ -36,30 +23,25 @@ theorem LiteralData.inserted_plain (table : Table) (first : Int) (rest : List Va
     (LiteralData.inserted table [.integer first :: rest]).rows =
       table.rows ++ [⟨LiteralData.newRowid table (.integer first :: rest), .integer first :: rest⟩] := by
   simp only [LiteralData.inserted, LiteralData.insertRow, List.foldl_cons, List.foldl_nil, LiteralData.newCells]
-  rw [LiteralData.generatedCells_plain _ _ noGenerated]
+  rw [NormalizedField.generatedCells_plain _ _ noGenerated]
   rcases alias with none | some
   · simp [none]
   · have : LiteralData.newRowid table (.integer first :: rest) = first := by
       simp [LiteralData.newRowid, some]
     simp [some, this]
 
-end Belay.Sqlite.Model
-
-namespace Belay.Sqlite
-open Model
-
 /-- For every raw database, position below the number of its row lists and rows: the rows at the
-position, after {name}`Model.Database.setRows` at it, are the supplied rows. Proof sketch:
+position, after {name}`Database.setRows` at it, are the supplied rows. Proof sketch:
 {lit}`List.set` stores the rows at a position below the length. -/
-theorem Database.rows_getD_setRows {raw : Model.Database} {position : Nat} (rows : List Row)
+theorem Database.rows_getD_setRows {raw : Database} {position : Nat} (rows : List Row)
     (aligned : position < raw.rows.length) : (raw.setRows position rows).rows.getD position [] = rows := by
-  simp [Model.Database.setRows, List.getD_eq_getElem?_getD, List.getElem?_set_self aligned]
+  simp [Database.setRows, List.getD_eq_getElem?_getD, List.getElem?_set_self aligned]
 
 /-- For every raw database whose row lists match its catalog, and every table that the lookup of the
 catalog finds: the position of the table is below the number of row lists. Proof sketch: the lookup
 gives an object of the catalog at the position, so the position is below the length of the catalog,
 which is the length of the row lists. -/
-theorem Database.position_lt_rows {raw : Model.Database} (shaped : raw.RowsShaped) {name : Identifier}
+theorem Database.position_lt_rows {raw : Database} (shaped : raw.RowsShaped) {name : Identifier}
     {position : Nat} {table : CatalogTable} (found : raw.catalog.findTable name = some (position, table)) :
     position < raw.rows.length := by
   obtain ⟨object, atPosition, -⟩ := Catalog.findTable_some _ _ _ _ found
@@ -107,12 +89,12 @@ theorem countMatching_appended (context : Resolved.EvalContext) (condition : Opt
 /-- For every clock value, counters, two bound values and two columns: the row that a plain INSERT
 with the two parameters supplies is the two bound values, each stored with the affinity of its
 column. Proof sketch: the parameters of the context are the bound values. -/
-theorem rowsAt_two_parameters (value : Int) (counters : Counters) (database : Model.Database)
+theorem rowsAt_two_parameters (value : Int) (counters : Counters) (database : Database)
     (first second : CatalogColumn) (a b : Value) :
     Resolved.rowsAt (Resolved.statementContext value counters [a, b] database []) [first, second]
       [[.expression (.parameter 1), .expression (.parameter 2)]] =
       [[Value.store first.affinity (boundValue a), Value.store second.affinity (boundValue b)]] := by
-  simp [Resolved.rowsAt, Resolved.Cell.valueAt, List.zipIdx, sql_simp, Resolved.statementContext,
+  simp [Resolved.rowsAt, Resolved.Cell.valueAt, List.zipIdx, Resolved.Expr.eval_parameter, parameterValue, Resolved.statementContext,
     Resolved.subqueryContext]
 
 /-- The resolved condition {lit}`c = ?n` of a column: the column at a position compared with
@@ -130,8 +112,9 @@ theorem equalsParameter_true (cell : CatalogColumn) (position index : Nat) (para
     (same : Resolved.comparisonOperands (some cell.affinity) stored stored = (stored, stored)) :
     Resolved.truthy ((equalsParameter cell position index).eval (Resolved.EvalContext.bound parameters) row) =
       true := by
-  simp [equalsParameter, sql_simp, cellIs, bound, same, notNull]
-  simp [Comparison.holds, Collation.compare_eq_of_binary (Std.ReflCmp.compare_self (cmp := Value.compare))]
+  simp [equalsParameter, Resolved.Expr.eval_compare, Resolved.Expr.eval_column,
+    Resolved.Expr.eval_parameter, parameterValue, cellIs, bound, same]
+  simp [Resolved.truthy_apply_ordinary, notNull, Comparison.holds, Collation.compare_eq_of_binary (Std.ReflCmp.compare_self (cmp := Value.compare))]
 
 /-- For every column with INTEGER affinity and every integer, the affinity leaves a comparison of
 the integer with itself as it is. Proof sketch: an integer is not text, so it stays a number. -/
@@ -147,4 +130,4 @@ theorem comparisonOperands_text (cell : CatalogColumn) (value : List UInt8) (tex
       (.text value, .text value) := by
   simp [text, Resolved.comparisonOperands, Value.isText, Value.store]
 
-end Belay.Sqlite
+end Belay.Sqlite.Model

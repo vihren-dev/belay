@@ -103,6 +103,8 @@ def removingTrigger : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
   CREATE TRIGGER forget AFTER INSERT ON customers BEGIN DELETE FROM customers WHERE id = NEW.id; END;"
 
+/-- In {name}`removingTrigger` no customer has the id 3 before, the insert succeeds, and afterwards neither
+the count claim nor the row claim holds: the successful insert is not enough for the claims. -/
 theorem a_trigger_removes_the_inserted_customer :
     Holds (noCustomerHasTheId 3) removingTrigger ∧ (afterInsert removingTrigger 3 "ann").outputs.allOk = true ∧
     ¬ Holds.reached (exactlyOneCustomerHasTheId 3) (afterInsert removingTrigger 3 "ann") ∧
@@ -114,6 +116,8 @@ def keyless : Database := db! r"
   CREATE TABLE customers (id INTEGER, name TEXT NOT NULL);
   INSERT INTO customers VALUES (1, 'mary');"
 
+/-- In {name}`keyless` customer 1 is present, the insert of the id 1 succeeds, and afterwards the count of the
+customers with the id is not exactly one. -/
 theorem without_the_guard_two_customers_have_the_id :
     ¬ Holds (noCustomerHasTheId 1) keyless ∧ (afterInsert keyless 1 "john").outputs.allOk = true ∧
     ¬ Holds.reached (exactlyOneCustomerHasTheId 1) (afterInsert keyless 1 "john") := by decide +kernel
@@ -124,6 +128,8 @@ def uniqueName : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
   INSERT INTO customers VALUES (7, 'john');"
 
+/-- In {name}`uniqueName` no customer has the id 3 before, and the insert of the name {lit}`'john'` fails, so
+the run does not succeed and a claim guarded by {lit}`ifOk` asks nothing. -/
 theorem a_duplicate_name_fails_the_insert :
     Holds (noCustomerHasTheId 3) uniqueName ∧ (afterInsert uniqueName 3 "john").outputs.allOk = false := by
   decide +kernel

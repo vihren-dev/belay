@@ -61,3 +61,20 @@ def test_preserved_count_claim_over_every_database(runtime_root: Path, tmp_path:
     are satisfiable on a database, and keeps the counterexample that the site excludes: a trigger on UPDATE
     that existed before the expansion and removes the rows when the backfill fires it."""
     check_module_chain(runtime_root, tmp_path, (("ExpansionCountQueries", 1), ("ExpansionCountClaims", 3)))
+
+
+def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path: Path) -> None:
+    """The guide's signup invariant is proved for every admitted database with a site of the signup
+    insert and the partial unique index on the email of the live accounts: for every email value, a run
+    that succeeds keeps at most one live account with that email. The fixture shows the invariant kept on
+    a database for a new email, a rejected live email whose rolled-back database still satisfies the
+    invariant, and a deleted account whose email can be reused, and keeps the counterexample of an
+    ordinary nullable UNIQUE constraint, which does not keep the invariant."""
+    check_module_chain(runtime_root, tmp_path, (("AccountSignupQueries", 1), ("SignupInvariantClaims", 2)))
+
+
+def test_delete_trigger_removes_an_unrelated_row(runtime_root: Path, tmp_path: Path) -> None:
+    """A delete trigger may remove a row of another customer: the kernel confirms, from the actual run of
+    the delete, that a session of another customer exists before and is gone after the successful
+    delete, and that the same run without the trigger keeps it."""
+    check_module_chain(runtime_root, tmp_path, (("PurgeTriggerCounterexample", 2),))
