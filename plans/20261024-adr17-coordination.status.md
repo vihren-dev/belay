@@ -375,23 +375,25 @@ retry succeeded: review `20261025T001053Z-5bc323f0` has no findings for the empt
 merge of the previously reviewed parents. Reviewer access is restored for the
 pending source units above. Complete S6 full/verdict/prediction and task-end
 checks are running as root session `24501` in `s6-complete-publication`, using
-slot 1. Shared S5 search review is running as root session `85770` against
-`efa0d465`; its result remains pending. The S5 instance repair uses slot 2.
+slot 1. Shared S5 search review of `efa0d465` found zero musts and one policy-list
+should; the correction and its acceptance are recorded below.
 
 On 2026-10-25 the editor compatibility check exposed an S5 import regression:
 the global `ToExpr Output` instance in `CheckReplayData` changes the existing
-guide's `#eval` rendering. The `s4_part1` worker owns the narrow correction in
-a new workspace based on `6228f90a`, under the existing S5 task. Keep the
-guide expectations and checked replay intact. The editor worker continues
-independent Nix checks; its part cannot pass compatibility until the correction
-is integrated. Slots 1 and 2 are reserved for these two checks respectively.
+guide's `#eval` rendering. The `s4_part1` worker corrected the instance scope in
+an isolated workspace based on `6228f90a`, keeping the guide expectations and
+checked replay intact. Seven focused Nix checks pass at
+`pncn74lcx9si588ivscx36cn3micnf05`; source `b5f15c67` has a clean review.
+The separate policy-list correction passes three focused search checks at
+`82xlqm0788nqy2hfwz6ymzgc8j0jhcxw`; source `ac077b90` has a clean review.
+Both corrections and their records are frozen at `bf3fa71f`.
 
 The editor's real Lean-server fixtures now pass in Nix at
 `8d538sd8bf49gx9qqnrd8rimpcaxbs27`: both LF and CRLF cases, with zero failures,
 errors or skips. The tested source is `44b4286c`; its production files are
 unchanged from `a075cb27`. The retry adds the pinned timezone-data path to the
 surface test derivation after the server watchdog failed to find UTC. The
-editor source is at rest and slot 1 is released. Compatibility, independent
+editor source is at rest with no reserved build slot. Compatibility, independent
 review and part acceptance remain open. The editor worker will integrate the
 checked S5 correction through a new merge, then run the combined focused checks.
 
@@ -401,4 +403,26 @@ can change partial writes and error precedence even with total `ORDER BY`;
 the transfer optimization can also preserve source rowids. The owner has been
 asked to choose possible executions (coordinator recommendation), a proved
 plan-independent restriction, or exact pinned planning. No production or task
-contract has changed before that answer. The audit worker has no live process.
+contract has changed before that answer. The read-only audit has no live process.
+
+Reviews recovered on 2026-10-25: stored-view source `694d0790`, search/view
+integration `6228f90a`, and search/execution integration `3a632d10` have no
+findings. Their retained review records are at `7e458081`, `bc55cdc1` and
+`c71360eb`. Enforced-DROP source `dd60f94c` has no source findings; its two
+status corrections and review records are at `ffe4d749`. SQL-doc source
+`3bb4171e` has one diagnostic-text should; its approved correction is prepared
+and awaits a build slot. None of these results completes its enclosing task.
+
+The migration descriptor review is complete at `48bc5237`. Its next comparison
+and pattern unit is assigned under the unchanged reviewed task and owns slot 2.
+The new production leaves compiled; focused fixtures and Nix acceptance remain
+pending. Editor integration and the doc-message correction are next in the queue.
+
+The next S5 unit is assigned to `s4_part1` under the existing reviewed S5 task:
+`#sql_check`, searched `sql_refute`, and certified result display, with explicit
+input primitives and bounded resource controls. Use a new workspace on
+`bf3fa71f`; preserve the old `s5-commands` draft until intentionally reused.
+Reuse the shared checker and keep explicit refutation available. Command and
+tactic fixtures must establish all three outcomes and original-claim replay;
+measure command cost before choosing the default budget. Automatic theorem
+checks and editor actions remain the later part. This unit has no build slot yet.
