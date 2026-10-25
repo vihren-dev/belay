@@ -114,3 +114,10 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   `ProofCostStatus` constructor. R11: a baseline entry without a count is not
   skipped; if the proof failed or is gone now, the run fails (guards added).
   R9 and R19: a docstring, and the opening of this file.
+- 2026-10-25: Part 2, review of the refactor `41b7bcde` (`20261025T203438Z-41b7bcde`):
+  one must (R11) and one should (R9), fixed. A baseline entry without a count
+  also fails the run when the proof has no exact count now (guard added), and
+  the fixture has a docstring. Focused Nix run of the 7 report and comparison
+  tests (not a gate):
+  `/nix/store/vraggxhp3znizyrxy0yig0l237jjci27-sqlite-verifier-test-surface-1`,
+  7 passed.

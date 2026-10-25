@@ -39,12 +39,14 @@ def compare' (allowance : Nat) (now : LibraryCosts) : LibraryComparison :=
 #guard (compare' 0 (library #[entry "M" "a" 10000, entry "M" "b" 5000, entry "M" "c" 1])).added.size == 1
 #guard (compare' 0 (library #[entry "M" "a" 10000, entry "M" "b" 5000, entry "M" "p" 1 (identity := .privateName)])).added.isEmpty
 -- a baseline entry without a count cannot be compared, but its failure or loss still fails the run
+/-- A baseline whose entry {lit}`a` has no completed count. -/
 def inexact : LibraryCosts := library #[entry "M" "a" 0 .precisionUnavailable, entry "M" "b" 5000]
 #guard (compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .failed, entry "M" "b" 5000])).missing.map (·.2 == .failed) == #[true]
 #guard (compareLibrary 0 (some inexact) (library #[entry "M" "b" 5000])).missing.map (·.2 == .absent) == #[true]
 #guard (compareLibrary 0 (some inexact) (library #[entry "M" "a" 3, entry "M" "b" 5000])).unusableBaseline.size == 1
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .failed, entry "M" "b" 5000])] == 1
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "b" 5000])] == 1
+#guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .precisionUnavailable, entry "M" "b" 5000])] == 1
 #guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 3, entry "M" "b" 5000])] == 0
 -- exit codes
 #guard comparisonExit #[compare' 0 baseline] == 0

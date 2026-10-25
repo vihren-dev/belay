@@ -39,7 +39,7 @@ structure LibraryComparison where
   failed : Array ProofCostRecord := #[]
   /-- Proofs with a stable name that the baseline does not have. -/
   added : Array ProofCostRecord := #[]
-  /-- Baseline records with no completed count that exist now without a failure. They cannot be compared. -/
+  /-- Baseline records with no completed count whose proof has a completed count now. They cannot be compared. -/
   unusableBaseline : Array ProofCostRecord := #[]
 
 /-- Whether two records measure the same thing, so that their counts can be compared. -/
@@ -76,10 +76,12 @@ def compareLibrary (allowance : Nat) (baseline : Option LibraryCosts) (current :
           | .failed, _ => { found with missing := found.missing.push (old, .failed) }
           | .completed, none | .precisionUnavailable, _ =>
             { found with missing := found.missing.push (old, .precisionUnavailable) }
-      -- A baseline entry without a count cannot be compared, but a failure now is still a failure.
+      -- A baseline entry without a count cannot be compared. It still fails the run when the proof has no completed count now.
       | .completed, none | .failed, _ | .precisionUnavailable, _ =>
-        if new.status == .failed then { found with missing := found.missing.push (old, .failed) }
-        else { found with unusableBaseline := found.unusableBaseline.push old }) start
+        match new.status with
+        | .failed => { found with missing := found.missing.push (old, .failed) }
+        | .precisionUnavailable => { found with missing := found.missing.push (old, .precisionUnavailable) }
+        | .completed => { found with unusableBaseline := found.unusableBaseline.push old }) start
   current.records.foldl (fun found record =>
     if !record.isStable || known.contains (key record) then found
     else match record.status with
