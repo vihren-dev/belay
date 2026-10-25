@@ -717,11 +717,10 @@ Nix acceptance: 13 passed, 52 deselected, in 15.65 seconds:
 `/nix/store/gxxxsp08l7ncq2hmd1fs9r33ylingvb2-sqlite-verifier-test-surface-1`.
 Independent review follows this commit; no task-end acceptance is claimed.
 
-The separately accepted statement/run source remains at a8bf73ae in
-fk-statement-preservation. This workspace starts from the accepted engine unit;
-those branches will be merged at the next clean boundary. Source-only probes in
-fk-enforced-ddl continue the implicit DELETE of enforced DROP and ADD COLUMN.
-The current plain-DROP theorem does not claim to cover that implicit DELETE.
+The CREATE/plain-DROP checkpoint started from the accepted engine unit, while
+statement/run source `a8bf73ae` was on a separate branch. The integrated unit
+below merges those branches and proves the implicit DELETE of enforced DROP.
+The earlier plain-DROP theorem itself does not cover that implicit DELETE.
 A separate ADD COLUMN execution audit is with the coordinator for an owner scope
 decision. No ADD execution definition changed in this unit.
 
@@ -730,8 +729,8 @@ The non-CREATE constructors are now listed explicitly in CreatesObject and its
 frame proof, so a future constructor requires classification. The top status
 clarifies that the accepted DML statement/run unit is on a separate branch.
 This acceptance record omits process coordination and external diagnostic claims;
-the named Nix result establishes acceptance. The constructor-only proof correction
-requires the focused gates again before its commit.
+the named Nix result establishes acceptance. The integrated unit below reran
+the focused gates with the constructor-only proof correction included.
 
 ## Integrated enforced-DROP proof unit
 
@@ -769,8 +768,10 @@ The fixture driver checks 293 axiom reports and permits only `propext`,
 bound; the Nix invocation has an 1800-second bound. The required development
 build was completed before the Nix check, but is not acceptance evidence.
 
-Independent review of this coherent source and its four merge resolutions is
-pending until reviewer access is restored. The source is frozen at this boundary.
+Independent review `20261025T001914Z-dd60f94c` checked this coherent source and
+its merge resolutions after reviewer access was restored. It found zero musts
+and two shoulds about stale status text; both descriptions are corrected here.
+No production source changed after the Nix gate. The source is frozen at this boundary.
 The three shoulds from review `20261024T204324Z-135b8338` are recorded as fixed.
 The task remains OPEN: ADD COLUMN and the complete DDL/run contract, final matrix,
 part-2 full/verdict acceptance and task-end checks still remain.

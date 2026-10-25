@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T00:20:06+00:00",
+  "finding": "20261025T001914Z-dd60f94c#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Recorded that the integrated focused Nix gate already included the constructor-only correction."
+}
