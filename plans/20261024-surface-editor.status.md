@@ -137,7 +137,8 @@ cases passed, 93 deselected, in 2.43 seconds; report
 `/nix/store/bzy1b1fwjxlk3m36r0kbirncv3j7jrq6-sqlite-verifier-test-surface-1`.
 The mandatory incremental development build passed after qualifying one module
 documentation reference. Its initial short-name error and final log remain local
-diagnostics. Both R9 findings are recorded fixed; their refactor review follows.
+diagnostics. Both R9 findings are recorded fixed in `f40b07c5`; its independent
+review `20261025T003305Z-f40b07c5` completed with no findings.
 The 23-case result above remains the compatibility evidence for unchanged code.
 Integration review `20261025T003132Z-495d7693` completed with no findings.
 Neither prior editor parent was amended.
