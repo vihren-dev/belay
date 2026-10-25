@@ -301,8 +301,14 @@ Sections: "Level 2/3 Triples", "Two states", "Invariants" and the complete examp
 - Success: `ifOk` is conditional (it asks nothing of a failed run); `andOk` requires that the run
   succeeded and that the postcondition holds. `count_kept` uses `ifOk` with the site and the closed
   premise `(db.run expand).outputs.allOk = true`.
-- `addCustomer_adds` is stated as two supported assertions (exactly one customer has the id; a
-  customer has the id and name), not one two-subquery query.
+- The insert-and-lookup claim is stated as two supported assertions (exactly one customer has the
+  id; a customer has the id and name), not one two-subquery query.
+- `addCustomer_adds` (a program that uses a result) is a fresh claim with the `AddCustomerSite`
+  premise: the guide's precondition "customers has a name column" (`pragma_table_info`) is too
+  weak; a trigger that removes the new customer makes the program report success with no
+  customer of that name. The site lists the table shape, the plain insert resolution, and that the
+  model runs the query and the insert for every value that the query returns. The id is not
+  computed (aggregate and rowid-bound reasoning is out of scope); the claim holds for every id.
 - `signup_keeps` is stated per email value with the filtered count query, with the partial unique
   index `WHERE deleted_at IS NULL`; the ordinary nullable `UNIQUE (email, deleted_at)` is the
   counterexample.
@@ -318,3 +324,22 @@ read-only statement at the assertion term; `$missing` reports the Lean variable 
 error is reported at the offset of the string; `EXPLAIN` reports the unsupported command wrapper at
 the start of the SQL. Positions were checked with `lake lean` on a scratch file (the pytest needs the
 Nix runtime root). Not done: diagnostics for `before` (Part 1b).
+
+### Unit 5: a program that uses a result (`addCustomer_adds`)
+
+- Model package: `Model/SelectStepKeeps.lean` (a continued, non-error SELECT step leaves the
+  connection as it was), and three laws in `Model/PlainInsertRows.lean`
+  (`rowsAt_three_parameters`, `LiteralData.newCells_getElem?_of_plain`,
+  `LiteralData.inserted_single_rows`).
+- Belay package: `SingleStatementChecks.lean` (`check_single_of_statement`, `selectedValues`,
+  `mem_selectedValues`, `not_error_of_single`, `connection_resolveState`).
+- Fixtures: `AddCustomerQueries` (programs, `AddCustomerSite`, the lookup law), `AddCustomerClaims`
+  (universal `addCustomer_adds`: `FreshEnsures` with the site as the entry condition, and
+  `ok = true -> Holds.reached (customerNamed name) final`), `AddCustomerInstances` (`shopSite` with
+  kernel-checked modeledness, the kernel run that adds eve, counterexample `removingTrigger`).
+  Test: `test_added_customer_claim_over_every_database` with a 300 s timeout per module, because the
+  kernel check of the modeledness of the insert for every environment takes about 40 s.
+- Deviation: modeledness of the query and the insert is a field of the site. It cannot be proved
+  for all databases, because the readiness of an insert depends on the id (a rowid bound and the
+  stored form). Options: (a) keep it as a site field (kernel-discharged on concrete databases),
+  (b) prove it from aggregate-max and rowid-bound laws for the query result. Recommendation: (a).

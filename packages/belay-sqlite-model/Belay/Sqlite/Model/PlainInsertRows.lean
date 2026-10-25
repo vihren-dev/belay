@@ -130,4 +130,41 @@ theorem comparisonOperands_text (cell : CatalogColumn) (value : List UInt8) (tex
       (.text value, .text value) := by
   simp [text, Resolved.comparisonOperands, Value.isText, Value.store]
 
+/-- For every counters, database and three values: the resolved row of an INSERT of the three
+parameters {lit}`?1`, {lit}`?2` and {lit}`?3` into a table with three columns is the one row of
+the three values that each column stores under its affinity. Proof sketch: unfold the row, the
+cells and the three parameters. -/
+theorem rowsAt_three_parameters (value : Int) (counters : Counters) (database : Database)
+    (first second third : CatalogColumn) (a b c : Value) :
+    Resolved.rowsAt (Resolved.statementContext value counters [a, b, c] database []) [first, second, third]
+      [[.expression (.parameter 1), .expression (.parameter 2), .expression (.parameter 3)]] =
+      [[Value.store first.affinity (boundValue a), Value.store second.affinity (boundValue b),
+        Value.store third.affinity (boundValue c)]] := by
+  simp [Resolved.rowsAt, Resolved.Cell.valueAt, List.zipIdx, Resolved.Expr.eval_parameter, parameterValue,
+    Resolved.statementContext, Resolved.subqueryContext]
+
+/-- For every table without a generated column whose rowid alias is absent or at one position, every
+supplied cells, every rowid and every other position: the cell of the new row at the other position
+is the supplied cell. Proof sketch: no generated column changes a cell, and only the alias position
+may change to the rowid. -/
+theorem LiteralData.newCells_getElem?_of_plain (table : Table) (values : List Value) (rowid : Int)
+    (noGenerated : ∀ column ∈ table.shape.columns, column.generated = none)
+    {position : Nat} (alias : table.shape.rowidAlias = none ∨ table.shape.rowidAlias = some position)
+    {other : Nat} (different : other ≠ position) :
+    (LiteralData.newCells table values rowid)[other]? = values[other]? := by
+  unfold LiteralData.newCells
+  rw [NormalizedField.generatedCells_plain _ _ noGenerated]
+  rcases alias with none | some
+  · simp [none]
+  · simp [some, List.getElem?_set_ne (Ne.symm different)]
+
+/-- For every table and every cells: the rows after inserting one row are the old rows and one new
+row, whose rowid is {name}`LiteralData.newRowid` and whose cells are {name}`LiteralData.newCells`.
+Proof sketch: unfold the insertion of a single row. -/
+theorem LiteralData.inserted_single_rows (table : Table) (values : List Value) :
+    (LiteralData.inserted table [values]).rows = table.rows ++
+      [⟨LiteralData.newRowid table values,
+        LiteralData.newCells table values (LiteralData.newRowid table values)⟩] := by
+  simp [LiteralData.inserted, LiteralData.insertRow]
+
 end Belay.Sqlite.Model

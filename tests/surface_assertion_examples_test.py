@@ -21,10 +21,11 @@ def axiom_reports(stdout: str) -> list[set[str]]:
     return [set(filter(None, map(str.strip, report.split(",")))) for report in reports]
 
 
-def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...]) -> None:
+def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
+                       timeout: int = 120) -> None:
     """Elaborate the fixture modules in order, each importing the earlier ones, and audit the axioms of
     each module: its count of `#print axioms` reports is the given one, each report lists only ordinary
-    logical axioms, and no proof is missing."""
+    logical axioms, and no proof is missing. The timeout, in seconds, applies to each module."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     for module, count in modules:
@@ -33,7 +34,7 @@ def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[
         artifact = tmp_path / f"{module}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
                               "-R", str(FIXTURES), "-o", str(artifact),
-                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=120)
+                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=timeout)
         assert result.returncode == 0, result.diagnostic()
         reports = axiom_reports(result.stdout)
         assert len(reports) == count, result.diagnostic()
@@ -78,3 +79,15 @@ def test_delete_trigger_removes_an_unrelated_row(runtime_root: Path, tmp_path: P
     the delete, that a session of another customer exists before and is gone after the successful
     delete, and that the same run without the trigger keeps it."""
     check_module_chain(runtime_root, tmp_path, (("PurgeTriggerCounterexample", 2),))
+
+
+def test_added_customer_claim_over_every_database(runtime_root: Path, tmp_path: Path) -> None:
+    """The guide's claim about the program that uses a result is proved for every admitted database with
+    the stated site (schema, resolution without rules, affinities, and a modeled query and insert for every
+    value that the query returns), every name and email: when the program reports success, a customer with
+    the name exists. The fixture shows the site on a database, where the kernel runs the program and finds
+    the customer, and keeps the counterexample that the site excludes: a trigger that removes the new
+    customer after a successful insert. The instance module needs a longer timeout than the others,
+    because the kernel evaluates the model's run of the insert for every environment (about 40 s)."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("AddCustomerQueries", 0), ("AddCustomerClaims", 1), ("AddCustomerInstances", 2)), timeout=300)
