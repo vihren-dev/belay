@@ -21,10 +21,13 @@ UNMODELED = {"source-compound-representative-uncertain", "source-limit-uncertain
 """Source membership or evaluation failures for which D5 requires refusal."""
 UNMODELED_COMMON_TABLES = {
     "cte-recursive", "cte-recursive-union", "cte-recursive-inner-name", "cte-recursive-empty-arguments",
-    "cte-recursive-arguments", "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write",
-    "cte-materialized", "cte-not-materialized", "cte-with-recursive-nonrecursive", "cte-with-recursive-circular"}
-"""CTE cases that stay outside the model: recursion and the RECURSIVE keyword (owner decision of
-2026-10-24), materialization hints, a subquery that reads a written table, and uncertain membership."""
+    "cte-recursive-arguments", "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write"}
+"""CTE cases that the model refuses after translation: recursion without the RECURSIVE keyword
+(owner decision of 2026-10-24), a subquery that reads a written table, and uncertain membership."""
+REFUSED_BY_THE_FRONTEND = {"cte-materialized", "cte-not-materialized", "cte-with-recursive-nonrecursive",
+                           "cte-with-recursive-circular"}
+"""CTE cases that the text frontend refuses, so that no model case exists to check in the kernel:
+the RECURSIVE keyword (owner decision of 2026-10-24) and materialization hints."""
 
 
 @pytest.mark.parametrize("common_tables", [False, True], ids=["derived", "common-tables"])
@@ -39,6 +42,12 @@ def test_query_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path: 
     assert [record["name"] for record in records] == [case.name for case in source.definitions()]
     resolved_ids(records, json.loads((ROOT / "conformance/requirements-3.51.0.json").read_text()))
     translator = runtime_translator(runtime_root)
+    refused = [record for record in records if record["name"] in REFUSED_BY_THE_FRONTEND]
+    assert len(refused) == (len(REFUSED_BY_THE_FRONTEND) if common_tables else 0)
+    for record in refused:
+        case, answer = prepare(record, translator)
+        assert case is None and (answer["verdict"], answer["frontendStatus"]) == ("MODEL_UNSUPPORTED", "UNSUPPORTED"), answer
+    records = [record for record in records if record not in refused]
     prepared = []
     for record in records:
         case, answer = prepare(record, translator)
