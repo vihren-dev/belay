@@ -1,6 +1,6 @@
 # Status: checked SQL documentation blocks
 
-Created 2026-10-24. Status: OPEN. Implementation of the public handler is checked; the task stays open for part and task acceptance.
+Created 2026-10-24. Status: DONE (2026-10-25).
 Task: [task file](20261024-sql-doc-blocks.task.md).
 Specs: ADR17's checked SQL docstrings and ADR16 layer boundaries.
 
@@ -145,3 +145,20 @@ trigger or foreign-key constraint failures give the model's text) are stated abo
 `SqlDocGuide`. Focused Nix check of that refactor snapshot (`-k 'surface_sql_doc or
 surface_layers'`): 154 passed, 76 deselected, 22.70 seconds; report
 `/nix/store/2c3j895qgphqdbfmdqqvbw3i89kgjg4s-sqlite-verifier-test-surface-1`.
+
+## Acceptance
+
+Review `20261025T093900Z-5d6de3ca` of the refactor commit `5d6de3ca` found nothing. On that source
+(the later commits change only status and review records), the Nix gates passed:
+
+- `just test-full`: `/nix/store/yw7nj4f2b7xkbx3cyyafl0cagxpv47in-sqlite-verifier-test-reports`
+  (its log summaries show 472 and 230 passed).
+- `just verdict`: `/nix/store/fdyxvw89hvk8i7sa232c6is81sczb24d-sqlite-verifier-verdict`.
+- `just test-nix`: 71 passed, 1641 deselected.
+- `just test-scheduled-checks`:
+  `/nix/store/j37adzg25s32slqy03advda9hfd02dwx-sqlite-verifier-scheduled-check-reports`.
+
+Logs are `build/agent-logs/docblocks-*`. The judge lock and the frozen predictions are unchanged.
+The task is DONE. Needed outside this task: none known in the private guide; the guide text about
+`+error` messages should say what `SqlDocGuide` says (syntax, function and trigger or
+foreign-key constraint failures give the model's own text).
