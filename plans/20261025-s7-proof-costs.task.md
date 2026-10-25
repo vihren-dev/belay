@@ -91,8 +91,11 @@ budget unit). No outcome may turn missing data into zero.
    `Float` trace endpoints cannot represent exactly become `precision-unavailable`.
 5. **Usable only after a successful compile.** Records come from the compiled
    module file. A module with an error has no compiled file, and the tool reports
-   that and exits 2. A module that was compiled earlier and whose last compile
-   failed is not reported as measured (decision 4).
+   that and exits 2. The tool does not build. A module whose Lean file changed
+   after its compiled file was made is reported as stale, not as measured
+   (decision 4). The README says to run the tool after a successful `lake build`;
+   a failed build caused by something other than that file's text (an import or a
+   compiler option) is not detected.
 6. **Missing coverage is explicit.** For every library module that the tool
    reads, each named theorem that has no completed record is listed as
    `unmeasured`, including every theorem of a module compiled without
@@ -103,7 +106,8 @@ budget unit). No outcome may turn missing data into zero.
    compile has the same declaration types and values, the same messages, and no new
    axiom (`sorryAx`, `ofReduceBool`, native decision) as a native compile. The native
    trace line does not appear in the output. Compiler errors stay errors, with their
-   native text.
+   native text. The one exception is resource exhaustion that the instrumentation
+   itself causes: a proof near `maxHeartbeats` can exceed it (outcome 12).
 8. **Native async stays on.** Collection does not set `Elab.async`. Both async
    and sync compiles give attributed records: an expensive proof after a cheap
    one, and before it, shows its growth on its own theorem only.
@@ -199,8 +203,10 @@ ten times a cheap one; growth is detected; a count is an integer).
 
 Each coherent commit has focused checks and an independent review. A part ends
 with post-review `just test-full` and `just verdict`; the task end adds
-`just test-nix` and `just test-scheduled-checks`. Only Nix results are
-evidence. After an edit of `BelaySqlCheck.lean` run `lake build belay-sql-check`
+`just test-nix` and `just test-scheduled-checks`. The owner's rule is that
+the mutant suites run in CI and never locally; `CLAUDE.md` names
+`just test-scheduled` for this point, which also runs them (see the report on
+this task). Only Nix results are evidence. After an edit of `BelaySqlCheck.lean` run `lake build belay-sql-check`
 as well, because `just dev-build` does not build it. Frozen predictions, the
 judge and its lock stay unchanged.
 
@@ -218,8 +224,10 @@ Part 2 is outcomes 10-12 (checker, comparison, documentation, end-to-end).
   record set must not hold one body twice.
 - **Measuring.** The native `Elab.definition.value` trace nodes (`elabFunValues`
   in `Lean/Elab/MutualDef.lean`) are the boundary. Enabling them makes Lean print
-  them; the output must be restored. The trace label is the resolved declaration
-  name; keep the `Name`, not a printed string, so private names stay exact.
+  them; the output must be restored. The trace label is a formatted message, not a `Name`
+  (the prototype reads its text). Take the canonical `Name` of each declaration from
+  the command's own declaration information and correlate it with the label, so
+  that private and anonymous names stay exact.
   Proof tasks finish after the command returns, so the record set is completed
   at export (`Pending.finish` in the prototype) and the compiled file exists only
   for a successful compile.
@@ -231,7 +239,7 @@ Part 2 is outcomes 10-12 (checker, comparison, documentation, end-to-end).
   exclude a user's `theorem _name`. The S5 `Check.statements` shows one way to
   recognize names that a command declares; it belongs to S5 and stays read-only.
 - **Stale compiled files.** Lake can leave the previous compiled file when a
-  recompile fails. Decision 4 says how the tool notices.
+  recompile fails. Decision 4 says what the tool can notice.
 - **Checker size and layers.** `BelaySqlCheck.lean` is near 200 lines. Put pure
   parts (record, report, comparison) in Lake-free library modules that the
   checker imports, as `SqlCheckReport` does. A second Lake-importing module needs
@@ -289,8 +297,9 @@ named outcome.
    does both and combines the codes.
 4. **Stale compiled files.** Recommended: each record stores a hash of its
    module's source text, and the tool reports a module whose file changed as
-   unmeasured (outcome 5). Alternative: document that the user must run the tool
-   after a successful `lake build`.
+   stale; this detects source edits only, and the README tells users to run the
+   tool after a successful `lake build` (outcome 5). Alternative: no hash, and the
+   README instruction alone.
 5. **Other `declaration` handlers.** Recommended: the chain delegation in
    "Tricky points" (outcome 9). Alternative: delegate to `elabDeclaration` only and
    document that earlier third-party handlers are bypassed when collection is

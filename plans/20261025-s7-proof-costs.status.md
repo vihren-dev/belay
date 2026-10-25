@@ -35,3 +35,10 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   line in the compiler output. Wrote the task file with six owner decisions
   (installation, baseline file, failing conditions, stale compiled files,
   other handlers, unmeasured inventory).
+- 2026-10-25: review `20261025T160753Z-0bf2dd32` of the task file had four
+  musts (all R19): the source hash cannot detect a failed rebuild caused by
+  imports or options; instrumentation can exhaust `maxHeartbeats`, so message
+  equality needs that exception; the task-end command differs between
+  `CLAUDE.md` (`just test-scheduled`) and the owner's rule
+  (`just test-scheduled-checks`); the trace label is a formatted message, not a
+  `Name`. The task text now states each point.
