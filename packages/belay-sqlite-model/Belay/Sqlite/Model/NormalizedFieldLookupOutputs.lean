@@ -87,7 +87,8 @@ theorem translate_step_outputs (context : ResolveContext) (clock : Option Clock)
 
 /-- For every parameter value, the original lookup gives the same step output on the original
 connection and on a connection with the expanded database, at any clocks and indexes. The
-premises are those of {name}`translate_step_outputs`. Proof sketch: as there, with
+premises are those of {name}`translate_step_outputs` except that the stored name need not be absent
+from the columns: preservation never reads the new field. Proof sketch: as there, with
 {name}`results_preserve` in place of {name}`results_translate`. -/
 theorem preserve_step_outputs (context : ResolveContext) (clock : Option Clock) (before after : Nat)
     (connection expanded : Connection) (reference : Syntax.TableReference)

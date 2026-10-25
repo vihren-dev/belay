@@ -52,9 +52,10 @@ theorem Output.ofResults_singleton (result : List (List Value)) : Output.ofResul
   have erased : [result].eraseDups = [result] := by simp [List.eraseDups_cons]
   simp [Output.ofResults, erased, Resolved.stableSort, Resolved.insertStable]
 
-/-- For every statement that reads no clock, the output of its step does not depend on the clock
-of the run or on the index. Proof sketch: such a statement runs at the clock value 0 whatever the
-clock is ({name}`statementClock`). -/
+/-- For every statement that reads no clock, every connection, parameters and index, the output of
+its step with any clock is the output of the same step with no clock. The statement index is the same
+on both sides; the theorem does not relate different indexes. Proof sketch: such a statement runs at
+the clock value 0 whatever the clock is ({name}`statementClock`). -/
 theorem resolvedStepOutput_clock_free (clock : Option Clock) (index : Nat) (connection : Connection)
     (parameters : List Value) (statement : Resolved.Statement) (noClock : statement.readsClock = false) :
     resolvedStepOutput clock index connection parameters statement =

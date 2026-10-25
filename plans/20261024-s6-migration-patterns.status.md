@@ -558,3 +558,18 @@ logical axioms, and the retained counterexample and its native replay still pass
 evidence. R3/R19 self-review checked the plain-words statements of `Site` and both public
 theorems, the proof sketches, and that the trigger premise is the exact structural
 `triggersFiring` condition and is not strengthened.
+
+Source commit `3c6d698c3fe214292dc4a3f37de1c184f3da255a` received independent review
+`20261025T052741Z-3c6d698c`: two musts and one should. R2 (must) found that the docstring of
+`resolvedStepOutput_clock_free` claimed independence from the index, although the theorem
+compares outputs at the same index; R2 (must) found that the docstring of
+`preserve_step_outputs` listed the premises of `translate_step_outputs` but the theorem has no
+fresh-name premise; R5 (should) found that the fixture's `triggerAt` accepted every other
+statement. The fix commit corrects both docstrings and replaces `triggerAt` with the two
+explicit trigger definitions `insertTrigger` and `updateTrigger`, so `rfl` now checks the
+parsed triggers exactly. No formula changed. The development build
+(`build/agent-logs/s6-devbuild-2.log`) preceded the retried focused Nix check: **3 passed,
+95 deselected**, output
+`/nix/store/98s84xdk5k5snix7yywyp21y3g2l2s8k-sqlite-verifier-test-surface-1`, log
+`build/agent-logs/expansion-laws-focused-retry.log`. The eight new axiom reports still use only
+the ordinary logical axioms.

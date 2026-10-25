@@ -43,22 +43,33 @@ the translation laws. Proof sketch: kernel evaluation of the public success pred
 theorem original_domain : Migration.Domain (send expansion) (fun _ => True) initial := by
   exact ⟨True.intro, by decide +kernel⟩
 
-/-- The trigger that the statement at the given place of the counter example's expansion
-creates, as a name and a definition. The unused default is a placeholder for other places. -/
-def triggerAt (place : Nat) : Identifier × CatalogTrigger :=
-  match expansion.statements[place]? with
-  | some (.createTrigger name _ time event table condition body, _) =>
-    (name, { table, time, event, condition, body })
-  | _ => (name! "unused", { table := name! "unused", time := .after, event := .insert, body := [] })
+/-- The body of both triggers: copy the lowercase of the new email into the stored field of the
+changed row. -/
+def maintenanceBody : List Syntax.BodyStatement :=
+  [.update (name! "customers")
+    [(name! "email_lower", .call "lower" [.qualified (name! "NEW") (name! "email")])]
+    (some (.compare .eq (.identifier (name! "id") .none) (.qualified (name! "NEW") (name! "id"))))]
+
+/-- The trigger that runs after every INSERT into {lit}`customers`. -/
+def insertTrigger : Identifier × CatalogTrigger :=
+  (name! "customers_email_ins",
+    { table := name! "customers", time := .after, event := .insert, body := maintenanceBody })
+
+/-- The trigger that runs after an UPDATE of {lit}`email` in {lit}`customers`. -/
+def updateTrigger : Identifier × CatalogTrigger :=
+  (name! "customers_email_upd",
+    { table := name! "customers", time := .after, event := .update [name! "email"],
+      body := maintenanceBody })
 
 /-- The counter example's expansion is the general four-statement expansion of the table
-{lit}`customers` with the field {lit}`email_lower` over {lit}`email`, with its two CREATE
-TRIGGER statements and no bound values. Proof sketch: the parsed statements unfold to the
-general script's statements, so the equality holds by reflexivity. -/
+{lit}`customers` with the field {lit}`email_lower` over {lit}`email`, with the two
+CREATE TRIGGER statements of {name}`insertTrigger` and {name}`updateTrigger` and no bound values.
+Proof sketch: the parsed statements and the general script's statements are the same terms, so
+the equality holds by reflexivity. -/
 theorem counter_expansion_is_general :
     expansion =
       NormalizedFieldExpansion.expansion (name! "customers") (name! "email_lower") (name! "email")
-        (triggerAt 2) (triggerAt 3) [] [] [] [] := by
+        insertTrigger updateTrigger [] [] [] [] := by
   rfl
 
 /-- The table of the one-customer database at catalog position 0. -/
@@ -98,7 +109,7 @@ theorem sample_lookup_translates (value : Value) :
   obtain ⟨site⟩ := sample_has_site
   rw [counter_expansion_is_general]
   exact NormalizedFieldExpansion.queryTranslates (name! "customers") none (name! "id") (name! "email")
-    (name! "email_lower") "id" 1 value (triggerAt 2) (triggerAt 3) [] [] [] []
+    (name! "email_lower") "id" 1 value insertTrigger updateTrigger [] [] [] []
     sample ⟨site⟩ environment
     complete_environment
 
@@ -115,7 +126,7 @@ theorem sample_lookup_preserved (value : Value) :
   obtain ⟨site⟩ := sample_has_site
   rw [counter_expansion_is_general]
   exact NormalizedFieldExpansion.queryPreserves (name! "customers") none (name! "id") (name! "email")
-    (name! "email_lower") "id" 1 value (triggerAt 2) (triggerAt 3) [] [] [] []
+    (name! "email_lower") "id" 1 value insertTrigger updateTrigger [] [] [] []
     sample ⟨site⟩ environment
     complete_environment
 
