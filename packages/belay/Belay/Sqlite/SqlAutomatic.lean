@@ -43,16 +43,18 @@ private def checkStatement (statement : Statement) (excluded : Array Name) :
       return { outcome, exampleText }
 
 /-- Emit only checked results, using a zero-width native suggestion after the command.
-The original false statement keeps its error until edited; the added example is independent. -/
+The original false statement keeps its error until edited; the added example is independent.
+An unknown result has no certificate, so it reports nothing. -/
 private def reportStatement (command : Syntax) (statement : Statement)
     (result : AutomaticResult) : TermElabM Unit :=
   withEnv statement.context.env do
-    if let .refuted .. := result.outcome.result then
-      logErrorAt statement.ref (← describe result.outcome)
+    let title ← match result.outcome.result with
+      | .refuted .. =>
+        logErrorAt statement.ref (← describe result.outcome)
+        pure "Add as a regression example"
+      | .proved .. => pure "Add checked proof example"
+      | .unknown => return
     let position := command.getTailPos?.getD 0
-    let title := match result.outcome.result with
-      | .refuted .. => "Add as a regression example"
-      | _ => "Add checked proof example"
     Meta.Tactic.TryThis.addSuggestion statement.ref
       { suggestion := result.exampleText, toCodeActionTitle? := some (fun _ => title) }
       (origSpan? := some (Syntax.ofRange { start := position, stop := position }))
