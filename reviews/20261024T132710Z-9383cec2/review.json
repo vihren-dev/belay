@@ -1,0 +1,46 @@
+{
+  "caller": "codex",
+  "commit": "9383cec201c073ebb8a4225d7a72e8c47edb6d54",
+  "date": "2026-10-24T13:27:10+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261024-surface-editor.status.md",
+    "plans/20261024-surface-editor.task.md",
+    "reviews/20261024T132607Z-11cc3da1/resolution-1-20261024T132654Z.json",
+    "reviews/20261024T132607Z-11cc3da1/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261024T132710Z-9383cec2#1",
+      "line": 13,
+      "path": "plans/20261024-surface-editor.task.md",
+      "rule": "R18",
+      "severity": "should",
+      "text": "The added paragraph treats the owner's \"continue until ADR 0017 is complete\" instruction as the present problem for the editor features. That instruction does not name the editor features, and ADR 0017 lists them under \"Not decided here\" (line 268), so the paragraph does not meet R18's evidence rule. It also leaves the earlier finding's other half open: the task still requires outcomes such as semantic coloring and order warnings, and no S2/S3 user or blocked slice needs those. Fix: name a concrete owner request or a blocked S2–S6 slice for each editor feature, or cut the features that have none."
+    }
+  ],
+  "id": "20261024T132710Z-9383cec2",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -30,8 +30,16 @@ Further accepted on 2026-10-24: foreign-key actions use the selected mapping
 for their child targets too. Correct CASCADE, SET NULL and SET DEFAULT, together
 with assigned/changed columns used by constraints, generated columns and
 UPDATE OF triggers. Preserve repeated selected targets and leave unused declared
-columns unchanged, as pinned SQLite does. These mapped-NULL and mapped-action
-corrections are the planned execution changes; add native regressions for both.
+columns unchanged, as pinned SQLite does. Add native regressions for both
+mapped-NULL and mapped-action corrections.
+
+Further accepted on 2026-10-25: correct ADD COLUMN's REFERENCES default check.
+With enforcement on, a nonempty table rejects a REFERENCES column whose default
+is neither absent nor a literal NULL. An empty table can accept it. Preserve
+SQLite's default-form distinction: `NULL` and `(NULL)` qualify, but `(+NULL)`
+does not qualify merely because it evaluates to NULL. This correction, with
+native regressions and updated preservation laws, joins the planned execution
+changes. Do not replace the correction with a NULL-only proof restriction.
 
 ## Required outcomes
 
@@ -90,6 +98,9 @@ corrections are the planned execution changes; add native regressions for both.
    preservation for CREATE TABLE with a forward reference or DROP INDEX.
    Expose individual atom laws and convenience combined laws. The existing
    `Admitted` and `Valid` preservation theorems continue to hold.
+   ADD COLUMN uses the corrected enforcement, table-emptiness and default-form
+   checks. Its rejection leaves both catalog and rows unchanged; successful
+   cases still require the schema/mapping premises of the separate atoms.
 7. **A usable proof boundary.** Reuse the existing row/run preservation machinery
    where its contract fits. Foreign-key facts depend on more than one table;
    do not force them into a table-local `WriteLaws` premise that hides parent
@@ -141,6 +152,15 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   succeeds with enforcement on, but foreign_key_check then reports the child.
   Preserve SQLite's behavior and state the missing comparison premise in the
   conditional theorem; do not assume final row validity to conceal this case.
+- Compare ADD COLUMN REFERENCES with enforcement on/off and empty/nonempty
+  tables. Retain the mismatch where a nonempty child accepts `DEFAULT 99` in
+  the old model even when native rejects it, including a matching parent 99.
+  Cover omitted default, `NULL`, `(NULL)`, `(+NULL)`, a cast producing NULL,
+  numeric constants, parenthesized expressions and CURRENT_TIMESTAMP wherever
+  the existing syntax supports them. Check the native error precedence and
+  unchanged catalog/rows after rejection, as well as successful controls.
+  Evaluate defaults through the existing code; their value alone must not
+  erase the syntax distinction that the native REFERENCES check observes.
 - The statement/run matrix covers foreign keys on/off, immediate constraints,
   NO ACTION/RESTRICT/CASCADE/SET NULL/SET DEFAULT, triggers, conflict outcomes,
   explicit transactions and rollback. Unsupported deferred constraints retain
@@ -151,7 +171,8 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   `sorryAx` and `ofReduceBool`; no native computation certifies a theorem.
 - Capture a frozen-prediction baseline before model edits. Classify every changed
   prediction against pinned native SQLite; only changes explained by the accepted
-  mapped-NULL and mapped-action corrections are planned. Preserve all mustAgree claims;
+  mapped-NULL, mapped-action and ADD COLUMN default corrections are planned.
+  Preserve all mustAgree claims;
   do not weaken a claim to hide a regression. Native probes use the pinned 3.51.0 build. Use
   existing test infrastructure, finite subprocess timeouts and real Nix suite
   registration. Add authored native regression evidence through the existing
@@ -164,8 +185,9 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   [the build-boundary status](20261024-text-build-boundaries.status.md).
   Status and PR acceptance claims cite only Nix results.
 
-Two acceptance parts: mapped-NULL/action corrections, split API, checks, pragma correspondence and frames;
-the statement/run preservation laws and downstream proof examples. Both parts
+Two acceptance parts: mapped-NULL/action corrections, split API, checks, pragma
+correspondence and frames; the ADD COLUMN default correction, statement/run
+preservation laws and downstream proof examples. Both parts
 are required for slice 5 to be complete. The implementer chooses the work units.
 
 ## Existing code and constraints
@@ -177,6 +199,9 @@ All paths below are below `packages/belay-sqlite-model/Belay/Sqlite/Model/`:
 `DatabaseWriteLaws.lean`, `RowEngineFacts.lean`, `RunHolds.lean` and
 `ScriptRunHolds.lean`. Surface export: `packages/belay/Belay/Sqlite/Database.lean`.
 Native selection/actions: `sqlite3FkLocateIndex` and `fkActionTrigger` in `parser/upstream/sqlite3.c`.
+`sqlite3AlterFinishAddColumn` checks the default's syntax before emitting the
+nonempty-table REFERENCES error. Reuse the existing ADD COLUMN resolution and
+execution boundary; keep its table-dependent check in the actual run path.
 
 `Catalog.drop` renumbers positions. Parent selection can depend on index order.
 `matchIndex` permits repeated parent columns, as the accepted slice-4 decision
@@ -187,6 +212,7 @@ can satisfy it even when the parent schema is incompatible. Prove correspondence
 to the corrected native behavior rather than strengthening the row fact silently.
 
 Stop and report a specification finding if an execution-semantic change is
-needed beyond the accepted mapped-NULL/action corrections, if the split cannot express SQLite's rules, or if a
+needed beyond the accepted mapped-NULL/action and ADD COLUMN default corrections,
+if the split cannot express SQLite's rules, or if a
 preservation claim has a native counterexample not handled by its stated
 conditions. Continue independent work while the owner decides.

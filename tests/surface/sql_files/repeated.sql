@@ -1,0 +1,1 @@
+SELECT :a, :a, $b;

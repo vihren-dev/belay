@@ -32,7 +32,7 @@ theorem Catalog.findTrigger_some {catalog : Catalog} {name : Identifier} {positi
   have located := List.mem_zipIdx_iff_getElem?.mp inside
   simp only at located passes
   cases entry : object.entry with
-  | table _ => simp [entry] at passes
+  | table _ | view _ => simp [entry] at passes
   | index _ => simp [entry] at passes
   | trigger found =>
     simp only [entry] at passes

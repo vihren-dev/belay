@@ -12,7 +12,7 @@ namespace Belay.Sqlite.Model
 
 /-- For the given property of a table at a catalog position and the given database: at every
 position at which {name}`Database.table` gives a table, the property holds for that position
-and table. Positions that hold an index or a trigger, and positions past the end, impose nothing,
+and table. Positions that hold an index, view or trigger, and positions past the end, impose nothing,
 so a database without tables satisfies every such property. -/
 def Database.EveryTable (property : Nat → Table → Prop) (database : Database) : Prop :=
   ∀ position table, database.table position = some table → property position table
@@ -83,7 +83,7 @@ theorem Table.Admitted.ofEmpty {table : Table} (empty : table.rows = []) : table
 
 /-- For the given database, require both:
 * {lit}`rows` has exactly one entry for each catalog object.
-* At every position without a table (an index, a trigger, or past the end), the stored row
+* At every position without a table (an index, view, trigger, or past the end), the stored row
   list is empty. -/
 def Database.RowsShaped (database : Database) : Prop :=
   database.rows.length = database.catalog.length ∧

@@ -14,10 +14,11 @@ namespace Belay.Sqlite.Model.Resolved
 ({name}`QuerySource.join`) from the outer row, so each row starts with the outer cells; none
 when a table is missing. An outer row with fewer cells than {name}`Query.outer`, such as the
 row without cells over which the model evaluates a constant term, is filled with NULL, so the
-subquery's own cells keep their positions. With no outer cells this is {name}`Query.source`. -/
+subquery's own cells keep their positions. Excess cells are discarded at {name}`Query.outer`,
+so the supplied row cannot shift the query's own cells. With no outer cells this is {name}`Query.source`. -/
 def Query.sourceAfter (context : EvalContext) (outer : List Value) (query : Query) (database : Database) :
     Option SourceRows :=
-  let cells := outer ++ List.replicate (query.outer - outer.length) .null
+  let cells := outer.take query.outer ++ List.replicate (query.outer - outer.length) .null
   query.sources.foldlM (QuerySource.join context database)
     { rows := [cells], width := cells.length, fault := .none, outer := cells }
 

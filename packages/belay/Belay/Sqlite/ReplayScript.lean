@@ -23,11 +23,10 @@ structure ScriptText where
   /-- Translated statements with the original ranges and parameter names. -/
   items : Array Translation.ParameterizedStatement
 
-/-- Validate explicit or recovered SQL against a script's actual statement syntax. Rebinding
-is retained because the value is evaluated from the complete supplied expression. -/
-def scriptText (expression : Expr) (text : Option String := none)
-    (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) : TermElabM ScriptText := do
-  let value ← scriptValue expression excluded excludedLocals
+/-- Match explicit or recovered SQL with an already checked script value. This function
+checks syntax and recovers ranges; the caller is responsible for the value's equality with
+its original expression. An explicit text supports hand-built script terms. -/
+def scriptTextOf (expression : Expr) (value : Script) (text : Option String := none) : TermElabM ScriptText := do
   let source ← sourceOf scriptSourceKey expression
   let some text := text.or (source.map (·.text))
     | throwError "no original SQL is available for this script; supply its SQL text"
@@ -36,6 +35,12 @@ def scriptText (expression : Expr) (text : Option String := none)
   if items.toList.map (·.statement.value) != value.statements.map (·.1) then
     throwError "the supplied SQL does not represent this script; supply the original SQL"
   return { value, text, items }
+
+/-- Validate explicit or recovered SQL against a script's actual statement syntax. Rebinding
+is retained because the value is evaluated from the complete supplied expression. -/
+def scriptText (expression : Expr) (text : Option String := none)
+    (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) : TermElabM ScriptText := do
+  scriptTextOf expression (← scriptValue expression excluded excludedLocals) text
 
 /-- Render SQLite shell bindings without rewriting the original query. The shell's parameter
 table holds typed values; numeric slots use their assigned numbers and named slots retain
@@ -98,6 +103,28 @@ def databaseReport (database : Expr) (text : Option String := none)
   let (_, construction) ← Replay.construction database text excluded excludedLocals
   return { construction, sqlite := construction ++ "\n;\n" }
 
+/-- Assemble a replay from previously checked construction, source and observations.
+This formatter enforces the shell binding-table restriction and retains original statements;
+constructing a report does not itself certify any of these inputs. -/
+def render (construction : String) (source : ScriptText) (outputs : List Output) : TermElabM Report := do
+  let bound := source.items.any (fun item => !item.parameters.isEmpty)
+  if bound && (mentionsBindingTable construction || mentionsBindingTable source.text) then
+    throwError "SQL replay is unavailable: the SQL can observe or change the shell binding table"
+  let mut sqlite := ".bail off\n" ++ construction ++
+    "\n;\nPRAGMA foreign_keys=OFF;\nPRAGMA recursive_triggers=OFF;\n" ++
+    (if bound then ".parameter init\n" else "")
+  for (item, (_, values)) in source.items.toList.zip source.value.statements do
+    checkSystem "SQL replay formatting"
+    let some bindings := bindingsSql item.parameters values
+      | throwError "a parameter has no exact SQLite spelling; use a native SQLite value"
+    let (start, stop) := statementRange item.statement
+    let original := String.fromUTF8! (source.text.toUTF8.extract start stop)
+    sqlite := sqlite ++ bindings ++ original ++ "\n;\n"
+  return { construction
+           original := some source.text
+           bindings := source.value.statements.map (·.2)
+           outputs, sqlite }
+
 /-- Prepare a script replay from checked values and validated original text. Explicit text
 inputs remain available for hand-built terms. The shell continues after SQL errors, matching
 the script runner, and resets construction settings before the claim's statements. -/
@@ -108,21 +135,6 @@ def scriptReport (database script : Expr) (databaseText scriptSource : Option St
   let outputs ← match observations value source.value with
     | .ok outputs => pure outputs
     | .error reason => throwError "SQL replay is unavailable: {reason}"
-  let bound := source.items.any (fun item => !item.parameters.isEmpty)
-  if bound && (mentionsBindingTable construction || mentionsBindingTable source.text) then
-    throwError "SQL replay is unavailable: the SQL can observe or change the shell binding table"
-  let mut sqlite := ".bail off\n" ++ construction ++
-    "\n;\nPRAGMA foreign_keys=OFF;\nPRAGMA recursive_triggers=OFF;\n" ++
-    (if bound then ".parameter init\n" else "")
-  for (item, (_, values)) in source.items.toList.zip source.value.statements do
-    let some bindings := bindingsSql item.parameters values
-      | throwError "a parameter has no exact SQLite spelling; use a native SQLite value"
-    let (start, stop) := statementRange item.statement
-    let original := String.fromUTF8! (source.text.toUTF8.extract start stop)
-    sqlite := sqlite ++ bindings ++ original ++ "\n;\n"
-  return { construction
-           original := some source.text
-           bindings := source.value.statements.map (·.2)
-           outputs, sqlite }
+  render construction source outputs
 
 end Belay.Sqlite.Replay

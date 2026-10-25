@@ -44,6 +44,7 @@
     "tests/conformance_transaction_evidence_test.py"
   ],
   "harness": [
+    "tests/mutation_edits_test.py",
     "tests/conformance_acquisition_test.py",
     "tests/conformance_restriction_examples_test.py",
     "tests/conformance_authored_boundaries_test.py",
@@ -121,12 +122,21 @@
   "surface": [
     "tests/surface_guide_test.py",
     "tests/surface_claims_test.py",
+    "tests/surface_views_test.py",
     "tests/surface_schema_claims_test.py",
     "tests/surface_success_test.py",
     "tests/surface_s6_foundations_test.py",
     "tests/surface_execution_test.py",
     "tests/success_theorems_test.py",
     "tests/surface_parameters_test.py",
+    "tests/surface_sql_files_test.py",
+    "tests/surface_sql_file_root_test.py",
+    "tests/surface_sql_file_forms_test.py",
+    "tests/surface_sql_records_test.py",
+    "tests/surface_sql_check_test.py",
+    "tests/surface_sql_check_roots_test.py",
+    "tests/surface_sql_lake_inputs_test.py",
+    "tests/surface_editor_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",
@@ -138,6 +148,11 @@
     "tests/surface_replay_test.py",
     "tests/surface_sql_docs_test.py",
     "tests/surface_sql_doc_blocks_test.py",
-    "tests/surface_foreign_key_atoms_test.py"
+    "tests/surface_foreign_key_atoms_test.py",
+    "tests/surface_search_test.py",
+    "tests/surface_check_command_test.py",
+    "tests/surface_automatic_test.py",
+    "tests/surface_automatic_editor_test.py",
+    "tests/surface_automatic_cancel_test.py"
   ]
 }

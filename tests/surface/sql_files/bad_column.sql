@@ -1,0 +1,1 @@
+SELECT nmae FROM users;

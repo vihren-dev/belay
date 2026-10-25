@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T09:15:41+00:00",
+  "finding": "20261025T091532Z-cdca869a#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the header now says the task is integrated with S5"
+}

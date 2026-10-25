@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleQueryLaws
 import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.QuerySourceCopyLaws
 
 set_option doc.verso true
 
@@ -61,8 +62,9 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
     resolveSelect context catalog query [] = .ok (.query q [], catalog) := by
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
+  have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
   unfold resolveSelect
-  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
   simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
     Except.bind, Except.mapError, Pure.pure, Except.pure]
@@ -174,8 +176,9 @@ theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (cat
     resolveSelect context catalog query [] = .ok (.prepareError (.expression error), catalog) := by
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
+  have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
   unfold resolveSelect
-  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
   simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body,
     issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]

@@ -8,6 +8,8 @@ import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.SqlDiagnostics
 import Belay.Sqlite.EvalDatabase
 import Belay.Sqlite.SqlBang
+import Belay.Sqlite.SqlFileSyntax
+import Belay.Sqlite.SqlModule
 import Belay.Sqlite.Run
 import Belay.Sqlite.Program
 import Belay.Sqlite.Env
@@ -66,6 +68,10 @@ import Belay.Sqlite.SampleShrink
 import Belay.Sqlite.CounterexampleShrink
 import Belay.Sqlite.SampleScriptHints
 import Belay.Sqlite.ReplayScript
+import Belay.Sqlite.SqlCheckCommand
+import Belay.Sqlite.SqlRefuteSearch
+import Belay.Sqlite.CheckOperation
+import Belay.Sqlite.SqlAutomatic
 import Belay.Sqlite.SqlDocBlock
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser

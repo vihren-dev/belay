@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T07:08:32+00:00",
+  "finding": "20261025T065939Z-426fecad#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "the unreadable-module case now has a test (Nix surface run, 1 passed, /nix/store/nzqzyma78kp58bf5nhgn4ayc5znffy72-sqlite-verifier-test-surface-1); the unknown and ambiguous package branches need a compiled module with a forged record, because the module walk fails first for any real removed dependency; they stay untested until a real path reaches them"
+}

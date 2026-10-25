@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T07:52:53+00:00",
+  "finding": "20261025T074257Z-242ef6ab#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the checker now groups records by resolved file and hash (groupSources); a new fixture covers two modules that reach one file by different option values"
+}

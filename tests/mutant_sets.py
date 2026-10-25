@@ -6,19 +6,21 @@
 is an input of each, so no test file imports another.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
 from types import ModuleType
 
 from conformance.native_replay import prepare
 from conformance.sql_text import runtime_translator
 from conformance.resolve_mutants import measure
+from conformance.mutation_edits import Mutation
 
 ROOT = Path(__file__).resolve().parents[1]
 """The repository root, which holds the packages that each mutant copies."""
 
 
-Mutants = dict[str, tuple[str, str, str]]
-"""A mutant table: the file, the exact text and the replacement of each mutant."""
+Mutants = Mapping[str, Mutation]
+"""A mutant table of single source edits and explicitly grouped logical faults."""
 Targets = dict[str, tuple[str, ...]]
 """The target cases of each mutant."""
 
@@ -27,7 +29,7 @@ def measure_set(runtime_root: Path, modules: list[ModuleType], tables: list[tupl
     """Every target case of the mutant tables, recorded natively from the case modules, agrees
     with the unchanged model, and every mutant changes the verdict of its target case. Only the
     target cases are recorded and classified: the coverage test kernel-checks every case."""
-    mutants: Mutants = {}
+    mutants: dict[str, Mutation] = {}
     targets: Targets = {}
     for table, table_targets in tables:
         assert not set(table) & set(mutants), "mutant names must be unique"

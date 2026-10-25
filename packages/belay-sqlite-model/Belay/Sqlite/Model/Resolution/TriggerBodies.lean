@@ -46,22 +46,24 @@ def bodyStep : StatementResolution → Except NodeRestriction (Except PrepareErr
 
 /-- Resolve a SELECT of a trigger's body as {lit}`resolveSelect` does, with the trigger's rows as
 the outer cells of its query, before the cells of its own sources, as a subquery has them.
-Nested WITH definitions use the same per-use expansion and recursion checks. -/
+Nested WITH and stored views use the same indexed expansion. View bodies retain
+trigger names while hiding ordinary caller names. -/
 def resolveBodySelect (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) : StatementResolution :=
   let dqs := context.profile.dqsDml
   let resolved : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
-    let expanded ← prepareCommonTables catalog 8 query subqueries
+    let expanded ← prepareQuerySources catalog 8 query subqueries
     let query := expanded.query
     let subqueries := expanded.copies.queries.toList
     let columnNames := expanded.copies.columnNames
+    let viewRoots := expanded.copies.viewRoots
     let result : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
       let (pending, inner) ← resolveSources catalog query.source query.joins row.width
         (fun index => sourceExpansion catalog 8 subqueries none index columnNames)
       let scope := Scope.enclose (row.scope 0) inner
       let main : QueryScope := { scope, pending, outer := row.width, outerAliases := [],
                                  aliases := (resultAliases scope query.columns).filterMap id }
-      let (resolvedSubqueries, shapes) ← resolveSubqueries dqs catalog 8 main subqueries columnNames
+      let (resolvedSubqueries, shapes) ← resolveSubqueries dqs catalog 8 main subqueries columnNames viewRoots
       let main ← (main.refresh catalog shapes query).mapError .value
       let (resolvedQuery, _) ← (resolveQueryBody dqs main.scope { later := shapes, outer := row.width } [] main.pending query).mapError .value
       if let some issue := expanded.copies.recursionIssue 8 resolvedSubqueries then throw (.value issue)
@@ -108,8 +110,8 @@ the trigger's rows: an INSERT around no table, with {lit}`ON CONFLICT DO UPDATE`
 of a trigger form; an UPDATE and a DELETE around the written table; a SELECT whose one result
 column raises as {name}`resolveRaiseSelect`, when it has no other clause than {lit}`WHERE`, and
 the restriction of a {lit}`RAISE` form when it has one; and another SELECT as
-{name}`resolveBodySelect`. Nested WITH definitions in expression subqueries use the
-same expansion as ordinary statements. -/
+{name}`resolveBodySelect`. Nested WITH definitions and stored views in expression subqueries use the
+same expansion as ordinary statements, retaining trigger-cell positions. -/
 def resolveBodyStatement (context : ResolveContext) (catalog : Catalog) (row : TriggerRow) :
     Syntax.BodyStatement → Except NodeRestriction (Except PrepareError Resolved.Step)
   | .insert table columns rows conflicts algorithm subqueries =>

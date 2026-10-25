@@ -5,6 +5,7 @@ import Belay.Sqlite.Script
 import Belay.Sqlite.SqlLiteral
 import Belay.Sqlite.SqlParameters
 import Belay.Sqlite.SqlSource
+import Belay.Sqlite.SqlParameterInfo
 
 set_option doc.verso true
 
@@ -53,12 +54,13 @@ def scriptExpr (items : Array Translation.ParameterizedStatement) : Expr :=
 /-- The type {lit}`Value` of the model, which every parameter's value has. -/
 def valueType : Expr := Lean.mkConst ``Belay.Sqlite.Model.Value
 
-/-- The value of a parameter {lit}`$x`: the Lean variable {lit}`x`, elaborated where the script is
-and outside the arguments of the script's function, and coerced to {lit}`Value`. An error is at
+/-- The original Lean expression and the coerced {lit}`Value` of a parameter {lit}`$x`.
+Elaboration happens where the script is and outside its generated arguments, so editor
+information retains the captured expression's original type. An error is at
 the parameter in the SQL text ({name}`textRange`): a name that does not resolve, and a type
 without a coercion to {lit}`Value`. -/
 def variableValue (literal : Syntax) (text : String) (name : String) (parameter : Translation.Parameter) :
-    TermElabM Expr := do
+    TermElabM (Expr × Expr) := do
   let ref := textRange literal text parameter.start parameter.stop
   let value ← try
       let value ← withoutErrToSorry <| elabTerm (mkIdentFrom ref (Name.mkSimple name)) none
@@ -70,29 +72,27 @@ def variableValue (literal : Syntax) (text : String) (name : String) (parameter 
   try withRef ref do
       let coerced ← ensureHasType valueType value
       synthesizeSyntheticMVarsNoPostponing
-      instantiateMVars coerced
+      return (value, ← instantiateMVars coerced)
   catch _ =>
     throwErrorAt ref m!"the parameter {parameter.text} is the Lean variable {name} of type {type}, which has no coercion to Value; give {name} the type Value, String or Int64, or convert it to a Value"
 
-/-- The term of the script of the statements: {name}`scriptExpr` for a text without parameters;
-otherwise the function of the arguments ({name}`planParameters`) whose value is
-{lit}`Script.withValues` of {name}`scriptExpr` with one list for each statement, with the value of
-each number from 1 to the statement's largest one: an argument, the value of a variable
-({name}`variableValue`), or NULL for a number without a parameter. An error of the plan is at its
-parameter in the SQL text. The resulting script carries source metadata for replay; consumers
-check that text against the actual statements and bindings before using it. -/
-def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
-    TermElabM Expr := do
-  let plan ← match planParameters (items.toList.map (·.parameters)) with
-    | .ok plan => pure plan
-    | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
+/-- Construct the script function from a checked parameter plan and its captured variable
+values, each with its original Lean expression and its coerced {lit}`Value` ({name}`variableValue`).
+Inline and file SQL use the same numbering, sparse NULL slots and lambda construction. The caller
+supplies source metadata through {lit}`annotate`; it does not change the value. With an editor
+source ({name}`SqlEditorSource`), the parameters in the SQL text get editor information; a file
+script has none, because its text is not a Lean literal. -/
+def scriptTermFromPlan (items : Array Translation.ParameterizedStatement) (plan : ParameterPlan)
+    (variables : List (ParameterSource × Expr × Expr)) (editor? : Option SqlEditorSource)
+    (annotate : Expr → Expr) : TermElabM Expr := do
   let script := scriptExpr items
-  let fileName ← getFileName
-  if plan.slots.all (·.isEmpty) then return withSource scriptSourceKey literal text fileName script
-  let variables ← plan.variables.mapM fun (name, parameter) => do
-    return (ParameterSource.variable name, ← variableValue literal text name parameter)
+  if plan.slots.all (·.isEmpty) then return annotate script
   withLocalDeclsDND (plan.arguments.map fun name => (Name.mkSimple name, valueType)).toArray fun arguments => do
-    let sources := variables ++ (plan.arguments.map ParameterSource.argument).zip arguments.toList
+    let argumentSources := (plan.arguments.map ParameterSource.argument).zip arguments.toList
+    let sources := variables.map (fun (source, _, value) => (source, value)) ++ argumentSources
+    if let some editor := editor? then
+      emitSqlParameterInfo editor items plan
+        (variables.map (fun (source, original, _) => (source, original)) ++ argumentSources)
     let null := Lean.mkConst ``Belay.Sqlite.Model.Value.null
     -- Each source of a slot is in `sources`: the plan adds a variable or an argument for each one.
     let slotValue : Slot → Expr
@@ -100,8 +100,22 @@ def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.Par
       | .source source => (sources.lookup source).getD null
     let lists ← mkListLit (mkApp (Lean.mkConst ``List [Level.zero]) valueType)
       (← plan.slots.mapM fun slots => mkListLit valueType (slots.map slotValue))
-    mkLambdaFVars arguments (withSource scriptSourceKey literal text fileName
-      (mkApp2 (Lean.mkConst ``Script.withValues) script lists))
+    mkLambdaFVars arguments (annotate (mkApp2 (Lean.mkConst ``Script.withValues) script lists))
+
+/-- The inline script term, with dollar variables captured from Lean and all other parameters
+as arguments in first-appearance order. Numbered gaps bind NULL. Plan and variable errors point
+into the SQL literal. The term retains source metadata; replay checks it against the actual
+statements and bindings. File elaboration uses the same {name}`scriptTermFromPlan` constructor. -/
+def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
+    TermElabM Expr := do
+  let plan ← match planParameters (items.toList.map (·.parameters)) with
+    | .ok plan => pure plan
+    | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
+  let variables ← plan.variables.mapM fun (name, parameter) => do
+    return (ParameterSource.variable name, ← variableValue literal text name parameter)
+  let fileName ← getFileName
+  scriptTermFromPlan items plan variables (some (.literal literal text))
+    (withSource scriptSourceKey literal text fileName)
 
 /-- Elaborate {lit}`sql "SQL"` to the script of its statements ({name}`scriptTerm`). -/
 @[term_elab sqlTerm]

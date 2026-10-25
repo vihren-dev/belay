@@ -5,9 +5,9 @@ set_option doc.verso true
 
 /-! The values of the parameters of a checked SQL documentation block. A block binds its
 parameters in one of two ways. With named bindings, each parameter name is a header argument,
-and the shared parameter plan decides the numbers, so {lit}`:a` and {lit}`?1` bind as in a
-{lit}`sql` term. With the explicit list, the header gives one list of values for each statement
-and no name is needed. This module decides what is wrong with the inputs, as problems at the
+and the shared parameter plan in file mode decides the numbers. A {lit}`$name` is an argument like
+the others and never a Lean variable, and {lit}`:a` and {lit}`?1` bind as in a {lit}`sql` term. With the explicit list, the header gives one list of values for each
+statement and no name is needed. This module decides what is wrong with the inputs, as problems at the
 SQL token or the header argument that the user can change. It does not elaborate Lean terms. -/
 
 namespace Belay.Sqlite.SqlDoc
@@ -71,7 +71,7 @@ argument that no parameter needs is a problem at the argument. -/
 def namedPlan (statements : List (List Parameter)) (supplied : List String) :
     Except (List Problem) ParameterPlan := do
   let required ← requiredNames statements.flatten
-  let plan ← match planParameters statements with
+  let plan ← match planParameters statements .file with
     | .ok plan => pure plan
     | .error diagnostic =>
       let hint := "; or bind the parameters of this block with the explicit list (values := ...)"

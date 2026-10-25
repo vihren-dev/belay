@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T08:27:13+00:00",
+  "finding": "20261025T075410Z-d34b1e68#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the earlier persistence sentence of the task now includes the relative option value and its module"
+}

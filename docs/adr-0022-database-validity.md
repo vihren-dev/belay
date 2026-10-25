@@ -104,6 +104,14 @@ Assigned/changed-column effects, including UPDATE OF triggers, use those actual
 targets. Slice 5 includes this correction and native regressions alongside the
 NULL check; it does not reinterpret a repeated mapping as positional declaration pairs.
 
+On 2026-10-25 the owner also accepted correcting ADD COLUMN REFERENCES defaults.
+With foreign-key enforcement on, a nonempty table rejects a new REFERENCES
+column unless its default is absent or literal NULL. The native check observes
+default syntax: `(NULL)` qualifies, while `(+NULL)` does not become acceptable
+because its computed value is NULL. Empty-table and enforcement-off cases retain
+their native behavior and other ADD COLUMN checks. Slice 5 includes the execution
+correction, pinned-native regressions and updated conditional preservation laws.
+
 Each atom has two forms: a proposition that a proof reads easily, and a check that computes,
 with a lemma that the two are equivalent. The atom is decidable through its check, so `decide`
 proves it for a concrete database. The checks of the constraint atoms are the functions that

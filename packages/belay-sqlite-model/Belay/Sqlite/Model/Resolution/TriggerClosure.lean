@@ -45,7 +45,7 @@ def Catalog.triggersFiring (catalog : Catalog) (request : FireRequest) : List (N
         if table == request.table && (triggerEvent shape.columns trigger.event).fires request.event then some (position, trigger)
         else none
       | none => none
-    | .table _ | .index _ => none
+    | .table _ | .view _ | .index _ => none
 
 /-- The triggers of the catalog that fire for the request, in the order in which SQLite prepares
 them: the {lit}`BEFORE` triggers, then the {lit}`AFTER` triggers, each newest first. Checked

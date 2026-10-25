@@ -86,14 +86,14 @@ theorem Catalog.key_of_declared {catalog : Catalog} {position : Nat} {checked : 
     (member : checked ∈ catalog.declaredIndexes position) :
     checked.key ∈ catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
-      | .table _ | .trigger _ => none := by
+      | .table _ | .view _ | .trigger _ => none := by
   obtain ⟨object, inCatalog, made⟩ := List.mem_filterMap.mp member
   refine List.mem_filterMap.mpr ⟨object, inCatalog, ?_⟩
   revert made
   cases object.entry with
   | index index =>
     cases chosen : (index.table == position && index.unique) <;> simp [chosen] <;> intro made <;> subst made <;> rfl
-  | table _ | trigger _ => simp
+  | table _ | view _ | trigger _ => simp
 
 /-- For every catalog, position and key of a unique index on the table at the position, as
 {name}`Catalog.uniqueKeys` lists them: an index of {name}`Catalog.declaredIndexes` has the key.
@@ -101,7 +101,7 @@ Proof sketch: the catalog object that gives the key also gives an index with it.
 theorem Catalog.declared_of_key {catalog : Catalog} {position : Nat} {key : UniqueKey}
     (member : key ∈ catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
-      | .table _ | .trigger _ => none) :
+      | .table _ | .view _ | .trigger _ => none) :
     ∃ checked ∈ catalog.declaredIndexes position, checked.key = key := by
   obtain ⟨object, inCatalog, made⟩ := List.mem_filterMap.mp member
   revert made
@@ -110,7 +110,7 @@ theorem Catalog.declared_of_key {catalog : Catalog} {position : Nat} {key : Uniq
     cases chosen : (index.table == position && index.unique) <;> simp [chosen] <;> intro made <;> subst made
     exact ⟨{ name := object.name, key := index.uniqueKey, replace := false, ascendingTies := false },
       List.mem_filterMap.mpr ⟨object, inCatalog, by simp [entry, chosen]⟩, rfl⟩
-  | table _ | trigger _ => simp
+  | table _ | view _ | trigger _ => simp
 
 /-- For every catalog, position, table name, table and index of {name}`Catalog.checkedIndexes`:
 the key of the index is in {name}`Catalog.uniqueKeys` of the table.

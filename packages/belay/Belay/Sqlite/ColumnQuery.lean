@@ -17,7 +17,8 @@ open Belay.Sqlite.Model
 /-- For every script whose first statement is {lit}`SELECT 1 WHERE c` with the subquery {lit}`SELECT e FROM t WHERE p`,
 where the catalog of the database has the table {lit}`t` at a position, {lit}`e` is no function call, has no aggregate call
 and resolves in the scope of the table to an expression without a fallible call, {lit}`p` resolves in the scope of the table,
-and {lit}`c` resolves, for every lowest position of a subquery with one column ({name}`scalarShape`), to a condition without a
+and {lit}`c` resolves, for every lowest position of a subquery with one column and
+the declared-type origin of {lit}`e` ({name}`scalarShape`), to a condition without a
 fallible call, the output of the script is the output of the step of the simple query without source whose condition is the
 resolved {lit}`c`, with the simple query of that table with the resolved {lit}`p` and {lit}`e` as its one subquery. The source reference has no indexed query.
 Proof sketch:
@@ -41,7 +42,8 @@ theorem Script.outputOn_selectOne_column
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
         { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest] })
+          (tableScope db.raw.catalog reference position table)) lowest
+          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
     (plain : mainCondition.any Resolved.Expr.isFallibleCall = false) :
     script.outputOn db = some (resolvedStepOutput none 0 db.raw.connection parameters
       (.query (Resolved.Query.selectOneWhere mainCondition)
@@ -78,7 +80,8 @@ theorem Holds.iff_selectOne_column
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
         { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest] })
+          (tableScope db.raw.catalog reference position table)) lowest
+          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
     (noScalar : mainCondition.any (· matches .subquery _) = false)
     (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
     (valueCalm : expression.Calm) :
@@ -115,7 +118,8 @@ theorem Empty.iff_selectOne_column
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
         { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest] })
+          (tableScope db.raw.catalog reference position table)) lowest
+          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
     (noScalar : mainCondition.any (· matches .subquery _) = false)
     (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
     (valueCalm : expression.Calm) :
@@ -152,7 +156,8 @@ theorem Fails.not_selectOne_column
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
         { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest] })
+          (tableScope db.raw.catalog reference position table)) lowest
+          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
     (noScalar : mainCondition.any (· matches .subquery _) = false)
     (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
     (valueCalm : expression.Calm) :

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T07:40:49+00:00",
+  "finding": "20261025T071945Z-0ac03732#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the status text no longer claims same-name coverage; a new fixture covers it and exposed a real defect, fixed with SqlRootOverride records"
+}

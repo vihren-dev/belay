@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T08:27:14+00:00",
+  "finding": "20261025T075410Z-d34b1e68#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "SqlSourceUse.sameSource is deleted; groupSources (SqlCheckReport.lean, pure) is the one definition of source identity, with guards and the records test using it"
+}

@@ -14,6 +14,8 @@ then stops at this one. -/
 inductive PrepareError where
   /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
   | tableExists (name : Identifier)
+  /-- {lit}`view %T already exists` ({lit}`sqlite3StartTable`). -/
+  | viewExists (name : Identifier)
   /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
   | indexNameUsed (name : Identifier)
   /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/

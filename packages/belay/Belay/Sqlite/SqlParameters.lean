@@ -3,9 +3,9 @@ import Belay.Sqlite.SqlDiagnostics
 
 set_option doc.verso true
 
-/-! The meaning of the parameters of {lit}`sql r"..."` (ADR 0017, S3; ADR 0019, D1), without
-elaboration: a parameter {lit}`$x` is the Lean variable {lit}`x`, and every other parameter is
-an argument of type {lit}`Value` of the function that the term gives. This module decides the
+/-! SQL parameter construction (ADR 0017, S3/S7; ADR 0019, D1), without elaboration.
+Inline SQL captures {lit}`$x` as the Lean variable {lit}`x`; file SQL makes it an argument.
+Every other parameter is an argument of type {lit}`Value`. This module decides the
 arguments, the variables and the value of each parameter number of each statement, or the error
 at the parameter that makes the text wrong. {lit}`Belay/Sqlite/SqlTerm.lean` builds the term. -/
 
@@ -13,13 +13,23 @@ namespace Belay.Sqlite
 
 open Translation
 
+/-- Whether dollar parameters capture Lean variables. Inline SQL captures them; SQL files
+make every parameter an explicit argument, independent of the caller's local variables. -/
+inductive ParameterMode where
+  /-- Inline SQL reads {lit}`$name` from the Lean scope. -/
+  | inline
+  /-- File SQL makes {lit}`$name` an argument, like its other parameters. -/
+  | file
+  deriving BEq, Inhabited
+
 /-- What gives the value of one parameter: a Lean variable that {lit}`$x` names, or an argument
 of the script's function. -/
 inductive ParameterSource where
   /-- The Lean variable of the name, written {lit}`$name`. -/
   | variable (name : String)
   /-- The argument of the name: {lit}`:name`, {lit}`@name` and {lit}`#name` give the name
-  without the sign, and {lit}`?` and {lit}`?NNN` give {lit}`p` and the number. -/
+  without the sign, and {lit}`?` and {lit}`?NNN` give {lit}`p` and the number.
+  In file mode a dollar name also gives an argument without the sign. -/
   | argument (name : String)
   deriving BEq, Repr, Inhabited
 
@@ -55,14 +65,18 @@ def isLeanIdentifier (name : String) : Bool :=
   | first :: rest => Lean.isIdFirst first && rest.all Lean.isIdRest
   | [] => false
 
-/-- The source of one parameter token, or the error at a {lit}`$` name that is not a Lean
-identifier. -/
-def parameterSource (parameter : Parameter) : Except Diagnostic ParameterSource :=
+/-- The source of one parameter token. Dollar names capture variables in the default inline
+mode and name arguments in file mode; a dollar name that is not one Lean identifier is an
+error. Parameter numbers and token signs retain their SQLite meanings in both modes. -/
+def parameterSource (parameter : Parameter) (mode : ParameterMode := .inline) : Except Diagnostic ParameterSource :=
   let at_ (message : String) : Diagnostic := { start := parameter.start, stop := parameter.stop, message }
   match parameter.text.toList with
   | '$' :: name =>
-    if isLeanIdentifier (String.ofList name) then .ok (.variable (String.ofList name))
-    else .error (at_ s!"the parameter {parameter.text} must name a Lean variable, and its name is not a Lean identifier; write a Lean identifier such as $x, or write :name to make an argument")
+    if isLeanIdentifier (String.ofList name) then
+      .ok (if mode == .inline then .variable (String.ofList name) else .argument (String.ofList name))
+    else .error (at_ (if mode == .inline then
+      s!"the parameter {parameter.text} must name a Lean variable, and its name is not a Lean identifier; write a Lean identifier such as $x, or write :name to make an argument"
+      else s!"the parameter {parameter.text} cannot name a Lean argument; use a name such as $x, or bind the script with Script.withValues"))
   | '?' :: _ => .ok (.argument s!"p{parameter.number}")
   | _ :: name => .ok (.argument (String.ofList name))
   | [] => .ok (.argument s!"p{parameter.number}")
@@ -85,10 +99,12 @@ structure PlanState where
 /-- Add one parameter of a statement to the state, with the sources of the earlier parameters of
 the statement by number, or the error at the parameter: two parameters
 ({name}`parameterKey`) that give one Lean name, such as {lit}`:id` and {lit}`@id`, and two
-parameters of one statement with one number, such as {lit}`$x` and {lit}`?1`. -/
+parameters of one statement with one number, such as {lit}`$x` and {lit}`?1`. The mode changes
+only whether a dollar name captures a variable or gives an argument. -/
 def addParameter (state : PlanState) (numbers : List (Nat × Parameter × ParameterSource))
-    (parameter : Parameter) : Except Diagnostic (PlanState × List (Nat × Parameter × ParameterSource)) := do
-  let source ← parameterSource parameter
+    (parameter : Parameter) (mode : ParameterMode := .inline) :
+    Except Diagnostic (PlanState × List (Nat × Parameter × ParameterSource)) := do
+  let source ← parameterSource parameter mode
   let at_ (message : String) : Diagnostic := { start := parameter.start, stop := parameter.stop, message }
   let state ← match state.names.lookup source.name with
     | some first =>
@@ -116,14 +132,16 @@ def statementSlots (numbers : List (Nat × Parameter × ParameterSource)) : List
 /-- The plan of the parameters of the statements, each with its parameter tokens in text order,
 or the error of the first parameter in text order that makes the text wrong. For example, in
 {lit}`SELECT :a, ?3`, the arguments are {lit}`a` and {lit}`p3`, and the slots are {lit}`a`,
-NULL and {lit}`p3`. -/
-def planParameters (statements : List (List Parameter)) : Except Diagnostic ParameterPlan := do
+NULL and {lit}`p3`. The default inline mode captures dollar parameters; file mode makes them
+arguments without changing their SQLite identity or number. -/
+def planParameters (statements : List (List Parameter)) (mode : ParameterMode := .inline) :
+    Except Diagnostic ParameterPlan := do
   let mut state : PlanState := {}
   let mut slots : List (List Slot) := []
   for parameters in statements do
     let mut numbers : List (Nat × Parameter × ParameterSource) := []
     for parameter in parameters do
-      (state, numbers) ← addParameter state numbers parameter
+      (state, numbers) ← addParameter state numbers parameter mode
     slots := slots ++ [statementSlots numbers]
   return { state.plan with slots }
 

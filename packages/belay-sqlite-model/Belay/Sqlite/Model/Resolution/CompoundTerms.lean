@@ -47,7 +47,7 @@ scope of their query, which SQLite gives before it resolves a name ({lit}`select
 the last error replaces the earlier ones. None when every column expands. -/
 def starIssue (scope : Scope) (columns : List Syntax.ResultColumn) : Option ValueIssue :=
   columns.foldl (fun issue column => (match column with
-    | .star => if scope.inner.isEmpty then some (.prepare .noTablesSpecified) else none
+    | .star => if !(scope.inner.any (·.namesVisible)) then some (.prepare .noTablesSpecified) else none
     | .sourceStar name => if (scope.starColumns? name).isSome then none else some (.prepare (.noSuchSource name))
     | .expression .. => none) <|> issue) none
 

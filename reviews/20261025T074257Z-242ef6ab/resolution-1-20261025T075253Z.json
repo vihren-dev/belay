@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T07:52:53+00:00",
+  "finding": "20261025T074257Z-242ef6ab#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the S7 task text now lists the option value and its module in the persisted record"
+}

@@ -132,7 +132,7 @@ inductive RestrictionKind where
   {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such expressions, which the model does
   not describe (ADR 0015, slice 3). -/
   | jsonSubtype
-  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an {lit}`ON` condition,
+  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an {lit}`ON` condition or an unexpanded catalog view,
   a {lit}`json_each` argument or another statement, is not modeled (ADR 0018, slice 1). -/
   | subqueryHere
   /-- An aggregate in a subquery whose argument reads a cell of a query around it is not modeled: SQLite computes an

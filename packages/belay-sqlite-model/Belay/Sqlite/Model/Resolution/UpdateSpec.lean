@@ -28,15 +28,16 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
     | exact absurd rfl (named _)
     | (simp_all; done)
 
-/-- For every UPDATE, with any subqueries and shapes: when no table has the folded name, the resolution is
+/-- For every UPDATE, with any subqueries and shapes: when no table or view has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
-    (missing : catalog.findTable tableName = none) :
+    (missing : catalog.findTable tableName = none)
+    (notView : catalog.findView tableName = none) :
     resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveUpdate
-  simp [missing, prepareError]
+  simp [missing, notView, prepareError]
 
 end Belay.Sqlite.Model

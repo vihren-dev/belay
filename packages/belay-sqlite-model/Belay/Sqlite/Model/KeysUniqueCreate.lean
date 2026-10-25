@@ -28,7 +28,7 @@ theorem Catalog.mem_uniqueKeys_append {catalog : Catalog} {object : CatalogObjec
   · refine .inr ?_
     simp only [List.filterMap_cons, List.filterMap_nil] at new
     cases entry : object.entry with
-    | table _ | trigger _ => simp [entry] at new
+    | table _ | view _ | trigger _ => simp [entry] at new
     | index index =>
       simp only [entry] at new
       by_cases on : index.table = position ∧ index.unique = true

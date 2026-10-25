@@ -85,6 +85,67 @@ example : (start.run (env := Env.newConnection) do
 `Script.run_env` states that a run in which no statement reads the clock and no statement ends at
 a counter that the run does not know is the same in every environment.
 
+## SQL in separate files
+
+`sql_file "sql/schema.sql"` reads a file at compile time and gives the same `Script` as `sql r"..."`
+for the same text. The path is relative to the package that owns the Lean file, so the form works
+from any folder and after the package moves. Every parameter of the file, including `$name`,
+becomes an argument of the definition, in the order of its first appearance:
+
+```lean
+def schema := sql_file "sql/schema.sql"
+```
+
+- `sql_file "sql/m.sql" (section := "up")` selects one direction of a migration file. The
+  `-- +goose Up` and `-- +goose Down` markers and the dbmate `-- migrate:up` and `-- migrate:down`
+  markers are known. A file with direction markers needs a section.
+- `sql_file "sql/seed.sql" (against := db)` also checks each statement against the database `db`
+  and reports the problems at the form. The value of the form does not change.
+- `sql_module Queries from "sql/queries.sql"` defines `Queries.name` for each statement that
+  follows a `-- name: name` marker. The ordinary comment lines after the marker become the
+  docstring, and the docstring ends with the SQL location. A suffix such as `:one` is ignored.
+  `(against := db)` works as for `sql_file`.
+- A marker or tool syntax inside a string, a comment or a trigger body is ordinary SQL text and
+  names nothing.
+
+An external SQL edit is not seen by a Lean file that is already open: restart the Lean file, or
+run `lake build`. If the compiler cannot decide which package owns the Lean file, for example
+with two nested Lake projects of one name, write `set_option belay.sql.packageRoot ".." in`
+before the form. The value is a path relative to the folder of the Lean file.
+
+### Check that a build is fresh
+
+Lake rebuilds a library after an SQL edit only when the lakefile lists the SQL files as inputs
+of the library:
+
+```lean
+input_dir sqlFiles where
+  path := "sql"
+  text := true
+  filter := .extension "sql"
+
+lean_lib App where
+  needs := #[sqlFiles]
+```
+
+`lake exe belay-sql-check` compares the SQL files that the compiled libraries of the current
+package read with the files on disk. It builds nothing. It prints, for each library, the number
+of modules and SQL sources and the number of stale sources, and for each stale source its package,
+path, declarations and the `lake build` command. `--library App` checks one library. The exit code
+is 0 when all sources are fresh, 1 when a source changed or is missing, and 2 when a library could
+not be read, for example because it is not built. Line-ending changes are not edits.
+
+## Check SQL examples in documentation
+
+With `set_option doc.verso true`, a `sql` code block in a docstring runs its SQL while Lean
+elaborates the file. `(db := start)` names the closed database that the block starts from. The
+lines that start with `--` at the end of the block state the expected text: the cells of each
+row joined by ` | `, and the rows joined by newlines. A block that does not return this text is
+an error at the block. A named header argument binds the parameter of the same name, for example
+`(v := 5)` for `:v`. `(values := lists)` binds every parameter by number, `(env := environment)`
+gives the clock, `(expected := outputs)` states the exact `List Output`, and `+error` expects the
+first SQL failure. `Belay.Sqlite.SqlDocGuide` explains each option with checked examples.
+
 ## Claims about every database
 
 `Holds q db` says that every possible result of the query has a row. `Empty q db` says that
@@ -144,3 +205,59 @@ the new name, the terms and filter resolve, and a unique index has no conflictin
 `LiteralData.uniqueRows_of_column_groups` connects a no-duplicate GROUP BY claim to the
 column key check. This direction is sufficient: repeated NULLs group together but do not
 conflict in a unique index. The grouping and index must use the same collation.
+
+## Check a claim before proving it
+
+`#sql_check P` tries checked proof automation, then searches for a valid database
+that refutes `P`. It reports **proved**, **false**, or **unknown**. A false SQL
+claim includes the database construction, bindings, environment, model outputs
+and a script for pinned SQLite. Unknown gives no evidence about the claim.
+The command adds no theorem. For example:
+
+```lean
+#sql_check ∀ db : Database, Empty (sql "SELECT 1") db
+example : ¬ (∀ db : Database, Empty (sql "SELECT 1") db) := by sql_refute
+```
+
+Use `with (schema := db! "CREATE TABLE custom(x);")` to guide inference, or
+repeat `(db := candidate)` after `with` for an ordered candidate sequence.
+`(env := environment)` supplies the environment; `(input name := value)` supplies
+a quantified input, even when its binder is named `schema` or `env`. These inputs
+work with both frontends. They are proposals: claim preconditions are checked,
+not assumed. The explicit tactic `sql_refute (db := candidate)` checks a supplied
+witness independently of search bounds.
+
+| Lean option | Default | Meaning |
+| --- | ---: | --- |
+| `sql.check` | true | Check SQL theorem statements in the background |
+| `sql.checkBudget` | 100000 | Cooperative Lean heartbeat units; zero disables checking |
+| `sql.checkRecursionLimit` | 4000 | Finite reduction depth; zero disables checking |
+| `sql.checkCandidates` | 128 | Maximum proposals tried, including explicit witnesses |
+| `sql.checkMaxRows` | 2 | Maximum generated rows per table |
+| `sql.checkRandomSamples` | 4 | Seeded proposals per parameter value |
+| `sql.checkSeed` | 0 | Reproducible sampler seed |
+| `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
+| `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
+
+Use `set_option sql.checkBudget 500000 in` before a command or tactic for a
+larger search. A heartbeat budget is not a wall-clock deadline. Explicit
+witnesses come first, then empty/targeted inferred databases and seeded samples
+for each parameter value. Expensive data conditions can need a larger budget.
+
+For arbitrary generators, call `Check.check` with `Check.SampleConfig.witnesses`,
+or `Check.checkCandidates` with an elaboration-monad callback. `Check.refuteWith`
+accepts a custom quantified-input selector. The certificate and replay APIs stay
+separate: a programmatic candidate or display record is not itself evidence.
+Theorem statements that mention SQL are checked by default, including anonymous
+examples and mutual declarations. Only a certified counterexample is an error.
+The native editor action appends an independently checked regression example or
+proof example. The original false theorem keeps its error until you change it.
+Section hypotheses remain premises; the theorem and proof-body assumptions cannot
+justify their own check. Set `sql.check false` to keep only explicit checks.
+The shared budget includes discovery, all statements in one command, and checking
+the offered text. Use a larger budget for a mutual block. Cancellation and resource
+exhaustion leave the claim unknown; background diagnostic latency is separate from
+ordinary proof elaboration.
+An edit to an earlier command cancels a running check. An edit to the checked
+command itself discards the result of the old check, which ends within
+`sql.checkBudget`.

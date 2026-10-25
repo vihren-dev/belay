@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-24T19:26:59+00:00",
+  "finding": "20261024T192533Z-44af9a58#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The citation names the complete source tree at 489b22f6, not only its commit diff. jj file show -r 489b22f6 docs/s7-proof-cost-findings.md reads the retained file; lines 109 and 113 state the 585,850-unit increase, about 9.05%, and the sample limitation. The immutable commit is present in the shared repository and will be published with the reviewed prototype."
+}

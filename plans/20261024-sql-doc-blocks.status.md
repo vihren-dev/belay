@@ -165,3 +165,29 @@ gate here is `just test-scheduled-checks`. No mutant test touches the files of t
 Outstanding outside this task: the private guide needs one correction. Its text about `+error`
 messages should say what `SqlDocGuide` says: syntax, function and trigger or foreign-key
 constraint failures give the model's own text, and the expected lines repeat it.
+
+## Integration with S7 and S5
+
+2026-10-25: merge of `00fba7b1` (this line) and `77c17f02` (S7 and S5 head), with no rebase.
+Conflicts and resolutions:
+
+- `packages/belay/lakefile.lean`: kept the S7 and S5 glob arrays and appended a separate
+  `++ #[...]` array with the doc-block modules.
+- `packages/belay/Belay/Sqlite.lean`: kept the S5 imports and added `SqlDocBlock`.
+- `tests/nix_suites.json`: kept both lists of surface tests.
+- `docs/adr-0017-user-surface.md`: took the S7 and S5 text, which already names the doc blocks.
+- `plans/20261024-sql-doc-blocks.{task,status}.md`: both lines added these files from the same
+  reviewed original; took this line's versions, which contain the later work.
+- `DbDiagnostics.lean`, `build-support/tests.nix` and `packages/belay/README.md` merged without
+  a conflict. `tests.nix` is unchanged from the S7 and S5 head. The README has a new short
+  section on the doc blocks.
+
+One semantic change follows the S7 helper: S7 gave `planParameters` a `ParameterMode`. The doc
+block uses `.file`, so `$name` is an explicit argument that never reads a Lean variable, which
+is the task's rule. The earlier decision that no `SqlParameters` change is needed still holds.
+No S7 SQL-file module and no S5 editor or automatic-check module uses the diagnostics or the
+parser entry that this line changed.
+
+Checks of the merge: `just dev-build`, `lake build` and `lake build belay-sql-check` pass (local,
+diagnostic). The whole Nix surface suite passed 300 tests in 1031 seconds, report
+`/nix/store/l0g82jvd1i3sdvqqbqj4pwrkr35gp0h7-sqlite-verifier-test-surface-1`.
