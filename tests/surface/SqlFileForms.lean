@@ -44,12 +44,21 @@ def shop : Database := db! r"CREATE TABLE users(email TEXT, name TEXT);"
 -- A database that knows the tables leaves the script as it is.
 /-- A file checked against a database that has its tables. -/
 def checked := sql_file "sql_files/checked.sql" (against := shop)
+/-- The same file without the database check. -/
+def unchecked := sql_file "sql_files/checked.sql"
+example : checked = unchecked := rfl
 example : checked = sql "INSERT INTO users(email, name) VALUES (:email, :name);\nSELECT name FROM users WHERE email = :email;\n" := rfl
 
 -- The statements of a module are definitions named by their markers.
 sql_module Queries from "sql_files/queries.sql"
 
 example : Queries.findByEmail = fun email => (sql "SELECT * FROM users WHERE email = :email") email := rfl
+
+-- Checking a module against the database leaves each definition as it was.
+sql_module CheckedQueries from "sql_files/queries.sql" (against := shop)
+example : CheckedQueries.findByEmail = Queries.findByEmail := rfl
+example : CheckedQueries.insertUser = Queries.insertUser := rfl
+example : CheckedQueries.last = Queries.last := rfl
 
 -- A marker inside a trigger body, a string or a comment names nothing.
 elab "check_module_names" : command => do

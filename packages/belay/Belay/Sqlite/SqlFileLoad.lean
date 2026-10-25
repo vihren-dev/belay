@@ -1,4 +1,5 @@
 import Belay.Sqlite.SqlFileSource
+import Belay.Sqlite.SqlSourceRecord
 
 set_option doc.verso true
 
@@ -30,15 +31,18 @@ def sqlOverrideRoot (leanFile : FilePath) (override : String) : IO FilePath := d
 Without the option, existing Lake manifests associate the Lean filename with its package
 directory; with it, the explicit root is read through {name}`readSqlFileSourceAtRoot`. Errors
 point to the form, including a missing package setup when Lean was invoked without Lake's
-module setup, because the compiled record needs the package identity in both modes. -/
+module setup, because the compiled record needs the package identity in both modes. A
+successful load adds a {name}`SqlSourceUse` to the module, with the declaration being elaborated. -/
 def loadSqlFileSource (reference : Syntax) (path : FilePath) : Elab.Term.TermElabM SqlFileSource := do
   let some package := (← getEnv).getModulePackage?
     | throwErrorAt reference "SQL files need the owning package's module setup; compile with lake build or open the Lean file in its Lake project"
   let leanFile ← getFileName
   let override := sqlPackageRootOption.get (← getOptions)
-  try
+  let source ← try
     if override.isEmpty then readSqlFileSource leanFile package path
     else readSqlFileSourceAtRoot (← sqlOverrideRoot leanFile override) package path
   catch error => throwErrorAt reference error.toMessageData
+  modifyEnv (recordSqlSourceUse · ⟨source.package, source.path.toString, sqlTextHash source.text, ← Elab.Term.getDeclName?⟩)
+  return source
 
 end Belay.Sqlite

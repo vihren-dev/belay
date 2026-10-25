@@ -145,3 +145,18 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   S5 will change `SqlTerm.variableValue` to original/coerced pairs; `scriptTermFromPlan`
   here takes `variables : List (ParameterSource × Expr)` and `fileScriptTerm` needs
   a one-line adaptation when S5 and S7 are integrated (the coordinator handles it).
+- 2026-10-25: part 2 starts. `Belay/Sqlite/SqlSourceRecord.lean` (no Lake import) defines
+  `SqlSourceUse` (package, package-relative path, hash, optional declaration),
+  `sqlTextHash` (`String.hash` of the CRLF-to-LF text, the rule of Lake's `text = true`
+  inputs), source identity ignoring the declaration, and a persistent extension that
+  accepts additions from any elaboration branch (`asyncMode := .sync`; it is never read
+  during elaboration). `loadSqlFileSource` adds a record with the declaration being
+  elaborated, and `sql_module` adds one per generated definition. Fixtures now check
+  that `(against := db)` leaves a file and every module definition definitionally equal
+  to the unchecked form. Focused Nix surface run (35 passed, 75 deselected, 54.01 s) at
+  `/nix/store/v2ihkpky37iwvld5f6xji2m6p4izwc33-sqlite-verifier-test-surface-1` covers
+  the pure checks and a real Lake build where an importing module reads the records of
+  `Queries` (package, relative path, normalized hash, two declarations of one file, one
+  declaration per module entry, distinct sources counted once). The checker, its report
+  and the Lake input fixtures are next. Review of the planning amendment `a613a42e` and
+  of `561834a0` found no musts (one should about a stale status phrase, fixed).
