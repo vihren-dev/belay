@@ -15,3 +15,29 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 ## Progress log
 
 - 2026-10-25: task and status files written.
+- 2026-10-25: review 1 of the task commit (`6335c706`) gave four must findings
+  (CTE copies and `exact`, quote kind of qualified names, CAST affinity, the
+  prediction-file comparison). The task file now states each of them as the code
+  has it. Findings are recorded as fixed.
+
+## Implementation plan (informal)
+
+- Do not change `resolveStatement` or the resolver functions that proofs unfold
+  (57 unfold sites in 43 files). `resolveStatementTraced` returns
+  `(resolveStatement ..., trace)`, so the law holds by `rfl`.
+- New modules `Resolution/NameTrace*.lean`, each below 200 lines, imported from
+  `Model.lean`: (1) data types; (2) expression walker over `Scope.resolveName`,
+  `comparisonAffinity` and `comparisonCollation`; (3) query and source walker
+  with the resolver's scope functions; (4) write statements; (5) entry points
+  and agreement theorems.
+- Tests: kernel `#guard` examples; a Lean surface fixture and pytest check that
+  each exact path selects the name token; a check over the frozen conformance
+  inputs that dropping the trace equals `resolveStatement`.
+- Prediction files: baseline built before the first model change
+  (`build/predictions-baseline`), compared after each model commit.
+
+## Documented gaps (planned)
+
+- CREATE TABLE, CREATE INDEX, CREATE VIEW, CREATE TRIGGER and ALTER bodies.
+- Unused WITH definitions (the resolver never resolves them).
+- Compound ORDER BY terms.

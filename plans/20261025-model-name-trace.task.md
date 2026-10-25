@@ -26,23 +26,37 @@ except where the translator's spans must locate a traced name (see below).
   gives exactly `resolveStatement`'s result, for success and for failure. This
   law is a theorem, not only a test. A script-level wrapper over the statement
   list is welcome where it is cheap.
-- **One run decides the statement and the trace.** The trace comes from the
-  resolver run that decides the statement, with the same scopes, catalog and
-  WITH/view expansion, so it cannot disagree with execution. The model gets no
-  second resolver and no syntax walk that rebuilds scopes. The editor never
-  rebuilds scopes or searches for the text of a name.
+- **The trace uses the resolver's own decisions.** The traced entry point does
+  not change `resolveStatement` or any function that existing proofs unfold
+  (see "Existing interfaces and tricky points"). So the trace code walks the
+  statement beside the resolver and builds each scope with the resolver's own
+  scope functions (CTE and view expansion, source lists, subquery scopes, upsert
+  and `before.t` scopes), with the same catalog and state. It decides every name
+  with the resolver's own lookup, affinity and collation functions, and it takes
+  the operand affinity from the resolver's own `resolveOperand`. The model gets
+  no second lookup rule and no second scope rule. Agreement theorems state, for
+  the decision points that can be stated alone (an identifier that is found,
+  missing or ambiguous; a comparison's affinity and collation), that the trace
+  and the resolver's result say the same. The editor never rebuilds scopes or
+  searches for the text of a name.
 - **Every name occurrence gets one record.** A `NameOccurrence` holds:
   - `path`, the occurrence's node path in the statement as written, in the
     layout of `Restriction.path`, which `Translation.Span.select` maps to a
     source range;
-  - `exact`, false when the occurrence comes from a stored view body or another
-    copied definition. Then `path` is the use site, which
-    `CommonTableCopies.originalPath` collapses it to. A client may describe such
-    an occurrence but must never edit it;
+  - `exact`, false when the occurrence comes from a stored view body. Then
+    `path` is the use site of the view, which `CommonTableCopies.originalPath`
+    collapses it to. A client may describe such an occurrence but must never
+    edit it. A name in a WITH definition of the statement itself is exact: the
+    copy of the definition for each use maps back, through the same function, to
+    the definition as written, so two uses of one definition give two records
+    with the same path;
   - the role: table reference, column reference, qualifier, alias declaration,
     result-column alias or comparison site;
-  - the name as written and whether it was quoted, and how (double quotes
-    matter for DQS);
+  - the name as written, and for an unqualified column name the quote kind that
+    the syntax keeps (`Syntax.Expr.identifier` has it; double quotes matter for
+    DQS). The syntax of a qualified name, a table name and an alias does not keep
+    the quote kind, and this task does not extend it: for them the quote kind is
+    absent and a client reads the token text from the span;
   - the result: `found`, `ambiguous` with the candidates, or `missing` with the
     admissible candidates, the in-scope names legal at that occurrence with
     their scope source. A double-quoted name that the resolver turned into a
@@ -59,7 +73,10 @@ except where the translator's spans must locate a traced name (see below).
   GROUP BY terms, and the expressions of INSERT, UPDATE, DELETE, upsert and
   RETURNING are traced, including the S6 `before.t` sources. A name the
   resolver never looks up (for example a parse-only position) is either traced
-  with its role or listed as a documented gap; no silent omission.
+  with its role or listed as a documented gap; no silent omission. When the
+  resolver stops at an earlier error, names after the error are traced as not
+  reached where their scope is known, and the gap list says which positions
+  are not traced at all (the status file keeps that list).
 - **The trace is data only.** `Resolved.Statement`, every prediction file, the
   conformance claims and the existing proof terms are unchanged. Proofs that
   unfold `resolveStatement` keep working without new unfolding of a trace.
@@ -77,8 +94,9 @@ a table name, a CTE that shadows a table, a column of a derived table and of a
 view (`exact = false` for names inside the view body), a correlated subquery,
 USING/NATURAL merged columns, an ambiguous name with its candidates, a missing
 name with ranked-input candidates, a DQS fallback, a `before.t` source, and
-comparison affinity for column vs. literal, NOCASE/BINARY collations and
-unary-plus/CAST cases where no affinity applies. Include an UPDATE, a DELETE,
+comparison affinity for column vs. literal, NOCASE/BINARY collations, a
+unary-plus operand where no affinity applies, and a CAST operand, whose
+affinity is that of its type name. Include an UPDATE, a DELETE,
 an upsert and a RETURNING clause.
 
 A test over the translated SQL of the fixtures checks that each exact path
@@ -86,7 +104,10 @@ selects exactly the name's text (`Span.select` gives the token's bytes). A test
 over every statement of the frozen conformance inputs checks that dropping the
 trace gives the same result as `resolveStatement`, in addition to the theorem.
 
-All 53 prediction files stay byte-identical (`just verdict`); the
+All prediction files stay byte-identical: the files that
+`nix-build integrity/judge.nix -A predictions` writes (55 at the base commit,
+one for each corpus input) are compared with a baseline built before the first
+model change, in addition to `just verdict`, which grades the claims only. The
 implementation leaves the corpus, claims and judge lock unchanged. Relevant
 mutants only, by name with `-k`. Each coherent commit gets focused checks,
 dev-build and independent review. One acceptance part: after final review run
