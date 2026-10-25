@@ -9,16 +9,36 @@ model that no case notices shows a missing case. The cases are the authored case
 `conformance.authored_*` module of each table, recorded natively with their outputs. The mutants
 of writes, joins and table forms are in `tests/conformance_table_mutants_test.py`, a separate Nix
 suite, so that each suite stays within its time limit on a hosted runner. Each test is one
-measurement of at most 16 mutants, which builds one base copy for its mutants (`measure_set`)
-and then the mutant copies in parallel. The two Nix suites of mutants run at the same time on a
-hosted runner, which slows each test about twice. The number and query-without-FROM mutants (17)
-were one measurement until it took 176 seconds alone on eight cores (October 2026) and more than
-its limit of 300 seconds beside the other suite, as the base copy and most of these mutant copies
-build almost every module. As three measurements, of the 6 mutants of arithmetic, the other 7
-number mutants and the 4 mutants of queries without FROM, each took at most 124 seconds alone. Every case must agree with the base copy. Each mutant copy then classifies the case
-that the mutant names as its target, which keeps the elaboration of case terms short.
+measurement, which builds one base copy for its mutants (`measure_set`) and then the mutant
+copies in parallel. Each of the three Nix suites of mutants has its own job on its own hosted
+runner (`.github/workflows/ci.yml`). A hosted runner is slower than this development machine: a
+measurement that took 160.6 seconds here took more than the limit of 300 seconds there, so the
+local target for a measurement is about 125 seconds. The base copy and most mutant copies build
+almost every module, so the time of a measurement grows with the number of mutant copies that
+build many modules.
+
+Three groups of mutants were each one measurement that was too slow, and are now split:
+
+- The number and query-without-FROM mutants (17) took 176 seconds alone on eight cores (October
+  2026). As three measurements, of the 6 mutants of arithmetic, the other 7 number mutants and
+  the 4 mutants of queries without FROM, each took at most 124 seconds alone.
+- The 16 query mutants took 160.6 seconds in a focused local run, and more than 300 seconds on a
+  hosted runner. As three measurements by model file, of the 3 mutants of `Comparison.lean`, the
+  7 mutants of `QueryEval.lean` and `QueryResults.lean`, and the 6 mutants of the `Resolution`
+  folder, they took 109.5, 82.9 and 72.5 seconds.
+- The 14 JSON mutants took 194.1 seconds in a focused local run. As two measurements, of the 8
+  mutants of JSON reading and the 6 mutants of the JSON functions, they took 122.8 and 112.5
+  seconds.
+
+The measurements of the query and JSON splits ran while another Nix build used the same eight
+cores (load average about 14), so each is an upper bound of its time alone. The hosted run is
+the validation of the limits.
+
+Every case must agree with the base copy. Each mutant copy then classifies the case that the
+mutant names as its target, which keeps the elaboration of case terms short.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -35,15 +55,45 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_parameters, parameter_mutants, authored_compound, compound_mutants,
                          authored_pragmas, pragma_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
+from conformance.mutation_edits import source_edits
 from tests.mutant_sets import Mutants, Targets, measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
-def test_every_query_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query cases notice every changed rule of query semantics
-    (`conformance.query_mutants`), so these rules are tested."""
-    measure_set(runtime_root, [authored_queries], [(query_mutants.MUTANTS, query_mutants.TARGETS)])
+def query_mutant_table(selected: Callable[[str], bool]) -> tuple[Mutants, Targets]:
+    """The query mutants of `conformance.query_mutants` whose edited model file satisfies
+    `selected`, with their targets: three measurements, each within the time limit."""
+    mutants = {name: mutant for name, mutant in query_mutants.MUTANTS.items()
+               if selected(source_edits(mutant)[0][0])}
+    return mutants, {name: query_mutants.TARGETS[name] for name in mutants}
+
+
+def is_resolution_file(path: str) -> bool:
+    """Whether a query mutant edits a file of the resolution of names and clauses."""
+    return path.startswith(query_mutants.SQLITE + "Resolution/")
+
+
+def test_every_comparison_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every changed rule of the comparison of two values
+    (the mutants of `conformance.query_mutants` in `Comparison.lean`)."""
+    measure_set(runtime_root, [authored_queries],
+                [query_mutant_table(lambda path: path == query_mutants.COMPARISON)])
+
+
+def test_every_query_evaluation_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every changed rule of ordering, aggregates, `LIMIT` and
+    `OFFSET` (the mutants of `conformance.query_mutants` in `QueryEval.lean` and
+    `QueryResults.lean`)."""
+    measure_set(runtime_root, [authored_queries],
+                [query_mutant_table(lambda path: path != query_mutants.COMPARISON and not is_resolution_file(path))])
+
+
+def test_every_query_resolution_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every removed prepare error of the resolution of
+    queries (the mutants of `conformance.query_mutants` in the `Resolution` folder of the
+    model)."""
+    measure_set(runtime_root, [authored_queries], [query_mutant_table(is_resolution_file)])
 
 
 def number_mutant_table(arithmetic: bool) -> tuple[Mutants, Targets]:
@@ -72,12 +122,17 @@ def test_every_fromless_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_fromless], [(fromless_mutants.MUTANTS, fromless_mutants.TARGETS)])
 
 
+def test_every_json_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSON cases notice every changed rule of JSON reading and `json_extract`
+    (`conformance.json_mutants`)."""
+    measure_set(runtime_root, [authored_json], [(json_mutants.MUTANTS, json_mutants.TARGETS)])
+
+
 def test_every_json_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored JSON and JSON function cases notice every changed rule of the JSON functions
-    (`conformance.json_mutants`, `conformance.json_function_mutants`)."""
-    measure_set(runtime_root, [authored_json, authored_json_functions],
-                [(json_mutants.MUTANTS, json_mutants.TARGETS),
-                 (json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
+    """The authored JSON function cases notice every changed rule of `json_type`, `json_valid`,
+    `json_array_length` and `json` (`conformance.json_function_mutants`)."""
+    measure_set(runtime_root, [authored_json_functions],
+                [(json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
 
 
 def test_every_json_each_and_clock_mutant_changes_a_verdict(runtime_root: Path) -> None:
