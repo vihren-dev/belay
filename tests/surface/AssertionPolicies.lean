@@ -3,6 +3,11 @@ import Belay.Sqlite.AssertionTerms
 import Belay.Sqlite.ExecutionWPLaws
 
 set_option doc.verso true
+
+/-! Fixtures for the error policies of assertion postconditions. They check {lit}`ifOk` and
+{lit}`andOk` in ordinary triples against the existing execution implementation: errors and
+unmodeled stops before the program and inside it, every concrete {lit}`oneOf` choice, the returned
+outputs, and query assertions as postconditions. -/
 set_option maxRecDepth 4096
 
 namespace AssertionExamples
@@ -14,8 +19,8 @@ def insertThree : Sql (List Output) := send (sql r"INSERT INTO t VALUES (3, 3)")
 /-- An actual rows result selects an unmodeled continuation for the second concrete row. -/
 def alternateStops : Sql (List Output) := do
   match ← single (sql r"SELECT x FROM t LIMIT 1") with
-  | some (.integer 1) => pure []
-  | _ => send (sql r"SELECT random()")
+  | some (.integer value) => if value = 1 then pure [] else send (sql r"SELECT random()")
+  | some .null | some (.real _) | some (.text _) | some (.blob _) | none => send (sql r"SELECT random()")
 
 /-- A modeled error already in the trace removes the conditional obligation, whatever the property. -/
 theorem if_ok_prefix_error_is_vacuous :

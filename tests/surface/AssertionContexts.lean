@@ -4,6 +4,11 @@ import Belay.Sqlite.DbBang
 import Belay.Sqlite.SqlTerm
 
 set_option doc.verso true
+
+/-! Fixtures for query assertions in execution contexts. They check that the default and the
+real-context observations agree at an initial context and disagree on a clock, counters and a
+pragma setting, and that a default assertion follows open transactions and rollback but does not
+fix the entry of a triple. -/
 set_option maxRecDepth 4096
 
 namespace AssertionExamples

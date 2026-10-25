@@ -134,3 +134,6 @@ the part is recorded in the closing entry.
   (prefix error and prefix unmodeled stop under both policies, error then write,
   error then unmodeled step, every `oneOf` choice, returned outputs, `holds` and
   `holdsInContext` as postconditions).
+- 2026-10-25, review of unit 2 (8be7d23e): the consequence rule's docstring states
+  its unrestricted premise, the fixture `alternateStops` names every `Value`
+  constructor instead of a catch-all, and the new fixtures have module docstrings.

@@ -3,6 +3,10 @@ import Belay.Sqlite.AssertionTerms
 import Belay.Sqlite.ExecutionWPLaws
 
 set_option doc.verso true
+
+/-! Fixtures for the composition rules of fresh-run triples: pure, bind, consequence,
+conjunction, ordinary-triple continuations and a nested specification keep the captured database
+and environment, and a fresh claim does not become a triple about every context. -/
 set_option maxRecDepth 4096
 
 namespace AssertionExamples

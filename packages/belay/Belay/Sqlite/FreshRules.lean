@@ -35,9 +35,10 @@ theorem FreshTriple.bind_iff {α β : Type} (program : Sql α) (next : α → Sq
   simp only [FreshTriple, Sql.check_bind]
 
 /-- A fresh triple stays true for a stronger precondition and a weaker postcondition, at the
-same program. The weaker postcondition must follow at each admitted database and complete
-environment, for each returned value and reached context. Proof sketch: monotonicity of the
-branch check ({name}`Sql.check_mono`), after specializing to the stronger precondition. -/
+same program. The stronger precondition must imply the original one for every database. The
+weaker postcondition must follow from the original one for every database, environment, value
+and context, not only for the ones that a run reaches. Proof sketch: monotonicity of the branch
+check ({name}`Sql.check_mono`), after specializing to the stronger precondition. -/
 theorem FreshTriple.mono {α : Type} {program : Sql α} {pre stronger : Database → Prop}
     {post weaker : Database → Env → α → ExecutionContext → Prop} (checked : FreshTriple program pre post)
     (entry : ∀ db, stronger db → pre db)
