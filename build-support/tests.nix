@@ -85,7 +85,7 @@ let
   mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py)
     (root + /tests/mutant_guards_test.py) (root + /tests/restriction_registry_test.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
-  # Inputs shared by the three suites that the old single model suite contained.
+  # Inputs shared by the suites of the old single model suite and the suites that read the same modules.
   modelInputs = frontend ++ [
     claims
     (root + /tests/conformance_freeze_capture.py)
@@ -275,6 +275,19 @@ in {
   };
   model = suite "model" {
     inputs = modelInputs;
+    runtime = conformance;
+    tools = modelTools;
+  };
+  # The kernel proofs of the authored coverage cases (tests/conformance_*_coverage_test.py), in two
+  # suites. With them the `model` suite took 840 s locally and more than 1160 s on hosted macOS, near
+  # its limit; now the three suites each take about a third of that.
+  coverageStatements = suite "coverageStatements" {
+    inputs = modelInputs ++ [ (root + /tests/coverage_case_support.py) ];
+    runtime = conformance;
+    tools = modelTools;
+  };
+  coverageFeatures = suite "coverageFeatures" {
+    inputs = modelInputs ++ [ (root + /tests/coverage_case_support.py) ];
     runtime = conformance;
     tools = modelTools;
   };

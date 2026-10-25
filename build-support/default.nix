@@ -57,9 +57,9 @@ in rec {
   # The scheduled suites of the mutants of the model, which CI runs in their own job, one runner
   # each (`just test-mutants SUITE`); tests/nix_mutant_suites.json lists them.
   mutantSuites = builtins.fromJSON (builtins.readFile ../tests/nix_mutant_suites.json);
-  # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus
+  # `just test` skips the slow model comparisons, the kernel proofs of the coverage cases, the frozen evidence and the locked-corpus
   # validation; `just test-full` runs them.
-  developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" ];
+  developmentTests = pkgs.lib.removeAttrs tests [ "model" "coverageStatements" "coverageFeatures" "frozen" "corpora" ];
   # One folder per suite, named after the suite, for the justfile recipes: for example
   # build/nix-tests-full/frozen/junit.xml. `nix-build -A tests` would instead number its
   # out-links in alphabetical order of the suites.
