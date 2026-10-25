@@ -3,7 +3,8 @@
 Created 2026-10-24. Status: OPEN. Task refreshed 2026-10-25 and assigned for
 implementation of part 1 in workspace `sqlite-verifier-s6-assertions`, based on
 `e3baff02` (published PR #254, above the S6 execution contracts of PR #250).
-No implementation or Nix acceptance is claimed yet.
+Part 1 is in progress: the context observation unit is implemented (see Part 1
+progress). Nix acceptance is not claimed yet; it is recorded at the end of the part.
 Task: [task file](20261024-s6-assertions.task.md).
 Specs: ADR17 S6; accepted fresh-run and explicit effect-premise decisions.
 
@@ -113,3 +114,8 @@ the part is recorded in the closing entry.
   not imply a fresh entry. Test: `tests/surface_assertions_test.py`
   (registered in `tests/nix_suites.json`, suite `surface`).
 
+- 2026-10-25, review of unit 1 (156fc263): four findings fixed in a refactor
+  commit: the validity theorem states only what it proves, the clock-free step
+  fact is proved inside its single user instead of as a model-only lemma in the
+  surface (R6), the three modules have module docstrings, and this summary is
+  current.

@@ -3,6 +3,14 @@ import Belay.Sqlite.Queries
 
 set_option doc.verso true
 
+/-!
+Single-state query observation in an execution context. {lit}`Script.outputIn` is the output of
+a one-statement query when the model runs it from the clock, next index and connection of a
+context. {lit}`Holds.inContext` asserts that this output has rows. {lit}`Holds.reached` asserts
+the same at the default observation of the database that a context sees, which is how
+{lit}`Holds` observes a database. No second interpreter exists: both use the model's script run.
+-/
+
 namespace Belay.Sqlite
 open Model
 

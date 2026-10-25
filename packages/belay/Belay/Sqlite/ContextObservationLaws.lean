@@ -3,13 +3,19 @@ import Belay.Sqlite.ExecutionFresh
 
 set_option doc.verso true
 
+/-!
+Laws of the default and the real-context assertions: when they equal {lit}`Holds`, which output
+cases establish them, and the validity of the database that a context sees at the end of a fresh
+run.
+-/
+
 namespace Belay.Sqlite
 open Model
 
-/-- For every bundled database valid under the pinned profile, the start and every branch of
-every program from the fresh initial connection reach a valid visible database and a valid
-open-transaction snapshot. Proof sketch: the idle connection has no snapshot, so the start is
-valid; {name}`Sql.Branch.valid` keeps validity. -/
+/-- For every bundled database, environment, program and branch of the program from the fresh
+initial connection, the database that the connection of the final context sees is valid under
+the pinned profile. Proof sketch: the idle connection has no open-transaction snapshot, so the
+start is valid; {name}`Sql.Branch.valid` keeps validity along the branch. -/
 theorem ExecutionContext.initial_finish_valid {α : Type} {program : Sql α} (db : Database) {env : Env}
     {result : SqlRun α}
     (branch : program.Branch env.clock 0 (db.raw.connection env.counters) result) :

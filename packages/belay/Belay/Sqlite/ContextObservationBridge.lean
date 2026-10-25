@@ -2,17 +2,14 @@ import Belay.Sqlite.ContextObservationLaws
 
 set_option doc.verso true
 
+/-!
+When the real-context observation ({lit}`Script.outputIn`) equals the default observation. The
+bridge covers a query statement that reads no clock and no counter, and that resolution turns into
+the same query in both contexts over equal databases. It does not cover every read-only query.
+-/
+
 namespace Belay.Sqlite
 open Model
-
-/-- For every statement that reads no clock, every clock, index, connection and values, the
-output of the resolved statement is the output without a clock. Proof sketch: such a statement
-takes the clock value 0 whatever the clock is, so both outputs unfold to the same term. -/
-theorem resolvedStepOutput_clock_free (clock : Option Clock) (index : Nat) (connection : Connection)
-    (parameters : List Value) (resolved : Resolved.Statement) (noClock : resolved.readsClock = false) :
-    resolvedStepOutput clock index connection parameters resolved =
-      resolvedStepOutput none index connection parameters resolved := by
-  simp [resolvedStepOutput, statementClock, noClock]
 
 /-- For every script that starts with a statement that resolution turns into a query at the
 connection of the context, the real-context output is the output of that resolved statement at
@@ -36,7 +33,8 @@ database, then the two real-context outputs are equal. The contexts may differ i
 counters, settings, trace and open transaction, as far as these do not change the resolution.
 This is not true for every read-only query: a clock read, a counter read or a pragma setting
 can differ between the contexts. Proof sketch: both outputs unfold to the resolved statement's
-output, which for a query without clock and counter reads depends only on the database
+output; a statement without a clock read takes the clock value 0 in every context, and then the
+output of a query without counter reads depends only on the database
 ({name}`resolvedStepOutput_query`). -/
 theorem Script.outputIn_eq_of_independent (script : Script) (first second : ExecutionContext)
     (statement : Syntax.Statement) (parameters : List Value) (rest : List (Syntax.Statement × List Value))
@@ -50,10 +48,14 @@ theorem Script.outputIn_eq_of_independent (script : Script) (first second : Exec
     (noCounters : (Resolved.Statement.query query subqueries).counterReads = [])
     (sameDatabase : first.connection.state.database = second.connection.state.database) :
     script.outputIn first = script.outputIn second := by
+  have clockFree : ∀ (clock : Option Clock) (index : Nat) (connection : Connection),
+      resolvedStepOutput clock index connection parameters (.query query subqueries) =
+        resolvedStepOutput none index connection parameters (.query query subqueries) := by
+    intro clock index connection
+    simp [resolvedStepOutput, statementClock, noClock]
   rw [Script.outputIn_query script first statement parameters rest query subqueries afterFirst head resolvedFirst,
     Script.outputIn_query script second statement parameters rest query subqueries afterSecond head resolvedSecond,
-    resolvedStepOutput_clock_free first.clock first.index first.connection parameters _ noClock,
-    resolvedStepOutput_clock_free second.clock second.index second.connection parameters _ noClock,
+    clockFree first.clock first.index first.connection, clockFree second.clock second.index second.connection,
     resolvedStepOutput_query first.index first.connection parameters query subqueries noClock
       (by simp [noCounters, Counters.firstUnknown]),
     resolvedStepOutput_query second.index second.connection parameters query subqueries noClock
