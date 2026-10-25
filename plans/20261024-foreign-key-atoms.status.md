@@ -1103,3 +1103,9 @@ REFERENCES defaults (omitted, `NULL`, `+NULL`, `(NULL)`, `(+NULL)`, `-NULL`, a c
 CURRENT_TIMESTAMP, empty and populated tables, enforcement on and off), mapped-NULL and mapped
 actions, and the probes of unit 4 (RESTRICT against NO ACTION, SET DEFAULT, the repeated-column
 index, ADD COLUMN to an absent table), with their claims and the new lock.
+
+Whole-task checks on the same tree (2026-10-25): `just test-nix` exit 0, 70 passed (1477 deselected),
+log `build/agent-logs/wt-test-nix.log`; `just test-scheduled-checks` exit 0, 47 passed in the last
+suite listed in `build/agent-logs/wt-scheduled-checks.log`, reports
+`/nix/store/3477i9gzhsp4nqiihpmgj5llzh3hzsx9-sqlite-verifier-scheduled-check-reports`.
+The task stays OPEN only for the separate judge change with the corpus-v54 evidence.
