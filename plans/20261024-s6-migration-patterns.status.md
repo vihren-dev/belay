@@ -18,8 +18,8 @@ base of this implementation workspace. Final table-rebuild and FK work is still
 needed for the cascade example. Existing reviewed native diagnostics inform
 these contracts but are not implementation acceptance. The descriptors,
 comparison/pattern primitives, composition/frame laws, named commutation laws
-and pattern frontend have the focused evidence below. The fourth unit awaits
-independent review. Universal examples, private-guide corrections and the
+and pattern frontend have focused evidence and clean independent reviews below.
+Universal examples, private-guide corrections and the
 acceptance-part checks remain required.
 
 ## Progress
@@ -214,8 +214,9 @@ gates; task end requires Nix and scheduled checks. No such completion is claimed
 
 ## Fourth unit: application composition and pattern frontend
 
-The implementation is in Jujutsu change `ytvpyvlvtswvqvromlvvxyyuqwszzlkx`,
-with source and fixtures unchanged from frozen checked revision
+Implementation commit `162849adfa03ebb5d6ce5f6b2fe44d21d8ecb5cb` (Jujutsu
+change `ytvpyvlvtswvqvromlvvxyyuqwszzlkx`) has source and fixtures unchanged
+from frozen checked revision
 `68527f2d3cfc44f358a9cf44042ba5f8b25b60fe`. It adds pure-migration/application commutation, named
 application-bind commutation and its same-application/unrestricted conveniences.
 The sufficient premise observes every returning first-application branch's raw
@@ -260,7 +261,8 @@ R3/R19 self-review checked proof sketches, raw reached-domain premises, unchange
 original-success domains, retained application values and actual/all-branch
 coverage. The frontend reuses the exact fresh predicates and default Holds;
 its small explanation function classifies only supported elaborated heads.
-Independent review is pending. No model, text-parser, sampler, editor hook or
-existing execution definition changed. Universal examples and private-guide
+Independent review `20261025T011343Z-162849ad` read the diff and tests and
+found zero musts and zero shoulds. No model, text-parser, sampler, editor hook
+or existing execution definition changed. Universal examples and private-guide
 corrections remain unfinished. Neither acceptance part is complete; post-review
 full/verdict and task-end Nix/scheduled checks remain required.
