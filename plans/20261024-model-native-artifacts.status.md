@@ -1,6 +1,6 @@
 # Model native artifact reuse status
 
-Created 2026-10-24. Status: OPEN.
+Created 2026-10-24. Status: DONE on 2026-10-25.
 Task: [required outcomes](20261024-model-native-artifacts.task.md).
 Owner: `text_build_boundaries`, assigned after clean task review.
 
@@ -110,8 +110,25 @@ records 796 package/surface-fixture files and S6 test drivers byte-equal to
 
 Follow-up review `20261024T215517Z-ebe1c3e9` is clean: zero must and zero should
 findings. Implementation source is frozen at `ebe1c3e9` for root's integration.
-Full acceptance remains pending. Root approved one combined
-S5/S6/native full/verdict gate for this task and S6 part 1, provided the S6
-sources and fixtures remain byte-identical to `e804ddde`. Task-end Nix and
-scheduled checks also remain due. This is an acceptance plan, not a passing
-result. No SQL, Lean declaration, package manifest or judge file changed.
+At that checkpoint full acceptance was pending. Root approved the combined
+S5/S6/native gate for this task and S6 part 1, with the S6 sources and fixtures
+byte-identical to `e804ddde`. The complete two-part integration has now passed
+the final acceptance recorded below. No SQL, Lean declaration, package manifest
+or judge file changed in the native-artifact implementation.
+
+## Final integrated acceptance, 2026-10-25
+
+The producer and regression test are unchanged in reviewed integration
+`5bc323f0`. Its full Nix report `l53fgdvx2y87xwj1j6q0kvhx1qcqbhj4` passes 937
+tests, including installed package replay and surface/translation/layer checks.
+Verdict `fdyxvw89hvk8i7sa232c6is81sczb24d` passes; all 53 prediction files and
+7,372 cases are unchanged. Task-end Nix checks pass 71, and scheduled report
+`j37adzg25s32slqy03advda9hfd02dwx` passes 47. No failures, errors or skips occur
+in those reports. The exact integration commands and outputs are retained in
+`build/agent-logs/s6-complete-acceptance.json` and its adjacent gate logs.
+
+The real consumer-edit measurement, old-output failure, artifact inspection and
+producer invalidation evidence above establish the task's native-reuse behavior.
+The final package replay regression checks the reviewed selector correction too.
+Linux acceptance is complete; this record does not claim an executed Darwin build.
+The task is DONE and publishes with the S6 execution-contract foundation.
