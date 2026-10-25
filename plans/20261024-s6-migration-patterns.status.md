@@ -578,3 +578,14 @@ The fix commit `7935fc9cae660c31e1aef099a5a10530607bc573` received independent r
 `20261025T054748Z-7935fc9c`: zero musts and zero shoulds. All three earlier findings are
 recorded as fixed. This completes the whole-expansion unit; the part-end `just test-full` and
 `just verdict` follow.
+
+Part-end checks on 2026-10-25, run on the source above: `just test-full` passed. Output:
+`/nix/store/r0g88mlbmsfpyhhscfq6mpkh7ls9mhs3-sqlite-verifier-test-reports`; the summed JUnit
+reports show 949 tests with zero failures, errors or skips (log
+`build/agent-logs/s6-test-full.log`). `just verdict` passed. Output:
+`/nix/store/43n3v71nlv2n14mx6ww3j8dlf2isw5qz-sqlite-verifier-verdict`; 53 corpora, 4869 AGREE and
+2503 MODEL_UNSUPPORTED (log `build/agent-logs/s6-verdict.log`). The predictions
+`/nix/store/cxmq9kq5hjvmlfiwmymkdhagy54nn0mr-sqlite-verifier-predictions` hold the same 53
+files as the baseline `1n22b69h6f0df7l9hzpydw7biwhx3pna`. The acceptance part is still open for
+the remaining examples (rebuild cascade, safe-rebuild preservation and affinity), which wait for
+their separately owned contracts.
