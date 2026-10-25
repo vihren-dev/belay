@@ -1205,3 +1205,14 @@ What the views line changes for the foreign-key proofs:
 Two older fixtures needed a change after the merge. `ForeignKeyCreate.lean` lacked the `createView` case in its `create` match. `ForeignKeyEngine.lean` named a theorem `preserves`, which the views line made a keyword (`MigrationPatternSyntax`). The theorem is now `rowReferencesPreserved`.
 
 Local evidence only so far (not evidence for the record): `just dev-build` and the `belay` and `verifier-conformance` builds pass; all 24 foreign-key fixtures run with no errors. Nix results follow in later sections.
+
+### Nix results of the integration merge `53c76a6a` (2026-10-25)
+
+Review: two rounds on the merge (`reviews/20261025T120038Z-c0b53f10`, `reviews/20261025T120418Z-234b73a6`). The first round had one must (ADR 0017 was taken whole from the views side and lost accepted clarifications) and one should (module text said three CREATE forms). Both are fixed inside the merge, which was not pushed. The second round has no must; its one should (status wording) is fixed.
+
+Nix gates on the tree of `53c76a6a` (the following status-only commit changes no source):
+
+- `just test-full`: pass, `/nix/store/mzgmxhk09fzg4x623wnz03r1zw7nv1py-sqlite-verifier-test-reports`. The first run stopped at the 1500 s `suite_build_limit` (exit 124, no test failure, log `build/agent-logs/int-test-full-timeout1.log`); the cold rebuild of the merged model and a busy host were the cause. The limit was not changed. The rerun reused the finished derivations.
+- `just verdict`: pass, `/nix/store/b2sqcc93lswl0cf60l3d2kvw869v9jjn-sqlite-verifier-verdict`. Every corpus up to v52 is unchanged (AGREE or MODEL_UNSUPPORTED counts as before).
+- Predictions: `/nix/store/7s4byx2yc1kxrc8km2lcrknw8f2bl2vr-sqlite-verifier-predictions`. Compared with `/nix/store/bi8dvn7zxjwgrcn0mggw7zy5jpq8ay3m-sqlite-verifier-predictions` (the views integration predictions, 53 files): no record changed (`diff -r` identical). The own predictions path of the #255 head is not recorded; the baseline is the nearest recorded one.
+- `just test-nix` and `just test-scheduled-checks` are not run for this merge; the coordinator runs them on the judge merge.
