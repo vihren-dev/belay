@@ -426,3 +426,34 @@ Reuse the shared checker and keep explicit refutation available. Command and
 tactic fixtures must establish all three outcomes and original-claim replay;
 measure command cost before choosing the default budget. Automatic theorem
 checks and editor actions remain the later part. This unit has no build slot yet.
+
+
+PR #250 is published on #249 as `tasks/s6-execution-contracts` at `9ac05c46`.
+The checked source is `5bc323f0`; the completion record `70f5fc28` has a clean
+independent review. The execution-contract and native-artifact tasks are DONE.
+This completes those tasks, not S6 or ADR17. Complete Nix acceptance has 937
+passing full checks, 71 Nix checks and 47 scheduled checks. The verdict is
+4,869 AGREE and 2,503 MODEL_UNSUPPORTED; all 53 prediction files and 7,372
+cases are unchanged. The existing PR #249 general-mutant CI failure remains
+open and is not claimed fixed by #250.
+
+Fifteen complete acceptance logs, summaries and the PR body are hash-verified
+under `s4/build/agent-logs/s6-complete-integration-acceptance`. Two additional
+roots under `s4/build/accepted-s6-native-artifacts` retain the complete full and
+surface reports. Existing roots retain the shared verdict, predictions,
+scheduled checks, API documentation and native-artifact measurements. Completed
+implementation workspaces are being audited for retirement after publication.
+
+The second migration-pattern unit is checked at `2ed8463e`: three focused Nix
+groups with 160 standard-axiom reports pass at `4ngn8pikwbsql2fqflbvmgc7gz6crxm9`.
+Review of `838aa29e` has no source findings; its status provenance correction
+is recorded. The worker continues the approved composition and frame laws
+under the same task, without a reserved heavy slot.
+
+The editor integration at `495d7693` passes 23 focused Nix checks at
+`pfqbwzf1dvcfbdjzhl2fyavl3fwca3dv`. Independent source review found only two
+missing module overview comments. Their correction passes both real-server
+checks at `bzy1b1fwjxlk3m36r0kbirncv3j7jrq6`; final review is pending. Slot 1
+remains reserved for that worker and the queued SQL-doc message correction.
+The S5 command/tactic frontend worker now owns slot 2 for its first build and
+measured command checks. Neither enclosing task is complete.
