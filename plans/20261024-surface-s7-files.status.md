@@ -223,3 +223,10 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   each of the two files is stale after an edit with no rebuild. The same-name fixtures
   moved to `tests/sql_file_support.py`. Nix surface run (26 passed, 91 deselected, 69.88 s) at
   `/nix/store/47g2zk4b2fv7dy6ircmhzcnja74zgilw-sqlite-verifier-test-surface-1`.
+- 2026-10-25: review `20261025T074257Z-242ef6ab` found two musts (R13). The task text now
+  lists the option value and its module among the persisted data. The checker now resolves
+  each record to its file and groups the records by resolved file and text hash
+  (`groupSources`), so two modules that reach one file by different option values count
+  one source and one stale report names both declarations (new fixture in
+  `tests/surface_sql_check_roots_test.py`). Nix surface run (11 passed, 107 deselected,
+  72.50 s) at `/nix/store/8klpbwk58bwck39c859rr39y6gp0a6aj-sqlite-verifier-test-surface-1`.

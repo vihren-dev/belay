@@ -75,32 +75,52 @@ private def pathBelow (directory file : FilePath) : Option FilePath :=
     some ⟨"/".intercalate (target.drop base.length)⟩
   else none
 
-/-- The file that a record names. Without an explicit root it is below the owning package. With
-one it is below the Lean file of the module that set the option, and the report path is made
-relative to the package when the file is inside it. -/
-private def sourceFile (workspace : Workspace) (package : Package) (use : SqlSourceUse) :
-    IO (Except String (FilePath × String)) := do
-  let some anchor := use.rootOverride | return .ok (package.dir / use.path, use.path)
-  let some module := workspace.findModule? anchor.module
-    | return .error s!"a record of {use.package} was made with belay.sql.packageRoot in module {anchor.module}, which is not in this workspace; rebuild the library that contains it"
-  let file := (module.leanFile.parent.getD ".") / anchor.root / use.path
-  let resolved ← if ← file.pathExists then IO.FS.realPath file else pure file
-  let shown := ((pathBelow (← IO.FS.realPath package.dir) resolved).map (·.toString)).getD use.path
-  return .ok (file, shown)
+/-- A record with the file it names, found in the current workspace. -/
+private structure ResolvedUse where
+  /-- The record. -/
+  use : SqlSourceUse
+  /-- The file, with its directory resolved, so two ways to name one file give one value. -/
+  file : FilePath
+  /-- The path to show: relative to the owning package when the file is inside it. -/
+  shown : String
 
-/-- Compare the records of one distinct source with its file in the owning package. -/
-private def checkSource (workspace : Workspace) (library : String) (uses : Array SqlSourceUse)
-    (use : SqlSourceUse) : IO (Except String CheckedSource) := do
-  let declarations := uses.filterMap fun other => if other.sameSource use then other.declaration else none
-  match packagesNamed workspace use.package with
-  | #[package] =>
-    match ← sourceFile workspace package use with
-    | .error problem => return .error s!"library {library}: {problem}"
-    | .ok (file, shown) =>
-      let current ← if ← file.pathExists then some <$> sqlTextHash <$> IO.FS.readFile file else pure none
-      return .ok { package := use.package, path := shown, state := sourceState use.hash current, declarations }
-  | #[] => return .error s!"library {library}: a record names package {use.package}, which is not in this workspace; require that package in the lakefile again, or run lake build {library} after removing the form that read {use.path}"
-  | _ => return .error s!"library {library}: a record names package {use.package}, which several packages of this workspace have; give the packages different names"
+/-- The file that a record names. Without an explicit root it is below the owning package. With
+one it is below the Lean file of the module that set the option. -/
+private def resolveUse (workspace : Workspace) (library : String) (use : SqlSourceUse) :
+    IO (Except String ResolvedUse) := do
+  let package ← match packagesNamed workspace use.package with
+    | #[package] => pure package
+    | #[] => return .error s!"library {library}: a record names package {use.package}, which is not in this workspace; require that package in the lakefile again, or run lake build {library} after removing the form that read {use.path}"
+    | _ => return .error s!"library {library}: a record names package {use.package}, which several packages of this workspace have; give the packages different names"
+  let base ← match use.rootOverride with
+    | none => pure package.dir
+    | some anchor =>
+      match workspace.findModule? anchor.module with
+      | some module => pure ((module.leanFile.parent.getD ".") / anchor.root)
+      | none => return .error s!"library {library}: a record of {use.package} was made with belay.sql.packageRoot in module {anchor.module}, which is not in this workspace; rebuild the library that contains it"
+  let file := base / use.path
+  let directory := (file.parent.getD ".")
+  let resolved ← if ← directory.pathExists then
+      pure ((← IO.FS.realPath directory) / (file.fileName.getD ""))
+    else pure file
+  let shown := ((pathBelow (← IO.FS.realPath package.dir) resolved).map (·.toString)).getD use.path
+  return .ok { use, file := resolved, shown }
+
+/-- The distinct sources of the records: one for each file and text hash, however many declarations
+or modules read it. A source keeps the declarations of all its records. -/
+private def groupSources (resolved : Array (ResolvedUse × Option UInt64)) : Array CheckedSource := Id.run do
+  let mut groups : Array (FilePath × UInt64 × CheckedSource) := #[]
+  for (item, current) in resolved do
+    let declarations := item.use.declaration.toArray
+    match groups.findIdx? fun (file, hash, _) => file == item.file && hash == item.use.hash with
+    | some index =>
+      groups := groups.modify index fun (file, hash, source) =>
+        (file, hash, { source with declarations := source.declarations ++ declarations })
+    | none =>
+      let state := sourceState item.use.hash current
+      let source : CheckedSource := { package := item.use.package, path := item.shown, state, declarations }
+      groups := groups.push (item.file, item.use.hash, source)
+  return groups.map (·.2.2)
 
 /-- Check one library: read its compiled modules, then compare each distinct source with its file. -/
 private def checkLibrary (workspace : Workspace) (library : LeanLib) : IO (LibraryCheck × Array String) := do
@@ -109,16 +129,16 @@ private def checkLibrary (workspace : Workspace) (library : LeanLib) : IO (Libra
   let mut walk : Walk := { library := name }
   for module in modules do
     walk ← walkModule workspace module.name walk
-  let mut sources := #[]
   let mut problems := walk.problems
-  let mut distinct : Array SqlSourceUse := #[]
+  let mut resolved : Array ResolvedUse := #[]
   for use in walk.uses do
-    unless distinct.any use.sameSource do distinct := distinct.push use
-  for use in distinct do
-    match ← checkSource workspace name walk.uses use with
-    | .ok source => sources := sources.push source
-    | .error problem => problems := problems.push problem
-  return ({ library := name, modules := modules.size, sources }, problems)
+    match ← resolveUse workspace name use with
+    | .ok item => resolved := resolved.push item
+    | .error problem => unless problems.contains problem do problems := problems.push problem
+  let withCurrent ← resolved.mapM fun item => do
+    let current ← if ← item.file.pathExists then some <$> sqlTextHash <$> IO.FS.readFile item.file else pure none
+    return (item, current)
+  return ({ library := name, modules := modules.size, sources := groupSources withCurrent }, problems)
 
 /-- The Lake environment of the running toolchain. -/
 private def lakeEnvironment : IO Lake.Env := do

@@ -103,8 +103,13 @@ roots or impose a restriction on nested projects.
   requires restarting the Lean file; this task adds no external-file watcher.
 - **Compiled source records survive imports.** Persist package identity,
   package-relative source path and normalized-text hash with the compiled
-  module and generated declaration where there is one. Several declarations
-  using a file retain their association but do not inflate source totals.
+  module and generated declaration where there is one. When the package-root
+  option chose the root, also persist the option value and the module that set
+  it (both relative, never an absolute path), because the option value is
+  relative to that module's Lean file and the checker needs both to find the
+  file again. Several declarations or modules using a file retain their
+  association but do not inflate source totals; the checker counts a source
+  once for each resolved file and text hash.
   Relocating a package does not leave the checker using an old absolute path.
   Hash normalization matches pinned Lake's `text = true` line-ending rules.
 - **The checker inspects the existing build.** `lake exe belay-sql-check`
