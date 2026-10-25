@@ -50,8 +50,8 @@ theorem guard_context (clock : Int) (counters : Counters) (parameters : List Val
     (database : Model.Database) (position index : Nat) (table : Table) (cell : CatalogColumn)
     (depth : Nat) (found : database.table position = some table) :
     let queries := guardQueries position index table.shape cell
-    let context := Resolved.subqueryContext clock counters parameters database queries (depth + 1)
-    let inner := Resolved.subqueryContext clock counters parameters database queries depth
+    let context := Resolved.subqueryContext clock counters parameters database queries none (depth + 1)
+    let inner := Resolved.subqueryContext clock counters parameters database queries none depth
     (guardCondition.evaluate context []).2 = .none ∧
       (Resolved.truthy (guardCondition.eval context []) = true ↔
         filteredOnes inner (rangeResolved index cell) (Resolved.sourceRows table) = [] ∧
@@ -60,8 +60,8 @@ theorem guard_context (clock : Int) (counters : Counters) (parameters : List Val
         filteredOnes inner typedResolved (table.shape.infoRows.map (· ++ [.text (bytes! "ledger"), .null])) ≠ []) := by
   dsimp only
   let queries := guardQueries position index table.shape cell
-  let inner := Resolved.subqueryContext clock counters parameters database queries depth
-  let context := Resolved.subqueryContext clock counters parameters database queries (depth + 1)
+  let inner := Resolved.subqueryContext clock counters parameters database queries none depth
+  let context := Resolved.subqueryContext clock counters parameters database queries none (depth + 1)
   have range := range_run inner database position index table cell found
   have account := metadata_run inner database table.shape.infoRows (nameResolved (bytes! "account"))
     (by simp [nameResolved, Resolved.Expr.any, Resolved.Expr.isFallibleCall])
@@ -122,7 +122,7 @@ theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable
   let query := Resolved.Query.selectOneWhere guardCondition
   let queries := guardQueries position index table cell
   let counters := db.raw.connection.state.counters.view (Resolved.Statement.query query queries).counterReads
-  let inner := Resolved.subqueryContext 0 counters [] db.raw queries 3
+  let inner := Resolved.subqueryContext 0 counters [] db.raw queries none 3
   have ran := guard_context 0 counters [] db.raw position index
     {shape := table, rows := db.raw.rows.getD position []} cell 3 (db.raw.table_of_findTable _ _ _ found)
   have faultless := Resolved.Query.selectOneWhere_faultless

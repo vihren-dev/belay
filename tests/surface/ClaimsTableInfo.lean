@@ -47,7 +47,7 @@ theorem table_has_a_stored_column_named {script : Script} {isQuery : script.isQu
     FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
       (.literal (.text bytes)) .binary, none))
       (by simp [namesAlias]) (by simp [sql_simp])
-  refine Iff.trans (Holds.iff_selectOne_tableInfo (namedSource := rfl) head rfl (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves
+  refine Iff.trans (Holds.iff_selectOne_tableInfo (namedSource := rfl) (current := rfl) head rfl (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves
     (by simp [sql_simp])) (Iff.trans ?_ (Iff.trans (CatalogTable.exists_pragmaRow_name table argument
       (fun cell => cell = Value.text bytes)) ?_))
   · refine exists_congr fun row => and_congr_right fun _ => ?_
@@ -128,9 +128,9 @@ theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : C
     FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
       (.literal (.text (bytes! "status"))) .binary, none)) (by simp [namesAlias]) (by simp [sql_simp])
   constructor
-  · simpa using Empty.iff_selectOne_tableInfo (namedSource := rfl) (head := rfl) rfl
+  · simpa using Empty.iff_selectOne_tableInfo (namedSource := rfl) (current := rfl) (head := rfl) rfl
       (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp])
-  · exact Fails.not_selectOne_tableInfo (namedSource := rfl) (head := rfl) rfl
+  · exact Fails.not_selectOne_tableInfo (namedSource := rfl) (current := rfl) (head := rfl) rfl
       (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp])
 
 /-- An existing table whose schema has no status column. The pragma query succeeds with no matching row. -/

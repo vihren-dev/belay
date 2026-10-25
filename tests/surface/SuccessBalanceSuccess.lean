@@ -33,7 +33,7 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     (term := .compare .eq (.identifier (name! "account") .none) (.parameter 1))
     (result := (predicate, none)) (by simp [namesAlias])
     (by simp [sql_simp, accountColumn, accountAt, predicate]; rfl)
-  apply (Holds.iff_selectAggregate (script := balance a) (operand := .identifier (name! "cents") .none) (alias := none) (text := "sum(cents)") (namedSource := rfl) (head := rfl)
+  apply (Holds.iff_selectAggregate (script := balance a) (operand := .identifier (name! "cents") .none) (alias := none) (text := "sum(cents)") (namedSource := rfl) (current := rfl) (head := rfl)
     (reference := {table := name! "ledger", alias := none}) (build := .sum) (name := "sum")
     (resolved := .column cents) (condition := some predicate) (aggregate := .sum (.column cents))
     rfl rfl found (resolveOperand_identifier_table centsColumn) rfl (by simpa [resultAliases] using resolves) rfl

@@ -46,7 +46,7 @@ example (catalog : Catalog) (position : Nat) (table : CatalogTable)
     resolveSources catalog (some {table := name! "ledger", alias := none}) [] 0 queries [8, 0] =
       .ok ([{item := .table position, kind := .inner, condition := .none}],
         tableScope catalog {table := name! "ledger", alias := none} position table) :=
-  resolveSources_table catalog _ position table rfl rfl found queries [8, 0]
+  resolveSources_table catalog _ position table rfl rfl rfl found queries [8, 0]
 
 /-- The pragma source law preserves its rows for every callback and a nested-query prefix. -/
 example (catalog : Catalog) (rows : List (List Value))
@@ -59,4 +59,4 @@ example (catalog : Catalog) (rows : List (List Value))
     resolveSources catalog (some reference) [] 0 queries [8, 2] =
       .ok ([{ item := .pragma (pragmaSource reference (bytes! "ledger") tableInfoNames rows).1,
               kind := .inner, condition := .none }], tableInfoScope reference (bytes! "ledger") rows) := by
-  exact resolveSources_tableInfo catalog _ (bytes! "ledger") rows rfl rfl (by decide) notTable notView info queries [8, 2]
+  exact resolveSources_tableInfo catalog _ (bytes! "ledger") rows rfl rfl rfl (by decide) notTable notView info queries [8, 2]

@@ -78,3 +78,8 @@ primitive's meaning.
   `Resolved.Statement.readsInitial` list their constructors; proof sketches for the
   independence laws; docstrings for the fixtures; the native test is split into
   `tests/surface_two_state_test.py` and `tests/two_state_support.py`.
+- 2026-10-25, the first `just test-full` failed in `tests/test_model_package.py` (fixture modules
+  must be named as compiled examples; fixed) and in 13 surface tests (the premise
+  `reference.schema = none` and the optional `initial` argument of `subqueryContext` shift
+  the arguments of the fixtures in `tests/surface`; fixed in the fixtures). The failed log
+  of the second run is `build/agent-logs/gate-full-2-failed.log`.
