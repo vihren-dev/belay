@@ -18,6 +18,7 @@ def library (records : Array ProofCostRecord) (unmeasured : Array String := #[])
   { name := "L", records, unmeasured := unmeasured.map ({ module := "M", declaration := · }), stale := #[] }
 
 def baseline : LibraryCosts := library #[entry "M" "a" 10000, entry "M" "b" 5000]
+/-- Compare {lit}`now` with {lit}`baseline` for an allowance in internal heartbeats. -/
 def compare' (allowance : Nat) (now : LibraryCosts) : LibraryComparison :=
   compareLibrary allowance (some baseline) now
 
@@ -37,6 +38,14 @@ def compare' (allowance : Nat) (now : LibraryCosts) : LibraryComparison :=
 -- new stable proofs are added; unstable names are not compared
 #guard (compare' 0 (library #[entry "M" "a" 10000, entry "M" "b" 5000, entry "M" "c" 1])).added.size == 1
 #guard (compare' 0 (library #[entry "M" "a" 10000, entry "M" "b" 5000, entry "M" "p" 1 (identity := .privateName)])).added.isEmpty
+-- a baseline entry without a count cannot be compared, but its failure or loss still fails the run
+def inexact : LibraryCosts := library #[entry "M" "a" 0 .precisionUnavailable, entry "M" "b" 5000]
+#guard (compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .failed, entry "M" "b" 5000])).missing.map (·.2 == .failed) == #[true]
+#guard (compareLibrary 0 (some inexact) (library #[entry "M" "b" 5000])).missing.map (·.2 == .absent) == #[true]
+#guard (compareLibrary 0 (some inexact) (library #[entry "M" "a" 3, entry "M" "b" 5000])).unusableBaseline.size == 1
+#guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 0 .failed, entry "M" "b" 5000])] == 1
+#guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "b" 5000])] == 1
+#guard comparisonExit #[compareLibrary 0 (some inexact) (library #[entry "M" "a" 3, entry "M" "b" 5000])] == 0
 -- exit codes
 #guard comparisonExit #[compare' 0 baseline] == 0
 #guard comparisonExit #[compare' 0 (library #[entry "M" "a" 10001, entry "M" "b" 5000])] == 1

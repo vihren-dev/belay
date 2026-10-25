@@ -39,7 +39,7 @@ structure LibraryComparison where
   failed : Array ProofCostRecord := #[]
   /-- Proofs with a stable name that the baseline does not have. -/
   added : Array ProofCostRecord := #[]
-  /-- Baseline records with no completed count. They cannot be compared. -/
+  /-- Baseline records with no completed count that exist now without a failure. They cannot be compared. -/
   unusableBaseline : Array ProofCostRecord := #[]
 
 /-- Whether two records measure the same thing, so that their counts can be compared. -/
@@ -62,25 +62,30 @@ def compareLibrary (allowance : Nat) (baseline : Option LibraryCosts) (current :
   let unmeasured := current.unmeasured.map fun item => (item.module, item.declaration)
   let start : LibraryComparison := { name := current.name }
   let compared := before.foldl (fun found old =>
-    match old.status, old.heartbeats with
-    | .completed, some oldCount =>
-      match now[key old]? with
-      | none =>
-        let cause := if unmeasured.contains (key old) then .unmeasured else .absent
-        { found with missing := found.missing.push (old, cause) }
-      | some new =>
+    match now[key old]? with
+    | none =>
+      let cause := if unmeasured.contains (key old) then .unmeasured else .absent
+      { found with missing := found.missing.push (old, cause) }
+    | some new =>
+      match old.status, old.heartbeats with
+      | .completed, some oldCount =>
         if !old.comparableWith new then { found with incompatible := found.incompatible.push (old, new) }
         else match new.status, new.heartbeats with
           | .completed, some newCount =>
             if newCount > oldCount + allowance then { found with growth := found.growth.push (old, new) } else found
           | .failed, _ => { found with missing := found.missing.push (old, .failed) }
-          | _, _ => { found with missing := found.missing.push (old, .precisionUnavailable) }
-    | _, _ => { found with unusableBaseline := found.unusableBaseline.push old }) start
+          | .completed, none | .precisionUnavailable, _ =>
+            { found with missing := found.missing.push (old, .precisionUnavailable) }
+      -- A baseline entry without a count cannot be compared, but a failure now is still a failure.
+      | .completed, none | .failed, _ | .precisionUnavailable, _ =>
+        if new.status == .failed then { found with missing := found.missing.push (old, .failed) }
+        else { found with unusableBaseline := found.unusableBaseline.push old }) start
   current.records.foldl (fun found record =>
     if !record.isStable || known.contains (key record) then found
-    else if record.status == .failed then { found with failed := found.failed.push record }
-    else if record.status == .completed then { found with added := found.added.push record }
-    else found) compared
+    else match record.status with
+      | .failed => { found with failed := found.failed.push record }
+      | .completed => { found with added := found.added.push record }
+      | .precisionUnavailable => found) compared
 
 /-- Compare every selected library with the baseline library of the same name. A library that the
 baseline does not have has only added proofs. -/

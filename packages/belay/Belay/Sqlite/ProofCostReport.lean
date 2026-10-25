@@ -75,7 +75,7 @@ private def recordLine (record : ProofCostRecord) : String :=
   let count := match record.status, record.heartbeats with
     | .completed, some heartbeats => showUnits heartbeats
     | .failed, _ => "failed"
-    | _, _ => "not exact"
+    | .completed, none | .precisionUnavailable, _ => "not exact"
   s!"  {record.module}  {kind}  {record.declaration}  {count}"
 
 /-- The text of the report for one library. -/
