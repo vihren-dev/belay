@@ -131,3 +131,11 @@ their own reviewed task. Neither is silently excluded by this task boundary.
 - 2026-10-25: review `20261025T054500Z-f420fa5b` of the corrective-action refactor had
   no musts and one should (no test for the duplicate-section message); the errors fixture
   now checks it with `#guard_msgs`. Checked by the part-end gate below.
+- 2026-10-25: part 1 acceptance (file elaboration and named statements) after the
+  reviews above: `just test-full` passed (472 passed, 71 deselected, 49 subtests in
+  165.41 seconds for the main suite; 108 passed in 327.35 seconds for the surface suite;
+  reports at `/nix/store/pll1s1p34sxqzp78gav75rzn19f49bii-sqlite-verifier-test-reports`)
+  and `just verdict` passed at
+  `/nix/store/fdyxvw89hvk8i7sa232c6is81sczb24d-sqlite-verifier-verdict`. Logs are
+  `build/agent-logs/s7-part1-test-full.log` and `s7-part1-verdict.log`. Part 2 (record
+  registry, checker, native Lake integration) starts next.
