@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T06:06:49+00:00",
+  "finding": "20261025T053652Z-9624ae5e#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "resolveStatementPragma now lists every remaining Pragma constructor; the ValueIssue matches list both constructors; ExprError is classified by an exhaustive function."
+}

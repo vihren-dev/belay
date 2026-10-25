@@ -11,10 +11,11 @@ change once, so the theorems that relate them can state it. -/
 namespace Belay.Sqlite.Model.Resolved
 
 /-- The catalog after the statement succeeds on the given catalog: CREATE TABLE, CREATE
-INDEX, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
+INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
 catalog change here; {lit}`ResolveState.after` handles it. For example,
 {lean}`(Statement.begin.applyCatalog [] : Catalog)` is the empty catalog. -/
 def Statement.applyCatalog : Statement → Catalog → Catalog
+  | .createView _ name view, catalog => catalog.createView name view
   | .createTable _ name table, catalog => catalog.createTable name table
   | .createIndex _ name index, catalog => catalog.createIndex name index
   | .createTrigger _ name trigger, catalog => catalog.createTrigger name trigger
@@ -29,11 +30,13 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
 inductive Statement.Kind where
   /-- CREATE TABLE or ADD COLUMN: a definition that changes a table. -/
   | definition
+  /-- CREATE VIEW: append an unresolved catalog definition without stored rows. -/
+  | view
   /-- CREATE INDEX. -/
   | index
   /-- CREATE TRIGGER (ADR 0018, D5). -/
   | trigger
-  /-- DROP INDEX or DROP TABLE: a removal from the catalog. -/
+  /-- DROP TABLE, VIEW, INDEX or TRIGGER: a removal from the catalog. -/
   | drop
   /-- BEGIN, COMMIT or ROLLBACK: transaction control. -/
   | control
@@ -51,6 +54,7 @@ inductive Statement.Kind where
 a statement has reads it, so a new statement form gets a form here first. -/
 @[simp] def Statement.kind : Statement → Statement.Kind
   | .createTable .. | .addColumn .. => .definition
+  | .createView .. => .view
   | .createIndex .. => .index
   | .createTrigger .. => .trigger
   | .drop .. => .drop
@@ -67,6 +71,6 @@ statement is not control. -/
 def Statement.isControl (statement : Statement) : Bool :=
   match statement.kind with
   | .control | .setting => true
-  | .definition | .index | .trigger | .drop | .write | .query | .prepareError => false
+  | .definition | .view | .index | .trigger | .drop | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Model.Resolved

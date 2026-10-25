@@ -80,8 +80,18 @@ The frontend maps these statements, and refuses every other statement as
   The library primitive `Resolved.Source.subquery index width` reads the complete
   result rows of an indexed query in the statement's context. It supports the existing joins,
   keeps enclosing-query cells through NULL extension, and refuses a source whose complete
-  row multiset depends on a window's tie order or whose evaluation fails. CTEs and views
-  remain outside the implemented part of ADR 0019 slice 4.
+  row multiset depends on a window's tie order or whose evaluation fails.
+- Ordinary nonrecursive `WITH` definitions use the same query sources. Explicit column
+  lists, forward references, repeated uses and nested name shadowing are supported.
+  Each use can read its permitted enclosing-query bindings. Unused definitions are not
+  prepared. WITH also prefixes the supported INSERT VALUES, UPDATE and DELETE forms;
+  nested definitions can occur in their scalar subqueries. Actual recursion, the
+  `RECURSIVE` keyword and both materialization hints remain model restrictions.
+  Invalid circular references and column counts retain SQLite's preparation errors.
+  Nested WITH also resolves in supported trigger expressions. Execution remains
+  unmodeled when a trigger body both writes and uses a subquery; successful
+  preparation does not remove that existing runtime restriction.
+  Views are query sources too; see the paragraph on `CREATE VIEW` below.
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
@@ -192,9 +202,9 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
-`NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
+`NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
-options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
+options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
@@ -208,7 +218,7 @@ and trigger bodies cannot split commands. An empty starting schema is allowed.
 ## Schema description
 
 `schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`,
-`CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
+`CREATE VIEW`, `CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
 follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
@@ -280,7 +290,7 @@ that foreign keys reference count violations as SQLite's `sqlite3FkCheck` does, 
 rowid order (primary-key order for a `WITHOUT ROWID` table), and a statement that ends with a
 count other than zero is `FOREIGN KEY constraint failed` and changes nothing. A child key
 looks up its parent under the parent index's affinity and collation, a parent row finds its
-child rows as `parent = child` compares them, and a child key with a NULL column needs no
+child rows as `parent = child` compares them, and a child key with a selected NULL column needs no
 parent. The actions `CASCADE`, `SET NULL`, `SET DEFAULT`, `RESTRICT` and `NO ACTION` run after
 each deleted row and after each updated row whose parent key changes, also in chains and for a
 table that references itself, with every constraint of their rows ABORT. A write that
@@ -290,6 +300,13 @@ the implicit `DELETE` of `DROP TABLE`. A deferred foreign key is the restriction
 `deferred-foreign-key`, `ON CONFLICT DO UPDATE` on a table with a key to check is
 `foreign-key-upsert`, and a write whose actions nest deeper than the trigger depth limit, or
 whose `REPLACE` deletes more than one row with foreign keys, is not described.
+
+Action assignments use the selected child columns in parent-key order, including repeated
+targets. For a mapping that selects child `x` twice, CASCADE, SET NULL and SET DEFAULT leave
+unused child `y` unchanged. UPDATE OF triggers use these assigned columns; constraint checks
+also include generated columns that depend on them. A generated dependent column is not an
+assigned column for UPDATE OF matching. Parent scans and child lookups can use different
+affinities, so enforcement alone does not imply the row-reference atom described below.
 
 `PRAGMA table_info(t)` and `PRAGMA foreign_key_list(t)` (ADR 0019, D2), also with `= t`, give
 SQLite's rows for the catalog of their time. `table_info` has one row for each column that is
@@ -301,6 +318,11 @@ key first. A missing table gives no rows. For `table_info`, a table of SQLite's 
 their cells have no affinity. A name of their hidden columns `arg` and `schema` is the
 restriction `table-function`, because SQLite gives a condition on such a column to the pragma
 as an argument.
+
+A view body may call `pragma_table_info` and `pragma_foreign_key_list`. The model treats the
+schema as trusted, the default of the profile, so these calls work in a view. Native SQLite
+refuses them as an unsafe use of a virtual table only after `PRAGMA trusted_schema=OFF`, which
+the model does not support.
 
 `PRAGMA integrity_check` and `PRAGMA quick_check` (ADR 0019, D2), alone or with a value in
 parentheses or after `=`, check the rows of every table, or of the named table. A decimal
@@ -323,14 +345,27 @@ unique constraints of each checked table hold.
 child row and foreign key that the row does not satisfy, also when foreign keys are off: the
 table name, the rowid (NULL for a `WITHOUT ROWID` table), the parent table as the key writes it,
 and the `fkid` of the key, in scan order and then in `fkid` order. The child row finds its parent
-as a write does, a NULL in the key satisfies it, and a missing parent table finds no row. A
+as a write does. NULL in a selected child-key column satisfies it. The selected mapping can
+repeat a column, so NULL in an unused declaration column does not exempt the row. Without a
+selected comparison, the NULL test uses the declaration columns. A missing parent table finds no row. A
 foreign key whose parent table has no parent key fails at prepare with
 `foreign key mismatch - "c" referencing "p"`, before any row. A missing table fails with
 `no such table`, and a name of SQLite's own tables is the restriction `system-table`. Without a table name, two or more tables with a mismatch are the restriction
 `foreign-key-mismatch-order`, and two or more tables with rows give no result. When the
-statement does not fail, the form without a table name gives no rows exactly when the foreign
-keys of every table hold (`Database.ForeignKeysHold`), and the form with the name of table t
-exactly when the foreign keys of t hold (`Table.ForeignKeysHold`).
+statement prepares, the form without a table name gives no rows exactly when the database has
+`Database.RowReferencesHold` with `database.catalog.foreignKeyMapping`; the named-table form
+uses `Table.RowReferencesHold` with that same mapping. These facts describe row comparisons,
+not whether the parent schema supports them. `Database.ParentSchemasCompatible` separately
+requires a located, catalog-selected mapping for every declaration, including empty child
+tables. A missing parent and NULL child keys can give an empty pragma result while that
+schema fact fails. An existing nonunique parent instead causes a prepare error.
+
+A supplied `ForeignKeyMapping` is total over child positions and declarations; it cannot omit
+a key from either atom. It can retain a parent comparison after a supporting index is dropped.
+The row fact then reads child rows, parent rows and parent-column definitions. Its frame laws
+transport catalog positions explicitly through DROP. The schema fact also reads eligible
+indexes and their selection order, so the same index drop can preserve row truth and break
+schema compatibility. Neither foreign-key atom is part of `Database.Valid`.
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
@@ -370,8 +405,42 @@ may not be dropped` for SQLite's schema tables under any of their names, also wi
 EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
 DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
 (`drop-constraint-index`). With foreign keys on, `DROP TABLE` first deletes the rows of a table
-that foreign keys reference, with their actions, and fails when a violation remains. The model
-has no views.
+that foreign keys reference, with their actions, and fails when a violation remains.
+
+`CREATE VIEW [IF NOT EXISTS] name [(columns)] AS select` and `DROP VIEW [IF EXISTS] name`
+(ADR 0019, D5) keep the view in the catalog as the `SELECT` syntax, not as resolved rows. SQLite
+reads the view when a statement uses it, so the view can name a table that does not exist yet,
+and a later `DROP TABLE` or `CREATE TABLE` changes what the view reads. A use of the view in
+`FROM` expands the stored query like a derived table, with the column names of the optional
+list or of the query. Names of tables, views and indexes share one namespace, so `already
+exists`, `use DROP VIEW to delete view` and `use DROP TABLE to delete table` apply as in SQLite.
+A view that names a missing table or reads itself fails when a statement uses it, with SQLite's
+preparation error. A view has no stored rows: the observation of the catalog reads them by
+running `SELECT * FROM view`. Not modeled, and refused as model restrictions: `TEMP` views,
+schema-qualified view names, `INSTEAD OF` triggers, a view as the argument of a
+table-valued pragma.
+
+A view has no `INSTEAD OF` trigger in the model, so a write to it fails as in SQLite:
+`INSERT`, `REPLACE`, `UPDATE` and `DELETE` give `cannot modify v because it is a view`, with
+the name as the catalog spells it, and they do not look at the rest of the statement. `CREATE
+INDEX` on a view gives `views may not be indexed`, `ALTER TABLE ... ADD COLUMN` gives `Cannot
+add a column to a view`, and `CREATE TRIGGER` with `BEFORE` or `AFTER` gives `cannot create
+BEFORE trigger on view: v` or the same with `AFTER`, after the checks of the trigger name. The
+rows of an `INSERT` with different widths are the one error that comes first, as in SQLite.
+
+`PRAGMA table_info(view)` and a write to a view first read the columns of the view, as
+`SELECT * FROM view` gives them now. `table_info` lists the name, the normalized declared type
+or the empty text, `notnull` 0, `dflt_value` NULL and `pk` 0 for each. SQLite reads the columns
+only to describe them, so it does not check everything that a query on the view checks. A view
+that names a missing table or reads itself, a missing column or function, an ORDER BY or GROUP
+BY term out of range, or an ambiguous column gives the preparation error of the query, for
+the pragma and for a write. The width of the view's own list of column names is not checked:
+`table_info` lists the names of the list, in order and without types, and a write gives
+`cannot modify`. A subquery with the wrong number of columns, an aggregate in the wrong place
+and the other errors that SQLite finds only when a statement runs the view are the restriction
+`view-body-check`. So is the same list-width mismatch in another view that the view reads, and
+a missing column in a view that a trigger body writes to, because SQLite resolves `new.a` and
+`old.a` there. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...
@@ -498,7 +567,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `schema-statement` | A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
+| `schema-statement` | A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
@@ -522,7 +591,8 @@ should shrink.
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
@@ -540,6 +610,7 @@ should shrink.
 | `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
 | `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body that no other restriction covers, with `changes()`, `total_changes()` or `last_insert_rowid()` in its body or `WHEN` condition, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
 | `source-column-name` | A derived source whose duplicate output names need SQLite's random suffix is not modeled; give the columns distinct aliases | ADR 0019, D5 |
+| `recursive-common-table` | A recursive CTE is not modeled, including when the WITH clause omits RECURSIVE; use nonrecursive definitions | ADR 0019, D5 |
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |

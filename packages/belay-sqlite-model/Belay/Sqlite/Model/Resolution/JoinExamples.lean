@@ -69,6 +69,12 @@ def joinU : Resolved.QuerySource :=
   joined [] { table := (name! "t"), alias := some (Identifier.ofString s!"t{item}") }) == some (.prepareError (.expression .tooManyTables))
 -- An operator that SQLite refuses (`unknown join type`) is a restriction.
 #guard restrictedOne [.star] (table (name! "t")) [joined ["LEFT", "INNER"] (table (name! "u")) (some onA)]
+-- SQLite resolves a result column alias in ON as it does in WHERE (checked natively), so the model
+-- refuses it instead of reporting a missing column. A name that is a column of the sources is no alias.
+#guard restrictedOne [.expression (qualified (name! "t") (name! "b")) (some (name! "z")) "t.b AS z"] (table (name! "t"))
+  [joined [] (table (name! "u")) (some (.compare .eq (.identifier (name! "z") .none) (qualified (name! "u") (name! "c"))))]
+#guard !restrictedOne [.expression (qualified (name! "t") (name! "b")) (some (name! "c")) "t.b AS c"] (table (name! "t"))
+  [joined [] (table (name! "u")) (some (.compare .eq (qualified (name! "t") (name! "a")) (qualified (name! "u") (name! "a"))))]
 -- Lean reads the operator keywords as SQLite's sqlite3JoinType does: without ASCII case, in
 -- any order and repeated (checked natively).
 #guard joinOperator ["Left", "outer"] == some (.left, false)

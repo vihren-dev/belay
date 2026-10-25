@@ -187,12 +187,24 @@ What the code has today, after slice 1 of ADR 0018:
 ### D4. The table rebuild
 
 - `INSERT ... SELECT`, with the conflict algorithms and `ON CONFLICT` clauses of the model.
-  The model computes the rows of the `SELECT` before it writes, as SQLite does when the
-  `SELECT` reads the written table, and in the order of the `SELECT`.
+  The model follows SQLite's source-evaluation and insertion order, including
+  streaming rows and materializing them when required by the actual statement.
+  It preserves expression-error precedence, conflict behavior and partial writes.
 - `ALTER TABLE t RENAME TO u`, `ALTER TABLE t RENAME COLUMN a TO b` and
   `ALTER TABLE t DROP COLUMN a`, with SQLite's rewrite of the references in indexes, foreign
   keys, triggers and views, and its prepare errors (for example, a column of a key or an
   index cannot be dropped). Only SQLite's default, `legacy_alter_table` off, is modeled.
+
+Amended 2026-10-24 by owner decision: the earlier rule that always computed all
+source rows before writing was too strong. Pinned SQLite 3.51.0 can stream an
+independent source; a read of the destination or a row trigger can require
+materialization. With source values `2, 1, -9223372036854775808`, destination
+`x UNIQUE` already containing `1`, and `INSERT OR FAIL INTO dest SELECT abs(x)
+FROM src`, the streaming case stops at the unique conflict after inserting `2`.
+An AFTER INSERT trigger whose body is `SELECT 1` makes this example materialize
+the source first: integer overflow occurs and `2` is not inserted. Both outcomes
+were checked against the pinned native binary. Slice 5 must model the exact
+behavior; it must not use an unsupported restriction in place of this work.
 
 ### D5. Queries as sources
 
@@ -275,15 +287,41 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 
 ## Implementation record
 
-2026-10-24, slice 4 part 1 in progress: resolved sources can read an indexed query
+2026-10-24, slice 4 part 1 complete: resolved sources can read an indexed query
 through the statement's evaluation context. Complete-row certainty is separate from
 first-column certainty. Column metadata now distinguishes absent expression affinity
 from BLOB affinity and combines every column of compound terms. D3's ORDER BY COLLATE
 exception is implemented for IN and scalar subqueries. Derived SELECT sources now pass
 through SQL translation, indexed source resolution and the same evaluator. Source expansion
 precedes expression resolution; derived bodies follow FROM order and preserve enclosing
-versus sibling binding. Part-1 native corpus and full/verdict acceptance remain pending;
-ordinary CTEs and views remain for parts 2 and 3. This does not complete D5 or slice 4.
+versus sibling binding. Part 1 passed native, full-suite and verdict acceptance at
+`c8db1a54`; draft corpus v53 remains separate from the subject publication and needs
+owner approval before merge. The publication checkpoint has its own final gates.
+Parts 2 and 3 cover ordinary CTEs and views. Part 1 alone does not complete D5 or slice 4.
+
+2026-10-24, slice 4 part 2 complete: ordinary WITH definitions use the same
+indexed query-source machinery. Definition names use lexical WITH scope; each use
+receives its permitted enclosing column scope. Explicit column lists retain the
+resolved affinity and collation. Supported SELECT and VALUES INSERT, UPDATE and
+DELETE forms share this expansion, including nested queries in trigger bodies.
+Unused definitions remain unprepared. Valid recursion ends in a model restriction.
+Circular references, column-count errors, repeated recursive references and
+recursive aggregates retain their checked SQL errors.
+The RECURSIVE keyword and materialization hints remain excluded. Focused Nix
+model, public surface and restriction checks pass. Independent review of the CTE
+implementation found no issues. The combined S4 and foreign-key integration passed
+all 923 Nix-selected tests and the frozen verdict. Final publication checks passed
+36 selected cases, including both guide proofs and the S6/S7 prototypes; integration
+review found no issues. All previously predicted corpus records are unchanged.
+Views remain part 3, so D5 and slice 4 remain open.
+
+2026-10-25, slice 4 part 3 remains open. Stored-view sources have focused kernel
+checks. DROP VIEW and DROP VIEW IF EXISTS now use the shared drop execution,
+including wrong-kind errors, changed catalog positions and rollback. The generic
+statement/run validity proofs cover the new syntax. Focused Nix surface, syntax
+and existing DROP mutation checks pass; frozen prediction outputs are unchanged.
+CREATE VIEW, complete view metadata/write errors and full part-3 acceptance
+remain unfinished. INSTEAD OF triggers remain excluded.
 
 ## Owner decisions
 

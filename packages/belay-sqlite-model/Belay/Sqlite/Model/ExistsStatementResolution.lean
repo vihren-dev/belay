@@ -32,12 +32,12 @@ theorem resolveStatement_selectOne_subquery (context : ResolveContext) (state : 
       FilterResolves context.profile.dqsDml [] [] (some mainFilter) (some mainCondition) { later := [shape] })
     (plain : mainCondition.any Resolved.Expr.isFallibleCall = false) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
-        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none]
+        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
         none false none) =
       .ok (.query (Resolved.Query.simple [] (some mainCondition) [.scalar (.literal (.integer 1))] ["1"])
         [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar (.literal (.integer 1))] ["1"]], state) := by
   have simple : ∀ source filter, (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] filter [] [] none none
-      none none false none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+      none none false none none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have noFeed : (([[(Resolved.Output.scalar (.literal (.integer 1)), "1", (none : Option Affinity))]] :
       List (List (Resolved.Output × String × Option Affinity))).flatten.filterMap fun (output, _) => match output with
       | .scalar expression => some expression
@@ -46,17 +46,17 @@ theorem resolveStatement_selectOne_subquery (context : ResolveContext) (state : 
     simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
   have subBody := resolveQueryBody_simple context.profile.dqsDml (tableScope state.catalog reference position table)
     (some 0) [] [] _ (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none
-      none none false none) (simple _ _) _ subCondition _
+      none none false none none) (simple _ _) _ subCondition _
     (resolveColumns_one _ _ _) (by simpa [resultAliases] using subResolves)
     (resolvePendingSources_table _ _ position) noFeed
   have mainBody := fun shape (parentless : shape.parent = none) =>
     resolveQueryBody_simple context.profile.dqsDml [] none [shape] [] [] (Syntax.Subquery.mk [.expression (.numeric "1") none "1"]
-      none [] (some mainFilter) [] [] none none none none false none) (simple _ _) _ (some mainCondition) _
+      none [] (some mainFilter) [] [] none none none none false none none) (simple _ _) _ (some mainCondition) _
     (resolveColumns_one _ _ _) (by simpa [resultAliases] using mainResolves shape parentless) (resolvePendingSources_nil _ _) noFeed
   refine resolveStatement_select_of_resolveSelect context state
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none)
-    _ rfl _ ?_
-  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl _ _
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
+    _ rfl rfl _ ?_
+  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
     (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ rfl _ _ (by simpa using mainBody _ rfl) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,
@@ -76,7 +76,7 @@ theorem resolveStatement_selectOne_exists (context : ResolveContext) (state : Re
     (subResolves : FilterResolves context.profile.dqsDml (tableScope state.catalog reference position table) []
       subFilter subCondition { current := some 0 }) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some (.exists 0)) [] [] none none
-        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none]
+        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
         none false none) =
       .ok (.query (Resolved.Query.selectOneWhere (.exists 0))
         [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar (.literal (.integer 1))] ["1"]], state) :=
@@ -96,7 +96,7 @@ theorem resolveStatement_selectOne_notExists (context : ResolveContext) (state :
     (subResolves : FilterResolves context.profile.dqsDml (tableScope state.catalog reference position table) []
       subFilter subCondition { current := some 0 }) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none
-        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none]
+        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
         none false none) =
       .ok (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
         [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar (.literal (.integer 1))] ["1"]], state) :=

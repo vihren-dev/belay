@@ -14,8 +14,8 @@ ROWS = SQLITE + "ForeignKeyRows.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "composite_null_checked": (MATCH,
-        "  link.key.columns.any fun position => values.getD position .null == .null\n",
-        "  link.key.columns.all fun position => values.getD position .null == .null\n"),
+        "  | .located _ key => (childValues link key values).any (· == .null)\n",
+        "  | .located _ key => (childValues link key values).all (· == .null)\n"),
     "set_null_deletes": (ROWS,
         "    | .cascade, none => acted <$> run (.delete link.child targets false false true) state\n",
         "    | .cascade, none | .setNull, none => acted <$> run (.delete link.child targets false false true) state\n"),

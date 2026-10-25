@@ -6,7 +6,7 @@ set_option doc.verso true
 /-! Whether a child row of a foreign key has its parent in a database (ADR 0018, D4; ADR 0022,
 D1), as the writes check it: with a NULL in its key, or with a parent row that the key finds
 ({name}`Belay.Sqlite.Model.parentFound`). {lit}`PRAGMA foreign_key_check` and the fact
-{lit}`Database.ForeignKeysHold` both use it. -/
+{lit}`Database.RowReferencesHold` both use it. -/
 
 namespace Belay.Sqlite.Model
 

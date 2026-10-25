@@ -30,59 +30,6 @@ theorem Database.Raw.run_append (raw : Database.Raw) (p q : Script) :
     raw.run (p ++ q) = (raw.run p).andThen (q.runOn ·) :=
   Script.runOn_append raw.connection p q
 
-/-- For every start database and model result of a program, the outputs of the checked run
-({name}`Run.checked`) depend only on the result's outputs and connection: its outputs when the
-database at its end is valid or when the model's run ended, and otherwise its outputs and the
-output {name}`Output.unmodeled` with {name}`invalidReason`. Proof sketch: a case split on the
-validity of the database at the end; each case unfolds {name}`Run.checked`. -/
-theorem Run.checked_outputs {α : Type} (start : Database) (result : SqlRun α) :
-    (Run.checked start result).outputs =
-      if result.connection.state.database.Valid Profile.pinned ∨ result.ended then result.outputs
-      else result.outputs ++ [.unmodeled invalidReason] := by
-  unfold Run.checked
-  by_cases valid : result.connection.state.database.Valid Profile.pinned <;> simp [valid]
-
-/-- For every start database and model result of a program: if no output of the checked run ends
-a run ({name}`Output.endsRun`), the database at the end of the result is valid, the model's run
-did not end ({name}`ScriptRun.ended`), and the checked run gives the result's value, that
-database, the result's outputs, its open transaction and its settings. Proof sketch: an invalid
-result gives an output {name}`Output.unmodeled`, from the result or from the check. -/
-theorem Run.checked_modeled {α : Type} {start : Database} {result : SqlRun α}
-    (modeled : ∀ output ∈ (Run.checked start result).outputs, output.endsRun = false) :
-    ∃ valid : result.connection.state.database.Valid Profile.pinned, result.ended = false ∧
-      Run.checked start result =
-        { value := result.value, outputs := result.outputs, db := ⟨_, valid⟩, start := start,
-          transaction := result.connection.state.snapshot, foreignKeys := result.connection.foreignKeys,
-          recursiveTriggers := result.connection.recursiveTriggers } := by
-  unfold Run.checked at modeled ⊢
-  by_cases valid : result.connection.state.database.Valid Profile.pinned
-  · rw [dite_eq_left valid] at modeled ⊢
-    exact ⟨valid, by simpa [ScriptRun.ended] using modeled, rfl⟩
-  · rw [dite_eq_right valid] at modeled
-    cases ended : result.ended
-    · rw [ended, ite_eq_right Bool.false_ne_true] at modeled
-      have := modeled (.unmodeled invalidReason) (List.mem_append_right _ (List.mem_singleton_self _))
-      simp [Output.endsRun] at this
-    · rw [ended, ite_eq_left rfl] at modeled
-      simp only [ScriptRun.ended, List.any_eq_true] at ended
-      obtain ⟨output, member, ends⟩ := ended
-      rw [modeled output member] at ends
-      cases ends
-
-/-- For every start database and model result of a program: if no output of the checked run
-({name}`Run.checked`) ends a run ({name}`Output.endsRun`), no output of the result ends it. Proof
-sketch: the outputs of the checked run are the result's outputs, with at most one output more
-({name}`Run.checked_outputs`). -/
-theorem Run.checked_outputs_modeled {α : Type} {start : Database} {result : SqlRun α}
-    (modeled : ∀ output ∈ (Run.checked start result).outputs, output.endsRun = false) :
-    ∀ output ∈ result.outputs, output.endsRun = false := by
-  intro output member
-  apply modeled
-  rw [Run.checked_outputs]
-  split
-  · exact member
-  · exact List.mem_append_left _ member
-
 /-- For every connection: if no transaction is open, foreign keys and recursive triggers are
 off, and the clock is 0 at every position, the idle connection to its database
 ({name}`Database.Raw.connection`), which knows no counter, is the connection with fewer known
@@ -105,51 +52,33 @@ then the outputs of the run of {lit}`p ++ q` are the outputs of the run of {lit}
 outputs of the run of {lit}`q` on that database. The second condition is needed because the run
 of {lit}`q` starts on a connection that knows no counter, while the run in {lit}`p ++ q` starts on
 the connection that {lit}`p` left: a statement of {lit}`q` that reads a counter ends the first run
-and not the second. Proof sketch: each run of a script is the checked run of S2's run
-({name}`Database.run_script_default`); the run of {lit}`p` is valid and did not end
-({name}`Run.checked_modeled`), so it leaves a connection that has the idle connection to its
-database as a connection with fewer known counters ({name}`Connection.lessKnown_idle`); the run of
-{lit}`q` on the idle connection does not end ({name}`Run.checked_outputs_modeled`), so it gives the
-same outputs and database on both ({name}`Belay.Sqlite.Model.runScriptFrom_counters`); the plain
-runs compose ({name}`Database.Raw.run_append`), and the check at the end reads the same result on
-both sides ({name}`Run.checked_outputs`). -/
+and not the second. Proof sketch: the first run leaves a connection related to an idle connection on its
+resulting database. The later run has no unknown-counter output, so the counter comparison
+theorem identifies its outputs on both connections. The model's script concatenation law
+then gives the output append equation. -/
 theorem Script.run_append (db : Database) (p q : Script) (outside : (db.run p).transaction = none)
     (setting : (db.run p).foreignKeys = false) (recursive : (db.run p).recursiveTriggers = false)
     (modeled : ∀ output ∈ (db.run p).outputs, output.endsRun = false)
     (modeledLater : ∀ output ∈ ((db.run p).db.run q).outputs, output.endsRun = false) :
     (db.run (p ++ q)).outputs = (db.run p).outputs ++ ((db.run p).db.run q).outputs := by
-  simp only [Database.run_script_default] at outside setting recursive modeled modeledLater ⊢
-  obtain ⟨valid, quiet, checked⟩ := Run.checked_modeled modeled
-  rw [checked] at outside setting recursive modeledLater ⊢
-  rw [Run.checked_outputs, Run.checked_outputs]
-  simp only [SqlRun.ofScript_toScriptRun] at outside setting recursive quiet modeledLater ⊢
+  simp only [Database.run_script_default, Run.ofValid, SqlRun.ofScript_toScriptRun]
+    at outside setting recursive modeled modeledLater ⊢
+  have quiet : (db.raw.run p).ended = false := by
+    simpa [ScriptRun.ended] using modeled
   have idle := Connection.lessKnown_idle outside setting recursive
     ((Belay.Sqlite.Model.runScriptFrom_clock runContext none 0 db.raw.connection p.statements).trans rfl)
-  have quietLater := Run.checked_outputs_modeled modeledLater
-  have noUnknown : ∀ output ∈ (Script.runOn (Database.Raw.connection (Script.runOn db.raw.connection p).connection.state.database) q).outputs,
-      output.endsAtUnknownCounter = false := fun output member => by
+  have noUnknown : ∀ output ∈ (Script.runOn (Database.Raw.connection
+      (Script.runOn db.raw.connection p).connection.state.database) q).outputs,
+      output.endsAtUnknownCounter = false := by
+    intro output member
     cases ends : output.endsAtUnknownCounter
     · rfl
     · have endsRun := Belay.Sqlite.Model.Output.endsRun_of_endsAtUnknownCounter ends
-      rw [quietLater output member] at endsRun
+      rw [modeledLater output member] at endsRun
       exact absurd endsRun (by decide)
   have same := Belay.Sqlite.Model.runScriptFrom_counters runContext none q.statements 0 idle noUnknown
   simp only [Database.Raw.run_append, ScriptRun.andThen, quiet, Bool.false_eq_true, ite_false]
-  simp only [Database.Raw.run] at quiet ⊢
-  have outputs : (Script.runOn (Script.runOn db.raw.connection p).connection q).outputs =
-      (Script.runOn (Database.Raw.connection (Script.runOn db.raw.connection p).connection.state.database) q).outputs :=
-    same.1.symm
-  have database : (Script.runOn (Script.runOn db.raw.connection p).connection q).connection.state.database =
-      (Script.runOn (Database.Raw.connection (Script.runOn db.raw.connection p).connection.state.database) q).connection.state.database :=
-    same.2.1.1.symm
-  simp only [ScriptRun.ended, List.any_append, outputs, database]
-  simp only [ScriptRun.ended] at quiet
-  simp only [quiet, Bool.false_or]
-  split
-  · rename_i continues
-    exact congrArg (_ ++ ·) (ite_eq_left continues).symm
-  · rename_i continues
-    rw [List.append_assoc]
-    exact congrArg (_ ++ ·) (ite_eq_right continues).symm
+  simpa only [Database.Raw.run, Script.runOn] using
+    congrArg ((db.raw.run p).outputs ++ ·) same.1.symm
 
 end Belay.Sqlite

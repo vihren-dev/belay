@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.SubqueryResolution
+import Belay.Sqlite.Model.Resolution.ViewColumns
 
 set_option doc.verso true
 
@@ -16,14 +17,20 @@ namespace Belay.Sqlite.Model
 
 /-- Resolve the subqueries of a write to the table {lit}`tableName`, whose syntax holds them at
 child {lit}`field`, around the scope that {lit}`scopeOf` gives for the table, then the write
-with them ({lit}`resolveWrite`). A subquery that reads the written table directly is
-{name}`RestrictionKind.subqueryReadsTarget`. -/
+with them ({lit}`resolveWrite`). The optional {lit}`columnNames` supplies explicit CTE/view
+output names; use the empty default for ordinary subqueries. Optional {lit}`viewRoots`
+identify stored definitions whose outer names and column counts need view checks. A subquery that reads the written table directly is
+{name}`RestrictionKind.subqueryReadsTarget`. A view target is not
+writable: its subqueries are not resolved, so that they cannot give an error before the error of
+the view, and the write itself reports that error ({name}`resolveViewTarget`). -/
 def resolveWriteSubqueries (context : ResolveContext) (catalog : Catalog) (field : Nat) (tableName : Identifier)
     (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
-    (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution) : StatementResolution :=
+    (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution)
+    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) : StatementResolution :=
+  if (catalog.findView tableName).isSome then resolveViewTarget context catalog tableName (resolveWrite [] {}) else
   let target := catalog.findTable tableName
   let scope := (target.map fun (_, table) => scopeOf table).getD []
-  match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries with
+  match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries columnNames viewRoots with
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
   | .error (.value issue) => issueResolution catalog [] issue
   | .ok (resolved, shapes) =>

@@ -62,21 +62,38 @@ theorem Sql.runFrom_send (clock : Option Clock) :
       cases ended : (runScriptFrom runContext clock (index + 1) next rest).ended <;>
         simp_all [ScriptRun.ended]
 
-/-- For every database, script and environment: {lit}`db.run s` is the checked run
-({name}`Run.checked`) of the model's run of the script from the idle connection to the
-database, with the environment's clock and counters ({name}`SqlRun.ofScript`). So the run of a script is
-the run of its program {name}`send`, with the outputs, the database and the connection of the
-model's run of the script. Proof sketch: {name}`Sql.runFrom_send`. -/
-theorem Database.run_script (db : Database) (script : Script) (env : Env) :
-    db.run script env = Run.checked db (SqlRun.ofScript (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters) script.statements)) :=
-  congrArg (Run.checked db) (Sql.runFrom_send env.clock 0 (db.raw.connection env.counters) script.statements)
+/-- For every database, script and environment, the final database of the model's script
+run is valid under the pinned profile. Proof sketch: the general model run theorem starts
+from the valid database and an idle transaction. -/
+theorem Script.run_database_valid (script : Script) (db : Database) (env : Env) :
+    (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters) script.statements).connection.state.database.Valid
+      Profile.pinned :=
+  (runScriptFrom_valid (profile := Profile.pinned) runContext env.clock 0
+    (connection := db.raw.connection env.counters) script.statements rfl rfl
+    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩).1
 
-/-- For every database and script: {lit}`db.run s` under {name}`Env.default` is the checked run
-({name}`Run.checked`) of S2's run of the script ({name}`Database.Raw.run`,
-{name}`SqlRun.ofScript`). Proof sketch: {name}`Database.run_script` without a clock. -/
+/-- For every database, script and environment, the public script run bundles the model's
+script result with its validity proof, preserving every field. Proof sketch:
+{name}`Sql.runFrom_send` identifies the results; proof irrelevance identifies their validity proofs. -/
+theorem Database.run_script (db : Database) (script : Script) (env : Env) :
+    db.run script env = Run.ofValid db
+      (SqlRun.ofScript (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters) script.statements))
+      (Script.run_database_valid script db env) := by
+  unfold Database.run Sql.run
+  simp only [show Runnable.toSql script = sendStatements script.statements from rfl, Sql.runFrom_send]
+
+/-- For every database and script, its public default run bundles the model's default run
+with its validity proof. Proof sketch: specialize {name}`Database.run_script` to the default environment. -/
 theorem Database.run_script_default (db : Database) (script : Script) :
-    db.run script = Run.checked db (SqlRun.ofScript (db.raw.run script)) :=
+    db.run script = Run.ofValid db (SqlRun.ofScript (db.raw.run script))
+      (Script.run_database_valid script db Env.default) :=
   Database.run_script db script Env.default
+
+/-- For every program, database and environment, the public run's outputs are exactly the
+model run's outputs. Proof sketch: the proof-bearing wrapper preserves the output field. -/
+theorem Sql.run_outputs {α : Type} (program : Sql α) (db : Database) (env : Env) :
+    (program.run db env).outputs =
+      (program.runFrom env.clock 0 (db.raw.connection env.counters)).outputs := rfl
 
 /-- For every program, optional clock, index and connection: if no output of the run without a
 clock is {name}`Output.unmodeled` with the reason {name}`clockUnmodeled`, the run with the clock

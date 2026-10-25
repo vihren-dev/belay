@@ -13,7 +13,10 @@
     "tests/conformance_queries_test.py",
     "tests/syntax_queries_test.py",
     "tests/syntax_subqueries_test.py",
+    "tests/syntax_common_tables_test.py",
     "tests/syntax_compound_test.py",
+    "tests/syntax_drops_test.py",
+    "tests/syntax_views_test.py",
     "tests/conformance_authored_resolution_test.py",
     "tests/conformance_query_coverage_test.py",
     "tests/shared_table_shape_test.py",
@@ -25,7 +28,8 @@
     "tests/column_extension_test.py",
     "tests/failed_catalog_observation_test.py",
     "tests/add_column_defaults_test.py",
-    "tests/conformance_query_sources_test.py"
+    "tests/conformance_query_sources_test.py",
+    "tests/foreign_key_atoms_native_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",
@@ -42,6 +46,7 @@
     "tests/conformance_transaction_evidence_test.py"
   ],
   "harness": [
+    "tests/mutation_edits_test.py",
     "tests/conformance_acquisition_test.py",
     "tests/conformance_restriction_examples_test.py",
     "tests/conformance_authored_boundaries_test.py",
@@ -61,10 +66,12 @@
     "tests/conformance_requirement_coverage_test.py",
     "tests/conformance_authored_transactions_test.py",
     "tests/conformance_predict_test.py",
+    "tests/conformance_view_observation_test.py",
     "tests/conformance_continuing_case_test.py",
     "tests/conformance_counters_test.py",
     "tests/conformance_run_on_test.py",
-    "tests/conformance_counters_record_test.py"
+    "tests/conformance_counters_record_test.py",
+    "tests/guide_view_contract_test.py"
   ],
   "sample": [
     "tests/conformance_tiers_test.py",
@@ -104,6 +111,7 @@
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
     "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py"
   ],
   "tableMutants": [
@@ -118,11 +126,25 @@
   "surface": [
     "tests/surface_guide_test.py",
     "tests/surface_claims_test.py",
+    "tests/surface_views_test.py",
     "tests/surface_schema_claims_test.py",
+    "tests/surface_success_test.py",
+    "tests/surface_s6_foundations_test.py",
+    "tests/surface_execution_test.py",
+    "tests/surface_execution_views_test.py",
+    "tests/surface_migration_patterns_test.py",
+    "tests/surface_migration_examples_test.py",
+    "tests/success_theorems_test.py",
     "tests/surface_parameters_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",
-    "tests/surface_translation_checks_test.py"
+    "tests/surface_translation_checks_test.py",
+    "tests/proof_cost_test.py",
+    "tests/surface_counterexample_test.py",
+    "tests/surface_sampling_test.py",
+    "tests/surface_inference_test.py",
+    "tests/surface_replay_test.py",
+    "tests/surface_foreign_key_atoms_test.py"
   ]
 }

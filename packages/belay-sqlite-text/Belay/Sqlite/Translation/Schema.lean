@@ -2,21 +2,21 @@ import Belay.Sqlite.Translation.Constraints
 
 set_option doc.verso true
 
-/-! DROP TABLE, DROP INDEX, DROP TRIGGER, CREATE INDEX and the pragmas of the model. The port of
+/-! DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, CREATE INDEX and the pragmas of the model. The port of
 {lit}`belay/sqlite/syntax_drops.py`, {lit}`syntax_indexes.py` and {lit}`syntax_pragmas.py`. -/
 
 namespace Belay.Sqlite.Translation
 
 open Belay.Sqlite.Model
 
-/-- {lit}`DROP TABLE|INDEX|TRIGGER [IF EXISTS] name`, with the name as written. -/
+/-- {lit}`DROP TABLE|VIEW|INDEX|TRIGGER [IF EXISTS] name`, with the name as written. -/
 def drop (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let kind := ((tree.children command)[1]?.map (·.symbol)).getD ""
   let parts ← require tree command ["DROP", kind, "ifexists", "fullname"]
   let full := parts[3]!
   unless tree.symbols full == ["nm"] do unsupported full "A schema name is not modeled; remove it"
   let make : Identifier → Bool → Syntax.Statement := match kind with
-    | "TABLE" => .dropTable | "INDEX" => .dropIndex | _ => .dropTrigger
+    | "TABLE" => .dropTable | "VIEW" => .dropView | "INDEX" => .dropIndex | _ => .dropTrigger
   let existsNode := parts[2]!
   let dropped ← identifierName tree (tree.children full)[0]!
   return composite (make dropped.value (!existsNode.children.isEmpty)) command.start command.stop

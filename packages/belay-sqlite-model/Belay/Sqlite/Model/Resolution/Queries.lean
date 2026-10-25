@@ -27,7 +27,7 @@ operand. A name is the {lit}`AS` alias, else the defined name of a referenced co
 ({name}`definedName`), else the source text as written. -/
 def resolveResultColumn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String × Option Affinity))
-  | .star => if scope.inner.isEmpty then .error (.prepare .noTablesSpecified) else
+  | .star => if !(scope.inner.any (·.namesVisible)) then .error (.prepare .noTablesSpecified) else
       scope.visible.mapM fun (position, defined) =>
         (fun (operand : Operand) => (.scalar operand.1, defined.name.text, operand.2)) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
@@ -127,6 +127,10 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     | some term =>
       if namesAlias scope visibleAliases term then throw (aliasInExpression.under [3])
       else some <$> condition [3] (resolveOperand dqs scope shapes true term)
+  -- SQLite resolves a result column alias in an ON condition as it does in WHERE.
+  if let some item := (query.joins.zipIdx.find? fun (join, _) =>
+      join.condition.any (namesAlias scope visibleAliases)).map (·.2) then
+    throw (aliasInExpression.under [2, item, 2])
   let sources ← resolvePendingSources dqs scope pending
   let collations := resultCollations scope query.columns
   let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy

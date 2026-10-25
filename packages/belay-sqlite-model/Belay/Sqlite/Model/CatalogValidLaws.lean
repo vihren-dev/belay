@@ -54,7 +54,7 @@ theorem length_eraseDups_iff {α : Type} [BEq α] [LawfulBEq α] :
         have lengths : (tail.filter fun item => !item == head).length = tail.length := by rw [same]
         omega
 
-/-- For every catalog, the number of folded names is the number of tables and indexes. Proof sketch:
+/-- For every catalog, the number of folded names is the number of tables, views and indexes. Proof sketch:
 {lit}`List.map` keeps the length. -/
 theorem Catalog.length_foldedNames (catalog : Catalog) :
     catalog.foldedNames.length = (catalog.filter (!·.isTrigger)).length := by
@@ -78,7 +78,7 @@ theorem Catalog.Valid.object {limits : Limits} {catalog : Catalog} (valid : cata
     {object : CatalogObject} (member : object ∈ catalog) : object.supported limits catalog = true :=
   ((Catalog.supported_iff limits catalog).mp valid).2 object member
 
-/-- For every valid catalog, the folded names of its tables and indexes are unique. Proof sketch: the
+/-- For every valid catalog, the folded names of its tables, views and indexes are unique. Proof sketch: the
 first part of {name}`Catalog.supported_iff`. -/
 theorem Catalog.Valid.namesUnique {limits : Limits} {catalog : Catalog} (valid : catalog.Valid limits) :
     catalog.NamesUnique :=
@@ -125,7 +125,7 @@ theorem Catalog.findTable_append_of_some {catalog : Catalog} (extension : Catalo
     simpa [hfind] using present
 
 /-- For every limits, catalog, extension and object that is supported under the catalog, the
-object is supported under the catalog with the extension appended. Proof sketch: a table does not read
+object is supported under the catalog with the extension appended. Proof sketch: a table or view does not read
 the catalog, and the table of an index and of a trigger keeps its position and its name
 ({lit}`Catalog.tableAt_append_of_some`, {lit}`Catalog.findTable_append_of_some`). -/
 theorem CatalogObject.supported_append {limits : Limits} {catalog : Catalog} {object : CatalogObject}
@@ -134,6 +134,7 @@ theorem CatalogObject.supported_append {limits : Limits} {catalog : Catalog} {ob
   unfold CatalogObject.supported at supported ⊢
   cases entry : object.entry with
   | table table => simpa only [entry] using supported
+  | view _ => simpa only [entry] using supported
   | index index =>
     simp only [entry, Bool.and_eq_true] at supported ⊢
     refine ⟨supported.1, ?_⟩
@@ -151,8 +152,7 @@ theorem CatalogObject.supported_append {limits : Limits} {catalog : Catalog} {ob
 
 /-- For every valid catalog and object: if the object is a trigger or has a name that the catalog
 does not find, and it is supported under the catalog with the object appended, then the catalog
-with the object appended is valid. This is the law of CREATE TABLE, CREATE INDEX and CREATE
-TRIGGER. Proof sketch: the folded names stay unique ({name}`CatalogStep.namesUnique`), and every
+with the object appended is valid. This is the law of CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER. Proof sketch: the folded names stay unique ({name}`CatalogStep.namesUnique`), and every
 old object stays supported ({name}`CatalogObject.supported_append`). -/
 theorem Catalog.Valid.append {limits : Limits} {catalog : Catalog} (valid : catalog.Valid limits)
     (object : CatalogObject) (fresh : object.isTrigger = false → catalog.find object.name = none)
@@ -167,5 +167,14 @@ theorem Catalog.Valid.append {limits : Limits} {catalog : Catalog} (valid : cata
     · exact CatalogObject.supported_append (valid.object old) [object]
     · rw [List.mem_singleton.mp new]
       exact supported
+
+/-- Appending a view with a fresh, nonreserved name preserves catalog validity for
+every unresolved body, including missing references and cycles. Proof sketch:
+{name}`Catalog.Valid.append` checks the new name; view support reads no body. -/
+theorem Catalog.Valid.createView {limits : Limits} {catalog : Catalog} (valid : catalog.Valid limits)
+    (name : Identifier) (view : CatalogView) (fresh : catalog.find name = none)
+    (ordinary : reservedName name = false) : (catalog.createView name view).Valid limits := by
+  exact valid.append {name, entry := .view view} (fun _ => fresh)
+    (by simp [CatalogObject.supported, ordinary])
 
 end Belay.Sqlite.Model

@@ -7,7 +7,7 @@ from the import lines of every Lean package and from the Nix build.
    and the text package imports a module of `packages/belay-sqlite-text`, and no lakefile other
    than the surface's requires it.
 3. The surface imports only its own modules, the text package's, the model's roots (the roots of
-   the libraries in the model's `lakefile.toml`), `Init`, `Std` and `Lean`; the text package
+   the libraries in the model's `lakefile.toml`), Plausible, `Init`, `Std` and `Lean`; the text package
    imports only its own modules, the model's roots and Lean's libraries.
 4. The conformance runtime contains the text package's program but not the surface: in
    `build-support/`, only the surface's own derivation and the `surface` test suite name the
@@ -115,13 +115,14 @@ def test_no_lower_package_imports_or_requires_an_upper_one(upper: Path) -> None:
 
 @pytest.mark.parametrize("package", [SURFACE, TEXT], ids=["surface", "text"])
 def test_imports_are_own_modules_model_roots_and_lean(package: Path) -> None:
-    """Rule 3: every import of a surface file is its own module, a text package module, a model
-    root or a Lean library; every import of a text package file is its own module, a model root or a
-    Lean library."""
+    """Rule 3: the surface imports its own modules, text, model roots, Lean and Plausible;
+    the text package imports its own modules, model roots and Lean libraries."""
     allowed = modules(package) | (modules(TEXT) if package == SURFACE else set())
     found = [f"{path.relative_to(ROOT)}: {name}" for path in lean_files(package) if path.name != "lakefile.lean"
              for name in imports(path)
-             if name not in allowed and name not in MODEL_ROOTS and name.split(".")[0] not in EXTERNAL_ROOTS]
+             if name not in allowed and name not in MODEL_ROOTS
+             and name.split(".")[0] not in EXTERNAL_ROOTS
+             and not (package == SURFACE and name.split(".")[0] == "Plausible")]
     assert found == []
 
 
@@ -130,9 +131,12 @@ SURFACE_SUITE = "tests.nix"
 surface package; any line of it may name the surface."""
 SURFACE_BUILD_LINES = frozenset({
     "sources.nix: surface = let folder = root + /packages/belay; in fs.toSource {",
-    "default.nix: surfacePackage = leanPackage {",
+    "default.nix: surfacePackage = let",
+    'default.nix: manifest = builtins.fromJSON (builtins.readFile (root + /packages/belay/lake-manifest.json));',
     'default.nix: directory = "packages/belay";',
     "default.nix: source = sources.surface;",
+    'default.nix: requires."packages/belay/.lake/packages/plausible" = plausiblePackage;',
+    'default.nix: "packages/belay/.lake/packages/plausible" ];',
     "default.nix: inherit leanPackages surfacePackage textPackage;",
 })
 """The other lines of `build-support/` that may name the surface: its sources, its derivation,
@@ -146,6 +150,17 @@ def test_only_the_surface_build_and_its_suite_name_the_surface() -> None:
     lines = [f"{path.name}: {line.strip()}" for path in sorted((ROOT / "build-support").glob("*.nix"))
              for line in path.read_text().splitlines() if SURFACE_NAMES.search(line)]
     assert [line for line in lines if not line.startswith(SURFACE_SUITE + ": ") and line not in SURFACE_BUILD_LINES] == []
-    assert "default.nix: surfacePackage = leanPackage {" in lines
+    assert "default.nix: surfacePackage = let" in lines
     runtime = (ROOT / "build-support/default.nix").read_text().split("conformanceRuntime = ", 1)[1].split("'';", 1)[0]
     assert "${textPackage}/.lake/build/bin/belay-sqlite-translate" in runtime
+
+
+def test_plausible_is_only_a_surface_dependency() -> None:
+    """S5's untrusted sampler must not enter model, translation or conformance imports/builds."""
+    for package in (TEXT, PACKAGES / "belay-sqlite-model", PACKAGES / "verifier-conformance"):
+        assert not any(name.split(".")[0] == "Plausible"
+                       for path in lean_files(package) for name in imports(path))
+        assert all("plausible" not in path.read_text().lower() for path in package.glob("lakefile.*"))
+    build = (ROOT / "build-support/default.nix").read_text()
+    requirements = re.findall(r'requires\."([^"]*plausible[^\"]*)"\s*=\s*plausiblePackage', build)
+    assert requirements == ["packages/belay/.lake/packages/plausible"]

@@ -23,7 +23,7 @@ theorem Script.not_claims_selectOne_exists_of_fallible
     {subFilter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     {position : Nat} {table : CatalogTable} {subCondition : Option Resolved.Expr}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.exists 0)) [] [] none none
-      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none]
+      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
       none false none, parameters) :: rest)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (resolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
@@ -50,7 +50,7 @@ theorem Script.not_claims_selectOne_notExists_of_fallible
     {subFilter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     {position : Nat} {table : CatalogTable} {subCondition : Option Resolved.Expr}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none
-      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none]
+      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
       none false none, parameters) :: rest)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (resolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []

@@ -64,7 +64,7 @@ def resolvedOne (statement : Syntax.Statement) : Option Resolved.Statement :=
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
-  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
+  | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
   | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..)
   | some (.update ..) | some (.delete ..) | some (.query ..) | none => none
 
@@ -72,7 +72,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 def namesOf (statement : Syntax.Statement) : Option (List String) :=
   match resolvedOne statement with
   | some (.query query _) => some query.names
-  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
+  | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
   | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..)
   | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
@@ -83,7 +83,7 @@ def rowsOf (statement : Syntax.Statement) : Option (List (List Value)) :=
     match resolved.getLast?, runSql (bindValues resolved.dropLast []) tables.emptyDatabase with
     | some (.query query subqueries), .success database => (query.runOn 0 {} [] database subqueries).map (·.2.rows)
     | some (.query ..), .failure .. | some (.query ..), .pending .. => none
-    | some (.createTable ..), _ | some (.createIndex ..), _ | some (.createTrigger ..), _ | some (.addColumn ..), _
+    | some (.createTable ..), _ | some (.createView ..), _ | some (.createIndex ..), _ | some (.createTrigger ..), _ | some (.addColumn ..), _
     | some (.drop ..), _ | some (.setting ..), _ | some .begin, _ | some .commit, _ | some .rollback, _
     | some (.insert ..), _ | some (.upsert ..), _ | some (.update ..), _ | some (.delete ..), _
     | some (.prepareError _), _ | none, _ => none

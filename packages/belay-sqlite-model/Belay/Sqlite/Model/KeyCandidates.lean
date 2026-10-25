@@ -36,7 +36,7 @@ inductive KeySource where
 {lit}`table`; none for every other object. -/
 def indexSource (table : Nat) : CatalogObject × Nat → Option KeySource
   | ({ entry := .index index, .. }, place) => if index.table == table && index.unique then some (.index place) else none
-  | ({ entry := .table _, .. }, _) | ({ entry := .trigger _, .. }, _) => none
+  | ({ entry := .table _, .. }, _) | ({ entry := .view _, .. }, _) | ({ entry := .trigger _, .. }, _) => none
 
 /-- The source of each key of {name}`Catalog.uniqueKeys` of the table at the position, in the
 same order: the PRIMARY KEY when there is one, the UNIQUE constraints, and the unique indexes on
@@ -57,7 +57,7 @@ theorem Catalog.keySources_length (catalog : Catalog) (position : Nat) (table : 
   · suffices ∀ start, ((catalog.zipIdx start).filterMap (indexSource position)).length =
         (catalog.filterMap fun object => match object.entry with
           | .index index => if index.table == position && index.unique then some index.uniqueKey else none
-          | .table _ | .trigger _ => none).length from this 0
+          | .table _ | .view _ | .trigger _ => none).length from this 0
     induction catalog with
     | nil => simp
     | cons object rest restLength =>
@@ -67,7 +67,7 @@ theorem Catalog.keySources_length (catalog : Catalog) (position : Nat) (table : 
       | index index =>
         by_cases unique : index.table = position ∧ index.unique = true <;>
           simp [List.zipIdx_cons, indexSource, restLength, unique]
-      | table _ | trigger _ => simp [List.zipIdx_cons, List.filterMap_cons, indexSource, restLength]
+      | table _ | view _ | trigger _ => simp [List.zipIdx_cons, List.filterMap_cons, indexSource, restLength]
 
 /-- Whether the table declares the key of the source {lit}`ON CONFLICT REPLACE`. A unique index
 has no such clause. -/

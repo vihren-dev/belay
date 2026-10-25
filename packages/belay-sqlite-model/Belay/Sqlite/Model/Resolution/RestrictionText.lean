@@ -42,6 +42,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .unmodeledFunction => "unmodeled-function"
   | .aggregateInExpression => "aggregate-in-expression"
   | .aliasInExpression => "alias-in-expression"
+  | .viewBodyCheck => "view-body-check"
   | .groupByTerm => "group-by-term"
   | .bareColumn => "bare-column"
   | .aggregateOrderBy => "aggregate-order-by"
@@ -65,6 +66,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .triggerWritesOwnTable => "trigger-writes-own-table"
   | .schemaTriggerOrder => "schema-trigger-order"
   | .sourceColumnName => "source-column-name"
+  | .recursiveCommonTable => "recursive-common-table"
   | .compoundOrderByTerm => "compound-order-by-term"
   | .foreignKeyMismatchOrder => "foreign-key-mismatch-order"
   | .connectionCounterRead => "connection-counter-read"
@@ -73,7 +75,7 @@ def RestrictionKind.id : RestrictionKind → String
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
 def RestrictionKind.message : RestrictionKind → String
-  | .schemaStatement => "a schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements; move the other statement to the script"
+  | .schemaStatement => "a schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements; move the other statement to the script"
   | .engineTable => "engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled; remove the table from the schema"
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
@@ -104,7 +106,8 @@ def RestrictionKind.message : RestrictionKind → String
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
   | .unmodeledFunction => "this function, or this form of it, is not modeled; rewrite the expression without it"
   | .aggregateInExpression => "an aggregate here is not modeled, such as the argument of a function that can fail; use the aggregate as a whole result column"
-  | .aliasInExpression => "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
+  | .aliasInExpression => "a result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled; write the column expression"
+  | .viewBodyCheck => "a view whose body has an error that SQLite finds only when a statement runs it is not modeled for a statement that reads only its columns; repair the view or select from it"
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
   | .aggregateOrderBy => "an ORDER BY term of an aggregate query that reads a column outside GROUP BY is not modeled; order by a grouping term, an aggregate or a result column"
@@ -128,6 +131,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .triggerWritesOwnTable => "a BEFORE UPDATE or BEFORE DELETE trigger that writes its own table is not modeled, because SQLite documents the result as undefined; use an AFTER trigger"
   | .schemaTriggerOrder => "two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one SQLite runs first; create them in the script"
   | .sourceColumnName => "SQLite names a duplicate source column at random; give the source columns distinct AS aliases"
+  | .recursiveCommonTable => "recursive common table expressions are not modeled; use nonrecursive WITH definitions"
   | .compoundOrderByTerm => "this ORDER BY term of a compound SELECT is not modeled, because the model cannot match it with a result column as SQLite does, or SQLite then names a result column at random; order by a result column number or an AS alias, and give the columns different names"
   | .connectionCounterRead => "last_insert_rowid() in INSERT, and total_changes() in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs; read the value in a separate statement"
   | .nondeterministicErrorOrder => "a call of changes(), total_changes(), last_insert_rowid(), random() or randomblob() in a generated column, an index expression or the filter of a partial index is not modeled when the expression has another error, because which error SQLite reports depends on the order of its walk; write the call alone, or remove the other error"
@@ -135,8 +139,8 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
-    .sourceColumnName, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .viewBodyCheck, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
+    .sourceColumnName, .recursiveCommonTable, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

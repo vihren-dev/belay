@@ -3,12 +3,10 @@ import Belay.Sqlite.Model.ScriptRunConstraints
 
 set_option doc.verso true
 
-/-! The corollary of the run theorems (ADR 0022, D3, slice 4): a run of {lit}`runScriptFrom`, the run of
-the surface, from a connection whose database and snapshot are valid ({lit}`Database.Valid`) ends in a
-connection whose database and snapshot are valid, for a context in execution mode with the limits of the
-profile. It needs no hypothesis on the statements of the script. ADR 0017, S4 uses it to remove the check
-{lit}`Run.checked`. {lit}`runScriptStep_valid` is the same for one statement, which the surface uses for the
-programs ({lit}`Sql.runFrom`) in the induction of {lit}`Sql.runFrom_valid`. -/
+/-! Runs preserve the validity of a connection's database and transaction snapshot
+(ADR 0022, D3, slice 4). The context is in execution mode and uses the profile's limits.
+The script theorem covers every statement list; the single-step theorem covers every
+step that continues to another connection. -/
 
 namespace Belay.Sqlite.Model
 
@@ -48,8 +46,8 @@ theorem runScriptFrom_valid {profile : Profile} (context : ResolveContext) (cloc
   (runScriptFrom_constraintAtoms context clock index script execution same
     (holds.mono fun _ valid => Database.valid_iff.mp valid)).mono fun _ atoms => Database.valid_iff.mpr atoms
 
-/-- The corollary of the run theorems for one statement ({name}`runScriptStep`), the step of a program of the
-surface. For every profile, context in execution mode with the limits of the profile, clock, index,
+/-- The corollary of the run theorems for one statement ({name}`runScriptStep`).
+For every profile, context in execution mode with the limits of the profile, clock, index,
 connection, statement and values: if the state of the connection satisfies {name}`SqlState.Holds` for
 {name}`Database.Valid`, and the step continues with a next connection, the state of the next connection
 satisfies it. Proof sketch: {name}`runScriptFrom_valid` for the script of the statement, whose run is the

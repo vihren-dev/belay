@@ -50,7 +50,7 @@ theorem Catalog.entry_of_mem_tableObjects {catalog : Catalog} {position place : 
     have located := List.mem_zipIdx_iff_getElem?.mp inside
     simp only at located
     cases kept' : original.entry with
-    | table _ => simp [kept'] at kept
+    | table _ | view _ => simp [kept'] at kept
     | index found =>
       simp only [kept'] at kept
       split at kept <;> try (cases kept; done)
@@ -82,7 +82,7 @@ theorem Catalog.Valid.indexTable {limits : Limits} {catalog : Catalog} (valid : 
     obtain ⟨ownerName, ownerEntry⟩ := owner'
     cases ownerEntry with
     | table table => exact ⟨_, table, rfl, rfl⟩
-    | index _ => simp [owner] at supported
+    | index _ | view _ => simp [owner] at supported
     | trigger _ => simp [owner] at supported
 
 /-- For every valid catalog, name and table that {name}`Catalog.findTable` finds at a position:

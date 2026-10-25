@@ -11,6 +11,17 @@ column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite.Model
 
+/-- The name of a view as the catalog spells it, or the name as written when there is none. -/
+def viewCatalogName (catalog : Catalog) (view : Identifier) : Identifier :=
+  (((catalog.findView view).bind fun (position, _) => catalog[position]?.map (·.name))).getD view
+
+/-- The resolution of a write (INSERT, UPDATE or DELETE) whose target is a view: SQLite refuses it
+with {lit}`cannot modify %s because it is a view`, because the model holds no INSTEAD OF trigger.
+The name keeps the catalog's spelling. Before that, SQLite reads the columns of the view
+({lit}`resolveViewTarget`). -/
+def resolveViewModify (catalog : Catalog) (view : Identifier) : StatementResolution :=
+  prepareError catalog (.viewModify (viewCatalogName catalog view))
+
 /-- The table column positions of an INSERT column list, or
 {lit}`table %S has no column named %s` for the first unknown name, or
 {lit}`cannot INSERT into generated column "%s"` for a generated column. -/
@@ -33,7 +44,7 @@ def writablePositions (columns : List CatalogColumn) : List Nat :=
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. The values may name the statement's resolved subqueries,
-whose shapes are {lit}`shapes`. -/
+whose shapes are {lit}`shapes`. A view target is {name}`resolveViewModify`, after the check of the rows. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
@@ -41,7 +52,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (tableName : Id
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none => if (catalog.findView tableName).isSome then resolveViewModify catalog tableName
+      else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let positions := match names with
       | some written => insertPositions tableName table.columns written

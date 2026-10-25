@@ -26,7 +26,7 @@ theorem Script.outputOn_selectOne_noDuplicateKeys
     {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -51,7 +51,7 @@ theorem Holds.iff_selectOne_noDuplicateKeys
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -77,7 +77,7 @@ theorem Empty.iff_selectOne_noDuplicateKeys
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -102,7 +102,7 @@ theorem Fails.not_selectOne_noDuplicateKeys
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -129,7 +129,7 @@ theorem Holds.iff_selectOne_noDuplicateKeys_pairwise
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -154,7 +154,7 @@ theorem Empty.iff_selectOne_noDuplicateKeys_repeated
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
       none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)

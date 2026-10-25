@@ -32,7 +32,7 @@ theorem Holds.selectOne_count_unique_lookup
     {column : CatalogColumn} {key : UniqueKey}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] (some subFilter) [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []

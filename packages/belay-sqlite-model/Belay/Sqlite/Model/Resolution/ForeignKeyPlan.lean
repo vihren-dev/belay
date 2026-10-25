@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.ParentKeys
 import Belay.Sqlite.Model.Resolution.StatementPrepareError
+import Belay.Sqlite.Model.Resolution.TriggerProgram
 
 set_option doc.verso true
 
@@ -83,7 +84,8 @@ def writeLinks (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat
         link.key.childChanged changed || link.key.selfReferences name
       (children ++ (parentLinks links position).filter (·.key.parentChanged table changed),
         children ++ parentLinks links position)
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => ([], [])
+  | some { entry := .index _, .. } | some { entry := .view _, .. }
+  | some { entry := .trigger _, .. } | none => ([], [])
 
 /-- The links that a write of the table at the position processes ({name}`writeLinks`): those
 that SQLite locates for it. -/
@@ -91,16 +93,20 @@ def processedLinks (catalog : Catalog) (links : List ForeignKeyLink) (position :
     List ForeignKeyLink :=
   (writeLinks catalog links position write).2
 
-/-- The writes that the actions of a write of the table at the position run: for DELETE, the
+/-- The events that the actions of a write of the table at the position run: for DELETE, the
 {lit}`ON DELETE` action of each located key that references the table; for UPDATE, the
 {lit}`ON UPDATE` action of each one whose parent key changes; INSERT runs none. A
 {lit}`CASCADE` of DELETE deletes child rows; a {lit}`CASCADE` of UPDATE, {lit}`SET NULL` and
-{lit}`SET DEFAULT` update the child's key columns; {lit}`RESTRICT` and {lit}`NO ACTION` write
-nothing. -/
-def actionWrites (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat) (write : ForeignKeyWrite) :
-    List (Nat × ForeignKeyWrite) :=
-  let childUpdate (link : ForeignKeyLink) : Nat × ForeignKeyWrite :=
-    (link.child, .update (((catalog.tableAt link.child).map (·.changedColumns link.key.columns)).getD link.key.columns))
+{lit}`SET DEFAULT` assign the selected {name}`childPositions`, including repeated targets;
+{lit}`RESTRICT` and {lit}`NO ACTION` write nothing. UPDATE events contain assigned columns,
+before generated-column dependencies are added for constraint checks. -/
+def actionEvents (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat) (write : ForeignKeyWrite) :
+    List (Nat × Resolved.TriggerEvent) :=
+  let childUpdate (link : ForeignKeyLink) : Nat × Resolved.TriggerEvent :=
+    let assigned := match link.parent with
+      | .located _ key => childPositions link key
+      | .missing | .mismatch _ => []
+    (link.child, .update (some assigned))
   let located (link : ForeignKeyLink) : Bool := match link.parent with
     | .located .. => true
     | .mismatch _ | .missing => false
@@ -115,6 +121,18 @@ def actionWrites (catalog : Catalog) (links : List ForeignKeyLink) (position : N
       | .cascade | .setNull | .setDefault => some (childUpdate link)
       | .restrict | .noAction => none
   | some _, .insert .. | none, _ => []
+
+/-- The foreign-key writes of the action events: each UPDATE checks its selected assigned
+columns and their generated-column dependencies. DELETE keeps its event. Use
+{name}`actionEvents` when choosing UPDATE OF triggers, which read only assigned columns. -/
+def actionWrites (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat) (write : ForeignKeyWrite) :
+    List (Nat × ForeignKeyWrite) :=
+  (actionEvents catalog links position write).map fun (child, event) =>
+    (child, match event with
+      | .update assigned => .update (((catalog.tableAt child).map
+          (·.changedColumns (assigned.getD []))).getD (assigned.getD []))
+      | .delete => .delete
+      | .insert => .insert true false)
 
 /-- The prepare error of one processed link, if any: a parent table that does not exist is
 {lit}`no such table: main.%s`, and a parent without a parent key is

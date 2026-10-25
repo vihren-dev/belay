@@ -4,10 +4,8 @@ import Belay.Sqlite.Model.Counters
 set_option doc.verso true
 
 /-! Calm expressions and statements (ADR 0017, S4): an expression that has no fallible call, reads
-no clock and calls no counter function. A claim over every database about a statement whose
-expressions are calm needs none of the three facts that the run of a statement checks first (a
-plain query, no clock read, no unknown counter read), so the query laws of the surface only
-state calm. -/
+no clock and calls no counter function. These syntactic conditions let query-output laws
+discharge the corresponding runtime checks without assumptions about a clock or counter values. -/
 
 namespace Belay.Sqlite.Model.Resolved
 

@@ -10,7 +10,7 @@ namespace Belay.Sqlite.Model
 /-- Whether a statement is BEGIN, COMMIT or ROLLBACK. -/
 def Syntax.Statement.transactionControl : Syntax.Statement → Bool
   | .begin | .commit | .rollback => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .createTrigger ..
+  | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .createTrigger ..
   | .dropTrigger .. | .insert .. | .update .. | .delete .. | .select .. | .pragma _ => false
 
 /-- For every statement that is not BEGIN, COMMIT or ROLLBACK and that resolves, the
@@ -29,7 +29,7 @@ theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveS
   cases statement <;> simp [Syntax.Statement.transactionControl] at plain
   case dropTable | insert | update | delete => exact written _ ok
   case pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
+    rcases resolveStatementPragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> rfl
     · rfl
   all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

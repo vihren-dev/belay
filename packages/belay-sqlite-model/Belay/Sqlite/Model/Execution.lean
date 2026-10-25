@@ -133,11 +133,11 @@ constraint an existing row with the default fails with
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
-to the catalog ({name}`Catalog.createTrigger`) with no rows.
+to the catalog ({name}`Catalog.createTrigger`) with no rows; CREATE VIEW stores an unresolved definition the same way.
 DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
 the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.
-CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
+CREATE TABLE, VIEW, INDEX or TRIGGER at a position other than the end of the catalog (or over
 rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
 {lit}`resolve` gives no such statement for a conforming database. A query changes nothing: its run over its source rows
@@ -179,6 +179,10 @@ def step (clock : Int) (counters : Counters) (parameters : List Value) (statemen
         if index.unique && !LiteralData.uniqueRows index.uniqueKey table.rows then
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .createView target name view =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createView name view, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
   | .createTrigger target name trigger =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then

@@ -4,7 +4,8 @@ set_option doc.verso true
 
 /-! Transaction control, INSERT, UPDATE and DELETE. The port of
 {lit}`belay/sqlite/syntax_writes.py`: each write keeps its RETURNING columns and the subqueries
-of its values, assignments and filter; a subquery in RETURNING or ON CONFLICT is refused. -/
+of its values, assignments and filter. Ordinary WITH prefixes retain definition templates
+in the same query list; a subquery in RETURNING or ON CONFLICT is refused. -/
 
 namespace Belay.Sqlite.Translation
 
@@ -68,15 +69,16 @@ def subqueryList (items : Array (Located Syntax.Subquery)) (command : ParseNode)
   sequence items command.start command.stop
 
 /-- {lit}`INSERT [OR algorithm] INTO table [(columns)] VALUES rows [ON CONFLICT ...] [RETURNING columns]`,
-and {lit}`REPLACE INTO`. -/
+and {lit}`REPLACE INTO`, with an optional ordinary WITH prefix. -/
 def insert (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"]
-  absent parts[0]! "A WITH clause"
   let algorithm ← insertAlgorithm tree parts[1]!
   let (conflicts, returned) ← noSubqueries inWriteClause (conflictClauses tree parts[6]!)
   let table := (← require tree parts[3]! ["nm"])[0]!
   let columns ← columnList tree parts[4]!
-  let (rows, items) ← statementSubqueries (valueRows tree parts[5]!)
+  let (rows, items) ← statementSubqueries do
+    withDefinitions queryMappers tree parts[0]!
+    valueRows tree parts[5]!
   let tableName ← identifierName tree table
   let results ← returning tree command returned
   let subqueries := subqueryList items command
@@ -98,16 +100,17 @@ def filterAndReturning (tree : SqlTree) (whereNode : ParseNode) (statement : Str
     parts.extract (parts.size - 2) parts.size else #[]
   return (filter, returned)
 
-/-- {lit}`UPDATE table SET assignments [WHERE expression] [RETURNING columns]`. -/
+/-- {lit}`UPDATE table SET assignments [WHERE expression] [RETURNING columns]`,
+with an optional ordinary WITH prefix. -/
 def update (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "UPDATE", "orconf", "xfullname", "indexed_opt", "SET", "setlist", "from",
     "where_opt_ret"]
-  absent parts[0]! "A WITH clause"
   absent parts[2]! "An OR conflict clause"
   absent parts[4]! "INDEXED BY"
   absent parts[7]! "UPDATE FROM"
   let table := (← require tree parts[3]! ["nm"])[0]!
   let ((mapped, filter, returned), items) ← statementSubqueries do
+    withDefinitions queryMappers tree parts[0]!
     let mapped ← assignmentList tree parts[6]!
     let (filter, returned) ← filterAndReturning tree parts[8]! "UPDATE"
     return (mapped, filter, returned)
@@ -117,13 +120,15 @@ def update (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.S
   return composite (.update tableName.value mapped.value filter.value results.value subqueries.value) command.start
     command.stop #[tableName.span, mapped.span, filter.span, results.span, subqueries.span]
 
-/-- {lit}`DELETE FROM table [WHERE expression] [RETURNING columns]`. -/
+/-- {lit}`DELETE FROM table [WHERE expression] [RETURNING columns]`,
+with an optional ordinary WITH prefix. -/
 def delete (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "DELETE", "FROM", "xfullname", "indexed_opt", "where_opt_ret"]
-  absent parts[0]! "A WITH clause"
   absent parts[4]! "INDEXED BY"
   let table := (← require tree parts[3]! ["nm"])[0]!
-  let ((filter, returned), items) ← statementSubqueries (filterAndReturning tree parts[5]! "DELETE")
+  let ((filter, returned), items) ← statementSubqueries do
+    withDefinitions queryMappers tree parts[0]!
+    filterAndReturning tree parts[5]! "DELETE"
   let tableName ← identifierName tree table
   let results ← returning tree command returned
   let subqueries := subqueryList items command
