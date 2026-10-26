@@ -240,6 +240,12 @@ delay the first evidence and make each review larger.
 specify it, it depends on the query plan, and ADR 0005 already compares such
 results without it.
 
+Clarification accepted 2026-10-25: when INSERT SELECT consumes query rows, order
+and evaluation barriers can change write states, errors and counters. ADR19 D4
+therefore represents possible write executions and quantifies public proofs
+over their admitted branches. This does not turn the fixed query traversal
+into a claim about SQLite's optimizer or change standalone result comparison.
+
 ## Not decided here
 
 - Collations other than BINARY, and the `COLLATE` operator.
