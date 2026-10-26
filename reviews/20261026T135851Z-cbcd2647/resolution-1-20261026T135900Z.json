@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T13:59:00+00:00",
+  "finding": "20261026T135851Z-cbcd2647#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "the file is the editor part 2b agent's plan file, merged unchanged from f5e85829; its owner updates it, and the merge itself changes no file"
+}

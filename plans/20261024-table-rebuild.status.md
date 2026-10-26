@@ -204,3 +204,10 @@ rebuild proof is separate.
     `resolveOperand_arm_compare` rewrite (commit 9193ed53 of that branch). No other test fails
     (the other suites and the host source tests pass). The gates are to be rerun on the merge
     with 95b61eb4.
+- 2026-10-26: merged f5e85829 (editor part 2b on the possible-executions interface) into the
+  workspace (`jj new 24abec47 f5e85829`, no conflicts: the editor's modules already carry the
+  `insertSelect` arms). The dev-build passes, as do the syntax tests and the surface name-token,
+  name-trace, translation, views and editor tests (local scratch runtime). The review of the
+  merge (`20261026T135851Z-cbcd2647`) found two musts in the editor agent's plan files, which the
+  merge does not change; both rejected with that reason. Gates on the merge: see the entry below.
+
