@@ -140,6 +140,7 @@
     "tests/surface_success_test.py",
     "tests/surface_s6_foundations_test.py",
     "tests/surface_s6_rules_test.py",
+    "tests/surface_s6_automation_test.py",
     "tests/surface_two_state_test.py",
     "tests/surface_execution_test.py",
     "tests/surface_execution_views_test.py",

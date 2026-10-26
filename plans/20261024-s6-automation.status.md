@@ -1,6 +1,6 @@
 # Status: S6 effect rules and automation
 
-Created 2026-10-24. Status: OPEN. Part 1 done (2026-10-26); parts 2 and 3 have not started.
+Created 2026-10-24. Status: OPEN. Part 1 done (2026-10-26); part 2 in progress; part 3 has not started.
 Task: [task file](20261024-s6-automation.task.md).
 Specs: ADR17 S6; production execution/assertion/pattern tasks; S5 checker.
 
@@ -132,3 +132,37 @@ Open points:
   - `just verdict`: exit 0, `/nix/store/qqlwfhcc7d9xdjwg58447dri5d52wy6g-sqlite-verifier-verdict`
     (55 corpora, AGREE 5170, MODEL_UNSUPPORTED 2430).
 - Next: part 2 (tactics, checker and code-action integration, the guide examples except the rebuild).
+
+## Part 2: tactics, checker integration, code actions (started 2026-10-26)
+
+Scope: acceptance part 2 of the task file. All package code is general; the guide examples are fixtures in
+`tests/surface`. The table-rebuild agent owns the model run and statement files; part 2 adds new modules and added
+lines in the shared registries (barrels, lakefiles, `tests/nix_suites.json`).
+
+Commit 1 (step rules and `sql_run`):
+
+- Model: `FailedStepFrame` (a failed plain write, a failed ADD COLUMN and a failed step keep the connection that
+  the step reports), `SelectStepFrame` (a SELECT step keeps the connection).
+- Surface rules: `SendStepRules` (`Sql.check_send_of_step`, the generic rule for one statement), one rule per
+  statement family (`PlainInsertStepRule`, `PlainUpdateStepRule`, `PlainDeleteStepRule`, `AddColumnStepRule`:
+  premises for the resolution, the table, the model coverage, then a success goal and a failure goal), and
+  `ReadStepRule` (`Sql.check_single_select`, `Sql.check_query_select`, `Sql.check_send_select`). The success and
+  failure goals of the write rules carry the fact that the step does not end the run, which a program that
+  continues after the statement needs.
+- Tactic: `SqlRunShape` (reads the program), `SqlRunRules` (which rule, which names for the goals),
+  `SqlRunGoals` (closing premises with hints, entering outcomes, entering triples), `SqlRun` (`sql_run [hints]`),
+  `SqlRunTriples` (a triple and its verification condition are the check of the program, by `Iff.rfl`).
+  `sql_run` uses the checked lemmas of `SqlRunTriples` to enter a triple, and it also accepts the goal that
+  `mvcgen [definition]` leaves (a check at a state with an equation to the initial context). It does not call
+  `mvcgen` by itself. Obligations that the rules do not close stay as goals with the tag of the rule premise; a
+  program that cannot be read fails before any change with a message that names the part.
+- Fixtures (`tests/surface`): `S6AutoAddCustomer` (the guide's insertion claim: fresh-run claim by `sql_run`,
+  the standard triple by `mvcgen` then `sql_run`, and the same claim by the public rules alone), `S6AutoEffects`
+  (UPDATE claim by `sql_run` and by the rules), `S6AutoShapes` (exact error and warning messages for a raw step, a
+  variable program and an unreadable part after a rule). Driver `tests/surface_s6_automation_test.py` in the
+  `surface` suite.
+- Not done yet in part 2: `sql_commute`, `sql_auto`, the "Try this" script and code action, checker integration,
+  the remaining guide fixtures and the negative fixtures.
+- Decision for the failure goal of a total (`andOk`) claim: `sql_run` leaves it as an obligation, since the
+  model coverage hint cannot show that the statement does not fail. The claim for the conditional form (`ifOk`)
+  closes it without a hint.
