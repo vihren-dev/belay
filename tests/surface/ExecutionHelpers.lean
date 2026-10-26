@@ -39,10 +39,12 @@ theorem helpers_explicit :
   change commitWrite.check committed initial
   unfold commitWrite
   change (Sql.exec .begin [] _).check committed initial
-  apply (Sql.check_continued (actual := .done 0)
+  apply (Sql.check_continued (actual := .done 0) (others := [])
     (connection := ((send (sql r"BEGIN")).runFrom daily.clock 0 initial.connection).connection)
     (by rfl) committed).mpr
-  intro selected choice
+  intro found member selected choice
+  simp only [Model.RunStep.executions, List.mem_singleton] at member
+  subst member
   have observed : selected = .done 0 := choice.elim id False.elim
   cases observed
   decide +kernel
@@ -63,11 +65,15 @@ theorem helper_errors :
       (fun result state => result = none ∧ state.outputs.allOk = false) initial := by
   constructor
   · rw [check_query]
-    change ∀ selected, OutputChoice (.error 1) selected → _
+    change ∀ found ∈ Model.RunStep.executions (.continued (.error 1) _ []), ∀ selected,
+      OutputChoice found.output selected → _
+    simp only [Model.RunStep.executions, List.mem_singleton, forall_eq]
     rw [OutputChoice.forall_iff]
     decide +kernel
   · rw [check_single, check_query]
-    change ∀ selected, OutputChoice (.error 1) selected → _
+    change ∀ found ∈ Model.RunStep.executions (.continued (.error 1) _ []), ∀ selected,
+      OutputChoice found.output selected → _
+    simp only [Model.RunStep.executions, List.mem_singleton, forall_eq]
     rw [OutputChoice.forall_iff]
     decide +kernel
 
@@ -76,7 +82,9 @@ theorem commit_error :
     (query (sql r"COMMIT")).check
       (fun value state => value = .error 1 ∧ state.connection.state.snapshot = none) initial := by
   rw [check_query]
-  change ∀ selected, OutputChoice (.error 1) selected → _
+  change ∀ found ∈ Model.RunStep.executions (.continued (.error 1) _ []), ∀ selected,
+    OutputChoice found.output selected → _
+  simp only [Model.RunStep.executions, List.mem_singleton, forall_eq]
   rw [OutputChoice.forall_iff]
   decide +kernel
 

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.ScriptRunIndex
+import Belay.Sqlite.Model.ScriptRunSingleton
 import Belay.Sqlite.Model.SqlStateLaws
 import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.ResolveStateSpec
@@ -19,8 +20,8 @@ are included here. Proof sketch: unfold the step; every earlier refusal ends
 the run, and each remaining output carries the same transition. -/
 theorem runScriptStep_ran {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value}
-    {output : Output}
-    (step : runScriptStep context clock index connection statement parameters = .continued output next) :
+    {output : Output} {others : List StatementExecution}
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
     ∃ resolved after value,
       resolveStatement context connection.resolveState statement = .ok (resolved, after) ∧
       statementClock clock index resolved = some value ∧
@@ -31,26 +32,8 @@ theorem runScriptStep_ran {context : ResolveContext} {clock : Option Clock} {ind
         (advanceRun index resolved connection.state (connection.state.statementRun value parameters resolved)) ∧
       next = connection.afterStep after (connection.state.statementRun value parameters resolved).counts
         (advanceRun index resolved connection.state (connection.state.statementRun value parameters resolved)) := by
-  unfold runScriptStep runScriptStepWith at step
-  split at step
-  · cases step
-  · rename_i resolved after found
-    split at step
-    · cases step
-    · rename_i value timed
-      split at step
-      · cases step
-      · rename_i known
-        dsimp only at step
-        split at step
-        · cases step
-        · rename_i ready
-          have ready : (connection.state.statementRun value parameters resolved).ready = true := by
-            cases valueReady : (connection.state.statementRun value parameters resolved).ready <;>
-              simp_all
-          refine ⟨resolved, after, value, found, timed, known, ready, ?_⟩
-          unfold ranScriptStep at step
-          split at step <;> cases step <;> simp_all
+  obtain ⟨_, resolved, after, value, found, timed, known, ready, ofStep, _, nextEq⟩ := runScriptStep_continued_spec step
+  exact ⟨resolved, after, value, found, timed, known, ready, ofStep.symm, nextEq⟩
 
 /-- An ordinary statement's transition publishes its supplied effect, then
 applies its supplied counts. Transaction control and connection-setting
@@ -100,10 +83,10 @@ the run, exclude failed effects by their outputs, then use the resolver's state
 law and the successful transition. -/
 theorem runScriptStep_effect {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value}
-    {output : Output} {resolved : Resolved.Statement} {after : ResolveState}
+    {output : Output} {others : List StatementExecution} {resolved : Resolved.Statement} {after : ResolveState}
     (found : resolveStatement context connection.resolveState statement = .ok (resolved, after))
     (ordinary : resolved.isControl = false)
-    (step : runScriptStep context clock index connection statement parameters = .continued output next)
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ value database,
       statementClock clock index resolved = some value ∧
@@ -135,13 +118,14 @@ theorem successful_script_cons {context : ResolveContext} {clock : Option Clock}
     (success : (runScriptFrom context clock index connection ((statement, parameters) :: rest)).outputs.all
       (fun output => !output.isError && !output.endsRun) = true) :
     ∃ output next,
-      runScriptStep context clock index connection statement parameters = .continued output next ∧
+      runScriptStep context clock index connection statement parameters = .continued output next [] ∧
       output.isError = false ∧
       (runScriptFrom context clock (index + 1) next rest).outputs.all
         (fun output => !output.isError && !output.endsRun) = true := by
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => simp [runScriptFrom, step, Output.isError, Output.endsRun] at success
-  | continued output next =>
+  | continued output next others =>
+    obtain rfl := runScriptStep_others step
     simp only [runScriptFrom, step, List.all_cons, Bool.and_eq_true,
       Bool.not_eq_true'] at success
     exact ⟨output, next, rfl, success.1.1, success.2⟩

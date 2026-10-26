@@ -38,10 +38,24 @@ def insertOutcome (database : Database) (target : Nat) (keys : List UniqueKey) (
     else .error (.constraintViolation, database)
   | none => checkedWrite database target keys result
 
+/-- A further possible execution of a statement, beside the execution that the model's own
+traversal takes (ADR 0019, D4, amended 2026-10-25). An index can change rowids, partial writes and
+the precedence of errors, so one statement can have several admitted results. Each one is complete:
+it has its own effect, its own counts for the counters of the connection and its own rows
+of a write that checks foreign keys. Two executions are never merged field by field. -/
+structure StatementRun.Alternative where
+  /-- The effect of this execution ({lit}`StatementRun.effect`). -/
+  effect : Effect
+  /-- What this execution does to the counters of the connection ({lit}`StatementRun.counts`). -/
+  counts : Counts := {}
+  /-- The rows that this execution wrote, when it checks foreign keys ({lit}`StatementRun.keyRows`). -/
+  keyRows : Option (List Row) := none
+
 /-- What running one statement on a database gives: its effect, whether the model
 describes it on the database (the support check), what it does to the counters of its
 connection, and for a write that checks foreign keys the rows that it wrote. All read the same
-computation of the write or the query (ADR 0024, D2). -/
+computation of the write or the query (ADR 0024, D2). These fields describe the execution that the
+model's own traversal takes; {lit}`alternatives` lists the other admitted executions. -/
 structure StatementRun where
   /-- The effect of the statement ({lit}`literalStep`). -/
   effect : Effect
@@ -53,6 +67,16 @@ structure StatementRun where
   /-- The rows that a write that checks foreign keys wrote ({name}`KeyRun.written`); none for
   every other statement. -/
   keyRows : Option (List Row) := none
+  /-- The other admitted executions of the statement, each with its own effect and counts; none for
+  every statement that the model describes with one next state. The support check
+  ({lit}`ready`) covers the statement and all its executions. -/
+  alternatives : List StatementRun.Alternative := []
+
+/-- The run of an alternative execution as a run of its own, for the functions that read one run
+({name}`StatementRun`). Its support check is true, because {lit}`ready` of the statement's run covers every
+execution. -/
+def StatementRun.Alternative.toRun (alternative : StatementRun.Alternative) : StatementRun :=
+  { effect := alternative.effect, ready := true, counts := alternative.counts, keyRows := alternative.keyRows }
 
 /-- The run of a write whose plain computation gives the effect, the support check and the
 counts: the same with foreign keys off, and with them on the run of the keys

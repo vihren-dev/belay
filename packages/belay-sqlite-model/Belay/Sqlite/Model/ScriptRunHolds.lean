@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.RunHolds
-import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.ScriptRunSingleton
 
 set_option doc.verso true
 
@@ -19,9 +19,10 @@ condition on the database of the connection before it:
 * a list with a first statement requires, for each resolved statement and state that
   {name}`resolveStatement` gives for the first statement over the connection, the condition of
   the resolved statement on the database of the connection; and, when
-  {name}`runScriptStep` continues with a next connection, the conditions of the rest from the
-  next index and the next connection. A statement at which the run ends requires nothing of the
-  rest, and a statement that does not resolve requires no condition. -/
+  {name}`runScriptStep` continues, the conditions of the rest from the next index and the
+  connection of each execution of the statement ({name}`RunStep.executions`). A statement at which
+  the run ends requires nothing of the rest, and a statement that does not resolve requires no
+  condition. -/
 def ScriptConditionsWith (condition : Resolved.Statement → Database → Prop) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) (connection : Connection) :
     List (Syntax.Statement × List Value) → Prop
@@ -31,7 +32,8 @@ def ScriptConditionsWith (condition : Resolved.Statement → Database → Prop) 
       condition resolved connection.state.database) ∧
       match runScriptStep context clock index connection statement parameters with
       | .ended _ => True
-      | .continued _ next => ScriptConditionsWith condition context clock (index + 1) next rest
+      | stepped@(.continued ..) =>
+        ∀ execution ∈ stepped.executions, ScriptConditionsWith condition context clock (index + 1) execution.next rest
 
 variable {property : Database → Prop} {condition : Resolved.Statement → Database → Prop}
 
@@ -59,28 +61,12 @@ theorem runScriptStep_holds (keeps : StatementKeeps property condition) (context
     (statement : Syntax.Statement) (parameters : List Value)
     (met : ∀ resolved after, resolveStatement context connection.resolveState statement = .ok (resolved, after) →
       condition resolved connection.state.database)
-    {output : Output} {next : Connection}
-    (continued : runScriptStep context clock index connection statement parameters = .continued output next) :
+    {output : Output} {next : Connection} {others : List StatementExecution}
+    (continued : runScriptStep context clock index connection statement parameters = .continued output next others) :
     next.state.Holds property := by
-  unfold runScriptStep runScriptStepWith ranScriptStep at continued
-  split at continued
-  · nomatch continued
-  · rename_i resolved after resolvedEq
-    split at continued
-    · nomatch continued
-    · rename_i value _
-      split at continued
-      · nomatch continued
-      · dsimp only at continued
-        split at continued
-        · nomatch continued
-        · split at continued
-          · nomatch continued
-          all_goals
-            injection continued with _ same
-            subst same
-            exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
-              (keeps value _ parameters resolved _ holds.1 (met resolved after resolvedEq))))
+  obtain ⟨_, resolved, after, value, resolution, _, _, _, _, _, rfl⟩ := runScriptStep_continued_spec continued
+  exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
+    (keeps value _ parameters resolved _ holds.1 (met resolved after resolution))))
 
 /-- The run theorem of {name}`runScriptFrom`, for every property and condition. For every context,
 clock, index, connection and statements with their values: if the statement theorem holds
@@ -96,15 +82,27 @@ theorem runScriptFrom_holds (keeps : StatementKeeps property condition) (context
         (runScriptFrom context clock index connection script).connection.state.Holds property
   | _, _, [], holds, _ => holds
   | index, connection, (statement, parameters) :: rest, holds, conditions => by
-    have step : ∀ output next, runScriptStep context clock index connection statement parameters = .continued output next →
-        next.state.Holds property := fun _ _ =>
-      runScriptStep_holds keeps context clock index holds statement parameters conditions.1
-    have later := conditions.2
     unfold runScriptFrom
-    revert step later
-    cases runScriptStep context clock index connection statement parameters with
-    | ended _ => exact fun _ _ => holds
-    | continued output next =>
-      exact fun step later => runScriptFrom_holds keeps context clock (index + 1) rest (step output next rfl) later
+    cases step : runScriptStep context clock index connection statement parameters with
+    | ended _ => exact holds
+    | continued output next others =>
+      obtain rfl := runScriptStep_others step
+      have kept := runScriptStep_holds keeps context clock index holds statement parameters conditions.1 step
+      have later := conditions.2
+      rw [step] at later
+      exact runScriptFrom_holds keeps context clock (index + 1) rest kept (later ⟨output, next⟩ (by simp [RunStep.executions]))
+
+/-- The run theorem of {name}`runScriptAllFrom`, for every property and condition. For every context,
+clock, index, connection and statements with their values: if the statement theorem holds
+({name}`StatementKeeps`), the state of the connection satisfies {name}`SqlState.Holds` and the
+statements meet {name}`ScriptConditionsWith`, then the state of the connection of every complete
+execution of the script satisfies {name}`SqlState.Holds`. Proof sketch:
+{name}`runScriptFrom_holds` holds for the traversal ({name}`runScriptAllFrom_forall`). -/
+theorem runScriptAllFrom_holds (keeps : StatementKeeps property condition) (context : ResolveContext)
+    (clock : Option Clock) (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
+    (holds : connection.state.Holds property) (conditions : ScriptConditionsWith condition context clock index connection script) :
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds property :=
+  runScriptAllFrom_forall context clock index connection script
+    (runScriptFrom_holds keeps context clock index script holds conditions)
 
 end Belay.Sqlite.Model

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.ScriptRunSingleton
 import Belay.Sqlite.Model.Resolution.ResolveState
 
 set_option doc.verso true
@@ -10,10 +10,10 @@ check, or {name}`Belay.Sqlite.Model.Output.ofStep` of the statement's run and tr
 
 namespace Belay.Sqlite.Model
 
-/-- The output of a step of a run: the output of a statement that ran, or
-{name}`Output.unmodeled` with the reason why the run ended at the statement. -/
+/-- The output of a step of a run: the output of the model's own execution of a statement that ran,
+or {name}`Output.unmodeled` with the reason why the run ended at the statement. -/
 def RunStep.output : RunStep → Output
-  | .continued output _ => output
+  | .continued output _ _ => output
   | .ended reason => .unmodeled reason
 
 /-- The output of a resolved statement at a zero-based index on the connection with the values
@@ -34,15 +34,17 @@ def resolvedStepOutput (clock : Option Clock) (index : Nat) (connection : Connec
       if !run.ready then .unmodeled unmodeledHere
       else Output.ofStep value parameters resolved connection.state run (advanceRun index resolved connection.state run) initial
 
-/-- For every statement that ran, its step ({name}`ranScriptStep`) has the output of
-{name}`Output.ofStep`. Proof sketch: an output other than {name}`Output.unmodeled` continues with
-it, and {name}`Output.unmodeled` ends the run with the same output. -/
-theorem ranScriptStep_output (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
-    (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) :
-    (ranScriptStep parameters connection resolved after value run transition).output =
+/-- For every statement that ran with a run that has no alternative execution, its step
+({name}`ranScriptStep`) has the output of {name}`Output.ofStep`. Proof sketch: an output other than
+{name}`Output.unmodeled` continues with it, and {name}`Output.unmodeled` ends the run with the same
+output; without alternatives, no further execution can end the run. -/
+theorem ranScriptStep_output (index : Nat) (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
+    (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) (single : run.alternatives = []) :
+    (ranScriptStep index parameters connection resolved after value run transition).output =
       Output.ofStep value parameters resolved connection.state run transition := by
   unfold ranScriptStep
-  split <;> simp_all [RunStep.output]
+  simp only [StatementExecution.ofAlternatives_of_single _ _ _ _ _ _ single, Except.map, List.map_nil]
+  split <;> simp_all [RunStep.output, RunStep.withOthers, pure, Except.pure]
 
 /-- For every context, clock, index, connection, statement and values, the output of the step
 ({name}`runScriptStep`) is {name}`Output.unmodeled` with the reason of the restriction when
@@ -72,7 +74,7 @@ theorem runScriptStep_output (context : ResolveContext) (clock : Option Clock) (
         simp only []
         split
         · simp [RunStep.output]
-        · rw [ranScriptStep_output]
+        · rw [ranScriptStep_output _ _ _ _ _ _ _ _ (SqlState.statementRun_alternatives ..)]
 
 /-- For every context, clock, index, connection, statement, values and later statements, the first
 output of the run of a script that starts with that statement is the output of its step. Proof

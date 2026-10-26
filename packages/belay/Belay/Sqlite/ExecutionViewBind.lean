@@ -26,7 +26,8 @@ theorem Sql.View.project_bind_stopped {α β : Type} {program : Sql α} {clock i
   induction branch with
   | pure => cases stopped
   | stopped => cases view; rfl
-  | @continued statement values rest clock index connection actual state selected result step choice _ hypothesis =>
+  | @continued statement values rest clock index connection actual state others found selected result step member choice _ hypothesis =>
+    obtain rfl := Sql.Branch.found_eq step member
     cases view with
     | exec hidden views =>
       have continued := choice_continues choice (runScriptStep_continued step).2
@@ -47,7 +48,8 @@ theorem Sql.View.project_bind_return {α β : Type} {program : Sql α} {clock in
   induction branch with
   | pure => cases returned; cases view; rfl
   | stopped => cases returned
-  | @continued statement values rest clock index connection actual state selected result step choice _ hypothesis =>
+  | @continued statement values rest clock index connection actual state others found selected result step member choice _ hypothesis =>
+    obtain rfl := Sql.Branch.found_eq step member
     cases view with
     | exec hidden views =>
       have continued := choice_continues choice (runScriptStep_continued step).2
