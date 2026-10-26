@@ -40,3 +40,13 @@ def test_sql_run_refuses_unreadable_programs(runtime_root: Path, tmp_path: Path)
     """`sql_run` fails with a message, and keeps the goal, for a raw execution step and for a variable program.
     After a rule it leaves an unreadable part as a goal and warns. The fixture checks the exact messages."""
     check_module_chain(runtime_root, tmp_path, (("S6AutoShapes", 0),), timeout=CHAIN_TIMEOUT_SECONDS)
+
+
+def test_sql_commute_proves_the_claim_and_refuses_the_rest(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql_commute` proves the preservation claim with `ReadCertificate.preservesAt_send` and the commutation
+    claim with `ReadCertificate.commutesOn_send` from an analysis result and obligations. The hints of the weak
+    claim leave three premises of the strong claim open. A read of the change counter and a migration under a
+    clock that changes leave the premise that is false open, and the fixtures check the messages."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("S6RulesQueryPattern", 8), ("S6AutoCommute", 2), ("S6RulesNegativeReads", 8),
+        ("S6RulesNegativeClock", 2), ("S6AutoCommuteNegative", 0)), timeout=CHAIN_TIMEOUT_SECONDS)

@@ -178,3 +178,21 @@ Commit 1 (step rules and `sql_run`):
   reaches them through few places: `runScriptStep_others` in `SendStepRules` (one use), `Sql.Branch.found_eq` in
   `ReadStepRule` (three uses), `sendStatements_branch_shape` in the part 1 certificate rules and the new
   `sql_commute` (through the rules). No new code uses `Succeeds.*` or `Sql.branch_continued_iff`.
+
+Commit 3 (`sql_commute`):
+
+- Surface: `SqlCommute` (`sql_commute [hints]`). The tactic reads the claim from the goal (`Migration.PreservesAt`,
+  `Migration.PreservesOn` or `Migration.CommutesOn`), reads the one statement of the read, applies
+  `ReadCertificate.preservesAt_send` or `ReadCertificate.commutesOn_send` by the claim, closes the premises of the rule
+  from the hints (the hint itself, the soundness of an analysis result `ReadAnalysis.analyze_sound`, and these under
+  introduced variables), and leaves each other premise as a goal with a warning that says what is missing. The tactic
+  does not search for dependency facts: it uses the proved rules and the hints. The rule follows the claim and not the
+  hints, so the hints of a weak claim never close a strong one.
+- Fixtures: `S6AutoCommute` (preservation and commutation of the lookup of `S6RulesQueryPattern`, and the weak hints
+  that leave `constant`, `obligations` and `admittedKept` open), `S6AutoCommuteNegative` (a counter read and a
+  migration under a moving clock leave the false premise open; the rules fixtures show that it is false).
+  The driver test is in `tests/surface_s6_automation_test.py`.
+- Review 20261026T223322Z-e1e78b5e (1 must, 2 shoulds) was for the earlier state of `SqlCommute` that the previous
+  commit contained by mistake (the preservation goal failed because the rule type was unfolded into more binders,
+  and no fixture used the tactic). Fixed in this commit: the rule type is not unfolded, the fixtures above use the
+  tactic, the handler has a docstring and the two read errors say what to do.

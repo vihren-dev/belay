@@ -62,8 +62,9 @@ def closePremise (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM Bool 
     catch _ => pure ()
   return false
 
-/-- Apply the rule of the claim to the goal. Return the premises that no hint closes, each with its name. -/
-def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM (List (Name × MVarId)) :=
+/-- Apply the rule of the claim to the goal. Return the premises that no hint closes, each with its name, and the variables of the rule that stay undetermined. -/
+def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) :
+    TacticM (List (Name × MVarId) × List MVarId) :=
   goal.withContext do
   let goalType ← instantiateMVars (← goal.getType)
   let some (_, rule) := claimOf? goalType
@@ -73,11 +74,11 @@ def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM (
   unless application.getAppFn.isConstOf ``send do
     throwError "sql_commute reads a read that is a sent script, but the read in this goal is not. Write the read as send followed by a script."
   let some (statement, values, rest) ← firstStatement? (application.getArg! 0)
-    | throwError "sql_commute cannot read the statement of the read: the script does not reduce to a list of statements."
+    | throwError "sql_commute cannot read the statement of the read: the script does not reduce to a list of statements. Write the read as a script of one literal statement, or apply ReadCertificate.preservesAt_send or ReadCertificate.commutesOn_send directly."
   unless ← isLast rest do
-    throwError "sql_commute handles a read of one statement, and the script of the read has more statements."
+    throwError "sql_commute handles a read of one statement, and the script of the read has more statements. Apply ReadCertificate.preservesAt_send or ReadCertificate.commutesOn_send directly to each statement."
   let ruleInfo ← getConstInfo rule
-  let (mvars, _, conclusion) ← forallMetaTelescopeReducing ruleInfo.type
+  let (mvars, _, conclusion) ← forallMetaTelescope ruleInfo.type
   let mut tagged : Array (Name × MVarId) := #[]
   for index in [0:mvars.size] do
     let name := (← mvars[index]!.mvarId!.getDecl).userName
@@ -88,28 +89,33 @@ def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM (
   unless ← isDefEq conclusion goalType do
     throwError "sql_commute: the goal does not have the shape of the rule {rule}. Check that the migration is a sent script and that the read is a sent script of one statement."
   let mut open_ : Array (Name × MVarId) := #[]
+  let mut variables : Array (Name × MVarId) := #[]
   for (name, mvar) in tagged do
     if ← mvar.isAssigned then continue
     let type ← instantiateMVars (← mvar.getType)
     if ← isProp type then
       if ← closePremise hints mvar then continue
       open_ := open_.push (name, mvar)
-    else if name == `certificate then continue
+    else if name == `certificate then variables := variables.push (name, mvar)
     else throwError "sql_commute: the variable {name} of the rule is not determined by the goal."
   goal.assign (mkAppN (.const rule (← mkFreshLevelMVarsFor ruleInfo)) mvars)
-  return open_.toList
+  let unassigned ← variables.filterM fun (_, mvar) => return !(← mvar.isAssigned)
+  return (open_.toList, unassigned.toList.map (·.2))
 
 /-- Run {lit}`sql_commute`: apply the rule of the claim, and leave the premises that no hint closes. -/
 syntax (name := sqlCommute) "sql_commute" (" [" term,* "]")? : tactic
 
+/-- Run {lit}`sql_commute`: apply the rule of the claim to the main goal, close the premises of the rule from the
+hints, and put the premises that stay open, with a warning for each, and the undetermined certificate in place of
+the main goal. -/
 @[tactic sqlCommute] def evalSqlCommute : Tactic := fun stx => do
   let hints : Array (TSyntax `term) := match stx with
     | `(tactic| sql_commute [$hints,*]) => hints.getElems
     | _ => #[]
   let goal ← getMainGoal
-  let open_ ← applyCommuteRule hints goal
+  let (open_, variables) ← applyCommuteRule hints goal
   for (name, _) in open_ do
     logWarning m!"sql_commute left the premise {name} open: {premiseAdvice name}"
-  setGoals ((open_.map (·.2)) ++ (← getGoals).drop 1)
+  setGoals ((open_.map (·.2)) ++ variables ++ (← getGoals).drop 1)
 
 end Belay.Sqlite.Run
