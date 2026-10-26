@@ -102,6 +102,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "nondeterministic-error-order": ("CREATE TABLE t(a INTEGER);",
                                      "CREATE TABLE u(a INTEGER, b AS (changes() + count(a)));"),
     "initial-database": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM before.t;"),
+    "query-source-insert": ("CREATE TABLE t(a INTEGER); CREATE TABLE s(a INTEGER);", "INSERT INTO t SELECT a FROM s;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

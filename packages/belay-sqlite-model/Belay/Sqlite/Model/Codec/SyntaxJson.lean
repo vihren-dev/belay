@@ -17,7 +17,8 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpr
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
-deriving instance Lean.FromJson, Lean.ToJson for CompoundOperator, Syntax.Compound, Syntax.CommonTable, Syntax.Subquery
+deriving instance Lean.FromJson, Lean.ToJson for CompoundOperator, Syntax.Compound, Syntax.CommonTable, Syntax.Subquery,
+  Syntax.SelectBody
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TriggerTime, Syntax.TriggerEvent, Syntax.BodyStatement
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.PragmaSetting, Syntax.Pragma

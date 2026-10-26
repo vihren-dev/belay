@@ -56,6 +56,13 @@ def expectText (text : String) (item : Located Syntax.Statement) (path : List Na
   expectText withClause selected [8, 0] "SELECT 1"
   expectText withClause selected [8, 0, 12, 0] "c"
   expectText withClause selected [8, 0, 12, 1, 0] "x"
+  let insertQuery := "WITH c(x) AS (SELECT 1) INSERT INTO t(a) SELECT x FROM c WHERE x = 1 RETURNING a;"
+  let #[insertedFromQuery] ← translated insertQuery | throw <| IO.userError "expected one statement"
+  expectText insertQuery insertedFromQuery [0] "t"
+  expectText insertQuery insertedFromQuery [2] "SELECT x FROM c WHERE x = 1"
+  expectText insertQuery insertedFromQuery [2, 3] "x = 1"
+  expectText insertQuery insertedFromQuery [2, 8, 0] "SELECT 1"
+  expectText insertQuery insertedFromQuery [5, 0] "a"
 
 #guard ["\"a\"\"b\"", "[a]]", "`x`", "'it''s'", "\"Some\" Type", "plain"].map dequote ==
   ["a\"b", "a]", "x", "it's", "Some", "plain"]

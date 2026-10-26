@@ -120,6 +120,14 @@ inductive Statement where
   | insert (table : Identifier) (columns : Option (List Identifier)) (rows : List (List Expr))
       (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
       (returning : List ResultColumn := []) (subqueries : List Subquery := [])
+  /-- {lit}`INSERT INTO table [(columns)] SELECT ...` and {lit}`REPLACE INTO table ... SELECT ...`
+  (ADR 0017, S6; ADR 0019, D4): the rows of the query, in the written {lit}`source`, are the
+  rows to insert. The other parts are those of {lit}`insert`, at the same steps of a path: the
+  table 0, the columns 1, the source 2, the clauses 3, the algorithm 4 and {lit}`RETURNING` 5.
+  The subqueries of the statement are those of the source ({name}`SelectBody`). -/
+  | insertSelect (table : Identifier) (columns : Option (List Identifier)) (source : SelectBody)
+      (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
+      (returning : List ResultColumn := [])
   /-- {lit}`UPDATE table SET assignments [WHERE filter] [RETURNING columns]`, with the
   subqueries of the statement, as for {lit}`SELECT`. -/
   | update (table : Identifier) (assignments : List (Identifier × Expr)) (filter : Option Expr)

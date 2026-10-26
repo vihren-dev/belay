@@ -166,6 +166,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
       let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
         (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
+  | insertSelect table columns body conflicts algorithm returning =>
+    simp only [statement_arms] at ok
+    exact written _ ok fun _ _ found =>
+      let ⟨same, unchanged, control⟩ := resolveInsertQuery_same _ _ _ _ _ _ _ _ _ _ found
+      ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found =>

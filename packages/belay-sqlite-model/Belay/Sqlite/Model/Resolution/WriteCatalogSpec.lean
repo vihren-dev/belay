@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.Resolution.InsertQueries
 
 set_option doc.verso true
 
@@ -29,6 +30,44 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog)
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
     | (cases ok)
+
+/-- For every successful resolution of INSERT from a query, the catalog is unchanged and the resolved
+statement is a prepare error: a query that SQLite prepares is a restriction of the model until the rows
+are run. Proof sketch: every branch of the resolver returns the input catalog with a prepare error, or
+a restriction, which is not a success. -/
+theorem resolveInsertQuery_prepareError (context : ResolveContext) (catalog after : Catalog)
+    (tableName : Identifier) (names : Option (List Identifier)) (body : Syntax.SelectBody)
+    (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
+    (returning : List Syntax.ResultColumn) (statement : Resolved.Statement)
+    (ok : (resolveInsertQueryTraced context catalog tableName names body conflicts algorithm returning).drop =
+      .ok (statement, after)) :
+    after = catalog ∧ ∃ error, statement = .prepareError error := by
+  unfold resolveInsertQueryTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
+  repeat' split at ok
+  all_goals first
+    | (cases ok; exact ⟨rfl, _, rfl⟩)
+    | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases
+          (show resolveViewTarget context catalog tableName (resolveViewModify catalog tableName) =
+            .ok (statement, after) from ok)
+       · simp only [resolveViewModify, prepareError] at h
+         cases h
+         exact ⟨rfl, _, rfl⟩
+       · exact ⟨rfl, _, rfl⟩)
+
+/-- For every successful resolution of INSERT from a query, the catalog is unchanged and the resolved
+statement applied to the input catalog gives the input catalog again; the statement is not transaction
+control. Proof sketch: the statement is a prepare error ({name}`resolveInsertQuery_prepareError`). -/
+theorem resolveInsertQuery_same (context : ResolveContext) (catalog after : Catalog)
+    (tableName : Identifier) (names : Option (List Identifier)) (body : Syntax.SelectBody)
+    (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
+    (returning : List Syntax.ResultColumn) (statement : Resolved.Statement)
+    (ok : (resolveInsertQueryTraced context catalog tableName names body conflicts algorithm returning).drop =
+      .ok (statement, after)) :
+    after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
+  obtain ⟨rfl, error, rfl⟩ := resolveInsertQuery_prepareError _ _ _ _ _ _ _ _ _ _ ok
+  exact ⟨rfl, rfl, rfl⟩
 
 /-- For every successful resolution of UPDATE, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again

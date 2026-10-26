@@ -1,7 +1,7 @@
 # Status: query inserts and ALTER table rebuild
 
 Created 2026-10-24. Status: OPEN. The task was checked against the code on
-2026-10-26; no implementation has started.
+2026-10-26; stage (a) of part 1 is implemented (see Progress).
 Task: [task file](20261024-table-rebuild.task.md).
 Specs: ADR19 D4/slice 5, ADR17 S6 and ADR22 preservation contracts.
 
@@ -81,6 +81,58 @@ rebuild proof is separate.
   - Judge PRs: each part adds authored corpus cases and so needs its own judge
     branch and an owner-approved judge PR (new corpus, claims and lock). The
     conformance classifier is subject code and needs no judge change.
-  - Predictions baseline: to build with `nix-build integrity/judge.nix -A
-    predictions` on the base before the first model change (not yet built).
+  - Predictions baseline: `build/predictions-baseline` (55 files) is the output of
+    the model name trace task, built on its pre-trace base; that task's status
+    records that its final tree predicts exactly the same, so it is the baseline
+    of `4fc773a5`. It was not rebuilt at `4fc773a5` itself.
   - Review `20261026T091236Z-2957bba7` of the check commit had no findings.
+
+- 2026-10-26: owner decisions (through the coordinator). (1) The alternatives
+  interface of write executions is a separate task, `20261026-possible-write-executions`,
+  in another workspace; this task consumes it, does stage (a) of part 1 now and stage (b)
+  (exact source production and the insertion fold) after the coordinator says to merge
+  it. (2) The translator records the place and quoting of name tokens in stored source
+  text (view result-column text, CHECK raw text) and the quoting of an ALTER's new name;
+  this is the start of part 2. The task file records both.
+- 2026-10-26: stage (a), the language front end and the preparation of INSERT SELECT.
+  - Syntax: `Syntax.Statement.insertSelect` with `Syntax.SelectBody` as the query (the
+    fields of a SELECT statement, so that a path below child 2 is the path in a SELECT).
+    Path steps: table 0, column list 1, query 2 (subqueries at 2/8), conflicts 3,
+    algorithm 4, RETURNING 5. JSON and `ToExpr` codecs derive.
+  - Text: `Translation/Writes.insertQuery` maps `INSERT/REPLACE ... SELECT`, with an ordinary WITH
+    prefix, compound queries, conflict clauses and RETURNING. A VALUES source keeps the
+    `insert` form. A trigger body still refuses a query source (unchanged, a documented
+    limit of triggers). `INSERT ... SELECT ... FROM s ON CONFLICT` is the pinned
+    parser's syntax error and stays one; `... WHERE true ON CONFLICT ...` parses.
+  - Resolution: `Resolution/InsertQueries.resolveInsertQueryTraced` follows the native
+    order checked by probes on 3.51.0: table (a view is "cannot modify"), column list
+    (unknown, then generated column), query names, column counts (`N values for M
+    columns`, `table t has K columns but N values were supplied`), then conflict
+    targets and RETURNING. The destination columns are not visible to the query. The
+    name trace has the table, the list, the query, the clauses and RETURNING.
+  - Decision: no `Resolved.Statement` constructor yet. A query that SQLite prepares ends
+    in the temporary restriction `query-source-insert` (docs/semantic-subset.md,
+    conformance/restriction_examples.py); stage (b) replaces it by a resolved form with
+    the semantics, so about 40 exhaustive matches are not changed twice. Prepare errors
+    are real, resolved outputs. Laws: `resolveInsertQuery_prepareError` and `_same`
+    extend the catalog-unchanged, valid and schema-link laws of the resolver.
+  - Native finding: SQLite accepts a column named twice in the INSERT column list; the
+    model keeps its restriction `insert-column-twice` for it.
+  - Deviation to flag: adding the syntax constructor forces exhaustive-match arms in
+    four modules that the editor part 2b agent owns (`SqlTableSlots`,
+    `SqlStatementContexts`, `SqlOrderWarnings`, `SqlTableOrigins` in
+    `packages/belay/Belay/Sqlite/`). The arms are the minimum (the slots of the table
+    and of the source tables; the query's nested-subquery slots under child 2/8 are
+    not covered and belong to that agent). `SampleScriptHints` (not an editor module)
+    gets a real arm. The commit builds only with these arms.
+  - Tests: kernel `#guard` examples (`InsertQueryExamples`, 15 cases), `tests/syntax_insert_query_test.py`
+    (9 cases), the translation range checks of `tests/surface/TranslationChecks.lean`
+    (not run locally: its runner needs the Nix runtime; `just test-full` runs it).
+  - Predictions after stage (a): 55 files compared with the baseline. 64 predictions
+    changed. 63 are unsupported before and after (the old reason "Only VALUES rows are
+    modeled as an INSERT source" or an unsupported `selectnowith`; now
+    `query-source-insert` (48), a recursive-common-table restriction (13), or another
+    later restriction (2)). One is newly predicted (`select1:select1-4.5:66` in
+    corpus-v5): a prepare error of an INSERT SELECT, which the native record
+    agrees with. `just dev-verdict` reports 5171 AGREE, 2429 MODEL_UNSUPPORTED, and no
+    DISAGREE over all corpora.

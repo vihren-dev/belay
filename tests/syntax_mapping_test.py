@@ -102,7 +102,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
     ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
     ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
-    ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("INSERT INTO t SELECT 1;", "SELECT 1"),
+    ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "SELECT 1"),
     ("INSERT INTO t VALUES (a & 1);", "a & 1"), ("UPDATE t SET a = 1 WHERE a IN u;", "a IN u"),
     ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),
 ])
@@ -118,7 +118,7 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
 @pytest.mark.parametrize(("sql", "advice"), [
     ("ALTER TABLE t RENAME TO u;", "rewrite it with the modeled forms: CREATE TABLE"),
     ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
-    ("INSERT INTO t SELECT 1;", "write INSERT ... VALUES (...)"),
+    ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "write INSERT ... VALUES (...)"),
     ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),
     ("VACUUM;", "the model runs CREATE TABLE"),
 ])

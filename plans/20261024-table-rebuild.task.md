@@ -230,7 +230,15 @@ corpus/claim/lock changes belong to a separate judge PR that needs owner
 approval before merge. The implementation PR leaves the lock unchanged.
 
 Three acceptance parts: query-source inserts; table/column renames; DROP COLUMN
-and integrated rebuild/proof coverage. Each coherent commit gets focused checks,
+and integrated rebuild/proof coverage. Part plan (owner decisions of 2026-10-26):
+part 1 is done in two stages. Stage (a), which every option needs, is the syntax,
+text translation, codecs and the SQLite-ordered preparation of INSERT SELECT.
+Stage (b) is the exact source production and the insertion fold; it waits for the
+possible-executions interface task, and the coordinator says when to merge it.
+Part 2 starts with a syntax change that records the place and quoting of the name
+tokens of stored source text (view result-column text, CHECK raw text) and the
+quoting of the new name of an ALTER, because the renames must rewrite them token
+by token; the translator records them in the syntax. Each coherent commit gets focused checks,
 dev-build, relevant dev-verdict and independent review. Each part ends with
 post-review `just test-full` and `just verdict`. Task end runs `just test-nix`
 and `just test-scheduled-checks`. Only Nix results are acceptance evidence.
@@ -262,7 +270,11 @@ of 2026-10-25; its line numbers fit the pinned `parser/upstream/sqlite3.c`
 QueryFunctions/Subqueries collect complete rows and lose source stop positions;
 PossibleOutput changes query observations but does not supply write states.
 The accepted extension must expose these missing execution contracts, including
-their public proof and conformance consumers, within this task's first part.
+their public proof and conformance consumers. Owner decision of 2026-10-26: the
+alternatives interface (the possible executions of a write, with its public
+proof and conformance consumers) is the separate task
+`plans/20261026-possible-write-executions.task.md`, implemented in its own
+workspace; this task consumes it.
 
 Separate source-production/error contracts from existing row insertion and
 catalog rewrite/validation contracts where they have different responsibilities.

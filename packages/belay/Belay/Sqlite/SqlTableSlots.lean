@@ -64,8 +64,8 @@ script no longer names the table that the database had at the start. -/
 def replacedTable? : Syntax.Statement → Option Identifier
   | .createTable name .. | .dropTable name _ => some name
   | .createView .. | .createIndex .. | .addColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
-  | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
-  | .dropTrigger .. => none
+  | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
+  | .createTrigger .. | .dropTrigger .. => none
 
 /-- The places of a statement, from its syntax and its ranges, without the places whose name a
 {lit}`WITH` definition of the statement names. A statement of another form, and the body of a
@@ -78,6 +78,8 @@ def tableSlotsOf (bytes : ByteArray) (item : Located Syntax.Statement) : List Ta
       (querySlots bytes span [] source joins ++ subquerySlots bytes span 8 subqueries, subqueries)
     | .insert (table := table) (subqueries := subqueries) .. =>
       (target [0] table ++ subquerySlots bytes span 6 subqueries, subqueries)
+    | .insertSelect (table := table) (source := body) .. =>
+      (target [0] table ++ querySlots bytes span [2] body.source body.joins, body.subqueries)
     | .update (table := table) (subqueries := subqueries) .. =>
       (target [0] table ++ subquerySlots bytes span 4 subqueries, subqueries)
     | .delete (table := table) (subqueries := subqueries) .. =>

@@ -76,6 +76,7 @@ deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.Compound
 deriving instance Lean.ToExpr for Syntax.CommonTable
 deriving instance Lean.ToExpr for Syntax.Subquery
+deriving instance Lean.ToExpr for Syntax.SelectBody
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
 deriving instance Lean.ToExpr for Syntax.TableOptions

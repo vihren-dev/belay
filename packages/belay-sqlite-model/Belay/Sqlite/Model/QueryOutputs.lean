@@ -14,7 +14,7 @@ def Syntax.Statement.readsOnly : Syntax.Statement → Bool
   | .select .. => true
   | .pragma form => form.readsOnly
   | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete ..
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete ..
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- Whether the output says that each result that SQLite may give has a row: rows that are not

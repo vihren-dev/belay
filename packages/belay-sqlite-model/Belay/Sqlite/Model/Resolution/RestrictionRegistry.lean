@@ -41,6 +41,6 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .viewBodyCheck | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
   | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
-  | .recursiveCommonTable | .foreignKeyUpsert | .raiseForm | .triggerForm | .sourceColumnName | .compoundOrderByTerm | .connectionCounterRead | .nondeterministicErrorOrder | .initialDatabase => .unsupported
+  | .recursiveCommonTable | .foreignKeyUpsert | .raiseForm | .triggerForm | .sourceColumnName | .compoundOrderByTerm | .connectionCounterRead | .nondeterministicErrorOrder | .initialDatabase | .querySourceInsert => .unsupported
 
 end Belay.Sqlite.Model

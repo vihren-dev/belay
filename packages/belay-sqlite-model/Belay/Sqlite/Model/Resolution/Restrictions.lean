@@ -194,6 +194,10 @@ inductive RestrictionKind where
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
+  /-- INSERT from a query ({lit}`INSERT INTO t SELECT ...`) that SQLite prepares: the model resolves the table, the
+  column list, the query, the column counts, the clauses and {lit}`RETURNING` in SQLite's order, but does not run the
+  rows yet (ADR 0017, S6; ADR 0019, D4). -/
+  | querySourceInsert
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model
