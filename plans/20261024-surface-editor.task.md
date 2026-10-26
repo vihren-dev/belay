@@ -215,8 +215,10 @@ warning for them:
   `RETURNING *` columns, function names and collation names;
 - names inside the body of a stored view (not an exact path, so never edited and
   never described);
-- names after the first unknown name of one statement: the resolver stops at the
-  first error, so a statement shows one correction at a time.
+- names after the first name that makes the statement fail: the resolver stops at
+  the first error, so a statement with name errors shows one correction at a time.
+  A double-quoted name that the resolver reads as a text literal is no error, so
+  every such occurrence of a statement gets its warning and its correction.
 
 A comparison has no operator part in the translated syntax. The comparison
 information is therefore the hover of the whole comparison expression, and the
