@@ -82,7 +82,8 @@ def resultColumn (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts 
     let value := parts[1]!
     let firstSubquery ← subqueryCount
     let mapped ← mappers.expression tree value
-    let tokens ← expressionNameTokens tree value.start value.stop mapped.span firstSubquery
+    let tokens ← if (← get).nameTokens then expressionNameTokens tree value.start value.stop mapped.span firstSubquery
+      else pure []
     return composite (.expression mapped.value named.value { text := tree.text value, tokens }) value.start
       (max value.stop parts[3]!.stop)
       #[mapped.span, named.span, spanOf value]

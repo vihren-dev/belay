@@ -6,8 +6,9 @@ set_option doc.verso true
 of an unaliased expression as the name of a view column, and a rename of a table or column
 rewrites the name tokens of that text. The frontend therefore records, for each name token of the
 text, where it stands in the text, how it was quoted, and the node paths of the name in the
-statement, among which is the path that the name trace reports for the same name. The trace and
-the resolved forms do not read the tokens. -/
+statement, among which is the path that the name trace reports for the same name. The frontend
+records them in the body of a stored view, whose column names are such texts; the text of a result
+column elsewhere has no tokens. The trace and the resolved forms do not read the tokens. -/
 
 namespace Belay.Sqlite.Model.Syntax
 

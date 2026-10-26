@@ -20,6 +20,15 @@ partial def Span.nameNodes (span : Span) (path : List Nat := []) : Array (List N
   let below := (span.parts.zipIdx.map fun (part, step) => part.nameNodes (path ++ [step])).flatten
   if span.isName then #[(path, span.start, span.stop)] ++ below else below
 
+/-- Run the action with the name tokens of result columns recorded, as in the body of a stored view,
+and restore the setting after it. -/
+def recordingNameTokens (action : TranslateM α) : TranslateM α := do
+  let around := (← get).nameTokens
+  modify fun scope => { scope with nameTokens := true }
+  let result ← action
+  modify fun scope => { scope with nameTokens := around }
+  return result
+
 /-- The number of subqueries listed so far in the statement. -/
 def subqueryCount : TranslateM Nat := do
   return ((← get).active.map (·.items.size)).getD 0

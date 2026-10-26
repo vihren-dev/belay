@@ -22,7 +22,7 @@ def definition (script : Script) (columns : Option (List Identifier) := none) : 
       subqueries }
   | none | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.addColumn ..)
   | some (.dropTable ..) | some (.dropView ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
-  | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.pragma ..)
+  | some (.insert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.pragma ..)
   | some (.createTrigger ..) | some (.dropTrigger ..) => {query := commonTablePlaceholder}
 
 /-- Append unresolved definitions with empty storage to a concrete fixture. Each

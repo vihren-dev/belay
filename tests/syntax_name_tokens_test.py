@@ -1,10 +1,11 @@
-"""The translation records the name tokens of the text of a result column
+"""The translation records the name tokens of the text of a result column in the body of a stored view
 (`packages/belay-sqlite-text/Belay/Sqlite/Translation/NameTokens.lean`, through the text package's program).
 
 SQLite names an unaliased view column by the text of its expression, and a rename rewrites the name tokens of
 that text. These tests check the JSON that Lean's `Syntax.SourceText` decoder reads: where each name stands
-in the text, how it was quoted, its node path, and the subquery that holds it. A text without a name stays a
-plain string. `tests/surface/NameTokenPaths.lean` checks that the paths are those of the name trace.
+in the text, how it was quoted, its node paths, and the subquery that holds it. A text without a name, and the
+text of a result column outside a view, stay plain strings. `tests/surface/NameTokenPaths.lean` checks that the
+paths are those of the name trace.
 """
 
 from collections.abc import Callable, Iterator
@@ -31,12 +32,16 @@ def paths_of(source: object, name: str) -> list[list[int]]:
     return item["paths"]
 
 
-def column_texts(parse_sql: Callable[..., Translation], sql: str) -> list[object]:
-    """The `text` of each result column of the first statement's query, in column order."""
-    [statement] = [item.value for item in parse_sql(sql, name_tokens=True).statements()]
+def view_of(parse_sql: Callable[..., Translation], query: str) -> dict[str, object]:
+    """The fields of `CREATE VIEW v AS query`, with the name tokens kept."""
+    [statement] = [item.value for item in parse_sql(f"CREATE VIEW v AS {query}", name_tokens=True).statements()]
     assert isinstance(statement, dict)
-    select = statement["select"]
-    return [column["expression"]["text"] for column in select["columns"] if column != "star"]
+    return statement["createView"]
+
+
+def column_texts(parse_sql: Callable[..., Translation], query: str) -> list[object]:
+    """The `text` of each result column of the query of a view, in column order."""
+    return [column["expression"]["text"] for column in view_of(parse_sql, query)["query"]["columns"] if column != "star"]
 
 
 def source_texts(value: object) -> Iterator[dict[str, object]]:
@@ -63,6 +68,14 @@ def test_names_of_an_expression_have_offsets_paths_and_quotes(parse_sql: Callabl
     assert [1] in paths_of(first, "a")
     assert [0] in paths_of(second, '"b"') and paths_of(second, "t") == [[1, 0]] and paths_of(second, "c") == [[1, 1]]
     assert [1] in paths_of(third, "[x y]") and [2] in paths_of(third, "`z`")
+
+
+def test_a_result_column_outside_a_view_has_no_tokens(parse_sql: Callable[..., Translation]) -> None:
+    """The text of a result column of a SELECT, an INSERT query or RETURNING is a plain string, as the
+    model does not rewrite it."""
+    statements = [item.value for item in parse_sql(
+        "SELECT a + 1 FROM t; INSERT INTO w SELECT x + y FROM s RETURNING x + 1;", name_tokens=True).statements()]
+    assert list(source_texts(statements)) == []
 
 
 def test_a_single_quoted_name_where_the_grammar_expects_a_name_is_a_token(parse_sql: Callable[..., Translation]) -> None:
@@ -93,22 +106,21 @@ def test_names_of_a_subquery_in_the_text_name_the_subquery(parse_sql: Callable[.
 def test_columns_of_with_definitions_and_derived_tables_have_tokens(parse_sql: Callable[..., Translation]) -> None:
     """A column of an indexed subquery, a WITH definition or a derived table, which a view can show as the
     name of its column, records its own tokens, with paths from its expression."""
-    [statement] = [item.value for item in parse_sql(
-        "WITH c AS (SELECT a+1 FROM t) SELECT * FROM c, (SELECT [x y] FROM t) AS d;", name_tokens=True).statements()]
-    definition, derived = statement["select"]["subqueries"]
+    definition, derived = view_of(
+        parse_sql, "WITH c AS (SELECT a+1 FROM t) SELECT * FROM c, (SELECT [x y] FROM t) AS d;")["subqueries"]
     assert written(definition["columns"][0]["expression"]["text"]) == [("a", "none", None)]
     assert written(derived["columns"][0]["expression"]["text"]) == [("[x y]", "bracket", None)]
     assert [] in paths_of(derived["columns"][0]["expression"]["text"], "[x y]")
 
 
 def test_every_token_is_a_name_of_its_text(parse_sql: Callable[..., Translation]) -> None:
-    """In the statements that keep source text, the bytes of each token are a name as written: the
-    dequoted bytes are the name that the expression holds, and the offsets are in order and inside the text."""
+    """In views, the bytes of each token begin like a name (a letter, a quote or an underscore), and the
+    offsets are in order and inside the text."""
     statements = [
         "CREATE VIEW v AS SELECT a+1, \"B\" * t.c, (SELECT max(d) FROM u WHERE u.a = t.a) FROM t;",
-        "INSERT INTO w SELECT x + y, [q] FROM s RETURNING x + 1;",
-        "SELECT `é` + 1, café, a IN (SELECT b FROM u) FROM t;",
-        "UPDATE t SET a = 1 RETURNING a + b;"]
+        "CREATE VIEW v AS SELECT x + y, [q] FROM s UNION SELECT 1, 2 FROM s;",
+        "CREATE VIEW v AS SELECT `é` + 1, café, a IN (SELECT b FROM u) FROM t;",
+        "CREATE VIEW v(p, q) AS WITH c AS (SELECT a + b FROM t) SELECT * FROM c;"]
     checked = 0
     for sql in statements:
         for source in source_texts([item.value for item in parse_sql(sql, name_tokens=True).statements()]):
@@ -118,8 +130,8 @@ def test_every_token_is_a_name_of_its_text(parse_sql: Callable[..., Translation]
             previous = 0
             for item in source["tokens"]:
                 assert previous <= item["start"] < item["stop"] <= len(encoded)
-                written = encoded[item["start"]:item["stop"]].decode()
-                assert written[0].isalpha() or written[0] in "\"[`_é"
+                covered = encoded[item["start"]:item["stop"]].decode()
+                assert covered[0].isalpha() or covered[0] in "\"[`'_"
                 previous = item["stop"]
                 checked += 1
     assert checked >= 20

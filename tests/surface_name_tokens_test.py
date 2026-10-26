@@ -11,10 +11,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 
 def test_name_tokens_stand_where_the_trace_puts_the_names(runtime_root: Path, tmp_path: Path) -> None:
-    """For queries with qualified, quoted and nested names, each name token of a result column
+    """For view bodies with qualified, quoted and nested names, each name token of a result column
     (`Syntax.NameToken`) has a path whose range in the statement is the token's bytes in the text of the
-    column, and each exact occurrence of the name trace inside a result column has a token with the path
-    of the occurrence, also in a subquery of the column. This checks that a client can match the tokens of
+    column, and each exact occurrence of the name trace of the same query as a SELECT inside a result column has a
+    token with the path of the occurrence, also in a subquery of the column. This checks that a client can match the tokens of
     a stored text to the occurrences that the model's resolver reports."""
     result = run_command(surface_command(runtime_root, FIXTURES / "NameTokenPaths.lean", tmp_path), cwd=tmp_path,
                          timeout=60)

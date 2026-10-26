@@ -181,6 +181,15 @@ rebuild proof is separate.
     unless `name_tokens=True`). Found and fixed a stage (a) range check that had never run
     locally (`TranslationChecks.lean`: the range of an INSERT query keeps the space before
     RETURNING).
+  - Decision: tokens are recorded only for result columns in the body of CREATE VIEW (the
+    only place where the text names a stored column; `Scope.nameTokens`, set by
+    `recordingNameTokens` in `Translation/Views.lean`). The claims fixtures compare `sql!` syntax
+    with hand-written syntax by `rfl`, and tokens elsewhere would break that without any use.
+    The Python fixture `parse_sql` and `NameTokenPaths.lean` follow (a view for the tokens, a
+    SELECT for the trace).
+  - Fixes the first `just test-full` exposed (stage (a) leftovers that had never run locally):
+    the `rowid-name` message fixtures (`DbBangErrors`, `SqlBangErrors`, `SqlDiagnosticsChecks`),
+    and the missing `insertSelect` arms in `ViewsSupport` and `ClaimsViewTriggers`.
   - Predictions: the 55 files are byte-identical to the stage (a) ones (`diff -r` clean).
   - Reviews: `20261026T113647Z-9b5f7fa8` (1 must: single-quoted names; 1 should: the fixture's
     catch-all; both fixed) and `20261026T115129Z-0d0f790e` (1 should, rejected with a reason:

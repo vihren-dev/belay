@@ -85,6 +85,10 @@ structure Scope where
   /-- The number of each parameter token of the statement, by the token's first byte
   ({lit}`numberParameters`). -/
   parameters : List (Nat × Nat) := []
+  /-- Whether the text of each result column records its name tokens
+  ({name}`Belay.Sqlite.Model.Syntax.SourceText`): in the body of a stored view, whose column names
+  are such texts. -/
+  nameTokens : Bool := false
 
 /-- The translation's monad: the scope, and a refusal that ends the translation. -/
 abbrev TranslateM := StateT Scope (Except Refusal)

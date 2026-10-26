@@ -1,43 +1,49 @@
 import Belay
 
 /-! A fixture of `tests/surface_name_tokens_test.py`: the name tokens that the translation records
-in the source text of a result column (`Syntax.SourceText`, `Syntax.NameToken`) stand where the
-name trace puts the names. For each token, the range that the statement's `Span.select` gives for
-its path is the token's bytes in the text of the column. For each exact occurrence of the trace
-that lies in a result column, the column has a token with the path of the occurrence. The
-statements cover names of the expression itself, qualified and quoted names, and the names of
-subqueries inside the column. The file fails to elaborate when a check fails. -/
+in the source text of a result column of a stored view (`Syntax.SourceText`, `Syntax.NameToken`)
+stand where the name trace puts the names. A query is translated twice: as the body of
+`CREATE VIEW`, which has the tokens, and as a `SELECT`, which the model resolves with a trace
+(the stored view resolves as that query; `CREATE` has no trace). For each token, the range that
+the view's `Span.select` gives for each of its paths is the token's bytes in the text of the
+column. For each exact occurrence of the trace of the SELECT that lies in a result column, the
+view's column has a token with the path of the occurrence. The queries cover names of the
+expression itself, qualified, quoted and single-quoted names, and the names of subqueries inside
+the column. The file fails to elaborate when a check fails. -/
 
 open Belay.Sqlite Belay.Sqlite.Model Belay.Sqlite.Translation
 
 /-- The statements of the SQL with the default release's grammar; a refusal fails the check. -/
-def translated (text : String) : IO (Array (Located Syntax.Statement)) := do
+def translated (text : String) : IO (Located Syntax.Statement) := do
   let grammar ← IO.ofExcept ((selectGrammar (← loadedMetadata) Release.default).mapError IO.userError)
   match ← translate grammar text.toUTF8 with
-  | .ok items => return items.map (·.statement)
+  | .ok #[item] => return item.statement
+  | .ok _ => throw <| IO.userError s!"expected one statement in {text}"
   | .error refusal => throw <| IO.userError s!"the translation refuses {text}: {refusal.message}"
 
-/-- The result columns of a SELECT statement; none for another statement. -/
-def selectColumns : Syntax.Statement → Option (List Syntax.ResultColumn)
-  | .select columns _ _ _ _ _ _ _ _ _ _ _ => some columns
-  | _ => none
+/-- The result columns of the query of a `CREATE VIEW`. -/
+def viewColumns (view : Syntax.Statement) : IO (List Syntax.ResultColumn) :=
+  match view with
+  | .createView _ _ _ query _ => return query.columns
+  | _ => throw <| IO.userError "expected a CREATE VIEW"
 
-/-- Fail unless the tokens of the column at `column` stand at the ranges of their paths; give the
-number of tokens checked. -/
-def checkTokenRanges (item : Located Syntax.Statement) (column : Nat) (source : Syntax.SourceText) : IO Nat := do
-  let (textStart, _) := item.span.select [0, column, 2]
+/-- Fail unless the tokens of the view's column at `column` stand at the ranges of their paths; give
+the number of tokens checked. -/
+def checkTokenRanges (view : Located Syntax.Statement) (column : Nat) (source : Syntax.SourceText) : IO Nat := do
+  let (textStart, _) := view.span.select [3, 0, column, 2]
   for token in source.tokens do
     for tokenPath in token.paths do
       let path := match token.subquery with
-        | none => [0, column, 0] ++ tokenPath
-        | some index => [8, index] ++ tokenPath
-      let found := item.span.select path
+        | none => [3, 0, column, 0] ++ tokenPath
+        | some index => [4, index] ++ tokenPath
+      let found := view.span.select path
       unless found == (textStart + token.start, textStart + token.stop) do
         throw <| IO.userError s!"token {repr token} selects {found} by {path}, not the range in the text"
   return source.tokens.length
 
 /-- Fail unless each exact occurrence with a name inside the column at `column` has a token with its
-path; give the number of occurrences checked. -/
+path; give the number of occurrences checked. The paths are those of a SELECT: the columns are the
+field 0 and the subqueries the field 8. -/
 def checkOccurrences (column : Nat) (source : Syntax.SourceText) (trace : NameTrace) : IO Nat := do
   let mut checked := 0
   for occurrence in trace do
@@ -55,41 +61,39 @@ def checkOccurrences (column : Nat) (source : Syntax.SourceText) (trace : NameTr
           checked := checked + 1
   return checked
 
-/-- Resolve the statements one after the other, each translated alone, and check the tokens of the
-columns of each statement marked as checked, which must be a SELECT, so that a statement of another
-form cannot bypass the check unnoticed; give the numbers of tokens and of occurrences checked in
-each. -/
-def checkScript (statements : List (String × Bool)) : IO (List (Nat × Nat)) := do
+/-- Create the tables of the script, then check each query as a view body against its own trace; give
+the numbers of tokens and of occurrences checked in each. -/
+def checkQueries (tables : List String) (queries : List String) : IO (List (Nat × Nat)) := do
   let mut state : ResolveState := { catalog := [] }
+  for text in tables do
+    let item ← translated text
+    match resolveStatement { profile := Profile.pinned, mode := .execution } state item.value with
+    | .ok (_, next) => state := next
+    | .error _ => throw <| IO.userError s!"{text} does not resolve"
   let mut counts := []
-  for (text, checked) in statements do
-    let #[item] ← translated text | throw <| IO.userError s!"expected one statement in {text}"
-    let (result, trace) := resolveStatementTraced { profile := Profile.pinned, mode := .execution } state item.value
+  for query in queries do
+    let view ← translated s!"CREATE VIEW v AS {query}"
+    let select ← translated query
+    let (_, trace) := resolveStatementTraced { profile := Profile.pinned, mode := .execution } state select.value
     let mut tokens := 0
     let mut occurrences := 0
-    let columns ← match selectColumns item.value with
-      | some columns => pure columns
-      | none => if checked then throw <| IO.userError s!"{text} is no SELECT" else pure []
-    for (column, index) in columns.zipIdx do
+    for (column, index) in (← viewColumns view.value).zipIdx do
       if let .expression _ _ source := column then
-        tokens := tokens + (← checkTokenRanges item index source)
+        tokens := tokens + (← checkTokenRanges view index source)
         occurrences := occurrences + (← checkOccurrences index source trace)
     counts := counts ++ [(tokens, occurrences)]
-    match result with
-    | .ok (_, next) => state := next
-    | .error _ => pure ()
   return counts
 
 #eval show IO Unit from do
-  let counts ← checkScript [
-    ("CREATE TABLE t(a INTEGER PRIMARY KEY, b TEXT UNIQUE, c REAL);", false),
-    ("CREATE TABLE u(a INTEGER, d TEXT);", false),
-    ("SELECT a + 1, \"b\" || t.c, [a], t.a FROM t;", true),
-    ("SELECT max(a), (a) * (c + 1) FROM t;", true),
-    ("SELECT (SELECT u.d FROM u WHERE u.a = t.a), EXISTS (SELECT 1 FROM u WHERE d = b) FROM t;", true),
-    ("SELECT a IN (SELECT a FROM u WHERE d > (SELECT b FROM t)) FROM t;", true),
-    ("SELECT 1, 'a', a FROM t;", true),
-    ("SELECT t.'a' + 1, t.\"b\", `c` FROM t;", true)]
+  let counts ← checkQueries [
+    "CREATE TABLE t(a INTEGER PRIMARY KEY, b TEXT UNIQUE, c REAL);",
+    "CREATE TABLE u(a INTEGER, d TEXT);"] [
+    "SELECT a + 1, \"b\" || t.c, [a], t.a FROM t;",
+    "SELECT max(a), (a) * (c + 1) FROM t;",
+    "SELECT (SELECT u.d FROM u WHERE u.a = t.a), EXISTS (SELECT 1 FROM u WHERE d = b) FROM t;",
+    "SELECT a IN (SELECT a FROM u WHERE d > (SELECT b FROM t)) FROM t;",
+    "SELECT 1, 'a', a FROM t;",
+    "SELECT t.'a' + 1, t.\"b\", `c` FROM t;"]
   -- The tokens include names that are no column or table (`max`), so one count is higher.
-  unless counts == [(0, 0), (0, 0), (7, 7), (4, 3), (10, 10), (6, 6), (1, 1), (5, 5)] do
-    throw <| IO.userError s!"the statements have {counts} tokens and occurrences"
+  unless counts == [(7, 7), (4, 3), (10, 10), (6, 6), (1, 1), (5, 5)] do
+    throw <| IO.userError s!"the queries have {counts} tokens and occurrences"
