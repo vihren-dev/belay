@@ -78,3 +78,4 @@ in another), `tests/admitted_atoms_run_theorems_test.py`,
   and one should (R19), all fixed in the next commit (docstrings of
   `StatementExecution.mem_expand_rows` and the foreign-key run laws; the replay error
   names the statement and the action; this attribution).
+- Review `20261026T115527Z-c2065e95` of the fix commit `c2065e95`: no findings.
