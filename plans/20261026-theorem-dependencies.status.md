@@ -23,6 +23,10 @@ Workspace: `/home/codex/work/sqlite-verifier-theorem-dependencies`.
 - Initial task review had no must findings. Both scope suggestions were rejected
   with recorded reasons: the owner accepted the proposed report features, and
   browser acceptance checks exercise the controls without adding a new harness.
+- Moved the standalone exporter to `tools/theorem_dependency_exporter.lean`.
+  It imports only Lean and runs directly, so a compiled library and the CLI's
+  former tools-package argument were unnecessary. The documentation package's
+  derivation identity now matches the base. Its source and targets are unchanged.
 
 ## Evidence
 
@@ -33,5 +37,10 @@ declarations. Final artifact paths will be recorded after completion checks.
 
 The implementation review found no must findings and one documentation issue:
 the public guide used an internal task label for proof-cost JSON. The guide and
-CLI help now give the command that creates the report. Standard completion
-checks and review of this correction are pending.
+CLI help now give the command that creates the report. The correction review
+had no findings. The packaging simplification passed the 27-test Nix suite at
+`/nix/store/vsyxsqqxjln57s0li149h98xilq7726x-sqlite-verifier-test-theoremDependencies-1`.
+
+The verdict and scheduled checks passed. An initial full run hit the existing
+documentation inventory's 60-second deadline during concurrent cold builds.
+Final full checks, infrastructure checks and packaging review are pending.

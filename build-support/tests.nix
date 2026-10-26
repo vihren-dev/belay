@@ -300,9 +300,9 @@ in {
   theoremDependencies = suite "theoremDependencies" {
     inputs = [ (root + /tools/__init__.py)
       (fs.fileFilter (file: pkgs.lib.hasPrefix "theorem_dependenc" file.name
-        && builtins.any file.hasExt [ "py" "html" "css" "js" ]) (root + /tools))
+        && builtins.any file.hasExt [ "py" "html" "css" "js" "lean" ]) (root + /tools))
       (root + /tests/theorem_dependencies) (root + /tests/theorem_dependency_graph_test.js) ];
-    runtime = documentationRoot;
+    runtime = pkgs.linkFarm "sqlite-verifier-test-lean" [ { name = "lean"; path = leanToolchain; } ];
     tools = [ pkgs.nodejs ];
   };
   model = suite "model" {

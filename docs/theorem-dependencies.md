@@ -63,14 +63,13 @@ you use absolute paths:
 }
 ```
 
-Compile those modules first. Then run the exporter with an explicit compiler,
-the built `public-doc-tools` package, and the compiled library directories:
+Compile those modules first. Then run the exporter with an explicit compiler
+and the compiled library directories:
 
 ```sh
 python3 -m tools.theorem_dependencies \
   --manifest /path/to/manifest.json \
   --lean /path/to/toolchain/bin/lean \
-  --tools /path/to/built/public-doc-tools \
   --lean-path /path/to/experiment/lib/lean:/path/to/model/lib/lean \
   --output build/experiment-dependencies
 ```

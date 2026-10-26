@@ -1,5 +1,5 @@
 # Inspect the selected built libraries, including source modules outside umbrella imports.
-{ pkgs, leanToolchain, docTools, dependencyTools, modelPackage, textPackage,
+{ pkgs, leanToolchain, dependencyTools, modelPackage, textPackage,
   surfacePackage, verifierConformance, plausiblePackage }:
 let
   packages = {
@@ -18,6 +18,6 @@ in pkgs.runCommand "sqlite-verifier-theorem-dependencies" {
   '') packages)}
   export PYTHONPATH=${dependencyTools}
   python3 -m tools.theorem_dependencies --root "$PWD" \
-    --lean ${leanToolchain}/bin/lean --tools ${docTools} --output "$out" \
+    --lean ${leanToolchain}/bin/lean --output "$out" \
     --lean-path ${pkgs.lib.escapeShellArg (pkgs.lib.concatMapStringsSep ":" (package: "${package}/.lake/build/lib/lean") libraries)}
 ''
