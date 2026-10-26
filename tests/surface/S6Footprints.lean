@@ -53,7 +53,7 @@ theorem all_continuations_frame {α β : Type} (program : Sql α) (next : α →
   rw [check_bind]
   exact branches
 
-/-- A source in the schema `before` translates: `Script.observeTwoState` reads it from the fixed
+/-- A source in the schema {lit}`before` translates: {lit}`Script.observeTwoState` reads it from the fixed
 initial database, and the ordinary run of the script refuses it. -/
 example : Script := sql r"SELECT x FROM before.t EXCEPT SELECT x FROM t"
 

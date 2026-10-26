@@ -25,15 +25,65 @@ on a new connection: {lean}`(none : Option Output)` for a script without stateme
 def Script.outputOn (script : Script) (db : Database) : Option Output :=
   (db.raw.run script).outputs.head?
 
-/-- The tactic that proves the argument {lit}`query` of {lit}`Holds`, {lit}`Empty` and
-{lit}`Fails`, or gives an error that says what a query is. It tries {lit}`decide`, then
-{lit}`rfl`: a script with a value {lit}`$x` or with an argument holds a free variable, which
-{lit}`decide` refuses, and {name}`Script.isQuery` reads only the statements, so {lit}`rfl`
-proves it. The proof {lit}`id rfl` has the type of the goal, so that the instances of
-{lit}`Decidable` below match a proposition that holds it. -/
-elab "check_query" : tactic => do
+/-- Whether the script is one statement that is a query with a source that names a schema, as
+{lit}`SELECT a FROM before.t` does. Such a query needs the initial database of a two-state
+observation ({name}`Model.usesSchema`). Every other script, also one that is not a query, gives false. -/
+def Script.namesSchema (script : Script) : Bool :=
+  match script.statements with
+  | [(statement, _)] =>
+    match statement.asQuery? with
+    | some (query, subqueries) => usesSchema query subqueries
+    | none => false
+  | [] | _ :: _ :: _ => false
+
+/-- Whether the script is exactly one {lit}`SELECT` statement: the only kind of statement that a
+two-state observation reads ({name}`Model.Syntax.Statement.asQuery?`). A read of a {lit}`PRAGMA` is a
+query ({name}`Script.isQuery`) but not a {lit}`SELECT`. -/
+def Script.isSelect (script : Script) : Bool :=
+  match script.statements with
+  | [(statement, _)] => statement.asQuery?.isSome
+  | [] | _ :: _ :: _ => false
+
+/-- The shared part of the query tactics: it tries {lit}`decide`, then {lit}`rfl`, because a script with a
+value {lit}`$x` or with an argument holds a free variable, which {lit}`decide` refuses, and
+{name}`Script.isQuery` reads only the statements, so {lit}`rfl` proves it. The proof {lit}`id rfl` has the
+type of the goal, so that the instances of {lit}`Decidable` below match a proposition that holds it. The
+error says what a query is. -/
+elab "check_query_shape" : tactic => do
   try evalTactic (← `(tactic| first | decide | exact id rfl))
   catch _ => throwError "the script must be one read-only statement: a SELECT, or PRAGMA foreign_keys without a value; remove the other statements, or use Database.run"
+
+/-- The script of the goal {lit}`Script.isQuery script = true`, when the goal has that form. -/
+def queryScript? (goal : Expr) : Option Expr :=
+  goal.eq?.bind fun (_, isQuery, _) => isQuery.app1? ``Script.isQuery
+
+/-- Whether the Boolean test of the script, such as {name}`Script.namesSchema`, is true for the script of
+the goal, by evaluation. A goal that is not a query goal gives false. -/
+def queryTestHolds (test : Name) (goal : Expr) : Meta.MetaM Bool := do
+  match queryScript? goal with
+  | some script => return (← Meta.whnf (mkApp (mkConst test) script)).isConstOf ``Bool.true
+  | none => return false
+
+/-- The tactic that proves the argument {lit}`query` of the two-state assertions, such as
+{lit}`holdsSince`. It proves what {lit}`check_query_shape` proves, and then refuses a script that is not
+a {lit}`SELECT`, because the two-state observation reads no other statement. A schema name in a source is
+allowed. -/
+elab "check_two_state_query" : tactic => do
+  let type ← (← getMainGoal).getType
+  evalTactic (← `(tactic| check_query_shape))
+  if (queryScript? type).isSome && !(← queryTestHolds ``Script.isSelect type) then
+    throwError "a two-state assertion reads one SELECT statement; a PRAGMA is not observed over two databases, so use a one-state assertion"
+
+/-- The tactic that proves the argument {lit}`query` of {lit}`Holds`, {lit}`Empty` and
+{lit}`Fails`, and of the one-state assertions {lit}`holds` and {lit}`holdsInContext`. It proves what
+{lit}`check_query_shape` proves, and then refuses a query whose source names a schema, as
+{lit}`before.t` does: a one-state assertion has no initial database to read it from, and the model
+would give no rows. The error names the assertions that take the initial database. -/
+elab "check_query" : tactic => do
+  let type ← (← getMainGoal).getType
+  evalTactic (← `(tactic| check_query_shape))
+  if ← queryTestHolds ``Script.namesSchema type then
+    throwError "the query has a source that names a schema, such as before.t: a one-state assertion has no initial database to read it from; use holdsSince or holdsInContextSince with the initial database, or the ensuresFrom claim, or remove the schema name"
 
 /-- {lit}`Holds q db`: query {lit}`q` runs on {lit}`db` without error and gives at least one row,
 for every result that SQLite may give for it. In terms of the formula: the output of

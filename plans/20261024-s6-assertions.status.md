@@ -1,6 +1,10 @@
 # Status: S6 fresh-run triples and assertions
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Task refreshed 2026-10-25 and assigned for
+implementation of part 1 in workspace `sqlite-verifier-s6-assertions`, based on
+`e3baff02` (published PR #254, above the S6 execution contracts of PR #250).
+Part 1 is in progress: the context observation unit is implemented (see Part 1
+progress). Nix acceptance is not claimed yet; it is recorded at the end of the part.
 Task: [task file](20261024-s6-assertions.task.md).
 Specs: ADR17 S6; accepted fresh-run and explicit effect-premise decisions.
 
@@ -12,11 +16,14 @@ complete environment, initial connection, index zero and empty trace. Existing
 Holds retains its default observation; context-aware assertions have a separate
 name. Before always refers to the captured start, including after bind.
 
-Execution contracts and the initial/current query task are prerequisites. The
-checked S6 prototype established the candidate transformer and soundness route,
-but supplied neither production assertions nor before-query semantics. The
-universal guide examples need the accepted schema and trigger/FK conditions;
-native trigger counterexamples remain required negative fixtures.
+Execution contracts are DONE (2026-10-25). The initial/current query task
+(`plans/20261024-s6-before-context`) is DONE and merged in part 1b: the query
+semantics exist (`observeTwoState`, `Script.observeTwoState`); the assertion
+layer over them is the remaining work of part 1b. The checked S6
+prototype established the candidate transformer and soundness route, but
+supplied no production assertions and no before-query semantics. The universal
+guide examples need the accepted schema and trigger/FK conditions; native
+trigger counterexamples remain required negative fixtures.
 
 ## Progress
 
@@ -27,32 +34,508 @@ native trigger counterexamples remain required negative fixtures.
   This task now explicitly supplies ifOk/andOk over those policies. No
   implementation or Nix acceptance is claimed.
 - Follow-up review 20261024T152713Z-33693f10 has no musts or shoulds.
+- 2026-10-25: carried the reviewed task and status into the implementation
+  workspace (commit "docs: carry the reviewed S6 assertions task").
 
-## Readiness audit against production execution contracts
+## Readiness refresh, 2026-10-25
 
-The 2026-10-24 audit of accepted `52cd08bf` found no new owner decision.
-Refresh the task immediately before assignment to reuse the completed
-`FreshTriple` bridges, `Sql.andOk`/`Sql.ifOk`, transformer laws and standard
-specification rules. Fresh composition conveniences and assertion syntax remain
-new work; do not duplicate the existing execution implementation.
+The readiness audit of 2026-10-24 (accepted `52cd08bf`) found no new owner
+decision. The refresh against the production tree at `e3baff02` changed the task
+as follows. It adds no scope and needs no owner choice.
 
-Fresh entry uses `ExecutionContext.initial db env`, including the supplied
-complete environment's counters. It does not force zero counters. The context
-stores a raw connection. Default query assertions can use the existing raw
-query observation and prove agreement with `Holds` under supplied validity;
-`Branch.valid` provides reached validity for fresh runs. No new runtime validity
-test or context field is needed. Context observations use the actual clock,
-next-statement index and connection, and discard the observed step's resulting
-connection. Equality bridges must account for pragma settings as well as clocks
-and counters.
+- **Reuse list added.** The task lists `FreshTriple` and its four theorems,
+  `Sql.andOk`/`Sql.ifOk` and their laws, `sqlWPMonad`, the triple soundness
+  theorems, the `send`/`query`/`single` specifications and `Sql.Branch.valid`.
+  These are complete. Remaining new work is fresh composition rules, assertions
+  and their bridges, assertion-level `ifOk`/`andOk`, fresh notation, `#explain`
+  coverage and the universal examples.
+- **Counter and validity wording corrected.** Fresh entry uses
+  `ExecutionContext.initial db env`, so it takes the supplied environment's
+  counters; it does not force zero or default counters. The context stores a raw
+  connection. The default assertion agrees with `Holds` under a validity proof of
+  the visible database; `Sql.Branch.valid` gives it for the final context of a
+  fresh run. No runtime validity test and no context field is added. Context
+  observations use the actual clock at the next index, the actual counters, the
+  settings and the connection, and discard the observed step's connection.
+  Equality bridges must account for pragma settings as well as clocks and
+  counters.
+- **`#explain` is extended, not created.** The 2026-10-24 audit said that the
+  task's mention of an existing explanation path was stale because only the guide
+  promised `#explain`. That was true on the S4/S6-execution line. Migration
+  patterns part 1 (PR #254, `MigrationExplainCommand.lean`) now provide the
+  command for the four migration primitives. This task extends the same command
+  to fresh-run triples, ordinary triples and `Succeeds`, as the guide
+  promises (S4 deferred it to S6). Authorized by the owner's request; no further
+  choice is needed.
+- **Two-state assertions marked dependent.** The initial/current query
+  context is unimplemented. The task marks every `before` outcome and fixture
+  (two-state assertions, the purge frame example, `before` diagnostics) as
+  depending on it, and keeps them in acceptance as part 1b. Part 1 and part 2 are
+  otherwise as before.
+- **Stale input text replaced.** The task no longer says that the production S6
+  contracts are absent from the tree. The link to the before-context task file is
+  now a plain reference, because that file stays in the planning workspace.
+- **Success equivalence narrowed.** `FreshTriple.succeeds_iff` and
+  `Sql.andOk_complete_iff` already prove the S4 bridge. The task asks only for
+  the form in the new notation and the proof that `S succeeds where G` equals it.
 
-The task's reference to an existing explanation path is stale. The private
-guide already promises `#explain`; S4 explicitly deferred it to S6 and the
-editor task assigns it here. Providing that command is authorized work, with
-later patterns and simulation extending it. This does not require another owner
-choice. The before-context prerequisite remains unimplemented; full two-state
-assertion acceptance still depends on it. Assign reusable effect/frame laws
-once during the universal examples, then let the automation task consume them.
+Design decisions that the task leaves to the implementation, recorded when made:
+names of the context-aware assertion, the fresh notation and the value-aware
+`ifOk`/`andOk` variants.
 
-No assertion implementation or acceptance is claimed. Task-source edits remain
-deferred until assignment, as requested by the owner.
+## Part 1 plan (informal, one coherent unit per commit)
+
+1. Context observation: the real-context output of a query, the default
+   assertion, the context-aware assertion and their correspondence theorems.
+2. Independence bridge and disagreement examples (clock, counters, pragma).
+3. Fresh composition rules and use of ordinary triples inside a fresh run.
+4. Assertion-level `ifOk`/`andOk`, assertion terms, fresh notation.
+5. `#explain` for fresh triples, ordinary triples and `Succeeds`.
+
+## Part 1 progress
+
+Evidence below names local checks only as development steps. Nix acceptance for
+the part is recorded in the closing entry.
+
+- 2026-10-25, unit 1 (context observation): `Script.outputIn` is the public
+  real-context output (the first output of the existing `runScriptFrom` from the
+  context's clock, next index and connection; no second interpreter).
+  `Holds.inContext` is the real-context assertion and `Holds.reached` the default
+  assertion at a context (`Holds.inContext` at the context's default observation,
+  `ExecutionContext.defaultObservation`). Proved: `Holds.reached_initial`,
+  `Holds.reached_iff_holds(_of_valid)`, `Script.outputOn_eq_outputIn`, and the
+  independence bridge `Script.outputIn_eq_of_independent` /
+  `Holds.inContext_iff_reached` for resolved queries without clock or counter
+  reads over equal databases. Modules: `ContextObservation`,
+  `ContextObservationLaws`, `ContextObservationBridge`. Fixture
+  `tests/surface/AssertionContexts.lean` (kernel): default and real-context
+  assertions disagree on a clock read, on `changes()` after a write and, for the
+  pragma setting query, on the observed outputs (`rows [[1]]` against
+  `rows [[0]]`); the default assertion follows an open transaction and a
+  rollback; the clock read depends on the next index; a default assertion does
+  not imply a fresh entry. Test: `tests/surface_assertions_test.py`
+  (registered in `tests/nix_suites.json`, suite `surface`).
+
+- 2026-10-25, review of unit 1 (156fc263): four findings fixed in a refactor
+  commit: the validity theorem states only what it proves, the clock-free step
+  fact is proved inside its single user instead of as a model-only lemma in the
+  surface (R6), the three modules have module docstrings, and this summary is
+  current.
+- 2026-10-25, unit 2 (fresh rules and assertion terms): `FreshTriple.pure_iff`,
+  `bind_iff`, `mono`, `and_iff`, `of_triple` (ordinary triple at the initial
+  context) and `bind_triple` (ordinary continuation specification inside a fresh
+  run) in `FreshRules`. `AssertionTerms`: `ContextAssertion`, `holds` (default),
+  `holdsInContext` (real context), `ifOk`/`andOk` and the value-aware
+  `ifOkWith`/`andOkWith` as Std.Do postconditions, proved equal to `Sql.ifOk` and
+  `Sql.andOk` (`triple_ifOkWith_iff`, `triple_andOkWith_iff`), `FreshEnsures` with
+  the same equalities and `Succeeds.iff_ensures` (S4 success equals the fresh
+  claim with `andOk ⌜True⌝`, by `Sql.andOk_complete_iff`). Fixtures
+  `FreshAssertionRules` (pure bind keeps the start; consequence; conjunction; two
+  steps and a nested specification keep the captured database and environment; a
+  fresh claim is refuted as an arbitrary-context triple) and `AssertionPolicies`
+  (prefix error and prefix unmodeled stop under both policies, error then write,
+  error then unmodeled step, every `oneOf` choice, returned outputs, `holds` and
+  `holdsInContext` as postconditions).
+- 2026-10-25, review of unit 2 (8be7d23e): the consequence rule's docstring states
+  its unrestricted premise, the fixture `alternateStops` names every `Value`
+  constructor instead of a catch-all, and the new fixtures have module docstrings.
+- 2026-10-25, unit 3 (notation and `#explain`): `program ensures post` and
+  `program ensures post where query` elaborate to `FreshEnsures (Runnable.toSql
+  program)` with the always-true or the `Holds` predicate; the guard query check
+  uses the query's source position (`FreshNotation`). The existing `#explain`
+  command (`MigrationExplainCommand`) now also explains `FreshTriple`,
+  `FreshEnsures`, ordinary `Std.Do.Triple` and `Succeeds` claims
+  (`ClaimExplanation`): entry assumptions, the captured start, the error policy
+  recognized from `ifOk`/`andOk` or "neither", and the observation of `Holds`,
+  `holds` and `holdsInContext`; migration messages are unchanged. The
+  `ensures` notation must be parenthesized in a declaration signature, like the
+  other claim notations. Fixtures `FreshNotationExamples` (expansions by `rfl`,
+  `succeeds where` equals `ensures andOk ⌜True⌝ where`, negative diagnostic at the
+  query) and `ClaimExplanationExamples`; `tests/surface_assertions_test.py`
+  checks the messages and five negative diagnostics (query not one read-only
+  statement in `ensures where`, `holds` and `holdsInContext`; unsupported
+  proposition in `#explain`).
+- 2026-10-25, review of unit 3 (71dee9bd): the error policy comes from the head of
+  the postcondition itself, not from any constant in the claim (a negated or nested
+  `andOk` is not reported as a policy); an ordinary triple is explained only for the
+  `Sql` monad (a triple over `Id` is reported as unsupported); the recognized
+  policy and observation names are named, documented lists.
+- 2026-10-25, second review of unit 3 (3b563bca): an ordinary triple is explained
+  only for `Sql` with the standard transformer `sqlWPMonad`; the fallback policy
+  text no longer says that a postcondition must inspect the trace to reject
+  errors.
+- 2026-10-25, third review of unit 3 (d06b0d47): the transformer check requires
+  the projection `WPMonad.toWP` applied to the constant `sqlWPMonad` itself, so a
+  copy of the instance or an expression that only mentions it is not explained;
+  `tests/surface_assertions_test.py` rejects an `Id` triple and a copied
+  transformer and checks the fallback policy text.
+
+## Part 1 acceptance, 2026-10-25
+
+Source commit `05b1db63` (review 20261025T074937Z-05b1db63: no findings). Nix
+results (shared settings max-jobs 1, cores 2; logs in
+`build/agent-logs/s6-test-full.log` and `s6-verdict.log`):
+
+- `just test-full`: exit 0, output
+  `/nix/store/mqcib6r6a7y2g1wzwkz66ihilg4csgya-sqlite-verifier-test-reports`.
+  Host source checks 472 passed (71 deselected, 49 subtests). Suites: corpora 54,
+  documentation 12, frozen 153, harness 246, model 251, packages 3,
+  parserLibrary 4, sample 23, surface 108, upstream 117, all passed. The ten
+  cases of `tests/surface_assertions_test.py` are in the surface suite and passed.
+  The public documentation inventory is part of the documentation phase.
+- `just verdict`: exit 0, output
+  `/nix/store/jvm10nn3zb4ibcnk41c4cqpplyg5i6fp-sqlite-verifier-verdict`; every
+  corpus reports AGREE and MODEL_UNSUPPORTED counts only.
+
+Part 1 is complete. Not done, by task design: part 1b (two-state `before`
+assertions, which wait for the initial/current query context), part 2 (universal
+guide examples, remaining frontend diagnostics, private guide integration), and
+the task-end `just test-nix` and `just test-scheduled-checks`.
+
+## Part 2 (universal examples and diagnostics), started 2026-10-25
+
+Scope from the coordinator: universal examples and the remaining frontend
+diagnostics that do not need the initial/current query context; no private guide
+edit (the guide change is written down below); do not edit the views agent's
+files (`tests/surface/DbBangErrors.lean`, `tests/surface/SuccessUniqueEmail.lean`,
+the balance success fixture, `tests/surface_guide_test.py`,
+`tests/surface_success_test.py`); new examples live in new fixture files and the
+new test `tests/surface_assertion_examples_test.py`.
+
+### Unit 1: insert then lookup over every database
+
+- Library: `packages/belay/Belay/Sqlite/PlainInsertEffect.lean` (the fresh `ifOk`
+  shape `Sql.ifOk_send_plainInsert` of a plain insert that is modeled) over the
+  model laws in `packages/belay-sqlite-model/Belay/Sqlite/Model/PlainInsertEffect.lean`
+  (the reached database of a plain insert) and `Model/PlainInsertRows.lean` (the
+  inserted rows are the old rows plus one appended row; counting and membership
+  laws). The model-only laws were first in the surface package and moved after
+  the review of `ed9cb8b6`.
+- Fixtures: `CustomerInsertSite` (the explicit `CustomerInsertSite` structure of
+  schema, resolution, affinity and modeledness conditions, and the fresh
+  reduction `insert_then_holds`), `CustomerInsertQueries` (the two lookup
+  queries as row facts), `InsertLookupClaims` (universal theorems
+  `inserted_customer_is_unique` and `inserted_customer_has_the_name`, a positive
+  example, and kernel counterexamples: an after-insert trigger that removes the
+  inserted row, a table without key (two customers share the id), and a `UNIQUE`
+  name that makes the insert fail).
+- Decision: the guide's single lookup query with two subqueries and the
+  filtered GROUP BY invariant query are not supported by the model's evaluator
+  laws (one subquery per statement), so the lookup claim is two supported
+  assertions (exactly one customer has the id; one customer has the id and the
+  name). Extending the evaluator is a model change shared with other agents.
+- Decision: "the INSERT is modeled" is an explicit premise of the site (it
+  depends on the database, for example the rowid bound). For concrete databases
+  it is discharged for every clock and counter by kernel reduction.
+
+### Unit 2: preserved count over every database
+
+- Library: `packages/belay/Belay/Sqlite/SendSuccessIfOk.lean`. `Sql.ifOk_send_of_success`: a script that
+  succeeds from the fresh start has every branch at the connection of the model run, with a valid database;
+  `NormalizedFieldExpansion.ifOk_send_expansion`: for a `Site` of the lowercase-field expansion the
+  reached database is `expandedDatabase`.
+- Fixtures: `ExpansionCountQueries` (the count query holds exactly when the table has `n` rows) and
+  `ExpansionCountClaims` (universal `expansion_keeps_the_customer_count` for every `n`, every pair of
+  triggers and every bound values; the guide's `count_kept` is its instance for `expand`; instance on a
+  database with two customers; counterexample: an `AFTER UPDATE` trigger that existed before the
+  expansion removes the customers when the backfill fires it, so the database has no site).
+- Decision: the premise of the claim is `(db.run expand).outputs.allOk = true`. The default-environment
+  success gives success from every complete environment (`Script.allOk_env`), and a kernel evaluation with an
+  open environment is too slow (about a minute), so the closed form is also what the kernel checks.
+
+### Review of unit 1 (`ed9cb8b6`, review 20261025T092136Z-ed9cb8b6)
+
+Three musts and three shoulds. Model-only declarations (`insertOutcome_ok`,
+`plainInsert_database`, `Output.ofStep_insert_ne_oneOf`, `RunStep.continues(_iff)`,
+`runScriptStep_insert_ne_oneOf`, the row, scan, count and comparison laws) moved to
+`Belay/Sqlite/Model/PlainInsertEffect.lean` and `PlainInsertRows.lean` in the model package,
+registered in its `lakefile.toml` (they are not in the umbrella `Belay.Sqlite.Model`; the surface
+modules import them). The two simp proofs that used the surface-only `sql_simp` set now list the
+model lemmas. The duplicate `LiteralData.generatedCells_plain` was dropped for the existing
+`NormalizedField.generatedCells_plain`. The wording "complete environments" of
+`Sql.ifOk_send_plainInsert` is corrected (it holds for every environment), and the counterexample
+theorems got docstrings.
+
+### Unit 3: invariant with a partial unique index, delete-trigger counterexample
+
+- Library: `Model/PartialUniqueCount.lean` (model package):
+  `Table.KeysUnique.countMatching_partial_le_one`, at most one stored row satisfies
+  `guard AND column = value` when a unique key with a filter implied by the guard exists.
+- Fixtures: `AccountSignupQueries` (the query `SELECT 1 WHERE (SELECT count(*) FROM accounts WHERE
+  deleted_at IS NULL AND email = $f) <= 1` and its row-count form), `SignupInvariantClaims`
+  (structure `AccountSignupSite`, universal `signup_keeps` for every email value `f`: a
+  successful signup keeps at most one live account with that email; kernel examples for a new email,
+  a live email that fails and rolls back with the invariant intact, a deleted account whose email is
+  reused; counterexample `nullableUnique`: with an ordinary `UNIQUE (email, deleted_at)` two live
+  accounts share the email), `PurgeTriggerCounterexample` (a delete trigger removes another
+  customer's session: the session exists before, the delete succeeds, and it is gone after; without
+  the trigger it stays). Tests: `tests/surface_assertion_examples_test.py`.
+- Deviation: the guide's invariant query is `oneLive` with `GROUP BY` and a `WHERE` filter. The
+  model's duplicate-key query law (`DuplicateKeyQuery`) supports only an unfiltered `GROUP BY`; the
+  filtered form needs model query-resolution work owned by the views agent. The invariant is
+  therefore stated per email value `f`. Quantified over all non-NULL values it is equivalent to the
+  global invariant; it says nothing about live accounts with a NULL email (the guide's `GROUP BY`
+  groups NULLs, while `email = $f` never matches NULL), so the equivalence needs a non-NULL email
+  premise (for example `email TEXT NOT NULL`).
+  Options: (a) keep the per-value form; (b) add a filtered duplicate-keys law later and restate
+  `signup_keeps` globally. Recommendation: (a) now, (b) when the query context lands.
+
+### Skipped for part 1b (they depend on the initial/current query context)
+
+- The purge-frame claim `purge_frame` (reads `before`) and its NULL-aware `IS NOT 1` condition,
+  with the nullable-parameter and non-numeric-text tests.
+- Diagnostics about `before` (unbound `before`, `before` in a one-state assertion).
+- Two-state assertions and fixtures; the universal positive purge-frame/delete-effect law (only the
+  delete-trigger counterexample is done, because it needs one state).
+
+### Guide change to make (not done here; the coordinator edits the private guide)
+
+Sections: "Level 2/3 Triples", "Two states", "Invariants" and the complete example
+(`addCustomer_adds`, `count_kept`, `purge_frame`, `signup_keeps`).
+
+- Correction: "The triple covers every database of every schema" is false. A claim covers every
+  admitted database that satisfies the stated conditions: the schema (columns, affinities, a
+  rowid-alias id), resolution of the statement without trigger or foreign-key rules, that the
+  statement is modeled, and for the invariant a partial unique index.
+- A claim about a fresh run is a `FreshTriple`/`ensures` (entry state is the initial one) or has an
+  explicit entry premise; a default `Holds` precondition in an ordinary triple does not tie the
+  database to the run.
+- Success: `ifOk` is conditional (it asks nothing of a failed run); `andOk` requires that the run
+  succeeded and that the postcondition holds. `count_kept` uses `ifOk` with the site and the closed
+  premise `(db.run expand).outputs.allOk = true`.
+- The insert-and-lookup claim is stated as two supported assertions (exactly one customer has the
+  id; a customer has the id and name), not one two-subquery query.
+- `addCustomer_adds` (a program that uses a result) is a fresh claim with the `AddCustomerSite`
+  premise: the guide's precondition "customers has a name column" (`pragma_table_info`) is too
+  weak; a trigger that removes the new customer makes the program report success with no
+  customer of that name. The site lists the table shape, the plain insert resolution, and that the
+  model runs the query and the insert for every value that the query returns. The id is not
+  computed (aggregate and rowid-bound reasoning is out of scope); the claim holds for every id.
+- `signup_keeps` is stated per email value with the filtered count query, with the partial unique
+  index `WHERE deleted_at IS NULL`; the ordinary nullable `UNIQUE (email, deleted_at)` is the
+  counterexample.
+- A successful trigger may remove the inserted row; a delete trigger may remove an unrelated row
+  (two kernel counterexamples). Explain default versus context-aware assertions and `#explain`.
+
+### Unit 4: remaining frontend diagnostics (no `before`)
+
+`tests/surface_assertions_test.py::test_assertion_diagnostics_reject_unadmitted_input` has six
+more cases, each checked at its source position with the real compiler output: an empty script, a
+comment-only script, `PRAGMA foreign_keys = 1` (a set PRAGMA) all report that the script must be one
+read-only statement at the assertion term; `$missing` reports the Lean variable at the `$`; a grammar
+error is reported at the offset of the string; `EXPLAIN` reports the unsupported command wrapper at
+the start of the SQL. Nix verification of these cases: pending until the Part 2 end gates. The diagnostics for `before` are done in Part 1b (unit 2 below).
+
+### Unit 5: a program that uses a result (`addCustomer_adds`)
+
+- Model package: `Model/SelectStepKeeps.lean` (a continued, non-error SELECT step leaves the
+  connection as it was), and three laws in `Model/PlainInsertRows.lean`
+  (`rowsAt_three_parameters`, `LiteralData.newCells_getElem?_of_plain`,
+  `LiteralData.inserted_single_rows`).
+- Belay package: `SingleStatementChecks.lean` (`check_single_of_statement`, `selectedValues`,
+  `mem_selectedValues`, `not_error_of_single`, `connection_resolveState`).
+- Fixtures: `AddCustomerQueries` (programs, `AddCustomerSite`, the lookup law), `AddCustomerClaims`
+  (universal `addCustomer_adds`: `FreshEnsures` with the site as the entry condition, and
+  `ok = true -> Holds.reached (customerNamed name) final`), `AddCustomerInstances` (`shopSite` with
+  kernel-checked modeledness, the kernel run that adds eve, counterexample `removingTrigger`).
+  Test: `test_added_customer_claim_over_every_database` with a 300 s timeout per module, because the
+  kernel check of the modeledness of the insert for every environment takes about 40 s.
+- Deviation: modeledness of the query and the insert is a field of the site. It cannot be proved
+  for all databases, because the readiness of an insert depends on the id (a rowid bound and the
+  stored form). Options: (a) keep it as a site field (kernel-discharged on concrete databases),
+  (b) prove it from aggregate-max and rowid-bound laws for the query result. Recommendation: (a).
+
+### Review of units 4 and 5
+
+- `320c3ef5` (diagnostics): review 20261025T102714Z-320c3ef5, one `should` (the status cited a local
+  result), fixed by this commit chain.
+- `9678b4af` (unit 5): review 20261025T102600Z-9678b4af, one `must` (R3: proof sketch of
+  `connection_resolveState`), fixed in `e3304c3b`; re-review 20261025T103132Z-e3304c3b has no
+  findings.
+- `c6cdcd6b`: the first Nix test-full of Part 2 failed only in
+  `test_root_imports_the_core_and_only_the_prelude` (the four new model modules were not reached from
+  `Belay.Sqlite.Model`); fixed by importing them from the root and by giving them targeted imports
+  instead of the root. Review 20261025T111214Z-c6cdcd6b has no findings.
+- Second Nix `test-full` of Part 2: the first attempt after the root-import fix failed in
+  `tests/surface_layers_test.py::test_imports_are_own_modules_model_roots_and_lean[surface]` (the
+  surface package may import only the model's root, not single model modules) and was then stopped by
+  the 3000 s limit of the gate script at 97% because the machine was loaded by other gates. The surface
+  modules `PlainInsertEffect` and `SingleStatementChecks` now import no single model module; the gate
+  script limit for the next run is 5400 s.
+- `0b0b11fa`: surface imports only the model root; review 20261025T121135Z-0b0b11fa has no
+  findings. The 1500 s limit of the Nix test build in `just test-full` is the one that stopped the
+  second attempt (exit 124); the gate script itself has a 5400 s limit.
+
+### Part 2 end gates (Nix), 2026-10-25
+
+- `just test-full` after the last code commit `0b0b11fa`: exit 0, output
+  `/nix/store/kizql489kqgq96z8jqcwvlxzhqwjn0m3-sqlite-verifier-test-reports`. Source checks: 472
+  passed, 71 deselected. Surface suite: 119 passed in 375 s; `test_added_customer_claim_over_every_database`
+  took 45 s inside the 300 s limit. Log: `build/agent-logs/s6p2-test-full.log`. Failed first and second
+  attempts are kept as `s6p2-test-full-attempt2.log` (and the root-import failure text is quoted above).
+- `just verdict`: exit 0, output `/nix/store/qnmdrk5m8lf4zlxf9776bl5r3d2h35n5-sqlite-verifier-verdict`.
+- Not run (task end): `just test-nix`, `just test-scheduled-checks`.
+
+## Coordinator decisions on Part 2, 2026-10-25
+
+- Invariant form: keep the per-value `signup_keeps` now. When the query context of S6
+  before-context is available, add a filtered duplicate-keys law and restate the invariant
+  globally (Part 1b or later).
+- `addCustomer_adds`: modeledness of the query and the insert stays a field of
+  `AddCustomerSite`, discharged by the kernel on concrete databases. A proof from aggregate-max
+  and rowid-bound laws is not part of this task.
+- The 300 s limit of the addCustomer instance chain is accepted; its docstring gives the
+  measured cost of about 40 s.
+- Publication: Part 2 waits for Part 1b, and the task gets one pull request.
+
+## Part 1b (assertions over the initial/current query context), started 2026-10-25
+
+Integration: `jj new d90d7b8e 86546fb9` (Part 2 head and the S6 before-context head; merge base
+`e3baff02`; no rebase). Conflicts: only the two lakefile glob lists (`packages/belay/lakefile.lean`,
+`packages/belay-sqlite-model/lakefile.toml`); both sides only add modules, so the resolution is the
+union. Adaptations for the before-context changes: my fixtures call the S4 query laws with the new
+`current : reference.schema = none` argument (`AddCustomerQueries`, `CustomerInsertQueries`,
+`AccountSignupQueries`, `ExpansionCountQueries`). `tests/surface/S6Footprints.lean`: the refusal of
+`before` (a `guard_msgs` example) is now a plain example from the before-context line; its docstring
+says that the observation reads `before` and the ordinary run refuses it. Nix verification of the
+merge: verified by the Part 1b end gates (see "Part 1b end gates" below).
+
+### Part 1b unit 1: the two-state assertion layer
+
+New modules `Belay/Sqlite/TwoStateAssertions.lean` and `Belay/Sqlite/FreshFromNotation.lean`; no
+change to the before-context files. Names:
+
+- `Script.observeTwoStateIn script initial context` observes a one-SELECT script over the initial
+  database and the clock, next index and connection of a context (it calls
+  `Model.observeTwoState`, the shared query implementation; `Script.observeTwoState` is the case
+  of index zero, `Script.observeTwoState_eq_in`).
+- `Holds.inContextSince script initial context` (real context) and `Holds.reachedSince script
+  initial context` (default observation of the reached database, as `Holds.reached`); the
+  initial database is a plain argument, so any start can be used. Decidable.
+- `holdsSince start q` and `holdsInContextSince start q` are the assertions on a context.
+- Bridges `Holds.inContextSince_iff_inContext` and `Holds.reachedSince_iff_reached`: a SELECT that
+  names no schema ignores the start.
+- `FreshEnsuresFrom program pre post` is a fresh triple whose postcondition gets the captured start
+  (`post : Database -> PostCond`); `FreshEnsuresFrom.iff_ensures` shows it extends `FreshEnsures`.
+  Notation: `program ensuresFrom start => post [where guard]`.
+
+### Part 1b unit 2: diagnostics for `before`
+
+`check_query` (the default proof of every one-state assertion: `Holds`, `Empty`, `Fails`, `holds`,
+`holdsInContext`, the `ensures ... where` guard) now refuses a query with a source that names a
+schema. The message says that a one-state assertion has no initial database and names
+`holdsSince`, `holdsInContextSince` and `ensuresFrom`. `check_two_state_query` is the check of the
+two-state assertions; it requires a SELECT (a PRAGMA read is a query but is not observed over two
+databases). Both share `check_query_shape`. The new cases are in
+`tests/surface_assertions_test.py` (seven rows, at the source position of the assertion); the
+kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (ten reports) with the test
+`test_two_state_assertions_follow_the_start_and_the_reached_database`. `#explain` knowledge of the
+two-state claims is optional and not done. Nix verification: see "Part 1b end gates" below.
+
+Guide change to make (not edited): the paragraph about `before` says the library "fixes the start
+in the precondition"; for a fresh run the claim `program ensuresFrom start => post` (the primitive
+`FreshEnsuresFrom`) captures the start, and an ordinary triple cannot name it. A `holds` that names
+`before` is a compile error, and the two-state assertion is `holdsSince start`.
+
+### Part 1b unit 3: model laws for the purge frame
+
+Model package (all new files, imported from `Model.lean` and listed in the lakefile globs; the before-context
+files and the S4 files are not edited):
+
+- `PlainDeleteEffect.lean`: `plainDelete_database` (a resolved plain delete that continues without an error
+  stores `setRows target (LiteralData.deleted ...).rows`), and the choice-free laws
+  `Output.ofStep_delete_ne_oneOf`, `runScriptStep_delete_ne_oneOf`.
+- `RowwiseExpr.lean`: `Expr.Rowwise` (columns, literals, parameters, comparisons, AND/OR/NOT, IS NULL), with
+  `evaluate_congr` (the subqueries, clock and counters of a context do not matter), `fault_none`, `calm`, and the
+  NULL-aware complement law `Expr.truthy_isNot_one_and`: a row with `(l AND r) IS NOT 1` true is not selected by
+  `l AND r`, for NULL and text values too.
+- `ExceptSubqueryRun.lean`: source rows of the two kinds of term (current table, `before` table), the run of
+  a simple subquery over the optional initial database (`Query.subqueryRun_simple_from`/`_fields`), and
+  `Query.PlainExcept`, the shape of `q1 EXCEPT q2` with its rows and no fault.
+- `ExceptCombineLaws.lean`: `except_combine_eq_nil` (left rows all in right rows give no row).
+- `TwoStateQuerySteps.lean`: the output of a calm query statement observed with an initial database has rows when
+  the run is clean and the result is not empty (copies of the S4 laws that take `some initial`).
+- `TwoStateNotExistsExcept.lean` and `TwoStateNotExistsExceptOutput.lean`: the statement
+  `Resolved.notExistsExcept` (`SELECT 1 WHERE NOT EXISTS (compound)`, terms 1 and 2) and
+  `resolvedStepOutput_notExistsExcept_hasRows`: observed with the initial database it has rows when every row of
+  the first term (initial table, condition) is a row of the second term (current table) and the rows of the first
+  term are identical where they compare equal.
+- `TwoStateKeptRows.lean`: the membership laws of the two terms, `notExistsExcept_subset` (a row with a
+  condition that excludes it from the delete filter survives the delete) and `notExistsExcept_identical` (the
+  first column is the rowid alias, so equal keys are one row).
+
+Belay package: `Sql.ifOk_send_plainDelete` (`PlainDeleteEffect.lean`, the mirror of `Sql.ifOk_send_plainInsert`)
+and `FreshEnsuresFrom.ifOk_iff` (in `TwoStateAssertions.lean`). Nix verification: see "Part 1b end gates" below.
+gates.
+
+### Part 1b unit 4: the purge frame claim and its fixtures
+
+Fixtures (chain `PurgeFrameQueries`, `PurgeFrameSite`, `PurgeFrameClaims`, `PurgeFrameInstances`; test
+`test_purge_frame_claim_over_every_database` in `tests/surface_assertion_examples_test.py`; 4, 0, 2 and 12 axiom
+reports, each with the ordinary axioms only):
+
+- `PurgeFrameQueries`: `purge` (the guide's text with `:c`, `:now`; each named parameter is an argument),
+  `purgeKeeps c now` (the guide's claim text), the resolved forms the model gives (`purgeFilter`,
+  `purgeKeepsCondition`, `purgeKeepsCompound`), and their row-wise and shape facts.
+- `PurgeFrameSite`: `PurgeFrameSite db c now`: position and catalog entry of `sessions`, its rowid alias is the
+  first column, the purge resolves to a plain delete `[] [] none` (no trigger or foreign-key rule), the claim
+  resolves (against the catalog of the start and the same catalog) to the compound EXCEPT statement, and the model
+  runs the purge for every clock and every counter. The final property is not a field.
+- `PurgeFrameClaims`: `purge_keeps_rows` (the two-state observation over the start and the reached database has
+  rows) and `purge_frame (c now : Value)`: `FreshEnsuresFrom (send (purge c now)) (Nonempty site) (fun start =>
+  ifOk (holdsSince start (purgeKeeps c now)))`, for all values (NULL and text too). Proof: `Sql.ifOk_send_plainDelete`
+  for the final database, `resolvedStepOutput_notExistsExcept_hasRows` with `notExistsExcept_subset` (complement
+  law of `IS NOT 1`) and `notExistsExcept_identical` (rowid alias, `Table.RowidsDistinct.row_eq`).
+- `PurgeFrameInstances`: the site on a three-session database (`sessionsSite`, whose fields hold by `decide +kernel`
+  for any values; only the modeled field depends on the values and is checked by `rfl` for each pair), the typed
+  corollary `purge_frame_typed (c : Value) (now : Int64)`, and the actual runs: integer time, NULL customer, NULL
+  time, a text time that deletes the live session too ("only expired sessions are deleted" is false), the OR variant
+  that breaks the claim, `NOT` instead of `IS NOT 1` that requires nothing for a NULL parameter, and an aborted
+  purge (trigger with `RAISE(ABORT)`) whose rollback leaves the start. The delete-trigger counterexample
+  (`PurgeTriggerCounterexample`) stays.
+
+Global invariant restatement (Part 2 decision 1b): NOT done. The query context of the before-context task does not
+give it. It needs a filtered duplicate-keys law (S4 has `SELECT 1 FROM t GROUP BY k HAVING count(*) > 1` only, 635
+lines in four modules: query form, resolution, output laws, belay lemma), the query `SELECT email FROM accounts WHERE
+deleted_at IS NULL GROUP BY email HAVING count(*) > 1` with its resolution, and a bridge from the partial unique
+index to "no live duplicates" (group equality by collation against the index key). That is well over 200 lines of
+new work that the task does not list. The per-value `signup_keeps` stays. Options: (1) a separate task for the
+filtered duplicate-keys law, then the global `signup_keeps`; (2) keep the per-value form as the final one.
+Recommendation: (1) only if the owner wants the guide's exact invariant text; otherwise (2).
+
+Guide changes to make (not edited):
+
+- `purge_frame` (both places, lines near 997 and 1620): `holds` refuses `before`, so the claim is written with the
+  two-state assertion and the captured start:
+
+```lean
+def purge := sql r"DELETE FROM sessions WHERE customer_id = :c AND expires_at < :now"
+def purgeKeeps (c now : Value) := sql r"SELECT 1 WHERE NOT EXISTS (
+    SELECT * FROM before.sessions
+    WHERE (customer_id = $c AND expires_at < $now) IS NOT 1
+    EXCEPT SELECT * FROM sessions)"
+theorem purge_frame (c now : Value) :
+    FreshEnsuresFrom (send (purge c now)) (fun db => Nonempty (PurgeFrameSite db c now))
+      (fun start => ifOk (holdsSince start (purgeKeeps c now)))
+```
+
+  with the sentence: the claim holds for every start whose `sessions` table has the rowid alias as its first column,
+  with no trigger or foreign-key rule on the delete; a purge that fails requires nothing; a trigger that deletes
+  more is outside the site (the delete-trigger counterexample). The typed form `(now : Int64)` follows by
+  `purge_frame_typed`.
+- The false second claim ("only expired sessions are deleted"): the kernel example
+  `text_time_deletes_every_session_of_the_customer` runs the purge with the text time and finds the live session
+  deleted, while the frame claim still holds.
+- The `NOT (...)` trap: `not_instead_of_is_not_one_requires_nothing_for_null` shows it on the actual run.
+
+Review 20261025T214355Z-8134b9e2 (fixtures commit): exit 0, one should finding resolved. The OR counterexample
+`or_variant_breaks_the_frame_claim` now checks `allOk` and the failed frame assertion on the same final context of
+the OR purge (`purgeOrFinal`).
+
+### Part 1b end gates (2026-10-25), tree of commit 35529cfd (review records only after it)
+
+- `just test-full` (Nix): the first run stopped with exit 124 at the fixed 1500 s limit of the Nix test build, without
+  a test failure; the rerun passed (exit 0). Output: `/nix/store/4ajvm45f719w23973f043ngzpr9mvhx8-sqlite-verifier-test-reports`.
+  It includes `test_purge_frame_claim_over_every_database` and the other surface assertion examples.
+- `just verdict` (Nix): exit 0. Output: `/nix/store/j6n12zbqaaigp2ilmmis9f506q2r03qc-sqlite-verifier-verdict`.
+- Final review of the last code commit 35529cfd: no findings (20261025T214627Z-35529cfd).

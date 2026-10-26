@@ -330,10 +330,23 @@ import Belay.Sqlite.Model.SimpleQuerySteps
 import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
+import Belay.Sqlite.Model.PartialUniqueCount
+import Belay.Sqlite.Model.PlainInsertEffect
+import Belay.Sqlite.Model.PlainDeleteEffect
+import Belay.Sqlite.Model.RowwiseExpr
+import Belay.Sqlite.Model.ExceptSubqueryRun
+import Belay.Sqlite.Model.TwoStateQuerySteps
+import Belay.Sqlite.Model.ExceptCombineLaws
+import Belay.Sqlite.Model.TwoStateNotExistsExcept
+import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
+import Belay.Sqlite.Model.TwoStateKeptRows
+import Belay.Sqlite.Model.PlainInsertRows
+import Belay.Sqlite.Model.SelectStepKeeps
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
 SQLite may give for it, the laws of the check pragmas and of {lit}`foreign_key_check`, a run of
 statement syntax that continues after an error, the constraints that a failed write names,
-structural preservation facts, and name resolution from statement syntax to resolved statements
+structural preservation facts, the effect of a plain INSERT and of a SELECT step, the bound of a
+unique lookup in a partial index, and name resolution from statement syntax to resolved statements
 with its specification and laws. -/
