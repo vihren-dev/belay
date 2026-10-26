@@ -76,4 +76,25 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
   have sameDatabase : database = connection.state.database := keeps
   rw [nextEq, noCounts, sameDatabase, Counters.apply_default]
 
+/-- For every SELECT statement and every step of it that gives rows: the step continues with those
+rows and keeps the connection. Plain words: a SELECT that gives rows changes nothing. Proof sketch: the
+step does not end the run because its output is rows, and a SELECT step that does not give an error
+keeps the connection ({name}`runScriptStep_select_connection`). -/
+theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    (isSelect : statement =
+      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+    {rows : List (List Value)}
+    (output : (runScriptStep context clock index connection statement parameters).output = .rows rows) :
+    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection := by
+  cases step : runScriptStep context clock index connection statement parameters with
+  | ended reason => rw [step] at output; simp [RunStep.output] at output
+  | continued out next =>
+    rw [step] at output
+    simp only [RunStep.output] at output
+    subst output
+    subst isSelect
+    rw [runScriptStep_select_connection step rfl]
+
 end Belay.Sqlite.Model

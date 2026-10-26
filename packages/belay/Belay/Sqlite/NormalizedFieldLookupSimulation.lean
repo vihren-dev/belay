@@ -17,34 +17,13 @@ the relation is outside this theorem. -/
 namespace Belay.Sqlite.NormalizedFieldExpansion
 open Belay.Sqlite.Calls Belay.Sqlite.Model Belay.Sqlite.Model.NormalizedField
 
-/-- For every statement that is a SELECT, every connection and every step of it that gives rows:
-the step continues with those rows and keeps the connection. Plain words: a SELECT that gives rows
-changes nothing. Proof sketch: the step does not end the run because its output is rows, and a SELECT
-step that does not give an error keeps the connection ({name}`runScriptStep_select_connection`). -/
-theorem select_rows_step {clock : Option Clock} {index : Nat} {connection : Connection}
-    {statement : Syntax.Statement} {values : List Value}
-    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
-    (isSelect : statement =
-      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
-    {rows : List (List Value)}
-    (output : (runScriptStep runContext clock index connection statement values).output = .rows rows) :
-    runScriptStep runContext clock index connection statement values = .continued (.rows rows) connection := by
-  cases step : runScriptStep runContext clock index connection statement values with
-  | ended reason => rw [step] at output; simp [RunStep.output] at output
-  | continued out next =>
-    rw [step] at output
-    simp only [RunStep.output] at output
-    subst output
-    subst isSelect
-    rw [runScriptStep_select_connection step rfl]
-
 /-- For every plan, clock, pair of indices, pair of connections, connection with the expansion facts, and
 value: if the second connection has the expanded database of the first, then the original lookup on the
 first connection gives some rows and keeps the connection, and the stored lookup on the second connection
 gives the same rows and keeps its connection. The indices and the other parts of the connections are
 arbitrary. Proof sketch: {name}`translate_step_outputs` equates the two outputs; the original lookup
 resolves to a simple table query ({name}`resolve_original_lookup`), so its output is rows
-({name}`step_output_of_simple_query`); {name}`select_rows_step` finishes both. -/
+({name}`step_output_of_simple_query`); {name}`runScriptStep_select_rows` finishes both. -/
 theorem Plan.lookup_steps (plan : Plan) (clock : Option Clock) (before after : Nat)
     (connection expanded : Connection) (source : plan.Source connection)
     (reached : expanded.state.database = source.expanded) (value : Value) :
@@ -66,7 +45,7 @@ theorem Plan.lookup_steps (plan : Plan) (clock : Option Clock) (before after : N
   have rows := step_output_of_simple_query runContext clock before connection _ [value] source.site.position
     source.site.table _ source.site.id names original source.site.present
     (originalFilter_calm source.site.source plan.number)
-  exact ⟨_, select_rows_step rfl rows, select_rows_step rfl (same.symm.trans rows)⟩
+  exact ⟨_, runScriptStep_select_rows rfl rows, runScriptStep_select_rows rfl (same.symm.trans rows)⟩
 
 /-- The signature with one call, the lookup of an id by a value. The call gives the outputs of its
 statement. -/

@@ -91,7 +91,7 @@ def storedFilled (context : ExecutionContext) : Bool :=
   (context.connection.state.database.rowsAt 0).all fun row =>
     match row.values.getLast? with
     | some .null | none => false
-    | some _ => true
+    | some (.integer _) | some (.real _) | some (.text _) | some (.blob _) => true
 
 /-- A relation that names the clock and requires the stored field of the new context to be filled. -/
 def filledRelation (old new : ExecutionContext) : Prop := old.clock = new.clock ∧ storedFilled new = true

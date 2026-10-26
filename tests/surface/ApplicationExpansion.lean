@@ -96,7 +96,8 @@ def lookupTwice (first second : Value) : Application lookupSignature Bool :=
   .call () first fun found =>
     match found with
     | [.rows (_ :: _)] => .pure true
-    | _ => .call () second fun other => .pure (other == [.rows []])
+    | [] | [.rows []] | [.done _] | [.error _] | [.oneOf _] | [.unmodeled _] | _ :: _ :: _ =>
+      .call () second fun other => .pure (other == [.rows []])
 
 /-- On the sample, every branch of the expansion gives an agreement of the application with original
 lookups and the application with stored lookups, for every pair of values. It is an instance of the

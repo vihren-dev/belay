@@ -58,7 +58,9 @@ structure Plan.Source (plan : Plan) (connection : Connection) where
   site : Site connection.state.database plan.tableName plan.idName plan.sourceName plan.storedName
   /-- Every row of the table has one cell for each column. -/
   wide : site.table.RowsWide
-  /-- Every row of the table is aliased: its rowid-alias cell agrees with its rowid. -/
+  /-- Every row of the table is aliased ({name}`Table.RowsAliased`): if the table has a rowid alias, the
+  alias cell of each row agrees with the rowid of the row. A table without a rowid alias, or without
+  rows, satisfies this and requires nothing. -/
   aliased : site.table.RowsAliased
   /-- The position of the table is inside the list of rows. -/
   aligned : site.position < connection.state.database.rows.length
