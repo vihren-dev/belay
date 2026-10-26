@@ -9,8 +9,8 @@ equal". It is the general form of the query of {lit}`Belay/Sqlite/DuplicateKeyQu
 the result column {lit}`1`. When the catalog of the database has the table, and {lit}`c`, {lit}`w` and {lit}`k` resolve in
 the scope of the table to expressions that are calm (no fallible call, no clock read and no counter read), the claims
 {lit}`Holds` and {lit}`Empty` of the query are statements about the groups that {lit}`GROUP BY` makes of the rows that
-{lit}`WHERE` keeps, and {lit}`Fails` does not hold. A condition that can fail is not calm, so it is not treated as
-false: the model gives no output for it. -/
+{lit}`WHERE` keeps, and {lit}`Fails` does not hold. A condition that can fail is not calm: the premises exclude it, so
+these laws do not cover it and never read it as false. -/
 
 namespace Belay.Sqlite
 open Belay.Sqlite.Model

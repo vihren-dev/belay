@@ -17,8 +17,8 @@ only as the resolver does, so the cases are those of the resolver: a name of a c
 {lit}`COLLATE`) or a qualified name resolves to the column, and a name that is no column can resolve in the other ways
 that {name}`resolveOperand` allows, such as a quoted text when the profile allows it ({lit}`dqs`) or the constants
 {lit}`TRUE` and {lit}`FALSE`. The collation is the explicit one if there is one, else the collation of the column,
-else {lit}`BINARY`. A parameter resolves to a constant value, and the result-column number {lit}`1` to the result
-column, both with {lit}`BINARY`. A term that the resolver rejects, such as an aggregate call, a number other than
+else {lit}`BINARY`. A parameter resolves to a constant value with {lit}`BINARY`, and the result-column number {lit}`1` to the result
+column with the given output collation. A term that the resolver rejects, such as an aggregate call, a number other than
 {lit}`1` or an expression, makes the equation false. -/
 def GroupTermResolvesIn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
     (output : Resolved.Output × String × Option Affinity) (outputCollation : Collation) (term : Syntax.Expr)

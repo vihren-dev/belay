@@ -52,8 +52,9 @@ theorem Empty.iff_selectOne_noDuplicateKeysWhere
     (Resolved.Statement.Calm.selectOne_duplicateKeys position _ whereCondition column columnName key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) whereCalm columnCalm keyCalm)
 
 /-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeysWhere`, {name}`Fails` of the script on the
-database does not hold: a calm query of a table that exists neither fails to resolve nor fails to run, so a condition
-that can fail is not calm and gets no output instead of being read as false. Proof sketch:
+database does not hold: a calm query of a table that exists neither fails to resolve nor fails to run, so the
+premise of calm expressions excludes a condition that can fail. The law says nothing about such a condition, and it is
+never read as false. Proof sketch:
 {name}`Script.outputOn_selectOne_noDuplicateKeysWhere` and
 {name}`resolvedStepOutput_notExists_duplicateKeys_not_isError`. -/
 theorem Fails.not_selectOne_noDuplicateKeysWhere

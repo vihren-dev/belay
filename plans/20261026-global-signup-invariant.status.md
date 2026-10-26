@@ -22,7 +22,7 @@ Specs: ADR 0017 S6; the S6 assertions task and its owner decision of 2026-10-26.
   `FilteredDuplicateKeyEmpty.lean`); there is one copy of the grouping proofs. `GroupTermResolves` (S4) is
   `GroupTermResolvesIn` for the result column `1`; `Resolved.keptRows` is the rows that `WHERE` keeps
   (`keptRows_none` for no filter). A filter is covered when it is `Calm` (`whereCalm` premise); a filter
-  that can fail is not calm, so the laws give no output for it and do not treat it as false.
+  that can fail is not calm, so the premise excludes it; the laws do not cover it and never read it as false.
 - 2026-10-26 (baseline): predictions before any change are at
   `/nix/store/gbis3y12hpnbkhs0ja8f7ljym19gc149-sqlite-verifier-predictions` (55 files).
 
