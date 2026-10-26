@@ -162,6 +162,8 @@
     "tests/surface_editor_origins_test.py",
     "tests/surface_editor_executed_test.py",
     "tests/surface_editor_order_test.py",
+    "tests/surface_editor_names_test.py",
+    "tests/surface_editor_corrections_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",

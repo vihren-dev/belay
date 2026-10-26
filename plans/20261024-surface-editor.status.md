@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b is in progress (the model name trace is merged).
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -394,3 +394,26 @@ All gates ran through `heavy.sh` and passed on the first run:
   `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
 - `just review`: the merge `99713acb` had two findings (task-file documentation), both fixed;
   the refactor commit `798c25b3` has no findings.
+
+## Part 2b — 2026-10-26
+
+Base: the merged model name trace (`4fc773a5`). Task section "Part 2b coverage" states what the
+trace covers (spec commit `95f4dc96`; R19 check of the task against the trace: no requirement is
+unreachable, the DDL-body, trigger-program, unused-WITH, star-expansion and view-body gaps of the
+trace limit the coverage, and the task now says so).
+
+### Commit 1: column and comparison hovers, corrections, DQS warnings
+
+Files (all in `packages/belay/Belay/Sqlite/`): `SqlNameSites` (trace occurrences to byte ranges:
+exact paths only, one place per decision, conflicting records dropped, bytes must write the name),
+`SqlKeywords` (keywords that need double quotes in a correction), `SqlNameCorrections` (edit
+distance 1 to 2, deterministic ties, quote style kept, all-or-nothing when a name is unsafe),
+`SqlNameDescription` (hover text), `SqlNameInfo` (hover and `variable` token for a column, hover
+for a comparison, DQS warning, quick fixes through `TryThis`). `SqlStatementContexts` now keeps
+the `ResolveState` of each statement, `SqlEditorInfo` runs `resolveStatementTraced`, `DbBang`
+emits the editor information also when `db!` fails. Decision: a name in the body of a stored view
+(`exact = false`) is not described, because its use-site path is the table hover of part 2a.
+
+Tests: `tests/surface_editor_names_test.py` (column hovers, comparison hovers, tokens and
+exclusions) and `tests/surface_editor_corrections_test.py` (quick fixes, applied corrections with
+non-BMP text and CRLF, DQS warning), both in the `surface` suite of `tests/nix_suites.json`.

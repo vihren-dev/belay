@@ -64,7 +64,8 @@ replay metadata, which replay consumers validate against the actual database. It
 declaration that holds the term, where each table of the final catalog is created
 ({name}`registerTableOrigins`), outside the value, and gives the table names editor information with the
 rows that the run reached ({name}`executedContexts`) and warns about a statement with several permitted
-results ({name}`orderEvidenceWarnings`). -/
+results ({name}`orderEvidenceWarnings`). When the text has an error, the names still get their
+information up to the statement that failed, so that an unknown name gets its corrections. -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
@@ -76,13 +77,14 @@ def elabDbBang : TermElab := fun term _ => do
     else (parameters.map parameterDiagnostic, Database.empty.raw.connection)
   for diagnostic in diagnostics do
     logErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
+  let (contexts, outputs) := executedContexts 0 Database.empty.raw.connection statements
   if !diagnostics.isEmpty then
+    if parameters.isEmpty then emitSqlEditorInfo (.literal literal text) statements {} contexts
     return ← mkLabeledSorry (mkConst ``Database) (synthetic := true) (unique := false)
   match databaseTerm connection.state.database with
   | .error message => throwErrorAt literal message
   | .ok database =>
     registerTableOrigins (.literal literal text) statements connection.state.database.catalog database
-    let (contexts, outputs) := executedContexts 0 Database.empty.raw.connection statements
     emitSqlEditorInfo (.literal literal text) statements {} contexts
     logOrderWarnings literal text (orderEvidenceWarnings statements outputs)
     return withSource databaseSourceKey literal text (← getFileName) database

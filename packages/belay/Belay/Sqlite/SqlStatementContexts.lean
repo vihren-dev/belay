@@ -18,10 +18,12 @@ namespace Belay.Sqlite
 open Belay.Sqlite.Model Translation
 
 /-- The database at the start of a statement, as far as the editor knows it. For example,
-{lean}`({ catalog := [], rows? := none } : StatementContext)` knows no table and no rows. -/
+{lean}`({ state := { catalog := [] }, rows? := none } : StatementContext)` knows no table and no rows. -/
 structure StatementContext where
-  /-- The catalog at the start of the statement. -/
-  catalog : Catalog
+  /-- The state of resolution at the start of the statement: its catalog and settings. The
+  resolver run that decides the statement starts from it, and the name trace of the statement
+  comes from that run. -/
+  state : ResolveState
   /-- The stored rows of each catalog position at the start of the statement, or none when an
   earlier statement may have changed them and no run measured them. -/
   rows? : Option (List (List Row))
@@ -47,7 +49,7 @@ def resolvedContexts (state : ResolveState) (rows? : Option (List (List Row))) :
     List (Located Syntax.Statement) → List StatementContext
   | [] => []
   | item :: rest =>
-    { catalog := state.catalog, rows? } :: match resolveStatement runContext state item.value with
+    { state, rows? } :: match resolveStatement runContext state item.value with
       | .error _ => []
       | .ok (_, next) =>
         resolvedContexts next (if mayChangeRows item.value then none else rows?) rest
@@ -62,7 +64,7 @@ def executedContexts (index : Nat) (connection : Connection) :
   | [] => ([], [])
   | item :: rest =>
     let here : StatementContext :=
-      { catalog := connection.state.database.catalog, rows? := some connection.state.database.rows }
+      { state := connection.resolveState, rows? := some connection.state.database.rows }
     match runScriptStep runContext none index connection item.value [] with
     | .ended _ => ([here], [])
     | .continued output next =>
