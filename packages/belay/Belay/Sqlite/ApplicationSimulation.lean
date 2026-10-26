@@ -20,9 +20,10 @@ where the migration succeeds at the original context ({name}`Migration.Domain`).
   migration have the same projected actual run and branch outcomes as the migration and then the
   new call. Both orders return the call's result and keep the complete connection, the clock and the
   statement index. The projection hides only the outputs of the migration.
-* The call keeps the domain: every branch of the old call that returns a result ends at a context that
-  satisfies the predicate and where the migration succeeds. A branch that stops, or a call that
-  fails with a modeled error, is not required to do so. -/
+* The call keeps the domain: every branch of the old call that returns a value ends at a context that
+  satisfies the predicate and where the migration succeeds. This includes a branch whose outputs hold a
+  modeled SQL error, because the call still returns its result. Only a branch that stops without a
+  value is exempt. -/
 structure Simulation {Name : Type} {signature : Signature Name} {μ : Type} (migration : Sql μ)
     (admitted : ExecutionContext → Prop) (pairing : Pairing signature) : Prop where
   /-- Each old call commutes with the migration and has its partner as the replacement. -/

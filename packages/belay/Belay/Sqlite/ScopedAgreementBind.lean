@@ -40,12 +40,16 @@ theorem RunsAgree.andThen {α β : Type} {related : ExecutionContext → Executi
     rw [← ExecutionContext.finish_append, ← ExecutionContext.finish_append] at laterReached
     simpa [sameOutputs] using laterReached
 
-/-- Branch coverage composes over a bind. The prefixes cover each other's branches, and the
-continuations cover each other's branches from every pair of related contexts. A pair of related
-contexts is exactly what a matched prefix branch reaches. Proof sketch: split a branch of the
-first bind into a prefix branch and a continuation branch ({name}`Sql.branch_bind_iff`), match the
-prefix branch, and match the continuation branch from the pair of reached contexts. A prefix
-branch without a value skips the continuation on both sides. -/
+/-- Branch coverage composes over a bind, in one direction. Assume that every branch of the left
+prefix from the first context has an agreeing branch of the right prefix from the second context
+({name}`BranchesCovered`), and that for every returned value and every pair of related contexts, every
+branch of the left continuation has an agreeing branch of the right continuation. Then every branch of
+the left bind has an agreeing branch of the right bind. The other direction is a separate use of this
+theorem with the relation turned around. The contexts of the continuation are exactly the pairs that a
+matched prefix branch reaches. Proof sketch: split a branch of the left bind into a prefix branch and a
+continuation branch ({name}`Sql.branch_bind_iff`), match the prefix branch, and match the continuation
+branch from the pair of reached contexts. A prefix branch without a value skips the continuation on
+both sides. -/
 theorem BranchesCovered.bind {α β : Type} {related : ExecutionContext → ExecutionContext → Prop}
     {left right : Sql α} {next following : α → Sql β} {first second : ExecutionContext}
     (prefixes : BranchesCovered related left right first second)

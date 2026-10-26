@@ -57,7 +57,10 @@ def oldShop : Interface shopSignature
 /-- The shop interface after the migration: the lookup reads another column. -/
 def newShop : Interface shopSignature
   | .find => { script := fun id => sql r"SELECT 1 FROM customers WHERE rowid = $id", result := hasRow }
-  | name => oldShop name
+  | .add => oldShop .add
+  | .addTwo => oldShop .addTwo
+  | .count => oldShop .count
+  | .recount => oldShop .recount
 
 /-- The pairing of the two shop interfaces. -/
 def shopPairing : Pairing shopSignature := ⟨oldShop, newShop⟩
@@ -137,7 +140,10 @@ def splitShop : Pairing shopSignature :=
   { old := oldShop
     new := fun
       | .recount => { script := fun _ => sql r"SELECT 0", result := countOf }
-      | name => oldShop name }
+      | .add => oldShop .add
+      | .find => oldShop .find
+      | .addTwo => oldShop .addTwo
+      | .count => oldShop .count }
 
 /-- The program that both count calls give in the old interface has two witnesses. -/
 def countByName : Application.Witness oldShop (oldShop.run .count ()) := ⟨.call .count () .pure, rfl⟩
