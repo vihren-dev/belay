@@ -137,11 +137,14 @@ changed in the implementation PR.
 
 ## Inputs and ownership
 
-Production branch/WP/equivalence modules do not exist in this planning tree;
-their reviewed task is linked above. Prototype findings are at c838d5cc in
-sqlite-verifier-s6-foundations, with completed acceptance at eb0a16a9. They are
-design inputs, not production dependencies. Final S4 supplies run and success
-laws. The table-rebuild task and foreign-key-atoms task own their model changes;
+The execution contracts are DONE (2026-10-25); reuse `Sql.Branch`
+(`ExecutionBranches.lean`), `Sql.check` (`ExecutionWP.lean`) and `Sql.EquivAt`,
+`EquivOn` and `Equiv` (`ExecutionEquivalence.lean`), and do not redefine them.
+The S6 prototype is published (PR #245, #246) as `tests/surface/S6*.lean` and
+`docs/s6-foundations-findings.md`; its findings are design inputs, not
+production dependencies. Final S4 supplies run and success laws. Guide examples
+are test fixtures under `tests/surface`; the packages hold only general laws
+(owner, 2026-10-26). The table-rebuild task and foreign-key-atoms task own their model changes;
 their final reviewed revisions are required for rebuild acceptance.
 
 Reserve surface exports, test manifests and the private guide before editing.
