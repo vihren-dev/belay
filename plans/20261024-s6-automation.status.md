@@ -181,8 +181,8 @@ Commit 1 (step rules and `sql_run`):
 
 Commit 3 (`sql_commute`):
 
-- Surface: `SqlCommute` (`sql_commute [hints]`). The tactic reads the claim from the goal (`Migration.PreservesAt`,
-  `Migration.PreservesOn` or `Migration.CommutesOn`), reads the one statement of the read, applies
+- Surface: `SqlCommute` (`sql_commute [hints]`). The tactic reads the claim from the goal (`Migration.PreservesAt` or
+  `Migration.CommutesOn`; `Migration.PreservesOn` is not supported yet), reads the one statement of the read, applies
   `ReadCertificate.preservesAt_send` or `ReadCertificate.commutesOn_send` by the claim, closes the premises of the rule
   from the hints (the hint itself, the soundness of an analysis result `ReadAnalysis.analyze_sound`, and these under
   introduced variables), and leaves each other premise as a goal with a warning that says what is missing. The tactic
@@ -196,3 +196,9 @@ Commit 3 (`sql_commute`):
   commit contained by mistake (the preservation goal failed because the rule type was unfolded into more binders,
   and no fixture used the tactic). Fixed in this commit: the rule type is not unfolded, the fixtures above use the
   tactic, the handler has a docstring and the two read errors say what to do.
+- 2026-10-26: review 20261026T223834Z-2826a0a8 of the `sql_commute` commit (2 musts: sibling goals dropped by
+  `sql_commute`; `Migration.PreservesOn` claimed but unsupported). This is the fourth review round in a row with
+  new musts, so work stopped; the owner approved a fifth round on 2026-10-27, and the count starts again. The fixes are prepared and uncommitted in the working copy
+  (siblings kept, `PreservesOn` removed from the supported claims, fixture `second_goal_stays` in `S6AutoCommute`;
+  the negative fixtures are `example`s, not named theorems);
+  the findings are resolved in the next commit.

@@ -28,7 +28,7 @@ inductive CommuteClaim where
 def claimOf? (goalType : Expr) : Option (CommuteClaim × Name) :=
   match goalType.getAppFn.constName? with
   | some name =>
-    if name == ``Migration.PreservesAt || name == ``Migration.PreservesOn then
+    if name == ``Migration.PreservesAt then
       some (.preservation, ``ReadCertificate.preservesAt_send)
     else if name == ``Migration.CommutesOn then some (.commutation, ``ReadCertificate.commutesOn_send)
     else none
@@ -68,7 +68,7 @@ def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) :
   goal.withContext do
   let goalType ← instantiateMVars (← goal.getType)
   let some (_, rule) := claimOf? goalType
-    | throwError "sql_commute proves only a claim of Migration.PreservesAt, Migration.PreservesOn or Migration.CommutesOn. Use another tactic for this goal."
+    | throwError "sql_commute proves only a claim of Migration.PreservesAt or Migration.CommutesOn. Use another tactic for this goal."
   let args := goalType.getAppArgs
   let application := if goalType.isAppOf ``Migration.PreservesAt then args[args.size - 2]! else args.back!
   unless application.getAppFn.isConstOf ``send do
@@ -113,9 +113,10 @@ the main goal. -/
     | `(tactic| sql_commute [$hints,*]) => hints.getElems
     | _ => #[]
   let goal ← getMainGoal
+  let siblings := (← getGoals).drop 1
   let (open_, variables) ← applyCommuteRule hints goal
   for (name, _) in open_ do
     logWarning m!"sql_commute left the premise {name} open: {premiseAdvice name}"
-  setGoals ((open_.map (·.2)) ++ variables ++ (← getGoals).drop 1)
+  setGoals ((open_.map (·.2)) ++ variables ++ siblings)
 
 end Belay.Sqlite.Run

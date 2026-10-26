@@ -52,15 +52,25 @@ warning: sql_commute left the premise admittedKept open: the predicate of the cl
 ---
 warning: declaration uses `sorry` -/
 #guard_msgs in
-/-- The hints of the weak claim do not close the strong claim: the tactic chooses the rule by the claim, the
-certificate is found, and the three premises of commutation stay open. -/
-theorem weak_hints_leave_commutation_open (name : Value) :
+-- The hints of the weak claim do not close the strong claim: the tactic chooses the rule by the claim, the
+-- certificate is found, and the three premises of commutation stay open. The example ends in sorry on
+-- purpose and only looks at the open goals.
+example (name : Value) :
     Migration.CommutesOn (send expansion) admitted (send (lookup name)) := by
   sql_commute [analysis, obligations]
   assert_open_goals [constant, obligations, admittedKept]
   all_goals sorry
 
+/-- Two goals at once: {lit}`sql_commute` works on the first goal while the second goal is visible, and the
+second goal is still there when the tactic is done. -/
+theorem second_goal_stays (name : Value) :
+    Migration.PreservesAt (send expansion) (fun _ => True) (send (lookup name)) initial ∧ True := by
+  constructor
+  sql_commute [analysis, obligations]
+  exact True.intro
+
 #print axioms lookup_preserved_by_sql_commute
 #print axioms lookup_commutes_by_sql_commute
+#print axioms second_goal_stays
 
 end S6RulesQueryPattern

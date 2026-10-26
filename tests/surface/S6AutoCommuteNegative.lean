@@ -6,7 +6,7 @@ import S6RulesNegativeClock
 S6). A read of the total change count has no certificate, and a migration that stores the clock does not commute
 with a read under a clock that changes. In both, the tactic leaves the premise that is false as a goal and says so;
 {lit}`S6RulesNegativeReads` and {lit}`S6RulesNegativeClock` show that the premise fails and that the claim is false. The
-fixture ends each proof with {lit}`sorry` only to look at the open goals; no theorem here is used. -/
+fixture ends each example with {lit}`sorry` only to look at the open goals; it declares no theorem. -/
 
 set_option doc.verso true
 
@@ -25,8 +25,8 @@ warning: sql_commute left the premise obligations open: no hint gives the obliga
 warning: declaration uses `sorry`
 -/
 #guard_msgs in
-/-- With no certificate for the counter read, {lit}`sql_commute` leaves the validity and the obligations open. -/
-theorem counter_read_leaves_certificate_open :
+-- With no certificate for the counter read, sql_commute leaves the validity and the obligations open.
+example :
     Migration.PreservesAt (send expansion) (fun _ => True) (send counterScript) initial := by
   sql_commute
   assert_open_goals [valid, obligations, certificate]
@@ -50,9 +50,9 @@ warning: sql_commute left the premise admittedKept open: the predicate of the cl
 warning: declaration uses `sorry`
 -/
 #guard_msgs in
-/-- Under a clock that changes, {lit}`sql_commute` leaves the constant clock open, which is false by
-{name}`moving_clock_not_constant`. -/
-theorem moving_clock_leaves_constant_open :
+-- Under a clock that changes, sql_commute leaves the constant clock open, which is false by
+-- moving_clock_not_constant.
+example :
     Migration.CommutesOn (send stampMigration) (fun _ => True) (send lookupAda) := by
   sql_commute
   assert_open_goals [valid, constant, obligations, admittedKept, certificate]

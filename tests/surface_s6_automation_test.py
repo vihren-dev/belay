@@ -48,5 +48,5 @@ def test_sql_commute_proves_the_claim_and_refuses_the_rest(runtime_root: Path, t
     claim leave three premises of the strong claim open. A read of the change counter and a migration under a
     clock that changes leave the premise that is false open, and the fixtures check the messages."""
     check_module_chain(runtime_root, tmp_path, (
-        ("S6RulesQueryPattern", 8), ("S6AutoCommute", 2), ("S6RulesNegativeReads", 8),
+        ("S6RulesQueryPattern", 8), ("S6AutoCommute", 3), ("S6RulesNegativeReads", 8),
         ("S6RulesNegativeClock", 2), ("S6AutoCommuteNegative", 0)), timeout=CHAIN_TIMEOUT_SECONDS)
