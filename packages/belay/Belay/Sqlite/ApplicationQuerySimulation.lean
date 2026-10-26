@@ -15,9 +15,10 @@ open Belay.Sqlite.Calls Belay.Sqlite.Migration
 /-- For every pairing, migration and predicate: if each call translates weakly, meets the frame facts of
 {name}`QueryFrames`, the clock gives one date at every index at the contexts of the predicate, and the
 migration reaches one connection with one count of outputs on all its branches, then the pairing is a
-full-state simulation ({name}`Simulation`). Plain words: both parts of a full-state simulation hold. Each
-call commutes with the migration in the full context, and each call keeps the contexts in the migration
-domain. Proof sketch: {name}`TranslatesOn.commutes_of_query` gives the commutation. The call keeps the
+full-state simulation ({name}`Simulation`). Plain words: both parts of a full-state simulation hold. At
+every context where the predicate holds and the migration succeeds, each call commutes with the migration
+in the full context. After every returning branch of a call from such a context, the predicate holds and
+the migration succeeds again. At other contexts the conclusion requires nothing. Proof sketch: {name}`TranslatesOn.commutes_of_query` gives the commutation. The call keeps the
 connection and the predicate, and a constant clock lets the migration succeed at the later index
 ({name}`Sql.succeedsFrom_index`). -/
 theorem Simulation.ofQueries {Name : Type} {signature : Signature Name} {μ : Type} {migration : Sql μ}

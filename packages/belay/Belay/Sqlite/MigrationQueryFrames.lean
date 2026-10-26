@@ -47,12 +47,14 @@ structure QueryFrames {μ α : Type} (migration : Sql μ) (admitted : ExecutionC
     query.Branch state.clock state.index state.connection first → admitted (state.finish first)
 
 /-- For every migration, predicate, query and replacement: if the query translates weakly
-({name}`Migration.TranslatesOn`), and the facts hold that keep the connection and the count of outputs, and
-the clock gives one date at every index at the contexts of the predicate, and the migration reaches one
-connection with one count of outputs on all its branches, then the query commutes fully with the migration
-({name}`Migration.CommutesAsOn`). Plain words: running the query and then the migration, and running the
-migration and then the replacement, return the same value and visible outputs, reach the same complete
-connection, and take the same number of statements, for every branch.
+({name}`Migration.TranslatesOn`), and the facts of {name}`QueryFrames` hold, and the clock gives one date
+at every index at the contexts of the predicate, and the migration reaches one connection with one count
+of outputs on all its branches, then the query commutes fully with the migration
+({name}`Migration.CommutesAsOn`). Plain words: at every context where the predicate holds and the
+migration succeeds, running the query and then the migration, and running the migration and then the
+replacement, return the same value and visible outputs, reach the same complete connection, and take the
+same number of statements, on every branch. At a context where the predicate is false, or where the
+migration fails or stops at the original context, the conclusion requires nothing.
 Proof sketch: {name}`Migration.TranslatesOn.commutes_of_frames` needs the later success of the migration, the
 equal connections and the equal step counts. The query keeps the connection, so the migration runs from the
 same connection at a later index, and a constant clock makes that run the same

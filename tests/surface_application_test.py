@@ -43,11 +43,13 @@ def test_application_branches_keep_choices_errors_stops_and_snapshots(runtime_ro
 def test_weak_query_translation_needs_frame_facts_to_become_a_simulation(runtime_root: Path,
                                                                         tmp_path: Path) -> None:
     """A constant query translates weakly across a migration that stores the clock of its statement, and
-    still no full-state simulation exists, because the read moves the statement index. When the clock
+    still no full-state simulation exists under a clock that changes with the index, because the read
+    moves the statement index (fixture ApplicationWeakBridges). When the clock
     gives one date at every index, the read meets the frame facts of the installed query bridge, the
     bridge gives a simulation, and the application with two reads commutes with the migration at every
-    admitted context. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ApplicationRestrictedDomain", 4), ("ApplicationWeakBridges", 6)))
+    admitted context (fixture ApplicationConstantClock). Every theorem uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ApplicationRestrictedDomain", 4), ("ApplicationWeakBridges", 2), ("ApplicationConstantClock", 4)))
 
 
 def test_interface_mistakes_are_diagnosed_where_they_are_written(runtime_root: Path, tmp_path: Path) -> None:
