@@ -43,10 +43,16 @@ inductive Call where
   Argument _ := Unit
   Result _ := Nat
 
-/-- The number in the only row of the only column of an output, or zero. -/
+/-- The number in the only row of the only column of one output, or zero. Every kind of output is
+named, so a new kind needs a decision here. -/
+def numberOfOutput : Output → Nat
+  | .rows [[.integer n]] => n.toNat
+  | .rows _ | .done _ | .error _ | .oneOf _ | .unmodeled _ => 0
+
+/-- The number in the output of a call with one statement, or zero when the call has another shape. -/
 def numberOf : List Output → Nat
-  | [.rows [[.integer n]]] => n.toNat
-  | _ => 0
+  | [output] => numberOfOutput output
+  | [] | _ :: _ :: _ => 0
 
 /-- The calls. {lit}`pick` reads an ambiguous row, the next three give numbers 100, 200 and 300,
 {lit}`duplicate` repeats a key, {lit}`stamp` reads the clock and {lit}`follow` gives 9. -/

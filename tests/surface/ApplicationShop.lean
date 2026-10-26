@@ -36,10 +36,15 @@ customers, and no argument. -/
     | .count => Nat
     | .recount => Nat
 
-/-- Read the number from the first output of a count query, or zero. -/
+/-- Read the number from one output of a count query, or zero. Every kind of output is named. -/
+def countOfOutput : Output → Nat
+  | .rows [[.integer n]] => n.toNat
+  | .rows _ | .done _ | .error _ | .oneOf _ | .unmodeled _ => 0
+
+/-- Read the number from the output of a count query with one statement, or zero. -/
 def countOf : List Output → Nat
-  | [.rows [[.integer n]]] => n.toNat
-  | _ => 0
+  | [output] => countOfOutput output
+  | [] | _ :: _ :: _ => 0
 
 /-- Whether the last output of a lookup has a row. -/
 def hasRow : List Output → Bool
