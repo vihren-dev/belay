@@ -20,6 +20,13 @@ materialization. This affects which error happens first and whether earlier
 writes survive FAIL. Do not always evaluate all rows first, and do not replace
 the accepted streaming/materialization work with a model restriction.
 
+On 2026-10-25 the owner selected possible write executions for plan-dependent
+behavior. Secondary-index choices can change rowids, partial writes and error
+precedence; even a total ORDER BY does not fix expression-evaluation barriers.
+Represent the permitted production traces and their resulting states explicitly.
+Do not claim that the model's fixed scan is the pinned planner's chosen plan,
+implement that planner, or narrow this task to plan-independent inserts.
+
 Only SQLite's default `legacy_alter_table = OFF` behavior is in scope. Existing
 restrictions on unrelated SQL remain explicit; this task does not add writable
 attached databases, virtual tables or INSTEAD OF triggers.
@@ -39,13 +46,33 @@ attached databases, virtual tables or INSTEAD OF triggers.
   ambiguities follow the pinned parser; the surface must not reinterpret text
   to make it parse differently. Existing RETURNING/upsert restrictions remain.
 - **Read and write timing is observable.** Source evaluation and row insertion
-  follow the pinned engine's streaming/materialization behavior, including
+  retain the pinned engine's streaming/materialization distinctions, including
   destination reads through views/CTEs/nested queries and row triggers. Sorting,
   grouping, DISTINCT, compounds and LIMIT/OFFSET retain their own evaluation
   and error behavior. A source-expression failure is not silently moved before
   an earlier insertion conflict, or after it when native evaluates it first.
   Existing plan-sensitive-query restrictions remain exact; they cannot justify
   refusing an otherwise supported streaming case.
+- **Plan-dependent executions preserve complete effects.** Define the admitted
+  source-production traces, including row order, evaluation barriers, source
+  errors and interaction with preceding insertions. Each resulting alternative
+  carries its own output/error, database, connection counters and other changed
+  execution state. A later statement runs from that alternative's state. Do not
+  merge states cell by cell or choose each later output independently. A source
+  row permutation alone cannot describe a sorter that evaluates a later error
+  before the first write. Mandated materialization, explicit ordering and
+  conflict semantics constrain the alternatives; they are not arbitrary runs.
+  State the abstraction's admitted choices without claiming that the pinned
+  planner realizes every choice. Include every supported native outcome.
+- **Execution and proof clients share the alternatives.** Extend the existing
+  statement/run and public branch interfaces to carry possible write states;
+  the current query-output-only `Output.oneOf` is insufficient. Prove that the
+  actual/canonical run is admitted and that run composition retains each
+  branch's reached context. Validity, FK laws, Succeeds, ordinary/fresh triples
+  and equivalence/migration laws quantify all admitted branches. Deterministic
+  statements remain the singleton case. No theorem about one chosen traversal
+  can stand in for a universal write claim. Share this execution meaning with
+  conformance rather than adding a second evaluator in the harness.
 - **Effects and failures are exact.** Preserve ABORT/FAIL/ROLLBACK/IGNORE/REPLACE,
   supported ON CONFLICT clauses, FK actions, trigger order and raises, partial
   writes, RETURNING output, change counters and last-insert state. Query rows
@@ -116,6 +143,33 @@ sorting and compounds; all supported conflict paths, RETURNING, FK actions and
 triggers; failures at prepare, source evaluation and insertion; and a later
 statement that observes partial effects. Cover LIMIT certainty explicitly.
 
+Retain the paired native index probes: source `(id,x)=(1,20),(2,10)` scanned
+without and with an index on x produces different destination rowid/value
+associations, and different retained writes when destination UNIQUE value 10
+already exists under OR FAIL. Also retain the ORDER BY k probe with source
+`(id,x,k)=(1,2,1),(2,1,2),(3,-9223372036854775808,3)` and destination UNIQUE 1:
+without an index on k, overflow precedes any insertion; with the index, 2 is
+inserted before UNIQUE fails. Both observed executions must be admitted, with
+their own later-query observations and counters. These witnesses do not prove
+that the represented alternatives are complete; kernel laws must establish
+the production/run composition contract for all admitted branches.
+
+Cover matching INSERT triggers with WHEN 0, UPDATE-only triggers, RETURNING,
+destination reads in dead expression branches and unused CTEs. These distinguish
+compiled-read/materialization rules from textual occurrence or runtime reachability.
+Preserve the eligible `INSERT INTO dest SELECT * FROM src` transfer case's source
+rowids, including gaps; an explicit destination column list can instead allocate
+new rowids. Keep this source-row identity through the shared insertion boundary.
+
+Conformance checks membership in permitted complete executions, including later
+state observations. It must reject a mixture of outputs from incompatible
+branches. Add kernel fixtures where one admitted write branch violates a claimed
+postcondition, and positive all-branch examples. Target mutants that collapse
+the alternatives to a canonical scan, evaluate all source expressions eagerly,
+or pair one branch's output with another branch's state. Preserve existing
+deterministic claims and classify every prediction change. Any needed evidence
+format, claim or judge change follows the separate reviewed judge-PR workflow.
+
 The ALTER matrix includes table/column names colliding or differing by case,
 quoted identifiers and literal text, schema-qualified references where already
 supported, aliases/shadowing, keys and expression/partial indexes, generated
@@ -157,6 +211,14 @@ streaming and temporary-table paths. sqlite3AlterRenameTable,
 sqlite3AlterRenameColumn and sqlite3AlterDropColumn define rewrite/validation
 behavior. Their token-aware references matter because expression spelling can
 be an output name. A textual global replacement is not an adequate model.
+
+The read-only `adr17_table_rebuild_readiness.md` and
+`table-rebuild-probes/source_timing.{py,json}` under the workspace research notes
+retain the pinned source locations and 28 bounded native probes. Existing
+QueryFunctions/Subqueries collect complete rows and lose source stop positions;
+PossibleOutput changes query observations but does not supply write states.
+The accepted extension must expose these missing execution contracts, including
+their public proof and conformance consumers, within this task's first part.
 
 Separate source-production/error contracts from existing row insertion and
 catalog rewrite/validation contracts where they have different responsibilities.

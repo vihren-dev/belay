@@ -187,8 +187,8 @@ What the code has today, after slice 1 of ADR 0018:
 ### D4. The table rebuild
 
 - `INSERT ... SELECT`, with the conflict algorithms and `ON CONFLICT` clauses of the model.
-  The model follows SQLite's source-evaluation and insertion order, including
-  streaming rows and materializing them when required by the actual statement.
+  The model represents permitted source-evaluation and insertion executions,
+  including streaming rows and materializing them when required by the statement.
   It preserves expression-error precedence, conflict behavior and partial writes.
 - `ALTER TABLE t RENAME TO u`, `ALTER TABLE t RENAME COLUMN a TO b` and
   `ALTER TABLE t DROP COLUMN a`, with SQLite's rewrite of the references in indexes, foreign
@@ -203,8 +203,23 @@ materialization. With source values `2, 1, -9223372036854775808`, destination
 FROM src`, the streaming case stops at the unique conflict after inserting `2`.
 An AFTER INSERT trigger whose body is `SELECT 1` makes this example materialize
 the source first: integer overflow occurs and `2` is not inserted. Both outcomes
-were checked against the pinned native binary. Slice 5 must model the exact
-behavior; it must not use an unsupported restriction in place of this work.
+were checked against the pinned native binary. Slice 5 must retain these
+distinctions; it must not use an unsupported restriction in place of this work.
+
+Amended 2026-10-25 by owner decision: plan-dependent INSERT SELECT behavior is
+represented by possible write executions, not by claiming the model's fixed
+scan order is SQLite's plan. An index can change rowids, partial FAIL writes and
+error precedence. ORDER BY can fix emitted row order while leaving evaluation
+barriers plan-dependent. Alternatives therefore carry production timing and
+their matching output, database, counters and connection state through later
+statements. Explicit ordering, required materialization and conflict rules
+constrain admitted choices; the model does not implement the pinned optimizer
+or promise that every abstract choice is a plan it selects. All supported native
+outcomes must be included. Public success, triple, equivalence and invariant
+laws cover all admitted branches. Conformance observes complete executions,
+not independent combinations of per-statement possibilities. The
+[table-rebuild task](../plans/20261024-table-rebuild.task.md) includes this
+execution/proof boundary and the native index-sensitive regression cases.
 
 ### D5. Queries as sources
 
