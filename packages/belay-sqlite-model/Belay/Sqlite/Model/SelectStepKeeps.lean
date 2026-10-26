@@ -22,7 +22,8 @@ theorem resolveSelect_shape (context : ResolveContext) (catalog after : Catalog)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     (∃ resolvedQuery resolvedSubqueries, statement = .query resolvedQuery resolvedSubqueries) ∨
       ∃ error, statement = .prepareError error := by
-  unfold resolveSelect at ok
+  unfold resolveSelect resolveSelectTraced at ok
+  dsimp only [Traced.drop] at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first
@@ -47,7 +48,7 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
   have selected : ∃ catalog, resolveSelect context connection.resolveState.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
         compound } subqueries = .ok (resolved, catalog) := by
-    simp only [resolveStatement, ResolveState.withCatalog] at found
+    simp only [statement_arms, ResolveState.withCatalog] at found
     cases resolution : resolveSelect context connection.resolveState.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
         compound } subqueries with
