@@ -336,6 +336,7 @@ import Belay.Sqlite.Model.TableInfoResolution
 import Belay.Sqlite.Model.TableInfoOutput
 import Belay.Sqlite.Model.TableInfoLaws
 import Belay.Sqlite.Model.TableInfoColumnLaws
+import Belay.Sqlite.Model.DuplicateKeyGroupTerm
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.DuplicateKeyOutput
 import Belay.Sqlite.Model.DuplicateKeyResolution
@@ -367,6 +368,7 @@ import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
 import Belay.Sqlite.Model.PartialUniqueCount
+import Belay.Sqlite.Model.PartialUniqueKeptRows
 import Belay.Sqlite.Model.PlainInsertEffect
 import Belay.Sqlite.Model.PlainDeleteEffect
 import Belay.Sqlite.Model.RowwiseExpr

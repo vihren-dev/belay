@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import re
+import shutil
 
 import pytest
 
@@ -19,6 +20,11 @@ def axiom_reports(stdout: str) -> list[set[str]]:
     """The axiom sets of all `#print axioms` reports in the output of one Lean run."""
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", stdout)
     return [set(filter(None, map(str.strip, report.split(",")))) for report in reports]
+
+
+def lines_after(stdout: str, tag: str) -> list[object]:
+    """Decode the JSON that a fixture logged after the tag, one value for each line."""
+    return [json.loads(line.removeprefix(tag)) for line in stdout.splitlines() if line.startswith(tag)]
 
 
 def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
@@ -72,8 +78,42 @@ def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path
     that succeeds keeps at most one live account with that email. The fixture shows the invariant kept on
     a database for a new email, a rejected live email whose rolled-back database still satisfies the
     invariant, and a deleted account whose email can be reused, and keeps the counterexample of an
-    ordinary nullable UNIQUE constraint, which does not keep the invariant."""
-    check_module_chain(runtime_root, tmp_path, (("AccountSignupQueries", 1), ("SignupInvariantClaims", 2)))
+    ordinary nullable UNIQUE constraint, which does not keep the invariant. The global form of the
+    invariant (no email has two live accounts, a GROUP BY query) is proved for every admitted database
+    with the same site and NOT NULL on the email, with the same counterexample."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3)))
+
+
+@pytest.mark.requires_native("sqlite3")
+def test_filtered_duplicate_key_query_agrees_with_native_sqlite(runtime_root: Path, tmp_path: Path) -> None:
+    """The model's result of the guide's global signup invariant query (our filtered duplicate-key
+    query law and `Holds`) agrees with pinned native SQLite on six databases: no live duplicate, a live
+    duplicate, a duplicate with one deleted account, two live NULL emails (GROUP BY joins NULL keys), and
+    emails that are equal only under NOCASE, with and without that collation in GROUP BY. The kernel checks the
+    same results in the fixture; the fixture logs the SQL and the model's result of each case."""
+    stdout = check_module_chain(runtime_root, tmp_path, (
+        ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
+        ("FilteredDuplicateKeyExamples", 1)))
+    cases = {str(case["name"]): case for case in lines_after(stdout, "FILTERED-DUPLICATES:")
+             if isinstance(case, dict)}
+    assert set(cases) == {"noLiveDuplicate", "liveDuplicate", "deletedDuplicate", "nullKeys", "nocaseBinary",
+                          "nocaseNocase"}, stdout
+    assert {name: case["holds"] for name, case in cases.items()} == {
+        "noLiveDuplicate": True, "liveDuplicate": False, "deletedDuplicate": True, "nullKeys": False,
+        "nocaseBinary": True, "nocaseNocase": False}
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    version = run_command([sqlite, "-version"], cwd=tmp_path, timeout=5)
+    assert version.returncode == 0 and version.stdout.startswith("3.51.0 "), version.diagnostic()
+    for name, case in cases.items():
+        script = tmp_path / f"{name}.sql"
+        script.write_text(f"{case['setup']};\n{case['query']};\n")
+        native = run_command([sqlite, "-batch", "-bail", "-json", ":memory:", f'.read "{script}"'],
+                             cwd=tmp_path, timeout=10)
+        assert native.returncode == 0 and not native.stderr, native.diagnostic()
+        rows = json.loads(native.stdout) if native.stdout.strip() else []
+        assert [list(row.values()) for row in rows] == ([[1]] if case["holds"] else []), (name, native.stdout)
 
 
 def test_two_state_assertions_follow_the_start_and_the_reached_database(runtime_root: Path, tmp_path: Path) -> None:
