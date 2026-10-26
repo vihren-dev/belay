@@ -22,6 +22,26 @@ def openingSize (atom text : String) : Option Nat :=
     | [] => none
     | _ :: _ => none
 
+/-- Whether the bytes, read as the content of a raw literal with {lit}`hashes` signs {lit}`#`,
+contain the closing delimiter: a quote followed by that many {lit}`#`. -/
+def closesRawLiteral (hashes : Nat) : List UInt8 → Bool
+  | [] => false
+  | byte :: rest => (byte == 34 && rest.take hashes == List.replicate hashes 35) || closesRawLiteral hashes rest
+
+/-- Whether the replacement of the bytes from {lean}`start` to {lean}`stop` of the literal's text
+leaves the literal as it is, with the same end and without escapes. A plain literal accepts no quote
+and no backslash. A raw literal with {lit}`n` signs {lit}`#` accepts no quote followed by {lit}`n`
+signs {lit}`#`, also not when the text after the range completes it. Both accept no carriage return,
+because Lean reads the line end in a literal as a line feed. For example, {lit}`"label"` is no
+replacement in {lit}`r"..."` and is one in {lit}`r#"..."#`. -/
+def replacementKeepsLiteral (atom text : String) (start stop : Nat) (replacement : String) : Bool :=
+  let bytes := text.toUTF8
+  let spliced := (bytes.extract 0 start ++ replacement.toUTF8 ++ bytes.extract stop bytes.size).toList
+  let keepsEnd :=
+    if atom.startsWith "\"" then !spliced.contains 34 && !spliced.contains 92
+    else !closesRawLiteral ((atom.toList.drop 1).takeWhile (· == '#')).length spliced
+  keepsEnd && !replacement.contains '\r'
+
 /-- The source range of a byte range of a string literal's text, when each byte of the text is a
 byte of the source: a raw literal with any number of {lit}`#`, or a plain literal without
 escapes ({name}`openingSize`). Otherwise the literal's range. A range without bytes covers one

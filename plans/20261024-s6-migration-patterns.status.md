@@ -589,3 +589,13 @@ reports show 949 tests with zero failures, errors or skips (log
 files as the baseline `1n22b69h6f0df7l9hzpydw7biwhx3pna`. The acceptance part is still open for
 the remaining examples (rebuild cascade, safe-rebuild preservation and affinity), which wait for
 their separately owned contracts.
+
+## Owner decision on the example modules (2026-10-26)
+
+The examples of the user guide are not part of the model or the surface packages. The
+`NormalizedField*` modules (16 modules in `belay-sqlite-model` and `belay`, about 1,900 lines)
+are shaped around the guide's `email_lower` expansion. A separate cleanup task, after the
+table-rebuild task, keeps their general content (ADD COLUMN, backfill UPDATE and scan laws over
+any table) under general names and statements, and moves the example-specific parts (the plan,
+the lookup simulation, the expansion theorem) to `tests/surface`. The remaining part-2 examples
+of this task are test fixtures only.

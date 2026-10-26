@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:28:41+00:00",
+  "finding": "20261026T102835Z-de8d7ef1#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The status no longer cites a local test result; the cut tests wait for the Nix run."
+}
