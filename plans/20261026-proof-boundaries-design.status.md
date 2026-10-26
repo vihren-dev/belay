@@ -22,6 +22,9 @@ Prior design baseline: `0cadcde9` (ADR 0025 and its checked experiments).
 - A second review caught an extra non-control premise in the applied-catalog
   witness. The corrected witness handles controls and retains the full original
   formula. All experiment sources are at rest.
+- Independent Claude review of `771604b5` found no must findings and two should
+  findings. Clarified the owner's present import-cleanup request and the boundary
+  with ADR 0025; recorded both resolutions. No experimental source changed.
 
 ## Evidence
 

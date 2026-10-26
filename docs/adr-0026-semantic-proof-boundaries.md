@@ -98,6 +98,10 @@ JSON call can fail. This decision covers congruence, not all expression proofs.
 
 ## D6. Put shared primitives below their consumers
 
+This is the bounded import cleanup requested in the owner's investigation of
+codebase modularity and the dependency report. The demonstrated moves define
+its scope; an unmeasured performance benefit is not its justification.
+
 Move the four demonstrated primitive facts to suitable foundational owners.
 Place definitions used by shared proofs below the specialized laws they replace.
 Remove the model umbrella imports from the three demonstrated surface modules:
@@ -130,8 +134,10 @@ semantic and simplification facts; a zero-consumer graph node alone does not
 justify deletion. Audit standard axioms and compile the affected public surface.
 
 ADR 0025 still owns invariant preservation and contextual script conditions.
-This ADR covers its explicitly deferred query, resolver, observation, source and
-expression opportunities plus the demonstrated import cleanup. It supersedes
+ADR 0025 explicitly leaves query observation transport, resolver provenance,
+subquery traversal and import-barrel policy outside its scope. This ADR adds
+the report-driven source-agreement, expression-congruence and execution-profile
+work and the demonstrated import cleanup. It supersedes
 named-endpoint obligations for the replaced families, not their formulas.
 No package split, evaluator rewrite, proof registry or performance target is
 introduced. Production source reduction and proof/build costs are measured
