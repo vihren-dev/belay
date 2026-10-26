@@ -127,6 +127,8 @@ interface, witnesses and remaining specializations together.
 
 ## Compatibility, evidence and scope
 
+Test lifetime amended 2026-10-26 with owner approval.
+
 These decisions change proof interfaces, not SQL execution or supported SQL.
 The project has no users: migrate callers and delete replaced declarations and
 aliases. Preserve their mathematical guarantees through complete migration

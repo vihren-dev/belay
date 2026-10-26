@@ -80,4 +80,6 @@ All task-file edits for this decision are batched in one commit. No new task,
 runner, test manifest, CI suite or production change was introduced. Per-commit
 checks use the existing `tests/docs_test.py` and independent Claude review.
 The previously accepted Nix experiment and production check inputs are unchanged;
-their evidence above remains applicable. Amendment review is pending.
+their evidence above remains applicable. Claude reviewed `b5d92aeb` with no
+must findings and one should finding: date the owner-approved amendment in
+the ADR text itself. Both ADRs now contain that date; the resolution is recorded.

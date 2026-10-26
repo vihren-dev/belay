@@ -104,6 +104,8 @@ the support gate, evaluation, errors, observations or the modeled SQL subset.
 
 ## D4. Formula strength and trust remain acceptance criteria
 
+Test lifetime amended 2026-10-26 with owner approval.
+
 The replacement must derive each removed endpoint's old mathematical claim
 with the same entry assumptions. Exhaustive old-formula checks are temporary
 migration evidence. Keep one copy through the last planned slice that changes
