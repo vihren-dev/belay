@@ -52,7 +52,12 @@ was sufficient before. General conjunction composition remains available.
 
 Relevant existing suites include `valid_atoms_theorems_test.py`,
 `keys_unique_theorems_test.py`, `admitted_atoms_run_theorems_test.py` and the
-foreign-key theorem suites under `tests/`. Use their existing Nix suite owners.
+foreign-key theorem suites under `tests/`. The three named formula suites
+currently run as host-owned checks through `just test-source`, using Nix-built
+libraries. Register their migrated checks in the existing `model` Nix suite
+in `tests/nix_suites.json`, including only needed helper/fixture inputs.
+`shared_table_shape_test.py`, which supplies `compile_checks`, is already in
+that suite. Broader test-ownership cleanup is outside scope.
 The admitted-run suite constructs names from `ATOMS` and three run prefixes;
 a literal-name search alone does not find all affected consumers.
 All subprocess checks retain configured timeouts. Apply the repository check
@@ -68,5 +73,7 @@ repeated at many callers: retain a reusable resolver bridge where it is needed.
 
 Changing statement/run execution, atom definitions, FK action semantics, judge
 inputs, corpus expectations, or unrelated resolver proofs is outside this task.
-Coordinate the generic names with the execution-condition task; either task
-can start from the baseline, but they edit the same proof interface.
+The foundations task supplies the lower generic predicates needed to replace
+the key-specific aliases without an import cycle. Integrate that boundary
+before completing this task. The execution-condition task uses the resulting
+generic names; its interface changes must retain these migrated formulas.

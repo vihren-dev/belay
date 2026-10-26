@@ -1,6 +1,7 @@
 # Proof simplification design status
 
-Date: 2026-10-26. Status: IN PROGRESS. Audience: the implementation team.
+Date: 2026-10-26. Status: DONE; production implementation remains unstarted.
+Audience: the implementation team.
 Task: [design task](20261026-proof-simplification-design.task.md).
 Base: integration commit `6413afe3ff50`.
 Workspace: `/home/codex/work/sqlite-verifier-proof-simplification`.
@@ -46,5 +47,19 @@ timeout --foreground 600 nix-build experiments/proof-simplification/default.nix 
   laws. It does not certify complete production migration or build-speed gains.
 
 The initial scope commit and its wording correction have completed Claude
-reviews. The experiment/specification commit is ready for its required Claude
-review. Final review records and task completion will be recorded below.
+reviews. Claude reviewed the experiment/specification commit `cf6b8201` with
+no findings (`reviews/20261026T090156Z-cf6b8201/review.json`). The reviewer did
+not rerun the experiment or recount the inventory; the Nix result above supplies
+that evidence.
+
+The final source-ownership audit found that the three existing Python formula
+suites are host-owned. The API task now requires their migrated checks in the
+existing model Nix suite, with no broader test-system change. The specs also
+name the foundation dependency for cycle-safe effect predicates and explicitly
+scope contextual preservation to ordinary runs with `initial := none`.
+
+All requested deliverables are prepared: proposed ADR 0025, three implementation
+tasks/status files, eight checked experiment modules, their reproducible Nix
+target, and an exact deletion inventory. The implementation tasks remain READY,
+not DONE. The final documentation clarification commit receives the usual
+independent commit review; its record is retained with this workspace.

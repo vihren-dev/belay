@@ -1,6 +1,6 @@
 # Proof simplification experiments and implementation specifications
 
-Date: 2026-10-26. Status: IN PROGRESS. Audience: the implementation team.
+Date: 2026-10-26. Status: DONE. Audience: the implementation team.
 Owner request: create a separate workspace, run experiments, and prepare ADRs
 and tasks for simplifying the model's theorem and proof API before implementation.
 Record: [design record](20261026-proof-simplification-design.status.md).

@@ -91,6 +91,13 @@ fixtures `ForeignKeyRuns.lean`, `ForeignKeyDdlRuns.lean`, and
 so a literal-name search alone is incomplete. Module inventory tests and
 barrel imports must also reflect deleted modules.
 
+The three Python formula suites above are host-owned at the frozen base:
+`tests/nix_suites.json` does not list them, `build-support/tests.nix` runs only
+listed files, and `conftest.py` leaves unlisted files in `--source-checks`.
+They run through `just test-source` against Nix-built libraries. The replacement
+task registers their migrated formulas in the existing `model` Nix suite;
+the `compile_checks` helper is already an input of that suite.
+
 `ValidAtomsRuns`, `KeysUniqueRuns`, `ValidAtomsTogether`, `ScriptRunConstraints`,
 and the three FK run modules contain certificates, conditions, equivalences,
 or general rules that are not in the deletion inventory. Removing their

@@ -9,11 +9,13 @@ parallel readiness-dependent step/run proofs and a repeated surface traversal.
 
 ## Required behavior
 
-One statement-preservation contract can express conditions on all five inputs
-actually passed to `runStatement`: clock, visible counters, parameter list,
+One statement-preservation contract can express conditions on the five inputs
+passed by ordinary script execution to `runStatement`: clock, visible counters, parameter list,
 resolved statement and database. Conditions that ignore inputs remain easy to
 write. Readiness is a condition for proofs that require it, not a universal
 precondition on every preservation theorem.
+These runners use the default `initial := none`; two-state observation APIs
+that supply an initial database are outside this preservation task.
 
 One resolved-script preservation induction handles ordinary and support-dependent
 invariants. Its conditions follow actual reached states and stop at a halted

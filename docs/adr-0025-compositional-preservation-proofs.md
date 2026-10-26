@@ -79,7 +79,9 @@ keys without forcing their whole statement theorem into `TableAtom`.
 
 The generic statement-preservation condition can depend on the clock value,
 visible counters, parameters, resolved statement and database passed to
-`runStatement`. Ordinary conditions ignore the additional arguments. Readiness
+`runStatement` by ordinary script execution, with its optional `initial`
+database left at `none`. Two-state observation APIs remain outside this scope.
+Ordinary conditions ignore the additional arguments. Readiness
 is an explicit condition for invariants that need it.
 
 There is one preservation induction for resolved scripts. Its conditions follow
@@ -142,9 +144,9 @@ recursion are separate opportunities. This ADR does not authorize those changes.
 
 | Task | Result | Dependency |
 | --- | --- | --- |
-| [Proof API](../plans/20261026-preservation-api.task.md) | Generic applications replace the endpoint matrix | Existing integration baseline |
+| [Proof API](../plans/20261026-preservation-api.task.md) | Generic applications replace the endpoint matrix | Foundations provide cycle-safe generic effect predicates |
 | [Proof foundations](../plans/20261026-preservation-foundations.task.md) | General primitives and one table-atom dispatch | Existing integration baseline |
-| [Execution conditions](../plans/20261026-preservation-context.task.md) | One run induction per executor | Coordinate with API removal; use its final names |
+| [Execution conditions](../plans/20261026-preservation-context.task.md) | One run induction per executor | API removal establishes the names and migrated formula tests |
 
 The tasks specify separate reviewable results, not a prescribed coding order.
 Their implementation is not part of the experiment and specification work.
