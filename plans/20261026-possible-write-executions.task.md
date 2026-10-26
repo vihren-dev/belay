@@ -18,8 +18,9 @@ results, and each result has its own database, counters and connection state.
 On 2026-10-26 the owner decided that this interface is a separate task, before
 INSERT SELECT: the shared run and proof interfaces change once, and the S6, S8,
 editor and conformance clients adapt once. This task adds no SQL. Every
-statement that the model supports today has exactly one execution, so every
-prediction and every claim stays the same. The table-rebuild task then gives
+statement that the model supports today has one next state (a query can still
+have several permitted results on it), so every prediction and every claim stays
+the same. The table-rebuild task then gives
 INSERT SELECT more than one execution through this interface.
 
 ## Required outcomes
@@ -30,8 +31,12 @@ INSERT SELECT more than one execution through this interface.
   state that the statement changes. Two executions are never merged cell by
   cell, and a part of one execution is never combined with a part of another.
 - **Every current statement is the singleton case.** A theorem states that each
-  statement that the model supports today has exactly one execution, and that
-  it is the current run. A second theorem states that the model's own run (the
+  statement that the model supports today has one next state: the database,
+  counters and connection of the current run. Its output is the current output.
+  A query whose current output is `Output.oneOf` keeps its result alternatives:
+  either one execution with that output, or, if `Output.oneOf` becomes a case of
+  executions (next outcome), one execution for each result, all with the same
+  next state. A second theorem states that the model's own run (the
   fixed traversal that execution uses) is always one of the admitted
   executions, also for a statement with more than one.
 - **Query result alternatives keep one meaning.** `Output.oneOf` describes
