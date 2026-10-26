@@ -22,10 +22,11 @@ def axiom_reports(stdout: str) -> list[set[str]]:
 
 
 def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
-                       timeout: int = 120) -> None:
+                       timeout: int = 120) -> str:
     """Elaborate the fixture modules in order, each importing the earlier ones, and audit the axioms of
     each module: its count of `#print axioms` reports is the given one, each report lists only ordinary
-    logical axioms, and no proof is missing. The timeout, in seconds, applies to each module."""
+    logical axioms, and no proof is missing. The timeout, in seconds, applies to each module. It gives the
+    output of the last module."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     for module, count in modules:
@@ -42,6 +43,7 @@ def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[
             assert report <= ALLOWED_PROOF_AXIOMS, result.diagnostic()
         assert "sorryAx" not in result.stdout, result.diagnostic()
         configuration["importArts"][module] = [[str(artifact)]]
+    return result.stdout
 
 
 def test_insert_then_lookup_claims_over_every_database(runtime_root: Path, tmp_path: Path) -> None:

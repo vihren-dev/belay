@@ -1,12 +1,15 @@
 """Application interfaces, translation and the two simulation theorems (ADR 0017, S8)."""
 
+import json
 from pathlib import Path
 import re
+import shutil
 
 import pytest
 
 from tests.runtime_support import run_command
 from tests.surface_assertion_examples_test import check_module_chain
+from tests.surface_replay_test import model_cell, native_replay, native_rows
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -50,6 +53,70 @@ def test_weak_query_translation_needs_frame_facts_to_become_a_simulation(runtime
     admitted context (fixture ApplicationConstantClock). Every theorem uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
         ("ApplicationRestrictedDomain", 4), ("ApplicationWeakBridges", 2), ("ApplicationConstantClock", 4)))
+
+
+def lines_after(stdout: str, tag: str) -> list[object]:
+    """Decode the JSON that a fixture logged after the tag, one value for each line."""
+    return [json.loads(line.removeprefix(tag)) for line in stdout.splitlines() if line.startswith(tag)]
+
+
+@pytest.mark.requires_native("sqlite3")
+def test_expansion_lookups_agree_and_counter_or_clock_calls_break_the_relation(runtime_root: Path,
+                                                                               tmp_path: Path) -> None:
+    """The lookup theorem of the lowercase-field expansion applies to the customers database and to an
+    application that chooses its second lookup from the first result (fixture ApplicationExpansion).
+    In fixture ApplicationCounterCalls, the shared write does not commute
+    fully with the expansion, a call that reads the total changes breaks the scoped condition of every
+    relation that relates the start to its migrated context, and so does a clock read under a clock that
+    changes with the index. Pinned SQLite gives the total changes 1 before and 2 after the expansion,
+    which are the values the kernel finds. Every theorem uses only logical axioms."""
+    stdout = check_module_chain(runtime_root, tmp_path,
+                                (("ApplicationExpansion", 3), ("ApplicationCounterCalls", 5)))
+    [evidence] = lines_after(stdout, "EXPANSION-TOTALS:")
+    assert isinstance(evidence, dict)
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    version = run_command([sqlite, "-version"], cwd=tmp_path, timeout=5)
+    assert version.returncode == 0 and version.stdout.startswith("3.51.0 "), version.diagnostic()
+    for name, expected, steps in (("old", evidence["old"], ("setup", "read")),
+                                  ("new", evidence["new"], ("setup", "migration", "read"))):
+        script = tmp_path / f"{name}.sql"
+        script.write_text(";\n".join(evidence[step] for step in steps) + ";\n")
+        native = run_command([sqlite, "-batch", "-bail", "-json", ":memory:", f'.read "{script}"'],
+                             cwd=tmp_path, timeout=10)
+        assert native.returncode == 0 and not native.stderr, native.diagnostic()
+        assert [list(row.values()) for row in json.loads(native.stdout)] == [[expected]], (name, native.stdout)
+    assert (evidence["old"], evidence["new"]) == (1, 2)
+
+
+@pytest.mark.requires_native("sqlite3")
+def test_missing_trigger_witness_is_checked_by_kernel_and_native_replay(runtime_root: Path,
+                                                                        tmp_path: Path) -> None:
+    """The expansion without its triggers loses a lookup after a write: the kernel finds the stale result,
+    and the relation that names the stored field holds at the start and breaks after the write. The
+    full expansion does not have the bug on the same application. Both replays of the witness are
+    emitted by the S5 path, and pinned SQLite gives the outputs that the model gives. Every theorem uses
+    only logical axioms."""
+    stdout = check_module_chain(runtime_root, tmp_path,
+                                (("ApplicationExpansion", 3), ("ApplicationMissingTrigger", 8)))
+    reports = {str(report["name"]): report for report in lines_after(stdout, "REPLAY:")
+               if isinstance(report, dict)}
+    assert set(reports) == {"old", "buggy"}, stdout
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    for name, inspect in (("old", ""), ("buggy", "SELECT email_lower FROM customers ORDER BY id;\n")):
+        report = reports[name]
+        result = native_replay(sqlite, report["sql"], tmp_path, name, inspect)
+        assert result.returncode == 0 and not result.stderr, result.diagnostic()
+        actual = native_rows(result.stdout)
+        outputs = report["outputs"]
+        assert isinstance(outputs, list)
+        expected = [[model_cell(cell) for cell in row] for output in outputs for row in output.get("rows", [])]
+        assert actual[:len(expected)] == expected, (name, actual, expected)
+        if name == "old":
+            assert expected == [[2]], expected
+        else:
+            assert expected == [] and actual == [["alpha@x"], [None]], (actual, expected)
 
 
 def test_interface_mistakes_are_diagnosed_where_they_are_written(runtime_root: Path, tmp_path: Path) -> None:
