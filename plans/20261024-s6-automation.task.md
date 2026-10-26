@@ -107,10 +107,16 @@ alternate SQL execution engine is required.
   purge-frame, partial-index invariant, query equivalence, expansion read-query
   and rebuild claims with the advertised routes and explicit premises. Keep
   their counterexamples. The query-equivalence example is the guide's
-  `notBlockedIn ≈ notBlockedEx` (`NOT IN` against `NOT EXISTS`): false in
-  general with the NULL counterexample, true under its `where` condition, and
-  proved by `sql_auto` without `where` when `blocked.customer_id` is
-  `NOT NULL`. Record every needed change of the private guide's
+  `notBlockedIn ≈ notBlockedEx` (`NOT IN` against `NOT EXISTS`). It is false
+  in general: a NULL `blocked.customer_id` makes `NOT IN` drop every row, and a
+  NULL `customers.id` with a non-NULL blocked id makes `NOT IN` drop that row
+  while `NOT EXISTS` keeps it. The guide's `where` condition (no NULL
+  `customer_id` in `blocked`) excludes only the first case. The checked claims
+  state explicit sufficient premises for both: no NULL `blocked.customer_id`
+  (the `where` condition, or `NOT NULL` in the schema for the `sql_auto` form
+  without `where`) and no NULL `customers.id` (for example, an `INTEGER PRIMARY
+  KEY`), and both counterexamples stay checked. The guide text that omits the
+  second premise is one of the recorded guide changes. Record every needed change of the private guide's
   tactic/footprint descriptions (the actual supported analysis and remaining
   obligations) in the status file for the guide acceptance task; do not edit
   the private guide in this task. The scope of the primitive contracts is
@@ -189,9 +195,13 @@ and do not redefine them:
 - Existing effect rules are narrow: `Sql.ifOk_send_plainInsert` and
   `Sql.ifOk_send_plainDelete` (one plain statement without RETURNING, subquery,
   rule or trigger, from the fresh context), `Sql.ifOk_send_of_success`, and the
-  model laws `plainInsert_database` and `plainDelete_database`. No UPDATE effect
-  law and no law of the effects of a fired trigger exists; the required outcomes
-  above need them for the advertised examples. `DatabaseWriteLaws`, `WriteLaws`,
+  model laws `plainInsert_database` and `plainDelete_database`. For UPDATE,
+  `runStatement_update_ok` and `table_after_update_ok`
+  (`NormalizedFieldEffects.lean`) give the stored rows of a successful UPDATE
+  without a foreign-key or trigger plan (`LiteralData.updated`); there is no
+  surface UPDATE rule over `Sql.Branch` and no law of the effects of a fired
+  trigger. The required outcomes above add only these missing rules, for the
+  advertised examples, on top of the existing laws. `DatabaseWriteLaws`, `WriteLaws`,
   `TriggerRun`, `Statement.counterReads`, `Statement.Calm`/`Quiet` and the clock
   and counter laws are inputs, not a proved whole-program footprint.
 - Foreign keys (DONE): `ForeignKeyMapping`, `Database.RowReferencesHold`,

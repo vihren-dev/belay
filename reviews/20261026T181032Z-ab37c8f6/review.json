@@ -1,0 +1,52 @@
+{
+  "caller": "claude",
+  "commit": "ab37c8f6e061ce97608558a4cec7456a5c9ea4b4",
+  "date": "2026-10-26T18:10:32+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261024-s6-automation.status.md",
+    "plans/20261024-s6-automation.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261026T181032Z-ab37c8f6#1",
+      "line": 111,
+      "path": "plans/20261024-s6-automation.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The stated equivalence is false under the guide’s `where` condition: with `customers.id = NULL` and `blocked.customer_id = 1 NOT NULL`, `NOT IN` returns no rows but `NOT EXISTS` returns the NULL row. Fix: require explicit sufficient schema and non-null premises for both variants and retain this counterexample."
+    },
+    {
+      "id": "20261026T181032Z-ab37c8f6#2",
+      "line": 192,
+      "path": "plans/20261024-s6-automation.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The document says no UPDATE effect law exists, but `NormalizedFieldEffects.lean` already provides `runStatement_update_ok` and `table_after_update_ok`. Fix: list these existing laws as inputs and identify only the missing contracts as required work."
+    }
+  ],
+  "id": "20261026T181032Z-ab37c8f6",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
