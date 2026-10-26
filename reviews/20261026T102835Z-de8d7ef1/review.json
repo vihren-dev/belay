@@ -1,0 +1,46 @@
+{
+  "caller": "claude",
+  "commit": "de8d7ef1dfe95e41daa42ce03aeadef4182a76af",
+  "date": "2026-10-26T10:28:35+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261024-surface-editor.status.md",
+    "reviews/20261026T095108Z-6d914dbc/review.json",
+    "tests/surface/AccountSignupQueries.lean",
+    "tests/surface/DbBangErrors.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261026T102835Z-de8d7ef1#1",
+      "line": 443,
+      "path": "plans/20261024-surface-editor.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status cites passing local tests, contrary to the rule in `AGENTS.md` and ADR 0020 D5 that status files cite only Nix results. Fix: remove the local pass claim and state that the interrupted tests still need Nix verification."
+    }
+  ],
+  "id": "20261026T102835Z-de8d7ef1",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

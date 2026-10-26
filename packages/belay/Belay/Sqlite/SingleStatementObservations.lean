@@ -29,7 +29,7 @@ theorem sendStatements_single_actual (statement : Syntax.Statement) (values : Li
   cases step : runScriptStep runContext clock index connection statement values with
   | ended reason => simp [sendStatements, Sql.runFrom, step, SqlRun.observation, singleObservation, RunStep.output,
       Output.endsRun]
-  | continued output next =>
+  | continued output next others =>
     have quiet := (runScriptStep_continued step).2
     simp [sendStatements, Sql.runFrom, step, SqlRun.observation, singleObservation, RunStep.output, quiet,
       Sql.map]
@@ -62,7 +62,7 @@ theorem sendStatements_single_branch (statement : Syntax.Statement) (values : Li
         · exact choice.elim
       subst selected
       exact ⟨_, (Sql.branch_stopped_iff step _).mpr rfl, rfl⟩
-  | continued output next =>
+  | continued output next others =>
     have quiet := (runScriptStep_continued step).2
     simp only [RunStep.output]
     constructor

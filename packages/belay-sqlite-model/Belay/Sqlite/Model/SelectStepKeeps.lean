@@ -39,10 +39,10 @@ database ({name}`runStatement_keeps_database`) and its counts leave the counters
 ({name}`Counters.apply_default`); {name}`runScriptStep_effect` gives the next connection. -/
 theorem runScriptStep_select_connection {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {columns source joins filter groupBy orderBy limit offset subqueries having
-      distinct compound parameters output}
+      distinct compound parameters output} {others : List StatementExecution}
     (step : runScriptStep context clock index connection
       (.select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
-      parameters = .continued output next)
+      parameters = .continued output next others)
     (noError : output.isError = false) : next = connection := by
   obtain ⟨resolved, after, value, found, -⟩ := runScriptStep_ran step
   have selected : ∃ catalog, resolveSelect context connection.resolveState.catalog
@@ -88,10 +88,11 @@ theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clo
       .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
     {rows : List (List Value)}
     (output : (runScriptStep context clock index connection statement parameters).output = .rows rows) :
-    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection := by
+    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection [] := by
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => rw [step] at output; simp [RunStep.output] at output
-  | continued out next =>
+  | continued out next others =>
+    obtain rfl := runScriptStep_others step
     rw [step] at output
     simp only [RunStep.output] at output
     subst output

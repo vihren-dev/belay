@@ -28,7 +28,7 @@ exact empty trigger selection. Proof sketch: the resolution is the plain
 assignment; its actual effect stores the computed rows; the row-map law
 identifies them. -/
 theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection next : Connection} {parameters : List Value} {output : Output}
+    {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
     {tableName name sourceName : Identifier} {position source : Nat} (table : Table)
     (found : connection.state.database.catalog.findTable tableName = some (position,
       { table.shape with columns := table.shape.columns ++ [textColumn name table.shape.strict] }))
@@ -43,7 +43,7 @@ theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index :
       { table := position, event := .update (some [table.shape.columns.length]) } = [])
     (step : runScriptStep context clock index connection
       (.update tableName [(name, .call "lower" [.identifier sourceName .none])] none [] [])
-      parameters = .continued output next)
+      parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ counters, next = { connection with state := { connection.state with
       database := connection.state.database.setRows position (loweredRows table source), counters } } := by

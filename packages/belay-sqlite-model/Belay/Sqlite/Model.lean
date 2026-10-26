@@ -138,6 +138,12 @@ import Belay.Sqlite.Model.PlainCounts
 import Belay.Sqlite.Model.SqlCounted
 import Belay.Sqlite.Model.SqlAdvance
 import Belay.Sqlite.Model.ScriptRunFailure
+import Belay.Sqlite.Model.Connection
+import Belay.Sqlite.Model.StatementExecution
+import Belay.Sqlite.Model.StatementExecutionLaws
+import Belay.Sqlite.Model.StatementSingleton
+import Belay.Sqlite.Model.ScriptRunAll
+import Belay.Sqlite.Model.ScriptRunSingleton
 import Belay.Sqlite.Model.FailingConstraintLaws
 import Belay.Sqlite.Model.ExecutionMessages
 import Belay.Sqlite.Model.ValidityFailure

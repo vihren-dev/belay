@@ -18,11 +18,20 @@ structure SqlEditorSource where
   /-- Map a nonempty SQL byte range to the corresponding original source range, or
   {lean}`none` if the bytes cannot be mapped exactly. -/
   range? : Nat → Nat → Option Syntax.Range
+  /-- Whether a replacement text for a nonempty SQL byte range can be written in its place without
+  changing how Lean reads the literal around it. An edit that the host cannot take is not offered. -/
+  accepts : Nat → Nat → String → Bool
+  /-- Where a diagnostic goes when it has no exactly mapped range, such as the string literal that
+  holds an escaped SQL text. The default {lean}`Syntax.missing` has no position, so such a diagnostic
+  is not shown. -/
+  fallback : Syntax := Syntax.missing
 
 /-- Map a raw or unescaped ordinary SQL literal. Escaped literals have no exact token map;
 their existing diagnostics still use the whole-literal fallback of {name}`textRange`. -/
 def SqlEditorSource.literal (literal : Syntax) (text : String) : SqlEditorSource :=
-  { text, range? := fun start stop => do
+  { text, fallback := literal,
+    accepts := replacementKeepsLiteral (literal.getArg 0).getAtomVal text,
+    range? := fun start stop => do
       if start >= stop || stop > text.utf8ByteSize then none else do
         let position ← literal.getPos?
         let _ ← literal.isStrLit?
@@ -44,5 +53,13 @@ def SqlEditorSource.identifier? (source : SqlEditorSource) (file : FileMap)
         let leading : Substring.Raw := ⟨file.source, range.start, range.start⟩
         let trailing : Substring.Raw := ⟨file.source, range.stop, range.stop⟩
         some (.ident (.original leading range.start trailing range.stop) token name [])
+
+/-- Where to show a warning for a SQL range: the exactly mapped identifier, else the fallback of
+the source ({name}`SqlEditorSource.fallback`), else nowhere. The fallback covers the whole literal,
+so use it for a warning and never for an edit. -/
+def SqlEditorSource.warningRef? (source : SqlEditorSource) (file : FileMap) (start stop : Nat) : Option Syntax :=
+  match source.identifier? file start stop Name.anonymous with
+  | some identifier => some identifier
+  | none => if source.fallback.getPos?.isSome then some source.fallback else none
 
 end Belay.Sqlite

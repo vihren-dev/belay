@@ -20,15 +20,17 @@ the one output. Proof sketch: {name}`Sql.check_exec` with the step; the output i
 only the raw continuation remains. -/
 theorem check_send_single_of_step {statement : Syntax.Statement} {values : List Value}
     {post : List Output → ExecutionContext → Prop} {state : ExecutionContext}
-    {actual : Output} {connection : Connection}
+    {actual : Output} {connection : Connection} {others : List StatementExecution}
     (step : runScriptStep runContext state.clock state.index state.connection statement values =
-      .continued actual connection)
+      .continued actual connection others)
     (notChoice : ∀ alternatives, actual ≠ .oneOf alternatives) :
     (send ⟨[(statement, values)]⟩).check post state ↔ post [actual] (state.next actual connection) := by
   unfold send
   simp only [sendStatements]
   rw [Sql.check_exec, step]
   dsimp only
+  rw [runScriptStep_executions step]
+  simp only [List.mem_singleton, forall_eq]
   cases actual with
   | oneOf alternatives => exact absurd rfl (notChoice alternatives)
   | done _ | rows _ | error _ | unmodeled _ =>
@@ -49,8 +51,8 @@ theorem Sql.ifOk_send_plainInsert {db : Database} {env : Env} {statement : Synta
     (found : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
       .ok (.insert target cells [] [] none, after))
     (present : db.raw.table target = some table)
-    (modeled : ∃ output next, runScriptStep runContext env.clock 0 (db.raw.connection env.counters)
-      statement values = .continued output next)
+    (modeled : ∃ output next others, runScriptStep runContext env.clock 0 (db.raw.connection env.counters)
+      statement values = .continued output next others)
     {post : List Output → ExecutionContext → Prop}
     (reached : ∀ (value : Int) (outputs : List Output) (final : ExecutionContext),
       final.connection.state.database = db.raw.setRows target
@@ -61,7 +63,7 @@ theorem Sql.ifOk_send_plainInsert {db : Database} {env : Env} {statement : Synta
       final.connection.state.database.Valid Profile.pinned → final.outputs.allOk = true →
       post outputs final) :
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
-  obtain ⟨output, next, step⟩ := modeled
+  obtain ⟨output, next, others, step⟩ := modeled
   refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
     (runScriptStep_insert_ne_oneOf found step)).2 ?_
   intro allOk
@@ -69,8 +71,11 @@ theorem Sql.ifOk_send_plainInsert {db : Database} {env : Env} {statement : Synta
     simp [ExecutionContext.next, List.allOk] at allOk
     exact allOk.2.1
   obtain ⟨value, -, effect⟩ := plainInsert_database found present step noError
-  have valid := runScriptStep_valid (profile := Profile.pinned) runContext env.clock 0 statement values rfl rfl
-    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩ step
+  have start : (db.raw.connection env.counters).state.Holds (Database.Valid Profile.pinned) :=
+    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩
+  have valid : next.state.Holds (Database.Valid Profile.pinned) :=
+    runScriptStep_valid (profile := Profile.pinned) runContext env.clock 0 statement values rfl rfl start
+      { output, next } (by rw [step]; simp [RunStep.executions])
   exact reached value [output] _ effect valid.1 allOk
 
 end Belay.Sqlite

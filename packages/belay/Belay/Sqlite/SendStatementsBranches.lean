@@ -43,7 +43,7 @@ theorem Sql.branch_map_iff {α β : Type} (function : α → β) (program : Sql 
       · rintro ⟨first, branch, rfl⟩
         rw [(Sql.branch_stopped_iff (rest := rest) step first).mp branch]
         rfl
-    | continued actual next =>
+    | continued actual next others =>
       rw [Sql.branch_continued_iff (rest := fun output => (rest output).map function) step]
       constructor
       · rintro ⟨selected, tail, choice, branch, rfl⟩
@@ -79,7 +79,7 @@ theorem sendStatements_branch_shape (statements : List (Syntax.Statement × List
       obtain rfl := (Sql.branch_stopped_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _).mp
         branch
       simp [runScriptFrom, step]
-    | continued output next =>
+    | continued output next others =>
       obtain ⟨selected, tail, _, tailBranch, rfl⟩ :=
         (Sql.branch_continued_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _).mp branch
       obtain ⟨first, firstBranch, rfl⟩ := (Sql.branch_map_iff _ _ _ _ _ _).mp tailBranch

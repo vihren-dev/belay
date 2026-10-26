@@ -34,11 +34,14 @@ theorem Sql.check_allOk_iff {α : Type} (program : Sql α) : ∀ state : Executi
   | exec statement values rest later =>
     intro state
     rw [Sql.check_exec]
-    simp only [Sql.SucceedsFrom]
     cases step : runScriptStep runContext state.clock state.index state.connection statement values with
-    | ended reason => simp
-    | continued output connection =>
+    | ended reason => simp [Sql.SucceedsFrom, step]
+    | continued output connection others =>
       have continues := (runScriptStep_continued step).2
+      try dsimp only
+      rw [runScriptStep_executions step, Sql.succeedsFrom_continued step]
+      simp only [List.mem_singleton, forall_eq]
+      unfold Sql.ExecutionSucceeds
       have nextOk (seen : Output) : (state.next seen connection).outputs.allOk = true ↔
           state.outputs.allOk = true ∧ seen.isError = false ∧ seen.endsRun = false := by
         simp only [ExecutionContext.next, List.allOk, List.all_append, List.all_cons,

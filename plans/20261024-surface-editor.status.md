@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -394,3 +394,84 @@ All gates ran through `heavy.sh` and passed on the first run:
   `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
 - `just review`: the merge `99713acb` had two findings (task-file documentation), both fixed;
   the refactor commit `798c25b3` has no findings.
+
+## Part 2b — 2026-10-26
+
+Base: the merged model name trace (`4fc773a5`). Task section "Part 2b coverage" states what the
+trace covers (spec commit `95f4dc96`; R19 check of the task against the trace: no requirement is
+unreachable, the DDL-body, trigger-program, unused-WITH, star-expansion and view-body gaps of the
+trace limit the coverage, and the task now says so).
+
+### Commit 1: column and comparison hovers, corrections, DQS warnings
+
+Files (all in `packages/belay/Belay/Sqlite/`): `SqlNameSites` (trace occurrences to byte ranges:
+exact paths only, one place per decision, conflicting records dropped, bytes must write the name),
+`SqlKeywords` (keywords that need double quotes in a correction), `SqlNameCorrections` (edit
+distance 1 to 2, deterministic ties, quote style kept, all-or-nothing when a name is unsafe),
+`SqlNameDescription` (hover text), `SqlNameInfo` (hover and `variable` token for a column, hover
+for a comparison, DQS warning, quick fixes through `TryThis`). `SqlStatementContexts` now keeps
+the `ResolveState` of each statement, `SqlEditorInfo` runs `resolveStatementTraced`, `DbBang`
+emits the editor information also when `db!` fails. Decision: a name in the body of a stored view
+(`exact = false`) is not described, because its use-site path is the table hover of part 2a.
+
+Tests: `tests/surface_editor_names_test.py` (column hovers, comparison hovers, tokens and
+exclusions) and `tests/surface_editor_corrections_test.py` (quick fixes, applied corrections with
+non-BMP text and CRLF, DQS warning), both in the `surface` suite of `tests/nix_suites.json`.
+
+### Refactor after review 1 — 2026-10-26
+
+Finding R11 (must): a quoted replacement such as `"select"` ends a raw literal without `#` or
+breaks an ordinary literal. `SqlEditorSource.accepts` (`SqlLiteral.replacementKeepsLiteral`) now
+refuses a replacement that would end the literal, add an escape or a carriage return; the
+correction list is then dropped as a whole. Tests: four literal forms and an applied quoted edit
+in an `r#` literal.
+
+### Fix: Nix surface suite input — 2026-10-26
+
+The first `just test-full` failed to collect the two new test files in the Nix surface suite:
+`tests/surface_editor_support.py` was not an input of the suite. `build-support/tests.nix` lists it
+now. The names test also checks that a checked `sql!` equals `sql` by `rfl` with the editor
+information active.
+
+### Fix: fixtures that the new information changes — 2026-10-26
+
+The second `just test-full` run found two failing surface tests before the 1500 s limit ended the
+suite (exit 124, at 96%). `DbBangErrors.lean` expects the info message of the native quick fix
+(`Nearest name in scope`) for the two unknown column names. `AccountSignupQueries.lean` failed
+at the base commit already (`rw [resolveOperand]` makes no progress after the name trace); the
+same one-line fix (`resolveOperand_arm_compare`) is in the name-trace integration workspace, so
+the two copies agree and merge without a conflict. The automatic-check tests, which the limit
+cut, still need a Nix result.
+
+### Gate state at the end of the work — 2026-10-26
+
+- `just verdict`: `/nix/store/pglhlk3pbcmzjic5prk7g8qs9f4sdhbj-sqlite-verifier-verdict`.
+- `just test-full` is not green: the Nix `surface` suite of this branch reaches the fixed 1500 s limit
+  (exit 124) at 87% to 96% in three runs, with no failed test in the last three logs
+  (`build/agent-logs/test-full-{3,4,5}-exit124.log`). The editor tests of part 2b pass in that suite
+  (`surface_editor_names_test.py`, `surface_editor_corrections_test.py`). The name-trace integration
+  branch splits the suite into `surface` and `surfaceChecks` for the same reason; this branch does not
+  have that split. Part 2b waits for a branch with the split to run `just test-full` again.
+- Not run yet: `just test-nix` and `just test-scheduled-checks` (end of the whole task).
+- Open for the integration: the table-rebuild constructor `Syntax.Statement.insertSelect` forces arms in
+  `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, and part 2b has
+  to cover the table slots of its subqueries and the names of its query.
+
+### Integration on the possible write executions — 2026-10-26
+
+The part 2b chain (`24ca98cb`) was merged onto the possible write executions on the model name
+trace (`95b61eb4`) in `f5e85829`. The only conflict was `build-support/tests.nix`: the merge keeps
+the split of the surface suite into `surface` and `surfaceChecks` and adds
+`tests/surface_editor_support.py` to the inputs of both. Main after #270 was merged in after the
+checks (`b70a04bb`, no file change).
+
+- `just test-full`: `/nix/store/4skhz2ks5dbc7f7zlvc1lzfb9xnx1fbb-sqlite-verifier-test-reports`. A
+  first run reached the 1500 s limit (exit 124) while a second `test-full` ran on the machine, with
+  no failed test in its log; the second run passed.
+- `just verdict`: `/nix/store/s03bkmji6nix413ln30210d6nl10lh8b-sqlite-verifier-verdict`, the same
+  output as the verdict of the possible write executions.
+
+Part 2b is accepted. Still open: the table-rebuild task adds `Syntax.Statement.insertSelect` and its
+arms in `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, without
+editor information for its subqueries and the names of its query. A follow-up of this task covers
+them after that task.

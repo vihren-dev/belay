@@ -36,7 +36,9 @@ lean_lib Belay where
       .one `Belay.Sqlite.SqlEditorSource, .one `Belay.Sqlite.SqlParameterInfo,
       .one `Belay.Sqlite.SqlTableSlots, .one `Belay.Sqlite.SqlStatementContexts, .one `Belay.Sqlite.SqlTableDescription,
       .one `Belay.Sqlite.SqlTableInfo, .one `Belay.Sqlite.SqlTableOrigins, .one `Belay.Sqlite.SqlEditorInfo,
-      .one `Belay.Sqlite.SqlOrderWarnings]
+      .one `Belay.Sqlite.SqlOrderWarnings, .one `Belay.Sqlite.SqlKeywords, .one `Belay.Sqlite.SqlNameSites,
+      .one `Belay.Sqlite.SqlNameDescription, .one `Belay.Sqlite.SqlNameCorrections,
+      .one `Belay.Sqlite.SqlNameInfo]
     ++ #[.one `Belay.Sqlite.CheckBudget, .one `Belay.Sqlite.CheckData,
       .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof,
       .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,

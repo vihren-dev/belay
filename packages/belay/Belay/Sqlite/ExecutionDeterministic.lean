@@ -21,7 +21,8 @@ def Model.Output.choosesResults : Output → Bool
   | .rows _ | .done _ | .error _ | .unmodeled _ => false
 
 /-- Whether the program has one branch from the clock, index and connection: every continued step
-along the actual run gives an output that is not a choice between results. A stopped step has one
+along the actual run has no further execution ({name}`RunStep.executions` is the one execution of the
+step) and gives an output that is not a choice between results. A stopped step has one
 branch by itself. The check follows the actual run only; it reads no other branch, because it
 shows that there is none. -/
 def Sql.hasOneBranch {α : Type} (clock : Option Clock) : Sql α → Nat → Connection → Bool
@@ -29,8 +30,8 @@ def Sql.hasOneBranch {α : Type} (clock : Option Clock) : Sql α → Nat → Con
   | .exec statement values rest, index, connection =>
     match runScriptStep runContext clock index connection statement values with
     | .ended _ => true
-    | .continued output next =>
-      !Model.Output.choosesResults output && (rest output).hasOneBranch clock (index + 1) next
+    | .continued output next others =>
+      others.isEmpty && !Model.Output.choosesResults output && (rest output).hasOneBranch clock (index + 1) next
 
 /-- For every program that has one branch from a context, a result is a branch of the program exactly
 when it is the actual run. Proof sketch: induction on the program. A pure program and a stopped step
@@ -51,9 +52,9 @@ theorem Sql.branch_iff_actual {α : Type} (program : Sql α) :
     | ended reason =>
       rw [Sql.branch_stopped_iff step]
       simp [Sql.runFrom, step]
-    | continued output next =>
-      simp only [Sql.hasOneBranch, step, Bool.and_eq_true, Bool.not_eq_true'] at one
-      obtain ⟨notChoice, restOne⟩ := one
+    | continued output next others =>
+      simp only [Sql.hasOneBranch, step, Bool.and_eq_true, Bool.not_eq_true', List.isEmpty_iff] at one
+      obtain ⟨⟨rfl, notChoice⟩, restOne⟩ := one
       have only : ∀ selected, OutputChoice output selected → selected = output := by
         intro selected choice
         rcases choice with same | other
@@ -136,7 +137,7 @@ theorem Sql.hasOneBranch_index {α : Type} (program : Sql α) (clock : Option Cl
     simp only [Sql.hasOneBranch, same]
     cases runScriptStep runContext clock second connection statement values with
     | ended reason => rfl
-    | continued output next => simp only [later output (first + 1) (second + 1) next]
+    | continued output next others => simp only [later output (first + 1) (second + 1) next]
 
 /-- Two programs that each have one branch at a context have equal weak views there when the projected
 actual observations are equal. Proof sketch: each side realizes exactly its projected actual
