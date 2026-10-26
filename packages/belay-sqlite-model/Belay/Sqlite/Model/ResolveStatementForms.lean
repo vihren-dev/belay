@@ -24,7 +24,7 @@ def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → P
   | .addColumn _ column _ => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
-  | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
+  | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every successful resolution of CREATE TABLE, the resolved statement meets
 {name}`Resolved.Statement.SchemaLink` on the catalog. Proof sketch: every branch of the resolver gives a

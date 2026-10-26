@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ValidAtomsStatement
 import Belay.Sqlite.Model.RunHolds
 
@@ -21,7 +22,8 @@ on the database, the effect of {name}`runStatement` satisfies {name}`Database.No
 {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_notNull`. -/
 theorem notNull_statementKeeps : StatementKeeps Database.NotNull fun statement database => statement.NotNullCondition database :=
-  fun clock counters parameters statement _ holds condition => runStatement_notNull clock counters parameters statement holds condition
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_notNull clock counters parameters statement holds condition)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "not null" ({name}`Resolved.Statement.NotNullCondition`) on the database of the state
@@ -60,7 +62,8 @@ on the database, the effect of {name}`runStatement` satisfies {name}`Database.Ty
 {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_typesFit`. -/
 theorem typesFit_statementKeeps : StatementKeeps Database.TypesFit fun statement database => statement.TypesFitCondition database :=
-  fun clock counters parameters statement _ holds condition => runStatement_typesFit clock counters parameters statement holds condition
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_typesFit clock counters parameters statement holds condition)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "types fit" ({name}`Resolved.Statement.TypesFitCondition`) on the database of the state
@@ -99,7 +102,8 @@ on the database, the effect of {name}`runStatement` satisfies {name}`Database.Ch
 {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_checksHold`. -/
 theorem checksHold_statementKeeps : StatementKeeps Database.ChecksHold fun statement database => statement.ChecksHoldCondition database :=
-  fun clock counters parameters statement _ holds condition => runStatement_checksHold clock counters parameters statement holds condition
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_checksHold clock counters parameters statement holds condition)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "checks hold" ({name}`Resolved.Statement.ChecksHoldCondition`) on the database of the state

@@ -78,6 +78,22 @@ execution. -/
 def StatementRun.Alternative.toRun (alternative : StatementRun.Alternative) : StatementRun :=
   { effect := alternative.effect, ready := true, counts := alternative.counts, keyRows := alternative.keyRows }
 
+/-- Whether an effect is no error with the reason {name}`ExecutionError.unmodeled`. An execution with
+such an effect has no output ({lit}`Output.ofStep`), and a step that has one ends the run. -/
+def Effect.isModeled : Effect → Bool
+  | .ok _ => true
+  | .error (reason, _) => reason != .unmodeled
+
+/-- The effects of all admitted executions of a run: its own, then those of its alternatives. A law
+about every admitted execution of a statement reads this list. -/
+def StatementRun.effects (run : StatementRun) : List Effect :=
+  run.effect :: run.alternatives.map (·.effect)
+
+/-- The effect of a run is one of its effects ({name}`StatementRun.effects`). Proof sketch: it is the
+head of the list. -/
+theorem StatementRun.effect_mem_effects (run : StatementRun) : run.effect ∈ run.effects :=
+  List.mem_cons_self
+
 /-- The run of a write whose plain computation gives the effect, the support check and the
 counts: the same with foreign keys off, and with them on the run of the keys
 ({name}`KeyRun`), described when both are. -/

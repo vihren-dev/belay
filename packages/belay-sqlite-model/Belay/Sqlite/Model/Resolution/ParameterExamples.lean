@@ -30,7 +30,7 @@ def queryOf (expression : Expr) (groupBy : List Expr := []) (orderBy : List Orde
   match (statements (migration catalog [.select [.expression expression none "e"] fromT [] none groupBy orderBy none none])).head? with
   | some (.query query _) => some query
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
-  | some .begin | some .commit | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..)
+  | some .begin | some .commit | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.insertSelect ..)
   | some (.delete ..) | some (.prepareError _) | some (.setting ..) | none => none
 
 /-- The value of an expression in {lit}`SELECT expression FROM t` over the row, with the values

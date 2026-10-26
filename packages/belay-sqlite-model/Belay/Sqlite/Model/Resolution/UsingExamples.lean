@@ -26,7 +26,7 @@ def queryOver (results : List ResultColumn) (source : TableReference) (joins : L
   match over results source joins with
   | some (.query query _) => some query
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- A join with {lit}`USING` and the names. -/
 def usingJoin (operator : List String) (name : Identifier) (names : List Identifier) : Join :=

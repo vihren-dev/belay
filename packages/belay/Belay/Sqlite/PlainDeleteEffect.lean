@@ -40,6 +40,9 @@ theorem Sql.ifOk_send_plainDelete {db : Database} {env : Env} {statement : Synta
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
   obtain ⟨output, next, others, step⟩ := modeled
   refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+    (fun _ _ resolved => by
+      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
+      rfl)
     (runScriptStep_delete_ne_oneOf found step)).2 ?_
   intro allOk
   have noError : output.isError = false := by

@@ -16,6 +16,7 @@ statement that writes no row. -/
 def Resolved.Statement.fireRequest (keys : Bool) : Resolved.Statement → Option FireRequest
   | .insert table _ _ _ _ => some { table, event := .insert }
   | .upsert table _ _ _ algorithm _ _ => some { table, event := .insert, algorithm }
+  | .insertSelect table _ _ _ _ algorithm _ _ => some { table, event := .insert, algorithm }
   | .update table assignments _ _ _ _ => some { table, event := .update (some (assignments.map (·.1))) }
   | .delete table _ _ _ _ => some { table, event := .delete }
   | .drop (table :: _) _ => if keys then some { table, event := .delete, fire := false } else none

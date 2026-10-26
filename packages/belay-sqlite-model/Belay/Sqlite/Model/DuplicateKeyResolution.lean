@@ -64,7 +64,7 @@ theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : Subque
   rfl
 
 /-- For every query {lit}`SELECT 1 FROM … GROUP BY k HAVING count(*) > 1` without join, {lit}`WHERE`, ordering and window,
-whose pending sources resolve and whose grouping term resolves ({name}`GroupTermResolves`) with the aggregate call
+whose scope has only own sources ({name}`Scope.ownSources`), whose pending sources resolve and whose grouping term resolves ({name}`GroupTermResolves`) with the aggregate call
 {lit}`count(*)`, the body resolves to the duplicate-key query of its sources, key and collation
 ({name}`Resolved.Query.duplicateKeys`), named {lit}`"1"`, with no affinity. Proof sketch: unfold the resolver; the
 query is an aggregate query whose one aggregate is the call of {lit}`HAVING`, the result column is the literal one,
@@ -74,6 +74,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
     (outerAliases : List Identifier) (pending : List PendingSource) (source : Option Syntax.TableReference)
     (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count") (key : Resolved.Expr)
     (collation : Collation) (sources : List Resolved.QuerySource)
+    (own : scope.ownSources = scope)
     (groupResolves : GroupTermResolves dqs scope { current, later, aggregates := [.callStar name] } term key collation)
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
@@ -104,7 +105,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   dsimp only
   simp only [aliasJoinItem?, List.zipIdx_nil, List.find?_nil, Option.map_none, oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
     List.isEmpty_cons, List.isEmpty_nil, List.any_cons, List.any_nil, aggregateCall, Bool.false_or, Bool.not_false, Bool.true_or, Bool.false_eq_true, ↓reduceIte, List.nil_append, Bool.not_true, Bool.and_false, Bool.false_and]
-  simp only [aggregates, columns, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil, terms,
+  simp only [own, aggregates, columns, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil, terms,
     names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
@@ -141,8 +142,10 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
       | .aggregate _ => none).any (fun expression =>
         expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false := by
     simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
+  have ownTable : (tableScope state.catalog reference position table).ownSources = tableScope state.catalog reference position table := by
+    simp [Scope.ownSources, tableScope, Scope.singleAt]
   have subBody := resolveQueryBody_duplicateKeys context.profile.dqsDml (tableScope state.catalog reference position table)
-    (some 0) [] [] _ (some reference) term name count key collation _ groupResolves (resolvePendingSources_table _ _ position)
+    (some 0) [] [] _ (some reference) term name count key collation _ ownTable groupResolves (resolvePendingSources_table _ _ position)
   have mainResolves : ∀ shape : SubqueryShape, shape.parent = none →
       FilterResolves context.profile.dqsDml [] [] (some (.not (.exists 0))) (some (.not (.exists 0))) { later := [shape] } :=
     fun _ parentless => FilterResolves.of_term (term := .not (.exists 0)) (result := (.not (.exists 0), none))

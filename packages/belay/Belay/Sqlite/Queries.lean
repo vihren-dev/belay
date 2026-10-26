@@ -20,6 +20,19 @@ def Script.isQuery (script : Script) : Bool :=
   | [(statement, _)] => statement.readsOnly
   | [] | _ :: _ :: _ => false
 
+/-- For every script that is a query, no statement of the script is written as INSERT from a query. Proof sketch:
+a query has one statement that only reads, and INSERT from a query writes. -/
+theorem Script.noInsertSelect_of_isQuery {script : Script} (query : script.isQuery = true) :
+    ∀ entry ∈ script.statements, entry.1.isInsertSelect = false := by
+  unfold Script.isQuery at query
+  split at query
+  · rename_i statement values same
+    intro entry member
+    rw [same] at member
+    obtain rfl := List.mem_singleton.1 member
+    cases statement <;> simp_all [Syntax.Statement.readsOnly, Syntax.Statement.isInsertSelect]
+  all_goals simp at query
+
 /-- The output of the first statement of the script on the database, with foreign keys off, as
 on a new connection: {lean}`(none : Option Output)` for a script without statements. -/
 def Script.outputOn (script : Script) (db : Database) : Option Output :=

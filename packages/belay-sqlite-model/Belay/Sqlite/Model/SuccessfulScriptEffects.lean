@@ -32,7 +32,7 @@ theorem runScriptStep_ran {context : ResolveContext} {clock : Option Clock} {ind
         (advanceRun index resolved connection.state (connection.state.statementRun value parameters resolved)) ∧
       next = connection.afterStep after (connection.state.statementRun value parameters resolved).counts
         (advanceRun index resolved connection.state (connection.state.statementRun value parameters resolved)) := by
-  obtain ⟨_, resolved, after, value, found, timed, known, ready, ofStep, _, nextEq⟩ := runScriptStep_continued_spec step
+  obtain ⟨resolved, after, value, found, timed, known, ready, ofStep, _, nextEq, _⟩ := runScriptStep_continued_spec step
   exact ⟨resolved, after, value, found, timed, known, ready, ofStep.symm, nextEq⟩
 
 /-- An ordinary statement's transition publishes its supplied effect, then
@@ -117,17 +117,16 @@ theorem successful_script_cons {context : ResolveContext} {clock : Option Clock}
     {rest : List (Syntax.Statement × List Value)}
     (success : (runScriptFrom context clock index connection ((statement, parameters) :: rest)).outputs.all
       (fun output => !output.isError && !output.endsRun) = true) :
-    ∃ output next,
-      runScriptStep context clock index connection statement parameters = .continued output next [] ∧
+    ∃ output next others,
+      runScriptStep context clock index connection statement parameters = .continued output next others ∧
       output.isError = false ∧
       (runScriptFrom context clock (index + 1) next rest).outputs.all
         (fun output => !output.isError && !output.endsRun) = true := by
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => simp [runScriptFrom, step, Output.isError, Output.endsRun] at success
   | continued output next others =>
-    obtain rfl := runScriptStep_others step
     simp only [runScriptFrom, step, List.all_cons, Bool.and_eq_true,
       Bool.not_eq_true'] at success
-    exact ⟨output, next, rfl, success.1.1, success.2⟩
+    exact ⟨output, next, others, rfl, success.1.1, success.2⟩
 
 end Belay.Sqlite.Model

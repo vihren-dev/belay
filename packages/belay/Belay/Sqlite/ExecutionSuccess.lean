@@ -37,17 +37,37 @@ theorem Sql.check_allOk_iff {α : Type} (program : Sql α) : ∀ state : Executi
     cases step : runScriptStep runContext state.clock state.index state.connection statement values with
     | ended reason => simp [Sql.SucceedsFrom, step]
     | continued output connection others =>
-      have continues := (runScriptStep_continued step).2
+      have continues := runScriptStep_executions_continue step
       try dsimp only
-      rw [runScriptStep_executions step, Sql.succeedsFrom_continued step]
-      simp only [List.mem_singleton, forall_eq]
-      unfold Sql.ExecutionSucceeds
-      have nextOk (seen : Output) : (state.next seen connection).outputs.allOk = true ↔
-          state.outputs.allOk = true ∧ seen.isError = false ∧ seen.endsRun = false := by
-        simp only [ExecutionContext.next, List.allOk, List.all_append, List.all_cons,
-          List.all_nil, Bool.and_true, Bool.and_eq_true, Bool.not_eq_true']
-      simp only [later, nextOk]
-      cases output <;> simp_all [ExecutionContext.next, Output.isError, Output.endsRun, and_assoc]
+      simp only [Sql.SucceedsFrom, step]
+      have each : ∀ found ∈ (RunStep.continued output connection others).executions,
+          ((rest found.output).check (fun _ final => final.outputs.allOk = true)
+              (state.next found.output found.next) ∧ match found.output with
+            | .oneOf alternatives => ∀ rows ∈ alternatives,
+              (rest (.rows rows)).check (fun _ final => final.outputs.allOk = true)
+                (state.next (.rows rows) found.next)
+            | .done _ | .rows _ | .error _ | .unmodeled _ => True) ↔
+          state.outputs.allOk = true ∧ Sql.ExecutionSucceeds
+            (fun seen => (rest seen).SucceedsFrom state.clock (state.index + 1) found.next) found.output := by
+        intro found member
+        have endsRun := continues found member
+        obtain ⟨seen, next⟩ := found
+        simp only at endsRun ⊢
+        unfold Sql.ExecutionSucceeds
+        have nextOk (chosen : Output) : (state.next chosen next).outputs.allOk = true ↔
+            state.outputs.allOk = true ∧ chosen.isError = false ∧ chosen.endsRun = false := by
+          simp only [ExecutionContext.next, List.allOk, List.all_append, List.all_cons,
+            List.all_nil, Bool.and_true, Bool.and_eq_true, Bool.not_eq_true']
+        simp only [later, nextOk]
+        cases seen <;> simp_all [ExecutionContext.next, Output.isError, Output.endsRun, and_assoc]
+      constructor
+      · intro all
+        have ownMember : ({ output, next := connection } : StatementExecution) ∈
+            (RunStep.continued output connection others).executions := by simp [RunStep.executions]
+        have own := (each _ ownMember).1 (all _ ownMember)
+        exact ⟨own.1, fun found member => ((each found member).1 (all found member)).2⟩
+      · rintro ⟨prefixOk, all⟩ found member
+        exact (each found member).2 ⟨prefixOk, all found member⟩
 
 
 /-- Total success with a true final property is exactly the prefix condition and S4 success

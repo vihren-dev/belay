@@ -87,23 +87,31 @@ def Resolved.WriteRules.frame (rules : Resolved.WriteRules) (clock : Int) (algor
   { clock, programs := rules.programs, recursive := rules.recursive, algorithm }
 
 /-- The run of a work with the rules at the clock value ({name}`runRows`), with fuel one more
-than the trigger depth limit, from the rows of the database; its programs inherit the algorithm. -/
+than the trigger depth limit, from the rows of the database; its programs inherit the algorithm.
+The optional {lit}`failure` is an error that ends the statement after its rows, as the failure of
+the query of an INSERT from a query does: when the rows all succeed, the statement stops with that
+error, keeps no row, and counts only the rows that it wrote before the error. -/
 def rowsKeys (rules : Resolved.WriteRules) (clock : Int) (target : Nat) (work : RowWork) (database : Database)
-    (plain : Bool) (algorithm : Option ConflictAlgorithm := none) : KeyRun :=
-  keyRun database target plain
-    (runRows database.catalog (rules.links database.catalog) (rules.depth + 1) (rules.frame clock algorithm) work
-      { rows := database.rows })
+    (plain : Bool) (algorithm : Option ConflictAlgorithm := none) (failure : Option ExecutionError := none) : KeyRun :=
+  let outcome := runRows database.catalog (rules.links database.catalog) (rules.depth + 1) (rules.frame clock algorithm) work
+    { rows := database.rows }
+  match failure, outcome with
+  | some reason, .ok state =>
+    { keyRun database target plain (.error (.error reason state)) with ready := keyReady database target plain state }
+  | _, _ => keyRun database target plain outcome
 
 /-- An INSERT of the rows into the table at the position with the rules: a write of several rows
 when it has more than one row, a key whose algorithm is REPLACE or a trigger of INSERT on the
-table, as SQLite's {lit}`isMultiWrite` is. Its programs inherit the algorithm of its {lit}`OR`
-clause, none without one. -/
+table, as SQLite's {lit}`isMultiWrite` is, or when its rows come from a query ({lit}`fromQuery`).
+Its programs inherit the algorithm of its {lit}`OR` clause, none without one. The optional
+{lit}`failure` ends the statement after the rows ({name}`rowsKeys`). -/
 def insertKeys (rules : Resolved.WriteRules) (clock : Int) (target : Nat) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (rows : List (List Value)) (database : Database) (plain : Bool)
-    (algorithm : Option ConflictAlgorithm := none) : KeyRun :=
-  let multiWrite := rows.length > 1 || policy.keys.contains .replace ||
+    (algorithm : Option ConflictAlgorithm := none) (fromQuery : Bool := false)
+    (failure : Option ExecutionError := none) : KeyRun :=
+  let multiWrite := fromQuery || rows.length > 1 || policy.keys.contains .replace ||
     rules.programs.any fun program => program.table == target && program.event == .insert
-  rowsKeys rules clock target (.insert target rows policy clauses multiWrite true) database plain algorithm
+  rowsKeys rules clock target (.insert target rows policy clauses multiWrite true) database plain algorithm failure
 
 /-- An UPDATE with the rules: the rows that the filter selects, in scan order, each with its new
 row as {name}`LiteralData.assign` and {name}`LiteralData.movedRowid` give it from the row at the

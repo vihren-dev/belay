@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Laws
+import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.Resolution.ResolveStateSpec
 
 set_option doc.verso true
@@ -63,6 +64,26 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
       · cases success
       · simp only [StatementRun.withKeys, Option.map, insertKeys] at success
         exact ⟨keyRun_ok_catalog success, rfl⟩
+  | insertSelect target cells query clauses returning algorithm subqueries foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      rcases runStatement_insertSelect_none clock counters parameters target cells query clauses returning algorithm subqueries
+        database with ⟨_, kept⟩ | ⟨literals, same, _⟩
+      · simp only [literalStep, kept] at success
+        cases success
+      · unfold literalStep at success
+        rw [same] at success
+        simp only [runStatement, StatementRun.withKeys, Option.map] at success
+        repeat' split at success
+        all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+    | some depth =>
+      rcases runStatement_insertSelect_some clock counters parameters target cells query clauses returning algorithm subqueries
+        depth database with ⟨_, kept⟩ | ⟨values, policy, multi, plain, conflict, same⟩
+      · simp only [literalStep, kept] at success
+        cases success
+      · unfold literalStep at success
+        rw [same] at success
+        exact ⟨keyRun_ok_catalog (by simpa only [rowsKeys] using success), rfl⟩
   | update target assignments filter returning subqueries foreignKeys =>
     cases foreignKeys with
     | none =>
@@ -157,7 +178,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
     simp only [SqlState.statementRun, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete | prepareError
   | query =>
     simp only [advanceWith] at reached
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
@@ -189,7 +210,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {pa
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete | prepareError
   | query | setting =>
     simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted

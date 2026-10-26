@@ -6,16 +6,16 @@ set_option doc.verso true
 
 /-! Examples of the possible executions of a statement (ADR 0019, D4, amended 2026-10-25).
 
-* Every current statement kind has one execution: a query, a write without and with foreign keys,
-  a DDL statement, a pragma, a transaction control statement and a statement that SQLite refuses
-  to prepare. The complete executions of each script are then the one run of
-  {lit}`Belay.Sqlite.Model.runScriptFrom`.
+* Every statement kind except INSERT from a query has one execution: a query, a write without and
+  with foreign keys, a DDL statement, a pragma, a transaction control statement and a statement that
+  SQLite refuses to prepare. The complete executions of each script of such statements are then the
+  one run of {lit}`Belay.Sqlite.Model.runScriptFrom`.
 * A statement with a permitted result list ({lit}`Belay.Sqlite.Model.Output.oneOf`) stands for
   executions that share the next connection ({lit}`Belay.Sqlite.Model.StatementExecution.expand`).
 * A statement run that is built by hand with a second execution makes a script with two complete
   executions. A later statement runs from the connection of the execution that reached it. The
-  second execution is a test input, not a recorded SQLite result: the model gives no statement
-  with more than one execution yet. -/
+  second execution is a test input, not a recorded SQLite result. INSERT from a query has executions
+  of its own: {lit}`InsertSelectExamples.lean`. -/
 
 namespace Belay.Sqlite.Model.PossibleExecutionsExamples
 
@@ -58,19 +58,6 @@ example : singleton (schema .noAction .noAction ++ [deleteOne, updateOne, child 
 /-- A query with a permitted result list is one execution, with the output {lit}`Output.oneOf`. -/
 example : allOutputs [createT, insertT "1" "b", insertT "2" "a", firstOf (.identifier (name! "name") .none)] =
     [[.done 0, .done 1, .done 1, .oneOf [[[textValue "a"]], [[textValue "b"]]]]] := by decide +kernel
-
-/-- For a script of the statements of the examples, the one complete execution is the traversal. -/
-theorem allOutputs_eq_own (script : List Syntax.Statement) (foreignKeys : Bool) :
-    allOutputs script foreignKeys = [ownOutputs script foreignKeys] := by
-  simp [allOutputs, ownOutputs, runScriptAllFrom_eq]
-
-/-- A step of every statement has at most one execution: the number of executions of
-{lit}`runScriptStep` is 0 when the run ends and 1 otherwise. -/
-theorem executions_length_le_one (index : Nat) (connection : Connection) (statement : Syntax.Statement)
-    (parameters : List Value) : (runScriptStep context none index connection statement parameters).executions.length ≤ 1 := by
-  cases step : runScriptStep context none index connection statement parameters with
-  | ended reason => simp [RunStep.executions]
-  | continued output next others => simp [RunStep.executions, runScriptStep_others step]
 
 /-- The connection after the table and the two rows of the query with a permitted result list. -/
 def afterRows : Connection :=

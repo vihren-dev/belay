@@ -57,8 +57,8 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
       (fun _ _ _ _ _ h => resolveInsert_schemaLink _ _ _ _ _ _ _ _ _ _ _ _ h) found
   case insertSelect =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => by
-      obtain ⟨_, _, rfl⟩ := resolveInsertQuery_prepareError _ _ _ _ _ _ _ _ _ _ found
-      trivial
+      obtain ⟨_, ⟨_, rfl⟩ | ⟨_, _, _, _, _, _, _, rfl⟩⟩ := resolveInsertQuery_form _ _ _ _ _ _ _ _ _ _ found <;>
+        trivial
   case update =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveUpdate_schemaLink _ _ _ _ _ _ _ _ _ _ h) found

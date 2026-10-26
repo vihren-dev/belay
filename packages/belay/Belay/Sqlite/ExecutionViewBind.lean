@@ -27,10 +27,9 @@ theorem Sql.View.project_bind_stopped {α β : Type} {program : Sql α} {clock i
   | pure => cases stopped
   | stopped => cases view; rfl
   | @continued statement values rest clock index connection actual state others found selected result step member choice _ hypothesis =>
-    obtain rfl := Sql.Branch.found_eq step member
     cases view with
     | exec hidden views =>
-      have continued := choice_continues choice (runScriptStep_continued step).2
+      have continued := choice_continues choice (runScriptStep_executions_continue step found member)
       simp only [bind, project, continued, Bool.false_eq_true, ↓reduceIte]
       rw [hypothesis (views selected) stopped]
 
@@ -49,10 +48,9 @@ theorem Sql.View.project_bind_return {α β : Type} {program : Sql α} {clock in
   | pure => cases returned; cases view; rfl
   | stopped => cases returned
   | @continued statement values rest clock index connection actual state others found selected result step member choice _ hypothesis =>
-    obtain rfl := Sql.Branch.found_eq step member
     cases view with
     | exec hidden views =>
-      have continued := choice_continues choice (runScriptStep_continued step).2
+      have continued := choice_continues choice (runScriptStep_executions_continue step found member)
       simp only [bind, List.cons_append, project, continued, Bool.false_eq_true, ↓reduceIte]
       rw [hypothesis (views selected) returned]
       split <;> rfl

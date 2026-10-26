@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.KeysUniqueWrites
 import Belay.Sqlite.Model.KeysUniqueUpsert
 import Belay.Sqlite.Model.KeysUniqueCreate
 import Belay.Sqlite.Model.KeysUniqueAddColumn
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -21,7 +22,7 @@ def Resolved.Statement.KeysCondition (database : Database) : Resolved.Statement 
   | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
-  | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
+  | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every rules, clock value, target, work, database, flag and algorithm: if the database
 satisfies {name}`Database.KeysUnique`, the effect of {name}`rowsKeys` satisfies
@@ -90,6 +91,15 @@ theorem runStatement_keysUnique (clock : Int) (counters : Counters) (parameters 
       split
       · exact Effect.keysUnique_of_database unique rfl
       · exact rowsKeys_effect_keysUnique rules clock target _ unique _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries unique
+        fun literals => Effect.keysUnique_of_effectDatabase
+          (runStatement_upsert_keysUnique clock counters parameters target literals clauses returning algorithm subqueries unique)
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules unique
+        fun _ _ _ plain conflict => rowsKeys_effect_keysUnique rules clock target _ unique plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none => exact runStatement_delete_keysUnique clock counters parameters target filter returning subqueries unique

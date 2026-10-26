@@ -44,7 +44,7 @@ def possible (script : List Syntax.Statement) : Option (List (List (List Value))
     let database := (runSql (bindValues earlier.reverse []) {}).database
     query.possibleOn 0 {} [] database subqueries
   | (.createTable ..) :: _ | (.createView ..) :: _ | (.createIndex ..) :: _ | (.createTrigger ..) :: _ | (.addColumn ..) :: _ | (.drop ..) :: _
-  | .begin :: _ | .commit :: _ | .rollback :: _ | (.insert ..) :: _ | (.upsert ..) :: _ | (.update ..) :: _
+  | .begin :: _ | .commit :: _ | .rollback :: _ | (.insert ..) :: _ | (.upsert ..) :: _ | (.insertSelect ..) :: _ | (.update ..) :: _
   | (.delete ..) :: _ | (.prepareError _) :: _ | (.setting ..) :: _ | [] => none
 
 /-- {lit}`CREATE TABLE t(id INTEGER PRIMARY KEY, name TEXT, p INTEGER)` with rows. -/

@@ -32,33 +32,36 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog)
     | (cases ok)
 
 /-- For every successful resolution of INSERT from a query, the catalog is unchanged and the resolved
-statement is a prepare error: a query that SQLite prepares is a restriction of the model until the rows
-are run. Proof sketch: every branch of the resolver returns the input catalog with a prepare error, or
-a restriction, which is not a success. -/
-theorem resolveInsertQuery_prepareError (context : ResolveContext) (catalog after : Catalog)
+statement is a prepare error, or an INSERT from a query without rules ({name}`Resolved.Statement.insertSelect`).
+Proof sketch: every branch of the resolver returns the input catalog with a prepare error, a restriction,
+which is not a success, or the INSERT from a query. -/
+theorem resolveInsertQuery_form (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (body : Syntax.SelectBody)
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn) (statement : Resolved.Statement)
     (ok : (resolveInsertQueryTraced context catalog tableName names body conflicts algorithm returning).drop =
       .ok (statement, after)) :
-    after = catalog ∧ ∃ error, statement = .prepareError error := by
+    after = catalog ∧ ((∃ error, statement = .prepareError error) ∨
+      ∃ table cells query clauses returning algorithm subqueries,
+        statement = .insertSelect table cells query clauses returning algorithm subqueries none) := by
   unfold resolveInsertQueryTraced at ok
   simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
-    | (cases ok; exact ⟨rfl, _, rfl⟩)
+    | (cases ok; exact ⟨rfl, .inl ⟨_, rfl⟩⟩)
+    | (cases ok; exact ⟨rfl, .inr ⟨_, _, _, _, _, _, _, rfl⟩⟩)
     | (cases ok)
     | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases
           (show resolveViewTarget context catalog tableName (resolveViewModify catalog tableName) =
             .ok (statement, after) from ok)
        · simp only [resolveViewModify, prepareError] at h
          cases h
-         exact ⟨rfl, _, rfl⟩
-       · exact ⟨rfl, _, rfl⟩)
+         exact ⟨rfl, .inl ⟨_, rfl⟩⟩
+       · exact ⟨rfl, .inl ⟨_, rfl⟩⟩)
 
 /-- For every successful resolution of INSERT from a query, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again; the statement is not transaction
-control. Proof sketch: the statement is a prepare error ({name}`resolveInsertQuery_prepareError`). -/
+control. Proof sketch: the statement is a prepare error or an INSERT from a query ({name}`resolveInsertQuery_form`), and both leave the catalog. -/
 theorem resolveInsertQuery_same (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (body : Syntax.SelectBody)
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
@@ -66,8 +69,8 @@ theorem resolveInsertQuery_same (context : ResolveContext) (catalog after : Cata
     (ok : (resolveInsertQueryTraced context catalog tableName names body conflicts algorithm returning).drop =
       .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  obtain ⟨rfl, error, rfl⟩ := resolveInsertQuery_prepareError _ _ _ _ _ _ _ _ _ _ ok
-  exact ⟨rfl, rfl, rfl⟩
+  obtain ⟨rfl, ⟨error, rfl⟩ | ⟨_, _, _, _, _, _, _, rfl⟩⟩ := resolveInsertQuery_form _ _ _ _ _ _ _ _ _ _ ok <;>
+    exact ⟨rfl, rfl, rfl⟩
 
 /-- For every successful resolution of UPDATE, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again

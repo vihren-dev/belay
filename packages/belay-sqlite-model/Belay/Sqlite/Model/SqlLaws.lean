@@ -47,7 +47,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .addColumn _ column _ => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
     | .createView .. | .createTrigger .. | .drop .. => True
-    | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
+    | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query .. | .setting .. => True
 
 /-- For every position and connection state, and every script of statements with values whose
@@ -97,7 +97,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
         have none := first.2.1 positions keys rfl
         subst none
         simp [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, Resolved.WriteRules.expressions, runStatement, StatementRun.withKeys]
-      | createTable | createView | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | createTable | createView | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | insertSelect | update | delete
       | prepareError | setting =>
         simp_all [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, runStatement]
     have run : (state.statementRun (state.clock position) parameters statement).ready = true := ready

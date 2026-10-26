@@ -138,7 +138,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .connectionCounterRead => "last_insert_rowid() in INSERT, and total_changes() in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs; read the value in a separate statement"
   | .nondeterministicErrorOrder => "a call of changes(), total_changes(), last_insert_rowid(), random() or randomblob() in a generated column, an index expression or the filter of a partial index is not modeled when the expression has another error, because which error SQLite reports depends on the order of its walk; write the call alone, or remove the other error"
   | .initialDatabase => "a table qualified with before is modeled only in a two-state query that is given the initial database, and not with function arguments; remove the schema name or observe the query in a postcondition; a view of the initial database that calls a table function named like a view of the current database, or calls pragma_table_info or pragma_foreign_key_list, is not modeled either, so rename the current view or read the table directly"
-  | .querySourceInsert => "INSERT from a query is not run by the model yet; write VALUES rows instead"
+  | .querySourceInsert => "INSERT from a query in the body of a trigger is not modeled; write VALUES rows in the body, or run the INSERT as a statement of the script"
   | .foreignKeyMismatchOrder => "PRAGMA foreign_key_check without a table name is not modeled when two or more tables have a foreign key mismatch, because SQLite checks the tables in an internal order; name the table, for example PRAGMA foreign_key_check(t)"
 
 /-- Every restriction, in the order of the registry. -/

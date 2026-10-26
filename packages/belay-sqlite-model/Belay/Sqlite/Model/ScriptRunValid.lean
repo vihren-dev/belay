@@ -66,9 +66,8 @@ theorem runScriptStep_valid {profile : Profile} (context : ResolveContext) (cloc
   cases step : runScriptStep context clock index connection statement values with
   | ended _ => simp [step, RunStep.executions] at member
   | continued output next others =>
-    obtain rfl := runScriptStep_others step
-    simp only [step, RunStep.executions, List.mem_singleton] at member
-    subst member
-    exact kept { outputs := [output], connection := next } (by simp [runScriptAllFrom, runScriptAllWith, step, RunStep.executions])
+    exact kept { outputs := [found.output], connection := found.next }
+      (by simp only [runScriptAllFrom, runScriptAllWith, step]
+          exact List.mem_flatMap.2 ⟨found, by simpa [step] using member, List.mem_map.2 ⟨⟨[], found.next⟩, by simp [runScriptAllWith], rfl⟩⟩)
 
 end Belay.Sqlite.Model

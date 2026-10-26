@@ -50,7 +50,8 @@ Proof sketch: {name}`Script.query_allOk_iff` supplies the default output check a
 theorem Succeeds.of_query {script : Script} {predicate : Database → Prop} (query : script.isQuery = true)
     (success : ∀ db, predicate db → ¬ Fails script db query ∧
       (script.outputOn db).any Output.endsRun = false) : Succeeds script predicate :=
-  Succeeds.of_default fun db holds => (Script.query_allOk_iff query db).mpr (success db holds)
+  Succeeds.of_default (Script.noInsertSelect_of_isQuery query) fun db holds =>
+    (Script.query_allOk_iff query db).mpr (success db holds)
 
 /-- For every query and predicate, if the query holds on every database satisfying the
 predicate, it succeeds. Proof sketch: a row-bearing output is neither an error nor an

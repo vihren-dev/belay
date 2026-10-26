@@ -56,4 +56,32 @@ theorem runScriptFrom_mem_runScriptAllFrom (context : ResolveContext) (clock : O
       simp only [runScriptAllWith, step, RunStep.executions, List.flatMap_cons, List.mem_append, List.mem_map]
       exact Or.inl ⟨_, by simpa [runScriptAllFrom] using runScriptFrom_mem_runScriptAllFrom context clock (index + 1) next rest, rfl⟩
 
+/-- For every context, optional clock, index, connection and statements with their values, the first
+of the complete executions ({name}`runScriptAllFrom`) is the run of the model's own traversal
+({name}`runScriptFrom`). So a script always has an execution, and the first one is the one that a
+prediction reports. Proof sketch: induction on the statements; the first execution of a step is the
+model's own, and the executions of the rest from its connection begin with the model's own traversal
+of the rest. -/
+theorem runScriptAllFrom_head (context : ResolveContext) (clock : Option Clock) :
+    ∀ (index : Nat) (connection : Connection) (script : List (Syntax.Statement × List Value)),
+      (runScriptAllFrom context clock index connection script).head? =
+        some (runScriptFrom context clock index connection script)
+  | _, _, [] => by simp [runScriptFrom, runScriptAllFrom, runScriptAllWith]
+  | index, connection, (statement, parameters) :: rest => by
+    unfold runScriptFrom runScriptAllFrom
+    cases step : runScriptStep context clock index connection statement parameters with
+    | ended reason => simp [runScriptAllWith, step]
+    | continued output next others =>
+      have inner := runScriptAllFrom_head context clock (index + 1) next rest
+      unfold runScriptAllFrom at inner
+      simp only [runScriptAllWith, step, RunStep.executions, List.flatMap_cons]
+      cases tail : runScriptAllWith (fun index connection (entry : Syntax.Statement × List Value) =>
+          runScriptStep context clock index connection entry.1 entry.2) (index + 1) next rest with
+      | nil => simp [tail] at inner
+      | cons head more =>
+        rw [tail] at inner
+        simp only [List.head?_cons, Option.some.injEq] at inner
+        subst inner
+        simp [runScriptFrom]
+
 end Belay.Sqlite.Model

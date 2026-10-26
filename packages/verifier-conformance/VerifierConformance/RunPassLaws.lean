@@ -122,18 +122,26 @@ theorem runPassAllFrom_results (context : ResolveContext) (clock : Option Clock)
 
 /-- For every context, optional clock, index, connection and statements with their values, the results
 of the pass of the model's own execution ({name}`runPassFrom`), from which a prediction comes, are the
-outputs of the model's run ({name}`runScriptFrom`). Proof sketch: the complete executions are the one run
-of the model ({name}`runScriptAllFrom_eq`), so the passes are one pass, and {name}`runPassAllFrom_results`
-gives its results. -/
+outputs of the model's run ({name}`runScriptFrom`). Proof sketch: the first complete execution is the
+model's own run ({name}`runScriptAllFrom_head`), so the first pass is the pass of that run, and
+{name}`runPassAllFrom_results` gives its results. -/
 theorem runPassFrom_results (context : ResolveContext) (clock : Option Clock) (index : Nat)
     (connection : Connection) (script : List (Syntax.Statement × List Value)) :
     (runPassFrom context clock index connection script).results =
       (runScriptFrom context clock index connection script).outputs := by
   have results := runPassAllFrom_results context clock index connection script
-  rw [runScriptAllFrom_eq] at results
+  have first := runScriptAllFrom_head context clock index connection script
   unfold runPassFrom
   cases passes : runPassAllFrom context clock index connection script with
-  | nil => simp [passes] at results
-  | cons pass others => simp [passes] at results; simp [results.1]
+  | nil =>
+    rw [passes] at results
+    cases listed : runScriptAllFrom context clock index connection script <;> simp_all
+  | cons pass rest =>
+    rw [passes] at results
+    cases listed : runScriptAllFrom context clock index connection script with
+    | nil => simp_all
+    | cons head more =>
+      rw [listed] at first
+      simp_all
 
 end Belay.Sqlite.Model.Conformance

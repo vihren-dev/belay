@@ -12,6 +12,14 @@ the {lit}`RETURNING` columns. The query sees no column of the written table. -/
 
 namespace Belay.Sqlite.Model
 
+/-- The cells of one full row of INSERT from a query, in table order: the result column of the query
+that fills a named column ({name}`Resolved.SourceCell.source`, by its place in the column list), or the
+cell of an omitted column ({name}`omittedCell`). -/
+def sourceCells (columns : List CatalogColumn) (positions : List Nat) : Except ValueIssue (List Resolved.SourceCell) :=
+  resolveAll (fun position column => match positions.idxOf? position with
+    | some written => .ok (.source written)
+    | none => (omittedCell column).map .cell) columns
+
 /-- Resolve INSERT from a query as far as SQLite prepares it. Path 1 is the column list, path 2 the
 query ({name}`resolveSelectDetailsTraced` below it, as for a {lit}`SELECT` statement), path 3 the
 {lit}`ON CONFLICT` clauses and path 5 the {lit}`RETURNING` columns, as for {name}`resolveInsertTraced`. The
@@ -19,7 +27,7 @@ columns of the query are counted by its names, which a compound takes from its l
 counts, the repeated column of the list ({name}`RestrictionKind.insertColumnTwice`, because SQLite
 accepts it and the model does not describe which value it stores), the policies of the conflict
 algorithms and the restrictions of {name}`resolveInsertTraced` follow the same rules. A statement that
-SQLite prepares is {name}`RestrictionKind.querySourceInsert`, until the model runs the rows. The trace
+SQLite prepares is {name}`Resolved.Statement.insertSelect`, which runs the rows of the query. The trace
 holds the table at path 0, then the names of the column list, of the query, of the clauses and of the
 {lit}`RETURNING` columns, in the order in which the resolver reaches them. -/
 def resolveInsertQueryTraced (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
@@ -34,7 +42,7 @@ def resolveInsertQueryTraced (context : ResolveContext) (catalog : Catalog) (tab
   Traced.stage catalog [1] ((insertPositionsTraced tableName table.columns scope names).mapError ValueIssue.prepare)
     fun positions =>
   Traced.sourceStage catalog ((resolveSelectDetailsTraced context catalog body.query body.subqueries).under [2])
-    fun (source, _, _) =>
+    fun (source, subqueries, _) =>
   let width := source.names.length
   if names.isNone && width != positions.length then
     Traced.lift (prepareError catalog (.expression (.valueCount tableName positions.length width)))
@@ -42,14 +50,14 @@ def resolveInsertQueryTraced (context : ResolveContext) (catalog : Catalog) (tab
     Traced.lift (prepareError catalog (.expression (.valuesForColumns width positions.length)))
   else if positions.eraseDups.length != positions.length then
     Traced.lift (restrict [1] .insertColumnTwice)
-  else
+  else Traced.stage catalog [2] (Traced.lift (sourceCells table.columns positions)) fun cells =>
   let keys := catalog.uniqueKeys position table
   Traced.stage catalog [3] (resolveAllTraced (resolveConflictTraced dqs tableName position table keys) conflicts)
-    fun _ =>
-  Traced.stage catalog [insertReturningField] (resolveReturningTraced dqs scope returning) fun _ =>
+    fun clauses =>
+  Traced.stage catalog [insertReturningField] (resolveReturningTraced dqs scope returning) fun columns =>
   let policy := catalog.writePolicy position table algorithm
   if policy.mixed then Traced.lift (restrict [] .mixedConflictAlgorithms)
   else if replacesDefault table policy then Traced.lift (restrict [] .replaceDefault)
-  else Traced.lift (restrict [] .querySourceInsert)
+  else Traced.ok (.insertSelect position cells source clauses columns algorithm subqueries, catalog)
 
 end Belay.Sqlite.Model

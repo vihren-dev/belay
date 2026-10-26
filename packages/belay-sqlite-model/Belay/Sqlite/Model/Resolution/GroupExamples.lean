@@ -54,7 +54,7 @@ def rowsOf (statement : Syntax.Statement) : Answer :=
     | none => .restricted
   | some (.prepareError error) => .error error
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | none => .restricted
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | none => .restricted
 
 /-- {lit}`count(*)`, written as a call. -/
 def count : Expr := .callStar "count"

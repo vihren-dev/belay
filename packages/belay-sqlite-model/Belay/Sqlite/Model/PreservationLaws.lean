@@ -149,6 +149,7 @@ theorem step_extends (clock : Int) (counters : Counters) (parameters : List Valu
   | rollback => exact DatabaseExtends.refl database
   | insert => exact DatabaseExtends.refl database
   | upsert => exact DatabaseExtends.refl database
+  | insertSelect => exact DatabaseExtends.refl database
   | update => exact DatabaseExtends.refl database
   | delete => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database

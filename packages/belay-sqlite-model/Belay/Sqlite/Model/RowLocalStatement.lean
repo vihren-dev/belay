@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalUpsert
 import Belay.Sqlite.Model.RowLocalWrites
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -97,6 +98,15 @@ theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
       split
       · exact Effect.satisfies_of_database every rfl
       · exact rowsKeys_rowLocal rowLocal rules clock target _ every _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries every
+        fun literals => Effect.satisfies_of_effectDatabase
+          (runStatement_upsert_rowLocal rowLocal clock counters parameters target literals clauses returning algorithm subqueries every)
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules every
+        fun _ _ _ plain conflict => rowsKeys_rowLocal rowLocal rules clock target _ every plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none => exact runStatement_delete_rowLocal rowLocal clock counters parameters target filter returning subqueries every

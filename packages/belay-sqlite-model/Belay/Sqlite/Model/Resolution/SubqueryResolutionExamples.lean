@@ -46,7 +46,7 @@ def queryOf (statement : Syntax.Statement) : Option (Resolved.Query × List Reso
   match resolvedOne statement with
   | some (.query query subqueries) => some (query, subqueries)
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _)
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.prepareError _)
   | none => none
 
 /-- Whether the statement is a model restriction. -/
@@ -57,7 +57,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query ..)
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.query ..)
   | none => none
 
 -- EXISTS (SELECT 1 FROM u WHERE u.x = t.v): t's cells are 0 and 1, u's start at 2; x without a type has BLOB affinity.

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.StatementCountersLaws
 import Belay.Sqlite.Model.ScriptRunSingleton
+import Belay.Sqlite.Model.ExecutionCounters
 
 set_option doc.verso true
 
@@ -38,19 +39,6 @@ know ({name}`counterUnknownReason`). -/
 def RunStep.endedUnknown (step : RunStep) : Prop :=
   ∃ kind, step = .ended (counterUnknownReason kind)
 
-/-- The relation between an execution on a connection that knows fewer counters and an execution on
-one that knows more: the same output, and next connections where the first knows fewer counters
-({name}`Connection.LessKnown`). -/
-def StatementExecution.LessKnown (first second : StatementExecution) : Prop :=
-  first.output = second.output ∧ first.next.LessKnown second.next
-
-/-- The relation {name}`StatementExecution.LessKnown` between two lists of executions, position by
-position. Two lists of different length are not in the relation. -/
-def StatementExecution.LessKnownAll : List StatementExecution → List StatementExecution → Prop
-  | [], [] => True
-  | [], _ :: _ | _ :: _, [] => False
-  | first :: firsts, second :: seconds => first.LessKnown second ∧ StatementExecution.LessKnownAll firsts seconds
-
 /-- What a step of a run gives when the first connection knows fewer counters: either the first
 step ends the run because it reads a counter that the first connection does not know, or both
 steps are the same. The same steps are two ends with the same reason, and two continuations whose
@@ -68,25 +56,22 @@ theorem RunStep.ended_lessKnown (kind : CounterKind) (step : RunStep) :
     (RunStep.ended (counterUnknownReason kind)).LessKnown step :=
   Or.inl ⟨kind, rfl⟩
 
-/-- For every connection pair in the relation {name}`Connection.LessKnown`, every after-state,
-counts and transition pair in the relation {name}`SqlTransition.LessKnown`: the connections after
-the step are in the relation. Proof sketch: a transition that continues gives its state; a halt
-gives the database of its outcome, which is the same on both sides, and the counters after the
-counts ({name}`Counters.LessKnown.apply`). -/
-theorem Connection.afterStep_counters {first second : Connection} (after : ResolveState) (counts : Counts)
-    {firstStep secondStep : SqlTransition} (same : first.LessKnown second)
-    (steps : firstStep.LessKnown secondStep) :
-    (first.afterStep after counts firstStep).LessKnown (second.afterStep after counts secondStep) := by
-  obtain ⟨⟨database, snapshot, clockOf, counters⟩, _, _⟩ := same
-  cases firstStep <;> cases secondStep
-  · exact ⟨steps, rfl, rfl⟩
-  · exact absurd steps id
-  · exact absurd steps id
-  · simp only [SqlTransition.LessKnown] at steps
-    subst steps
-    rename_i outcome
-    cases outcome <;>
-      exact ⟨⟨rfl, rfl, clockOf, counters.apply counts⟩, rfl, rfl⟩
+/-- For every output, two next connections where the first knows fewer counters, and two results of
+{name}`StatementExecution.ofAlternatives` in the relation {name}`StatementExecution.AlternativesLessKnown`:
+the steps of {name}`ranScriptStep` that continue with them are in the relation
+{name}`RunStep.LessKnown`. Proof sketch: cases on the two results; a failure ends both steps with
+one reason, and two lists of executions are those of {name}`StatementExecution.LessKnownAll`, with the
+execution of the model's own traversal in front. -/
+theorem RunStep.withOthers_lessKnown (output : Output) {first second : Connection} (nexts : first.LessKnown second)
+    {firstAlternatives secondAlternatives : Except String (List StatementExecution.Traced)}
+    (alternatives : StatementExecution.AlternativesLessKnown firstAlternatives secondAlternatives) :
+    (RunStep.withOthers output first (firstAlternatives.map (List.map StatementExecution.Traced.execution))).LessKnown
+      (RunStep.withOthers output second (secondAlternatives.map (List.map StatementExecution.Traced.execution))) := by
+  cases firstAlternatives <;> cases secondAlternatives <;> simp only [StatementExecution.AlternativesLessKnown] at alternatives
+  · subst alternatives
+    simp [Except.map, RunStep.withOthers, RunStep.LessKnown]
+  · simp only [Except.map, RunStep.withOthers, RunStep.LessKnown, RunStep.executions, StatementExecution.LessKnownAll]
+    exact Or.inr ⟨⟨rfl, nexts⟩, alternatives⟩
 
 /-- For every context, clock, index, statement and values, and two connections where the first knows
 fewer counters: the step of {name}`runScriptStep` on the first connection is in the relation
@@ -127,13 +112,12 @@ theorem runScriptStep_counters (context : ResolveContext) (clock : Option Clock)
         · have steps := advanceRun_counters index resolved (first.state.statementRun value parameters resolved) same.1
           have output := Output.ofStep_counters value parameters resolved
             (first.state.statementRun value parameters resolved) same.1 known steps
-          simp only [ready, Bool.not_true, Bool.false_eq_true, ite_false, ranScriptStep, output,
-            StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
+          have alternatives := StatementExecution.ofAlternatives_counters index parameters same resolved after value
+            (first.state.statementRun value parameters resolved) known
+          simp only [ready, Bool.not_true, Bool.false_eq_true, ite_false, ranScriptStep, output]
           split
           · simp [RunStep.LessKnown]
-          all_goals
-            simp only [RunStep.LessKnown, RunStep.withOthers, pure, Except.pure, RunStep.executions]
-            exact Or.inr ⟨⟨rfl, Connection.afterStep_counters after _ same steps⟩, trivial⟩
+          all_goals exact RunStep.withOthers_lessKnown _ (Connection.afterStep_counters after _ same steps) alternatives
         · simp [ready, RunStep.LessKnown]
 
 /-- For every context, clock, statements with values, and two connections where the first knows
@@ -179,8 +163,6 @@ theorem runScriptFrom_counters (context : ResolveContext) (clock : Option Clock)
       · cases secondStep : runScriptStep context clock index second statement parameters with
         | ended other => rw [secondStep] at sameStep; exact absurd sameStep id
         | continued otherOutput otherNext otherOthers =>
-          obtain rfl := runScriptStep_others firstStep
-          obtain rfl := runScriptStep_others secondStep
           rw [secondStep] at sameStep
           obtain ⟨⟨sameOutput, sameNext⟩, _⟩ := sameStep
           subst sameOutput

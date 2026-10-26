@@ -93,6 +93,53 @@ theorem advanceRun_atPosition (first second : Nat) (statement : Resolved.Stateme
     advanceRun second statement state run = (advanceRun first statement state run).atPosition second := by
   simp only [advanceRun, advanceWith_atPosition first second, SqlTransition.counted_atPosition]
 
+/-- For every function that can fail, function on its results and list of arguments, mapping the results of
+the monadic map is the monadic map of the mapped function. Proof sketch: induction on the arguments. -/
+theorem List.mapM_except_map {α β γ : Type} (f : α → Except String β) (g : β → γ) :
+    ∀ arguments : List α, (arguments.mapM f).map (List.map g) = arguments.mapM fun argument => (f argument).map g
+  | [] => rfl
+  | argument :: rest => by
+    have later := List.mapM_except_map f g rest
+    simp only [List.mapM_cons]
+    cases first : f argument with
+    | error reason => simp [first, bind, Except.bind, Except.map]
+    | ok head =>
+      cases others : rest.mapM f with
+      | error reason =>
+        rw [others] at later
+        simp only [Except.map] at later ⊢
+        simp [first, bind, Except.bind, Except.map, ← later]
+      | ok tail =>
+        rw [others] at later
+        simp only [Except.map] at later ⊢
+        simp [first, bind, Except.bind, Except.map, ← later, pure, Except.pure]
+
+/-- For every two indexes, values, connection, resolved statement, resolution state, clock value and run, the
+executions of the alternatives of the run ({name}`StatementExecution.ofAlternatives`) are the same at both
+indexes: the index reaches an execution only through the position of a failure, which neither its output
+nor its connection reads. Proof sketch: the execution of each alternative is the same at both indexes
+({name}`advanceRun_atPosition`, {name}`Output.ofStep_atPosition`, {name}`Connection.afterStep_atPosition`),
+and the map commutes with the executions ({name}`List.mapM_except_map`). -/
+theorem StatementExecution.ofAlternatives_index (first second : Nat) (parameters : List Value) (connection : Connection)
+    (resolved : Resolved.Statement) (after : ResolveState) (value : Int) (run : StatementRun) :
+    (StatementExecution.ofAlternatives first parameters connection resolved after value run).map
+        (List.map StatementExecution.Traced.execution) =
+      (StatementExecution.ofAlternatives second parameters connection resolved after value run).map
+        (List.map StatementExecution.Traced.execution) := by
+  unfold StatementExecution.ofAlternatives
+  rw [List.mapM_except_map, List.mapM_except_map]
+  congr 1
+  funext alternative
+  have same : StatementExecution.ofRun parameters connection resolved after value alternative.toRun
+      (advanceRun second resolved connection.state alternative.toRun) =
+      StatementExecution.ofRun parameters connection resolved after value alternative.toRun
+        (advanceRun first resolved connection.state alternative.toRun) := by
+    rw [advanceRun_atPosition first second]
+    simp [StatementExecution.ofRun]
+  cases h : StatementExecution.ofRun parameters connection resolved after value alternative.toRun
+      (advanceRun first resolved connection.state alternative.toRun) <;>
+    simp_all [Except.map]
+
 /-- For every optional clock, two indexes and resolved statement: if the clock, when the run
 has one, gives the same value at both indexes, the statement's clock value
 ({name}`statementClock`) is the same at both. Proof sketch: case analysis on the clock; without
@@ -114,7 +161,7 @@ theorem runScriptStep_index (context : ResolveContext) (clock : Option Clock) (f
     runScriptStep context clock first connection statement parameters =
       runScriptStep context clock second connection statement parameters := by
   simp only [runScriptStep, runScriptStepWith, ranScriptStep, statementClock_index same, advanceRun_atPosition second first, Output.ofStep_atPosition,
-    Connection.afterStep_atPosition, StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
+    Connection.afterStep_atPosition, StatementExecution.ofAlternatives_index first second]
 
 /-- For every state, position, effect and next state: if the effect's transition
 ({name}`SqlState.publish`) continues with the next state, the next state has the clock of the
@@ -171,7 +218,7 @@ theorem runScriptStep_continued {context : ResolveContext} {clock : Option Clock
     {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
     (continued : runScriptStep context clock index connection statement parameters = .continued output next others) :
     next.state.clock = connection.state.clock ∧ output.endsRun = false := by
-  obtain ⟨_, resolved, after, value, _, _, _, _, _, noStop, rfl⟩ := runScriptStep_continued_spec continued
+  obtain ⟨resolved, after, value, _, _, _, _, _, noStop, rfl, _⟩ := runScriptStep_continued_spec continued
   exact ⟨Connection.afterStep_clock .., noStop⟩
 
 end Belay.Sqlite.Model

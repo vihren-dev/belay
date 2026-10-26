@@ -31,6 +31,36 @@ theorem resolveSelect_shape (context : ResolveContext) (catalog after : Catalog)
     | (cases ok; exact Or.inr ⟨_, rfl⟩)
     | (cases ok)
 
+/-- For every resolution of a SELECT statement: the resolved statement is a query or a prepare
+error, so it is no INSERT from a query. Proof sketch: the resolution of the statement is that of its
+query ({name}`resolveSelect`), whose result has one of the two shapes ({name}`resolveSelect_shape`). -/
+theorem resolveStatement_select_shape {context : ResolveContext} {state : ResolveState}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    {resolved : Resolved.Statement} {after : ResolveState}
+    (found : resolveStatement context state
+      (.select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound) =
+      .ok (resolved, after)) :
+    ∃ catalog, resolveSelect context state.catalog
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
+        compound } subqueries = .ok (resolved, catalog) ∧
+      ((∃ query subqueries, resolved = .query query subqueries) ∨ ∃ error, resolved = .prepareError error) := by
+  have selected : ∃ catalog, resolveSelect context state.catalog
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
+        compound } subqueries = .ok (resolved, catalog) := by
+    simp only [statement_arms, ResolveState.withCatalog] at found
+    cases resolution : resolveSelect context state.catalog
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
+        compound } subqueries with
+    | error failure => rw [resolution] at found; simp [Except.map] at found
+    | ok result =>
+      obtain ⟨statement, catalog⟩ := result
+      rw [resolution] at found
+      simp only [Except.map, Except.ok.injEq, Prod.mk.injEq] at found
+      obtain ⟨rfl, -⟩ := found
+      exact ⟨catalog, rfl⟩
+  obtain ⟨catalog, ok⟩ := selected
+  exact ⟨catalog, ok, resolveSelect_shape _ _ _ _ _ _ ok⟩
+
 /-- For every connection and every statement that resolves from a SELECT: if the step of the
 statement continues and its output is not an error, the next connection is the connection of the
 step. The database, the transaction, the settings and the counters are unchanged. Proof sketch: the
@@ -45,25 +75,9 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
       parameters = .continued output next others)
     (noError : output.isError = false) : next = connection := by
   obtain ⟨resolved, after, value, found, -⟩ := runScriptStep_ran step
-  have selected : ∃ catalog, resolveSelect context connection.resolveState.catalog
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
-        compound } subqueries = .ok (resolved, catalog) := by
-    simp only [statement_arms, ResolveState.withCatalog] at found
-    cases resolution : resolveSelect context connection.resolveState.catalog
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
-        compound } subqueries with
-    | error failure => rw [resolution] at found; simp [Except.map] at found
-    | ok result =>
-      obtain ⟨statement, catalog⟩ := result
-      rw [resolution] at found
-      simp only [Except.map, Except.ok.injEq, Prod.mk.injEq] at found
-      obtain ⟨rfl, -⟩ := found
-      exact ⟨catalog, rfl⟩
-  obtain ⟨catalog, ok⟩ := selected
+  obtain ⟨catalog, ok, shape⟩ := resolveStatement_select_shape found
   have ordinary := (resolveSelect_same _ _ _ _ _ _ ok).2.2
   obtain ⟨value, database, -, effect, nextEq⟩ := runScriptStep_effect found ordinary step noError
-  have shape : (∃ query subqueries, resolved = .query query subqueries) ∨
-      ∃ error, resolved = .prepareError error := resolveSelect_shape _ _ _ _ _ _ ok
   have keeps := runStatement_keeps_database value (connection.state.counters.view resolved.counterReads)
     parameters connection.state.database resolved (by
       rcases shape with ⟨query, subqueries, same⟩ | ⟨error, same⟩
@@ -92,11 +106,13 @@ theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clo
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => rw [step] at output; simp [RunStep.output] at output
   | continued out next others =>
-    obtain rfl := runScriptStep_others step
+    subst isSelect
+    obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_ran step
+    obtain ⟨-, -, shape⟩ := resolveStatement_select_shape found
+    obtain rfl := runScriptStep_others step found (by rcases shape with ⟨_, _, rfl⟩ | ⟨_, rfl⟩ <;> rfl)
     rw [step] at output
     simp only [RunStep.output] at output
     subst output
-    subst isSelect
     rw [runScriptStep_select_connection step rfl]
 
 end Belay.Sqlite.Model

@@ -80,7 +80,7 @@ def outputs (script : List Syntax.Statement) : Option (List (List Value)) :=
     | some (.query query subqueries), .success database => (query.runOn 0 {} [] database subqueries).map (·.2.rows)
     | some (.query ..), .failure .. | some (.query ..), .pending .. => none
     | some (.createTable ..), _ | some (.createView ..), _ | some (.createIndex ..), _ | some (.createTrigger ..), _ | some (.addColumn ..), _ | some (.drop ..), _ | some (.setting ..), _ | some .begin, _
-    | some .commit, _ | some .rollback, _ | some (.insert ..), _ | some (.upsert ..), _ | some (.update ..), _
+    | some .commit, _ | some .rollback, _ | some (.insert ..), _ | some (.upsert ..), _ | some (.insertSelect ..), _ | some (.update ..), _
     | some (.delete ..), _ | some (.prepareError _), _ | none, _ => none
   | .restricted _ => none
 
@@ -148,7 +148,7 @@ def indexKeys (script : List Syntax.Statement) : Option (List IndexKey) :=
   match (statements (migration tables script)).getLast? with
   | some (.createIndex _ _ index) => some index.keys
   | some (.createTable ..) | some (.createView ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..)
-  | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query ..) | some (.prepareError _) | none => none
+  | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.query ..) | some (.prepareError _) | none => none
 
 -- An index term has an explicit collation, else its column's.
 #guard indexKeys [.createIndex (name! "i") false (name! "c")

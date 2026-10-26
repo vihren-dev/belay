@@ -192,7 +192,7 @@ inductive RestrictionKind where
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
-  /-- INSERT from a query that SQLite prepares: the model resolves it in SQLite's order but does not run its rows yet (ADR 0019, D4). -/
+  /-- INSERT from a query in the body of a trigger: the model resolves and runs INSERT from a query as a statement, and does not describe it inside a trigger body (ADR 0019, D4). -/
   | querySourceInsert
   deriving Repr, DecidableEq
 

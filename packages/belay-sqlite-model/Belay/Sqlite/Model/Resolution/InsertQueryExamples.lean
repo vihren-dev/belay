@@ -48,7 +48,7 @@ def prepared : Except NodeRestriction (Resolved.Statement × ResolveState) → O
   | .ok (.prepareError error, _) => some error
   | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
   | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _)
-  | .ok (.upsert .., _) | .ok (.update .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _)
+  | .ok (.upsert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _)
   | .error _ => none
 
 /-- The restriction of a resolution with its path, if it is one. -/
@@ -107,11 +107,21 @@ def refused : Except NodeRestriction (Resolved.Statement × ResolveState) → Op
 -- and the model does not describe which value it stores.
 #guard refused (run "t" (some ["b", "b"]) (body ["x", "y"])) == some ([1], .insertColumnTwice)
 
--- A statement that SQLite prepares is the restriction that the model does not run query rows yet.
-#guard refused (run "t" (some ["b"]) (body ["x"])) == some ([], .querySourceInsert)
+/-- The cells of the resolved INSERT from a query, if the resolution is one. -/
+def cellsOf : Except NodeRestriction (Resolved.Statement × ResolveState) → Option (List Resolved.SourceCell)
+  | .ok (.insertSelect _ cells .., _) => some cells
+  | _ => none
 
--- An INSERT without a column list fills the columns that are not generated.
-#guard refused (run "t" none (body ["x", "y"])) == some ([], .querySourceInsert)
+-- A statement that SQLite prepares is an INSERT from a query: the named column reads the first result
+-- column, and the omitted columns have the cells of their defaults.
+#guard cellsOf (run "t" (some ["b"]) (body ["x"])) ==
+  some [.cell (.value .null), .source 0, .cell (.value .null)]
+
+-- An INSERT without a column list fills the columns that are not generated, in table order.
+#guard cellsOf (run "t" none (body ["x", "y"])) == some [.source 0, .source 1, .cell (.value .null)]
+
+-- The names of the column list give the order of the result columns.
+#guard cellsOf (run "t" (some ["b", "a"]) (body ["x", "y"])) == some [.source 1, .source 0, .cell (.value .null)]
 
 -- A query of a table that the catalog lacks is a prepare error of the table.
 #guard prepared (run "t" none (body ["x", "y"] "nosuch")) == some (.noSuchTable (name "nosuch"))

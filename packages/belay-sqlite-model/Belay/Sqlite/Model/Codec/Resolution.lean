@@ -132,6 +132,7 @@ deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.ConflictPolicy
 deriving instance Lean.ToExpr for Resolved.Cell
+deriving instance Lean.ToExpr for Resolved.SourceCell
 deriving instance Lean.ToExpr for Resolved.TriggerEvent
 deriving instance Lean.ToExpr for Resolved.Step
 deriving instance Lean.ToExpr for Resolved.Program

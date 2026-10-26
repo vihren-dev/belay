@@ -73,7 +73,7 @@ statement and resolution state: if the statement resolves against the connection
 state, and the connection's clock assignment gives the statement's clock value
 ({name}`statementClock`) at the index when it has one, then the step of the run with the clock
 and the values either ends, or continues with the output of {name}`Output.ofStep` with the
-values of the run and the transition of {name}`advance` with the values, and the next connection is
+values of the run and the transition of {name}`advance` with the values (and some list of further executions), and the next connection is
 {name}`Connection.afterStep` of that transition with the resolution state and the counts of the run. Proof
 sketch: unfold the step with the resolution; a statement without a clock value, the support
 check and an {name}`Output.unmodeled` end it; otherwise the clock value is the assignment's, so
@@ -85,13 +85,13 @@ theorem runScriptStep_resolved {context : ResolveContext} {clock : Option Clock}
     (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after))
     (fits : ∀ value, statementClock clock index resolved = some value → connection.state.clock index = value) :
     (∃ reason, runScriptStep context clock index connection statement parameters = .ended reason) ∨
-    ∃ next, runScriptStep context clock index connection statement parameters = .continued
+    ∃ next others, runScriptStep context clock index connection statement parameters = .continued
         (Output.ofStep (connection.state.clock index) parameters resolved connection.state
           (connection.state.statementRun (connection.state.clock index) parameters resolved)
-          (advance index resolved parameters connection.state)) next [] ∧
+          (advance index resolved parameters connection.state)) next others ∧
       next = connection.afterStep after (connection.state.statementRun (connection.state.clock index) parameters resolved).counts
         (advance index resolved parameters connection.state) := by
-  simp only [runScriptStep, runScriptStepWith, ranScriptStep, ok, StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
+  simp only [runScriptStep, runScriptStepWith, ranScriptStep, ok, Except.map]
   split
   · exact .inl ⟨_, rfl⟩
   · rename_i value valued
@@ -107,7 +107,9 @@ theorem runScriptStep_resolved {context : ResolveContext} {clock : Option Clock}
           have unfolded : advance index resolved parameters connection.state = advanceRun index resolved connection.state
               (connection.state.statementRun (connection.state.clock index) parameters resolved) := rfl
           rw [unfolded, stepped]
-          exact .inr ⟨_, rfl, rfl⟩
+          split
+          · exact .inl ⟨_, rfl⟩
+          · exact .inr ⟨_, _, rfl, rfl⟩
 
 /-- For every context, connection, statement, list of values, resolved statement, resolution
 state and state: if the statement resolves against the connection's resolution state to the
@@ -178,7 +180,7 @@ theorem runScriptFrom_agrees (context : ResolveContext) (clock : Option Clock) :
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
         rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk (fun _ => fits.head) with
-          ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+          ⟨reason, ended⟩ | ⟨next, _, continued, afterStep⟩
         · refine .inl ⟨[], reason, ?_, List.nil_prefix⟩
           simp [runScriptFrom, ended]
         · simp only [List.map_cons, bindValues_cons_cons, runScriptFrom, continued, sqlTraceFrom]
