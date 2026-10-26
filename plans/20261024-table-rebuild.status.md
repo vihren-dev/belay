@@ -303,3 +303,7 @@ rebuild proof is separate.
   - `just test-full` (test-model, mutants, run 4) found that the Nix inputs of the model suites did not
     carry `InsertSelectRun.lean`, which the production mutants read; `build-support/tests.nix` lists it
     with the other run files. The local run reads the whole tree, so only the Nix run shows this.
+  - Review `20261026T215351Z-9b4e3a73` (Nix inputs of the model suites): no findings.
+  - `just test-full` (surface, run 5) found that `tests/success_theorems_test.py` restates
+    `Succeeds.script_iff` without its premise (no statement is an INSERT from a query); the restated
+    law takes the premise. Everything else of the run passed (375 surface tests, all other suites).
