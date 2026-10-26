@@ -147,3 +147,35 @@ rebuild proof is separate.
   list; no status changed. Reviews `20261026T102355Z-3a5d704e` (1 must, fixed) and
   `20261026T102455Z-2c17775a` (no findings). Stage (a) is at a reviewed stopping point; the
   part's `just test-full` and `just verdict` run at the end of part 1.
+- 2026-10-26: token positions of stored source text (part 2, first syntax change; owner answer A).
+  - Done: the text of a result column is a `Syntax.SourceText` (the text and its
+    `Syntax.NameToken`s, in `Resolution/SyntaxTokens.lean`), built by the translator
+    (`Translation/NameTokens.lean`). Each token has its byte offsets in the text, its quote
+    kind, the node paths of the range tree that have its range, and, for a name inside an
+    indexed subquery of the text, the index of that subquery. Result columns of WITH
+    definitions, derived tables and subqueries record their own tokens. A plain string
+    coerces to a text without tokens, so no construction of a result column changed; the JSON
+    of a text without tokens is the plain string.
+  - Decision: tokens carry the paths of every range-tree node with the token's range
+    (an identifier and its two parts, the list around a single call argument, absent parts at
+    the position of a name). The name trace's path is one of them, and the fixture
+    `tests/surface/NameTokenPaths.lean` checks that every exact trace occurrence inside a result
+    column has a token with its path. The tokens include names that are no column or table
+    (`max`, `IN`, aliases); a client takes the token by the path of an occurrence.
+  - Decision: `ResultColumn.reindexM` (the copy for another subquery list) keeps only the
+    text. Mapping the tokens' subquery indexes through the reindex function made 6 predictions
+    unsupported (`subquery-here`), because the CTE copy's mapping has no entry for an unused
+    index.
+  - Not done here, by design: the CHECK raw text and the new-name quoting of an ALTER. The CHECK
+    label is a resolved string of the catalog, and SQLite derives it from the stored raw text
+    (dequoting a text that starts with a quote), so its tokens are only useful together with
+    the catalog storing the raw text; the new-name quoting belongs to the RENAME forms, which do
+    not exist yet. Both come with the rename statements. The editor's need (replace only the
+    identifier) is met by the existing leaf spans of names and the first byte of the token.
+  - Tests: `tests/syntax_name_tokens_test.py` (5 cases), `tests/surface_name_tokens_test.py` with
+    `NameTokenPaths.lean` (run with the full runtime; locally through a scratch runtime root
+    that links the dev-build packages), the syntax tests (the fixture `parse_sql` strips tokens
+    unless `name_tokens=True`). Found and fixed a stage (a) range check that had never run
+    locally (`TranslationChecks.lean`: the range of an INSERT query keeps the space before
+    RETURNING).
+  - Predictions: the 55 files are byte-identical to the stage (a) ones (`diff -r` clean).

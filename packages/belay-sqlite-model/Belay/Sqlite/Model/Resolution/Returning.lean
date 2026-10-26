@@ -53,7 +53,7 @@ def returningColumnTraced (dqs : Bool) (scope : Scope) (item : Nat) :
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperandTraced dqs scope {} true value).under [item, 0]
       Traced.recordAll (alias.toList.map (returningAliasOccurrence item))
-      pure [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]
+      pure [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text.text))]
 
 /-- Whether a result column is {lit}`source.*`. -/
 def Syntax.ResultColumn.isSourceStar : Syntax.ResultColumn → Bool

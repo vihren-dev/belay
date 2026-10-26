@@ -238,7 +238,11 @@ possible-executions interface task, and the coordinator says when to merge it.
 Part 2 starts with a syntax change that records the place and quoting of the name
 tokens of stored source text (view result-column text, CHECK raw text) and the
 quoting of the new name of an ALTER, because the renames must rewrite them token
-by token; the translator records them in the syntax. Each coherent commit gets focused checks,
+by token; the translator records them in the syntax. The change is split by what
+exists: the text of result columns (`Syntax.SourceText`, `Syntax.NameToken`) first,
+as it needs no new statement form; the CHECK raw text and the quoting of the new
+name come with the rename forms and the catalog storage that read them (see the
+status file). Each coherent commit gets focused checks,
 dev-build, relevant dev-verdict and independent review. Each part ends with
 post-review `just test-full` and `just verdict`. Task end runs `just test-nix`
 and `just test-scheduled-checks`. Only Nix results are acceptance evidence.

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Translation.Queries
+import Belay.Sqlite.Translation.NameTokens
 
 set_option doc.verso true
 
@@ -78,8 +79,11 @@ def resultColumn (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts 
   | ["scanpt", "expr", "scanpt", "as"] =>
     let named ← alias tree parts[3]!
     let value := parts[1]!
+    let firstSubquery ← subqueryCount
     let mapped ← mappers.expression tree value
-    return composite (.expression mapped.value named.value (tree.text value)) value.start (max value.stop parts[3]!.stop)
+    let tokens ← expressionNameTokens tree value.start value.stop mapped.span firstSubquery
+    return composite (.expression mapped.value named.value { text := tree.text value, tokens }) value.start
+      (max value.stop parts[3]!.stop)
       #[mapped.span, named.span, spanOf value]
   | _ => unsupported node "Only `*` and expressions are modeled as result columns; write the column names"
 

@@ -55,9 +55,13 @@ def Expr.reindex (index : Nat → Nat) (expression : Expr) : Expr :=
   Id.run (expression.reindexM (pure ∘ index))
 
 
-/-- Change the query indexes of a result expression. Stars retain their written names. -/
+/-- Change the query indexes of a result expression. Stars retain their written names, and an
+expression keeps its text without the name tokens, which name the subqueries of the original list. -/
 def ResultColumn.reindexM [Monad m] (index : Nat → m Nat) : ResultColumn → m ResultColumn
-  | .expression value alias text => do return .expression (← value.reindexM index) alias text
+  | .expression value alias text => do
+    -- The name tokens of the text name the subqueries of the original list, so a copy for another
+    -- list keeps only the text; the copy serves resolution and is never rewritten.
+    return .expression (← value.reindexM index) alias text.text
   | .star => pure .star
   | .sourceStar source => pure (.sourceStar source)
 

@@ -14,7 +14,7 @@ def sourceOutputNames (scope : Scope) (results : List Syntax.ResultColumn) : Lis
   results.flatMap fun
     | .star => scope.visible.map (·.2.name.text)
     | .sourceStar name => ((scope.starColumns? name).getD []).map (·.2.name.text)
-    | .expression value alias text => [(alias.map (·.text)).getD (value.writtenName.getD text)]
+    | .expression value alias text => [(alias.map (·.text)).getD (value.writtenName.getD text.text)]
 
 /-- Name-only columns for a derived source. Duplicate names follow {name}`derivedNames`;
 a random suffix is the restriction {name}`RestrictionKind.sourceColumnName`. The path locates

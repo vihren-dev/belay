@@ -62,6 +62,8 @@ deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
 deriving instance Lean.ToExpr for CounterKind
 deriving instance Lean.ToExpr for Syntax.QuoteKind
+deriving instance Lean.ToExpr for Syntax.NameToken
+deriving instance Lean.ToExpr for Syntax.SourceText
 deriving instance Lean.ToExpr for Syntax.RaiseKind
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
