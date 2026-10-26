@@ -1,6 +1,6 @@
 # Global signup invariant: no two live accounts share an email
 
-Created 2026-10-26. Status: OPEN.
+Created 2026-10-26. Status: DONE (2026-10-26).
 Status: [progress](20261026-global-signup-invariant.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6;
 [S6 assertions task](20261024-s6-assertions.task.md), the outcome "Two-state and

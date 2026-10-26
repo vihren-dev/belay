@@ -1,7 +1,6 @@
 # Status: global signup invariant
 
-Created 2026-10-26. Status: OPEN. Model, surface lemma, bridge law, fixtures and native check are in
-the first commit; reviews and Nix gates are open.
+Created 2026-10-26. Status: DONE (2026-10-26).
 Task: [task file](20261026-global-signup-invariant.task.md).
 Specs: ADR 0017 S6; the S6 assertions task and its owner decision of 2026-10-26.
 
@@ -53,3 +52,26 @@ partial index) is kernel-checked. `one_live_iff` gives `Holds oneLive` in row te
   `GlobalSignupInvariant.lean` and `FilteredDuplicateKeyExamples.lean`, native check
   `test_filtered_duplicate_key_query_agrees_with_native_sqlite`. Local checks only (dev-build, belay and
   conformance lake build, focused pytest with a local runtime root); Nix results come at the end.
+- 2026-10-26: commit 2 (`refactor:`): docstrings say that the output collation applies to the result-column
+  number and that a non-calm filter is excluded by the premise, not covered.
+
+## Reviews
+
+- `20261026T171103Z-f5bfc2f7` (commit 1): two R2 musts, both fixed in commit 2.
+- `20261026T171344Z-c73d1de5` (commit 2): no findings.
+
+## Nix results (acceptance evidence)
+
+- Predictions: `nix-build integrity/judge.nix -A predictions` gives
+  `/nix/store/x9pb5pqq1s3s7mz7skixc4i3plsxp9nk-sqlite-verifier-predictions`; `diff -r` against the base
+  `/nix/store/gbis3y12hpnbkhs0ja8f7ljym19gc149-sqlite-verifier-predictions` is empty (55 files, byte-identical).
+- `just test-full`: exit 0, `/nix/store/5b0ralv5m5m1mgqzkzbp2bq6lm9vzbvd-sqlite-verifier-test-reports`
+  (group counts passed: 481, 18, 28, 287, 153, 23, 3, 117, 233, 368, 41; the 368 include the new native
+  check `test_filtered_duplicate_key_query_agrees_with_native_sqlite`).
+- `just verdict`: exit 0, `/nix/store/nd13p9s3yj2dyj8y768hbppbxyxwxxm1-sqlite-verifier-verdict`
+  (55 corpora, AGREE 5170, MODEL_UNSUPPORTED 2430).
+- `just test-nix`: 71 passed, exit 0 (log `build/agent-logs/test-nix-2.log`). The first run failed with one
+  error in `test_failed_pytest_target_has_no_output`, caused by a symlink loop that this session had made in the
+  untracked `packages/belay/.lake/build/lib/lean` for a local runtime root; the loop was removed and the rerun is clean.
+- `just test-scheduled-checks`: exit 0, 49 passed,
+  `/nix/store/y4hd40ajgf3yr8ygg8kaj7gbzfyp4sw5-sqlite-verifier-scheduled-check-reports`.
