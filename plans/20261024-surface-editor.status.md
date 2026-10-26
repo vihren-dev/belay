@@ -440,5 +440,5 @@ suite (exit 124, at 96%). `DbBangErrors.lean` expects the info message of the na
 (`Nearest name in scope`) for the two unknown column names. `AccountSignupQueries.lean` failed
 at the base commit already (`rw [resolveOperand]` makes no progress after the name trace); the
 same one-line fix (`resolveOperand_arm_compare`) is in the name-trace integration workspace, so
-the two copies agree and merge without a conflict. The 20 automatic-check tests, which the limit
-cut, pass locally.
+the two copies agree and merge without a conflict. The automatic-check tests, which the limit
+cut, still need a Nix result.
