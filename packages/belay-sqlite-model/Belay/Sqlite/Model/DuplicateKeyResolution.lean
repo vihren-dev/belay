@@ -40,13 +40,13 @@ theorem GroupTermResolves.identifier_table {dqs : Bool} {catalog : Catalog} {ref
     GroupTermResolves dqs (tableScope catalog reference position table) shapes (.identifier name quote) (.column index)
       ((table.columns[index]?.map (·.collation)).getD .binary) := by
   have resolved : (tableScope catalog reference position table).resolveName name = .found index [index] :=
-    resolveName_one_source found
+    resolveName_one_source_at found
   have collation := Syntax.Expr.columnCollation_identifier_table (catalog := catalog) (reference := reference)
     (position := position) (quote := quote) found
   unfold GroupTermResolves
   rw [resolveGroupTerm_identifier_found (found := resolved) ..]
-  simp only [tableScope, Scope.single] at collation
-  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.single, Scope.argumentCell, Scope.triggerCell,
+  simp only [tableScope, Scope.singleAt] at collation
+  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.singleAt, Scope.argumentCell, Scope.triggerCell,
     Scope.columns, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, collation]
   rfl
 

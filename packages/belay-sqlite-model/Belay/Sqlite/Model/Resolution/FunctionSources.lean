@@ -36,7 +36,8 @@ def eachReference (path : List Nat) (reference : Syntax.TableReference) (argumen
   if !reference.table.isKeyword (bytes! "json_each") || arguments.isEmpty then
     .error (.restriction path .tableFunction)
   else if arguments.length > maximumEachArguments then .error (.prepare .tooManyEachArguments)
-  else .ok { name := reference.alias.getD (name! "json_each"), columns := eachColumns, hidden := eachHidden }
+  else .ok { name := reference.alias.getD (name! "json_each"), columns := eachColumns, hidden := eachHidden,
+             role := .tableFunction }
 
 /-- Resolve the arguments of the {lit}`json_each` source at {lit}`index` of the scope, whose
 reference is at {lit}`path`: each argument resolves over the whole scope, as SQLite does,
@@ -69,7 +70,8 @@ def pragmaSource (reference : Syntax.TableReference) (argument : List UInt8) (na
   (.fixed (names.length + 2) (rows.map (· ++ [.text argument, .null])),
     { name := reference.alias.getD reference.table,
       columns := (names ++ ["arg", "schema"]).map fun name => { name := .ofString name, declaredType := none },
-      hidden := [names.length, names.length + 1], arguments := [names.length, names.length + 1] })
+      hidden := [names.length, names.length + 1], arguments := [names.length, names.length + 1],
+      role := .tableFunction })
 
 /-- The source of a table-valued pragma at {lit}`path` with its arguments as written:
 {lit}`pragma_table_info('t')` with the rows of {name}`Catalog.tableInfoRows` and

@@ -47,9 +47,9 @@ theorem resolveSources_tableInfo (catalog : Catalog) (reference : Syntax.TableRe
         item := .pragma (pragmaSource reference argument tableInfoNames rows).1, kind := .inner, condition := .none }],
       tableInfoScope reference argument rows) := by
   have prefixed := Identifier.pragma_prefix_of_isKeyword _ isFunction
-  simp [resolveSources, resolveReference, namedSource, current, arguments, prefixed, pragmaReference, notTable, notView, isFunction, info, maximumJoinTables,
-    mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError,
-    joinOperator, tableInfoScope, Functor.map, Except.map, Scope.place]
+  simp [resolveSources_some, resolveReference, resolveReferenceTraced, namedSource, current, arguments, prefixed, pragmaReference, notTable, notView, isFunction, info,
+    maximumJoinTables, mergeJoinsTraced, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Except.mapError,
+    joinOperator, tableInfoScope, Scope.place, traced_drop]
 
 /-- The first source of a query that is a pragma with the rows of the pragma, as an inner join without a condition. -/
 def Resolved.QuerySource.pragma (rows : Resolved.PragmaRows) : Resolved.QuerySource :=

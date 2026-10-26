@@ -38,17 +38,29 @@ theorem findTable_createTrigger (catalog : Catalog) (name triggerName : Identifi
   | none =>
     rw [findPosition_append_rejected located (by simp [CatalogObject.isTrigger, CatalogEntry.isTrigger])]
 
+/-- A found identifier as the only result column of a table read from the catalog resolves to its
+column position. Its output name and affinity are whatever the resolver gives. Proof sketch: unfold
+the result-column resolver for an expression that is a name, then apply the single-source name law. -/
+theorem resolveColumns_identifier_at (dqs : Bool) (shapes : SubqueryShapes) (position : Option Nat)
+    (tableName : Identifier) (columns : List CatalogColumn) (rowid : Bool) {id : Identifier}
+    (quote : Syntax.QuoteKind) {idPosition : Nat} (found : columnPosition columns id = some idPosition)
+    (alias : Option Identifier) (text : String) :
+    ∃ (name : String) (affinity : Option Affinity),
+      resolveAll (resolveResultColumn dqs (Scope.singleAt position tableName columns rowid) shapes)
+        [.expression (.identifier id quote) alias text] = .ok [[(.scalar (.column idPosition), name, affinity)]] := by
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveOperand_identifier_singleAt found, Bind.bind,
+    Except.bind, Pure.pure, Except.pure, Except.mapError]
+
 /-- A found identifier as the only result column resolves to its column position. Its output
-name and affinity are whatever the resolver gives. Proof sketch: unfold the result-column
-resolver for an expression that is a name, then apply the single-table name law. -/
+name and affinity are whatever the resolver gives. Proof sketch: this is
+{name}`resolveColumns_identifier_at` for a table that has no catalog position. -/
 theorem resolveColumns_identifier (dqs : Bool) (shapes : SubqueryShapes) (tableName : Identifier)
     (columns : List CatalogColumn) (rowid : Bool) {id : Identifier} (quote : Syntax.QuoteKind) {idPosition : Nat}
     (found : columnPosition columns id = some idPosition) (alias : Option Identifier) (text : String) :
     ∃ (name : String) (affinity : Option Affinity),
       resolveAll (resolveResultColumn dqs (Scope.single tableName columns rowid) shapes)
-        [.expression (.identifier id quote) alias text] = .ok [[(.scalar (.column idPosition), name, affinity)]] := by
-  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, resolveOperand_identifier_single found, Bind.bind,
-    Except.bind, Pure.pure, Except.pure, Except.mapError]
+        [.expression (.identifier id quote) alias text] = .ok [[(.scalar (.column idPosition), name, affinity)]] :=
+  resolveColumns_identifier_at dqs shapes none tableName columns rowid quote found alias text
 
 /-- Lowercase of a parameter resolves to the lowercase expression of that parameter, without
 comparison affinity. Proof sketch: resolve the one argument, then reduce the known call. -/
@@ -58,25 +70,57 @@ theorem resolve_lower_parameter {dqs : Bool} (scope : Scope) (number : Nat) :
   rw [resolveOperand_arm_call, resolveArguments_arm_cons, resolveArguments_arm_nil, resolveOperand_parameter]
   rfl
 
-/-- In the scope of one table, the written filter {lit}`lower(source) = lower(?n)` resolves to
+/-- In the scope of one table read from the catalog, the written filter {lit}`lower(source) = lower(?n)` resolves to
 {name}`originalFilter` of the source column position and the parameter number, for a source
 name that the table has. Proof sketch: the comparison law resolves both operands; function
 results carry neither affinity nor collation, so the default BINARY collation applies. -/
+theorem resolve_original_filter_at {dqs : Bool} {position : Option Nat} {tableName source : Identifier} {columns : List CatalogColumn}
+    {rowid : Bool} {sourcePosition : Nat}
+    (found : columnPosition columns source = some sourcePosition) (number : Nat) :
+    resolveOperand dqs (Scope.singleAt position tableName columns rowid) {} true
+      (.compare .eq (.call "lower" [.identifier source .none]) (.call "lower" [.parameter number])) =
+      .ok (originalFilter sourcePosition number, none) := by
+  rw [resolveOperand_compare _ _ (by decide) (by decide)]
+  simp only [resolve_lower_column_at found, resolve_lower_parameter, Except.mapError, bind, Except.bind]
+  simp [comparisonAffinity, comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.firstExplicitCollation,
+    Syntax.Expr.columnCollation, originalFilter]
+
+/-- In the scope of one table, the written filter {lit}`lower(source) = lower(?n)` resolves to
+{name}`originalFilter` of the source column position and the parameter number, for a source
+name that the table has. Proof sketch: this is {name}`resolve_original_filter_at` for a table that
+has no catalog position. -/
 theorem resolve_original_filter {dqs : Bool} {tableName source : Identifier} {columns : List CatalogColumn}
     {rowid : Bool} {sourcePosition : Nat}
     (found : columnPosition columns source = some sourcePosition) (number : Nat) :
     resolveOperand dqs (Scope.single tableName columns rowid) {} true
       (.compare .eq (.call "lower" [.identifier source .none]) (.call "lower" [.parameter number])) =
-      .ok (originalFilter sourcePosition number, none) := by
-  rw [resolveOperand_compare _ _ (by decide) (by decide)]
-  simp only [resolve_lower_column found, resolve_lower_parameter, Except.mapError, bind, Except.bind]
-  simp [comparisonAffinity, comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.firstExplicitCollation,
-    Syntax.Expr.columnCollation, originalFilter]
+      .ok (originalFilter sourcePosition number, none) :=
+  resolve_original_filter_at (position := none) found number
 
-/-- In the scope of one table, the written filter {lit}`stored = lower(?n)` resolves to
+/-- In the scope of one table read from the catalog, the written filter {lit}`stored = lower(?n)` resolves to
 {name}`storedFilter` of the stored column position and the parameter number, when that column
 has TEXT affinity and BINARY collation. Proof sketch: the comparison law resolves the column
 with its TEXT affinity and the call without one, and TEXT affinity is the comparison affinity. -/
+theorem resolve_stored_filter_at {dqs : Bool} {position : Option Nat} {tableName stored : Identifier} {columns : List CatalogColumn}
+    {rowid : Bool} {storedPosition : Nat}
+    (found : columnPosition columns stored = some storedPosition)
+    (text : columns[storedPosition]?.map CatalogColumn.affinity = some .text)
+    (binary : columns[storedPosition]?.map (·.collation) = some .binary) (number : Nat) :
+    resolveOperand dqs (Scope.singleAt position tableName columns rowid) {} true
+      (.compare .eq (.identifier stored .none) (.call "lower" [.parameter number])) =
+      .ok (storedFilter storedPosition number, none) := by
+  have resolved : (Scope.singleAt position tableName columns rowid).resolveName stored =
+      .found storedPosition [storedPosition] := resolveName_one_source_at found
+  rw [resolveOperand_compare _ _ (by decide) (by decide)]
+  simp only [resolveOperand_identifier_singleAt found, resolve_lower_parameter, text, Except.mapError, bind,
+    Except.bind]
+  simp [comparisonAffinity, comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.firstExplicitCollation,
+    Syntax.Expr.columnCollation, resolved, Scope.columns_singleAt, binary, storedFilter]
+
+/-- In the scope of one table, the written filter {lit}`stored = lower(?n)` resolves to
+{name}`storedFilter` of the stored column position and the parameter number, when that column
+has TEXT affinity and BINARY collation. Proof sketch: this is {name}`resolve_stored_filter_at` for
+a table that has no catalog position. -/
 theorem resolve_stored_filter {dqs : Bool} {tableName stored : Identifier} {columns : List CatalogColumn}
     {rowid : Bool} {storedPosition : Nat}
     (found : columnPosition columns stored = some storedPosition)
@@ -84,13 +128,7 @@ theorem resolve_stored_filter {dqs : Bool} {tableName stored : Identifier} {colu
     (binary : columns[storedPosition]?.map (·.collation) = some .binary) (number : Nat) :
     resolveOperand dqs (Scope.single tableName columns rowid) {} true
       (.compare .eq (.identifier stored .none) (.call "lower" [.parameter number])) =
-      .ok (storedFilter storedPosition number, none) := by
-  have resolved : Scope.resolveName [{ name := tableName, columns := columns, hasRowid := rowid }] stored =
-      .found storedPosition [storedPosition] := resolveName_one_source found
-  rw [resolveOperand_compare _ _ (by decide) (by decide)]
-  simp only [resolveOperand_identifier_single found, resolve_lower_parameter, text, Except.mapError, bind,
-    Except.bind]
-  simp [comparisonAffinity, comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.firstExplicitCollation,
-    Syntax.Expr.columnCollation, resolved, Scope.single, Scope.columns, binary, storedFilter]
+      .ok (storedFilter storedPosition number, none) :=
+  resolve_stored_filter_at (position := none) found text binary number
 
 end Belay.Sqlite.Model.NormalizedField

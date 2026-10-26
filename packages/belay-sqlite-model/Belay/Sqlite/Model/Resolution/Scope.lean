@@ -117,6 +117,12 @@ def Scope.forStoredView (scope : Scope) : Scope :=
 def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
   [{ name, columns, hasRowid }]
 
+/-- The scope of one table that was read from the catalog at {lit}`position`, as
+{name}`Scope.single` gives it; the position is a fact for a name trace and changes no resolution. -/
+def Scope.singleAt (position : Option Nat) (name : Identifier) (columns : List CatalogColumn)
+    (hasRowid : Bool := true) : Scope :=
+  [{ name, columns, hasRowid, catalogPosition := position }]
+
 /-- Whether the position of the concatenated row is a cell of a trigger's row
 ({name}`ScopeSource.trigger`). -/
 def Scope.triggerCell (scope : Scope) (position : Nat) : Bool :=

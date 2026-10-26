@@ -19,6 +19,26 @@ private def tableT : Scope :=
 /-- An unqualified column name. -/
 private def identifier (text : String) : Syntax.Expr := .identifier (name text) .none
 
+/-- Whether a result is a name bound to exactly one column. -/
+private def isFoundOne : NameResult → Bool
+  | .found [_] => true
+  | .found _ | .ambiguous _ | .missing .. | .source _ | .schema _ | .resultColumn _ | .declares
+  | .compared .. | .unreached _ => false
+
+/-- Whether a result is a name that no column has, as SQLite's {lit}`no such column`. -/
+private def isMissingError : NameResult → Bool
+  | .missing .error _ => true
+  | .missing .textLiteral _ | .missing .booleanKeyword _ | .missing .rowidName _ | .found _ | .ambiguous _
+  | .source _ | .schema _ | .resultColumn _ | .declares | .compared .. | .unreached _ => false
+
+/-- Whether a result is a name that no column has, with the two columns of the scope and then the
+alias of the first result column as candidates. -/
+private def listsAliasLast (alias : Identifier) : NameResult → Bool
+  | .missing .error [.column _, .column _, last] => last == .resultAlias alias 0
+  | .missing .error _ | .missing .textLiteral _ | .missing .booleanKeyword _ | .missing .rowidName _
+  | .found _ | .ambiguous _ | .source _ | .schema _ | .resultColumn _ | .declares | .compared .. | .unreached _ =>
+    false
+
 /-- A query over the scope of {lit}`tableT` with the given result columns, grouping terms and ordering terms. -/
 private def query (columns : List Syntax.ResultColumn) (groupBy : List Syntax.Expr := [])
     (orderBy : List Syntax.OrderTerm := []) : Syntax.Subquery :=
@@ -38,7 +58,7 @@ private def aliasAndOrderBy : Bool :=
       column.path == [0, 0, 0] && column.role == .columnReference &&
       alias.path == [0, 0, 1] && alias.role == .resultAlias &&
       order.path == [5, 0, 0] && order.role == .columnReference &&
-      (match order.result with | .resultColumn 0 => true | _ => false)
+      order.result == .resultColumn 0
     | _ => false)
 
 #guard aliasAndOrderBy
@@ -46,7 +66,7 @@ private def aliasAndOrderBy : Bool :=
 /-- The operand of an aggregate is recorded at the operand of the call. -/
 private def aggregateOperand : Bool :=
   (match (traced (query [.expression (.call "max" [identifier "a"]) none "max(a)"])).trace with
-    | [operand] => operand.path == [0, 0, 0, 1, 0] && (match operand.result with | .found [_] => true | _ => false)
+    | [operand] => operand.path == [0, 0, 0, 1, 0] && isFoundOne operand.result
     | _ => false)
 
 #guard aggregateOperand
@@ -60,9 +80,7 @@ private def missingGroupByName : Bool :=
       (match trace.getLast? with
         | some occurrence =>
           occurrence.path == [4, 0] &&
-          (match occurrence.result with
-            | .missing .error [.column _, .column _, .resultAlias alias 0] => alias == name "x"
-            | _ => false)
+          listsAliasLast (name "x") occurrence.result
         | none => false)
     | _ => false)
 
@@ -74,7 +92,7 @@ private def failureKeepsTrace : Bool :=
       .expression (identifier "b") none "b"]) with
     | ⟨.error (.prepare (.noSuchColumn missing)), [first, second]⟩ =>
       missing == name "z" && first.path == [0, 0, 0] && second.path == [0, 1, 0] &&
-      (match second.result with | .missing .error _ => true | _ => false)
+      isMissingError second.result
     | _ => false)
 
 #guard failureKeepsTrace
@@ -87,8 +105,7 @@ private def failureAfterAggregateKeepsEarlierCalls : Bool :=
       .expression (.arithmetic .add (.call "max" [identifier "z"]) (.numeric "1")) none "max(z)+1"]) with
     | ⟨.error (.prepare (.noSuchColumn missing)), [first, second]⟩ =>
       missing == name "z" && first.path == [0, 0, 0, 1, 1, 0] && second.path == [0, 1, 0, 1, 1, 0] &&
-      (match first.result with | .found [_] => true | _ => false) &&
-      (match second.result with | .missing .error _ => true | _ => false)
+      isFoundOne first.result && isMissingError second.result
     | _ => false)
 
 #guard failureAfterAggregateKeepsEarlierCalls

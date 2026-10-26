@@ -78,8 +78,10 @@ inductive Candidate where
   | column (binding : Binding)
   /-- The alias of a result column of the query, legal where result aliases are. -/
   | resultAlias (name : Identifier) (resultColumn : Nat)
-  /-- A source that a qualifier or a table reference could name. -/
+  /-- A source that a qualifier could name. -/
   | source (source : SourceRef)
+  /-- A table or view of the catalog that a table reference could name. -/
+  | catalogObject (kind : SourceKind) (name : Identifier) (position : Nat)
   deriving Repr, DecidableEq
 
 /-- What the resolver made of a name that no column of the scope has. -/

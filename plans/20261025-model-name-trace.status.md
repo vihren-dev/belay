@@ -107,3 +107,18 @@ them through result-alias lookup and `resolveOperand`).
   `resolvePendingSources`, `resolveJoinCondition`, `resolveAggregateCall`, `resolveGroupTerm` in
   eight proof files). Total so far 63 of the limit of about 80. The `if let` over the joins of
   a query became `aliasJoinItem?`, so that the projection can be pushed through it.
+- 2026-10-26: layer 3 done in the working copy: the sources of `FROM` with the trace.
+  `resolveTableReferenceTraced`, `resolveReferenceTraced`, `resolveSourcesTraced`,
+  `mergeJoinTraced` and `mergedNamesTraced` record the schema, the table (as a source, or as a
+  missing name with the tables and views of the catalog as candidates, or as refused), the alias
+  and the names of `USING`, with the old functions as projections. Facts at creation: a
+  `ScopeSource` now holds its `role` (`SourceKind`) and its `catalogPosition`; `Scope.singleAt`
+  and `tableScope` carry the position. Review 12 of the layer-2 refactor gave one should (catch-all
+  matches over `NameResult` in the examples), fixed here. Kernel examples:
+  `NameTraceSourceExamples.lean`. Proof repairs of layer 3: 27 manual changes (the four theorems
+  of `JoinMerge`, `QuerySourceCopyLaws` 2, `QuerySpec`, `SimpleSourceResolution` 2,
+  `SimpleStatementResolution` 2, `ExprResolutionLaws`, `DuplicateKeyResolution` 3,
+  `ScalarSubqueryResolution` 4, `TableInfoResolution`, `NormalizedFieldLookups` 3,
+  `NormalizedFieldSelectResolution` and `NormalizedFieldResolution` 4 corollaries of new `_at`
+  lemmas). Total so far: 48 manual and 42 mechanical changes (90 together). Gaps found: a
+  view or `WITH` use `FROM v AS v` records the table only (the alias equals the table name).

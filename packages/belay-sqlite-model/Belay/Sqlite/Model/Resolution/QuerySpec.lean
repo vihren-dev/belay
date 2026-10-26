@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.SelectResolution
+import Belay.Sqlite.Model.Resolution.SourceListFromArms
 
 set_option doc.verso true
 
@@ -42,7 +43,7 @@ theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog)
     (ordinary : querySourceCopiesNeeded catalog query subqueries = false) :
     resolveSelect context catalog query subqueries = .ok (.prepareError (.noSuchTable source.table), catalog) := by
   have notMore : ¬ query.joins.length + 1 > maximumJoinTables := by omega
-  simp [resolveSelect, resolveSelectDetails, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, current, arguments, resolveTableReference, missing, notView, application, table,
-    notMore, Except.mapError, SourceIssue.under, prepareError, Functor.map, Except.map, bind, Except.bind]
+  simp [resolveSelect, resolveSelectDetails, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources_some, first, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, traced_drop, missing, notView, application, table,
+    notMore, Except.mapError, SourceIssue.under, prepareError, bind, Except.bind]
 
 end Belay.Sqlite.Model

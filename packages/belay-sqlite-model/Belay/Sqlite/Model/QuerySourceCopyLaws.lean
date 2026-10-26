@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.QuerySourceExpansion
 import Belay.Sqlite.Model.Resolution.RowSpec
+import Belay.Sqlite.Model.Resolution.SourceListFromArms
 
 set_option doc.verso true
 
@@ -33,8 +34,8 @@ theorem resolveReference_noView (catalog : Catalog) (path : List Nat)
         | none => simp
         | some found =>
           cases arguments : reference.arguments <;>
-            simp [resolveReference, named, schema, arguments, resolveTableReference, table, view,
-              Except.mapError, SourceIssue.under, Except.map, Functor.map] at ok
+            simp [resolveReference, resolveReferenceTraced, named, schema, arguments, resolveTableReferenceTraced, table, view,
+              refuseTable, traced_drop, Except.mapError, SourceIssue.under] at ok
 
 /-- If all FROM references resolve, none of its named sources without arguments
 is an unexpanded stored view. No FROM has no references, as in {name}`resolveSources`.
@@ -48,7 +49,7 @@ theorem resolveSources_noView (catalog : Catalog) (source : Option Syntax.TableR
   cases source with
   | none => rfl
   | some source =>
-    simp only [resolveSources, bind, Except.bind] at ok
+    simp only [resolveSources_some, bind, Except.bind] at ok
     split at ok <;> try contradiction
     split at ok <;> try contradiction
     rename_i first firstOk

@@ -33,7 +33,7 @@ theorem Syntax.Expr.columnCollation_identifier_table {catalog : Catalog} {refere
     (found : columnPosition table.columns name = some index) :
     (Syntax.Expr.identifier name quote).columnCollation (tableScope catalog reference position table) =
       table.columns[index]?.map (·.collation) := by
-  simp [Syntax.Expr.columnCollation, tableScope, resolveName_one_source found, Scope.columns_single]
+  simp [Syntax.Expr.columnCollation, tableScope, resolveName_one_source_at found, Scope.columns_singleAt]
 
 /-- For a name that selects a column of a physical table, its origin type is
 that column's declaration. Proof sketch: name resolution selects one cell of
@@ -43,8 +43,8 @@ theorem Syntax.Expr.originType_identifier_table {catalog : Catalog} {reference :
     (found : columnPosition table.columns name = some index) (shapes : SubqueryShapes) :
     (Syntax.Expr.identifier name quote).originType (tableScope catalog reference position table) shapes =
       table.columns[index]?.bind (·.declaredType) := by
-  simp only [Syntax.Expr.originType, tableScope, resolveName_one_source found]
-  simp [Scope.nameOriginType, Scope.originTypeAt, Scope.columns, Scope.triggerCell, Scope.single]
+  simp only [Syntax.Expr.originType, tableScope, resolveName_one_source_at found]
+  simp [Scope.nameOriginType, Scope.originTypeAt, Scope.columns, Scope.triggerCell, Scope.singleAt]
 
 /-- For every scope, shapes, subquery syntax with one expression column and no parent, and resolved query with one column,
 the shape that resolution records for the subquery is the shape of a one-column subquery ({name}`scalarShape`) with the
@@ -116,7 +116,7 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar expression]
       [(definedName (tableScope state.catalog reference position table) value).getD text]) affinity rfl
   have ordinary : value.flexibleNumeric (tableScope state.catalog reference position table)
-      { current := some 0 } = false := by simp [tableScope, Syntax.Expr.flexibleNumeric_single]
+      { current := some 0 } = false := by simp [tableScope, Syntax.Expr.flexibleNumeric_singleAt]
   rw [ordinary] at shapeIs
   have mainBody := resolveQueryBody_simple context.profile.dqsDml [] none
     [scalarShape affinity value.explicitCollation (value.columnCollation (tableScope state.catalog reference position table))
