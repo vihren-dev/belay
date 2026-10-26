@@ -90,7 +90,13 @@ and artifact SHA-256 hashes separately so their identities remain inspectable.
 
 ## Attach existing proof costs
 
-Add `--proof-costs /path/to/proof-costs.json` to attach an existing S7 JSON report.
+Add `--proof-costs /path/to/proof-costs.json` to attach an existing proof-cost
+report. Create that JSON in a package with compiled proof-cost measurements:
+
+```sh
+lake exe belay-sql-check --costs --json > proof-costs.json
+```
+
 The exporter does not enable cost collection or rebuild instrumented proofs.
 A record must name a selected declaration and match its module, Lean version,
 and source hash. It must contain a completed internal-heartbeat measurement.

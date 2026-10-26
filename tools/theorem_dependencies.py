@@ -76,7 +76,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True, help="Directory for index.html and dependencies.json")
     parser.add_argument("--manifest", type=Path, help="Explicit selected modules; source paths are relative to this file")
     parser.add_argument("--lean-path", help="Compiled library roots separated by the platform path separator; defaults to LEAN_PATH when set")
-    parser.add_argument("--proof-costs", type=Path, help="Existing S7 proof-cost JSON; collection stays unchanged")
+    parser.add_argument("--proof-costs", type=Path, help="JSON from lake exe belay-sql-check --costs --json")
     arguments = parser.parse_args()
     selected_path = arguments.lean_path if arguments.lean_path is not None else os.environ.get("LEAN_PATH")
     paths = [Path(part).resolve() for part in selected_path.split(os.pathsep) if part] if selected_path else None
