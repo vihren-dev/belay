@@ -201,6 +201,28 @@ Part 2a gives:
 - the shared entry point, semantic tokens for resolved tables and the
   source-position fixtures.
 
+## Part 2b coverage (checked against the trace, 2026-10-26)
+
+Part 2b covers the names that the trace covers: the names of the statements that
+`sql!`, `db!` and `#sql` resolve, in queries, `WITH` definitions used by the
+statement, `UPDATE`, `INSERT` and `DELETE`. The trace lists these positions as
+documented gaps, so part 2b gives no column information, correction or DQS
+warning for them:
+
+- the bodies of `CREATE TABLE`, `CREATE VIEW`, `CREATE TRIGGER`, `CREATE INDEX`
+  and `ALTER`, and stored trigger programs;
+- `WITH` definitions that the statement does not use, `*` expansions and
+  `RETURNING *` columns, function names and collation names;
+- names inside the body of a stored view (not an exact path, so never edited and
+  never described);
+- names after the first unknown name of one statement: the resolver stops at the
+  first error, so a statement shows one correction at a time.
+
+A comparison has no operator part in the translated syntax. The comparison
+information is therefore the hover of the whole comparison expression, and the
+name hovers of the operands stay more specific. A name that is ambiguous gets
+the existing error and no hover, because no column is the one the resolver chose.
+
 ## Current APIs and ownership constraints
 
 Surface files: `SqlLiteral`, `SqlTerm`, `SqlParameters`, `SqlDiagnostics`,
