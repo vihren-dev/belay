@@ -11,9 +11,24 @@ Workspace: `/home/codex/work/sqlite-verifier-theorem-dependencies`.
 - Recorded the report contract and acceptance checks before implementation.
 - The investigation's disposable Nix exporter established that private imported
   declarations and theorem bodies can be read from the pinned compiled model.
-- Exporter, report and build integration work is ready to start.
+- Implemented the private compiled-environment exporter with exact module
+  ownership, separate type/body edges, external targets and source selections.
+- Implemented the offline report with dependency/user paths, helper folding,
+  source context, module summaries and refactoring candidates.
+- Added explicit scope manifests, artifact/source provenance, shared namespace
+  loading, optional existing proof costs, a Nix target and usage documentation.
+- Self-review fixed direct self-edge display and normalized source hashes to
+  match existing proof-cost records. Nix fixture tests exposed ambient compiler
+  lookup; the tests now pin the compiler sysroot and poison ambient Lean.
+- Initial task review had no must findings. Both scope suggestions were rejected
+  with recorded reasons: the owner accepted the proposed report features, and
+  browser acceptance checks exercise the controls without adding a new harness.
 
 ## Evidence
 
-Implementation checks and independent commit reviews are pending. The earlier
-investigation is feasibility evidence, not acceptance of this implementation.
+The focused Nix suite passed all 27 tests. A Nix report covers all 928 selected
+modules (681 model/codec, 203 surface, 29 text, 15 conformance) and exports
+31,098 declarations plus 2,615 external boundary nodes. Counts include generated
+declarations. Final artifact paths will be recorded after completion checks.
+
+The implementation commit review and standard task-completion checks are pending.

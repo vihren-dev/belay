@@ -297,6 +297,14 @@ in {
                (root + /tests/public_doc_inventory) ];
     runtime = documentationRoot;
   };
+  theoremDependencies = suite "theoremDependencies" {
+    inputs = [ (root + /tools/__init__.py)
+      (fs.fileFilter (file: pkgs.lib.hasPrefix "theorem_dependenc" file.name
+        && builtins.any file.hasExt [ "py" "html" "css" "js" ]) (root + /tools))
+      (root + /tests/theorem_dependencies) (root + /tests/theorem_dependency_graph_test.js) ];
+    runtime = documentationRoot;
+    tools = [ pkgs.nodejs ];
+  };
   model = suite "model" {
     inputs = modelInputs;
     runtime = conformance;

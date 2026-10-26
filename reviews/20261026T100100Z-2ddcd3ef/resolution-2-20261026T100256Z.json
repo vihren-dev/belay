@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:02:56+00:00",
+  "finding": "20261026T100100Z-2ddcd3ef#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "This is an acceptance interaction check using an available browser, not a required new browser harness. It checks that controls actually invoke graph operations and render results, which graph-only tests cannot establish."
+}
