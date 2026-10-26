@@ -1,6 +1,6 @@
 # Possible write executions: one statement, several admitted complete results
 
-Created 2026-10-26. Status: OPEN.
+Created 2026-10-26. Status: DONE (2026-10-26).
 Status: [progress](20261026-possible-write-executions.status.md).
 Specs: [ADR 0019](../docs/adr-0019-guide-sql.md), D4 and its amendment of
 2026-10-25; [ADR 0012](../docs/adr-0012-query-semantics.md), the clarification

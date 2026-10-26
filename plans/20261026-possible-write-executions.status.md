@@ -1,6 +1,6 @@
 # Status: possible write executions
 
-Created 2026-10-26. Status: OPEN. Implementation is in progress; results of Nix checks are below as they come.
+Created 2026-10-26. Status: DONE (2026-10-26).
 Task: [task file](20261026-possible-write-executions.task.md).
 Specs: ADR 0019 D4 and its amendment of 2026-10-25, ADR 0012's clarification
 of 2026-10-25, and the table-rebuild task.
@@ -79,3 +79,30 @@ in another), `tests/admitted_atoms_run_theorems_test.py`,
   `StatementExecution.mem_expand_rows` and the foreign-key run laws; the replay error
   names the statement and the action; this attribution).
 - Review `20261026T115527Z-c2065e95` of the fix commit `c2065e95`: no findings.
+
+## Final Nix results (commit `c2065e95`, status commit after it)
+
+- `just test-full`: `/nix/store/7sv0yybm7hndldi0qmpfv7y6d1ybyx8p-sqlite-verifier-test-reports`.
+  Suites without failure: corpora 56, coverageFeatures 18, coverageStatements 28,
+  documentation 12, frozen 153, harness 287, model 233, packages 3, parserLibrary 4,
+  sample 23, surface 367, surfaceChecks 41, upstream 117; `test-source` 481 passed.
+  Earlier runs of the same commit failed only by timeout under load of several parallel
+  test runs (the conformance runner in `conformance_progress_views_test` at 30 s, and the
+  `CounterexampleSamples` and `CounterexampleSearch` fixtures at 180 s and 240 s); the same
+  suites passed in the runs with lower load, and the conformance runner of this commit is as fast as the
+  runner of the base commit (53 s against 60 s for the same progress run under the same load).
+- `just verdict`: `/nix/store/z889s2b88qx8whqw1s27vzkj5kjqk6qf-sqlite-verifier-verdict`
+  with the predictions `/nix/store/b1xas5vfpk4kjjm0hg9f4l00559sx2qd-sqlite-verifier-predictions`:
+  55 files, `diff -r` with the baseline is empty.
+- `just test-nix`: 71 passed, 1917 deselected.
+- `just test-scheduled-checks`: `/nix/store/ixin2qkp0lw8jpg77iwm41cgm9n72rl8-sqlite-verifier-scheduled-check-reports`,
+  49 tests, no failure.
+- Part 1 (model, conformance) and part 2 (surface) are one checked unit because the surface
+  cannot build on the old run; both parts therefore share the one `test-full` and `verdict`.
+
+## Open points for the owner
+
+- `runSqlFrom`/`passFrom` (halting classification) stay single-run and `runScriptStepFailure`
+  describes the own execution only; they can follow when a statement with a second execution exists.
+- A false witness identifies the execution that the replay used (the model's own); a statement
+  with more than one execution has no replay and `db!` reports it (ADR 0019 D4 amendment).
