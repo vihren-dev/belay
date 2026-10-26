@@ -100,6 +100,16 @@ in another), `tests/admitted_atoms_run_theorems_test.py`,
 - Part 1 (model, conformance) and part 2 (surface) are one checked unit because the surface
   cannot build on the old run; both parts therefore share the one `test-full` and `verdict`.
 
+## Integration on the stack top (2026-10-26, Nix results)
+
+The chain was merged onto PR #270 (the model name trace) without conflicts
+(`95b61eb4`).
+
+- `just test-full`: `/nix/store/3hw5s1rqnccfgyki66yx86hsjvzlbm81-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/s03bkmji6nix413ln30210d6nl10lh8b-sqlite-verifier-verdict`. Its
+  `report.json` and `counts.json` are byte-identical to the verdict of PR #270,
+  `/nix/store/pglhlk3pbcmzjic5prk7g8qs9f4sdhbj-sqlite-verifier-verdict`.
+
 ## Open points for the owner
 
 - `runSqlFrom`/`passFrom` (halting classification) stay single-run and `runScriptStepFailure`
