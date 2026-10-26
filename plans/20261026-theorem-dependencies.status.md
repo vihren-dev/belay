@@ -43,4 +43,9 @@ had no findings. The packaging simplification passed the 27-test Nix suite at
 
 The verdict and scheduled checks passed. An initial full run hit the existing
 documentation inventory's 60-second deadline during concurrent cold builds.
-Final full checks, infrastructure checks and packaging review are pending.
+The packaging review had no findings. Full source checks identified the missing
+Lean build-category entries for the directly executed exporter and its fixtures;
+their exact paths are now registered in the existing direct-fixture category.
+The first infrastructure run completed its cold local build but reached the
+outer recipe deadline. It is rerunning with that build available. Final full
+checks and infrastructure checks are pending.
