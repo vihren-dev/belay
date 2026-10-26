@@ -22,3 +22,8 @@ No production automation, general footprint engine or completion is claimed.
   stable proof suggestions, S5 integration and private guide acceptance.
   Review 20261024T152950Z-8b118fbc found no musts or shoulds. Implementation
   remains unassigned pending its listed prerequisites.
+- 2026-10-26: inputs refreshed against main after #270 and the possible write
+  executions (#271): the prerequisites are implemented, the task names the current
+  modules, the query-equivalence example, three acceptance parts (the rebuild example
+  waits for the table-rebuild task) and the guide changes recorded here for the guide
+  acceptance task. Assigned for part 1.

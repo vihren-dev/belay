@@ -1,10 +1,15 @@
 # S6: checked effect rules and reproducible proof automation
 
-Created 2026-10-24. Status: OPEN. Implementation follows the production S6
-contracts. Status: [progress](20261024-s6-automation.status.md).
+Created 2026-10-24. Status: OPEN. Inputs refreshed on 2026-10-26 against main
+after PR #270 and the possible write executions (PR #271).
+Status: [progress](20261024-s6-automation.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6;
+[execution contracts](20261024-s6-execution-contracts.task.md),
 [assertions](20261024-s6-assertions.task.md),
-[migration patterns](20261024-s6-migration-patterns.task.md), and
+[before context](20261024-s6-before-context.task.md),
+[migration patterns](20261024-s6-migration-patterns.status.md) (status file; its
+task file is not on main),
+[possible write executions](20261026-possible-write-executions.task.md) and
 [S5 checker](20261024-surface-s5.task.md).
 
 ## Purpose and boundary
@@ -57,8 +62,9 @@ alternate SQL execution engine is required.
   certificate used to discharge a semantic condition. The analyzer itself is
   untrusted and may return unknown. Unhandled syntax is never an empty effect.
 - **Programs require all continuations.** A program rule covers every actual
-  raw continuation and all concrete oneOf alternatives at their reached
-  contexts. It may take an explicit semantic bound or prove one compositionally
+  raw continuation, every execution of each statement (`RunStep.executions`,
+  `Sql.Branch.continued`) and every result alternative of `Output.oneOf`, at
+  their reached contexts. It may take an explicit semantic bound or prove one compositionally
   from statement rules. An observed run or syntactic inspection of a function
   body is not a universal effect proof. Result-dependent continuations remain
   expressible through the primitive even when automatic analysis stops.
@@ -100,10 +106,16 @@ alternate SQL execution engine is required.
 - **The guide examples have checked scripts.** Check the corrected insertion,
   purge-frame, partial-index invariant, query equivalence, expansion read-query
   and rebuild claims with the advertised routes and explicit premises. Keep
-  their counterexamples. Update all private guide tactic/footprint descriptions
-  to state the actual supported analysis and remaining obligations. The scope
-  of the primitive contracts is unchanged by automation coverage. S8 later
-  supplies its own interface-scoped call proofs to the same public mechanisms.
+  their counterexamples. The query-equivalence example is the guide's
+  `notBlockedIn ≈ notBlockedEx` (`NOT IN` against `NOT EXISTS`): false in
+  general with the NULL counterexample, true under its `where` condition, and
+  proved by `sql_auto` without `where` when `blocked.customer_id` is
+  `NOT NULL`. Record every needed change of the private guide's
+  tactic/footprint descriptions (the actual supported analysis and remaining
+  obligations) in the status file for the guide acceptance task; do not edit
+  the private guide in this task. The scope of the primitive contracts is
+  unchanged by automation coverage. S8 is done; its interface-scoped call
+  proofs use the same public mechanisms and need no change here.
 
 ## Tests and acceptance
 
@@ -127,9 +139,11 @@ all S5 result classes, budget exhaustion and cancellation on the new claim
 forms. Recheck emitted proof scripts with search disabled. Audit their axiom
 dependencies for sorryAx, ofReduceBool, _native and assumed effect soundness.
 
-Two acceptance parts: required effect/frame specifications and conservative
-dependency certificates; tactics, checker/code-action integration and corrected
-guide examples. Each coherent commit gets focused checks, dev-build and review.
+Three acceptance parts: (1) required effect/frame specifications and
+conservative dependency certificates; (2) tactics, checker/code-action
+integration and the corrected guide examples except the rebuild; (3) the
+rebuild example, after the table-rebuild task supplies INSERT SELECT, RENAME
+and DROP COLUMN with their contracts. Each coherent commit gets focused checks, dev-build and review.
 Each part ends with post-review just test-full and just verdict. At task end
 run just test-nix and just test-scheduled-checks under the build-boundary
 override. Every subprocess test has a finite timeout. Only Nix results are
@@ -138,13 +152,65 @@ evidence uses a separate judge PR.
 
 ## Inputs and ownership
 
-The linked production contracts and S5 are not implemented in this planning
-tree. Integrate their final reviewed boundaries first. The checked prototype
-and effect counterexamples are in sqlite-verifier-s6-foundations at c838d5cc,
-with completed acceptance at eb0a16a9. Existing model pieces include
-DatabaseWriteLaws, WriteLaws, TriggerRun, Statement.counterReads and clock laws;
-these are useful inputs, not a proved whole-program footprint. Final FK work
-supplies the split schema/row-reference conditions and selected action mapping.
+Checked on 2026-10-26. The production contracts are in place; build on them
+and do not redefine them:
+
+- Execution contracts (DONE): `Sql.Branch` and `OutputChoice`
+  (`ExecutionBranches.lean`), `Sql.runFrom` (`ProgramRun.lean`),
+  `ExecutionContext`, `Sql.check` (`ExecutionWP.lean`), `Sql.andOk`, `Sql.ifOk`,
+  `Sql.SucceedsFrom` (`ExecutionSuccess.lean`), the `Std.Do` instance and
+  `Sql.triple_branch` (`ExecutionWPLaws.lean`), the `@[spec]` rules `send_spec`,
+  `query_spec` and `single_spec` (`ExecutionSpecifications.lean`), and
+  `Sql.EquivAt`/`EquivOn`/`Equiv` with `Sql.View` (`ExecutionEquivalence*.lean`,
+  `ExecutionView*.lean`). The `@[spec]` rules unfold to `Sql.check` only; they do
+  not yet reduce a triple to row obligations.
+- Possible write executions (PR #271, the base of this task): `StatementExecution`,
+  `RunStep.executions` and `Sql.Branch.continued` over all executions. Every
+  current statement is the singleton case; the table-rebuild task adds INSERT
+  SELECT with several.
+- Assertions and before context (DONE): `FreshTriple`, `FreshEnsures`,
+  `FreshEnsuresFrom` and the fresh rules (`ExecutionFresh.lean`,
+  `FreshRules.lean`, `AssertionTerms.lean`, `TwoStateAssertions.lean`).
+- Migration patterns (part 1 accepted): `MigrationPattern.lean`,
+  `MigrationPatternFresh.lean`, `MigrationPatternSyntax.lean`, the frame rules
+  `TranslatesAt.commutes_of_frames` and `TranslatesOn.commutes_of_query`
+  (`MigrationPatternFrames.lean`, `MigrationQueryFrames.lean`), and the
+  normalized-field expansion (`NormalizedFieldExpansion.lean`).
+- S5 checker (parts 1 to 3 accepted): `Check.check` (`CheckOperation.lean`) with
+  its `prove` callback, which defaults to `tryProof` (`CheckProof.lean`);
+  `checkCandidates`, `certify`, `#sql_check` and `sql_refute`. Claim recognition
+  (`CheckClaim.lean`) covers `Holds`, `Empty`, `Fails`, `Succeeds`,
+  `Script.outputOn`, `Database.run` and `Sql.SucceedsFrom` only; this task adds
+  the triples, equivalences and patterns. `SqlAutomatic.lean` gives the existing
+  "Try this" suggestions (`Meta.Tactic.TryThis.addSuggestion`) and the
+  `sql.check` option, with editor tests in `tests/surface_automatic_editor_test.py`.
+- `sql_simp` (`SqlSimp.lean`, `SqlSimpLaws.lean`) holds expression, resolution
+  and calm laws, and no effect rule.
+- Existing effect rules are narrow: `Sql.ifOk_send_plainInsert` and
+  `Sql.ifOk_send_plainDelete` (one plain statement without RETURNING, subquery,
+  rule or trigger, from the fresh context), `Sql.ifOk_send_of_success`, and the
+  model laws `plainInsert_database` and `plainDelete_database`. No UPDATE effect
+  law and no law of the effects of a fired trigger exists; the required outcomes
+  above need them for the advertised examples. `DatabaseWriteLaws`, `WriteLaws`,
+  `TriggerRun`, `Statement.counterReads`, `Statement.Calm`/`Quiet` and the clock
+  and counter laws are inputs, not a proved whole-program footprint.
+- Foreign keys (DONE): `ForeignKeyMapping`, `Database.RowReferencesHold`,
+  `ParentSchemasCompatible`, the DDL and update conditions, and the run
+  preservation laws (`ForeignKeyRuns.lean`, `ForeignKeySchemaRuns.lean`).
+- The guide examples and their current explicit proofs: `addCustomer_adds`
+  (`tests/surface/AddCustomerClaims.lean`), `purge_keeps_rows` and
+  `purge_frame` (`PurgeFrameClaims.lean`), `signup_keeps`
+  (`SignupInvariantClaims.lean`; the global form is PR #275),
+  `expansion_keeps_the_customer_count`, `sample_lookup_translates` and
+  `sample_lookup_preserved`, and the refutations `not_full_commutation`,
+  `local_footprint_refuted`, `disjoint_tables_not_enough` and
+  `all_continuations_frame`. The S6 prototype is published (PR #245, #246) as
+  `tests/surface/S6*.lean`, `tests/surface/ExecutionBranches.lean` and
+  `docs/s6-foundations-findings.md`. No fixture checks the query-equivalence
+  example yet.
+- Parallel work: the table-rebuild agent owns the model run, statement and
+  INSERT SELECT files and repairs surface execution proofs for the new
+  executions. Keep edits of shared surface files narrow and prefer new modules.
 
 Reserve the surface barrel, tactic registries, S5 checker entry, test manifests
 and private guide before editing. Keep certificate semantics, analysis, tactic
