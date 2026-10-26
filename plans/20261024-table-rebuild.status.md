@@ -309,3 +309,6 @@ rebuild proof is separate.
     law takes the premise. Everything else of the run passed (375 surface tests, all other suites).
   - Review `20261026T221012Z-ecb46ac9` (success theorem test): no findings. `just test-full` (run 6) passes
     in Nix: all test suites, surface suite 376 passed. Next: `just verdict`.
+  - Stage (b) gates in Nix: `just test-full` passes (run 6) and `just verdict` passes (no DISAGREE;
+    the 55-file predictions baseline holds). The manual proof repair count is about 87, over the line of
+    80, so work stops here for a report to the coordinator before part 2 (renames).
