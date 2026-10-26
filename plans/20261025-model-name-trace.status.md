@@ -27,13 +27,14 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
   gap list no longer has compound ORDER BY.
 
 - 2026-10-25: the coordinator found that the walk beside the resolver weakens
-  the task's main guarantee, so it is the owner's decision. The "decision"
-  wording in both task files now reads "proposed, pending the owner's
-  decision". Until the answer arrives, only work that both designs need
-  continues: the data types, translator span parts and their path test,
-  kernel fixtures, the prediction baseline and the conformance-input
-  agreement harness. The walker modules (`NameTraceBinding` to
-  `NameTraceStatement`) are written but held back, not committed.
+  the task's main guarantee, so the owner decided it.
+- 2026-10-26: the owner decided to thread the trace through the resolver. The
+  walk beside the resolver is rejected. The task files now state that decision,
+  the returned shape (the result paired with a trace that is also given on
+  failure), the projection law as a theorem, and that proof repairs are the cost.
+  The test over the frozen conformance inputs is dropped (see the task file).
+  The held walker modules in `build/held-walkers/` are a source of record-building
+  code only and are deleted before the task ends.
 
 - 2026-10-25: prediction baseline built from the base tree in a clean workspace
   (`build/predictions-baseline`, Nix store output
@@ -58,20 +59,16 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 
 ## Implementation plan (informal)
 
-- Do not change `resolveStatement` or the resolver functions that proofs unfold
-  (57 unfold sites in 43 files). `resolveStatementTraced` returns
-  `(resolveStatement ..., trace)`, so the law holds by `rfl`.
-- New modules `Resolution/NameTrace*.lean`, each below 200 lines, imported from
-  `Model.lean`: (1) data types; (2) expression walker over `Scope.resolveName`,
-  `comparisonAffinity` and `comparisonCollation`; (3) query and source walker
-  with the resolver's scope functions; (4) write statements; (5) entry points
-  and agreement theorems.
+- A traced form for each resolver function that leads to a name decision; the
+  untraced function is its projection. Order: the trace monad and the
+  projection lemmas, `resolveOperand` and its mutual functions, the clause and
+  source resolvers, subqueries and compounds, the write resolvers, then
+  `resolveStatementTraced` and the projection law.
+- Proof repairs are counted here: so far none.
 - Tests: kernel `#guard` examples; a Lean surface fixture and pytest check that
-  each exact path selects the name token; a check over the frozen conformance
-  inputs that dropping the trace equals `resolveStatement`.
-- Agreement checks: see the task file, "The trace uses the resolver's own decisions".
-- Prediction files: baseline built before the first model change
-  (`build/predictions-baseline`), compared after each model commit.
+  each exact path selects the name token.
+- Prediction files: baseline `build/predictions-baseline` (55 files), compared
+  after each model commit.
 
 ## Documented gaps (planned)
 

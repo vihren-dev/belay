@@ -172,14 +172,9 @@ disagree with execution. Producing it leaves every resolved statement and
 prediction byte-identical. The editor never rebuilds scopes or searches for the
 text of a name.
 
-Proposed 2026-10-25, pending the owner's decision (model name-trace task): the resolver is not threaded
-with a trace, because that would change the definitions that about 90 existing
-proofs unfold. The trace is computed beside the resolver, from the resolver's
-own scope, lookup, affinity and collation functions. The guarantee that it
-cannot disagree with execution is therefore weaker than "by construction":
-theorems cover single decisions, and a test over the frozen conformance inputs
-covers whole statements; the model name-trace task lists the checks and the
-remaining gap. Part 2b consumes the trace as specified above.
+Decision of 2026-10-26 (owner): the model name-trace task threads the trace
+through the resolver, so the trace is the one of the run that decides the
+statement. Part 2b consumes it as specified above.
 
 Part 2a covers the outcomes that a fixed syntax slot decides. A table
 reference slot (statement target, `FROM` source or join source, in a statement

@@ -21,41 +21,31 @@ except where the translator's spans must locate a traced name (see below).
 
 - **A traced entry point decides the same statement.** A model function
   `resolveStatementTraced` takes the same `ResolveContext`, `ResolveState` and
-  `Syntax.Statement` as `resolveStatement` and returns the same
-  `Except NodeRestriction` result paired with a `NameTrace`. Dropping the trace
-  gives exactly `resolveStatement`'s result, for success and for failure. This
-  law is a theorem, not only a test. A script-level wrapper over the statement
-  list is welcome where it is cheap.
-- **The trace uses the resolver's own decisions.** Proposed 2026-10-25, pending the owner's decision
-  (the other option threads the trace through the resolver), which would amend the editor task's wording "the trace comes from the resolver run
-  that decides the statement" (see the dated note in the editor task): the
-  resolver is not threaded with a trace. `resolveStatement` and the functions
-  that existing proofs unfold (`resolveStatement`: 57 places in 43 files;
-  `resolveOperand`: 35) stay as they are, because a traced version of them
-  would break those proofs. The trace code instead walks the statement beside
-  the resolver, in the resolver's order, and builds each scope with the
-  resolver's own scope functions (CTE and view expansion, source lists, subquery
-  scopes, upsert and `before.t` scopes) over the same catalog and state. It
-  decides every name with the resolver's own lookup, affinity and collation
-  functions, and takes the operand affinity from the resolver's own
-  `resolveOperand`. The model gets no second lookup rule and no second scope
-  rule. This is a weaker guarantee than the editor task asked for, and the
-  weakness is stated here: the trace is not equal to the resolver's run by
-  construction, and no theorem links every traced binding to the resolver's
-  scope for that occurrence. Agreement is checked in three ways. (1) Theorems
-  for the decision points that can be stated alone: given a scope, the traced
-  result of an identifier (found, missing, ambiguous) is the resolver's result
-  for that scope, and a comparison site's affinity and collation are the ones
-  that `resolveOperand` puts in the resolved comparison. (2) A test over every
-  statement of the frozen conformance inputs: for a statement that resolves, the
-  trace has no missing or ambiguous name except those it marks (DQS text
-  literal, boolean keyword, rowid restriction); for a prepare error about a
-  column, the trace has a record of the same name and kind; and the cell
-  positions that found names bind are among the column reads of the resolved
-  statement. (3) The kernel examples. A trace that binds a name in a wrong
-  scope and passes all three checks is possible in principle; the editor
-  consumes the trace knowing this. The editor never rebuilds scopes or searches
-  for the text of a name.
+  `Syntax.Statement` as `resolveStatement` and returns the pair
+  `Except NodeRestriction (Resolved.Statement × ResolveState) × NameTrace`. The
+  trace is returned for failure as well as for success: after a failure it
+  holds the occurrences that the resolver decided up to and including the
+  failing name, with that name's admissible candidates, because editor typo
+  corrections need them. The law
+  `(resolveStatementTraced ctx st s).1 = resolveStatement ctx st s` is a
+  theorem, for success and for failure. A script-level wrapper over the
+  statement list is welcome where it is cheap.
+- **The trace comes from the resolver run that decides the statement.** The
+  owner decided on 2026-10-26, as the editor task said from the start, that the
+  resolver is threaded with the trace, so that the trace cannot disagree with
+  execution by construction. The resolver functions that decide names
+  (`resolveOperand` and the functions that call it, the source, subquery,
+  compound and write resolvers) get a traced form, which returns the result and
+  the trace of one run. The untraced function is the projection of its traced
+  form: `resolveStatement`, `resolveOperand` and every other function that the
+  change touches keep their names and result types and are defined by dropping
+  the trace of the traced form. There is one implementation of each decision;
+  the model has no second lookup rule and no second scope rule. The projection
+  law (`resolveStatement` is the first component of `resolveStatementTraced`) is
+  a theorem. Existing theorems keep their statements. Their proofs may be
+  repaired, for example with equation lemmas that restate the old bodies of the
+  projected functions; the status file counts the repairs. The editor never
+  rebuilds scopes or searches for the text of a name.
 - **Every name occurrence gets one record.** A `NameOccurrence` holds:
   - `path`, the occurrence's node path in the statement as written, in the
     layout of `Restriction.path`, which `Translation.Span.select` maps to a
@@ -91,12 +81,13 @@ except where the translator's spans must locate a traced name (see below).
   RETURNING are traced, including the S6 `before.t` sources. A name the
   resolver never looks up (for example a parse-only position) is either traced
   with its role or listed as a documented gap; no silent omission. When the
-  resolver stops at an earlier error, names after the error are traced as not
-  reached where their scope is known, and the gap list says which positions
-  are not traced at all (the status file keeps that list).
-- **The trace is data only.** `Resolved.Statement`, every prediction file, the
-  conformance claims and the existing proof terms are unchanged. Proofs that
-  unfold `resolveStatement` keep working without new unfolding of a trace.
+  resolver stops at an error, the names after the error are not traced, because
+  the resolver does not reach them; the failing name is traced with its
+  candidates. The gap list says which positions are not traced at all (the
+  status file keeps that list).
+- **The trace is data only.** `Resolved.Statement`, every prediction file and
+  the conformance claims are unchanged, and no theorem changes its statement.
+  Producing the trace changes no decision of the resolver.
 - **Paths locate the name itself.** For an exact occurrence, the translated
   statement's span selects the range of the name token, not a larger enclosing
   node. Where the translator gives a node no parts today, this task adds the
@@ -117,9 +108,10 @@ affinity is that of its type name. Include an UPDATE, a DELETE,
 an upsert and a RETURNING clause.
 
 A test over the translated SQL of the fixtures checks that each exact path
-selects exactly the name's text (`Span.select` gives the token's bytes). A test
-over every statement of the frozen conformance inputs checks that dropping the
-trace gives the same result as `resolveStatement`, in addition to the theorem.
+selects exactly the name's text (`Span.select` gives the token's bytes). No test
+over the frozen conformance inputs checks that dropping the trace gives
+`resolveStatement`: the projection law is a theorem and `resolveStatement` is
+defined by it, and such a test would need a new runner hook.
 
 All prediction files stay byte-identical: the files that
 `nix-build integrity/judge.nix -A predictions` writes (55 at the base commit,
@@ -134,9 +126,12 @@ dev-build and independent review. One acceptance part: after final review run
 ## Existing interfaces and tricky points
 
 - `Resolution/Resolve.lean` holds `resolveStatement`; 88 files mention it and
-  many specs `simp only [resolveStatement, ...]`. Changing its definition to a
-  projection of the traced function would break those proofs. The projection
-  law must hold without making existing proofs depend on the trace.
+  many specs `simp only [resolveStatement, ...]`, and 35 places unfold
+  `resolveOperand`. The traced forms replace the bodies of these functions, so
+  those proofs need repair. The cheapest repair keeps the proof and adds a
+  simp set that turns the projection of a traced body back into the old
+  `Except` body. More than 80 manual proof changes would be a signal to stop and
+  report to the owner.
 - Name lookup goes through `Scope.resolveName`, `Scope.resolveQualified`,
   `Scope.resolveSchemaQualified` and `Scope.starColumns?` in
   `Resolution/ScopeNames.lean`; comparison affinity is `comparisonAffinity` in
@@ -145,9 +140,10 @@ dev-build and independent review. One acceptance part: after final review run
   (`MergedNames.lean`), CTE/view expansion (`CommonTableExpansion.lean`,
   `QuerySourceExpansion.lean`, `CommonTableCopies.lean`) and subquery scopes
   (`SubqueryScopes.lean`) each decide part of the result. The resolver is large
-  (167 files in `Resolution/`): threading a trace through every function by
-  hand is a real cost, and a design that records at the few decision points
-  should be weighed against it.
+  (167 files in `Resolution/`): the trace is threaded through the functions that
+  lead from `resolveStatement` to a name decision, which are about 40 to 60
+  functions. Functions that no name decision reaches (DDL, defaults, checks and
+  trigger bodies) stay untraced and call the projections.
 - Restrictions already carry node paths (`NodeRestriction`), so the resolver
   already knows where it is for error reporting; the trace's paths must use the
   same layout so that one `Span` serves both.
