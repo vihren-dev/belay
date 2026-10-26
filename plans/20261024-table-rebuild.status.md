@@ -307,3 +307,5 @@ rebuild proof is separate.
   - `just test-full` (surface, run 5) found that `tests/success_theorems_test.py` restates
     `Succeeds.script_iff` without its premise (no statement is an INSERT from a query); the restated
     law takes the premise. Everything else of the run passed (375 surface tests, all other suites).
+  - Review `20261026T221012Z-ecb46ac9` (success theorem test): no findings. `just test-full` (run 6) passes
+    in Nix: all test suites, surface suite 376 passed. Next: `just verdict`.
