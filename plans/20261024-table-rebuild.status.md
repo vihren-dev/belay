@@ -298,3 +298,5 @@ rebuild proof is separate.
     `check_send_single_of_step`; `ExpansionCountClaims` gives the condition of
     `Sql.succeedsFrom_sendStatements` from `expansion_noInsertSelect`. Proof repairs by hand: about 87
     in total, above the line of 80 that asks for a stop; the report flags this.
+  - Reviews: `20261026T213513Z-7de3cfdd` (mutant file list) and `20261026T213607Z-769be6ba` (surface
+    fixtures and `runScriptStep_select_others`): no findings.
