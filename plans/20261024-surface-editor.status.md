@@ -417,3 +417,11 @@ emits the editor information also when `db!` fails. Decision: a name in the body
 Tests: `tests/surface_editor_names_test.py` (column hovers, comparison hovers, tokens and
 exclusions) and `tests/surface_editor_corrections_test.py` (quick fixes, applied corrections with
 non-BMP text and CRLF, DQS warning), both in the `surface` suite of `tests/nix_suites.json`.
+
+### Refactor after review 1 — 2026-10-26
+
+Finding R11 (must): a quoted replacement such as `"select"` ends a raw literal without `#` or
+breaks an ordinary literal. `SqlEditorSource.accepts` (`SqlLiteral.replacementKeepsLiteral`) now
+refuses a replacement that would end the literal, add an escape or a carriage return; the
+correction list is then dropped as a whole. Tests: four literal forms and an applied quoted edit
+in an `r#` literal.

@@ -11,8 +11,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 SOURCE = '''import Belay
 open Belay.Sqlite
-def shop : Database := db! r"CREATE TABLE orders(id INTEGER PRIMARY KEY, label TEXT NOT NULL COLLATE NOCASE, qty INTEGER, price REAL);
-  CREATE TABLE tied(bat, cat)"
+def shop : Database := db! r##"CREATE TABLE orders(id INTEGER PRIMARY KEY, label TEXT NOT NULL COLLATE NOCASE, qty INTEGER, price REAL);
+  CREATE TABLE tied(bat, cat); CREATE TABLE odd("select" INTEGER)"##
 def unique := sql! shop r"SELECT lable FROM orders"
 def tie := sql! shop r"SELECT aat FROM tied"
 def distant := sql! shop r"SELECT far_away_name FROM orders"
@@ -23,7 +23,10 @@ def quotedTable := sql! shop r##"SELECT * FROM "ordrs""##
 def updates := sql! shop r"UPDATE orders SET qyt = 1"
 def inserts := sql! shop r"INSERT INTO orders(lable) VALUES (1)"
 def deletes := sql! shop r"DELETE FROM orders WHERE prce > 1"
-def keyword := sql! shop r##"CREATE TABLE odd("select" INTEGER); SELECT selec FROM odd"##
+def keyword := sql! shop r##"SELECT selec FROM odd"##
+def keywordOneHash := sql! shop r#"SELECT selec FROM odd"#
+def keywordRaw := sql! shop r"SELECT selec FROM odd"
+def keywordOrdinary := sql! shop "SELECT selec FROM odd"
 def escaped := sql! shop "SELECT\\nlable FROM orders"
 def plain := sql r"SELECT lable FROM orders"
 def building : Database := db! r"CREATE TABLE t(name); SELECT nmae FROM t"
@@ -35,7 +38,8 @@ def finished : Nat := 0
 def test_corrections_offered(runtime_root: Path, tmp_path: Path) -> None:
     """Our correction candidates (`SqlNameCorrections`) reach the real server as quick fixes at the exact
     range of the written name: a unique nearest name, a tie, quoting kept as written, tables and column
-    targets of writes, and no fix for a distant name, plain `sql`, or an escaped literal."""
+    targets of writes, and no fix for a distant name, plain `sql`, an escaped literal, or a quoted name that would end the
+    literal that holds it."""
     server = LeanServer(runtime_root, tmp_path)
     try:
         uri = server.open(SOURCE)
@@ -53,7 +57,11 @@ def test_corrections_offered(runtime_root: Path, tmp_path: Path) -> None:
         assert corrections(server, uri, SOURCE, "prce", 0, "prce") == [("Replace prce with price", "price")]
         assert corrections(server, uri, SOURCE, "nmae", 0, "nmae") == [("Replace nmae with name", "name")]
         assert corrections(server, uri, SOURCE, "qyt FROM", 0, "qyt") == [("Replace qyt with qty", "qty")]
-        assert corrections(server, uri, SOURCE, "selec ", 0, "selec") == [('Replace selec with "select"', '"select"')]
+        for occurrence in (0, 1):
+            assert corrections(server, uri, SOURCE, "selec FROM odd", occurrence, "selec") == [
+                ('Replace selec with "select"', '"select"')], occurrence
+        for occurrence in (2, 3):
+            assert corrections(server, uri, SOURCE, "selec FROM odd", occurrence, "selec") == [], occurrence
         for occurrence in (1, 2):
             assert corrections(server, uri, SOURCE, "lable FROM orders", occurrence, "lable") == [], occurrence
     finally:
@@ -147,3 +155,30 @@ def test_double_quoted_fallback_warning(runtime_root: Path, tmp_path: Path) -> N
             ('Replace "lable" with "label"', '"label"')]
     finally:
         server.close()
+
+
+KEYWORD = '''import Belay
+open Belay.Sqlite
+def shop : Database := db! r##"CREATE TABLE odd("select" INTEGER)"##
+def keyword := sql! shop r#"SELECT selec FROM odd"#
+def finished : Nat := 0
+'''
+
+
+def test_applied_quoted_correction_keeps_the_literal(runtime_root: Path, tmp_path: Path) -> None:
+    """The quoted edit of our quick fix (`SqlLiteral.replacementKeepsLiteral`) in a raw literal with one
+    `#`: applying it elaborates without errors, so the literal still ends where it did."""
+    server = LeanServer(runtime_root, tmp_path)
+    try:
+        uri = server.open(KEYWORD)
+        (title, text), = corrections(server, uri, KEYWORD, "selec FROM", 0, "selec")
+        assert (title, text) == ('Replace selec with "select"', '"select"')
+        fixed = apply_edit(KEYWORD, span_of(KEYWORD, "selec FROM", 0, "selec"), text)
+    finally:
+        server.close()
+    second = fresh_server(runtime_root, tmp_path / "second")
+    try:
+        uri = second.open(fixed)
+        assert [item for item in diagnostics(second, uri) if item["severity"] == 1] == []
+    finally:
+        second.close()

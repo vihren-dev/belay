@@ -18,6 +18,9 @@ structure SqlEditorSource where
   /-- Map a nonempty SQL byte range to the corresponding original source range, or
   {lean}`none` if the bytes cannot be mapped exactly. -/
   range? : Nat → Nat → Option Syntax.Range
+  /-- Whether a replacement text for a nonempty SQL byte range can be written in its place without
+  changing how Lean reads the literal around it. An edit that the host cannot take is not offered. -/
+  accepts : Nat → Nat → String → Bool
   /-- Where a diagnostic goes when it has no exactly mapped range, such as the string literal that
   holds an escaped SQL text. The default {lean}`Syntax.missing` has no position, so such a diagnostic
   is not shown. -/
@@ -26,7 +29,9 @@ structure SqlEditorSource where
 /-- Map a raw or unescaped ordinary SQL literal. Escaped literals have no exact token map;
 their existing diagnostics still use the whole-literal fallback of {name}`textRange`. -/
 def SqlEditorSource.literal (literal : Syntax) (text : String) : SqlEditorSource :=
-  { text, fallback := literal, range? := fun start stop => do
+  { text, fallback := literal,
+    accepts := replacementKeepsLiteral (literal.getArg 0).getAtomVal text,
+    range? := fun start stop => do
       if start >= stop || stop > text.utf8ByteSize then none else do
         let position ← literal.getPos?
         let _ ← literal.isStrLit?

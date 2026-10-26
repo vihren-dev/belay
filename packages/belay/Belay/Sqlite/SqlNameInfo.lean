@@ -57,15 +57,19 @@ def writtenText (bytes : ByteArray) (site : NameSite) : String :=
   (String.fromUTF8? (bytes.extract site.start site.stop)).getD ""
 
 /-- Emit the information of an unknown name of a place: the warning of the double-quote fallback at
-the occurrence, and the corrections at the exactly mapped identifier. -/
+the occurrence, and the corrections at the exactly mapped identifier. A correction that the literal
+cannot take ({name}`SqlEditorSource.accepts`), such as a quoted name in a raw literal without
+{lit}`#`, is not offered; the list is all or nothing, so a tie never hides an option. -/
 def emitUnknownName (source : SqlEditorSource) (file : FileMap) (bytes : ByteArray) (site : NameSite)
     (name : Identifier) (use : MissingUse) (candidates : List Candidate) : TermElabM Unit := do
   let written := writtenText bytes site
   if use matches .textLiteral then
     if let some ref := source.warningRef? file site.start site.stop then
       logWarningAt ref (doubleQuoteWarning written name)
-  if let some identifier := source.identifier? file site.start site.stop Name.anonymous then
-    suggestCorrections identifier written (correctionTokens written name candidates)
+  let tokens := correctionTokens written name candidates
+  if tokens.all (source.accepts site.start site.stop) then
+    if let some identifier := source.identifier? file site.start site.stop Name.anonymous then
+      suggestCorrections identifier written tokens
 
 /-- The columns that the resolver found for a column name, or none for any other occurrence. A name
 that is ambiguous has no found column, so the editor describes none. -/
