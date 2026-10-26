@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.StatementCountersLaws
+import Belay.Sqlite.Model.ScriptRunSingleton
 
 set_option doc.verso true
 
@@ -37,15 +38,28 @@ know ({name}`counterUnknownReason`). -/
 def RunStep.endedUnknown (step : RunStep) : Prop :=
   ∃ kind, step = .ended (counterUnknownReason kind)
 
+/-- The relation between an execution on a connection that knows fewer counters and an execution on
+one that knows more: the same output, and next connections where the first knows fewer counters
+({name}`Connection.LessKnown`). -/
+def StatementExecution.LessKnown (first second : StatementExecution) : Prop :=
+  first.output = second.output ∧ first.next.LessKnown second.next
+
+/-- The relation {name}`StatementExecution.LessKnown` between two lists of executions, position by
+position. Two lists of different length are not in the relation. -/
+def StatementExecution.LessKnownAll : List StatementExecution → List StatementExecution → Prop
+  | [], [] => True
+  | [], _ :: _ | _ :: _, [] => False
+  | first :: firsts, second :: seconds => first.LessKnown second ∧ StatementExecution.LessKnownAll firsts seconds
+
 /-- What a step of a run gives when the first connection knows fewer counters: either the first
 step ends the run because it reads a counter that the first connection does not know, or both
-steps are the same. The same steps are two ends with the same reason, and two continuations with the
-same output and with connections where the first knows fewer counters. -/
+steps are the same. The same steps are two ends with the same reason, and two continuations whose
+executions ({name}`RunStep.executions`) are pairwise in the relation
+{name}`StatementExecution.LessKnown` ({name}`StatementExecution.LessKnownAll`). -/
 def RunStep.LessKnown (first second : RunStep) : Prop :=
   first.endedUnknown ∨ match first, second with
     | .ended firstReason, .ended secondReason => firstReason = secondReason
-    | .continued firstOutput firstNext, .continued secondOutput secondNext =>
-      firstOutput = secondOutput ∧ firstNext.LessKnown secondNext
+    | .continued .., .continued .. => StatementExecution.LessKnownAll first.executions second.executions
     | .ended _, .continued .. | .continued .., .ended _ => False
 
 /-- For every counter and step, a first step that ends the run at a read of that counter is in the
@@ -113,12 +127,13 @@ theorem runScriptStep_counters (context : ResolveContext) (clock : Option Clock)
         · have steps := advanceRun_counters index resolved (first.state.statementRun value parameters resolved) same.1
           have output := Output.ofStep_counters value parameters resolved
             (first.state.statementRun value parameters resolved) same.1 known steps
-          simp only [ready, Bool.not_true, Bool.false_eq_true, ite_false, ranScriptStep, output]
+          simp only [ready, Bool.not_true, Bool.false_eq_true, ite_false, ranScriptStep, output,
+            StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
           split
           · simp [RunStep.LessKnown]
           all_goals
-            simp only [RunStep.LessKnown]
-            exact Or.inr ⟨trivial, Connection.afterStep_counters after _ same steps⟩
+            simp only [RunStep.LessKnown, RunStep.withOthers, pure, Except.pure, RunStep.executions]
+            exact Or.inr ⟨⟨rfl, Connection.afterStep_counters after _ same steps⟩, trivial⟩
         · simp [ready, RunStep.LessKnown]
 
 /-- For every context, clock, statements with values, and two connections where the first knows
@@ -156,16 +171,18 @@ theorem runScriptFrom_counters (context : ResolveContext) (clock : Option Clock)
           subst sameStep
           simp only
           exact ⟨trivial, same⟩
-        | continued otherOutput otherNext => rw [secondStep] at sameStep; exact absurd sameStep id
-    | continued output next =>
+        | continued otherOutput otherNext otherOthers => rw [secondStep] at sameStep; exact absurd sameStep id
+    | continued output next others =>
       rw [firstStep] at step
       rcases step with ⟨kind, known⟩ | sameStep
       · exact absurd known (by simp)
       · cases secondStep : runScriptStep context clock index second statement parameters with
         | ended other => rw [secondStep] at sameStep; exact absurd sameStep id
-        | continued otherOutput otherNext =>
+        | continued otherOutput otherNext otherOthers =>
+          obtain rfl := runScriptStep_others firstStep
+          obtain rfl := runScriptStep_others secondStep
           rw [secondStep] at sameStep
-          obtain ⟨sameOutput, sameNext⟩ := sameStep
+          obtain ⟨⟨sameOutput, sameNext⟩, _⟩ := sameStep
           subst sameOutput
           simp only [firstStep] at modeled ⊢
           have later := runScriptFrom_counters context clock rest (index + 1) sameNext

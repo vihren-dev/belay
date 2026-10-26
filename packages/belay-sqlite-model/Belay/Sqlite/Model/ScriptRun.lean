@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Output
+import Belay.Sqlite.Model.StatementExecution
 import Belay.Sqlite.Model.Resolution.Resolve
 import Belay.Sqlite.Model.SqlExecution
 
@@ -14,53 +14,14 @@ It runs the statement with
 application that sends one statement at a time does. The run takes an optional clock: a
 statement that reads the clock runs with the clock's value at its index, or ends the run when
 the run has no clock. A statement that the model does not describe ends the run.
-{lit}`ScriptRunLaws.lean` relates the run to {name}`Belay.Sqlite.Model.runSqlFrom`. -/
+
+A statement has one or more possible executions ({name}`Belay.Sqlite.Model.StatementExecution`).
+The step of a statement ({lit}`RunStep`) lists them, with the execution of the
+model's own traversal first. {lit}`runScriptFrom` goes on with that execution;
+{lit}`ScriptRunAll.lean` goes on with each one. {lit}`ScriptRunLaws.lean` relates the run to
+{name}`Belay.Sqlite.Model.runSqlFrom`. -/
 
 namespace Belay.Sqlite.Model
-
-/-- The state of a connection between two statements: the visible database, the snapshot of
-an open transaction, a clock assignment and the counters ({name}`SqlState`), and the settings of
-{lit}`PRAGMA foreign_keys` and {lit}`PRAGMA recursive_triggers`. For example,
-{lean}`({ state := { database := {} } } : Connection)` is an idle connection to the empty
-database with both settings off. The run of this file takes
-its clock as an argument and does not read the clock assignment of the state; the laws of
-{lit}`ScriptRunLaws.lean` compare the run with {name}`runSqlFrom` on the state, which reads it. -/
-structure Connection where
-  /-- The database, the open transaction, the clock assignment (which the run carries without
-  a change) and the counters (which each statement that writes changes). -/
-  state : SqlState
-  /-- Whether foreign keys are on; off by default, as in SQLite. -/
-  foreignKeys : Bool := false
-  /-- Whether recursive triggers are on; off by default, as in SQLite. -/
-  recursiveTriggers : Bool := false
-
-/-- The state of resolution for the next statement: the catalog of the visible database, the
-catalog of the snapshot of an open transaction, and the settings. -/
-def Connection.resolveState (connection : Connection) : ResolveState :=
-  { catalog := connection.state.database.catalog, saved := connection.state.snapshot.map (·.catalog),
-    foreignKeys := connection.foreignKeys, recursiveTriggers := connection.recursiveTriggers }
-
-/-- The connection after a statement that stopped with the outcome: an open transaction stays
-open with its snapshot, as in SQLite; a failure outside a transaction, also after the rollback
-of {lit}`OR ROLLBACK` ({name}`SqlState.failed`), leaves the connection idle. The database is
-the outcome's, and the settings are those of the resolution state {lit}`after` the statement, and the counters are
-those after the {lit}`counts` of the statement, which a failed write also gives (ADR 0024, D2). -/
-def Connection.afterError (connection : Connection) (after : ResolveState) (counts : Counts) : Outcome → Connection
-  | .success database | .failure _ _ database =>
-    { state := { connection.state with
-                 database := database, snapshot := none, counters := connection.state.counters.apply counts },
-      foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers }
-  | .pending persisted visible _ =>
-    { state := { connection.state with
-                 database := visible, snapshot := some persisted, counters := connection.state.counters.apply counts },
-      foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers }
-
-/-- The connection after a statement's transition: the state of a transition that continues,
-with the settings of the resolution state {lit}`after` the statement, or
-{name}`Connection.afterError` of a halt with the counts of the statement. -/
-def Connection.afterStep (connection : Connection) (after : ResolveState) (counts : Counts) : SqlTransition → Connection
-  | .next state => { state, foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers }
-  | .halt outcome => connection.afterError after counts outcome
 
 /-- The reason of a statement that reads the clock in a run without a clock. -/
 def clockUnmodeled : String :=
@@ -84,25 +45,44 @@ must not read one. -/
 def statementClock (clock : Option Clock) (index : Nat) (statement : Resolved.Statement) : Option Int :=
   if statement.readsClock then clock.map (· index) else some 0
 
-/-- What one statement of a run gives: its output and the connection after it, or the reason
-why the run ends at it. -/
+/-- What one statement of a run gives: its possible executions, or the reason why the run ends at
+it. The first execution is the one that the model's own traversal takes, given as its output and
+connection; the others are the further executions that the model admits ({lit}`others`, none for
+every statement that the model describes today). -/
 inductive RunStep where
-  /-- The statement ran, with its output, which is not {name}`Output.unmodeled`. -/
-  | continued (output : Output) (next : Connection)
+  /-- The statement ran, with the output and connection of the model's own execution, which is
+  not {name}`Output.unmodeled`, and the other possible executions. -/
+  | continued (output : Output) (next : Connection) (others : List StatementExecution)
   /-- The model does not describe the statement; the run ends. -/
   | ended (reason : String)
 
-/-- The step of a statement that ran on the connection with the values bound to its parameters,
-as resolved, with the resolution state {lit}`after` it, its clock value, its run and its
+/-- All possible executions of the step, the model's own execution first; none for a step that
+ends the run. -/
+def RunStep.executions : RunStep → List StatementExecution
+  | .continued output next others => { output, next } :: others
+  | .ended _ => []
+
+/-- The step of a statement that ran: it continues with the execution of the model's own
+traversal and the others, or ends the run with the reason when an execution has no output. -/
+def RunStep.withOthers (output : Output) (next : Connection) : Except String (List StatementExecution) → RunStep
+  | .ok others => .continued output next others
+  | .error reason => .ended reason
+
+/-- The step of a statement that ran on the connection at an index with the values bound to its
+parameters, as resolved, with the resolution state {lit}`after` it, its clock value, its run and its
 transition: {name}`Output.ofStep` with the values; an output {name}`Output.unmodeled` ends the run,
 and every other output continues with {name}`Connection.afterStep` of the transition and the counts
-of the run. -/
-def ranScriptStep (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
+of the run. Each further execution of the run ({name}`StatementRun.alternatives`) advances from the
+same connection with its own effect and counts ({name}`StatementExecution.ofAlternatives`), and one
+that has no output ends the run. -/
+def ranScriptStep (index : Nat) (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
     (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) : RunStep :=
   match Output.ofStep value parameters resolved connection.state run transition with
   | .unmodeled reason => .ended reason
   | output@(.rows _) | output@(.done _) | output@(.error _) | output@(.oneOf _) =>
-    .continued output (connection.afterStep after run.counts transition)
+    .withOthers output (connection.afterStep after run.counts transition)
+      ((StatementExecution.ofAlternatives index parameters connection resolved after value run).map
+        (List.map StatementExecution.Traced.execution))
 
 /-- The steps of one statement of a run up to its transition, with the value to give when the
 run ends at the statement ({lit}`ended`, with the reason) and when the statement runs
@@ -142,7 +122,7 @@ clock in a run without a clock, a statement that reads an unknown counter, a sta
 fails the support check, and an output {name}`Output.unmodeled` end the run. -/
 def runScriptStep (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (statement : Syntax.Statement) (parameters : List Value) : RunStep :=
-  runScriptStepWith .ended (ranScriptStep parameters connection) context clock index connection statement parameters
+  runScriptStepWith .ended (ranScriptStep index parameters connection) context clock index connection statement parameters
 
 /-- The result of a run: the output of each statement that ran, in order, and the connection
 at the end. -/
@@ -164,7 +144,7 @@ def runScriptFrom (context : ResolveContext) (clock : Option Clock) (index : Nat
   | [] => { outputs := [], connection }
   | (statement, parameters) :: rest => match runScriptStep context clock index connection statement parameters with
     | .ended reason => { outputs := [.unmodeled reason], connection }
-    | .continued output next =>
+    | .continued output next _ =>
       let later := runScriptFrom context clock (index + 1) next rest
       { later with outputs := output :: later.outputs }
 

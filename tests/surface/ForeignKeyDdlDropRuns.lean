@@ -102,8 +102,8 @@ end ForeignKeyDdlDropRunsFixture
 #print axioms Belay.Sqlite.Model.parentSchemasCompatibleSelectedKeeps
 #print axioms Belay.Sqlite.Model.runSqlFrom_parentSchemasCompatibleSelected
 #print axioms Belay.Sqlite.Model.runSql_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runScriptFrom_parentSchemasCompatibleSelected
+#print axioms Belay.Sqlite.Model.runScriptAllFrom_parentSchemasCompatibleSelected
 #print axioms Belay.Sqlite.Model.foreignKeyAtomsSelected_statementKeeps
 #print axioms Belay.Sqlite.Model.runSqlFrom_foreignKeyAtomsSelected
 #print axioms Belay.Sqlite.Model.runSql_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runScriptFrom_foreignKeyAtomsSelected
+#print axioms Belay.Sqlite.Model.runScriptAllFrom_foreignKeyAtomsSelected

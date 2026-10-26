@@ -45,15 +45,15 @@ theorem runSql_parentSchemasCompatible (mapping : ForeignKeyMapping)
 the connection's database and saved snapshot have compatible parent schemas, and each reached
 resolved statement keeps the catalog, then the final connection's database and snapshot have
 compatible parent schemas. Failed resolution and halted suffixes impose no extra condition.
-Proof sketch: apply {name}`runScriptFrom_holds` with the same schema statement theorem. -/
-theorem runScriptFrom_parentSchemasCompatible (mapping : ForeignKeyMapping) (context : ResolveContext)
+Proof sketch: apply {name}`runScriptAllFrom_holds` with the same schema statement theorem. -/
+theorem runScriptAllFrom_parentSchemasCompatible (mapping : ForeignKeyMapping) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection}
     (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (Database.ParentSchemasCompatible mapping))
     (conditions : ScriptConditionsWith (fun statement _ => statement.KeepsParentSchema)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (Database.ParentSchemasCompatible mapping) :=
-  runScriptFrom_holds (parentSchemasCompatibleKeeps mapping) context clock index script holds conditions
+  runScriptAllFrom_holds (parentSchemasCompatibleKeeps mapping) context clock index script holds conditions
 
 end Belay.Sqlite.Model

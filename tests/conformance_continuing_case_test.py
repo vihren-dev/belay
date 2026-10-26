@@ -3,7 +3,7 @@
 A recorder of version 6 runs on after an SQL error, so its trace has one event for each
 statement, also after a failed one. `model_case` accepts such a trace only for version 6 and
 marks the case as one whose run continues; `VerifierConformance.Classify.classifyCase` then
-compares it with the model's run that continues (`runPassFrom`). The record here is written by
+compares it with the complete executions of the model that continue (`runPassAllFrom`). The record here is written by
 hand from two version 5 records: a prepare error in autocommit changes nothing, so the event of
 a later statement is the one of a record without the failed statement.
 """

@@ -34,7 +34,7 @@ theorem Sql.branch_index_iff {α : Type} (program : Sql α) (clock : Option Cloc
     cases step : runScriptStep runContext clock first connection statement values with
     | ended reason =>
       rw [Sql.branch_stopped_iff step, Sql.branch_stopped_iff (same.symm.trans step)]
-    | continued output next =>
+    | continued output next others =>
       rw [Sql.branch_continued_iff step, Sql.branch_continued_iff (same.symm.trans step)]
       constructor
       · rintro ⟨selected, tail, choice, branch, rfl⟩
@@ -59,7 +59,7 @@ theorem Sql.runFrom_index {α : Type} (program : Sql α) (clock : Option Clock)
     simp only [Sql.runFrom, same]
     cases runScriptStep runContext clock second connection statement values with
     | ended reason => rfl
-    | continued output next => simp only [later output (first + 1) (second + 1) next]
+    | continued output next others => simp only [later output (first + 1) (second + 1) next]
 
 /-- For every program, every clock that gives one date at every index (or no clock), every pair of start
 indices and every connection: the program succeeds from the first index exactly when it succeeds from the

@@ -35,7 +35,7 @@ theorem check_send_append (first second : Script) (post : List Output → Execut
   simp only [Sql.check_bind, Sql.check_pure]
 
 /-- A one-statement query checks its converted result for every raw or concrete output of
-the actual step, using the full next context. SQL errors become Except errors; an unmodeled
+every execution of the step, using the full next context of that execution. SQL errors become Except errors; an unmodeled
 step fails. Proof sketch: unfold query and apply the execution-step and pure rules. -/
 theorem check_query (script : Script) (one : script.statements.length = 1)
     (post : Except Nat (List (List Value)) → ExecutionContext → Prop) (state : ExecutionContext) :
@@ -43,8 +43,9 @@ theorem check_query (script : Script) (one : script.statements.length = 1)
       let (statement, values) := script.statements[0]'(by rw [one]; exact Nat.one_pos)
       match runScriptStep runContext state.clock state.index state.connection statement values with
       | .ended _ => False
-      | .continued actual connection =>
-        ∀ selected, OutputChoice actual selected → post (queryResult selected) (state.next selected connection) := by
+      | .continued actual connection others =>
+        ∀ found ∈ (RunStep.continued actual connection others).executions, ∀ selected,
+          OutputChoice found.output selected → post (queryResult selected) (state.next selected found.next) := by
   unfold query
   generalize selected : script.statements[0] = entry
   rcases entry with ⟨statement, values⟩
@@ -52,7 +53,7 @@ theorem check_query (script : Script) (one : script.statements.length = 1)
   split
   · rename_i reason step
     exact iff_false_intro (Sql.check_stopped step post)
-  · rename_i actual connection step
+  · rename_i actual connection others step
     rw [Sql.check_continued step]
     simp only [Sql.check_pure]
 

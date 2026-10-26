@@ -90,13 +90,14 @@ theorem scriptConditions : ScriptConditionsWith
     change Except.ok (.upsert 2 [[.value (.integer 2)]] [] [] none [] none, connection.resolveState) = .ok (resolved, after) at equal
     cases equal
     exact ⟨by trivial, outside⟩
-  · trivial
+  · exact fun execution _ => trivial
 
 /-- The public surface-run theorem preserves both atoms after a real parsed statement. -/
-theorem scriptPreserves : (runScriptFrom runContext none 0 connection script.statements).connection.state.Holds
+theorem scriptPreserves : ∀ run ∈ runScriptAllFrom runContext none 0 connection script.statements,
+    run.connection.state.Holds
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) := by
-  apply runScriptFrom_foreignKeyAtoms Profile.pinned _ runContext none 0 _
+  apply runScriptAllFrom_foreignKeyAtoms Profile.pinned _ runContext none 0 _
   · exact ⟨by decide +kernel, fun _ same => nomatch same⟩
   · exact scriptConditions
 

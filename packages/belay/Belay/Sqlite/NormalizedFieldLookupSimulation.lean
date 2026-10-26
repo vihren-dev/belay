@@ -29,10 +29,10 @@ theorem Plan.lookup_steps (plan : Plan) (clock : Option Clock) (before after : N
     (reached : expanded.state.database = source.expanded) (value : Value) :
     ∃ rows, runScriptStep runContext clock before connection
         (originalLookup (tableReference plan.tableName plan.alias) plan.idName plan.sourceName plan.text
-          plan.number) [value] = .continued (.rows rows) connection ∧
+          plan.number) [value] = .continued (.rows rows) connection [] ∧
       runScriptStep runContext clock after expanded
         (storedLookup (tableReference plan.tableName plan.alias) plan.idName plan.storedName plan.text
-          plan.number) [value] = .continued (.rows rows) expanded := by
+          plan.number) [value] = .continued (.rows rows) expanded [] := by
   have same := translate_step_outputs runContext clock before after connection expanded
     (tableReference plan.tableName plan.alias) plan.idName plan.sourceName plan.storedName plan.text plan.number
     value source.site.table source.site.position source.site.source source.site.id plan.first plan.second rfl

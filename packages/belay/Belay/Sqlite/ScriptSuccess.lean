@@ -32,11 +32,13 @@ theorem Sql.succeedsFrom_sendStatements (statements : List (Syntax.Statement × 
   | cons head tail later =>
     rcases head with ⟨statement, values⟩
     intro clock index connection
-    simp only [sendStatements, Sql.SucceedsFrom, runScriptFrom]
+    simp only [sendStatements, runScriptFrom]
     cases step : runScriptStep runContext clock index connection statement values with
-    | ended reason => simp [List.allOk, Output.isError, Output.endsRun]
-    | continued output next =>
+    | ended reason => simp [Sql.SucceedsFrom, step, List.allOk, Output.isError, Output.endsRun]
+    | continued output next others =>
       have quiet := (runScriptStep_continued step).2
+      rw [Sql.succeedsFrom_continued step]
+      unfold Sql.ExecutionSucceeds
       simp only [Sql.succeedsFrom_map, later]
       cases output <;> simp_all [List.allOk, Output.isError, Output.endsRun]
 

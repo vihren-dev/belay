@@ -33,7 +33,7 @@ theorem raw_branch : observe.Branch daily.clock 0 initial.connection
 theorem second_branch : observe.Branch daily.clock 0 initial.connection
     { outputs := [.rows [[2]]], connection := initial.connection, value := some (.rows [[2]]) } := by
   unfold observe
-  apply Sql.Branch.continued (rest := Sql.pure) (actual := .oneOf [[[1]], [[2]]]) (next := initial.connection)
+  apply Sql.Branch.continued_own (rest := Sql.pure) (actual := .oneOf [[[1]], [[2]]]) (next := initial.connection)
     (selected := .rows [[2]]) (result := { outputs := [], connection := initial.connection, value := some (.rows [[2]]) })
   · rfl
   · exact OutputChoice.rows (by simp)

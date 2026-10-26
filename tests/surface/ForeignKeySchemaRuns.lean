@@ -58,5 +58,5 @@ example : badSnapshot.database.ParentSchemasCompatible matching.raw.catalog.fore
 #print axioms Belay.Sqlite.Model.parentSchemasCompatibleKeeps
 #print axioms Belay.Sqlite.Model.runSqlFrom_parentSchemasCompatible
 #print axioms Belay.Sqlite.Model.runSql_parentSchemasCompatible
-#print axioms Belay.Sqlite.Model.runScriptFrom_parentSchemasCompatible
+#print axioms Belay.Sqlite.Model.runScriptAllFrom_parentSchemasCompatible
 #print axioms cascadeRollbackCompatible

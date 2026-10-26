@@ -1,12 +1,12 @@
 """The run theorems of the atoms of `Database.Admitted` and the corollary for `Database.Valid` (ADR 0022,
 D3, slice 4, part 3) have their stated formulas and rest only on the standard axioms.
 
-There is one theorem of `runSqlFrom`, one of `runSql` and one of `runScriptFrom` for each atom, and the
-same three for the bundle `Database.Admitted`. The theorems of `runScriptFrom` have no hypothesis on the
+There is one theorem of `runSqlFrom`, one of `runSql` and one of `runScriptAllFrom` for each atom, and the
+same three for the bundle `Database.Admitted`. The theorems of `runScriptAllFrom` have no hypothesis on the
 statements of the script: the atoms that need the catalog assume a context in execution mode with the limits
 of the invariant, and the resolver gives the conditions. The theorems of `runSqlFrom` and `runSql` assume
 the support check `supportedSqlFrom` and, for "catalog supported", "rows aliased" and the bundle, the run
-condition `Resolved.Statement.AppliedValid`. The corollary `runScriptFrom_valid` is the form that ADR 0017,
+condition `Resolved.Statement.AppliedValid`. The corollary `runScriptAllFrom_valid` is the form that ADR 0017,
 S4 uses. The check file restates each formula, so a change that weakens a formula (for example a hypothesis
 that is dropped, or an atom that changes) fails here, and it refuses `sorryAx`, `ofReduceBool` and `_native`
 in the `#print axioms` output (`compile_checks`).
@@ -33,9 +33,9 @@ ATOMS = [
     ("admitted", "Database.Admitted profile", "profile : Profile", False),
 ]
 
-THEOREMS = [f"{prefix}_{name}" for name, *_ in ATOMS for prefix in ("runSqlFrom", "runSql", "runScriptFrom")] + [
-    "runScriptFrom_keysUnique", "runScriptFrom_notNull", "runScriptFrom_typesFit", "runScriptFrom_checksHold",
-    "runScriptFrom_constraintAtoms", "runScriptFrom_valid", "runScriptStep_valid", "Database.valid_empty", "Database.valid_iff",
+THEOREMS = [f"{prefix}_{name}" for name, *_ in ATOMS for prefix in ("runSqlFrom", "runSql", "runScriptAllFrom")] + [
+    "runScriptAllFrom_keysUnique", "runScriptAllFrom_notNull", "runScriptAllFrom_typesFit", "runScriptAllFrom_checksHold",
+    "runScriptAllFrom_constraintAtoms", "runScriptAllFrom_valid", "runScriptStep_valid", "Database.valid_empty", "Database.valid_iff",
 ]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -46,7 +46,7 @@ STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 def atom_checks(name: str, invariant: str, parameter: str, explicit: bool) -> str:
     """The restated formulas of the three run theorems of one atom. An atom with a parameter needs the
     catalog: its theorems of `runSqlFrom` and `runSql` ask for the run condition `AppliedValid`, and its
-    theorem of `runScriptFrom` asks for the mode and the limits of the context."""
+    theorem of `runScriptAllFrom` asks for the mode and the limits of the context."""
     argument = parameter.split(" :")[0]
     needs_catalog = bool(parameter)
     limits = "profile.limits" if argument == "profile" else "limits"
@@ -73,8 +73,9 @@ example {binder}(script : List (Resolved.Statement × List Value)) {{database : 
 example {implicit}(context : ResolveContext) (clock : Option Clock) (index : Nat) {{connection : Connection}}
     (script : List (Syntax.Statement × List Value)){script_hypotheses}
     (holds : connection.state.Holds ({invariant})) :
-    (runScriptFrom context clock index connection script).connection.state.Holds ({invariant}) :=
-  runScriptFrom_{name} context clock index script{" execution same" if needs_catalog else ""} holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds ({invariant}) :=
+  runScriptAllFrom_{name} context clock index script{" execution same" if needs_catalog else ""} holds
 """
 
 
@@ -84,15 +85,16 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.Valid profile)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds (Database.Valid profile) :=
-  runScriptFrom_valid context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.Valid profile) :=
+  runScriptAllFrom_valid context clock index script execution same holds
 example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
     {connection : Connection} (statement : Syntax.Statement) (values : List Value)
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.Valid profile)) {output : Output} {next : Connection}
-    (continued : runScriptStep context clock index connection statement values = .continued output next) :
-    next.state.Holds (Database.Valid profile) :=
-  runScriptStep_valid context clock index statement values execution same holds continued
+    (holds : connection.state.Holds (Database.Valid profile)) :
+    ∀ found ∈ (runScriptStep context clock index connection statement values).executions,
+      found.next.state.Holds (Database.Valid profile) :=
+  runScriptStep_valid context clock index statement values execution same holds
 example (profile : Profile) : (({} : Database)).Valid profile := Database.valid_empty profile
 example {profile : Profile} {database : Database} :
     database.Valid profile ↔ database.AdmittedWith profile Database.ConstraintAtoms := Database.valid_iff
