@@ -32,11 +32,12 @@ was sufficient before. General conjunction composition remains available.
 
 - The old formula suite is restated through generic applications, covering all
   removed endpoints. Anonymous examples or test-local declarations may carry
-  the formulas; they are not replacement public endpoint aliases. Their
-  assumptions and conclusions are compared with the frozen inventory source.
+  the formulas as temporary migration witnesses. Compare their assumptions and
+  conclusions with the frozen inventory source.
 - Compile the affected model examples and formula suites in Nix. Audit the
-  new proof closures under the existing standard-axiom policy. Retain native
-  necessity examples and transaction/failure examples; deleting names must
+  generic proofs and independently proved invariant evidence under the existing
+  standard-axiom policy. Retain native necessity examples and transaction/failure
+  examples; deleting names must
   not delete their semantic coverage.
 - Verify both conditional raw runs and resolver-derived surface runs, including
   support-independent NOT NULL/type/CHECK claims, admitted dependencies and
@@ -54,14 +55,31 @@ Relevant existing suites include `valid_atoms_theorems_test.py`,
 `keys_unique_theorems_test.py`, `admitted_atoms_run_theorems_test.py` and the
 foreign-key theorem suites under `tests/`. The three named formula suites
 currently run as host-owned checks through `just test-source`, using Nix-built
-libraries. Register their migrated checks in the existing `model` Nix suite
-in `tests/nix_suites.json`, including only needed helper/fixture inputs.
+libraries. Only lasting checks of current contracts remain registered in the
+existing `model` Nix suite in `tests/nix_suites.json` after retirement, with
+needed helper/fixture inputs. Temporary checks can use the existing Nix harness
+during migration.
+The exhaustive retired-endpoint matrix is temporary; Nix acceptance does not
+require registering it as a permanent suite.
 `shared_table_shape_test.py`, which supplies `compile_checks`, is already in
 that suite. Broader test-ownership cleanup is outside scope.
 The admitted-run suite constructs names from `ATOMS` and three run prefixes;
 a literal-name search alone does not find all affected consumers.
 All subprocess checks retain configured timeouts. Apply the repository check
 cadence at implementation commits and completion; there is no new CI framework.
+
+## Test lifetime
+
+Apply ADR 0025 D4's retirement rule. Share the temporary formula witnesses with
+the execution-condition task through the final contract change. Record Nix
+acceptance at that revision, then remove redundant sources and registrations
+before refactor completion. Keep focused premise-strength checks, actual
+clients and semantic counterexamples; avoid an invariant-by-executor matrix.
+Do not remove mixed test files wholesale: unique lookup, whole-statement atom
+guarantees and the used Valid helper/definition checks can remain meaningful.
+Historical formula witnesses are replayed at their recorded revision. Record
+which lasting coverage replaces them in the existing status; no new registry
+or test runner is needed.
 
 ## Tricky points and boundaries
 
@@ -76,4 +94,5 @@ inputs, corpus expectations, or unrelated resolver proofs is outside this task.
 The foundations task supplies the lower generic predicates needed to replace
 the key-specific aliases without an import cycle. Integrate that boundary
 before completing this task. The execution-condition task uses the resulting
-generic names; its interface changes must retain these migrated formulas.
+generic names; its interface changes must re-establish the affected formulas
+before their shared temporary witnesses are retired.

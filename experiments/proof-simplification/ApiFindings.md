@@ -94,9 +94,11 @@ barrel imports must also reflect deleted modules.
 The three Python formula suites above are host-owned at the frozen base:
 `tests/nix_suites.json` does not list them, `build-support/tests.nix` runs only
 listed files, and `conftest.py` leaves unlisted files in `--source-checks`.
-They run through `just test-source` against Nix-built libraries. The replacement
-task registers their migrated formulas in the existing `model` Nix suite;
-the `compile_checks` helper is already an input of that suite.
+They run through `just test-source` against Nix-built libraries. The original
+design registered their migrated formulas in the existing `model` Nix suite.
+The owner's 2026-10-26 amendment to ADR 0025 D4 makes the exhaustive matrix
+temporary: only lasting checks of current contracts remain in that suite. The
+`compile_checks` helper is already an input of the suite.
 
 `ValidAtomsRuns`, `KeysUniqueRuns`, `ValidAtomsTogether`, `ScriptRunConstraints`,
 and the three FK run modules contain certificates, conditions, equivalences,

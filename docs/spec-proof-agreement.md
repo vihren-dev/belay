@@ -83,8 +83,9 @@ statement/output laws. Import moves must compile those consumers too.
 ## Acceptance checks
 
 - Recover every removed source helper formula and all five nominated context/
-  query endpoints as kernel-checked formula tests with original assumptions.
-  Include arbitrary subquery depth and correlated source traversal.
+  query endpoints as temporary kernel-checked migration witnesses with original
+  assumptions. Universal proofs cover subquery depth and correlated traversal;
+  this does not require a separate example at each depth or helper stage.
 - Keep examples for absent versus present tables, unequal shape, a fixed
   pragma independent of both databases, and a database-dependent pragma.
   Equal row lists alone must not silently imply the full source contract.
@@ -96,7 +97,8 @@ statement/output laws. Import moves must compile those consumers too.
   not be treated as subtype equality. Include a local expression that is not
   Rowwise and one that can fault.
 - Compile all actual consumers and checked public documentation. Audit standard
-  axiom closures and inspect simp/instance/export uses before deleting names.
+  axioms of generic proofs and independent instances without duplicate projection
+  audits; inspect simp/instance/export uses before deleting names.
 - Report the combined cost of the common proof, masks, adapters, caller changes
   and formula tests. The prototype establishes shared reasoning and stronger
   contracts; it does not establish net source or compilation-time savings.
@@ -104,6 +106,22 @@ statement/output laws. Import moves must compile those consumers too.
 Use existing proof-test and Nix infrastructure with explicit timeouts. Execution,
 conformance inputs and judge claims remain unchanged. No additional traversal
 generator or testing framework is needed.
+
+## Test lifetime
+
+The fourteen old source-helper checks, old endpoint adapters and four old
+expression-formula witnesses are migration evidence under ADR 0026. After
+final Nix acceptance, retire redundant copies covered by current contracts
+and migrated clients. Preserve the accepted historical revision for replay.
+
+Keep focused checks of premise strength and meaning: source absence/shape and
+pragma dependence; value, fault and JSON subtype; distinct certainty flags; and
+the newly permitted fixed-pragma and fallible-local-expression cases. Reuse
+existing examples first. A case that uniquely protects a requirement remains
+until a consumer or focused regression covers it. The two stronger context laws
+are current guarantees, not old-API compatibility obligations. Source counts,
+old-name searches and dependency comparisons are one-time acceptance checks.
+Record retirement in the existing status file; use existing test infrastructure.
 
 ## Assignment and coordination
 

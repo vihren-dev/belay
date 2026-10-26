@@ -68,3 +68,14 @@ Final review: Claude reviewed `6915dc4e` with no findings
 (`reviews/20261026T090601Z-6915dc4e/review.json`). All required design reviews
 are complete. The Nix experiment inputs are unchanged since the accepted result.
 No design question or experiment failure remains pending.
+
+## Amendment: test lifetime, 2026-10-26
+
+The owner approved separating temporary migration evidence from permanent
+coverage. ADR 0025 D4 and its three implementation tasks now require complete
+formula acceptance through the final contract change, then retirement of
+redundant witnesses and registrations. Only lasting current-contract checks
+belong in the model Nix suite. This supersedes the earlier registration decision
+recorded above; it does not change the accepted experiment results. The shared
+amendment and review are recorded in the
+[proof-boundaries status](20261026-proof-boundaries-design.status.md).

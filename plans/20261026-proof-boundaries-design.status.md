@@ -65,3 +65,19 @@ The final diff against production baseline `3fe5caef` has no changes under
 packages, runtime/build integration, tests, judge, integrity or conformance.
 No mutants, claims, corpora or native oracle changed. Specifications are proposed
 for implementation review; no production refactor is represented as delivered.
+
+## Amendment: test lifetime, 2026-10-26
+
+The owner approved the lean-suite recommendation. ADRs 0025 and 0026, their
+implementation specifications and the existing ADR 0025 task files now separate
+temporary exhaustive migration witnesses from lasting contract/semantic checks.
+One shared witness set lasts through the final affected contract change; final
+Nix acceptance is recorded before redundant sources and registrations retire.
+Unique premise, semantic and trust coverage stays until a migrated client or
+focused regression covers it. Historical experiments remain outside normal CI.
+
+All task-file edits for this decision are batched in one commit. No new task,
+runner, test manifest, CI suite or production change was introduced. Per-commit
+checks use the existing `tests/docs_test.py` and independent Claude review.
+The previously accepted Nix experiment and production check inputs are unchanged;
+their evidence above remains applicable. Amendment review is pending.

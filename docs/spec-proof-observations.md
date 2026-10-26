@@ -17,8 +17,8 @@ not meet this requirement.
 All 42 model/surface row, empty and error endpoints listed in the findings are
 replaced. Each old formula is derivable with the same assumptions. The
 implementation removes the old public declarations and updates actual callers,
-exports, tests and documentation. The formula regressions can be anonymous Lean
-examples; they do not require a replacement matrix of public names.
+exports, tests and documentation. Temporary migration witnesses can be anonymous
+Lean examples; they do not become a permanent matrix of public names or tests.
 
 Resolver-only output transport remains independently usable. The stronger
 duplicate-key pairwise/repeated and count unique-lookup claims remain available
@@ -83,8 +83,10 @@ No whole-migration line reduction or performance improvement is established yet.
 ## Acceptance checks
 
 - Kernel-check every removed query endpoint's exact old formula using the new
-  API and original hypotheses. Include all seven families at both layers.
-- Exercise an arbitrary predicate of the output. Retain error precedence,
+  API and original hypotheses as migration evidence. Include all seven families
+  at both layers.
+- Exercise an arbitrary predicate through a migrated real consumer; a separate
+  test of equality substitution is unnecessary. Retain error precedence,
   unbound-window, may-fault source, aggregate-empty-input and possible-result
   regressions. At least one case must retain multiple possible results.
 - Kernel-check the old four relation formulas against the new profiles. Retain
@@ -93,7 +95,8 @@ No whole-migration line reduction or performance improvement is established yet.
   observations separately.
 - Compile the existing frame, deterministic, bind, migration and public-example
   consumers after migration. Retain their original mathematical premises.
-- Audit new proof closures for the existing standard axioms only. Compile
+- Audit generic proofs and independently proved instances for the existing
+  standard axioms only, without duplicate audits of trivial projections. Compile
   checked documentation and inspect source registrations/exports as well as
   dependency-report references before deleting declarations.
 - Report removed and added source, including helpers, adapters that remain,
@@ -103,6 +106,23 @@ No whole-migration line reduction or performance improvement is established yet.
 Use the repository's existing model/surface proof tests, Nix checks and review
 cadence. New checks have explicit timeouts. SQL predictions and judge inputs
 remain unchanged. No new production CI framework is required.
+
+## Test lifetime
+
+The complete 42-formula matrix and four old/new relation adapters are temporary
+acceptance witnesses under ADR 0026. Retire redundant witnesses after final
+Nix acceptance and caller migration; keep their recorded revision for replay.
+Import/source measurements and old-dependency inspections are one-time checks.
+
+Permanent coverage protects distinct current contracts and semantic boundaries.
+Reuse the existing claims, frame, bind and migration fixtures, including
+`ExecutionEquivalence`, `ExecutionViewComparisons` and `ExecutionViewChoices`.
+They already distinguish state, raw steps, actual results and possible results.
+Add only uncovered premise checks, especially no-error without a clean source
+and output reasoning without a bound-window premise. A witness that uniquely
+protects such a requirement stays until a consumer or focused regression covers
+it. Ordinary equality-law tests and duplicate singleton fixtures are unnecessary.
+Use existing suites and record retirement in the existing status file.
 
 ## Assignment and coordination
 

@@ -105,8 +105,27 @@ the support gate, evaluation, errors, observations or the modeled SQL subset.
 ## D4. Formula strength and trust remain acceptance criteria
 
 The replacement must derive each removed endpoint's old mathematical claim
-with the same entry assumptions. Tests may restate those claims as anonymous
-examples using the new generic API. They cease to require a public-name matrix.
+with the same entry assumptions. Exhaustive old-formula checks are temporary
+migration evidence. Keep one copy through the last planned slice that changes
+their shared contracts, and record Nix acceptance against the final migrated
+implementation. Then delete redundant temporary test sources and registrations
+before completing the refactor. Historical witnesses remain replayable at their
+recorded revision; they need not compile against later APIs.
+
+Permanent coverage protects generic contracts, independently different premise
+requirements, semantic distinctions and real clients. Retain any migration case
+that uniquely checks such a requirement until a current consumer or focused
+regression covers it. In particular, ordinary compilation does not detect an
+accidentally stronger hypothesis or a weaker definition. Reuse existing native
+necessity examples, checked documentation and conformance. Audit generic proofs
+and independently proved invariant evidence under the existing axiom policy;
+trivial wrapper projections do not need duplicate audits.
+
+Frozen inventories, old-name dependency inspections, import comparisons and
+source-size reports are one-time acceptance work. Record acceptance and test
+retirement in the existing status files. There is no new test manifest, runner
+or permanent suite for this migration, and no lasting invariant-by-executor
+matrix solely to preserve the removed API's layout.
 
 Preservation covers the current database and saved transaction snapshot, the
 database carried by partial constraint FAIL, and the appropriate databases of
@@ -132,9 +151,11 @@ native evaluator axiom, new axiom or trusted shortcut is introduced.
 On adoption, D1 supersedes the requirement for separately named per-atom run
 and statement endpoints in ADR 0022 D3 and in the completed keys-unique,
 Valid-atoms and Admitted-atoms tasks. It also replaces named run specializations
-in the foreign-key task. Their mathematical claims and necessity examples
-remain obligations. Historical task/status records continue to describe their
-original delivery; they are not rewritten as if this refactor already existed.
+in the foreign-key task. D4 also supersedes ongoing name/formula-matrix checks
+for retired endpoints in those tasks. Their mathematical claims, distinct
+premise requirements, necessity examples and axiom policy remain obligations.
+Historical task/status records continue to describe their original delivery;
+they are not rewritten as if this refactor already existed.
 
 Resolver provenance contracts, query observation transport, subquery traversal
 invariants, package splitting, import-barrel policy and foreign-key engine
@@ -146,7 +167,7 @@ recursion are separate opportunities. This ADR does not authorize those changes.
 | --- | --- | --- |
 | [Proof API](../plans/20261026-preservation-api.task.md) | Generic applications replace the endpoint matrix | Foundations provide cycle-safe generic effect predicates |
 | [Proof foundations](../plans/20261026-preservation-foundations.task.md) | General primitives and one table-atom dispatch | Existing integration baseline |
-| [Execution conditions](../plans/20261026-preservation-context.task.md) | One run induction per executor | API removal establishes the names and migrated formula tests |
+| [Execution conditions](../plans/20261026-preservation-context.task.md) | One run induction per executor | API removal establishes the names and temporary migration witnesses |
 
 The tasks specify separate reviewable results, not a prescribed coding order.
 Their implementation is not part of the experiment and specification work.

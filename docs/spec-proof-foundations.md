@@ -83,8 +83,10 @@ There is no requirement that an invariant hold after every micro-operation.
 ## Acceptance checks
 
 - Kernel-check the three replaced resolver formulas and the full applied-catalog
-  validity formula with their original assumptions. Exercise every syntax
-  constructor, controls, write preparation/rule cases and saved-catalog cases.
+  validity formula with their original assumptions as migration witnesses.
+  The universal certificate proof covers every syntax constructor; no extra
+  fixture per constructor is required. Retain distinct control, write-rule and
+  saved-catalog semantics through existing coverage or focused missing cases.
 - Verify by proof/source dependency inspection that the new dispatch does not
   invoke the replaced top-level proofs, directly or through helper closures.
   Compile all resolver and statement-preservation consumers.
@@ -106,6 +108,23 @@ There is no requirement that an invariant hold after every micro-operation.
 No execution behavior, judge input, corpus or SQL feature scope changes. The
 standalone experiment checker is sufficient historical evidence and does not
 become a new production CI suite.
+
+## Test lifetime
+
+Apply ADR 0026's retirement rule. Resolver projection witnesses, duplicate
+primitive proofs, baseline/narrow module copies, old-endpoint dependency
+inspections and import/source measurements are temporary acceptance work.
+Normal compilation of relocated declarations and migrated consumers replaces
+duplicate probes. No frozen import count or old-name inventory becomes a CI gate.
+
+Keep concise coverage of independently conditional certificate fields, including
+unconditional state equality, arbitrary schema-link limits and execution-mode
+state validity. Preserve control/saved-catalog meaning and the existing axiom
+policy. Retain any unique contract coverage until a migrated client or focused
+regression supplies it; then delete redundant active witnesses and registrations
+after final Nix acceptance. Record retirement in the existing status file.
+Row-engine prototypes remain historical experiments, with no production tests
+or obligation to port them to the new API.
 
 ## Assignment and coordination
 

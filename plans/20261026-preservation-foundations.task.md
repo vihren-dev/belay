@@ -55,6 +55,18 @@ Use the existing Nix test suites and repository check cadence, with bounded
 commands. Production package edits require the local development build as
 specified in `AGENTS.md`; local diagnostics are not acceptance evidence.
 
+## Test lifetime
+
+The old whole-statement and four primitive replacement witnesses, dependency
+inspection and source measurements are migration acceptance work under ADR
+0025 D4. Universal proofs cover all statement constructors; this does not
+require a new example for each constructor. After final Nix acceptance, retire
+duplicate witnesses covered by the generic proof contracts and migrated clients.
+Keep focused checks for independent atom premises, missing row-list behavior
+without `RowsShaped`, success and carried FAIL wherever existing coverage is
+insufficient. Keep axiom coverage of generic proofs and independent instances.
+Record retirement in the existing status file and use existing suites only.
+
 ## Relevant code and design constraints
 
 `AdmittedAtomFrames` imports `RowLocalFrame`, which imports `RowLocalAtoms`.

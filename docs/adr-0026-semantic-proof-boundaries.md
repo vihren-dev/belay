@@ -129,16 +129,37 @@ interface, witnesses and remaining specializations together.
 
 These decisions change proof interfaces, not SQL execution or supported SQL.
 The project has no users: migrate callers and delete replaced declarations and
-aliases. Preserve their mathematical guarantees as formula tests. Retain useful
-semantic and simplification facts; a zero-consumer graph node alone does not
-justify deletion. Audit standard axioms and compile the affected public surface.
+aliases. Preserve their mathematical guarantees through complete migration
+checks, then retain focused coverage of current contracts. A zero-consumer
+graph node alone does not justify deletion of useful semantic or simp facts.
+
+Old-formula matrices, old/new representation adapters, duplicate primitive
+proofs and baseline/narrow import copies are temporary acceptance witnesses.
+Keep one copy through the last planned slice that changes their contracts.
+Record Nix acceptance against that final implementation, then delete redundant
+temporary test sources and registrations before completing the refactor.
+Historical experiments remain replayable at their recorded revision, outside
+normal CI; this includes the deferred row-engine prototypes.
+
+Retain a case if it uniquely protects a premise boundary, semantic distinction
+or trust guarantee until a migrated consumer or focused regression covers it.
+Use existing public examples, checked documentation and conformance first.
+Audit generic proofs and independently proved instances with existing tools;
+remove duplicate audits of trivial projections. Tests of ordinary equality
+laws or substitution alone add no repository-specific guarantee.
+
+Old-endpoint dependency inspections, frozen inventories and before/after import
+or source-size measurements are one-time acceptance work, not CI snapshots.
+Record acceptance and retirement in existing status files. No new manifest,
+runner or permanent ADR-specific suite is required.
 
 ADR 0025 still owns invariant preservation and contextual script conditions.
 ADR 0025 explicitly leaves query observation transport, resolver provenance,
 subquery traversal and import-barrel policy outside its scope. This ADR adds
 the report-driven source-agreement, expression-congruence and execution-profile
 work and the demonstrated import cleanup. It supersedes
-named-endpoint obligations for the replaced families, not their formulas.
+named-endpoint obligations and ongoing retired-endpoint test matrices for the
+replaced families; their mathematical guarantees remain obligations.
 No package split, evaluator rewrite, proof registry or performance target is
 introduced. Production source reduction and proof/build costs are measured
 after migration; the experiment makes no net-saving or speed claim.

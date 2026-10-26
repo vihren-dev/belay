@@ -32,8 +32,8 @@ explicit where resolution requires them.
 
 Update all preservation evidence, conjunction composition, resolver bridges,
 callers and documentation to the unified interface. Delete the parallel
-production contracts and traversals. Old-formula adapters may exist as
-experiment/test proofs; they are not compatibility APIs in production.
+production contracts and traversals. Old-formula adapters are temporary
+migration witnesses under ADR 0025 D4, not permanent compatibility APIs or tests.
 
 ## Acceptance checks
 
@@ -52,10 +52,12 @@ experiment/test proofs; they are not compatibility APIs in production.
 - The state support check implies raw statement readiness, while its counter
   knowledge requirement remains additional. Test an example where this
   distinction matters. The two checks must not be treated as equivalent.
-- Re-run all migrated per-atom formula checks and existing statement/script
-  preservation examples. Audit the new generic proofs and representative
-  clients for the standard axiom policy. The full model and surface packages,
-  checked docs and existing Nix acceptance suites pass.
+- Re-establish the affected per-atom migration formulas against the final
+  condition contracts, sharing temporary witnesses with the API task. Compile
+  existing statement/script preservation examples. Audit new generic proofs
+  and independently proved invariant evidence under the standard axiom policy.
+  The full model and surface packages, checked docs and existing Nix acceptance
+  suites pass.
 - Confirm there is one production preservation induction for each executor
   and no retained old-interface traversal. Report net proof changes and any
   material elaboration-cost changes; source reduction alone proves no speedup.
@@ -63,6 +65,17 @@ experiment/test proofs; they are not compatibility APIs in production.
 Use the repository's current Nix suite owners and check cadence. Commands have
 configured timeouts. No new general execution framework or CI service is part
 of this work.
+
+## Test lifetime
+
+After the final affected contract change passes Nix acceptance, remove redundant
+old-condition adapters and per-atom formula matrices from active test sources
+and registrations. Preserve their historical acceptance record. Keep focused
+checks for unconditional versus supported premises, input-dependent conditions,
+reached states, halt boundaries, transaction/FAIL outcomes and counter knowledge.
+Reuse existing clients and necessity examples before adding a case. These checks
+protect different semantics; they need not repeat every invariant at every run
+entry point. Record retirement in the existing status file.
 
 ## Relevant code and traps
 
