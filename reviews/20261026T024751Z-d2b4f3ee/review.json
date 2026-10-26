@@ -1,0 +1,94 @@
+{
+  "caller": "claude",
+  "commit": "d2b4f3ee9b96c9cc639ca9de79e173877809b7b9",
+  "date": "2026-10-26T02:47:51+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/ApplicationClaims.lean",
+    "packages/belay/Belay/Sqlite/ApplicationExplanation.lean",
+    "packages/belay/Belay/Sqlite/ApplicationSyntax.lean",
+    "packages/belay/Belay/Sqlite/ClaimExplanation.lean",
+    "packages/belay/Belay/Sqlite/ScopedSimulationReverse.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "plans/20261024-surface-s8.status.md",
+    "reviews/20261026T024124Z-ea8d6d0d/review.json",
+    "tests/surface/ApplicationRollback.lean",
+    "tests/surface/ApplicationSyntaxExamples.lean",
+    "tests/surface_application_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261026T024751Z-d2b4f3ee#1",
+      "line": 30,
+      "path": "packages/belay/Belay/Sqlite/ApplicationClaims.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The `entry` and `calls` field docstrings omit their quantifiers, assumptions, and cases that require nothing. Fix: restate each field’s contract, including migration-domain restrictions for entry and universal quantification over related contexts, calls, and arguments."
+    },
+    {
+      "id": "20261026T024751Z-d2b4f3ee#2",
+      "line": 157,
+      "path": "tests/surface_application_test.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The allowed proof axioms are a literal inside the test’s checking loop. Fix: use the documented `ALLOWED_PROOF_AXIOMS` definition from `tests.surface_assertion_examples_test`."
+    },
+    {
+      "id": "20261026T024751Z-d2b4f3ee#3",
+      "line": 145,
+      "path": "tests/surface_application_test.py",
+      "rule": "R12",
+      "severity": "should",
+      "text": "The added tests increase this source file to 214 lines, exceeding the below-200-line limit. Fix: move the syntax tests into a separate registered test module."
+    },
+    {
+      "id": "20261026T024751Z-d2b4f3ee#4",
+      "line": 1,
+      "path": "packages/belay/Belay/Sqlite/ApplicationExplanation.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring explaining its purpose. Fix: add a module docstring describing its role in explaining simulation contracts."
+    },
+    {
+      "id": "20261026T024751Z-d2b4f3ee#5",
+      "line": 1,
+      "path": "packages/belay/Belay/Sqlite/ApplicationSyntax.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring explaining its purpose. Fix: add a module docstring describing how simulation notation exposes the public claims."
+    },
+    {
+      "id": "20261026T024751Z-d2b4f3ee#6",
+      "line": 172,
+      "path": "plans/20261024-surface-s8.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status claims that the fixture proves every syntax form equal to its primitive by `rfl`, but the guarded scoped form has only an explanation check. Fix: state that three forms have equality proofs and all four have explanation checks."
+    }
+  ],
+  "id": "20261026T024751Z-d2b4f3ee",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

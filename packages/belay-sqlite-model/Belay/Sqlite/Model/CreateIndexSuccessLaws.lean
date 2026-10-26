@@ -85,17 +85,17 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
   cases found : connection.state.database.catalog.findTable tableName with
   | none =>
     cases view : (connection.state.database.catalog.findView tableName).isSome <;>
-      simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, view, restrict,
+      simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, view, restrict,
         prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError, Output.endsRun]
   | some pair =>
     rcases pair with ⟨position, table⟩
     simp only [Option.some.injEq, Prod.mk.injEq, and_assoc, exists_and_left]
     by_cases tableReserved : reservedName tableName = true
-    · simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, tableReserved,
+    · simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, tableReserved,
         prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError]
     have tableFree : reservedName tableName = false := Bool.eq_false_iff.mpr tableReserved
     by_cases nameReserved : reservedName name = true
-    · simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, tableFree, nameReserved,
+    · simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, tableFree, nameReserved,
         prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError]
     have nameFree : reservedName name = false := Bool.eq_false_iff.mpr nameReserved
     cases named : connection.state.database.catalog.find name with
@@ -106,24 +106,24 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
         have := Catalog.find_not_trigger _ _ _ _ named
         simp [CatalogObject.isTrigger, CatalogEntry.isTrigger] at this
       | table shape | view view | index key =>
-        simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
+        simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
           named, prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError]
     | none =>
       simp only [tableFree, nameFree, true_and]
       cases keys : indexKeys context.profile.dqsDdl (Scope.single tableName table.columns !table.withoutRowid)
           table.columns terms with
       | error issue =>
-        cases issue <;> simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found,
+        cases issue <;> simp [statement_arms, resolveCreateIndex, Connection.resolveState, found,
           tableFree, nameFree, named, keys, issueResolution, prepareError, restrict,
           ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError, Output.endsRun]
       | ok keyTerms =>
         cases filters : indexFilter context.profile.dqsDdl (Scope.single tableName table.columns !table.withoutRowid) filter with
         | error issue =>
-          cases issue <;> simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found,
+          cases issue <;> simp [statement_arms, resolveCreateIndex, Connection.resolveState, found,
             tableFree, nameFree, named, keys, filters, issueResolution, prepareError, restrict,
             ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError, Output.endsRun]
         | ok resolvedFilter =>
-          simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
+          simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
             named, keys, filters, ResolveState.withCatalog, Except.map, resolvedStepOutput_createIndex clock index connection parameters name
               { table := position, keys := keyTerms, unique, filter := resolvedFilter }
               { shape := table, rows := connection.state.database.rows.getD position [] } aligned

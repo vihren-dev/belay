@@ -1,0 +1,59 @@
+{
+  "caller": "claude",
+  "commit": "3b563bca0d2b835ffe3718da16b885da20c784d3",
+  "date": "2026-10-25T07:40:24+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/ClaimExplanation.lean",
+    "packages/belay/Belay/Sqlite/MigrationExplainCommand.lean",
+    "plans/20261024-s6-assertions.status.md",
+    "reviews/20261025T073024Z-71dee9bd/resolution-1-20261025T073139Z.json",
+    "reviews/20261025T073024Z-71dee9bd/resolution-2-20261025T073139Z.json",
+    "reviews/20261025T073024Z-71dee9bd/resolution-3-20261025T073140Z.json",
+    "reviews/20261025T073024Z-71dee9bd/review.json",
+    "tests/surface/ClaimExplanationExamples.lean",
+    "tests/surface_assertions_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261025T074024Z-3b563bca#1",
+      "line": 84,
+      "path": "packages/belay/Belay/Sqlite/ClaimExplanation.lean",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The guard checks only the monad, so a `Sql` triple with a custom `WP` instance receives a false explanation of execution contexts and branch obligations. Fix: require the standard SQL predicate transformer and its context shape before emitting this explanation."
+    },
+    {
+      "id": "20261025T074024Z-3b563bca#2",
+      "line": 51,
+      "path": "packages/belay/Belay/Sqlite/ClaimExplanation.lean",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The fallback incorrectly says that rejecting modeled errors requires inspecting the trace, although a postcondition such as `⇓ outputs => ⌜outputs.allOk = true⌝` rejects errors through returned outputs. Fix: remove this restriction from both fallback messages and state that the postcondition determines how modeled errors affect the claim."
+    }
+  ],
+  "id": "20261025T074024Z-3b563bca",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

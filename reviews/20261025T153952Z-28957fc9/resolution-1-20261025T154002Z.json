@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T15:40:02+00:00",
+  "finding": "20261025T153952Z-28957fc9#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The status names tests/conformance_feature_coverage_test.py, where the merge registers the cases."
+}

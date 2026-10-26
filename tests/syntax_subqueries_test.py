@@ -36,9 +36,9 @@ def test_forms_name_subqueries_in_text_order(parse_sql: Callable[..., Translatio
     first, second, third = select["subqueries"]
     assert first["columns"] == [{"expression": {"value": {"call": {"name": "max", "arguments": [column("b")]}},
                                                 "alias": None, "text": "max(b)"}}]
-    assert second["filter"] == {"compare": {"operator": "eq", "left": {"qualified": {"source": "u", "column": "b"}},
-                                            "right": {"qualified": {"source": "t", "column": "a"}}}}
-    assert third["source"] == {"table": "u", "alias": None, "arguments": None, "query": None}
+    assert second["filter"] == {"compare": {"operator": "eq", "left": {"qualified": {"source": "u", "column": "b", "schema": None}},
+                                            "right": {"qualified": {"source": "t", "column": "a", "schema": None}}}}
+    assert third["source"] == {"table": "u", "alias": None, "arguments": None, "query": None, "schema": None}
     assert [item["parent"] for item in (first, second, third)] == [None, None, None]
 
 

@@ -30,7 +30,7 @@ theorem add_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
       counters } } := by
   obtain ⟨resolved, after, _, resolution, _⟩ := runScriptStep_ran step
   have body := resolution
-  simp only [resolveStatement, ResolveState.withCatalog, Except.map] at body
+  simp only [statement_arms, ResolveState.withCatalog, Except.map] at body
   split at body
   · cases body
   · rename_i pair bodyOk
@@ -88,7 +88,7 @@ theorem trigger_step {context : ResolveContext} {clock : Option Clock} {index : 
       counters } } := by
   obtain ⟨resolved, after, _, resolution, _⟩ := runScriptStep_ran step
   have body := resolution
-  simp only [resolveStatement, ResolveState.withCatalog, Except.map] at body
+  simp only [statement_arms, ResolveState.withCatalog, Except.map] at body
   split at body
   · cases body
   · rename_i pair bodyOk

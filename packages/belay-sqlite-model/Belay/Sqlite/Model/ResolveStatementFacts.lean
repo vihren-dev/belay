@@ -29,37 +29,40 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
     · simp only [ResolveState.withCatalog, Except.map, Except.ok.injEq, Prod.mk.injEq] at ok
       obtain ⟨rfl, _⟩ := ok
       exact each _ _ rfl
-  cases statement with
-  | begin | commit | rollback => cases ok; trivial
-  | createTable name columns constraints options =>
+  cases statement
+  all_goals simp only [statement_arms] at ok
+  case begin => cases ok; trivial
+  case commit => cases ok; trivial
+  case rollback => cases ok; trivial
+  case createTable =>
     exact plain _ ok fun _ _ found => resolveCreateTable_schemaLink _ _ _ _ _ _ _ _ found
-  | createView name ifNotExists columns query subqueries =>
+  case createView =>
     exact plain _ ok fun _ _ found => resolveCreateView_schemaLink _ _ _ _ _ _ found
-  | createIndex name unique table terms filter =>
+  case createIndex =>
     exact plain _ ok fun _ _ found => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found
-  | addColumn table column =>
-    exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ found
-  | dropTable name ifExists =>
+  case addColumn =>
+    exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ _ found
+  case dropTable =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
-  | dropView name ifExists =>
+  case dropView =>
     exact plain _ ok fun _ _ found => resolveDropView_schemaLink _ _ _ valid found
-  | dropIndex name ifExists =>
+  case dropIndex =>
     exact plain _ ok fun _ _ found => resolveDropIndex_schemaLink _ _ _ valid found
-  | createTrigger name ifNotExists time event table condition body =>
+  case createTrigger =>
     exact plain _ ok fun _ _ found => resolveCreateTrigger_schemaLink _ _ _ _ _ _ found
-  | dropTrigger name ifExists =>
+  case dropTrigger =>
     exact plain _ ok fun _ _ found => resolveDropTrigger_schemaLink _ _ _ valid found
-  | insert table columns rows conflicts algorithm returning subqueries =>
+  case insert =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveInsert_schemaLink _ _ _ _ _ _ _ _ _ _ _ _ h) found
-  | update table assignments filter returning subqueries =>
+  case update =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveUpdate_schemaLink _ _ _ _ _ _ _ _ _ _ h) found
-  | delete table filter returning subqueries =>
+  case delete =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveDelete_schemaLink _ _ _ _ _ _ _ _ _ h) found
-  | pragma pragma => exact resolveStatementPragma_schemaLink ok
-  | select results source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
+  case pragma => exact resolveStatementPragma_schemaLink ok
+  case select =>
     exact plain _ ok fun _ _ found => resolveSelect_schemaLink _ _ _ _ _ _ found
 
 end Belay.Sqlite.Model

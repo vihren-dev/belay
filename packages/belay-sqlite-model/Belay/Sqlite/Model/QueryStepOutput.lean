@@ -20,17 +20,19 @@ def RunStep.output : RunStep → Output
 bound to its parameters, as {name}`runScriptStep` gives it: {name}`clockUnmodeled` for a statement
 that reads a clock that the run does not have, {name}`counterUnknownReason` for an unknown counter,
 {name}`unmodeledHere` for a statement that fails the support check, and otherwise
-{name}`Output.ofStep` of its run and its transition. -/
+{name}`Output.ofStep` of its run and its transition. The optional {lit}`initial` database is the one that the
+sources of the initial origin of a query read; with none, as in {name}`runScriptStep`, such a source gives no rows
+and the output is not modeled. -/
 def resolvedStepOutput (clock : Option Clock) (index : Nat) (connection : Connection) (parameters : List Value)
-    (resolved : Resolved.Statement) : Output :=
+    (resolved : Resolved.Statement) (initial : Option Database := none) : Output :=
   match statementClock clock index resolved with
   | none => .unmodeled clockUnmodeled
   | some value => match connection.state.counters.firstUnknown resolved.counterReads with
     | some kind => .unmodeled (counterUnknownReason kind)
     | none =>
-      let run := connection.state.statementRun value parameters resolved
+      let run := connection.state.statementRun value parameters resolved initial
       if !run.ready then .unmodeled unmodeledHere
-      else Output.ofStep value parameters resolved connection.state run (advanceRun index resolved connection.state run)
+      else Output.ofStep value parameters resolved connection.state run (advanceRun index resolved connection.state run) initial
 
 /-- For every statement that ran, its step ({name}`ranScriptStep`) has the output of
 {name}`Output.ofStep`. Proof sketch: an output other than {name}`Output.unmodeled` continues with

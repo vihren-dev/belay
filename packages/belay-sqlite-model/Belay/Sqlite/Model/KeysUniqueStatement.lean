@@ -18,7 +18,7 @@ namespace Belay.Sqlite.Model
 * DROP: {name}`Catalog.DropCondition` of the catalog at its positions;
 * every other statement: nothing. -/
 def Resolved.Statement.KeysCondition (database : Database) : Resolved.Statement → Prop
-  | .addColumn target _ => database.AddColumnCondition target
+  | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
@@ -51,7 +51,7 @@ theorem runStatement_keysUnique (clock : Int) (counters : Counters) (parameters 
     exact runStatement_createView_keysUnique clock counters parameters target name view unique
   | createTrigger target name trigger =>
     exact runStatement_createTrigger_keysUnique clock counters parameters target name trigger unique
-  | addColumn target column => exact runStatement_addColumn_keysUnique clock counters parameters target column unique condition
+  | addColumn target column refuses => exact runStatement_addColumn_keysUnique clock counters parameters target column refuses unique condition
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_keysUnique clock counters parameters positions unique condition

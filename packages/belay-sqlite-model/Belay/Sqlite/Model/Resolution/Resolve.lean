@@ -1,15 +1,4 @@
-import Belay.Sqlite.Model.Resolution.SelectResolution
-import Belay.Sqlite.Model.Resolution.WriteResolution
-import Belay.Sqlite.Model.Resolution.CommonTableWrites
-import Belay.Sqlite.Model.Resolution.StatementCatalog
-import Belay.Sqlite.Model.Resolution.Updates
-import Belay.Sqlite.Model.Resolution.Deletes
-import Belay.Sqlite.Model.Resolution.Drops
-import Belay.Sqlite.Model.Resolution.ViewDefinitions
-import Belay.Sqlite.Model.Resolution.ResolveState
-import Belay.Sqlite.Model.Resolution.TriggerDefinitions
-import Belay.Sqlite.Model.Resolution.PragmaResolution
-import Belay.Sqlite.Model.Resolution.ViewTableInfo
+import Belay.Sqlite.Model.Resolution.StatementArms
 
 set_option doc.verso true
 
@@ -22,51 +11,6 @@ error is resolved as if that statement had no effect: SQLite never runs it, and 
 model restriction there still refuses the script, which is conservative. -/
 
 namespace Belay.Sqlite.Model
-
-/-- Resolve one statement against the state, with no statement index: a restriction is one
-inside the statement ({name}`NodeRestriction`). BEGIN in an open transaction and
-COMMIT or ROLLBACK without one fail when SQLite runs them, not when it prepares
-them, so they resolve and leave the error to the execution semantics: such a BEGIN
-keeps the first saved catalog, and such a ROLLBACK keeps the current catalog.
-A pragma resolves with {name}`resolveStatementPragma`: {lit}`PRAGMA foreign_keys = value` changes the
-state's setting outside a transaction and nothing inside one, as SQLite does, and
-{lit}`PRAGMA recursive_triggers = value` changes it also inside one. SELECT and supported
-writes expand ordinary WITH definitions before their expressions resolve. -/
-def resolveStatement (context : ResolveContext) (state : ResolveState) :
-    Syntax.Statement → Except NodeRestriction (Resolved.Statement × ResolveState)
-  | .begin => .ok (.begin, { state with saved := state.saved.getD state.catalog })
-  | .commit => .ok (.commit, { state with saved := none })
-  | .rollback => .ok (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none })
-  | .pragma pragma => resolveStatementPragma context state pragma
-  | .createTable name columns constraints options =>
-    state.withCatalog (resolveCreateTable context state.catalog name columns constraints options)
-  | .createView name ifNotExists columns query subqueries =>
-    state.withCatalog (resolveCreateView state.catalog name ifNotExists { columns, query, subqueries })
-  | .createIndex name unique table terms filter =>
-    state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter)
-  | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog table column)
-  | .dropTable name ifExists => state.withWrite context (resolveDropTable state.catalog name ifExists)
-  | .dropView name ifExists => state.withCatalog (resolveDropView state.catalog name ifExists)
-  | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog name ifExists)
-  | .createTrigger name ifNotExists time event table condition body =>
-    state.withCatalog (resolveCreateTrigger state.catalog name ifNotExists { table, time, event, condition, body })
-  | .dropTrigger name ifExists => state.withCatalog (resolveDropTrigger state.catalog name ifExists)
-  | .insert table columns rows conflicts algorithm returning subqueries =>
-    state.withWrite context (resolveCommonTableWrite context state.catalog 6 table (fun _ => []) subqueries
-      (fun index => resolveInsert context state.catalog table columns
-        (rows.map (List.map (Syntax.Expr.reindex index))) conflicts algorithm returning))
-  | .update table assignments filter returning subqueries =>
-    state.withWrite context (resolveCommonTableWrite context state.catalog 4 table (writtenScope table) subqueries
-      (fun index => resolveUpdate context state.catalog table
-        (assignments.map fun (name, value) => (name, value.reindex index))
-        (filter.map (Syntax.Expr.reindex index)) returning))
-  | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
-    state.withCatalog (resolveSelect context state.catalog
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct, compound }
-      subqueries)
-  | .delete table filter returning subqueries =>
-    state.withWrite context (resolveCommonTableWrite context state.catalog 3 table (writtenScope table) subqueries
-      (fun index => resolveDelete context state.catalog table (filter.map (Syntax.Expr.reindex index)) returning))
 
 /-- Resolve the statements from a zero-based index and a state, in order. A restriction of a
 statement gets the statement's index ({name}`NodeRestriction.at`). -/

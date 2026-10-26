@@ -121,39 +121,14 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
       .ok (.insert position full columns resolvedSubqueries, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
       ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
-  unfold resolveInsert at ok
-  simp only [prepareError, restrict, issueResolution] at ok
-  split at ok
-  · cases ok
-  split at ok
-  · split at ok <;> cases ok
-  rename_i found_position table found
-  split at ok
-  · cases ok
-  rename_i positions _
-  split at ok
-  · split at ok <;> cases ok
-  rename_i written _
-  split at ok
-  · cases ok
-  split at ok
-  · cases ok
-  split at ok
-  · cases ok
-  split at ok
-  · split at ok <;> cases ok
-  rename_i rows_ok
-  split at ok
-  · split at ok <;> cases ok
-  split at ok
-  · split at ok <;> cases ok
-  split at ok
-  · cases ok
-  split at ok
-  · cases ok
-  split at ok
-  case isFalse => cases ok
+  unfold resolveInsert resolveInsertTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
+  repeat' split at ok
+  all_goals (try (first | (simp at ok; done) | (cases ok; done)))
   cases ok
+  obtain ⟨table, found, positions, written, rows_ok⟩ : ∃ table, catalog.findTable tableName = some (position, table) ∧
+      ∃ positions written, resolveAll (fun _ row => fullCells table.columns positions row) written = Except.ok full :=
+    ⟨_, ‹_›, _, _, ‹_›⟩
   refine ⟨rfl, table, found, fun row member => ?_⟩
   unfold resolveAll at rows_ok
   obtain ⟨length, each⟩ := resolveAllFrom_ok _ 0 written _ rows_ok

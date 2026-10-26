@@ -26,10 +26,11 @@ theorem resolveCreateView_schemaLink (catalog after : Catalog) (name : Identifie
 /-- For every successful resolution of ALTER TABLE ADD COLUMN, the resolved statement meets
 {name}`Resolved.Statement.SchemaLink` on the catalog. Proof sketch: every branch of the resolver gives a
 prepare error, or the ADD COLUMN of a column whose strict default fits
-({name}`resolveAddColumn_strictDefaultFits`). -/
-theorem resolveAddColumn_schemaLink (context : ResolveContext) (catalog after : Catalog)
+({name}`resolveAddColumn_strictDefaultFits`).
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
+theorem resolveAddColumn_schemaLink (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     statement.SchemaLink catalog := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok

@@ -1,5 +1,8 @@
 import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.DbDiagnostics
+import Belay.Sqlite.SqlTableOrigins
+import Belay.Sqlite.SqlEditorInfo
+import Belay.Sqlite.SqlOrderWarnings
 
 set_option doc.verso true
 
@@ -57,14 +60,19 @@ def parameterDiagnostic (parameter : Translation.Parameter) : Diagnostic :=
 of {name}`runDiagnostics` at its range of the text ({name}`textRange`). After an error, the term
 is a {lit}`sorry` that Lean shows no second error for. Otherwise the term is
 {name}`databaseTerm` of the database, and its error is an error at the literal. A successful value retains its source text as
-replay metadata, which replay consumers validate against the actual database. -/
+replay metadata, which replay consumers validate against the actual database. It also records, for the
+declaration that holds the term, where each table of the final catalog is created
+({name}`registerTableOrigins`), outside the value, and gives the table names editor information with the
+rows that the run reached ({name}`executedContexts`) and warns about a statement with several permitted
+results ({name}`orderEvidenceWarnings`). -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
   let some text := literal.isStrLit? | throwUnsupportedSyntax
   let items ← literalStatements literal
+  let statements := items.toList.map (·.statement)
   let parameters := items.toList.flatMap (·.parameters)
-  let (diagnostics, connection) := if parameters.isEmpty then runDiagnostics text.toUTF8 (items.toList.map (·.statement))
+  let (diagnostics, connection) := if parameters.isEmpty then runDiagnostics text.toUTF8 statements
     else (parameters.map parameterDiagnostic, Database.empty.raw.connection)
   for diagnostic in diagnostics do
     logErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
@@ -72,6 +80,11 @@ def elabDbBang : TermElab := fun term _ => do
     return ← mkLabeledSorry (mkConst ``Database) (synthetic := true) (unique := false)
   match databaseTerm connection.state.database with
   | .error message => throwErrorAt literal message
-  | .ok database => return withSource databaseSourceKey literal text (← getFileName) database
+  | .ok database =>
+    registerTableOrigins (.literal literal text) statements connection.state.database.catalog database
+    let (contexts, outputs) := executedContexts 0 Database.empty.raw.connection statements
+    emitSqlEditorInfo (.literal literal text) statements {} contexts
+    logOrderWarnings literal text (orderEvidenceWarnings statements outputs)
+    return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite

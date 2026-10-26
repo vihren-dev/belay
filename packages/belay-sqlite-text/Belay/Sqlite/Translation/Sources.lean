@@ -51,16 +51,32 @@ def sourceParts (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : Transl
              constraint := parts[5]!, arguments := none, query := some (leaf index select.start select.stop) }
   | _ => unsupported node ("This FROM source is not modeled; use a table, table-valued function or SELECT")
 
-/-- A named table, function or indexed query with its optional alias; a schema name is refused. -/
+/-- The schema name of a source, which only {lit}`before` may be (ADR 0017, S6): the name of the
+fixed initial database. In {lit}`schema.table` the grammar reads the schema as the first name
+({lit}`nm`) and the table as the name of {lit}`dbnm`. Any other schema name is refused, because the model has
+no other database. -/
+def sourceSchema (tree : SqlTree) (source : SourceParts) : TranslateM (Located (Option Identifier)) := do
+  if source.query.isSome || source.schema.children.isEmpty then return missing source.schema.start source.schema.stop
+  let name ← identifierName tree source.table
+  unless name.value.isInitialSchema do
+    unsupported source.schema "A schema name other than before is not modeled; remove it"
+  return name.present
+
+/-- A named table, function or indexed query with its optional alias and its optional schema name
+{lit}`before`; every other schema name is refused. -/
 def tableReference (tree : SqlTree) (source : SourceParts) : TranslateM (Located Syntax.TableReference) := do
-  absent source.schema "A schema name"
+  let schema ← sourceSchema tree source
+  let tableName := if source.schema.children.isEmpty then source.table else (tree.children source.schema)[1]!
   let table ← if source.query.isSome then pure (leaf (name! "") source.table.start source.table.stop)
-    else identifierName tree source.table
+    else identifierName tree tableName
   let named ← alias tree source.aliasNode
   let arguments := (source.arguments.map (·.present)).getD (missing source.table.start source.table.stop)
   let query := (source.query.map (·.present)).getD (missing source.table.start source.table.stop)
-  return composite { table := table.value, alias := named.value, arguments := arguments.value, query := query.value } source.table.start
-    (max source.table.stop source.aliasNode.stop) #[table.span, named.span, arguments.span, query.span]
+  let reference : Syntax.TableReference :=
+    { table := table.value, alias := named.value, arguments := arguments.value, query := query.value,
+      schema := schema.value }
+  return composite reference source.table.start
+    (max source.table.stop source.aliasNode.stop) #[table.span, named.span, arguments.span, query.span, schema.span]
 
 /-- The keywords of a {lit}`joinop` before {lit}`JOIN`, as written; none for {lit}`,` and a plain
 {lit}`JOIN`. -/

@@ -1,4 +1,6 @@
 import Belay.Sqlite.Model.SimpleSelectResolution
+import Belay.Sqlite.Model.Resolution.SourceListArms
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -10,11 +12,11 @@ catalog position, and the resolved column. The catalog may be any catalog. -/
 namespace Belay.Sqlite.Model
 
 /-- The scope of a query of one table that the catalog has at a position: one source with the alias
-of the reference, or else the name that the catalog gives the table, the columns of the table, and
-whether it has a rowid. -/
+of the reference, or else the name that the catalog gives the table, the columns of the table, whether it
+has a rowid, and the catalog position that it was read from. -/
 def tableScope (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable) : Scope :=
-  Scope.single (reference.alias.getD ((catalog[position]?.map (·.name)).getD reference.table)) table.columns
-    (!table.withoutRowid)
+  Scope.singleAt (some position) (reference.alias.getD ((catalog[position]?.map (·.name)).getD reference.table))
+    table.columns (!table.withoutRowid)
 
 /-- A {lit}`FROM` clause that names one table, with no table-function arguments and no joins, resolves
 when the catalog has the table: it gives one inner source on the catalog position of the table, and one
@@ -23,19 +25,19 @@ scope of the table ({name}`tableScope`). The catalog may be any catalog.
 The source reference has no indexed query. The result holds for every derived-source callback
 and diagnostic prefix; neither is read on this successful named-table path. Leave both at their defaults
 for a query without derived sources.
-Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the hypotheses. -/
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the hypotheses. -/
 theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table))
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table))
     (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
     (prefix_ : List Nat := []) :
     resolveSources catalog (some reference) [] 0 queries prefix_ = .ok ([{ item := .table position, kind := .inner, condition := .none }],
       tableScope catalog reference position table) := by
-  simp [resolveSources, resolveReference, namedSource, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
+  simp [resolveSources_some, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, found, maximumJoinTables, Scope.place, mergeJoins, mergeJoinsTraced, traced_drop, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Except.mapError, joinOperator, tableScope, Scope.singleAt]
 
 /-- No pending source resolves to no source, for any scope and quote setting. Proof sketch: there is no
 condition and no argument to resolve. -/
 theorem resolvePendingSources_nil (dqs : Bool) (scope : Scope) : resolvePendingSources dqs scope [] = .ok [] := by
-  simp [resolvePendingSources, resolveAll, resolveAllFrom, resolveEachArguments, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [resolvePendingSources_arm, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- The one inner source without a condition, which {name}`resolveSources_table` gives, resolves to the
 first source of the table, {name}`Resolved.QuerySource.first`, for any scope and quote setting.
@@ -44,7 +46,7 @@ Proof sketch: unfold the resolver and the join condition check; there is no cond
 theorem resolvePendingSources_table (dqs : Bool) (scope : Scope) (position : Nat) :
     resolvePendingSources dqs scope [{ item := .table position, kind := .inner, condition := .none }] =
       .ok [Resolved.QuerySource.first position] := by
-  simp [resolvePendingSources, resolveJoinCondition, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure,
+  simp [resolvePendingSources_arm, resolveJoinCondition_none, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure,
     Resolved.QuerySource.first]
 
 /-- The result column {lit}`1` resolves, in any scope and with any shapes of subqueries, to the integer
@@ -54,7 +56,7 @@ Proof sketch: unfold the resolver; a numeric literal needs no scope. -/
 theorem resolveColumns_one (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) :
     resolveAll (resolveResultColumn dqs scope shapes) [.expression (.numeric "1") none "1"] =
       .ok [[(.scalar (.literal (.integer 1)), "1", none)]] := by
-  simp [resolveAll, resolveAllFrom, resolveResultColumn, resolveOperand, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveOperand, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rfl
 
 end Belay.Sqlite.Model

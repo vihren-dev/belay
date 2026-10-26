@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T14:44:50+00:00",
+  "finding": "20261025T143614Z-c1fa1969#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "jj merged docs/adr-0019-guide-sql.md against a different base and reverted the v53 line's 2026-10-24 amendment. The file is restored from e384c875. An audit of all 546 changed files against the three-way expectation against 6a0bc6be shows no other single-sided mismatch."
+}

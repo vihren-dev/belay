@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T20:48:53+00:00",
+  "finding": "20261025T204821Z-ea94c585#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the underscore fixture copies were unintended generated leftovers; deleted from the tree"
+}

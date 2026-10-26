@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T20:48:53+00:00",
+  "finding": "20261025T204821Z-ea94c585#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "status scope summary now separates the completed query implementation from the remaining assertion layer"
+}

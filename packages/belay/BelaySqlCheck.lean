@@ -1,13 +1,16 @@
 import Lake
 import Lake.Load
 import Belay.Sqlite.SqlCheckReport
+import Belay.Sqlite.ProofCostRun
 
 set_option doc.verso true
 
 /-! {lit}`lake exe belay-sql-check [--library NAME]` (ADR 0017, S7): compare the SQL files that the
-compiled libraries of the current package read with the files on disk. The tool only inspects the
-existing build. It never builds a library, and it never writes a manifest, so a stale library is
-reported before any rebuild. It is the only module of the surface that imports Lake. -/
+compiled libraries of the current package read with the files on disk. With {lit}`--costs` it
+reports the proof costs that the compiled libraries stored, or compares them with a baseline (see
+{lit}`Belay.Sqlite.runCosts`). The tool only inspects the existing build. It never builds a library,
+and it never writes a manifest, so a stale library is reported before any rebuild. It is the only
+module of the surface that imports Lake. -/
 
 open Lean Lake System Belay.Sqlite
 
@@ -159,13 +162,24 @@ private def run (name? : Option String) : IO UInt32 := do
   for problem in problems do IO.eprintln s!"error: {problem}"
   return exitCodeOf checks problems
 
+/-- The own modules of a library with their compiled and source files, for the costs mode. -/
+private def costFiles (library : LeanLib) : IO (String × Array ModuleFiles) := do
+  let modules ← library.getModuleArray
+  return (library.name.toString (escape := false), modules.map fun module =>
+    { name := module.name.toString (escape := false), olean := module.oleanFile, source := module.leanFile })
+
+/-- Report or compare the proof costs of the selected libraries. -/
+private def runCostsMode (name? : Option String) (settings : CostSettings) : IO UInt32 := do
+  let workspace ← loadCurrentWorkspace
+  let libraries ← IO.ofExcept (selectLibraries workspace name?)
+  runCosts (← libraries.mapM costFiles) settings
+
 /-- The entry point; see the module documentation. -/
 def main (arguments : List String) : IO UInt32 := do
-  let name? ← match arguments with
-    | [] => pure none
-    | ["--library", name] => pure (some name)
-    | _ => throw <| IO.userError "usage: lake exe belay-sql-check [--library NAME]"
-  try run name?
+  try
+    match ← IO.ofExcept (parseArguments arguments) with
+    | .sqlFiles name? => run name?
+    | .costs name? settings => runCostsMode name? settings
   catch error =>
     IO.eprintln s!"error: {error}"
     return 2

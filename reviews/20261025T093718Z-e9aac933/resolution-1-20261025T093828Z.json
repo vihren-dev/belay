@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T09:38:28+00:00",
+  "finding": "20261025T093718Z-e9aac933#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docstring or status text corrected in the next commit"
+}

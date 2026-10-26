@@ -22,7 +22,7 @@ theorem Query.source_single (context : EvalContext) (query : Query) (database : 
   cases database.table table with
   | none => rfl
   | some found =>
-    simp [joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure]
+    simp [QuerySource.joinTable, joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure]
 
 /-- For every evaluation context, query without sources ({lit}`SELECT` without {lit}`FROM`) and
 every database, the source is one row with no cells, without a fault. -/

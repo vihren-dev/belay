@@ -29,7 +29,7 @@ theorem an_email_matches_at_most_one_user (db : Database) (v : String) (position
     (term := .compare .eq (.identifier (name! "email") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (.compare .eq (some cell.affinity) (.column col) (.parameter 1) cell.collation, none))
     (by simp [sql_simp, column, columnAt]; rfl)
-  exact Holds.selectOne_count_unique_lookup (namedSource := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+  exact Holds.selectOne_count_unique_lookup (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
     mainResolves (key := UniqueKey.ofColumns table.columns [col]) (descending := false)
     (Catalog.ofColumns_mem_uniqueKeys_of_unique _ _ _ declaredUnique) columnAt rfl (by simp [UniqueKey.ofColumns, columnAt])
 
@@ -53,7 +53,7 @@ theorem an_id_matches_at_most_one_user (db : Database) (v : Int64) (position col
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (.compare .eq (some cell.affinity) (.column col) (.parameter 1) cell.collation, none))
     (by simp [sql_simp, column, columnAt]; rfl)
-  refine Holds.selectOne_count_unique_lookup (namedSource := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+  refine Holds.selectOne_count_unique_lookup (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
     mainResolves (key := UniqueKey.ofColumns table.columns table.primaryKey) (descending := false)
     (Catalog.ofColumns_mem_uniqueKeys_of_primaryKey _ _ _ (by simp [primary])) columnAt rfl ?_
   simp [UniqueKey.ofColumns, primary, columnAt]

@@ -1,6 +1,8 @@
 import Belay.Sqlite.Model.AggregateQueryLaws
 import Belay.Sqlite.Model.CountSelectResolution
 import Belay.Sqlite.Model.SubquerySelectResolution
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -26,7 +28,7 @@ theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : Subquery
       .ok [[(.aggregate ((build resolved).withCollation (operand.collationIn scope)), (alias.map (·.text)).getD text,
         none)]] := by
   have notJson : ¬ (build resolved).writesJson = true := by simp [noJson]
-  simp [resolveAll, resolveAllFrom, resolveResultColumn, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
     Except.mapError, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- For every query {lit}`SELECT agg(x) FROM … WHERE p` without join, grouping, ordering, window, {lit}`HAVING`,
@@ -58,7 +60,7 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     affinity operandOk rfl noJson
   have aggregates : (Syntax.Expr.call name [operand]).aggregateCalls = [.call name [operand]] := by
     simp [Syntax.Expr.aggregateCalls, called]
-  unfold resolveQueryBody
+  rw [resolveQueryBody_arm]
   dsimp only
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
@@ -67,9 +69,9 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     List.append_nil, Option.toList_none, Syntax.Expr.distinctList, List.foldl_nil, Bool.not_eq_true',
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
-  · simp [found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
+  · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
       Resolved.Output.canFail]
-  · simp [found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
+  · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
       Model.condition, Functor.map, Except.map, Resolved.Output.canFail]
 
 /-- For every statement {lit}`SELECT agg(x) FROM t WHERE p` (or without {lit}`WHERE`) of a table that the catalog of the
@@ -77,7 +79,7 @@ state has at a position, without table-function arguments, whose aggregate {lit}
 JSON ({name}`aggregateNamed`), whose operand resolves in the scope of the table and whose condition resolves
 ({name}`FilterResolves`), resolution gives the whole-table aggregate query of the first source of the table
 ({name}`Resolved.Query.aggregateOf`), with no subquery, and leaves the state as it is. The source reference has no indexed query.
-Proof sketch:
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch:
 {name}`resolveStatement_select_of_resolveSelect` and {name}`resolveSelect_no_subqueries`; the body resolves by
 {name}`resolveQueryBody_aggregate` in the scope of the table ({name}`resolveSources_table`,
 {name}`resolvePendingSources_table`). -/
@@ -85,7 +87,7 @@ theorem resolveStatement_select_aggregate (context : ResolveContext) (state : Re
     (reference : Syntax.TableReference) (filter : Option Syntax.Expr) (name : String) (operand : Syntax.Expr)
     (alias : Option Identifier) (text : String) (build : Resolved.Expr → Resolved.Aggregate)
     (named : aggregateNamed name = some build) (position : Nat) (table : CatalogTable) (resolved : Resolved.Expr)
-    (affinity : Option Affinity) (condition : Option Resolved.Expr) (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (affinity : Option Affinity) (condition : Option Resolved.Expr) (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : state.catalog.findTable reference.table = some (position, table))
     (operandOk : resolveOperand context.profile.dqsDml (tableScope state.catalog reference position table)
       { current := none, later := [] } true operand = .ok (resolved, affinity))
@@ -102,7 +104,7 @@ theorem resolveStatement_select_aggregate (context : ResolveContext) (state : Re
     (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] (some reference) [] filter [] [] none none none
       none false none none) [] rfl rfl _ ?_
   refine resolveSelect_no_subqueries context state.catalog _ _ none _ _ rfl rfl
-    (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) ?_
+    (resolveSources_table state.catalog reference position table namedSource current arguments found) (by simp [starIssue]) ?_
   have body := resolveQueryBody_aggregate context.profile.dqsDml (tableScope state.catalog reference position table)
     none [] [] _ (some reference) filter name operand alias text build named resolved affinity operandOk noJson condition
     _ (by simpa using resolves) (resolvePendingSources_table _ _ position)

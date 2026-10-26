@@ -106,7 +106,7 @@ theorem resolveOperand_tableInfo_type (dqs : Bool) (reference : Syntax.TableRefe
     (shapes : SubqueryShapes) (misuse : Bool) :
     resolveOperand dqs (tableInfoScope reference argument rows) shapes misuse
         (.identifier (name! "type") quote) = .ok (.column 2, some .blob) := by
-  simp only [resolveOperand, tableInfoScope_resolveName_type]
+  simp only [traced_arms, tableInfoScope_resolveName_type]
   simp [Scope.nameRead, Scope.nameOperand, Scope.affinityAt, tableInfoScope, pragmaSource, Scope.place,
     Scope.argumentCell, Scope.triggerCell, Scope.columns, tableInfoNames,
     CatalogColumn.affinity, affinityOf]

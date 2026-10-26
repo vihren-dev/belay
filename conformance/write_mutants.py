@@ -29,11 +29,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      some ⟨names, returnedRows context returning (Resolved.rowsAt context [] rows),\n"
         "        some (run.counts.changes.getD 0)⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
-        "      .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
-        "      .ok [(resolved, (alias.map (·.text)).getD text)]"),
+        "      pure [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
+        "      pure [(resolved, (alias.map (·.text)).getD text)]"),
     "constant_not_evaluated": (CELLS,
-        "    else .ok (.value (operand.1.eval (.plain 0) []))",
-        "    else .ok (.value (match operand.1 with\n"
+        "  else pure (.value (operand.1.eval (.plain 0) []))",
+        "  else pure (.value (match operand.1 with\n"
         "      | .arithmetic _ left _ => left.eval (.plain 0) []\n      | other => other.eval (.plain 0) []))"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
@@ -53,8 +53,8 @@ GUARDS: dict[str, str] = {
     "update_returning_old_values": "rule:statementOutput",
     "update_returning_every_row": "rule:statementOutput",
     "returning_rows_on_failure": "rule:statementOutput",
-    "returning_names_ignore_definition": "rule:returningColumn",
-    "constant_not_evaluated": "rule:constantCell",
+    "returning_names_ignore_definition": "rule:returningColumnTraced",
+    "constant_not_evaluated": "rule:constantCellTraced",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

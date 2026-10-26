@@ -78,6 +78,45 @@ import Belay.Sqlite.Model.ForeignKeyParentCoverage
 import Belay.Sqlite.Model.ForeignKeyAssignmentCoverage
 import Belay.Sqlite.Model.ForeignKeyUpdateCoverage
 import Belay.Sqlite.Model.ForeignKeyActionCoverage
+import Belay.Sqlite.Model.AdmittedWriteLaws
+import Belay.Sqlite.Model.RowEngineResultLaws
+import Belay.Sqlite.Model.ForeignKeyChangeCoverage
+import Belay.Sqlite.Model.ForeignKeyCounterDelete
+import Belay.Sqlite.Model.ForeignKeyUpdateChecks
+import Belay.Sqlite.Model.ForeignKeyCounterUpdate
+import Belay.Sqlite.Model.ForeignKeyInsertWrite
+import Belay.Sqlite.Model.ForeignKeyCounterInsert
+import Belay.Sqlite.Model.ForeignKeyWorkConditions
+import Belay.Sqlite.Model.ForeignKeyCounterTriggers
+import Belay.Sqlite.Model.ForeignKeyCounterNested
+import Belay.Sqlite.Model.ForeignKeyCounterRows
+import Belay.Sqlite.Model.ForeignKeyCounterWrites
+import Belay.Sqlite.Model.ForeignKeyPlainFrame
+import Belay.Sqlite.Model.ForeignKeyWriteConditions
+import Belay.Sqlite.Model.ForeignKeyStatement
+import Belay.Sqlite.Model.ForeignKeyRuns
+import Belay.Sqlite.Model.ForeignKeyCreateFrame
+import Belay.Sqlite.Model.ForeignKeyCreateSelection
+import Belay.Sqlite.Model.ForeignKeyCreate
+import Belay.Sqlite.Model.CatalogAddColumnSearch
+import Belay.Sqlite.Model.ForeignKeyAddColumnLink
+import Belay.Sqlite.Model.ForeignKeyAddColumnSelection
+import Belay.Sqlite.Model.ForeignKeyAddColumnPairs
+import Belay.Sqlite.Model.ForeignKeyAddColumnReads
+import Belay.Sqlite.Model.ForeignKeyAddColumnValid
+import Belay.Sqlite.Model.ForeignKeyAddColumnDatabase
+import Belay.Sqlite.Model.ForeignKeyAddColumn
+import Belay.Sqlite.Model.ForeignKeyDdlConditions
+import Belay.Sqlite.Model.ForeignKeyCreateView
+import Belay.Sqlite.Model.ForeignKeyDdlSelected
+import Belay.Sqlite.Model.ForeignKeySelectedStatement
+import Belay.Sqlite.Model.ForeignKeySelectedRuns
+import Belay.Sqlite.Model.ForeignKeyDropSchema
+import Belay.Sqlite.Model.ForeignKeyDdlDrop
+import Belay.Sqlite.Model.ForeignKeyDropRows
+import Belay.Sqlite.Model.ForeignKeyDropEngine
+import Belay.Sqlite.Model.ForeignKeyDropCatalog
+import Belay.Sqlite.Model.ForeignKeyEngineFacts
 import Belay.Sqlite.Model.ForeignKeyRowFrame
 import Belay.Sqlite.Model.ForeignKeySchemaWrites
 import Belay.Sqlite.Model.ForeignKeySchemaRuns
@@ -195,6 +234,41 @@ import Belay.Sqlite.Model.ForeignKeyCheckLaws
 import Belay.Sqlite.Model.Resolution
 import Belay.Sqlite.Model.Resolution.QuerySpec
 import Belay.Sqlite.Model.Resolution.ScopeLaws
+import Belay.Sqlite.Model.Resolution.NameTraceTypes
+import Belay.Sqlite.Model.Resolution.SourceKind
+import Belay.Sqlite.Model.Resolution.TracedAttr
+import Belay.Sqlite.Model.Resolution.Traced
+import Belay.Sqlite.Model.Resolution.TracedIssues
+import Belay.Sqlite.Model.Resolution.ScopeBindings
+import Belay.Sqlite.Model.Resolution.OperandRecords
+import Belay.Sqlite.Model.Resolution.OperandForms
+import Belay.Sqlite.Model.Resolution.OperandTraced
+import Belay.Sqlite.Model.Resolution.OperandProjection
+import Belay.Sqlite.Model.Resolution.OperandArms
+import Belay.Sqlite.Model.Resolution.OperandArmsMore
+import Belay.Sqlite.Model.Resolution.NameTraceSettled
+import Belay.Sqlite.Model.Resolution.NameResultSources
+import Belay.Sqlite.Model.Resolution.NameTraceConstraints
+import Belay.Sqlite.Model.Resolution.ResolveAll
+import Belay.Sqlite.Model.Resolution.TracedList
+import Belay.Sqlite.Model.Resolution.WriteStages
+import Belay.Sqlite.Model.Resolution.SourceStage
+import Belay.Sqlite.Model.Resolution.StatementTraced
+import Belay.Sqlite.Model.Resolution.StatementAttr
+import Belay.Sqlite.Model.Resolution.WriteTracedLaws
+import Belay.Sqlite.Model.Resolution.ResolveStatement
+import Belay.Sqlite.Model.Resolution.StatementArms
+import Belay.Sqlite.Model.Resolution.ResultColumnTraced
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
+import Belay.Sqlite.Model.Resolution.QueryBodyTraced
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
+import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
+import Belay.Sqlite.Model.Resolution.SourceRecords
+import Belay.Sqlite.Model.Resolution.TableReference
+import Belay.Sqlite.Model.Resolution.SourceReference
+import Belay.Sqlite.Model.Resolution.SourceListArms
+import Belay.Sqlite.Model.Resolution.SourceListFromArms
+import Belay.Sqlite.Model.Resolution.JoinMerge
 import Belay.Sqlite.Model.OutputResultsLaws
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.QueryOutputOn
@@ -214,6 +288,7 @@ import Belay.Sqlite.Model.PrepareErrorOutput
 import Belay.Sqlite.Model.SimpleTableOutput
 import Belay.Sqlite.Model.SelectOneResolution
 import Belay.Sqlite.Model.ExprEvalLaws
+import Belay.Sqlite.Model.SingleSourceNameLaws
 import Belay.Sqlite.Model.ExprResolutionLaws
 import Belay.Sqlite.Model.ExprCalmLaws
 import Belay.Sqlite.Model.SubqueryExprResolutionLaws
@@ -279,6 +354,7 @@ import Belay.Sqlite.Model.SumRangeLaws
 import Belay.Sqlite.Model.SumValueLaws
 
 import Belay.Sqlite.Model.QueryStepOutput
+import Belay.Sqlite.Model.TwoStateQuery
 import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.QueryOutputCases
 import Belay.Sqlite.Model.OutputResultsLaws
@@ -290,10 +366,23 @@ import Belay.Sqlite.Model.SimpleQuerySteps
 import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
+import Belay.Sqlite.Model.PartialUniqueCount
+import Belay.Sqlite.Model.PlainInsertEffect
+import Belay.Sqlite.Model.PlainDeleteEffect
+import Belay.Sqlite.Model.RowwiseExpr
+import Belay.Sqlite.Model.ExceptSubqueryRun
+import Belay.Sqlite.Model.TwoStateQuerySteps
+import Belay.Sqlite.Model.ExceptCombineLaws
+import Belay.Sqlite.Model.TwoStateNotExistsExcept
+import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
+import Belay.Sqlite.Model.TwoStateKeptRows
+import Belay.Sqlite.Model.PlainInsertRows
+import Belay.Sqlite.Model.SelectStepKeeps
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
 SQLite may give for it, the laws of the check pragmas and of {lit}`foreign_key_check`, a run of
 statement syntax that continues after an error, the constraints that a failed write names,
-structural preservation facts, and name resolution from statement syntax to resolved statements
+structural preservation facts, the effect of a plain INSERT and of a SELECT step, the bound of a
+unique lookup in a partial index, and name resolution from statement syntax to resolved statements
 with its specification and laws. -/

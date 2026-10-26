@@ -2,6 +2,8 @@ import Belay.Sqlite.Model.CountStatementResolution
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
+import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
 
 set_option doc.verso true
 
@@ -38,13 +40,13 @@ theorem GroupTermResolves.identifier_table {dqs : Bool} {catalog : Catalog} {ref
     GroupTermResolves dqs (tableScope catalog reference position table) shapes (.identifier name quote) (.column index)
       ((table.columns[index]?.map (·.collation)).getD .binary) := by
   have resolved : (tableScope catalog reference position table).resolveName name = .found index [index] :=
-    resolveName_one_source found
+    resolveName_one_source_at found
   have collation := Syntax.Expr.columnCollation_identifier_table (catalog := catalog) (reference := reference)
     (position := position) (quote := quote) found
-  unfold GroupTermResolves resolveGroupTerm
-  simp only [resolved]
-  simp only [tableScope, Scope.single] at collation
-  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.single, Scope.argumentCell, Scope.triggerCell,
+  unfold GroupTermResolves
+  rw [resolveGroupTerm_identifier_found (found := resolved) ..]
+  simp only [tableScope, Scope.singleAt] at collation
+  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.singleAt, Scope.argumentCell, Scope.triggerCell,
     Scope.columns, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, collation]
   rfl
 
@@ -57,7 +59,7 @@ theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : Subque
     resolveOperand dqs scope shapes false (.compare .gt (.callStar name) (.numeric "1")) =
       .ok (.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary, none) := by
   have literal : queryNumeric "1" false = .ok (.integer 1) := by rfl
-  simp [resolveOperand, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
+  simp [traced_arms, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
     comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, Bind.bind, Except.bind]
   rfl
 
@@ -86,7 +88,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   have calls : Syntax.Expr.distinctList [.callStar name] = [.callStar name] := by simp [Syntax.Expr.distinctList]
   have aggregates : resolveAll (fun _ call => resolveAggregateCall dqs scope { current, later, aggregates := [.callStar name] } call)
       [.callStar name] = .ok [.countRows] := by
-    simp [resolveAll, resolveAllFrom, resolveAggregateCall, Bind.bind, Except.bind, Pure.pure, Except.pure]
+    simp [resolveAll, resolveAllFrom, resolveAggregateCall_callStar, Bind.bind, Except.bind, Pure.pure, Except.pure]
   have aliases : resultAliases scope [.expression (.numeric "1") none "1"] = [none] := by simp [resultAliases]
   have collations : resultCollations scope [.expression (.numeric "1") none "1"] = [.binary] := by
     simp [resultCollations, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation]
@@ -98,9 +100,9 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   have names : ∀ list, namesAlias scope list (.compare .gt (.callStar name) (.numeric "1")) = false := by
     intro list; simp [namesAlias]
   have having := resolveOperand_moreThanOne dqs scope { current, later, aggregates := [.callStar name] } name rfl
-  unfold resolveQueryBody
+  rw [resolveQueryBody_arm]
   dsimp only
-  simp only [oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+  simp only [aliasJoinItem?, List.zipIdx_nil, List.find?_nil, Option.map_none, oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
     List.isEmpty_cons, List.isEmpty_nil, List.any_cons, List.any_nil, aggregateCall, Bool.false_or, Bool.not_false, Bool.true_or, Bool.false_eq_true, ↓reduceIte, List.nil_append, Bool.not_true, Bool.and_false, Bool.false_and]
   simp only [aggregates, columns, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil, terms,
     names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
@@ -114,7 +116,7 @@ the catalog of the state has at a position, without table-function arguments, wh
 of the table to a key under a collation ({name}`GroupTermResolves`), resolution gives the simple query without source
 and with the condition {lit}`NOT EXISTS` of subquery 0, and the duplicate-key query of the first source of the table as
 its one subquery, and leaves the state as it is. The source reference has no indexed query.
-Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
 {name}`resolveSelect_noFrom_one_subquery`; the subquery resolves by {name}`resolveQueryBody_duplicateKeys` in the scope
 of its table ({name}`resolveSources_table`, {name}`resolvePendingSources_table`), and the statement's query by
 {name}`resolveQueryBody_simple` in the empty scope with the shape of the subquery, as for the other forms of
@@ -122,7 +124,7 @@ of its table ({name}`resolveSources_table`, {name}`resolvePendingSources_table`)
 theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveContext) (state : ResolveState)
     (reference : Syntax.TableReference) (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count")
     (position : Nat) (table : CatalogTable) (key : Resolved.Expr) (collation : Collation)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
     (groupResolves : GroupTermResolves context.profile.dqsDml (tableScope state.catalog reference position table)
       { current := some 0, aggregates := [.callStar name] } term key collation) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] []
@@ -156,7 +158,7 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
     (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none none none false none none)
     _ rfl rfl _ ?_
   refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
-    (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
+    (resolveSources_table state.catalog reference position table namedSource current arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ rfl _ _ (by simpa using mainBody _ rfl) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,
     Resolved.Output.operands, Resolved.Expr.any, Resolved.Expr.isFallibleCall]

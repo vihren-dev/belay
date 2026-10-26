@@ -206,7 +206,7 @@ REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
-`FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
+`FROM`, schema-qualified tables and columns other than the schema `before` of a two-state query (restriction `initial-database`), `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
 keep their text, and declared types keep their text as SQLite's `sqlite3AddColumn` leaves
@@ -512,7 +512,11 @@ read the default under the column affinity. Without a default they read NULL.
 NOT NULL with NULL succeeds on an empty table and fails during execution on a
 populated table, retaining the prior catalog and rows. A time keyword default
 succeeds on an empty table and fails during execution on a populated table with
-SQLite's `Cannot add a column with non-constant default` (slice 6e2). Other
+SQLite's `Cannot add a column with non-constant default` (slice 6e2). With
+foreign keys enforced, a REFERENCES column with a default other than an absent default or the
+literal NULL fails on a populated table with SQLite's
+`Cannot add a REFERENCES column with non-NULL default value`; resolution decides this from the
+written default and the foreign-key setting, and an empty table succeeds. Other
 nonconstant defaults remain unsupported. Old-row readback can differ from INSERT default
 evaluation: TEXT DEFAULT 1.50 reads as 1.50 for old rows.
 
@@ -614,6 +618,7 @@ should shrink.
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |
+| `initial-database` | A table qualified with `before` outside a two-state query that is given the initial database, such as a table in the body of a trigger, and a function or pragma source with that schema name, are not modeled; the model never reads the current table instead. `CREATE VIEW` with such a table in its body is refused with the same restriction, because SQLite refuses it. A function call such as `json_each('[1]')` in the body of a view of the initial database is also refused when the current catalog has a view of the same name, because the model would read the wrong catalog, and a call of `pragma_table_info` or `pragma_foreign_key_list` in such a view body is refused, because SQLite refuses a view over a pragma function in an attached database. A three-part column name needs such a source, so without one it is the ordinary missing-column error, except that a rowid name in it is the restriction `rowid-name` | ADR 0017, S6 |
 
 #### Undecided
 

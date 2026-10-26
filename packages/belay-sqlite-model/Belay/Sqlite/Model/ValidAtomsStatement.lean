@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Model
 * ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`);
 * every other statement: nothing. -/
 def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Statement → Prop
-  | .addColumn target _ => database.RowsWideAt target
+  | .addColumn target _ _ => database.RowsWideAt target
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
@@ -23,7 +23,7 @@ def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Stateme
   ({name}`Database.StrictDefaultFitsAt`);
 * every other statement: nothing. -/
 def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statement → Prop
-  | .addColumn target column => database.RowsWideAt target ∧ database.StrictDefaultFitsAt target column
+  | .addColumn target column _ => database.RowsWideAt target ∧ database.StrictDefaultFitsAt target column
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
@@ -33,7 +33,7 @@ def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statem
   ({name}`Database.ChecksReadBelowAt`);
 * every other statement: nothing. -/
 def Resolved.Statement.ChecksHoldCondition (database : Database) : Resolved.Statement → Prop
-  | .addColumn target _ => database.RowsWideAt target ∧ database.ChecksReadBelowAt target
+  | .addColumn target _ _ => database.RowsWideAt target ∧ database.ChecksReadBelowAt target
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
@@ -49,7 +49,7 @@ theorem runStatement_notNull (clock : Int) (counters : Counters) (parameters : L
     {database : Database} (notNull : database.NotNull) (condition : statement.NotNullCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.NotNull :=
   runStatement_rowLocal Table.notNullAtom clock counters parameters statement notNull
-    fun _ column same table _ found added => by
+    fun _ column _ same table _ found added => by
       subst same
       exact (notNull _ table found).appendColumn (condition table found) added
 
@@ -65,7 +65,7 @@ theorem runStatement_typesFit (clock : Int) (counters : Counters) (parameters : 
     {database : Database} (fits : database.TypesFit) (condition : statement.TypesFitCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.TypesFit :=
   runStatement_rowLocal Table.typesFitAtom clock counters parameters statement fits
-    fun _ column same table _ found added => by
+    fun _ column _ same table _ found added => by
       subst same
       exact (fits _ table found).appendColumn (condition.1 table found) (condition.2 table found) added
 
@@ -81,7 +81,7 @@ theorem runStatement_checksHold (clock : Int) (counters : Counters) (parameters 
     {database : Database} (holds : database.ChecksHold) (condition : statement.ChecksHoldCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.ChecksHold :=
   runStatement_rowLocal Table.checksHoldAtom clock counters parameters statement holds
-    fun _ column same table _ found added => by
+    fun _ column _ same table _ found added => by
       subst same
       exact (holds _ table found).appendColumn (condition.1 table found) (condition.2 table found) added
 

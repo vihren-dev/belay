@@ -24,16 +24,17 @@ a double-quoted string or {lit}`no such column`, as no table is in scope. A valu
 JSON function may fail is a model restriction, because the model does not describe when
 SQLite evaluates a constant. The value is not yet stored with the column's affinity
 ({lit}`fullCells` stores it). In a trigger's body, {lit}`scope` has the trigger's rows (ADR
-0018, D5), and an item that names them stays an expression too; elsewhere it is empty. -/
-def constantCell (dqs : Bool) (shapes : SubqueryShapes) (expression : Syntax.Expr) (scope : Scope := []) :
-    Except ValueIssue Resolved.Cell :=
-  resolveOperand dqs scope shapes true expression >>= fun operand =>
-    if operand.1.readsClock || operand.1.readsRunValue || operand.1.any Resolved.Expr.namesSubquery ||
-        mentionsColumn scope expression then
-      if operand.1.any Resolved.Expr.isFallibleCall then .error (.restriction [] .constantFunctionError)
-      else .ok (.expression operand.1)
-    else if operand.1.mayFailOn (.plain 0) [] then .error (.restriction [] .constantFunctionError)
-    else .ok (.value (operand.1.eval (.plain 0) []))
+0018, D5), and an item that names them stays an expression too; elsewhere it is empty. The
+trace holds the names of the item, with paths relative to the item. -/
+def constantCellTraced (dqs : Bool) (shapes : SubqueryShapes) (expression : Syntax.Expr) (scope : Scope := []) :
+    Traced ValueIssue Resolved.Cell := do
+  let operand ← resolveOperandTraced dqs scope shapes true expression
+  if operand.1.readsClock || operand.1.readsRunValue || operand.1.any Resolved.Expr.namesSubquery ||
+      mentionsColumn scope expression then
+    if operand.1.any Resolved.Expr.isFallibleCall then throw (.restriction [] .constantFunctionError)
+    else pure (.expression operand.1)
+  else if operand.1.mayFailOn (.plain 0) [] then throw (.restriction [] .constantFunctionError)
+  else pure (.value (operand.1.eval (.plain 0) []))
 
 /-- The cell of an omitted column: its default ({name}`defaultValue`) stored with the
 column's affinity; or the time keyword of a default that is one, such as

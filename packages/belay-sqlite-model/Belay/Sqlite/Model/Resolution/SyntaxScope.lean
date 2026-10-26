@@ -43,7 +43,7 @@ a column, or a qualified name of one, anywhere in the expression, or a subquery,
 the row. A write value that names a column depends on the row. -/
 def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
   | .identifier name _ => !(scope.matches name).isEmpty
-  | .qualified source column => scope.resolveQualified source column != .missing
+  | .qualified source column schema => scope.resolveSchemaQualified source column schema != .missing
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     mentionsColumn scope left || mentionsColumn scope right
   | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _

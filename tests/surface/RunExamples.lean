@@ -120,6 +120,7 @@ example : (shop.run (closeZero ++ sql r"SELECT CURRENT_TIMESTAMP" ++ ids)).outpu
 -- When every result is the same, the output is `Output.rows`.
 /-- info: [oneOf [[["acme"]], [["zeta"]]]] -/
 #guard_msgs in
+set_option sql.orderWarnings false in
 #eval (shop.run (sql r"SELECT customer FROM invoices LIMIT 1")).outputs
 example : (shop.run (sql r"SELECT customer FROM invoices LIMIT 1")).outputs = [.oneOf [[["acme"]], [["zeta"]]]] := by
   decide +kernel

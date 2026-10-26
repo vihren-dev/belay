@@ -129,6 +129,7 @@ example : (indexed.run (sql r"SELECT name FROM customers LIMIT 1")).outputs
 
 /-- info: [oneOf [[["ada"]], [["bob"]]]] -/
 #guard_msgs in
+set_option sql.orderWarnings false in
 #eval (indexed.run (sql r"SELECT name FROM customers LIMIT 1")).outputs
 
 example : (indexed.run (sql r"SELECT 1 FROM customers LIMIT 1")).outputs = [.rows [[1]]] := by

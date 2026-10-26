@@ -33,7 +33,7 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
     split at success
     · cases success; exact ⟨rfl, rfl⟩
     · cases success
-  | addColumn target column =>
+  | addColumn target column _ =>
     simp only [literalStep, runStatement, step] at success
     split at success
     · cases success

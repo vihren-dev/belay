@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from types import ModuleType
 
-from conformance import authored_after_error, authored_counters
+from conformance import authored_after_error, authored_counters, authored_foreign_key_atoms
 from conformance.model_check import compiled_many, prove_all
 from conformance.native_replay import prepare
 from conformance.requirement_coverage import resolved_ids
@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def native_record_version(cases: ModuleType) -> int:
     """The native record version of a case module: 7 for the connection counters (ADR 0024),
     6 for the cases that run on after an error, else 5 (statement outputs)."""
-    return 7 if cases is authored_counters else 6 if cases is authored_after_error else 5
+    return 7 if cases is authored_counters else 6 if cases in (authored_after_error, authored_foreign_key_atoms) else 5
 
 
 def check_coverage_cases(cases: ModuleType, runtime_root: Path, tmp_path: Path) -> None:

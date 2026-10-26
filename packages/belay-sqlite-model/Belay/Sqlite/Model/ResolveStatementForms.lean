@@ -21,7 +21,7 @@ namespace Belay.Sqlite.Model
 
 For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
-  | .addColumn _ column => strictDefaultFits column = true
+  | .addColumn _ column _ => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
@@ -75,8 +75,8 @@ theorem resolveInsert_schemaLink (context : ResolveContext) (catalog after : Cat
     (statement : Resolved.Statement)
     (ok : resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (statement, after)) : statement.SchemaLink catalog := by
-  unfold resolveInsert at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveInsert resolveInsertTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
 
@@ -89,8 +89,8 @@ theorem resolveUpdate_schemaLink (context : ResolveContext) (catalog after : Cat
     (statement : Resolved.Statement)
     (ok : resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (statement, after)) : statement.SchemaLink catalog := by
-  unfold resolveUpdate at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveUpdate resolveUpdateTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
 
@@ -102,8 +102,8 @@ theorem resolveDelete_schemaLink (context : ResolveContext) (catalog after : Cat
     (subqueries : List Resolved.Query) (shapes : SubqueryShapes) (statement : Resolved.Statement)
     (ok : resolveDelete context catalog tableName filter returning subqueries shapes = .ok (statement, after)) :
     statement.SchemaLink catalog := by
-  unfold resolveDelete at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveDelete resolveDeleteTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
 
@@ -114,7 +114,8 @@ theorem resolveSelect_schemaLink (context : ResolveContext) (catalog after : Cat
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     statement.SchemaLink catalog := by
-  unfold resolveSelect resolveSelectDetails at ok
+  unfold resolveSelect resolveSelectTraced at ok
+  dsimp only [Traced.drop] at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
@@ -140,8 +141,8 @@ theorem resolveWriteSubqueries_schemaLink {columnNames : List (Nat × List Ident
       statement.SchemaLink catalog)
     (ok : resolveWriteSubqueries context catalog field tableName scopeOf subqueries resolveWrite columnNames =
       .ok (statement, after)) : statement.SchemaLink catalog := by
-  unfold resolveWriteSubqueries at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveWriteSubqueries resolveWriteSubqueriesTraced resolveViewTargetTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; trivial)
@@ -162,8 +163,8 @@ theorem resolveCommonTableWrite_schemaLink (context : ResolveContext) (catalog a
       statement.SchemaLink catalog)
     (ok : resolveCommonTableWrite context catalog field tableName scopeOf subqueries resolveWrite =
       .ok (statement, after)) : statement.SchemaLink catalog := by
-  unfold resolveCommonTableWrite at ok
-  simp only [resolveWriteSubqueries, prepareError, restrict, issueResolution, Except.mapError] at ok
+  unfold resolveCommonTableWrite resolveCommonTableWriteTraced resolveViewTargetTraced at ok
+  simp only [resolveWriteSubqueriesTraced, traced_drop, prepareError, restrict, issueResolution, Except.mapError] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; trivial)

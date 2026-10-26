@@ -144,9 +144,10 @@ the same row count and rowids, and each original row gains the affinity-applied
 value returned by {name}`readDefaultValue`.
 
 The proof follows the successful ADD branch and unfolds column extension
-and its row mapping. -/
-theorem add_column_shape (constant : column.clockDefault = false)
-    (success : advance position (.addColumn target column) parameters state = .next next) :
+and its row mapping.
+It holds for either value of the flag {lit}`refuses`: a refused addition is no success. -/
+theorem add_column_shape {refuses : Bool} (constant : column.clockDefault = false)
+    (success : advance position (.addColumn target column refuses) parameters state = .next next) :
     ∃ table value, state.database.table target = some table ∧
       readDefaultValue column = .ok value ∧
       next.database.table target = some (table.appendColumns [(column, value)]) ∧

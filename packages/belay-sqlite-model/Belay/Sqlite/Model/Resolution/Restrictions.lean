@@ -1,9 +1,9 @@
 set_option doc.verso true
 
-/-! The registry of model restrictions. A model restriction is SQL that SQLite accepts but the model does
-not describe; resolution refuses it, and the user reads its message. Each restriction is one constructor
-of {lit}`RestrictionKind`, which names the decision that introduced it. Its stable id and its message
-are in {lit}`Belay.Sqlite.Model.RestrictionText`, and {lit}`docs/semantic-subset.md` lists every id. -/
+/-! The registry of model restrictions: SQL that SQLite accepts but the model does not describe. Resolution
+refuses it, and the user reads its message. Each restriction is one constructor of {lit}`RestrictionKind`,
+which names the decision that introduced it. Its id and message are in {lit}`Belay.Sqlite.Model.RestrictionText`;
+{lit}`docs/semantic-subset.md` lists every id. -/
 
 namespace Belay.Sqlite.Model
 
@@ -18,8 +18,7 @@ inductive RestrictionKind where
   | rowidColumnName
   /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
-  /-- A string literal as a key term of CREATE INDEX, also a double-quoted name that is no column: SQLite reads a
-  string that names a column as that column (ADR 0014, slice 1). -/
+  /-- A string literal or a double-quoted non-column name as a key term of CREATE INDEX: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
   | indexStringTerm
   /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock
   only when it writes a row (ADR 0014, slice 1). -/
@@ -59,8 +58,7 @@ inductive RestrictionKind where
   | dropConstraintIndex
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
-  /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key (ADR 0012, amendment 1, owner
-  decision on question 1). -/
+  /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key (ADR 0012, amendment 1, owner decision 1). -/
   | rowDependentKey
   /-- {lit}`ON CONFLICT DO UPDATE` without a target on a table with more than one key: SQLite then chooses the key of
   the conflict by its internal order of indexes. -/
@@ -194,6 +192,8 @@ inductive RestrictionKind where
   {lit}`randomblob(n)` in a generated column, an index expression or the filter of a partial index, in an expression
   with another error: the error that SQLite reports depends on the order of its walk (ADR 0024, D5). -/
   | nondeterministicErrorOrder
+  /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
+  | initialDatabase
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

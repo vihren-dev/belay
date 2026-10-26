@@ -20,7 +20,8 @@ COLUMN is {name}`ExecutionError.checkColumnDefault`, which has the code {lit}`SQ
 def ExecutionError.isConstraint : ExecutionError → Bool
   | .constraintViolation | .constraintFail | .constraintRollback => true
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
-  | .datatypeMismatch | .functionError | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault => false
+  | .datatypeMismatch | .functionError | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault
+  | .referenceColumnDefault => false
 
 /-- The rules that a write runs row by row ({name}`Resolved.WriteRules`), as the statement
 keeps them; none for a statement that is not an INSERT, UPDATE, DELETE or DROP. Resolution

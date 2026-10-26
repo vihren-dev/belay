@@ -43,8 +43,8 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
   | createTrigger target name trigger =>
     exact runStatement_create_tableAtom Table.rowidsDistinctAtom clock counters parameters _ distinct
       (.inr (.inr (.inl ⟨target, name, trigger, rfl⟩)))
-  | addColumn target column =>
-    exact runStatement_addColumn_rowLocal (atom := Table.RowidsDistinct) clock counters parameters target column
+  | addColumn target column refuses =>
+    exact runStatement_addColumn_rowLocal (atom := Table.RowidsDistinct) clock counters parameters target column refuses
       distinct fun table _ found _ => Table.RowidsDistinct.appendColumns (distinct target table found) _
   | drop positions rules =>
     cases rules with

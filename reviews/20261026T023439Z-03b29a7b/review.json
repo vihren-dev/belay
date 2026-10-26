@@ -1,0 +1,90 @@
+{
+  "caller": "claude",
+  "commit": "03b29a7b22cf96487bdfda158f6180de0dceb0ea",
+  "date": "2026-10-26T02:34:39+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CountSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/FunctionSources.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceQueryExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Queries.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryAggregates.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryAggregatesArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResultColumnArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResultColumnTraced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SourceList.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SourceListArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Sources.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Traced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TracedList.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectNoFromResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSourceResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "plans/20261025-model-name-trace.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261026T023439Z-03b29a7b#1",
+      "line": 96,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "No test covers failure after a successful aggregate in the new prepass, which drops the resolved `a` occurrence from `SELECT max(a)+1, max(z)+1 FROM t` when `z` is missing. Fix: retain preceding aggregate occurrences on failure and add a regression example that checks both records."
+    },
+    {
+      "id": "20261026T023439Z-03b29a7b#2",
+      "line": 33,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "The catch-all `term` arm in `orderOperandTraced` silently accepts future `Syntax.Expr` constructors. Fix: enumerate the remaining constructors explicitly."
+    },
+    {
+      "id": "20261026T023439Z-03b29a7b#3",
+      "line": 12,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryAggregatesArms.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring describes only `count(*)`, but `resolveAggregateCall_callStar` proves the result for every function name without a name constraint. Fix: state that the helper returns `countRows` for every `callStar` name."
+    },
+    {
+      "id": "20261026T023439Z-03b29a7b#4",
+      "line": 11,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SourceListArms.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`resolveJoinCondition_none` is used by other proofs but has no proof sketch. Fix: state that both sides are equal by definition."
+    }
+  ],
+  "id": "20261026T023439Z-03b29a7b",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

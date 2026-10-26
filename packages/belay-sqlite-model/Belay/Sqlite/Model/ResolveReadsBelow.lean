@@ -26,7 +26,7 @@ theorem resolveOperand_below {width : Nat} {scope : Scope} (bounded : scope.Boun
     (e : Syntax.Expr) → ∀ operand, resolveOperand dqs scope shapes misuse e = .ok operand →
       operand.1.any (Expr.isColumnFrom width) = false
   | .identifier name quote, operand, ok => by
-    simp only [resolveOperand] at ok
+    simp only [traced_arms] at ok
     have named := Scope.resolveName_below bounded name
     cases found : scope.resolveName name with
     | found source reads => rw [found] at ok named; exact nameRead_below named ok
@@ -35,63 +35,63 @@ theorem resolveOperand_below {width : Nat} {scope : Scope} (bounded : scope.Boun
       repeat' split at ok
       all_goals first | (cases ok; done) | (cases ok; simp_all [Expr.any, Expr.isColumnFrom]; done)
     | ambiguous => simp only [found] at ok; cases ok
-  | .qualified source column, operand, ok => by
-    simp only [resolveOperand] at ok
-    have named := Scope.resolveQualified_below bounded source column
-    cases found : scope.resolveQualified source column with
+  | .qualified source column schema, operand, ok => by
+    simp only [traced_arms] at ok
+    have named := Scope.resolveSchemaQualified_below bounded source column schema
+    cases found : scope.resolveSchemaQualified source column schema with
     | found source reads => rw [found] at ok named; exact nameRead_below named ok
     | missing =>
       simp only [found] at ok
       repeat' split at ok <;> cases ok
     | ambiguous => simp only [found] at ok; cases ok
   | .compare operator left right, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, b, hb, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse left a ha
     have ib := resolveOperand_below bounded dqs shapes misuse right b hb
     split at ok <;> cases ok <;> (try split) <;> simp_all [Expr.any, Expr.isColumnFrom]
   | .collate inner name, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
     split at ok <;> cases ok <;> exact ia
   | .and left right, operand, ok | .or left right, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, condition_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, condition_eq_ok] at ok
     obtain ⟨a, ⟨oa, ha, rfl⟩, b, ⟨ob, hb, rfl⟩, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse left oa ha
     have ib := resolveOperand_below bounded dqs shapes misuse right ob hb
     cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .not inner, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, condition_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, condition_eq_ok] at ok
     obtain ⟨a, ⟨oa, ha, rfl⟩, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner oa ha
     cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .isNull inner _, operand, ok | .cast inner _, operand, ok | .positive inner, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
     cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .arithmetic _ left right, operand, ok | .concatenate left right, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, b, hb, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse left a ha
     have ib := resolveOperand_below bounded dqs shapes misuse right b hb
     cases ok; simp_all [Expr.any, Arguments.any, Expr.isColumnFrom]
   | .numeric text, operand, ok => by
-    simp only [resolveOperand, exceptMap_eq_ok] at ok
+    simp only [traced_arms, exceptMap_eq_ok] at ok
     obtain ⟨_, -, rfl⟩ := ok; simp [Expr.any, Expr.isColumnFrom]
   | .negate inner, operand, ok => by
     by_cases numbered : ∃ text, inner = .numeric text
     · obtain ⟨text, rfl⟩ := numbered
-      simp only [resolveOperand, exceptMap_eq_ok] at ok
+      simp only [traced_arms, exceptMap_eq_ok] at ok
       obtain ⟨_, -, rfl⟩ := ok; simp [Expr.any, Expr.isColumnFrom]
     · have unnumbered : ∀ text, inner = .numeric text → False := fun text same => numbered ⟨text, same⟩
-      simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+      simp only [traced_arms, resolveOperand_arm_negate dqs scope shapes misuse inner unnumbered, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
       obtain ⟨a, ha, ok⟩ := ok
       have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
       cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .call name arguments, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok] at ok
     obtain ⟨resolved, hr, ok⟩ := ok
     have ir := resolveArguments_below bounded dqs shapes misuse 0 arguments resolved hr
     split at ok
@@ -100,25 +100,25 @@ theorem resolveOperand_below {width : Nat} {scope : Scope} (bounded : scope.Boun
       · cases ok; simp [Expr.any, Expr.isColumnFrom]
       · exact callOperand_below ir ok
   | .callStar name, operand, ok => by
-    simp only [resolveOperand] at ok
+    simp only [traced_arms] at ok
     split at ok
     · cases ok; simp [Expr.any, Expr.isColumnFrom]
     · split at ok <;> cases ok
   | .null, operand, ok | .string _, operand, ok | .blob _, operand, ok | .currentTime _, operand, ok
   | .parameter _, operand, ok => by cases ok; simp [Expr.any, Expr.isColumnFrom]
   | .exists index, operand, ok => by
-    simp only [resolveOperand] at ok
+    simp only [traced_arms] at ok
     split at ok <;> cases ok; simp [Expr.any, Expr.isColumnFrom]
   | .subquery index, operand, ok => by
-    simp only [resolveOperand, exceptMap_eq_ok] at ok
+    simp only [traced_arms, exceptMap_eq_ok] at ok
     obtain ⟨_, -, rfl⟩ := ok; simp [Expr.any, Expr.isColumnFrom]
   | .inQuery inner index negated, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, shape, hs, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
     cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .inList inner values negated, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, resolved, hr, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
     have ir := resolveArguments_below bounded dqs shapes misuse 0 values resolved hr
@@ -128,14 +128,14 @@ theorem resolveOperand_below {width : Nat} {scope : Scope} (bounded : scope.Boun
       · cases ok; simp_all [Expr.any, Expr.isColumnFrom]
     · cases ok; simp_all [Expr.any, Expr.isColumnFrom]
   | .between inner low high negated, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, l, hl, h, hh, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse inner a ha
     have il := resolveOperand_below bounded dqs shapes misuse low l hl
     have ih := resolveOperand_below bounded dqs shapes misuse high h hh
     cases ok; split <;> simp_all [Expr.any, Expr.isColumnFrom]
   | .caseOf operands hasBase, operand, ok => by
-    simp only [resolveOperand, exceptBind_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok] at ok
     obtain ⟨resolved, hr, ok⟩ := ok
     have ir := resolveCase_below bounded dqs shapes misuse hasBase none 0 (by simp) operands resolved hr
     cases ok; simp_all [Expr.any, Expr.isColumnFrom]
@@ -149,9 +149,9 @@ theorem resolveArguments_below {width : Nat} {scope : Scope} (bounded : scope.Bo
     (shapes : SubqueryShapes) (misuse : Bool) (index : Nat) :
     (es : List Syntax.Expr) → ∀ arguments, resolveArguments dqs scope shapes misuse index es = .ok arguments →
       arguments.any (Expr.isColumnFrom width) = false
-  | [], arguments, ok => by simp only [resolveArguments, Except.ok.injEq] at ok; subst ok; simp [Arguments.any]
+  | [], arguments, ok => by simp only [traced_arms, Except.ok.injEq] at ok; subst ok; simp [Arguments.any]
   | e :: rest, arguments, ok => by
-    simp only [resolveArguments, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨a, ha, tail, ht, ok⟩ := ok
     have ia := resolveOperand_below bounded dqs shapes misuse e a ha
     have it := resolveArguments_below bounded dqs shapes misuse (index + 1) rest tail ht
@@ -168,9 +168,9 @@ theorem resolveCase_below {width : Nat} {scope : Scope} (bounded : scope.Bounded
     (index : Nat) (baseBelow : ∀ pair, base = some pair → pair.2.1.any (Expr.isColumnFrom width) = false) :
     (es : List Syntax.Expr) → ∀ arguments, resolveCase dqs scope shapes misuse needsBase base index es = .ok arguments →
       arguments.any (Expr.isColumnFrom width) = false
-  | [], arguments, ok => by simp only [resolveCase, Except.ok.injEq] at ok; subst ok; simp [Arguments.any]
+  | [], arguments, ok => by simp only [traced_arms, Except.ok.injEq] at ok; subst ok; simp [Arguments.any]
   | e :: rest, arguments, ok => by
-    simp only [resolveCase, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
+    simp only [traced_arms, exceptBind_eq_ok, exceptMapError_eq_ok] at ok
     obtain ⟨r, hr, ok⟩ := ok
     have ir := resolveOperand_below bounded dqs shapes misuse e r hr
     split at ok

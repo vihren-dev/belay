@@ -133,4 +133,18 @@ theorem Scope.resolveQualified_below {width : Nat} {scope : Scope} (bounded : sc
     | ambiguous => trivial
     | found first reads => rw [hat] at atBelow; exact atBelow
 
+/-- For every scope that ends below a width, source name, column name and optional schema, if the
+resolution of the qualified name ({name}`Scope.resolveSchemaQualified`) finds a column, then the positions that it
+reads are below the width. A name that is missing or ambiguous reads no position, so the statement requires
+nothing of it.
+Proof sketch: the schema qualifier only filters the scope ({name}`Scope.bounded_filter`), and
+{name}`Scope.resolveQualified_below` applies to the filtered scope. -/
+theorem Scope.resolveSchemaQualified_below {width : Nat} {scope : Scope} (bounded : scope.Bounded width)
+    (source column : Identifier) (schema : Option Identifier) :
+    (scope.resolveSchemaQualified source column schema).Below width := by
+  unfold Scope.resolveSchemaQualified Scope.inSchema
+  cases schema with
+  | none => exact Scope.resolveQualified_below bounded source column
+  | some schema => exact Scope.resolveQualified_below (Scope.bounded_filter bounded _) source column
+
 end Belay.Sqlite.Model

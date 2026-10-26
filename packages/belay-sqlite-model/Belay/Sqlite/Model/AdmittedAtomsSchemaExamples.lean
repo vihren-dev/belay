@@ -74,8 +74,8 @@ def oneTable : Catalog :=
 def columnC : CatalogColumn := { name := name! "c", declaredType := some "TEXT" }
 
 -- The statement that ADD COLUMN resolves to adds the column at position 0. Its default fits.
-example : (match resolveAddColumn execution oneTable (name! "t") (column (name! "c")) with
-    | .ok (statement, _) => decide (statement = .addColumn 0 columnC) | .error _ => false) = true := by decide +kernel
+example : (match resolveAddColumn execution oneTable false (name! "t") (column (name! "c")) with
+    | .ok (statement, _) => decide (statement = .addColumn 0 columnC false) | .error _ => false) = true := by decide +kernel
 example : strictDefaultFits columnC = true := by decide +kernel
 
 /-- The catalog after {name}`schema`: the table {lit}`t`, the index {lit}`ia` and the trigger {lit}`tr`. -/

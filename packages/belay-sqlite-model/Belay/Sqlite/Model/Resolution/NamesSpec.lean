@@ -53,10 +53,11 @@ theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Cata
 /-- For every successful resolution of ADD COLUMN, the catalog changes by one
 {name}`CatalogStep`: unchanged after a prepare error, else the table's object gets a
 new entry and keeps its name. Proof sketch: split every branch; the successful branch
-replaces the object that {name}`Catalog.findTable_some` gives at the table's position. -/
-theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalog)
+replaces the object that {name}`Catalog.findTable_some` gives at the table's position.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
+theorem resolveAddColumn_step (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -113,50 +114,50 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     · simpa [hsaved] using current
     · simpa [hsaved] using saved _ hsaved
   | createTable name columns constraints options =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ (by assumption))
   | createView name ifNotExists columns query subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateView_step _ _ _ _ _ _ (by assumption))
   | createIndex name unique table terms filter =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateIndex_step _ _ _ _ _ _ _ _ _ (by assumption))
   | addColumn table column =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveAddColumn_step _ _ _ _ _ _ (by assumption))
+    exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
   | dropTable name ifExists =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_step _ _ _ _ _ found
   | dropView name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropView_step _ _ _ _ _ (by assumption))
   | dropIndex name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropIndex_step _ _ _ _ _ (by assumption))
   | createTrigger name ifNotExists time event table condition body =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTrigger_step _ _ _ _ _ _ (by assumption))
   | dropTrigger name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropTrigger_step _ _ _ _ _ (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | update table assignments filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | delete table filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | pragma pragma =>
@@ -164,7 +165,7 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     · cases setting <;> exact ⟨current, saved⟩
     · exact ⟨current, saved⟩
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveSelect_same _ _ _ _ _ _ (by assumption)).1 ▸ .same)
 

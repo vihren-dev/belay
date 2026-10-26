@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T21:02:50+00:00",
+  "finding": "20261025T210104Z-5139332e#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "added guarded_notation_is_the_primitive_claim to TwoStateAssertionExamples (ten reports)"
+}

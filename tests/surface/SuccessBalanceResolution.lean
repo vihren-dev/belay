@@ -57,14 +57,14 @@ theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
     subqueryScopes catalog 8 (around [] []) none balanceQueries = .ok
       [ledgerScope catalog position table, ledgerScope catalog position table,
         pragmaScope table.infoRows, pragmaScope table.infoRows] := by
-  have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl found queries prefix_
+  have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl rfl found queries prefix_
   have info := Catalog.tableInfoRows_of_findTable catalog ledgerRef.table position table found
-  have metadata := fun queries prefix_ => resolveSources_tableInfo catalog pragmaRef (bytes! "ledger") table.infoRows rfl rfl (by decide) notTable notView info queries prefix_
+  have metadata := fun queries prefix_ => resolveSources_tableInfo catalog pragmaRef (bytes! "ledger") table.infoRows rfl rfl rfl (by decide) notTable notView info queries prefix_
   have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
-  unfold subqueryScopes
+  unfold subqueryScopes subqueryScopesTraced
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp [balanceQueries, oneQuery, countSyntax, compoundOf,
-    subqueryScope, QueryScope.sourceIndexes, around, Scope.columns, sources, metadata,
+  simp [traced_drop, resolveSourcesTraced_drop, balanceQueries, oneQuery, countSyntax, compoundOf,
+    subqueryScopeTraced, QueryScope.sourceIndexes, around, Scope.columns, sources, metadata,
     Scope.enclose, starIssue, resultAliases, ledgerScope, pragmaScope, tablePending, pragmaPending,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
   rfl
@@ -77,7 +77,7 @@ theorem guard_no_copies (catalog : Catalog) (position : Nat) (table : CatalogTab
     (found : catalog.findTable ledgerRef.table = some (position, table)) :
     querySourceCopiesNeeded catalog mainSyntax balanceQueries = false := by
   have notView : catalog.findView (name! "ledger") = none := Catalog.findView_none_of_table found
-  simp [querySourceCopiesNeeded, mainSyntax, balanceQueries, oneQuery, countSyntax,
+  simp [querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, mainSyntax, balanceQueries, oneQuery, countSyntax,
     ledgerRef, pragmaRef, notView]
 
 /-- For every existing cents column and subquery shape, the range body resolves with

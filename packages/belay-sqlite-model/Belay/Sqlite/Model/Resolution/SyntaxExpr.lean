@@ -10,6 +10,16 @@ schema, and refuses syntax that has no constructor. Numeric literals keep their 
 
 namespace Belay.Sqlite.Model.Syntax
 
+/-- The schema name that reads the fixed initial database of a two-state query: in
+{lit}`before.t` the table {lit}`t` is the one of the initial database, as in an observation of
+the database before a program ran. No other schema name is modeled. -/
+def initialSchemaName : Identifier := name! "before"
+
+/-- Whether a written schema name is {name}`initialSchemaName`, compared without ASCII letter
+case. For example, {lean}`Identifier.isInitialSchema (name! "BEFORE")` is {lean}`true`. -/
+def _root_.Belay.Sqlite.Model.Identifier.isInitialSchema (name : Identifier) : Bool :=
+  name.sameName initialSchemaName
+
 /-- How an identifier was written: unquoted, or in double quotes, brackets or backticks.
 SQLite reads an unquoted {lit}`TRUE` or {lit}`FALSE` as a keyword, and a double-quoted
 name as a string when no column has it; brackets and backticks only quote. -/
@@ -58,8 +68,10 @@ inductive Expr where
   double-quoted-string fallback and whether {lit}`TRUE` and {lit}`FALSE` are keywords. -/
   | identifier (name : Identifier) (quote : QuoteKind)
   /-- A qualified column name {lit}`source.column`, with both names as written. The
-  source is a table name or an alias. -/
-  | qualified (source column : Identifier)
+  source is a table name or an alias. With a {lit}`schema`, as in {lit}`before.t.c`, it names
+  a column of the table {lit}`t` of that schema only; an alias hides the table name, as in
+  SQLite. Use {lean}`(none : Option Identifier)` for the two-part form. -/
+  | qualified (source column : Identifier) (schema : Option Identifier := none)
   /-- Unary minus. -/
   | negate (operand : Expr)
   /-- Unary plus, which SQLite keeps as a no-op. -/
@@ -143,7 +155,16 @@ structure TableReference where
   /-- The indexed SELECT supplying this source. Use none for a named table or function;
   a derived source has no function arguments and uses its optional alias for qualification. -/
   query : Option Nat := none
+  /-- The schema name of {lit}`schema.table`, as written; none for an unqualified table. Only
+  {name}`initialSchemaName` is modeled: the table is then one of the initial database of a
+  two-state query. -/
+  schema : Option Identifier := none
   deriving Repr, BEq
+
+/-- Whether the reference names a table or view of the initial database, as in
+{lit}`before.t` ({name}`initialSchemaName`). -/
+def TableReference.readsInitial (reference : TableReference) : Bool :=
+  reference.schema.any (·.isInitialSchema)
 
 /-- One join of {lit}`FROM` after the first table: the keywords of its operator, the
 joined table, its optional {lit}`ON` condition and its optional {lit}`USING` column

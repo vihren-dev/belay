@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Writes
-import Belay.Sqlite.Model.Resolution.JoinUsing
+import Belay.Sqlite.Model.Resolution.JoinMerge
 
 set_option doc.verso true
 
@@ -13,11 +13,19 @@ namespace Belay.Sqlite.Model
 
 /-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
 ({name}`Scope.starOperand`), as operands with their affinities, and their names, or SQLite's
-{lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
+{lit}`no such table: source` when no source has the name. The qualifier is recorded at the node of
+the qualifier ({name}`Scope.starQualifierOccurrence`). -/
+def sourceStarColumnsTraced (scope : Scope) (source : Identifier) :
+    Traced ValueIssue (List (Operand × String)) := do
+  Traced.record (scope.starQualifierOccurrence source)
   match scope.starColumns? source with
-  | some columns => columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column
-  | none => .error (.prepare (.noSuchSource source))
+  | some columns => Traced.lift (columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column)
+  | none => throw (.prepare (.noSuchSource source))
+
+/-- The columns of {lit}`source.*` with their names: {name}`sourceStarColumnsTraced` without its
+trace. -/
+def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
+  (sourceStarColumnsTraced scope source).drop
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
 def maximumJoinTables : Nat := 64
@@ -37,28 +45,29 @@ def SourceIssue.under (path : List Nat) : SourceIssue → SourceIssue
   | .value issue => .value (issue.under path)
   | .noSuchTable name => .noSuchTable name
 
+/-- The issue of a table of the initial database: SQLite names a missing one with its schema, as in
+{lit}`no such table: before.t`; every other issue is unchanged. -/
+def initialIssue (reference : Syntax.TableReference) : SourceIssue → SourceIssue
+  | .noSuchTable name => .noSuchTable ⟨(reference.schema.map (·.bytes ++ bytes! ".")).getD [] ++ name.bytes⟩
+  | .value issue => .value issue
+
+/-- The paths of a source issue move below a node as those of its value issue do. -/
+instance : Traced.Underable SourceIssue := ⟨SourceIssue.under⟩
+
+/-- For every path and issue: moving a source issue below a node is {name}`SourceIssue.under`. Proof sketch: both sides are equal by definition. -/
+@[traced_drop] theorem Traced.underable_sourceIssue (path : List Nat) (issue : SourceIssue) :
+    Traced.Underable.under path issue = issue.under path := rfl
+
+/-- For every path: moving a source issue below a node is {name}`SourceIssue.under`, as a function. Proof sketch: both sides are equal by definition. -/
+@[traced_drop] theorem Traced.underable_sourceIssue_function (path : List Nat) :
+    (Traced.Underable.under path : SourceIssue → SourceIssue) = SourceIssue.under path := rfl
+
 /-- A value issue is a source issue ({name}`SourceIssue.value`), so the resolution of the
 sources can use the functions that give value issues. -/
 instance : MonadLift (Except ValueIssue) (Except SourceIssue) := ⟨Except.mapError .value⟩
 
-/-- The source of one table reference at {lit}`path`: the table's catalog position and the
-source with its name (the alias, else the table name as declared, as SQLite names it in
-messages). A missing table is SQLite's
-{lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
-query of one table, and so is a name of an eponymous table-valued function
-({name}`eponymousName`), which SQLite reads without arguments. A view requires indexed
-query expansion and is {name}`RestrictionKind.subqueryHere` at this physical-table boundary. -/
-def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
-    Except SourceIssue (Nat × ScopeSource) :=
-  match catalog.findTable reference.table with
-  | some (position, table) =>
-    let declared := (catalog[position]?.map (·.name)).getD reference.table
-    .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })
-  | none =>
-    if (catalog.findView reference.table).isSome then .error (.value (.restriction path .subqueryHere))
-    else if reservedName reference.table then .error (.value (.restriction path .systemTable))
-    else if eponymousName reference.table then .error (.value (.restriction path .tableFunction))
-    else .error (.noSuchTable reference.table)
+/-- A traced computation with value issues is one with source issues; the trace stays. -/
+instance : MonadLift (Traced ValueIssue) (Traced SourceIssue) := ⟨Traced.mapError .value⟩
 
 /-- The flags that the keywords of a join operator set, as SQLite's {lit}`sqlite3JoinType`
 gives them: {lit}`NATURAL`, {lit}`LEFT`, {lit}`RIGHT`, {lit}`OUTER` and {lit}`INNER`
@@ -122,27 +131,40 @@ condition of each join ({name}`mergeJoin`), after the sources of {lit}`left`;
 {lit}`coalesced` says whether the {lit}`FROM` has a right or full join; {lit}`item` is the
 position of the first join. An operator that SQLite refuses is a model restriction, checked
 before the join's {lit}`USING` and {lit}`NATURAL` errors. -/
-def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat) :
+def mergeJoinsTraced (coalesced : Bool) (left : Scope) (item : Nat) :
     List (Syntax.Join × Option (Resolved.JoinKind × Bool) × ScopeSource) →
-      Except ValueIssue (Scope × List (Resolved.JoinKind × JoinCondition))
-  | [] => .ok (left, [])
+      Traced ValueIssue (Scope × List (Resolved.JoinKind × JoinCondition))
+  | [] => pure (left, [])
   | (join, operator, right) :: rest => do
     let some (kind, natural) := operator | throw (.restriction [2, item, 0] .joinOperator)
-    let (merged, condition) ← mergeJoin left right natural coalesced kind.mergeRule item join
-    let (scope, conditions) ← mergeJoins coalesced (left ++ [merged]) (item + 1) rest
-    .ok (scope, (kind, condition) :: conditions)
+    let (merged, condition) ← mergeJoinTraced left right natural coalesced kind.mergeRule item join
+    let (scope, conditions) ← mergeJoinsTraced coalesced (left ++ [merged]) (item + 1) rest
+    pure (scope, (kind, condition) :: conditions)
+
+/-- The joined sources of the joins in order: {name}`mergeJoinsTraced` without its trace. -/
+def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat)
+    (joins : List (Syntax.Join × Option (Resolved.JoinKind × Bool) × ScopeSource)) :
+    Except ValueIssue (Scope × List (Resolved.JoinKind × JoinCondition)) :=
+  (mergeJoinsTraced coalesced left item joins).drop
 
 /-- Resolve the condition of the source at {lit}`index` of the scope: a merged condition is
 resolved already; a written one resolves over the whole scope, as SQLite does, and then
 must read only the sources up to this one, which the model evaluates while it joins
-({name}`RestrictionKind.laterTableInOn`). -/
-def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondition → Except ValueIssue (Option Resolved.Expr)
-  | .none => .ok none
-  | .merged condition => .ok (some condition)
+({name}`RestrictionKind.laterTableInOn`). The names of a written condition are recorded. -/
+def resolveJoinConditionTraced (dqs : Bool) (scope : Scope) (index : Nat) :
+    JoinCondition → Traced ValueIssue (Option Resolved.Expr)
+  | .none => pure none
+  | .merged condition => pure (some condition)
   | .written path term => do
-    let resolved ← condition path (resolveOperand dqs scope {} true term)
+    let resolved ← Traced.condition path (resolveOperandTraced dqs scope {} true term)
     let bound := scope.cellsBefore (index + 1)
-    if resolved.readsBelow bound then .ok (some resolved)
+    if resolved.readsBelow bound then pure (some resolved)
     else throw (.restriction path .laterTableInOn)
+
+/-- The condition of the source at {lit}`index` of the scope: {name}`resolveJoinConditionTraced`
+without its trace. -/
+def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) (condition : JoinCondition) :
+    Except ValueIssue (Option Resolved.Expr) :=
+  (resolveJoinConditionTraced dqs scope index condition).drop
 
 end Belay.Sqlite.Model

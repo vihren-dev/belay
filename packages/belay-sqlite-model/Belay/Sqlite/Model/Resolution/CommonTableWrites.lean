@@ -11,25 +11,34 @@ namespace Belay.Sqlite.Model
 
 /-- Resolve a write after instantiating its used CTEs and view sources. The callback receives the index
 mapping for its VALUES, SET and WHERE expressions, then the same resolved queries and
-shapes as {name}`resolveWriteSubqueries`. With no needed copies the mapping is identity.
+shapes as {name}`resolveWriteSubqueriesTraced`. With no needed copies the mapping is identity.
 A view target is not writable: the write reports that error ({name}`resolveViewTarget`) before the
-body of any source can give an error. -/
+body of any source can give an error. The names of a copy of a {lit}`WITH` definition or a stored view
+move to the written statement ({name}`CommonTableCopies.originalOccurrence`). -/
+def resolveCommonTableWriteTraced (context : ResolveContext) (catalog : Catalog) (field : Nat)
+    (tableName : Identifier) (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
+    (resolveWrite : (Nat → Nat) → List Resolved.Query → SubqueryShapes → TracedResolution) : TracedResolution :=
+  if (catalog.findView tableName).isSome then resolveViewTargetTraced context catalog tableName (resolveWrite id [] {}) else
+  if !querySourceCopiesNeeded catalog commonTablePlaceholder subqueries then
+    resolveWriteSubqueriesTraced context catalog field tableName scopeOf subqueries (resolveWrite id)
+  else Traced.sourceStage catalog (expandCommonTablesTraced catalog field commonTablePlaceholder subqueries)
+    fun expanded =>
+      let index := fun original => (expanded.rootIndexes.lookup original).getD
+        (expanded.copies.queries.size + original)
+      ((resolveWriteSubqueriesTraced context catalog field tableName scopeOf expanded.copies.queries.toList
+        (fun resolved shapes => match expanded.copies.recursionIssue field resolved with
+          | some issue => Traced.lift (issueResolution catalog [] issue)
+          | none => resolveWrite index resolved shapes) expanded.copies.columnNames
+          expanded.copies.viewRoots).mapError fun issue =>
+          { issue with path := expanded.copies.originalPath field issue.path }).mapOccurrences
+        (expanded.copies.originalOccurrence field)
+
+/-- Resolve a write after instantiating its used CTEs and view sources:
+{name}`resolveCommonTableWriteTraced` without its trace. -/
 def resolveCommonTableWrite (context : ResolveContext) (catalog : Catalog) (field : Nat)
     (tableName : Identifier) (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
     (resolveWrite : (Nat → Nat) → List Resolved.Query → SubqueryShapes → StatementResolution) : StatementResolution :=
-  if (catalog.findView tableName).isSome then resolveViewTarget context catalog tableName (resolveWrite id [] {}) else
-  if !querySourceCopiesNeeded catalog commonTablePlaceholder subqueries then
-    resolveWriteSubqueries context catalog field tableName scopeOf subqueries (resolveWrite id)
-  else match expandCommonTables catalog field commonTablePlaceholder subqueries with
-    | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
-    | .error (.value issue) => issueResolution catalog [] issue
-    | .ok expanded =>
-      let index := fun original => (expanded.rootIndexes.lookup original).getD
-        (expanded.copies.queries.size + original)
-      (resolveWriteSubqueries context catalog field tableName scopeOf expanded.copies.queries.toList
-        (fun resolved shapes => match expanded.copies.recursionIssue field resolved with
-          | some issue => issueResolution catalog [] issue
-          | none => resolveWrite index resolved shapes) expanded.copies.columnNames expanded.copies.viewRoots).mapError fun issue =>
-          { issue with path := expanded.copies.originalPath field issue.path }
+  (resolveCommonTableWriteTraced context catalog field tableName scopeOf subqueries
+    (fun index resolved shapes => Traced.lift (resolveWrite index resolved shapes))).drop
 
 end Belay.Sqlite.Model

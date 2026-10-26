@@ -41,7 +41,7 @@ theorem no_invoice_is_negative (db : Database) (position index : Nat) (table : C
     (shapes := { current := some 0 })
     (term := .compare .lt (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_notExists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
+  refine Iff.trans (Holds.iff_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
   · simp [sql_simp]
   · simp [sql_simp]; exact Iff.rfl
 
@@ -65,9 +65,9 @@ theorem exists_invoice_observations (db : Database) (position : Nat) (table : Ca
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   refine ⟨?_, ?_, ?_⟩
-  · simpa using Holds.iff_selectOne_exists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
-  · simpa using Empty.iff_selectOne_exists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
-  · exact Fails.not_selectOne_exists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Holds.iff_selectOne_exists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Empty.iff_selectOne_exists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · exact Fails.not_selectOne_exists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
 
 /-- Over every database with a table of invoices, NOT EXISTS reverses the row and empty observations of EXISTS,
 and never fails. Proof sketch: apply all three NOT EXISTS laws to the absent filter. -/
@@ -82,9 +82,9 @@ theorem not_exists_invoice_observations (db : Database) (position : Nat) (table 
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   refine ⟨?_, ?_, ?_⟩
-  · simpa using Holds.iff_selectOne_notExists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
-  · simpa using Empty.iff_selectOne_notExists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
-  · exact Fails.not_selectOne_notExists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Holds.iff_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Empty.iff_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
+  · exact Fails.not_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)
 
 /-- An existing table without invoices distinguishes an empty result from a missing-table error. -/
 def noInvoices : Database := db! r"CREATE TABLE invoices (amount INTEGER);"

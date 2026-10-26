@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Implementation is assigned.
+Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -206,3 +206,191 @@ document-edit cancellation cases) passed in the focused Nix gate
 `/nix/store/11rz63050cnrdwl6wpkk2fdc6jib0q7x-sqlite-verifier-test-automatic-1`
 (54 passed, 70 deselected). See the S5 status file for the cancellation limit.
 Editor part 2 remains open.
+
+## Part 2 split — 2026-10-25
+
+The R19 check of the task against the current model found that no resolver
+output says which name occurrence resolved to which catalog object: resolved
+statements hold catalog positions, prepare errors hold only a name, and
+`Span.leaves` is not a role trace. A surface-side walk would be a second
+resolver over the rewritten CTE and view copies. The coordinator decided that a
+model-side name trace becomes its own model task. The task file now states the
+trace and splits part 2 into part 2a (table-level behavior, no trace) and part
+2b (column, affinity, correction and DQS behavior, which consumes the trace).
+Part 2a progress is recorded below, one entry per commit.
+
+### Part 2a, commit 1: table hovers in `sql!` — 2026-10-25
+
+- New modules (all in `packages/belay/Belay/Sqlite/`, each under 200 lines):
+  `SqlTableSlots` (table-name places by fixed syntax path, checked against the
+  name that the syntax holds, `WITH`-defined names excluded), `SqlStatementContexts`
+  (catalog and row knowledge per statement: rows known until the first statement
+  that can write), `SqlTableDescription` (hover text), `SqlTableInfo` (the Lean
+  info tree node: hover, optional definition target, `property` token) and
+  `SqlEditorInfo` (the shared entry point `emitSqlEditorInfo`).
+- `SqlBang` calls the entry point after it logs the resolution errors. Plain `sql`
+  has no database and so no table information.
+- Finding on semantic tokens: Lean derives tokens from term information only for
+  local variables (`variable`) and for the field of a projection (`property`,
+  syntax kind `identProjKind`). A table name uses the `property` token through
+  that node kind. There is no token type for tables.
+- Tests: `tests/surface_editor_tables_test.py` (real server, LF and CRLF:
+  hover text and range, row counts before and after a write, `CREATE`/`DROP`
+  sequence, quoted names, CTE shadowing with no information, plain `sql` and an
+  escaped literal with no information, `property` token, UTF-16 ranges after a
+  non-BMP character). The helpers `position`, `hover` and `semantic_tokens` moved
+  to `tests/lean_server_support.py`. The test is in the `surface` suite of
+  `tests/nix_suites.json`. Nix results follow at the end of part 2a.
+
+### Part 2a, refactor after review 1 — 2026-10-25
+
+The review of commit 1 gave two musts, both fixed. `tableSlotsOf` now lists every
+statement form, so a new form fails to compile instead of getting no information.
+`mayChangeRows` now counts every statement that creates, drops or alters a catalog
+object, because a dropped view or index moves the catalog positions that index the
+stored rows; the test adds a view dropped before a populated table.
+
+### Part 2a, commit 2: table origins and navigation — 2026-10-25
+
+- `SqlTableOrigins` holds the surface environment extension `tableOriginsExtension`:
+  one entry for each declaration whose value is a `db!` term, with the folded
+  table name and the source range of the table name in its last `CREATE TABLE`.
+  The entry is outside the database value and the script value. `db!` records it
+  (`registerTableOrigins`) for the declaration it elaborates in (`getDeclName?`),
+  only for tables of the final catalog, and none for a script with `ROLLBACK`.
+- `sql!` reads it through `KnownDatabase.ofTerm`: the elaborated database term
+  must be a constant, or constants that stand for each other, whose value holds
+  the recorded literal. A computed database (`id db`) has no origin and no jump.
+  `emitSqlEditorInfo` drops the origin for a name that an earlier statement of the
+  script created or dropped. `evaluateDatabase` now returns the term with the
+  value (`EvaluatedDatabase`).
+- Finding: the recorded proof argument of the `db!` term does not survive
+  `def` elaboration (Lean abstracts nested proofs), so the match compares the
+  database literal only.
+- Alternative kept for the report: `db!` already marks its term with `withSource`
+  metadata; the task asks for an extension, so navigation does not use it.
+- Test: `tests/surface_editor_origins_test.py` (real server, definition requests):
+  two databases with an `items` table keep distinct origins, a constant that
+  names another database, a helper module compiled to an `.olean` and imported,
+  the last `CREATE` after a `DROP` inside a `db!` text, no jump for a computed
+  database, no jump after `DROP`/`CREATE` inside a `sql!` script, owner in the hover.
+  `tests/surface_support.py` and `tests/lean_server_support.py` got the module
+  name, the helper-module compile and `LEAN_SRC_PATH` for it. Nix results follow
+  at the end of part 2a.
+
+### Part 2a, refactor after review 2 — 2026-10-25
+
+Two musts fixed: the origin recorder lists every statement form (`isRollback`,
+`stepCreatedSlots`), and the alias chain limit is the named `aliasChainLimit`.
+The table-hover test expects the owner now shown in the hover (commit 2 added it).
+
+### Part 2a, commit 3: rows of a run in `db!` and `#sql` — 2026-10-25
+
+- `db!` runs its statements again with `executedContexts` after the run that
+  finds the errors, and gives its table names the rows that the run reached before
+  each statement. The second run is the same deterministic model run, so no
+  second definition of execution exists.
+- `#sql` is now a command elaborator, not a macro. It evaluates the database term
+  and runs the script in a trial (`sqlCommandInformation`) whose messages and
+  information it drops, so Lean shows each error once, at the `#eval` of
+  `Database.tables` that it still elaborates. The trial keeps nothing when the
+  database has no value or the text has an error. Then it emits the table
+  information with the actual rows.
+- Test: `tests/surface_editor_executed_test.py` (real server): counts before and
+  after an insert and a delete in `db!` and `#sql`, an unrun `sql!` after a write with no count, and
+  only information messages. `table_hover` moved to `tests/lean_server_support.py`.
+
+### Part 2a, refactor after review 3 — 2026-10-25
+
+Must fixed: the `#sql` trial does not know the values that the displayed run binds
+to the parameters of a script. A script with a parameter now gets the contexts of a
+resolution, whose rows are known only before the first statement that can write, instead
+of the contexts of a run. The executed test adds a `#sql` with a captured `$target`.
+
+### Part 2a, commit 4: order warnings — 2026-10-25
+
+- `SqlOrderWarnings` (option `sql.orderWarnings`, default true). Contexts:
+  - `db!` and `#sql` run their statements, so they give the evidence warning: a
+    statement whose output is `Output.oneOf` (several permitted results) warns at
+    the statement with the number of results and, for `LIMIT`/`OFFSET`, that
+    dependence. A single or equal result gives none (`Output.ofResults` already
+    merges equal results).
+  - `sql` and `sql!` do not run, so they give only the risk warning: a query with
+    `LIMIT`/`OFFSET`, no `ORDER BY` and a source of rows or a compound. It says the
+    selection may depend on the order and that the results may be equal. Known
+    limit: a one-row aggregate with `LIMIT` also gets it; the option turns it off.
+  - A `#sql` script with parameters gives the risk warning, because its trial run
+    binds no values. The `#eval` that `#sql` expands to elaborates with the
+    option off, so a statement warns once.
+- Warnings never change the term, success or proof obligations; the test checks
+  that no diagnostic is an error.
+- Existing fixtures: three `#guard_msgs` commands in `tests/surface/` that show
+  the unordered `LIMIT` idiom on purpose now say `set_option sql.orderWarnings
+  false in`. The private guide's examples of this idiom need the same line, or
+  their expected messages need the warning (guide change for the coordinator).
+- Test: `tests/surface_editor_order_test.py` (real server): evidence in `db!` and
+  `#sql`, equal and single results and `ORDER BY` with none, risk in `sql!` after
+  a write and in plain `sql`, no source with none.
+
+The source-position test (`test_source_positions_and_failures`) adds an ordinary
+literal without escapes, a multi-line raw literal with repeated occurrences, a
+literal with an escape (no information), text that the parser rejects (only the
+existing error), and the check that a keyword gets no semantic token.
+
+### Part 2a, Nix results — 2026-10-25
+
+After the final review of the part (no findings on the last commit) at
+`db34f58e`:
+
+- `just test-full` passed. The surface group, with the four new editor test
+  files and the changed guide fixtures, is
+  `/nix/store/yn5lyy6qhyv2bv823hdyzcpf3vl3wjcc-sqlite-verifier-test-surface-1`
+  (146 passed). The source-check group had 469 passed. The conformance runtime is
+  `/nix/store/qx367sqwhxgwcxp1hz7qplns2gb6rmv7-sqlite-verifier-conformance`, the
+  public documentation `/nix/store/xvs1d5nniq5c7dvgpgcak85jmvzbkbrl-sqlite-verifier-public-documentation-1`
+  and the report `/nix/store/96crr0c22qhwqn1q5rl0mzv1nw4384s6-sqlite-verifier-test-reports`.
+- `just verdict` passed:
+  `/nix/store/ndsqyfmx2i16r6ikj8r6aad55rgn8jvn-sqlite-verifier-verdict`. Part 2a
+  changed no model file, no judge file and no prediction input.
+- `just test-nix` and `just test-scheduled-checks` run at the end of the whole task, after part 2b.
+
+Part 2a is complete. Part 2b (column and affinity hovers, derived-column facts,
+typo corrections, DQS warnings) waits for the model name trace.
+
+### Coordinator decisions on part 2a — 2026-10-25
+
+Part 2a is accepted. The coordinator decided:
+
+1. Navigation keeps the environment extension (`db!` source metadata is not used).
+2. `db!` keeps the second model run (`executedContexts`) after the run that finds errors.
+3. The syntactic risk warning also applies to one-row aggregates with `LIMIT`;
+   `sql.orderWarnings` turns it off.
+4. `sql!` keeps the risk warning only; it gives no evidence warning.
+
+Part 2b waits for the model name-trace task. The coordinator integrates part 2a
+into the stack after the FK pull requests and runs the gates on that merge.
+
+### Integration gates — 2026-10-25
+
+The merge `99713acb` joins part 2a with the stack head (S7, doc blocks, FK part 2).
+Resolutions: the order-risk warning is in the inline `scriptTerm` of `SqlTerm.lean`
+(`sql_file` and `sql_module` give no risk warning, which the task does not ask for);
+`EvaluatedDatabase.value` is used by `sql_file` and `sql_module`. These two paths
+record no table origins or hovers; the task scopes part 2a to `sql!`, `db!` and `#sql`.
+The review of the merge found two items, both documentation: the parameterized-script
+exception of `#sql` in the task file, and the acceptance line in the opening status.
+
+Gate results on the merge `99713acb` plus the documentation refactor (2026-10-25).
+All gates ran through `heavy.sh` and passed on the first run:
+
+- `just test-full`: 337 tests passed;
+  `/nix/store/djshh9r2jv947vhhi51q38mdl2jrvvjb-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/a6nvwbx7sb8lx6fwjpr28g512dx1awxz-sqlite-verifier-verdict`.
+- Predictions: the store path is `/nix/store/2c56akphxc884accaa9piqwgyhg3bpbq-sqlite-verifier-predictions`,
+  the same path as the predictions of the v54 pull request, so the content is identical
+  (55 files; `diff -r` shows no difference).
+- `just test-nix`: 71 tests passed.
+- `just test-scheduled-checks`:
+  `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
+- `just review`: the merge `99713acb` had two findings (task-file documentation), both fixed;
+  the refactor commit `798c25b3` has no findings.

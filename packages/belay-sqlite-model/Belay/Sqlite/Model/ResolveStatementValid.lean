@@ -59,50 +59,50 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     · simpa [hsaved] using current
     · simpa [hsaved] using saved _ hsaved
   | createTable name columns constraints options =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_valid _ _ _ _ _ _ _ _ current execution (by assumption))
   | createView name ifNotExists columns query subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateView_valid _ _ _ _ _ _ _ current (by assumption))
   | createIndex name unique table terms filter =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateIndex_valid _ _ _ _ _ _ _ _ _ current (by assumption))
   | addColumn table column =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveAddColumn_valid _ _ _ _ _ _ current (by assumption))
+    exact keep _ (resolveAddColumn_valid _ _ _ _ _ _ _ current (by assumption))
   | dropTable name ifExists =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found
   | dropView name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropView_valid _ _ _ _ _ _ current (by assumption))
   | dropIndex name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropIndex_valid _ _ _ _ _ _ current (by assumption))
   | createTrigger name ifNotExists time event table condition body =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTrigger_valid _ _ _ _ _ _ _ current (by assumption))
   | dropTrigger name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropTrigger_valid _ _ _ _ _ _ current (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | update table assignments filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | delete table filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | pragma pragma =>
@@ -110,7 +110,7 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     · cases setting <;> exact ⟨current, saved⟩
     · exact ⟨current, saved⟩
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveSelect_same _ _ _ _ _ _ (by assumption)).1 ▸ current)
 

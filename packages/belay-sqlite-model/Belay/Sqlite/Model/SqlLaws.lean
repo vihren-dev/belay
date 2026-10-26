@@ -44,7 +44,7 @@ unrestricted; the empty script satisfies it. -/
 def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
     | .createTable .. => True
-    | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
+    | .addColumn _ column _ => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
     | .createView .. | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
@@ -80,7 +80,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
             state.database with
         | none => rfl
         | some source =>
-          have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
+          have clean := Resolved.source_fault_of_plain _ state.database none query.sources _ source noEach rfl found
           cases window : query.bindWindow parameters with
           | none => simp [Resolved.Query.run, single_select, window, clean]
           | some bound =>

@@ -11,6 +11,8 @@ import Belay.Sqlite.SqlBang
 import Belay.Sqlite.SqlFileSyntax
 import Belay.Sqlite.SqlModule
 import Belay.Sqlite.Run
+import Belay.Sqlite.TwoStateObservation
+import Belay.Sqlite.TwoStateAssertions
 import Belay.Sqlite.Program
 import Belay.Sqlite.Env
 import Belay.Sqlite.ValueDisplay
@@ -59,6 +61,18 @@ import Belay.Sqlite.MigrationApplicationViews
 import Belay.Sqlite.MigrationApplicationLaws
 import Belay.Sqlite.MigrationPatternSyntax
 import Belay.Sqlite.MigrationExplanation
+import Belay.Sqlite.ContextObservation
+import Belay.Sqlite.ContextObservationLaws
+import Belay.Sqlite.ContextObservationBridge
+import Belay.Sqlite.FreshRules
+import Belay.Sqlite.AssertionTerms
+import Belay.Sqlite.FreshNotation
+import Belay.Sqlite.FreshFromNotation
+import Belay.Sqlite.ClaimExplanation
+import Belay.Sqlite.PlainInsertEffect
+import Belay.Sqlite.PlainDeleteEffect
+import Belay.Sqlite.SingleStatementChecks
+import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
@@ -101,6 +115,24 @@ import Belay.Sqlite.SqlRefuteSearch
 import Belay.Sqlite.CheckOperation
 import Belay.Sqlite.SqlAutomatic
 import Belay.Sqlite.SqlDocBlock
+import Belay.Sqlite.ApplicationCalls
+import Belay.Sqlite.Application
+import Belay.Sqlite.ApplicationTranslation
+import Belay.Sqlite.ApplicationSimulation
+import Belay.Sqlite.ScopedAgreement
+import Belay.Sqlite.ScopedAgreementBind
+import Belay.Sqlite.ScopedSimulation
+import Belay.Sqlite.ExecutionDeterministic
+import Belay.Sqlite.ExecutionIndexFree
+import Belay.Sqlite.MigrationQueryFrames
+import Belay.Sqlite.ApplicationQuerySimulation
+import Belay.Sqlite.ScopedRowSteps
+import Belay.Sqlite.ScopedSimulationReverse
+import Belay.Sqlite.ApplicationClaims
+import Belay.Sqlite.ApplicationSyntax
+import Belay.Sqlite.ApplicationExplanation
+import Belay.Sqlite.NormalizedFieldPlan
+import Belay.Sqlite.NormalizedFieldLookupSimulation
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with

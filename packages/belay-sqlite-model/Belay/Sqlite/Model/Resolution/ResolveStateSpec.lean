@@ -74,10 +74,11 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 
 /-- For every successful resolution of ADD COLUMN, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
-theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog)
+transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
+theorem resolveAddColumn_applyCatalog (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
@@ -117,62 +118,62 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | commit => cases ok; rfl
   | rollback => cases ok; rfl
   | createTable name columns constraints options =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createView name ifNotExists columns query subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateView_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createIndex name unique table terms filter =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | addColumn table column =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | dropTable name ifExists =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_applyCatalog _ _ _ _ _ found
   | dropView name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveDropView_applyCatalog _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | dropIndex name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createTrigger name ifNotExists time event table condition body =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateTrigger_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | dropTrigger name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveDropTrigger_applyCatalog _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | insert table columns rows conflicts algorithm returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found =>
       let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
         (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found =>
       let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
         (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | delete table filter returning subqueries =>
-    simp only [resolveStatement] at ok
+    simp only [statement_arms] at ok
     exact written _ ok fun _ _ found =>
       let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
         (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
@@ -182,7 +183,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     · rfl
     · exact ordinary _ control unchanged.symm
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)

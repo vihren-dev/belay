@@ -96,6 +96,7 @@ columns only; a source never has an implicit rowid. Normalized declarations,
 expression origins, affinities and FLEXNUM flags each retain their own meaning. -/
 def derivedScopeSource (index : Nat) (alias : Option Identifier) (columns : List DerivedColumn) : ScopeSource :=
   { name := alias.getD (name! ""), qualified := alias.isSome, queryIndex := some index, hasRowid := false,
+    role := .derivedTable,
     columns := columns.map fun column =>
       { name := Identifier.ofString column.name, declaredType := column.declaredType, collation := column.collation },
     affinities := some (columns.map (·.affinity)),

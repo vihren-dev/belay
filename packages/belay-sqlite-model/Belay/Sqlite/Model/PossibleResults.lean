@@ -136,11 +136,12 @@ with the counters and the values bound to the statement's parameters ({name}`Res
 in the context of its subqueries, as
 {name}`Resolved.Query.runOn` gives its one result, with its window bound to the values
 ({name}`Resolved.Query.bindWindow`); none when a table is missing or a value of the window is not
-an integer. -/
+an integer. The optional {lit}`initial` database is the one that the sources of the initial origin read; use
+none outside a two-state observation. -/
 def Resolved.Query.possibleOn (query : Resolved.Query) (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
-    (subqueries : List Resolved.Query) : Option (List (List (List Value))) :=
-  let context := Resolved.statementContext clock counters parameters database subqueries
-  (query.source context database).bind fun source =>
+    (subqueries : List Resolved.Query) (initial : Option Database := none) : Option (List (List (List Value))) :=
+  let context := Resolved.statementContext clock counters parameters database subqueries initial
+  (query.source context database initial).bind fun source =>
     (query.bindWindow parameters).map fun bound => bound.possibleResults context source.rows
 
 end Belay.Sqlite.Model

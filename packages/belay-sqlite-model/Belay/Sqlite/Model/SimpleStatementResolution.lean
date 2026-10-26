@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Model
 any catalog. Proof sketch: unfold the resolver; there is no table to look up. -/
 theorem resolveSources_none (catalog : Catalog) :
     resolveSources catalog none [] = .ok ([], []) := by
-  simp [resolveSources]
+  simp [resolveSources, resolveSourcesTraced, traced_drop]
 
 /-- For every simple query ({name}`Syntax.Subquery.Simple`) without parent, whose parts resolve as
 in {name}`resolveSelect_simple`, the statement of its clauses with an empty list of subqueries
@@ -50,12 +50,12 @@ theorem resolveStatement_select_simple (context : ResolveContext) (state : Resol
 catalog has neither as a table nor as a view and whose name is neither a table of SQLite itself ({name}`reservedName`) nor a
 table-valued function ({name}`eponymousName`), the statement resolves to the prepare error
 {lit}`no such table`, for any clauses after {lit}`FROM`, and leaves the state as it is. The source reference has no indexed query.
-Proof sketch:
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch:
 the lookup of the first table fails with that error, which the resolver of the statement turns
 into the prepare error. -/
 theorem resolveStatement_select_missing_table (context : ResolveContext) (state : ResolveState) (query : Syntax.Subquery)
     (reference : Syntax.TableReference) (source : query.source = some reference) (noJoins : query.joins = [])
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (missing : state.catalog.findTable reference.table = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (missing : state.catalog.findTable reference.table = none)
     (notView : state.catalog.findView reference.table = none)
     (notReserved : reservedName reference.table = false) (notFunction : eponymousName reference.table = false) :
     resolveStatement context state (.select query.columns query.source query.joins query.filter query.groupBy
@@ -65,9 +65,9 @@ theorem resolveStatement_select_missing_table (context : ResolveContext) (state 
       query.groupBy query.orderBy query.limit query.offset [] query.having query.distinct query.compound) =
       state.withCatalog (resolveSelect context state.catalog { query with parent := none, commonTable := none } []) := rfl
   rw [unfolded]
-  unfold resolveSelect resolveSelectDetails
-  simp [prepareQuerySources, querySourceCopiesNeeded, CommonTableCopies.originalIssue, source, noJoins, resolveSources, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, notReserved,
-    notFunction, Except.mapError, SourceIssue.under, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Functor.map, Except.map]
+  unfold resolveSelect resolveSelectTraced
+  simp [resolveSelectDetailsTraced, prepareQuerySourcesTraced, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, CommonTableCopies.originalIssue, source, noJoins, resolveSourcesTraced_drop, resolveSources_some, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, traced_drop, missing, notView, notReserved,
+    notFunction, Except.mapError, SourceIssue.under, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.map]
 
 /-- For every SELECT without subqueries, joins, compound or a parent, whose sources resolve,
 whose result columns pass the star check, and whose body reports a prepare error, the statement

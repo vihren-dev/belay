@@ -1,6 +1,6 @@
-"""Each mutant of the subquery, expression form, DISTINCT and HAVING, foreign key, trigger,
-possible result, parameter, compound and pragma mutant tables changes the verdict of an authored
-case (ADR 0018 and ADR 0019).
+"""Each mutant of the subquery, expression form, DISTINCT and HAVING, foreign key, ADD COLUMN with
+REFERENCES, trigger, possible result, parameter, compound and pragma mutant tables changes the verdict
+of an authored case (ADR 0018 and ADR 0019).
 
 These tests are the second half of the mutant tests of `tests/conformance_query_mutants_test.py`,
 which describes the measurement and the time limit. They are in a separate file so that each file
@@ -11,11 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from conformance import (authored_compound, authored_distinct_having, authored_expression_forms,
-                         authored_foreign_keys, authored_parameters, authored_possible_results, authored_pragmas,
-                         authored_subqueries, authored_triggers, compound_mutants, distinct_having_mutants,
-                         expression_form_mutants, foreign_key_mutants, parameter_mutants, possible_result_mutants,
-                         pragma_mutants, subquery_mutants, trigger_mutants)
+from conformance import (add_reference_mutants, authored_add_references, authored_compound,
+                         authored_distinct_having, authored_expression_forms, authored_foreign_keys,
+                         authored_parameters, authored_possible_results, authored_pragmas, authored_subqueries,
+                         authored_triggers, compound_mutants, distinct_having_mutants, expression_form_mutants,
+                         foreign_key_mutants, parameter_mutants, possible_result_mutants, pragma_mutants,
+                         subquery_mutants, trigger_mutants)
 from tests.mutant_sets import measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
@@ -54,6 +55,14 @@ def test_every_foreign_key_mutant_changes_a_verdict(runtime_root: Path) -> None:
     column, `SET NULL` that deletes the child row, `CASCADE` on update that keeps the old child
     key, and a lookup that compares the child value without the parent key's affinity."""
     measure_set(runtime_root, [authored_foreign_keys], [(foreign_key_mutants.MUTANTS, foreign_key_mutants.TARGETS)])
+
+
+def test_every_add_reference_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of ADD COLUMN with REFERENCES and a default (`conformance.add_reference_mutants`)
+    notice every changed rule: a refusal that never happens, a refusal on an empty table or without
+    enforcement, a refusal of the NULL default, and a first DEFAULT that decides instead of the last."""
+    measure_set(runtime_root, [authored_add_references],
+                [(add_reference_mutants.MUTANTS, add_reference_mutants.TARGETS)])
 
 
 def test_every_trigger_mutant_changes_a_verdict(runtime_root: Path) -> None:

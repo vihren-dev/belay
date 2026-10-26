@@ -27,7 +27,7 @@ def failureAction (statement : Resolved.Statement) : ExecutionError → String
   | .transactionAlreadyActive | .noActiveTransaction =>
     "; remove the statement, or add the BEGIN or COMMIT that it needs"
   | .integerOverflow | .datatypeMismatch | .nullColumnDefault | .nonConstantColumnDefault
-  | .checkColumnDefault | .unmodeled | .prepare _ =>
+  | .checkColumnDefault | .referenceColumnDefault | .unmodeled | .prepare _ =>
     "; correct the statement, or the statements before it that give the data that it reads"
   | .constraintViolation | .constraintFail | .constraintRollback => match statement with
     | .createIndex .. => "; remove the rows whose values of the index are equal, or change the index"
@@ -59,7 +59,8 @@ def failureParts (clock : Option Clock) (bytes : ByteArray) (index : Nat) (conne
   | some (statement, failure@.constraintFail) | some (statement, failure@.constraintRollback)
   | some (statement, failure@.integerOverflow) | some (statement, failure@.datatypeMismatch)
   | some (statement, failure@.functionError) | some (statement, failure@.nullColumnDefault)
-  | some (statement, failure@.nonConstantColumnDefault) | some (statement, failure@.checkColumnDefault) =>
+  | some (statement, failure@.nonConstantColumnDefault) | some (statement, failure@.checkColumnDefault)
+  | some (statement, failure@.referenceColumnDefault) =>
     ({ start, stop, message := failure.message ((statementClock clock index statement).getD 0)
         (connection.state.counters.view statement.counterReads) values statement database },
       failureAction statement failure)

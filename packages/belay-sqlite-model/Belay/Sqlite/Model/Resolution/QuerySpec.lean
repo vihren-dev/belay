@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.SelectResolution
+import Belay.Sqlite.Model.Resolution.SourceListFromArms
 
 set_option doc.verso true
 
@@ -30,19 +31,19 @@ the query needs no WITH or stored-view copies, and that name is not reserved for
 own tables and names no eponymous table-valued function
 ({name}`eponymousName`), resolution gives SQLite's
 {lit}`no such table: %s` and keeps the catalog. The source reference has no indexed query.
-Proof sketch: source preparation keeps the ordinary query list; the first source's catalog
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: source preparation keeps the ordinary query list; the first source's catalog
 lookup fails before any query body resolves. -/
 theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (source : Syntax.TableReference)
     (first : query.source = some source) (tables : query.joins.length + 1 ≤ maximumJoinTables)
-    (namedSource : source.query = none) (arguments : source.arguments = none)
+    (namedSource : source.query = none) (current : source.schema = none) (arguments : source.arguments = none)
     (missing : catalog.findTable source.table = none) (notView : catalog.findView source.table = none)
     (application : reservedName source.table = false)
     (table : eponymousName source.table = false)
     (ordinary : querySourceCopiesNeeded catalog query subqueries = false) :
     resolveSelect context catalog query subqueries = .ok (.prepareError (.noSuchTable source.table), catalog) := by
   have notMore : ¬ query.joins.length + 1 > maximumJoinTables := by omega
-  simp [resolveSelect, resolveSelectDetails, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, application, table,
-    notMore, Except.mapError, SourceIssue.under, prepareError, Functor.map, Except.map, bind, Except.bind]
+  simp [resolveSelect, resolveSelectTraced, resolveSelectDetailsTraced, prepareQuerySourcesTraced, ordinary, CommonTableCopies.originalIssue, resolveSourcesTraced_drop, resolveSources_some, first, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, traced_drop, missing, notView, application, table,
+    notMore, Except.mapError, SourceIssue.under, prepareError, bind, Except.bind]
 
 end Belay.Sqlite.Model

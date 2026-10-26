@@ -94,15 +94,16 @@ every added cell appended, the effect of {name}`runStatement` satisfies "every t
 {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. Proof
 sketch: every error keeps the database, and a success is
 {lit}`Database.addColumn` of an added cell ({name}`step_addColumn_cases`), which
-{name}`Database.EachTable.addColumn` handles. -/
+{name}`Database.EachTable.addColumn` handles.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_rowLocal {atom : Table → Prop} (clock : Int) (counters : Counters) (parameters : List Value)
-    (target : Nat) (column : CatalogColumn) {database : Database} (every : database.EachTable atom)
+    (target : Nat) (column : CatalogColumn) (refuses : Bool) {database : Database} (every : database.EachTable atom)
     (appended : ∀ table value, database.table target = some table → AddedCell table column value →
       atom (table.appendColumns [(column, value)])) :
-    (runStatement clock counters parameters (.addColumn target column) database).effect.Satisfies
+    (runStatement clock counters parameters (.addColumn target column refuses) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement]
-  rcases step_addColumn_cases clock counters parameters target column database with kept | ⟨table, value, found, added, eq⟩
+  rcases step_addColumn_cases clock counters parameters target column refuses database with kept | ⟨table, value, found, added, eq⟩
   · exact Effect.satisfies_of_database every kept
   · refine Effect.satisfies_of_effectDatabase ?_
     show (effectDatabase _).EachTable atom
@@ -118,12 +119,13 @@ at the target are wide ({name}`Database.RowsWideAt`), the effect of {name}`runSt
 {name}`Database.NotNull` ({name}`Effect.Satisfies`): the database of a success and that of an error
 with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
 nothing about the other atoms or the support check. Proof sketch:
-{name}`runStatement_addColumn_rowLocal` with {name}`Table.NotNull.appendColumn`. -/
+{name}`runStatement_addColumn_rowLocal` with {name}`Table.NotNull.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_notNull (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
-    (column : CatalogColumn) {database : Database} (notNull : database.NotNull)
+    (column : CatalogColumn) (refuses : Bool) {database : Database} (notNull : database.NotNull)
     (wide : database.RowsWideAt target) :
-    (runStatement clock counters parameters (.addColumn target column) database).effect.Satisfies Database.NotNull :=
-  runStatement_addColumn_rowLocal clock counters parameters target column notNull fun table _ found added =>
+    (runStatement clock counters parameters (.addColumn target column refuses) database).effect.Satisfies Database.NotNull :=
+  runStatement_addColumn_rowLocal clock counters parameters target column refuses notNull fun table _ found added =>
     (notNull _ table found).appendColumn (wide table found) added
 
 /-- The theorem of "types fit" for ADD COLUMN, for every clock value, counters, parameter list, target,
@@ -134,12 +136,13 @@ the target are wide ({name}`Database.RowsWideAt`), and the stored default fits t
 with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
 nothing about the other
 atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
-{name}`Table.TypesFit.appendColumn`. -/
+{name}`Table.TypesFit.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_typesFit (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
-    (column : CatalogColumn) {database : Database} (fits : database.TypesFit)
+    (column : CatalogColumn) (refuses : Bool) {database : Database} (fits : database.TypesFit)
     (wide : database.RowsWideAt target) (strict : database.StrictDefaultFitsAt target column) :
-    (runStatement clock counters parameters (.addColumn target column) database).effect.Satisfies Database.TypesFit :=
-  runStatement_addColumn_rowLocal clock counters parameters target column fits fun table _ found added =>
+    (runStatement clock counters parameters (.addColumn target column refuses) database).effect.Satisfies Database.TypesFit :=
+  runStatement_addColumn_rowLocal clock counters parameters target column refuses fits fun table _ found added =>
     (fits _ table found).appendColumn (wide table found) (strict table found) added
 
 /-- The theorem of "checks hold" for ADD COLUMN, for every clock value, counters, parameter list, target,
@@ -150,12 +153,13 @@ satisfies {name}`Database.ChecksHold` ({name}`Effect.Satisfies`): the database o
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. It assumes nothing about
 the other atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
-{name}`Table.ChecksHold.appendColumn`. -/
+{name}`Table.ChecksHold.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_checksHold (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
-    (column : CatalogColumn) {database : Database} (holds : database.ChecksHold)
+    (column : CatalogColumn) (refuses : Bool) {database : Database} (holds : database.ChecksHold)
     (wide : database.RowsWideAt target) (reads : database.ChecksReadBelowAt target) :
-    (runStatement clock counters parameters (.addColumn target column) database).effect.Satisfies Database.ChecksHold :=
-  runStatement_addColumn_rowLocal clock counters parameters target column holds fun table _ found added =>
+    (runStatement clock counters parameters (.addColumn target column refuses) database).effect.Satisfies Database.ChecksHold :=
+  runStatement_addColumn_rowLocal clock counters parameters target column refuses holds fun table _ found added =>
     (holds _ table found).appendColumn (wide table found) (reads table found) added
 
 end Belay.Sqlite.Model
