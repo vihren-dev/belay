@@ -35,7 +35,7 @@ theorem resolveOperand_column_is_null {dqs : Bool} (catalog : Catalog) (referenc
     (catalog := catalog) (reference := reference) (position := position) (quote := .none) found
   have collate := Syntax.Expr.columnCollation_identifier_table (catalog := catalog) (reference := reference)
     (position := position) (quote := .none) found
-  rw [resolveOperand]
+  rw [resolveOperand_arm_compare]
   simp only [operand, resolveOperand_null]
   simp [truthTest, Syntax.Expr.unquotedBoolean, liveCondition, comparisonAffinity, comparisonCollation,
     Syntax.Expr.explicitCollation, collate, cellAt,
