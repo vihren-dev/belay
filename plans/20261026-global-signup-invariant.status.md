@@ -75,3 +75,16 @@ partial index) is kernel-checked. `one_live_iff` gives `Holds oneLive` in row te
   untracked `packages/belay/.lake/build/lib/lean` for a local runtime root; the loop was removed and the rerun is clean.
 - `just test-scheduled-checks`: exit 0, 49 passed,
   `/nix/store/y4hd40ajgf3yr8ygg8kaj7gbzfyp4sw5-sqlite-verifier-scheduled-check-reports`.
+
+## Integration on the open PR stack (2026-10-26)
+
+The owner asked for one PR stack. The branch now has the merge
+`merge: restore-dropped-task-files into global-signup-invariant for one PR stack`
+on top of the possible write executions (#271), editor part 2b (#272), the
+foreign-key done mark (#274) and the task-file restore (#276). The one conflict
+was the module list of `packages/belay-sqlite-model/lakefile.toml`; it keeps the
+modules of both sides. Checks on the merged tree:
+
+- `just test-full`: exit 0, `/nix/store/zm2m11y8bczn1x2amym44hcwxqvfb6yj-sqlite-verifier-test-reports`.
+- `just verdict`: exit 0, `/nix/store/x97krih71g1raag5g0jhlfnyx2ffl21l-sqlite-verifier-verdict`
+  (55 corpora, AGREE 5170, MODEL_UNSUPPORTED 2430, as before the merge).
