@@ -20,7 +20,7 @@ COMPILER_TIMEOUT_SECONDS = 300
 """Bound each compiler invocation while allowing complete project imports."""
 
 
-def export_dependencies(root: Path, lean: Path, tools: Path, output: Path,
+def export_dependencies(root: Path, lean: Path, output: Path,
                         *, manifest: Path | None = None, lean_path: list[Path] | None = None,
                         proof_costs: Path | None = None) -> dict[str, object]:
     """Inspect existing compiled modules, failing incomplete selections before publishing a report."""
@@ -41,7 +41,7 @@ def export_dependencies(root: Path, lean: Path, tools: Path, output: Path,
         environment["LEAN_SYSROOT"] = prefix.stdout.strip()
         environment["LEAN_PATH"] = str(library)
         exported = work / "dependencies.json"
-        subprocess.run([str(lean), "--run", str(tools / "TheoremDependencies.lean"),
+        subprocess.run([str(lean), "--run", str(Path(__file__).with_name("theorem_dependency_exporter.lean")),
                         str(selected), str(exported)], cwd=work, env=environment,
                        check=True, timeout=COMPILER_TIMEOUT_SECONDS)
         data = object_value(json.loads(exported.read_text()), "compiler dependency report")
@@ -72,7 +72,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--lean", type=Path, required=True)
-    parser.add_argument("--tools", type=Path, required=True, help="Built packages/public-doc-tools package")
     parser.add_argument("--output", type=Path, required=True, help="Directory for index.html and dependencies.json")
     parser.add_argument("--manifest", type=Path, help="Explicit selected modules; source paths are relative to this file")
     parser.add_argument("--lean-path", help="Compiled library roots separated by the platform path separator; defaults to LEAN_PATH when set")
@@ -82,7 +81,7 @@ def main() -> int:
     paths = [Path(part).resolve() for part in selected_path.split(os.pathsep) if part] if selected_path else None
     try:
         report = export_dependencies(arguments.root.resolve(), arguments.lean.resolve(),
-            arguments.tools.resolve(), arguments.output.resolve(), manifest=arguments.manifest,
+            arguments.output.resolve(), manifest=arguments.manifest,
             lean_path=paths, proof_costs=arguments.proof_costs)
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Dependency report failed: {error}\n")

@@ -23,7 +23,7 @@ def export(runtime: Path, directory: Path, modules: list[dict[str, str]],
     manifest.write_text(json.dumps({"modules": modules}))
     return subprocess.run(
         [str(runtime / "lean/bin/lean"), "--run",
-         str(runtime / "packages/public-doc-tools/TheoremDependencies.lean"),
+         str(ROOT / "tools/theorem_dependency_exporter.lean"),
          str(manifest), str(directory / output)],
         cwd=directory, env={**os.environ, "LEAN_PATH": str(directory), "LEAN_SYSROOT": str((runtime / "lean").resolve())},
         capture_output=True, text=True, timeout=30,
@@ -192,7 +192,7 @@ def test_report_pipeline_preserves_compiled_provenance(
     manifest = tmp_path / "selected.json"
     manifest.write_text(json.dumps({"modules": modules}))
     report = export_dependencies(directory, runtime_root / "lean/bin/lean",
-        runtime_root / "packages/public-doc-tools", tmp_path / "report", manifest=manifest, lean_path=[directory])
+        tmp_path / "report", manifest=manifest, lean_path=[directory])
     assert (tmp_path / "report/index.html").is_file()
     assert cast(dict[str, object], report["coverage"])["loadedModules"] == len(modules)
     assert all(row["sourceText"] and row["artifactFiles"] for row in objects(report, "modules"))

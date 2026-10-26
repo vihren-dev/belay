@@ -3,13 +3,10 @@
 # The conformance runtime does not contain it.
 name = "publicDocTools"
 version = "0.1.0"
-defaultTargets = ["PublicDocSyntax", "PublicDocInventory", "TheoremDependencies"]
+defaultTargets = ["PublicDocSyntax", "PublicDocInventory"]
 
 [[lean_lib]]
 name = "PublicDocSyntax"
 
 [[lean_lib]]
 name = "PublicDocInventory"
-
-[[lean_lib]]
-name = "TheoremDependencies"
