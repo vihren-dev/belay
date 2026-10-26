@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.CommonTableScope
 import Belay.Sqlite.Model.Resolution.SourceExpansion
+import Belay.Sqlite.Model.Resolution.NameResultSources
 
 set_option doc.verso true
 
@@ -33,9 +34,13 @@ structure CommonTableCopies where
   /-- SQL use sites for queries copied from stored definitions. Restrictions in
   those definitions point at the use, since the current SQL text has no body. -/
   viewUsePaths : List (Nat × List Nat) := []
+  /-- The kind of each copy of a stored view or of a {lit}`WITH` definition, and the catalog position of
+  the view, for the name trace: the source that uses the copy is a derived table to the resolver. -/
+  definitionKinds : List (Nat × SourceKind × Option Nat) := []
 
-/-- The expansion computation: pure state updates with the existing source errors. -/
-abbrev CommonTableCopyM := StateT CommonTableCopies (Except SourceIssue)
+/-- The expansion computation: state updates with the existing source errors. It records the names
+that it decides on the way, which the caller keeps only when the expansion fails. -/
+abbrev CommonTableCopyM := StateT CommonTableCopies (Traced SourceIssue)
 
 /-- Reserve a query index before copying its descendants and retain its written origin. -/
 def reserveCommonTableQuery (origin : Nat) : CommonTableCopyM Nat := do
@@ -60,6 +65,48 @@ def CommonTableCopies.originalPath (copies : CommonTableCopies) (field : Nat) : 
       (copies.viewUsePaths.lookup index).getD (first :: copies.origins[index]?.getD index :: rest)
     else first :: index :: rest
   | path => path
+
+/-- The source as the written statement sees it: the use of a copy of a stored view or of a {lit}`WITH`
+definition has the kind of the definition, not the kind of the derived table that the resolver reads. -/
+def CommonTableCopies.originalSource (copies : CommonTableCopies) (source : SourceRef) : SourceRef :=
+  match source.kind, source.query.bind (fun index => copies.definitionKinds.lookup index) with
+  | .derivedTable, some (kind, position) => { source with kind, position }
+  | .derivedTable, none | .baseTable, _ | .initialTable, _ | .storedView, _ | .commonTable, _
+  | .tableFunction, _ | .proposedRow, _ | .triggerRow, _ => source
+
+/-- Move an occurrence of a copied query back to the written statement, as
+{name}`CommonTableCopies.originalPath` does for a restriction, and give the sources the kind of their
+definition ({name}`CommonTableCopies.originalSource`). A name inside the copy of a stored view
+points at the use site of the view and is no longer exact, because the text of the view is not part of
+the statement. -/
+def CommonTableCopies.originalOccurrence (copies : CommonTableCopies) (field : Nat)
+    (occurrence : NameOccurrence) : NameOccurrence :=
+  let occurrence := { occurrence with result := occurrence.result.mapSources copies.originalSource }
+  match occurrence.path with
+  | first :: index :: _ =>
+    if first == field && (copies.viewUsePaths.lookup index).isSome then
+      { occurrence with path := (copies.viewUsePaths.lookup index).getD occurrence.path, exact := false }
+    else { occurrence with path := copies.originalPath field occurrence.path }
+  | _ => occurrence
+
+/-- The records of the names that the used {lit}`WITH` definitions declare, at the definitions as written
+(child 12 of the query, child 0 the name and child 1 the explicit columns): a declaration for each
+definition that a source uses, once, in the order of the definitions. A definition that no source uses is
+never copied, so it has no record. -/
+def CommonTableCopies.declarations (copies : CommonTableCopies) (field : Nat)
+    (written : List Syntax.Subquery) : NameTrace :=
+  let used := (copies.definitionKinds.filter fun (_, kind, _) => kind == .commonTable).filterMap
+    fun (index, _, _) => copies.origins[index]?
+  written.zipIdx.flatMap fun (query, origin) => match query.commonTable with
+    | none => []
+    | some definition =>
+      if used.contains origin then
+        { path := [field, origin, 12, 0], role := .aliasDeclaration, name := some definition.name,
+          result := .declares } ::
+        (definition.columns.getD []).mapIdx fun index name =>
+          { path := [field, origin, 12, 1, index], role := .aliasDeclaration, name := some name,
+            result := .declares }
+      else []
 
 /-- Restore written query indexes in source restrictions. SQL errors retain their names. -/
 def CommonTableCopies.originalIssue (copies : CommonTableCopies) (field : Nat) : SourceIssue → SourceIssue

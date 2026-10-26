@@ -1,6 +1,8 @@
 import Belay.Sqlite.Model.AggregateQueryLaws
 import Belay.Sqlite.Model.CountSelectResolution
 import Belay.Sqlite.Model.SubquerySelectResolution
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -26,7 +28,7 @@ theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : Subquery
       .ok [[(.aggregate ((build resolved).withCollation (operand.collationIn scope)), (alias.map (·.text)).getD text,
         none)]] := by
   have notJson : ¬ (build resolved).writesJson = true := by simp [noJson]
-  simp [resolveAll, resolveAllFrom, resolveResultColumn, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
     Except.mapError, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- For every query {lit}`SELECT agg(x) FROM … WHERE p` without join, grouping, ordering, window, {lit}`HAVING`,
@@ -58,7 +60,7 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     affinity operandOk rfl noJson
   have aggregates : (Syntax.Expr.call name [operand]).aggregateCalls = [.call name [operand]] := by
     simp [Syntax.Expr.aggregateCalls, called]
-  unfold resolveQueryBody
+  rw [resolveQueryBody_arm]
   dsimp only
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
@@ -67,9 +69,9 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     List.append_nil, Option.toList_none, Syntax.Expr.distinctList, List.foldl_nil, Bool.not_eq_true',
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
-  · simp [found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
+  · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
       Resolved.Output.canFail]
-  · simp [found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
+  · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
       Model.condition, Functor.map, Except.map, Resolved.Output.canFail]
 
 /-- For every statement {lit}`SELECT agg(x) FROM t WHERE p` (or without {lit}`WHERE`) of a table that the catalog of the

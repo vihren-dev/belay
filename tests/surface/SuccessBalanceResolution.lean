@@ -61,10 +61,10 @@ theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
   have info := Catalog.tableInfoRows_of_findTable catalog ledgerRef.table position table found
   have metadata := fun queries prefix_ => resolveSources_tableInfo catalog pragmaRef (bytes! "ledger") table.infoRows rfl rfl rfl (by decide) notTable notView info queries prefix_
   have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
-  unfold subqueryScopes
+  unfold subqueryScopes subqueryScopesTraced
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp [balanceQueries, oneQuery, countSyntax, compoundOf,
-    subqueryScope, QueryScope.sourceIndexes, around, Scope.columns, sources, metadata,
+  simp [traced_drop, resolveSourcesTraced_drop, balanceQueries, oneQuery, countSyntax, compoundOf,
+    subqueryScopeTraced, QueryScope.sourceIndexes, around, Scope.columns, sources, metadata,
     Scope.enclose, starIssue, resultAliases, ledgerScope, pragmaScope, tablePending, pragmaPending,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
   rfl

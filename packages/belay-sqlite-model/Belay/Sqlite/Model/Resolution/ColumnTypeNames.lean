@@ -41,6 +41,14 @@ theorem Scope.nameFlexibleNumeric_single (name : Identifier) (columns : List Cat
   unfold Scope.nameFlexibleNumeric
   split <;> simp [Scope.flexibleNumericAt, Scope.single]
 
+/-- In the scope of one physical table read from the catalog, every name resolution has ordinary
+affinity metadata. Proof sketch: as for {lit}`Scope.nameFlexibleNumeric_single`. -/
+theorem Scope.nameFlexibleNumeric_singleAt (position : Option Nat) (name : Identifier)
+    (columns : List CatalogColumn) (hasRowid : Bool) (resolution : NameResolution) :
+    (Scope.singleAt position name columns hasRowid).nameFlexibleNumeric resolution = false := by
+  unfold Scope.nameFlexibleNumeric
+  split <;> simp [Scope.flexibleNumericAt, Scope.singleAt]
+
 /-- FLEXNUM metadata inherited from a column or scalar query. COLLATE keeps
 the operand's affinity. CAST and unary plus do not inherit this flag. -/
 def Syntax.Expr.flexibleNumeric (scope : Scope) (shapes : SubqueryShapes) : Syntax.Expr → Bool
@@ -61,6 +69,15 @@ theorem Syntax.Expr.flexibleNumeric_single (name : Identifier) (columns : List C
     value.flexibleNumeric (Scope.single name columns hasRowid) { current } = false := by
   fun_induction Syntax.Expr.flexibleNumeric (Scope.single name columns hasRowid) { current } value <;>
     simp_all [Scope.nameFlexibleNumeric_single,
+      SubqueryShapes.find, SubqueryShapes.base]
+
+/-- Every expression in a physical table scope read from the catalog, with no resolved subqueries,
+has ordinary affinity metadata. Proof sketch: as for {lit}`Syntax.Expr.flexibleNumeric_single`. -/
+theorem Syntax.Expr.flexibleNumeric_singleAt (position : Option Nat) (name : Identifier)
+    (columns : List CatalogColumn) (hasRowid : Bool) (current : Option Nat) (value : Syntax.Expr) :
+    value.flexibleNumeric (Scope.singleAt position name columns hasRowid) { current } = false := by
+  fun_induction Syntax.Expr.flexibleNumeric (Scope.singleAt position name columns hasRowid) { current } value <;>
+    simp_all [Scope.nameFlexibleNumeric_singleAt,
       SubqueryShapes.find, SubqueryShapes.base]
 
 /-- Whether a result expression is a CAST at its root, which can give a

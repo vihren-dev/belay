@@ -30,8 +30,11 @@ attribute [sql_simp]
   Belay.Sqlite.Model.resolveOperand_numeric
   Belay.Sqlite.Model.resolveOperand_negate_numeric
   Belay.Sqlite.Model.Scope.columns_single
+  Belay.Sqlite.Model.Scope.columns_singleAt
   Belay.Sqlite.Model.resolveName_one_source
+  Belay.Sqlite.Model.resolveName_one_source_at
   Belay.Sqlite.Model.resolveOperand_identifier_single
+  Belay.Sqlite.Model.resolveOperand_identifier_singleAt
   Belay.Sqlite.Model.resolveOperand_identifier_table
   Belay.Sqlite.Model.resolveOperand_compare
   Belay.Sqlite.Model.resolveOperand_collate

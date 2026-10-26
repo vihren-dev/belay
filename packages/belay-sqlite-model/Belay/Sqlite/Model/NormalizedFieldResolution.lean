@@ -95,17 +95,30 @@ theorem findTable_addColumn {catalog : Catalog} {tableName : Identifier}
   dsimp only [replacement] at searched
   simp only [Catalog.addColumn, atPosition, Catalog.findTable, searched]
 
+/-- In the scope of one table read from the catalog, lowercase of a found column resolves to that
+column's lowercase expression with no comparison affinity. The column's own affinity and collation do
+not change a function result's metadata. Proof sketch: resolve its one argument with the column lookup
+law, then reduce the known call. -/
+theorem resolve_lower_column_at {dqs : Bool} {position : Option Nat} {tableName name : Identifier}
+    {columns : List CatalogColumn} {rowid : Bool} {source : Nat}
+    (found : columnPosition columns name = some source) :
+    resolveOperand dqs (Scope.singleAt position tableName columns rowid) {} true
+      (.call "lower" [.identifier name .none]) =
+      .ok (.scalar .lower (.cons (.column source) .nil), none) := by
+  rw [resolveOperand_arm_call, resolveArguments_arm_cons, resolveArguments_arm_nil,
+    resolveOperand_identifier_singleAt found]
+  rfl
+
 /-- In the single table scope, lowercase of a found column resolves to that
 column's lowercase expression with no comparison affinity. The column's own
 affinity and collation do not change a function result's metadata. Proof sketch:
-resolve its one argument with the column lookup law, then reduce the known call. -/
+this is {name}`resolve_lower_column_at` for a table that has no catalog position. -/
 theorem resolve_lower_column {dqs : Bool} {tableName name : Identifier}
     {columns : List CatalogColumn} {rowid : Bool} {source : Nat}
     (found : columnPosition columns name = some source) :
     resolveOperand dqs (Scope.single tableName columns rowid) {} true
       (.call "lower" [.identifier name .none]) =
-      .ok (.scalar .lower (.cons (.column source) .nil), none) := by
-  rw [resolveOperand, resolveArguments, resolveOperand_identifier_single found]
-  rfl
+      .ok (.scalar .lower (.cons (.column source) .nil), none) :=
+  resolve_lower_column_at (position := none) found
 
 end Belay.Sqlite.Model.NormalizedField

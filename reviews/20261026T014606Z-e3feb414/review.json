@@ -1,0 +1,108 @@
+{
+  "caller": "claude",
+  "commit": "e3feb4146108c89df97a0271fefa0bfd06bf528f",
+  "date": "2026-10-26T01:46:06+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ExprResolutionLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceTypes.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandArmsMore.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandForms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandProjection.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandRecords.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandTraced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryExprs.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Scope.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ScopeBindings.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SourceKind.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Traced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TracedAttr.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TracedIssues.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveReadsBelow.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SubqueryExprResolutionLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoColumnLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "plans/20261025-model-name-trace.status.md",
+    "reviews/20261026T011523Z-a99f6c82/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261026T014606Z-e3feb414#1",
+      "line": 90,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ScopeBindings.lean",
+      "rule": "R1",
+      "severity": "must",
+      "text": "The qualifier lookup implements a separate first-source rule without an equivalence theorem or test, so nested scopes containing `t.a` record the outer qualifier while resolving the inner column. Fix: derive the qualifier record from the resolver’s selected binding and check agreement with a shadowing example."
+    },
+    {
+      "id": "20261026T014606Z-e3feb414#2",
+      "line": 92,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Traced.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The nine public projection theorems from `drop_ok` through `drop_underTrace` have no plain-words docstrings. Fix: give each theorem a checked docstring that states its quantified equality."
+    },
+    {
+      "id": "20261026T014606Z-e3feb414#3",
+      "line": 13,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandArmsMore.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatements of `resolveOperand_arm_call` and `resolveOperand_arm_callStar` omit the required `misuse = false` condition for returning a listed aggregate by index. Fix: state that condition and describe the alternative when misuse is true."
+    },
+    {
+      "id": "20261026T014606Z-e3feb414#4",
+      "line": 17,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandArms.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "The new lemmas used by other proofs in `OperandArms`, `OperandArmsMore`, `Traced`, and `TracedIssues` lack proof sketches in their docstrings. Fix: add short sketches explaining projection simplification and the required case splits."
+    },
+    {
+      "id": "20261026T014606Z-e3feb414#5",
+      "line": 62,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/OperandForms.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "The match on `MissingUse` uses a catch-all, so adding a constructor silently maps it to `noSuchColumn`. Fix: explicitly enumerate the remaining constructors."
+    },
+    {
+      "id": "20261026T014606Z-e3feb414#6",
+      "line": 12,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceExamples.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new helpers `column`, `name`, `sourceOf`, `traced`, and `identifier` have no docstrings. Fix: add short docstrings explaining their purpose in the trace examples."
+    }
+  ],
+  "id": "20261026T014606Z-e3feb414",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

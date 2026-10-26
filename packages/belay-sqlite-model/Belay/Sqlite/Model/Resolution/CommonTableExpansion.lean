@@ -27,6 +27,12 @@ restriction and never supply fabricated rows to evaluation. Empty argument paren
 on a recursive source are accepted by SQLite; nonempty arguments remain restricted because
 their special preparation order is outside the supported nonrecursive forms.
 
+The copy resolves the plain tables and the sources of every query once, to find the errors that
+SQLite finds before it resolves the statement. The names it decides are recorded; the caller
+keeps them only when the copy fails ({name}`Traced.keepOnFailure`), because the resolution of the
+copied statement records them again. A name inside a stored view is recorded at the use site of
+the view.
+
 The optional {lit}`initial` is the catalog of the initial database of a two-state query. A source with the schema
 name {lit}`before` finds its view there, and {lit}`inInitial` says that the query is the body of such a view:
 its table names that no WITH definition of the body hides read the initial catalog too, so that the copy carries the
@@ -85,7 +91,7 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
           if inInitial && source.arguments.isSome && source.schema.isNone && ((catalog.findView source.table).isSome
               || isPragmaTableFunction source.table) then
             throw (SourceIssue.value (.restriction usePath .initialDatabase))
-          let _ ← liftM (resolveReference catalog usePath tagged (initial := initial))
+          let _ ← liftM (resolveReferenceTraced catalog usePath tagged (initial := initial))
           return tagged
         | some (viewCatalog, position, view) =>
           if source.arguments.isSome then
@@ -96,15 +102,17 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
           let _ ← liftM (checkCommonTableSyntax field view.subqueries)
           let index ← reserveCommonTableQuery (owner.getD 0)
           let (body, _) ← fun state =>
-            ((copyCommonTableQuery catalog field initial reads view.subqueries fuel none (some index) []
+            (((copyCommonTableQuery catalog field initial reads view.subqueries fuel none (some index) []
               ((reads, position) :: activeViews) view.query [] none).run state).mapError fun
                 | .noSuchTable missing => .value (.prepare (.noSuchSource
                     (if reads then missing else ⟨bytes! "main." ++ missing.bytes⟩)))
                 | .value (.restriction _ kind) => .value (.restriction usePath kind)
-                | .value (.prepare error) => .value (.prepare error)
+                | .value (.prepare error) => .value (.prepare error)).mapOccurrences
+                  fun occurrence => { occurrence with path := usePath, exact := false }
           fillCommonTableQuery index { body with parent := copiedOwner }
           modify fun state => { state with
             viewRoots := (index, name) :: state.viewRoots
+            definitionKinds := (index, .storedView, some position) :: state.definitionKinds
             columnNames := match view.columns with
               | some names => (index, names) :: state.columnNames
               | none => state.columnNames
@@ -127,6 +135,7 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
         let (body, _) ← copyCommonTableQuery catalog field initial inInitial written fuel (some definitionIndex) (some index)
           ((definitionIndex, .circular definition.name) :: active) activeViews anchor recursive none
         fillCommonTableQuery index { body with parent := copiedOwner }
+        modify fun state => { state with definitionKinds := (index, .commonTable, none) :: state.definitionKinds }
         nameCommonTableCopy catalog field index definition initial
         if !recursive.isEmpty then
           let (_, _, names) ← commonTableOutput catalog field index initial
@@ -155,9 +164,10 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
       return { mapped with source := ← copySource [2, position, 1] original.source }
     let mapped := { mapped with source, joins }
     let copies ← get
-    let (_, scope) ← liftM ((resolveSources catalog source joins 0
+    let (_, scope) ← liftM (((resolveSourcesTraced catalog source joins 0
       (fun index => sourceExpansion catalog field copies.queries.toList copiedOwner index copies.columnNames initial)
-      (if let some index := copiedOwner then [field, index] else []) initial).mapError (copies.originalIssue field))
+      (if let some index := copiedOwner then [field, index] else []) initial).mapError
+        (copies.originalIssue field)).mapOccurrences (copies.originalOccurrence field))
     if let some issue := starIssue scope query.columns then
       throw (.value (issue.under (if let some index := owner then [field, index] else [])))
     for child in children do

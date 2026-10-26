@@ -20,12 +20,16 @@ def Scope.namedColumns (scope : Scope) (name : Identifier) : List (Identifier ×
   (scope.filter (·.namesVisible)).filterMap fun source => (columnPosition source.columns name).bind fun index =>
     source.columns[index]?.map fun column => (source.name, column.name, source.merged.contains index)
 
+/-- Whether every left column of the folded name after the first is merged by its own source's
+join. SQLite checks it when the {lit}`FROM` has a right or full join. -/
+def Scope.usingUnambiguous (left : Scope) (name : Identifier) : Bool :=
+  ((left.namedColumns name).drop 1).all (·.2.2)
+
 /-- A merged name, as written, when every left column of the name after the first is
-merged by its own source's join; else SQLite's
-{name}`ExprError.ambiguousUsingReference`. SQLite checks it when the {lit}`FROM` has a
-right or full join. -/
+merged by its own source's join ({name}`Scope.usingUnambiguous`); else SQLite's
+{name}`ExprError.ambiguousUsingReference`. -/
 def usingReferenceChecked (left : Scope) (name : Identifier) : Except ValueIssue Identifier :=
-  if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name
+  if left.usingUnambiguous name then .ok name
   else .error (.prepare (.ambiguousUsingReference name))
 
 /-- The positions in the joined row of the scope of every column of the folded name in a visible source, in

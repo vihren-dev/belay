@@ -1,4 +1,4 @@
-"""The standalone model and codec build independently, and the core imports only Lean's prelude."""
+"""The standalone model and codec build independently, and the core imports only Lean's prelude and one Lean module."""
 
 import os
 from pathlib import Path
@@ -17,6 +17,9 @@ CORE_LIBRARY = "Belay.Sqlite.Model"
 CODEC_PREFIX = "Belay.Sqlite.Model.Codec"
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
+ALLOWED_EXTERNAL_IMPORT_MODULES = {"Lean.Meta.Tactic.Simp.RegisterCommand"}
+"""The one module outside the prelude that the core may import (ADR 0006, amendment of 2026-10-26): it gives
+`register_simp_attr`, for the named simp sets of the name-trace proofs. Any other `Lean` or `Std` import fails."""
 
 
 def module_path(module: str) -> Path:
@@ -82,12 +85,13 @@ def test_root_imports_the_core_and_only_the_prelude() -> None:
 
     Each module of the core library in `lakefile.toml`, except the compiled examples, is reached
     from the root. The root reaches no example and no codec module, and no module outside the
-    model except Lean's prelude (`Init`). The test reads the sources only, so it runs with the
+    model except Lean's prelude (`Init`) and the modules of `ALLOWED_EXTERNAL_IMPORT_MODULES`. The test reads the sources only, so it runs with the
     source checks of each pull request.
     """
     reached, external = root_import_closure()
     outside_prelude = [(module, dependency) for module, dependency in external
-                       if dependency.split(".")[0] not in ALLOWED_EXTERNAL_IMPORT_ROOTS]
+                       if dependency.split(".")[0] not in ALLOWED_EXTERNAL_IMPORT_ROOTS
+                       and dependency not in ALLOWED_EXTERNAL_IMPORT_MODULES]
     assert not outside_prelude, f"core modules import more than Lean's prelude: {outside_prelude}"
     examples = sorted(module for module in reached if is_example_module(module))
     assert not examples, f"the root imports compiled examples: {examples}"

@@ -11,9 +11,9 @@ QUERY_JOINS = SQLITE + "QueryJoins.lean"
 """The rows of joins."""
 SCOPE = SQLITE + "Resolution/ScopeNames.lean"
 """The resolution of unqualified names over the sources."""
-SOURCES = SQLITE + "Resolution/Sources.lean"
+SOURCES = SQLITE + "Resolution/TableReference.lean"
 """The resolution of the tables of FROM and their names."""
-QUERIES = SQLITE + "Resolution/Queries.lean"
+QUERIES = SQLITE + "Resolution/ResultColumnTraced.lean"
 """The resolution of SELECT and its result columns."""
 
 PADDED = "    if (joinMatches context row join candidates).isEmpty then [row ++ List.replicate width .null]"
@@ -30,11 +30,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "        join.condition.all fun condition => truthy (condition.eval context joined)"),
     "unqualified_takes_first_source": (SCOPE, "    else .ambiguous\n", "    else .found first reads\n"),
     "alias_keeps_table_name": (SOURCES,
-        "    .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })",
-        "    .ok (position, { name := declared, columns := table.columns, hasRowid := !table.withoutRowid })"),
+        "{ name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid,",
+        "{ name := declared, columns := table.columns, hasRowid := !table.withoutRowid,"),
     "star_omits_joined_columns": (QUERIES,
-        "      scope.visible.mapM fun (position, defined) =>",
-        "      (Scope.visible (scope.take 1)).mapM fun (position, defined) =>"),
+        "      Traced.lift (scope.visible.mapM fun (position, defined) =>",
+        "      Traced.lift ((Scope.visible (scope.take 1)).mapM fun (position, defined) =>"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the amendment: a left join drops the
@@ -53,7 +53,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "left_join_drops_unmatched": "rule:joinRow", "left_join_pads_left_values": "rule:joinRow",
     "on_after_padding": "rule:joinRow", "unqualified_takes_first_source": "rule:Scope.resolveStep",
-    "alias_keeps_table_name": "rule:resolveTableReference", "star_omits_joined_columns": "rule:resolveResultColumn",
+    "alias_keeps_table_name": "rule:resolveTableReferenceTraced", "star_omits_joined_columns": "rule:resolveResultColumnTraced",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

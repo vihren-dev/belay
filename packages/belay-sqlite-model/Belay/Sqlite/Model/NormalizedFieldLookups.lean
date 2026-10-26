@@ -44,7 +44,7 @@ theorem resolveStatement_select_column (context : ResolveContext) (state : Resol
         (some reference) [] filter [] [] none none [] none false none) =
       .ok (.query (Resolved.Query.simple [Resolved.QuerySource.first position] condition
         [.scalar (.column idPosition)] names) [], state) := by
-  obtain ⟨name, affinity, columns⟩ := resolveColumns_identifier context.profile.dqsDml { later := [] }
+  obtain ⟨name, affinity, columns⟩ := resolveColumns_identifier_at context.profile.dqsDml { later := [] } (some position)
     (reference.alias.getD ((state.catalog[position]?.map (·.name)).getD reference.table)) table.columns
     (!table.withoutRowid) .none idFound none text
   have simple : (Syntax.Subquery.mk [.expression (.identifier idName .none) none text] (some reference) [] filter [] []
@@ -75,7 +75,7 @@ theorem resolve_original_lookup (context : ResolveContext) (state : ResolveState
         (some (originalFilter sourcePosition number)) [.scalar (.column idPosition)] names) [], state) :=
   resolveStatement_select_column context state reference _ position table _ idName text namedSource current arguments found
     idFound (FilterResolves.of_term (result := (originalFilter sourcePosition number, none))
-      (by simp [namesAlias, namesAliasIn]) (resolve_original_filter sourceFound number))
+      (by simp [namesAlias, namesAliasIn]) (resolve_original_filter_at sourceFound number))
 
 /-- For a table whose stored column has TEXT affinity and BINARY collation, the stored lookup
 resolves to the simple query of the table with {name}`storedFilter` and the id column. Proof
@@ -94,7 +94,7 @@ theorem resolve_stored_lookup (context : ResolveContext) (state : ResolveState)
         (some (storedFilter storedPosition number)) [.scalar (.column idPosition)] names) [], state) :=
   resolveStatement_select_column context state reference _ position table _ idName text namedSource current arguments found
     idFound (FilterResolves.of_term (result := (storedFilter storedPosition number, none))
-      (by simp [namesAlias, namesAliasIn]) (resolve_stored_filter storedFound stored binary number))
+      (by simp [namesAlias, namesAliasIn]) (resolve_stored_filter_at storedFound stored binary number))
 
 /-- The original lowercase predicate is calm: it has no fallible call, clock read or counter
 call. Proof sketch: unfold the comparison and the two lowercase calls; lowercase cannot fail. -/

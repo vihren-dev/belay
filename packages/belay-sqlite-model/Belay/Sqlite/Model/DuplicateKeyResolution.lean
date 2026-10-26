@@ -2,6 +2,8 @@ import Belay.Sqlite.Model.CountStatementResolution
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
+import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
 
 set_option doc.verso true
 
@@ -38,13 +40,13 @@ theorem GroupTermResolves.identifier_table {dqs : Bool} {catalog : Catalog} {ref
     GroupTermResolves dqs (tableScope catalog reference position table) shapes (.identifier name quote) (.column index)
       ((table.columns[index]?.map (·.collation)).getD .binary) := by
   have resolved : (tableScope catalog reference position table).resolveName name = .found index [index] :=
-    resolveName_one_source found
+    resolveName_one_source_at found
   have collation := Syntax.Expr.columnCollation_identifier_table (catalog := catalog) (reference := reference)
     (position := position) (quote := quote) found
-  unfold GroupTermResolves resolveGroupTerm
-  simp only [resolved]
-  simp only [tableScope, Scope.single] at collation
-  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.single, Scope.argumentCell, Scope.triggerCell,
+  unfold GroupTermResolves
+  rw [resolveGroupTerm_identifier_found (found := resolved) ..]
+  simp only [tableScope, Scope.singleAt] at collation
+  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.singleAt, Scope.argumentCell, Scope.triggerCell,
     Scope.columns, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, collation]
   rfl
 
@@ -57,7 +59,7 @@ theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : Subque
     resolveOperand dqs scope shapes false (.compare .gt (.callStar name) (.numeric "1")) =
       .ok (.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary, none) := by
   have literal : queryNumeric "1" false = .ok (.integer 1) := by rfl
-  simp [resolveOperand, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
+  simp [traced_arms, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
     comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, Bind.bind, Except.bind]
   rfl
 
@@ -86,7 +88,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   have calls : Syntax.Expr.distinctList [.callStar name] = [.callStar name] := by simp [Syntax.Expr.distinctList]
   have aggregates : resolveAll (fun _ call => resolveAggregateCall dqs scope { current, later, aggregates := [.callStar name] } call)
       [.callStar name] = .ok [.countRows] := by
-    simp [resolveAll, resolveAllFrom, resolveAggregateCall, Bind.bind, Except.bind, Pure.pure, Except.pure]
+    simp [resolveAll, resolveAllFrom, resolveAggregateCall_callStar, Bind.bind, Except.bind, Pure.pure, Except.pure]
   have aliases : resultAliases scope [.expression (.numeric "1") none "1"] = [none] := by simp [resultAliases]
   have collations : resultCollations scope [.expression (.numeric "1") none "1"] = [.binary] := by
     simp [resultCollations, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation]
@@ -98,9 +100,9 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   have names : ∀ list, namesAlias scope list (.compare .gt (.callStar name) (.numeric "1")) = false := by
     intro list; simp [namesAlias]
   have having := resolveOperand_moreThanOne dqs scope { current, later, aggregates := [.callStar name] } name rfl
-  unfold resolveQueryBody
+  rw [resolveQueryBody_arm]
   dsimp only
-  simp only [oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+  simp only [aliasJoinItem?, List.zipIdx_nil, List.find?_nil, Option.map_none, oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
     List.isEmpty_cons, List.isEmpty_nil, List.any_cons, List.any_nil, aggregateCall, Bool.false_or, Bool.not_false, Bool.true_or, Bool.false_eq_true, ↓reduceIte, List.nil_append, Bool.not_true, Bool.and_false, Bool.false_and]
   simp only [aggregates, columns, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil, terms,
     names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]

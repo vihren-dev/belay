@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SimpleStatementResolution
 import Belay.Sqlite.Model.StatementCalm
 import Belay.Sqlite.Model.ExprAnyLaws
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -30,7 +31,7 @@ theorem resolveColumns_scalar (dqs : Bool) (scope : Scope) (shapes : SubquerySha
     (operand : resolveOperand dqs scope shapes false value = .ok (expression, affinity)) :
     resolveAll (resolveResultColumn dqs scope shapes) [.expression value none text] =
       .ok [[(.scalar expression, (definedName scope value).getD text, affinity)]] := by
-  cases value <;> simp_all [Syntax.Expr.isCall, resolveAll, resolveAllFrom, resolveResultColumn, Bind.bind, Except.bind,
+  cases value <;> simp_all [Syntax.Expr.isCall, resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, Bind.bind, Except.bind,
     Pure.pure, Except.pure, Except.mapError]
 
 /-- For every no-FROM SELECT with no aggregate calls whose result column resolves to one

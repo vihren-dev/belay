@@ -19,11 +19,11 @@ theorem group_nocase {table : CatalogTable} {index : Nat}
       { current := some 0, aggregates := [.callStar "count"] }
       (.collate (.identifier (name! "email") .none) (name! "NOCASE")) (.column index) .nocase := by
   have resolved : (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).resolveName (name! "email") =
-      .found index [index] := resolveName_one_source found
+      .found index [index] := resolveName_one_source_at found
   have operand := resolveOperand_identifier_table (catalog := db.raw.catalog) (reference := {table := name! "customers", alias := none})
     (position := position) (dqs := true) (shapes := {current := some 0, aggregates := [.callStar "count"]})
     (misuse := true) (quote := Syntax.QuoteKind.none) found
-  simp only [GroupTermResolves, resolveGroupTerm, Syntax.Expr.collatedColumn, resolved]
+  simp only [GroupTermResolves, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, resolved]
   rw [resolveOperand_collate _ (by rfl)]
   rw [operand]
   have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl
@@ -39,7 +39,7 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     ¬ Holds noDuplicateEmails db := by
   have absent : (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).resolveName
       (name! "email") = .missing := by
-    simp [tableScope, Scope.resolveName, Scope.depths, Scope.single, Scope.resolveAt, Scope.resolveStep, missing]
+    simp [tableScope, Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, missing]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have countName : normalizeIdentifier "count" = "count" := rfl
   have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl rfl found
@@ -51,13 +51,13 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
   have notView := Catalog.findView_none_of_table found
   have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
       noDuplicateEmails.statements[0].1 = .error restriction := by
-    simp [noDuplicateEmails, resolveStatement, resolveSelect, resolveSelectDetails, prepareQuerySources, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, notView,
+    simp [noDuplicateEmails, resolveStatement_select, resolveSelect, resolveSelectTraced, resolveSelectDetailsTraced, prepareQuerySourcesTraced, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, traced_arms, aliasJoinItem?, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, notView,
       CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
-      subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
-      noMain, sources, Scope.enclose, resolveSubqueryBodies, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources, compoundColumnsIssue,
+      subqueryScopes, subqueryScopesTraced, scopeOrder, compoundOf, subqueryScope, subqueryScopeTraced, Scope.columns,
+      noMain, sources, Scope.enclose, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, compoundColumnsIssue,
       prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,
       Except.map, Functor.map, Pure.pure, Except.pure, starIssue, SourceIssue.under,
-      resolveQueryBody, resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolveAggregateCall, resolveResultColumn, resolvePendingSources_table, resultAliases, resultCollations, resolveGroupTerm, Syntax.Expr.collatedColumn, absent, resolveOperand, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]
+      resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolvePendingSources_table, resultAliases, resultCollations, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, absent, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]
   obtain ⟨restriction, failed⟩ := resolved
   intro holds
   have output := Script.outputOn_eq_step noDuplicateEmails db _ [] [] rfl

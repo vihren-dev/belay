@@ -14,14 +14,14 @@ COMPARISON = SQLITE + "Comparison.lean"
 """The Values level: the comparison of two values."""
 EVALUATION = SQLITE + "QueryEval.lean"
 """The Expressions and Queries levels: evaluation and the query steps."""
-RESOLUTION = SQLITE + "Resolution/Queries.lean"
-"""The resolution of a SELECT."""
-EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
+EXPRESSIONS = SQLITE + "Resolution/OperandForms.lean"
 """The resolution of query expressions."""
 FORMS = SQLITE + "Resolution/ExprForms.lean"
 """The call and condition forms of expression resolution."""
-SOURCES = SQLITE + "Resolution/Sources.lean"
+TABLE_REFERENCES = SQLITE + "Resolution/TableReference.lean"
 """The resolution of the tables of FROM."""
+ORDER_TERMS = SQLITE + "Resolution/QueryBodyTraced.lean"
+"""The resolution of the ORDER BY terms of a query."""
 
 RESULTS = SQLITE + "QueryResults.lean"
 """The records, the sort and the window of a query."""
@@ -54,20 +54,20 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "limit_one_too_high": (RESULTS, "window.take limit", "window.take (limit + 1)"),
     "offset_ignored": (RESULTS, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
-        "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
-    "no_such_table": (SOURCES,
-        "    else .error (.noSuchTable reference.table)", "    else .error (.value (.restriction path .systemTable))"),
+        "    | .error => throw (.prepare (.noSuchColumn name))", "    | .error => pure (.literal .null, none)"),
+    "no_such_table": (TABLE_REFERENCES,
+        "      throw (.noSuchTable reference.table)", "      throw (.value (.restriction path .systemTable))"),
     "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (GROUPING,
-        ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
-        ".error ((callIssue name).under [4, item])"),
-    "no_order_by_out_of_range": (RESOLUTION,
-        "    | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
-        "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
+        "throw (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
+        "throw ((callIssue name).under [4, item])"),
+    "no_order_by_out_of_range": (ORDER_TERMS,
+        "| some (.error ()) => throw (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
+        "| some (.error ()) => throw (.restriction [4, item] .aggregateOrderBy)"),
     "no_group_by_out_of_range": (GROUPING,
-        "      | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
-        "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
+        "| some (.error ()) => throw (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
+        "| some (.error ()) => throw (.restriction [3, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""
@@ -97,12 +97,12 @@ GUARDS: dict[str, str] = {
     "empty_aggregate_no_row": "rule:queryGroups",
     "limit_one_too_high": "rule:Query.results",
     "offset_ignored": "rule:Query.results",
-    "no_such_column": "rule:resolveOperand",
-    "no_such_table": "rule:resolveTableReference",
+    "no_such_column": "rule:identifierTraced",
+    "no_such_table": "rule:resolveTableReferenceTraced",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
-    "no_aggregate_in_group_by": "rule:resolveGroupTerm",
-    "no_order_by_out_of_range": "rule:resolveQueryBody",
-    "no_group_by_out_of_range": "rule:resolveGroupTerm",
+    "no_aggregate_in_group_by": "rule:resolveGroupTermTraced",
+    "no_order_by_out_of_range": "rule:resolveOrderTermTraced",
+    "no_group_by_out_of_range": "rule:resolveGroupTermTraced",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

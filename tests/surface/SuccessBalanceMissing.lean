@@ -34,18 +34,18 @@ theorem guard_scopes_shadow (catalog : Catalog) (position : Nat) (table : Catalo
     | some pair =>
       have notView := Catalog.findView_none_of_table present
       dsimp only [pragmaRef] at present notView prefixed
-      simp [resolveSources, resolveReference, pragmaReference, present, notView, prefixed,
+      simp [resolveSources_some, resolveReference, resolveReferenceTraced, traced_drop, pragmaReference, present, notView, prefixed,
         pragmaRef, maximumJoinTables, SourceIssue.under, ValueIssue.under,
         Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
     | none =>
       have view : (catalog.findView pragmaRef.table).isSome = true := by simpa [present] using shadows
       dsimp only [pragmaRef] at view prefixed
-      simp [resolveSources, resolveReference, pragmaReference, view, prefixed,
+      simp [resolveSources_some, resolveReference, resolveReferenceTraced, traced_drop, pragmaReference, view, prefixed,
         pragmaRef, maximumJoinTables, SourceIssue.under, ValueIssue.under,
         Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
-  unfold subqueryScopes
+  unfold subqueryScopes subqueryScopesTraced
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp [balanceQueries, oneQuery, countSyntax, compoundOf, subqueryScope, QueryScope.sourceIndexes,
+  simp [traced_drop, resolveSourcesTraced_drop, balanceQueries, oneQuery, countSyntax, compoundOf, subqueryScopeTraced, QueryScope.sourceIndexes,
     around, Scope.columns, sources, Scope.enclose, starIssue, resultAliases, refused,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
@@ -63,12 +63,13 @@ theorem guard_select_shadow (catalog : Catalog) (position : Nat) (table : Catalo
       else .error ⟨[8, 2, 1], .tableFunction⟩ := by
   have scopes := guard_scopes_shadow catalog position table found shadows
   dsimp only [around] at scopes
+  unfold subqueryScopes at scopes
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect resolveSelectDetails
-  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
+  simp only [prepareQuerySourcesTraced, ordinary, Bool.false_eq_true, ↓reduceIte, traced_drop, Bind.bind, Except.bind, Pure.pure, Except.pure]
   by_cases view : (catalog.findView pragmaRef.table).isSome = true <;>
-    simp [CommonTableCopies.originalIssue, CommonTableCopies.originalPath, mainSyntax, noMain, starIssue, resultAliases,
+    simp [traced_drop, resolveSourcesTraced_drop, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, mainSyntax, noMain, starIssue, resultAliases,
       scopes, view, issueResolution, restrict, prepareError, Bind.bind, Except.bind,
       Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure] <;> rfl
 
@@ -81,12 +82,12 @@ theorem range_body_missing (catalog : Catalog) (position : Nat) (table : Catalog
     resolveQueryBody true (tableScope catalog ledgerRef position table) {current, later} [] (tablePending position)
       (oneQuery ledgerRef (some rangeSyntax)) = .error (.prepare (.noSuchColumn (name! "cents"))) := by
   have absent : (tableScope catalog ledgerRef position table).resolveName (name! "cents") = .missing := by
-    simp [tableScope, Scope.resolveName, Scope.depths, Scope.single, Scope.resolveAt, Scope.resolveStep, missing]
+    simp [tableScope, Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, missing]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have noRowid : rowidName (name! "cents") = false := by decide
   have noBool : booleanKeywordName (name! "cents") = false := by decide
-  simp [noRowid, noBool, Model.condition, resolveQueryBody, oneQuery, resolveAll, resolveAllFrom, Syntax.Expr.aggregateCalls, aggregateCall,
-    Syntax.Expr.distinctList, resolveResultColumn, resolveOperand, rangeSyntax, absent, one,
+  simp [noRowid, noBool, Model.condition, traced_arms, oneQuery, resolveAll, resolveAllFrom, Syntax.Expr.aggregateCalls, aggregateCall,
+    Syntax.Expr.distinctList, rangeSyntax, absent, one,
     resultAliases, resultCollations, namesAlias, Syntax.Expr.collationIn, definedName,
     ValueIssue.under, Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
@@ -107,9 +108,9 @@ theorem guard_bodies_missing (catalog : Catalog) (position : Nat) (table : Catal
   have failed := fun current later => range_body_missing catalog position table current later missing
   dsimp only [oneQuery] at failed
   have rangeFour : List.range 4 = [0, 1, 2, 3] := rfl
-  unfold resolveSubqueryBodies
+  unfold resolveSubqueryBodies resolveSubqueryBodiesTraced
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp [rangeFour, balanceQueries, oneQuery, countSyntax, QueryScope.refresh, Scope.refreshSources,
+  simp [traced_drop, resolveQueryBodyTraced_drop, rangeFour, balanceQueries, oneQuery, countSyntax, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources,
     ledgerScope, pragmaScope, around, failed, ValueIssue.under,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
@@ -126,12 +127,14 @@ theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table :
   have scopes := guard_scopes catalog position table found notTable notView
   have bodies := guard_bodies_missing catalog position table missing
   dsimp only [around] at scopes bodies
+  unfold subqueryScopes at scopes
+  unfold resolveSubqueryBodies at bodies
   have dqs : runContext.profile.dqsDml = true := rfl
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect resolveSelectDetails
-  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
+  unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
+  simp only [prepareQuerySourcesTraced, ordinary, Bool.false_eq_true, ↓reduceIte, traced_drop, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [traced_drop, resolveSourcesTraced_drop, QueryScope.refreshTraced, CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 end BalanceExample

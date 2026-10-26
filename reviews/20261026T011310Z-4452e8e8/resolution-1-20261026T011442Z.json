@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T01:14:42+00:00",
+  "finding": "20261026T011310Z-4452e8e8#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "task now lists stored trigger programs as an intentional coverage gap and qualifies the failing-name guarantee"
+}

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Catalog
+import Belay.Sqlite.Model.Resolution.SourceKind
 
 set_option doc.verso true
 
@@ -80,6 +81,11 @@ structure ScopeSource where
   /-- Whether the source is a trigger's {lit}`NEW` or {lit}`OLD` row (ADR 0018, D5), which only a
   qualified name sees ({lit}`Scope.resolveQualified`); false for every other source. -/
   trigger : Bool := false
+  /-- What kind of object the source is; a name trace reports it. A source that is built
+  from the catalog sets it where it reads the catalog. -/
+  role : SourceKind := .baseTable
+  /-- The catalog position of a table or view; none for any other source. -/
+  catalogPosition : Option Nat := none
   deriving Repr, DecidableEq
 
 /-- The sources in scope, in {lit}`FROM` order, each at its offset in the joined row;
@@ -110,6 +116,12 @@ def Scope.forStoredView (scope : Scope) : Scope :=
 {lit}`hasRowid` is false for a {lit}`WITHOUT ROWID` table. -/
 def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
   [{ name, columns, hasRowid }]
+
+/-- The scope of one table that was read from the catalog at {lit}`position`, as
+{name}`Scope.single` gives it; the position is a fact for a name trace and changes no resolution. -/
+def Scope.singleAt (position : Option Nat) (name : Identifier) (columns : List CatalogColumn)
+    (hasRowid : Bool := true) : Scope :=
+  [{ name, columns, hasRowid, catalogPosition := position }]
 
 /-- Whether the position of the concatenated row is a cell of a trigger's row
 ({name}`ScopeSource.trigger`). -/

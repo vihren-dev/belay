@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Writes
+import Belay.Sqlite.Model.Resolution.WriteStages
 
 set_option doc.verso true
 
@@ -18,39 +19,36 @@ the filter as a condition; then a column assigned twice is a model restriction. 
 algorithm other than ABORT is {name}`RestrictionKind.constraintAlgorithmUpdate`, after
 every other check. The values and the filter may name the statement's resolved subqueries,
 whose shapes are {lit}`shapes`. In a trigger's body, the values and the filter also see the
-trigger's rows {lit}`trigger`, after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`. -/
+trigger's rows {lit}`trigger`, after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`.
+The trace holds the table at path 0, then the names of the assignments, the filter and the
+{lit}`RETURNING` columns, in the order in which the resolver reaches them. -/
+def resolveUpdateTraced (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
+    (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
+    (trigger : Option TriggerRow := none) : TracedResolution :=
+  let dqs := context.profile.dqsDml
+  Traced.withTarget catalog tableName false (Traced.lift (resolveViewModify catalog tableName))
+    (Traced.lift (prepareError catalog (.noSuchTable tableName))) fun position table =>
+  let keys := catalog.uniqueKeys position table
+  let scope := Scope.singleAt (some position) tableName table.columns !table.withoutRowid
+  let around := (trigger.map (·.scope table.columns.length)).getD []
+  Traced.stage catalog [1] (resolveAllTraced (fun item => resolveAssignmentTraced dqs scope shapes
+      (keys.flatMap (·.reads table.columns.length)) (fun name => .prepare (.updateGenerated name))
+      (if table.withoutRowid then none else some table.rowidAlias) item around) assignments) fun resolved =>
+  Traced.stage catalog [2] (resolveWriteFilterTraced dqs (scope ++ around) shapes filter) fun resolvedFilter =>
+  let positions := resolved.map Prod.fst
+  if positions.eraseDups.length != positions.length then Traced.lift (restrict [1] .updateColumnTwice)
+  else Traced.stage catalog [updateReturningField] (resolveReturningTraced dqs scope returning) fun columns =>
+    if (catalog.keyAlgorithms position table).all (· == .abort) &&
+        table.columns.all (·.notNullAlgorithm == .abort) then
+      Traced.ok (.update position resolved resolvedFilter columns subqueries, catalog)
+    else Traced.lift (restrict [] .constraintAlgorithmUpdate)
+
+/-- The resolution of an UPDATE: {name}`resolveUpdateTraced` without its trace. -/
 def resolveUpdate (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (trigger : Option TriggerRow := none) : StatementResolution :=
-  let dqs := context.profile.dqsDml
-  match catalog.findTable tableName with
-  | none => if (catalog.findView tableName).isSome then resolveViewModify catalog tableName
-      else prepareError catalog (.noSuchTable tableName)
-  | some (position, table) =>
-    let keys := catalog.uniqueKeys position table
-    let scope := Scope.single tableName table.columns !table.withoutRowid
-    let around := (trigger.map (·.scope table.columns.length)).getD []
-    match resolveAll (fun item => resolveAssignment dqs scope shapes (keys.flatMap (·.reads table.columns.length))
-        (fun name => .prepare (.updateGenerated name)) (if table.withoutRowid then none else some table.rowidAlias) item
-        around) assignments with
-    | .error issue => issueResolution catalog [1] issue
-    | .ok resolved =>
-      let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
-        | none => .ok none
-        | some term => some <$> condition [] (resolveOperand dqs (scope ++ around) shapes true term)
-      match resolvedCondition with
-      | .error issue => issueResolution catalog [2] issue
-      | .ok resolvedFilter =>
-        let positions := resolved.map Prod.fst
-        if positions.eraseDups.length != positions.length then
-          restrict [1] .updateColumnTwice
-        else match resolveReturning dqs scope returning with
-          | .error issue => issueResolution catalog [updateReturningField] issue
-          | .ok columns =>
-            if (catalog.keyAlgorithms position table).all (· == .abort) &&
-                table.columns.all (·.notNullAlgorithm == .abort) then
-              .ok (.update position resolved resolvedFilter columns subqueries, catalog)
-            else restrict [] .constraintAlgorithmUpdate
+  (resolveUpdateTraced context catalog tableName assignments filter returning subqueries shapes trigger).drop
 
 end Belay.Sqlite.Model

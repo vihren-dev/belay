@@ -63,7 +63,7 @@ cells of the queries around it: a query without sources or columns of its own wh
 the derived table's columns ({name}`derivedNames`) when SQLite sorts it as
 {lit}`SELECT * FROM (compound)` ({name}`sortsAsDerived`), the
 column collations of {name}`compoundCollations`, the {lit}`ORDER BY` of
-{name}`resolveCompoundOrderBy` and the window of a single {lit}`SELECT`; and its shape as a
+{name}`resolveCompoundOrderByTraced` and the window of a single {lit}`SELECT`; and its shape as a
 subquery. The shape has the number of columns, the affinity and the collations of the first
 column of the right-most term, or of the derived table when {name}`sortsAsDerived` holds.
 The FLEXNUM flag follows the same selection as affinity.
@@ -71,9 +71,10 @@ The derived column has its column collation and no explicit collation; a scalar 
 still supplies no collation to its containing expression. The declared-type origin always
 follows the right-most term. The shape also has the lowest cell that a term reads.
 A compound with another clause of its own, or without terms, is
-{name}`RestrictionKind.subqueryHere`, which the frontend never gives. -/
-def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (compound : Syntax.Compound)
-    (terms : List CompoundTerm) : Except ValueIssue (Resolved.Query × SubqueryShape) := do
+{name}`RestrictionKind.subqueryHere`, which the frontend never gives. The occurrences are those of the
+{lit}`ORDER BY` of the compound. -/
+def resolveCompoundBodyTraced (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (compound : Syntax.Compound)
+    (terms : List CompoundTerm) : Traced ValueIssue (Resolved.Query × SubqueryShape) := do
   let (some first, some last) := (terms.head?, terms.getLast?) | throw (.restriction [] .subqueryHere)
   if !query.compoundForm then throw (.restriction [] .subqueryHere)
   let width := first.query.columns.length
@@ -83,7 +84,7 @@ def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (co
     match derivedNames first.scope first.written.columns first.query.names with
     | some names => pure names
     | none => throw (.restriction [5] .compoundOrderByTerm)
-  let order ← resolveCompoundOrderBy dqs terms collations (resultCollations first.scope first.written.columns) derived
+  let order ← resolveCompoundOrderByTraced dqs terms collations (resultCollations first.scope first.written.columns) derived
     query.orderBy
   let (limitValue, limitParameter) ← windowValue [6] query.limit
   let (offsetValue, offsetParameter) ← windowValue [7] query.offset
@@ -105,5 +106,11 @@ def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (co
       columnCollation := if derived then sourceColumns.head?.map (·.collation) else last.shape.columnCollation,
       lowest := terms.foldl (fun lowest term => minPosition lowest term.shape.lowest) none, derived }
   pure (resolved, shape)
+
+/-- The query and the shape of a compound from its resolved terms: {name}`resolveCompoundBodyTraced`
+without its occurrences. -/
+def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (compound : Syntax.Compound)
+    (terms : List CompoundTerm) : Except ValueIssue (Resolved.Query × SubqueryShape) :=
+  (resolveCompoundBodyTraced dqs outer query compound terms).drop
 
 end Belay.Sqlite.Model

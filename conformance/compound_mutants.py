@@ -79,10 +79,10 @@ GUARDS: dict[str, str] = {
     "except_keeps_duplicates": "rule:_root_.Belay.Sqlite.Model.CompoundOperator.combine",
     "null_unequal_null": "rule:sameOutput",
     "collation_right_most": "rule:compoundCollations",
-    "collation_binary": "rule:resolveCompoundBody",
-    "in_compound_collation": "rule:resolveCompoundBody",
+    "collation_binary": "rule:resolveCompoundBodyTraced",
+    "in_compound_collation": "rule:resolveCompoundBodyTraced",
     "except_runs_right_on_empty": "rule:stepEnd",
-    "order_by_binary": "rule:resolveCompoundOrderBy",
+    "order_by_binary": "rule:resolveCompoundOrderByTraced",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

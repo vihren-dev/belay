@@ -11,11 +11,11 @@ namespace Belay.Sqlite.Model.NormalizedField
 /-- Lowercase of a found original column mentions that row, so assignment keeps
 the expression instead of folding it as a constant. Proof sketch: the single
 source contributes the known column match. -/
-private theorem lower_mentions {tableName name : Identifier} {columns : List CatalogColumn}
-    {rowid : Bool} {source : Nat} (found : columnPosition columns name = some source) :
-    mentionsColumn (Scope.single tableName columns rowid)
+private theorem lower_mentions {position : Option Nat} {tableName name : Identifier}
+    {columns : List CatalogColumn} {rowid : Bool} {source : Nat} (found : columnPosition columns name = some source) :
+    mentionsColumn (Scope.singleAt position tableName columns rowid)
       (.call "lower" [.identifier name .none]) = true := by
-  simp [mentionsColumn, mentionsColumnIn, Scope.matches, Scope.single, found]
+  simp [mentionsColumn, mentionsColumnIn, Scope.matches, Scope.singleAt, found]
 
 /-- On a table with the fresh plain TEXT field appended, any successful backfill
 resolution assigns exactly that field to lowercase of the original named
@@ -36,29 +36,31 @@ theorem update_resolution {context : ResolveContext} {catalog : Catalog}
       none [] [] none ∧ next = catalog := by
   have old := columnPosition_append sourceFound [textColumn name table.strict]
   have added := columnPosition_new fresh table.strict
-  have mentions := lower_mentions (tableName := tableName) (rowid := !table.withoutRowid) old
-  have operand := resolve_lower_column (dqs := context.profile.dqsDml)
+  have mentions := lower_mentions (position := some position) (tableName := tableName)
+    (rowid := !table.withoutRowid) old
+  have operand := resolve_lower_column_at (dqs := context.profile.dqsDml) (position := some position)
     (tableName := tableName) (rowid := !table.withoutRowid) old
   have generated : ((table.columns ++ [textColumn name table.strict])[table.columns.length]?.bind
       (·.generated)).isSome = false := by
     rw [List.getElem?_append_right (Nat.le_refl table.columns.length), Nat.sub_self]
     rfl
   have assignment (keys : List Nat) (failure : Identifier → ValueIssue) (rowid : Option (Option Nat))
-      (item : Nat) : resolveAssignment context.profile.dqsDml
-        (Scope.single tableName (table.columns ++ [textColumn name table.strict]) !table.withoutRowid)
-        {} keys failure rowid item [] (name, .call "lower" [.identifier sourceName .none]) =
+      (item : Nat) : (resolveAssignmentTraced context.profile.dqsDml
+        (Scope.singleAt (some position) tableName (table.columns ++ [textColumn name table.strict])
+          !table.withoutRowid)
+        {} keys failure rowid item [] (name, .call "lower" [.identifier sourceName .none])).drop =
       if keys.contains table.columns.length then .error (.restriction [item, 1] .rowDependentKey)
       else .ok (table.columns.length, .scalar .lower (.cons (.column source) .nil)) := by
-    simp only [resolveAssignment, List.append_nil, operand, Except.mapError, bind, Except.bind,
-      Scope.columns_single, added, generated, Bool.false_eq_true, ↓reduceIte,
+    simp only [resolveAssignmentTraced, traced_drop, resolveOperandTraced_drop, assignedPosition, List.append_nil,
+      operand, Except.mapError, bind, Scope.columns_singleAt, added, generated, Bool.false_eq_true, ↓reduceIte,
       mentions, Bool.true_and, Bool.not_true, Bool.false_and, assignedExpression, Bool.true_or]
   cases keyed : ((catalog.uniqueKeys position
       { table with columns := table.columns ++ [textColumn name table.strict] }).flatMap
         (·.reads (table.columns ++ [textColumn name table.strict]).length)).contains table.columns.length <;>
-    simp only [resolveUpdate, found, Option.map_none, Option.getD_none, resolveAll,
+    simp only [resolveUpdate, resolveUpdateTraced, traced_drop, found, Option.map_none, Option.getD_none, resolveAll,
       resolveAllFrom, assignment, keyed, Bool.false_eq_true, ↓reduceIte,
-      bind, Except.bind, pure, Except.pure, resolveReturning, List.any_nil,
-      List.mapIdx_nil, List.foldr_nil, issueResolution, restrict] at ok
+      bind, Except.bind, pure, Except.pure, resolveReturningTraced, resolveWriteFilterTraced, Except.map, List.any_nil,
+      issueResolution, restrict] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl⟩)
@@ -139,8 +141,8 @@ theorem backfill_resolution {context : ResolveContext} {state after : ResolveSta
     have notView := Catalog.findView_none_of_table found
     have noCopies : querySourceCopiesNeeded state.catalog commonTablePlaceholder [] = false := by
       simp [querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, commonTablePlaceholder]
-    simp only [resolveStatement, resolveCommonTableWrite, List.any_nil, Bool.not_false, ↓reduceIte,
-      resolveWriteSubqueries, found, Option.map_some, Option.getD_some, notView, Option.isSome_none,
+    simp only [statement_arms, resolveCommonTableWrite_arm, Bool.not_false, ↓reduceIte,
+      resolveWriteSubqueries_arm, found, Option.map_some, Option.getD_some, notView, Option.isSome_none,
       Bool.false_eq_true, noCopies]
     rfl
   rw [bare] at ok

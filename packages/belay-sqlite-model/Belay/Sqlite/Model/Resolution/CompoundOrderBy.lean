@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.CompoundTerms
+import Belay.Sqlite.Model.Resolution.QueryBodyTraced
 
 set_option doc.verso true
 
@@ -68,8 +69,10 @@ result expression equal to the expression resolved over the term's own sources o
 ({name}`Scope.inner`), which needs the same expression as written ({name}`sameAsWritten`), else
 {name}`RestrictionKind.compoundOrderByTerm`. An expression that does not resolve there matches
 no column. An aggregate is {name}`RestrictionKind.compoundOrderByTerm`, and a name of an alias
-inside an expression {name}`RestrictionKind.aliasInExpression`. -/
-def termMatch (dqs : Bool) (term : CompoundTerm) (expression : Syntax.Expr) : Except ValueIssue (Option Nat) :=
+inside an expression {name}`RestrictionKind.aliasInExpression`. The occurrences are those of the
+alias use, or of the expression resolved over the term, whether or not the term matched. -/
+def termMatchTraced (dqs : Bool) (term : CompoundTerm) (expression : Syntax.Expr) :
+    Traced ValueIssue (Option Nat) :=
   let aliases := resultAliases term.scope term.written.columns
   let byAlias := match expression with
     | .identifier name _ => aliasIndex aliases name
@@ -78,25 +81,40 @@ def termMatch (dqs : Bool) (term : CompoundTerm) (expression : Syntax.Expr) : Ex
     | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
     | .concatenate .. | .raise .. => none
   match byAlias with
-  | some column => .ok (some column)
+  | some column => do
+    if let .identifier name quote := expression then Traced.record (aliasUseOccurrence name quote column)
+    pure (some column)
   | none =>
-    if !expression.aggregateCalls.isEmpty then .error (.restriction [] .compoundOrderByTerm)
-    else if namesAlias term.scope (aliases.filterMap id) expression then .error aliasInExpression
-    else match resolveOperand dqs term.scope.inner {} false expression with
-      | .error (.prepare _) => .ok none
-      | .error issue@(.restriction ..) => .error issue
-      | .ok (resolved, _) => match term.query.columns.findIdx? (· == .scalar resolved) with
-        | none => .ok none
-        | some column =>
-          if sameAsWritten resolved ((resultExpressions term.scope term.written.columns).getD column none) expression
-          then .ok (some column) else .error (.restriction [] .compoundOrderByTerm)
+    if !expression.aggregateCalls.isEmpty then throw (.restriction [] .compoundOrderByTerm)
+    else if namesAlias term.scope (aliases.filterMap id) expression then throw aliasInExpression
+    else
+      let attempt := resolveOperandTraced dqs term.scope.inner {} false expression
+      let decided : Except ValueIssue (Option Nat) := match attempt.drop with
+        | .error (.prepare _) => .ok none
+        | .error issue@(.restriction ..) => .error issue
+        | .ok (resolved, _) => match term.query.columns.findIdx? (· == .scalar resolved) with
+          | none => .ok none
+          | some column =>
+            if sameAsWritten resolved ((resultExpressions term.scope term.written.columns).getD column none) expression
+            then .ok (some column) else .error (.restriction [] .compoundOrderByTerm)
+      ⟨decided, attempt.trace⟩
 
 /-- The result column that an {lit}`ORDER BY` expression names on the first term from the left
-where it matches one ({name}`termMatch`), or none. -/
+where it matches one ({name}`termMatchTraced`), or none. The occurrences are those of the term
+that matched, else those of the last term. -/
+def firstMatchTraced (dqs : Bool) (expression : Syntax.Expr) :
+    List CompoundTerm → NameTrace → Traced ValueIssue (Option Nat)
+  | [], last => ⟨.ok none, last⟩
+  | term :: rest, _ =>
+    let attempt := termMatchTraced dqs term expression
+    match attempt.drop with
+    | .ok none => firstMatchTraced dqs expression rest attempt.trace
+    | .ok (some _) | .error _ => attempt
+
+/-- The result column that an {lit}`ORDER BY` expression names on the first term from the left
+where it matches one ({name}`firstMatchTraced`), or none, without the occurrences. -/
 def firstMatch (dqs : Bool) (terms : List CompoundTerm) (expression : Syntax.Expr) : Except ValueIssue (Option Nat) :=
-  terms.foldlM (fun found term => match found with
-    | some column => pure (some column)
-    | none => termMatch dqs term expression) none
+  (firstMatchTraced dqs expression terms []).drop
 
 /-- The collation of an outer {lit}`COLLATE` of an expression, which a compound's sort uses
 after SQLite replaces the matched expression by its column number; none without one. -/
@@ -110,31 +128,38 @@ def Syntax.Expr.outerCollation (expression : Syntax.Expr) : Option Collation :=
 
 /-- Resolve the {lit}`ORDER BY` of a compound over its terms, with its column collations: first
 each column number, out of range as SQLite's {lit}`%r ORDER BY term out of range - should be
-between 1 and %d`; then every other term on each term of the compound ({name}`firstMatch`), and
+between 1 and %d`; then every other term on each term of the compound ({name}`firstMatchTraced`), and
 the first term that names no column is SQLite's
 {lit}`%r ORDER BY term does not match any column in the result set`. A term sorts under its
 outer {lit}`COLLATE` ({name}`Syntax.Expr.outerCollation`), else under the column's collation:
 {lit}`columns` without the rewrite of SQLite, and {lit}`leftmost`, the collations of the
 left-most term's expressions, when SQLite sorts the compound as {lit}`SELECT * FROM (compound)`
 ({lit}`derived`). An outer {lit}`COLLATE` with a name that names no collation is
-{name}`RestrictionKind.unknownCollation`. -/
-def resolveCompoundOrderBy (dqs : Bool) (terms : List CompoundTerm) (columns leftmost : List Collation) (derived : Bool)
-    (orderBy : List Syntax.OrderTerm) : Except ValueIssue (List Resolved.SortTerm) := do
+{name}`RestrictionKind.unknownCollation`. The names of the terms are recorded at child 0 of the
+term. -/
+def resolveCompoundOrderByTraced (dqs : Bool) (terms : List CompoundTerm) (columns leftmost : List Collation)
+    (derived : Bool) (orderBy : List Syntax.OrderTerm) : Traced ValueIssue (List Resolved.SortTerm) := do
   let width := columns.length
-  let numbers ← orderBy.zipIdx.mapM fun (term, item) => match term.expression.withoutCollate with
+  let numbers ← Traced.mapAll (fun (term, item) => match term.expression.withoutCollate with
     | (_, false) => throw (.restriction [5, item] .unknownCollation)
     | (expression, true) => match columnNumber expression with
       | some number => if 1 ≤ number ∧ number ≤ width then pure (some (number.toNat - 1))
         else throw (.prepare (.orderByOutOfRange (item + 1) width))
-      | none => pure none
-  let matched ← (orderBy.zip numbers).zipIdx.mapM fun ((term, number), item) => match number with
+      | none => pure none) orderBy.zipIdx
+  let matched ← Traced.mapAll (fun ((term, number), item) => match number with
     | some column => pure (some column)
-    | none => (firstMatch dqs terms term.expression.withoutCollate.1).mapError (·.under [5, item, 0])
-  let found ← (matched.zipIdx).mapM fun (column, item) => match column with
+    | none => Traced.under [5, item, 0] (firstMatchTraced dqs term.expression.withoutCollate.1 terms [])) (orderBy.zip numbers).zipIdx
+  let found ← Traced.mapAll (fun (column, item) => match column with
     | some column => pure column
-    | none => throw (.prepare (.orderByNoMatch (item + 1)))
+    | none => throw (.prepare (.orderByNoMatch (item + 1)))) matched.zipIdx
   pure ((orderBy.zip found).map fun (term, column) =>
     { key := .output column, descending := term.descending,
       collation := term.expression.outerCollation.getD ((if derived then leftmost else columns).getD column .binary) })
+
+/-- The sort terms of the {lit}`ORDER BY` of a compound: {name}`resolveCompoundOrderByTraced` without
+its occurrences. -/
+def resolveCompoundOrderBy (dqs : Bool) (terms : List CompoundTerm) (columns leftmost : List Collation) (derived : Bool)
+    (orderBy : List Syntax.OrderTerm) : Except ValueIssue (List Resolved.SortTerm) :=
+  (resolveCompoundOrderByTraced dqs terms columns leftmost derived orderBy).drop
 
 end Belay.Sqlite.Model

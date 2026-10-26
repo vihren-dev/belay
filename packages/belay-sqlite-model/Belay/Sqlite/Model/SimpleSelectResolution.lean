@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleQueryLaws
 import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.QuerySourceCopyLaws
 
 set_option doc.verso true
@@ -63,10 +64,9 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
-  unfold resolveSelect resolveSelectDetails
-  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  rw [noSources]
-  simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
+  unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
+  simp only [prepareQuerySources, prepareQuerySourcesTraced, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure, traced_drop]
+  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, subqueryScopesTraced, scopeOrder, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
     Except.bind, Except.mapError, Pure.pure, Except.pure]
 
 /-- For every simple query ({name}`Syntax.Subquery.Simple`) whose pending sources, result columns and
@@ -114,8 +114,8 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
       | sourceStar source => simp [sourceStar source]
       | expression value alias text => simp [expression value alias text member]
   have distinctNil : Syntax.Expr.distinctList [] = [] := rfl
-  unfold resolveQueryBody
-  simp only [noJoins, List.zipIdx_nil, List.find?_nil, Option.map_none, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
+  rw [resolveQueryBody_arm]
+  simp only [aliasJoinItem?, noJoins, List.zipIdx_nil, List.find?_nil, Option.map_none, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
   rw [notAggregate _ ?flagColumn rfl (fun _ => rfl)]
   simp only [List.isEmpty_nil, Bool.not_true, Bool.or_false, Bool.false_and, Option.toList_none, List.flatMap_nil,
     List.append_nil, ite_false, Bool.false_eq_true]
@@ -177,10 +177,9 @@ theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (cat
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
-  unfold resolveSelect resolveSelectDetails
-  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  rw [noSources]
-  simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body,
+  unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
+  simp only [prepareQuerySources, prepareQuerySourcesTraced, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure, traced_drop]
+  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, subqueryScopesTraced, scopeOrder, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body,
     issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]
 
 end Belay.Sqlite.Model

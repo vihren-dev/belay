@@ -12,6 +12,14 @@ checker and exporter programs, trusted module resolution for the gates, the offl
 the installed acceptance, and the evidence that names them. The model package, its boundary, its
 codec and the semantic levels stay; their users are now the conformance runner and the surface.
 
+Amended 2026-10-26 (owner decision): the core may import the one module
+`Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of `Lean` or `Std`. The module gives
+`register_simp_attr`, which defines the named simp sets (`traced_drop`, `traced_arms`,
+`statement_arms`) that the proofs about the name trace need. Two core modules import it:
+`Resolution/TracedAttr.lean` and `Resolution/StatementAttr.lean`. The cost: every importer of the
+model also loads the `Lean.Meta` modules that this import pulls in. `tests/test_model_package.py`
+allows exactly this module.
+
 ## Context
 
 The [library's Lake package](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
