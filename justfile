@@ -67,6 +67,11 @@ documentation-inventory: resources
     mkdir -p build
     timeout --foreground 900 nix-build build-support/default.nix -A publicDocumentation --out-link build/public-documentation --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
+# Browse theorem statements and completed proof dependencies from the selected compiled libraries.
+theorem-dependencies: resources
+    mkdir -p build
+    timeout --foreground 1800 nix-build build-support/default.nix -A theoremDependencies --out-link build/theorem-dependencies --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+
 # Test ownership is shared with Nix; all source-owned checks run on the host.
 test-source:
     timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/source.xml

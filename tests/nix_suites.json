@@ -184,5 +184,10 @@
     "tests/surface_automatic_test.py",
     "tests/surface_automatic_editor_test.py",
     "tests/surface_automatic_cancel_test.py"
+  ],
+  "theoremDependencies": [
+    "tests/test_theorem_dependency_exporter.py",
+    "tests/test_theorem_dependency_report.py",
+    "tests/test_theorem_dependency_manifest.py"
   ]
 }

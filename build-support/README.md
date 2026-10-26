@@ -23,6 +23,13 @@ runs it in a sandbox and links the output at `build/api-reference`. These
 targets are separate from `conformance` and its closure. See the
 [API reference guide](../docs/api-reference.md).
 
+`theoremDependencies` reads the compiled model, codec, text, surface and
+conformance libraries. `just theorem-dependencies` writes an offline HTML
+browser and JSON graph at `build/theorem-dependencies`. The
+[dependency guide](../docs/theorem-dependencies.md) explains coverage, helper
+paths and optional existing proof costs. `tests.theoremDependencies` checks
+the exporter and report against compiled fixtures.
+
 Reference generation corrects links to recursors that doc-gen4 omits to the
 existing parent-type anchors. It also corrects the Lean 4.34.1 TacticsExtra
 docstring's `Init/Tactic.html` link to `Init/Tactics.html`. The remaining
