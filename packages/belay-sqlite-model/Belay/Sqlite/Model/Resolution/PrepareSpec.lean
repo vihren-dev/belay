@@ -63,8 +63,8 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
       .ok (.prepareError error, after)) :
     ((error = .noSuchTable tableName ∧ catalog.findTable tableName = none) ∨ ∃ name, error = .viewModify name) ∧
       after = catalog := by
-  unfold resolveInsert at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveInsert resolveInsertTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals (try (cases ok; done))
   all_goals cases ok
@@ -88,7 +88,7 @@ theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog)
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   have consistent : (rows.any fun row => row.length != (rows.head?.map List.length).getD 0) = false := by
     simpa using same
-  unfold resolveInsert
-  simp [consistent, missing, notView, prepareError]
+  unfold resolveInsert resolveInsertTraced
+  simp [consistent, missing, notView, prepareError, traced_drop]
 
 end Belay.Sqlite.Model

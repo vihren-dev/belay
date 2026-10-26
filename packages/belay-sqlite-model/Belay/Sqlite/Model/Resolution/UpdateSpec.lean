@@ -20,8 +20,8 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
       .ok (.prepareError error, after)) :
     ((error = .noSuchTable tableName ∧ catalog.findTable tableName = none) ∨ ∃ name, error = .viewModify name) ∧
       after = catalog := by
-  unfold resolveUpdate at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveUpdate resolveUpdateTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals (try (cases ok; done))
   all_goals cases ok
@@ -39,7 +39,7 @@ theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog)
     (notView : catalog.findView tableName = none) :
     resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
-  unfold resolveUpdate
-  simp [missing, notView, prepareError]
+  unfold resolveUpdate resolveUpdateTraced
+  simp [missing, notView, prepareError, traced_drop]
 
 end Belay.Sqlite.Model

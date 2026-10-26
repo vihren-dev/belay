@@ -87,7 +87,7 @@ theorem observeTwoState_ordinary (context : ResolveContext) (clock : Option Cloc
   case select columns source joins filter groupBy orderBy limit offset subs having distinct compound =>
     obtain ⟨rfl, rfl⟩ := found
     rw [runScriptStep_output]
-    simp only [observeTwoState, resolveTwoState_ordinary _ _ _ _ _ plain, resolveStatement, ResolveState.withCatalog,
+    simp only [observeTwoState, resolveTwoState_ordinary _ _ _ _ _ plain, statement_arms, ResolveState.withCatalog,
       Connection.resolveState, plain]
     cases resolveSelect context connection.state.database.catalog _ _ <;> rfl
 

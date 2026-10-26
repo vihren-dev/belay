@@ -20,7 +20,8 @@ structure SourceRef where
   index : Nat
   /-- How many queries out the source is: 0 for a source of the query that holds the name. -/
   depth : Nat
-  /-- The catalog position of a table or view; none for any other source. -/
+  /-- The catalog position of a table or view that the source reads, also for the proposed row of an
+  upsert, which has the columns of the written table; none for any other source. -/
   position : Option Nat := none
   /-- The index of the query that supplies a view, a {lit}`WITH` definition or a derived table. -/
   query : Option Nat := none

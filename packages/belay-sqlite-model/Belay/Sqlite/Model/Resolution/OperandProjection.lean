@@ -15,6 +15,13 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
     (expression : Syntax.Expr) : Except ValueIssue Operand :=
   (resolveOperandTraced dqs scope shapes misuse expression).drop
 
+/-- For every operand: the projection of its traced form is {name}`resolveOperand`. Plain words: the two
+sides are the same function. Proof sketch: the definition. -/
+theorem resolveOperandTraced_drop (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool)
+    (expression : Syntax.Expr) :
+    (resolveOperandTraced dqs scope shapes misuse expression).drop = resolveOperand dqs scope shapes misuse expression :=
+  rfl
+
 /-- Resolve the arguments of a call in written order, from argument {lit}`index`: the projection of
 {name}`resolveArgumentsTraced`. The issue of argument {lit}`k` is at {lit}`[1, k]`. -/
 def resolveArguments (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) (index : Nat)

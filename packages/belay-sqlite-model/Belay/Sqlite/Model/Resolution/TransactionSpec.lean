@@ -32,7 +32,7 @@ theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveS
     rcases resolveStatementPragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> rfl
     · rfl
-  all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+  all_goals simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
   all_goals (repeat' split at ok)
   all_goals first | (cases ok; done) | (cases ok; rfl)
 
@@ -69,7 +69,7 @@ theorem resolveFrom_rollback (context : ResolveContext) (saved : Catalog) (state
   induction statements with
   | nil =>
     intro index state final resolved open_ ok
-    simp only [List.nil_append, resolveFrom, resolveStatement, open_, Option.getD_some, bind,
+    simp only [List.nil_append, resolveFrom, statement_arms, open_, Option.getD_some, bind,
       Except.bind, pure, Except.pure] at ok
     cases ok
     exact ⟨rfl, rfl⟩
@@ -94,7 +94,7 @@ theorem resolve_rollback_restores (context : ResolveContext) (index : Nat) (stat
     (idle : state.saved = none) (plain : ∀ statement ∈ statements, statement.transactionControl = false)
     (ok : resolveFrom context index state (.begin :: statements ++ [.rollback]) = .ok (resolved, final)) :
     final.catalog = state.catalog ∧ final.saved = none := by
-  simp only [List.cons_append, resolveFrom, resolveStatement, idle, Option.getD_none, bind,
+  simp only [List.cons_append, resolveFrom, statement_arms, idle, Option.getD_none, bind,
     Except.bind] at ok
   split at ok <;> try contradiction
   rename_i later hlater

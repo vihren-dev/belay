@@ -23,8 +23,8 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog)
     (ok : resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveInsert at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveInsert resolveInsertTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
@@ -42,8 +42,8 @@ theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog)
     (ok : resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveUpdate at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveUpdate resolveUpdateTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
@@ -59,8 +59,8 @@ theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog)
     (subqueries : List Resolved.Query) (shapes : SubqueryShapes) (statement : Resolved.Statement)
     (ok : resolveDelete context catalog tableName filter returning subqueries shapes = .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveDelete at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveDelete resolveDeleteTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
@@ -79,8 +79,8 @@ theorem resolveWriteSubqueries_same {columnNames : List (Nat × List Identifier)
     (ok : resolveWriteSubqueries context catalog field tableName scopeOf subqueries resolveWrite columnNames =
       .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveWriteSubqueries at ok
-  simp only [prepareError, restrict, issueResolution] at ok
+  unfold resolveWriteSubqueries resolveWriteSubqueriesTraced resolveViewTargetTraced at ok
+  simp only [traced_drop, prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
@@ -103,8 +103,8 @@ theorem resolveCommonTableWrite_same (context : ResolveContext) (catalog after :
     (ok : resolveCommonTableWrite context catalog field tableName scopeOf subqueries resolveWrite =
       .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveCommonTableWrite at ok
-  simp only [resolveWriteSubqueries, prepareError, restrict, issueResolution, Except.mapError] at ok
+  unfold resolveCommonTableWrite resolveCommonTableWriteTraced resolveViewTargetTraced at ok
+  simp only [resolveWriteSubqueriesTraced, traced_drop, prepareError, restrict, issueResolution, Except.mapError] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)

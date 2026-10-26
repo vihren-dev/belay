@@ -248,7 +248,16 @@ import Belay.Sqlite.Model.Resolution.OperandArms
 import Belay.Sqlite.Model.Resolution.OperandArmsMore
 import Belay.Sqlite.Model.Resolution.NameTraceSettled
 import Belay.Sqlite.Model.Resolution.NameResultSources
+import Belay.Sqlite.Model.Resolution.NameTraceConstraints
+import Belay.Sqlite.Model.Resolution.ResolveAll
 import Belay.Sqlite.Model.Resolution.TracedList
+import Belay.Sqlite.Model.Resolution.WriteStages
+import Belay.Sqlite.Model.Resolution.SourceStage
+import Belay.Sqlite.Model.Resolution.StatementTraced
+import Belay.Sqlite.Model.Resolution.StatementAttr
+import Belay.Sqlite.Model.Resolution.WriteTracedLaws
+import Belay.Sqlite.Model.Resolution.ResolveStatement
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
 import Belay.Sqlite.Model.Resolution.ResultColumnArms
 import Belay.Sqlite.Model.Resolution.QueryBodyTraced

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Writes
+import Belay.Sqlite.Model.Resolution.WriteStages
 
 set_option doc.verso true
 
@@ -12,26 +13,25 @@ namespace Belay.Sqlite.Model
 {lit}`RETURNING` columns. SQLite's own tables are a model restriction, as in
 {lit}`SELECT`. The filter may name the statement's resolved subqueries, whose shapes are
 {lit}`shapes`. In a trigger's body, the filter also sees the trigger's rows {lit}`trigger`,
-after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`. -/
+after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`. The trace holds
+the table at path 0, then the names of the filter and of the {lit}`RETURNING` columns. -/
+def resolveDeleteTraced (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
+    (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
+    (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : TracedResolution :=
+  let dqs := context.profile.dqsDml
+  Traced.withTarget catalog tableName true (Traced.lift (resolveViewModify catalog tableName))
+    (if reservedName tableName then Traced.lift (restrict [0] .systemTable)
+      else Traced.lift (prepareError catalog (.noSuchTable tableName))) fun position table =>
+  let scope := Scope.singleAt (some position) tableName table.columns !table.withoutRowid
+  Traced.stage catalog [1] (resolveWriteFilterTraced dqs
+      (scope ++ (trigger.map (·.scope table.columns.length)).getD []) shapes filter) fun resolvedFilter =>
+  Traced.stage catalog [deleteReturningField] (resolveReturningTraced dqs scope returning) fun columns =>
+  Traced.ok (.delete position resolvedFilter columns subqueries, catalog)
+
+/-- The resolution of a DELETE: {name}`resolveDeleteTraced` without its trace. -/
 def resolveDelete (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
     (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
-  let dqs := context.profile.dqsDml
-  match catalog.findTable tableName with
-  | none =>
-    if (catalog.findView tableName).isSome then resolveViewModify catalog tableName
-    else if reservedName tableName then restrict [0] .systemTable
-    else prepareError catalog (.noSuchTable tableName)
-  | some (position, table) =>
-    let scope := Scope.single tableName table.columns !table.withoutRowid
-    let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
-      | none => .ok none
-      | some term => some <$> condition [] (resolveOperand dqs (scope ++ (trigger.map (·.scope table.columns.length)).getD [])
-          shapes true term)
-    match resolvedCondition with
-    | .error issue => issueResolution catalog [1] issue
-    | .ok resolvedFilter => match resolveReturning dqs scope returning with
-      | .error issue => issueResolution catalog [deleteReturningField] issue
-      | .ok columns => .ok (.delete position resolvedFilter columns subqueries, catalog)
+  (resolveDeleteTraced context catalog tableName filter returning subqueries shapes trigger).drop
 
 end Belay.Sqlite.Model

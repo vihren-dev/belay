@@ -122,3 +122,68 @@ them through result-alias lookup and `resolveOperand`).
   `NormalizedFieldSelectResolution` and `NormalizedFieldResolution` 4 corollaries of new `_at`
   lemmas). Total so far: 48 manual and 42 mechanical changes (90 together). Gaps found: a
   view or `WITH` use `FROM v AS v` records the table only (the alias equals the table name).
+- 2026-10-26: layer 4 done in the working copy: subqueries, compound queries and the copied
+  definitions with the trace. `resolveSelectTraced`, the subquery steps, `resolveCompoundOrderBy`,
+  `expandCommonTablesTraced` and `resolveAllFromTraced` have the old functions as projections. The
+  trace of a select is settled (`NameTrace.settled`): a name that two passes of the resolver reach
+  gives one record, keyed on path, role and exactness. The statement level does not settle,
+  because two uses of one WITH definition must stay two records. Source-kind refinement:
+  `CommonTableCopies.definitionKinds` tells which derived table is a stored view (`storedView`, with
+  its catalog position) or a copy of a WITH definition (`commonTable`); `originalSource` and
+  `originalOccurrence` map the copy back to the definition as written, and
+  `CommonTableCopies.declarations` records the name and column list of each used WITH definition at
+  `[field, origin, 12, 0]` and `[field, origin, 12, 1, k]`. Proof repairs of layer 4: about 7 manual
+  (`QuerySpec`, `SimpleStatementResolution`, `SimpleSelectResolution`, `SubquerySelectResolution`,
+  `ResolveStatementForms`).
+- 2026-10-26: write layer done in the working copy: `resolveInsertTraced`, `resolveUpdateTraced`,
+  `resolveDeleteTraced`, the upsert and RETURNING resolvers, `resolveWriteSubqueriesTraced` and
+  `resolveCommonTableWriteTraced`, each with the old function as its projection. `Traced.stage` and
+  `Traced.withTarget` (`WriteStages.lean`) run the stages of a write and record the target table.
+  Paths: INSERT table 0, column list `[1, k]`, rows `[2, r, c]`, conflict clauses `[3, j, ...]`,
+  RETURNING 5, subqueries 6; UPDATE table 0, assignments `[1, k, 0|1]`, filter 2, RETURNING 3,
+  subqueries 4; DELETE table 0, filter 1, RETURNING 2, subqueries 3. The proposed row `excluded`
+  of an upsert has the kind `proposedRow` and the catalog position of the written table. Proof
+  repairs of the write layer: about 18 manual (`UpdateSpec` 2, `WriteCatalogSpec` 5, `RowSpec` 1,
+  `PrepareSpec` 2, `ResolveStatementForms` 5, `NormalizedFieldUpdateResolution` 2,
+  `ResolveStatementFacts` 1) and 57 mechanical lines (`resolveStatement` in a simp list became
+  `statement_arms`). New lemma modules (not repairs): `WriteTracedLaws`, `StatementArms`.
+- 2026-10-26: statement entry point done in the working copy: `resolveStatementRun` (per constructor;
+  DDL and PRAGMA through `Traced.lift`), `resolveStatementTraced` (the run with the constraint
+  post-pass `NameTrace.withConstraints`, which fills primary key, UNIQUE and foreign key from the
+  table at the catalog position of the source), `resolveStatement` as the first component, and the
+  theorem `resolveStatementTraced_fst` (the projection law, by `rfl`). Kernel examples:
+  `NameTraceStatementExamples.lean` and `NameTraceWriteExamples.lean`. Surface check:
+  `tests/surface/NameTraceSpans.lean` with `tests/surface_name_trace_test.py`.
+- Proof repair totals: 73 manual and 99 mechanical changes. The count of manual changes
+  stays below the limit of about 80.
+
+## Documented gaps (found in the work)
+
+- CREATE TABLE, CREATE INDEX, CREATE VIEW, CREATE TRIGGER and ALTER bodies, and stored trigger
+  programs; the trigger-row scope sources have the default role and are not traced.
+- Unused WITH definitions, star-expansion columns, RETURNING `*` columns, function names and
+  collation names.
+- A CTE body that the resolver copies for each use is recorded once for each use (same path).
+- `FROM v AS v` records the table only.
+- Names inside the view body that a write to a view reads (`viewColumns`, `resolveViewTarget`).
+
+## Import boundary of the simp sets (2026-10-26)
+
+`tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude` failed since layer 1:
+ADR 0006 lets the core import `Init` only, but `register_simp_attr` (the simp sets `traced_drop`,
+`traced_arms`, `statement_arms`) needs `import Lean.Meta.Tactic.Simp.RegisterCommand`. The owner
+decided on 2026-10-26 to allow exactly this module. ADR 0006 has a dated amendment and the test
+allows this one module (commit `refactor: allow the module that registers simp sets in the model
+core`). Two core modules import it: `Resolution/TracedAttr.lean` and `Resolution/StatementAttr.lean`.
+Two other faults of the same test are fixed in the layer-4 commit: `Model.lean` no longer imports
+compiled examples (Lake builds them through the `Resolution.*` glob), and `lakefile.toml` lists the
+module `SingleSourceNameLaws`.
+
+## Review results of the final commits
+
+- Decision commit (`b660aab9`, review 15): no findings.
+- Layer-4 commit (`c206e9b4`, review 16): one must (R11). `NameTrace.settled` merged the two
+  comparison records of a `BETWEEN`, which have one path and one role. Fixed in the next commit: the
+  form of the comparison is part of the key, with examples at the settled level and the statement
+  level.
+- Fix commit (`ca5e6f1d`, review 17): no findings.
