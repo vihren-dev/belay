@@ -83,3 +83,5 @@ The previously accepted Nix experiment and production check inputs are unchanged
 their evidence above remains applicable. Claude reviewed `b5d92aeb` with no
 must findings and one should finding: date the owner-approved amendment in
 the ADR text itself. Both ADRs now contain that date; the resolution is recorded.
+Claude reviewed clarification commit `03d0f498` with no findings. Amendment
+review is complete; production and experiment inputs remain unchanged.
