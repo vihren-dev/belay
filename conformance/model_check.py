@@ -18,6 +18,13 @@ def compiled(case: dict[str, Json], runtime: Path, *, emit_lean: bool = False) -
     return compiled_many([case], runtime, emit_lean=emit_lean)[0]
 
 
+RUNNER_TIMEOUT_SECONDS = 120
+"""Hang limit for one run of the compiled classifier. A batch of
+`replay_support.RUNNER_BATCH` cases of corpus-v5 takes up to 14 s on a
+developer machine and took more than 30 s, the old limit, on a CI runner
+(PR #270, 2026-10-26)."""
+
+
 def compiled_many(cases: list[dict[str, Json]], runtime: Path, *,
                   emit_lean: bool = False) -> list[dict[str, Json]]:
     """Classify a bounded batch through one runner process, preserving line order."""
@@ -25,7 +32,7 @@ def compiled_many(cases: list[dict[str, Json]], runtime: Path, *,
     if emit_lean:
         command.append("--emit-lean")
     result = subprocess.run(command, input="".join(json.dumps(case) + "\n" for case in cases),
-                            text=True, capture_output=True, timeout=30)
+                            text=True, capture_output=True, timeout=RUNNER_TIMEOUT_SECONDS)
     if result.returncode:
         raise RuntimeError(result.stderr or result.stdout)
     answers = [json.loads(line) for line in result.stdout.splitlines()]

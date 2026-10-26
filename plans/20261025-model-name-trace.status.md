@@ -230,6 +230,22 @@ module `SingleSourceNameLaws`.
 - `just test-scheduled-checks`:
   `/nix/store/walhg9m56ar02m26xlpvhd01siiqg7bh-sqlite-verifier-scheduled-check-reports`.
 
+## Integration on the stack top (2026-10-26, Nix results)
+
+The task branch was merged onto PR #269 (the split surface suites). The merge
+needed three repairs, each reviewed with no findings: the SELECT step proofs
+unfold the traced resolver (`4fc773a5`), the documentation inventory's compiler
+calls get a 180 s hang limit (`fa23807d`; one call took 58 s on a loaded
+machine against a 60 s limit), and the signup fixture rewrites with the compare
+arm equation of the traced resolver (`9193ed53`).
+
+- `just test-full` on `12010a59`:
+  `/nix/store/9lpf6q7329x054ab44kn58vw7pdjzj40-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/pglhlk3pbcmzjic5prk7g8qs9f4sdhbj-sqlite-verifier-verdict`.
+  Its `report.json` and `counts.json` are byte-identical to the verdict of the
+  stack top before the merge,
+  `/nix/store/pv8yv3gjwkbwli4bd5h3akpf50ysnrhi-sqlite-verifier-verdict`.
+
 ## DONE
 
 All required outcomes of the task file hold; the task is DONE.
