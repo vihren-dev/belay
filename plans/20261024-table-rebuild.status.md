@@ -83,3 +83,4 @@ rebuild proof is separate.
     conformance classifier is subject code and needs no judge change.
   - Predictions baseline: to build with `nix-build integrity/judge.nix -A
     predictions` on the base before the first model change (not yet built).
+  - Review `20261026T091236Z-2957bba7` of the check commit had no findings.
