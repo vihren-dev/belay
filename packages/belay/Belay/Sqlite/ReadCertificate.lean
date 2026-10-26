@@ -137,8 +137,10 @@ theorem ReadCertificate.output_eq {certificate : ReadCertificate} (valid : certi
 
 /-- For every certificate, context, statement and two connections that satisfy the obligations of the
 certificate: the statement resolves on the original connection to no INSERT from a query without rules
-({name}`Resolved.Statement.fromQuery`), so a step of it has one execution. Proof sketch: every resolution of
-the statement is the query statement of the certificate, which is no INSERT. -/
+({name}`Resolved.Statement.fromQuery`), so a step of it that continues has no further execution
+({name}`runScriptStep_others`). A step may still end the run, for a missing clock value or an unknown
+counter. Proof sketch: every resolution of the statement is the query statement of the certificate, which
+is no INSERT. -/
 theorem ReadCertificate.Obligations.single_original {certificate : ReadCertificate} {context : ResolveContext}
     {statement : Syntax.Statement} {original other : Connection}
     (obligations : certificate.Obligations context statement original other) :

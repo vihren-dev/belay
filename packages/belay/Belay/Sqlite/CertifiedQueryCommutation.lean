@@ -11,7 +11,8 @@ module proves for a certified read. First, a certified read keeps the connection
 execution and ends at the connection where it started, also when the read fails. Second, the read counts
 no change. The module does not prove that the migration reaches one connection with one output count; the
 caller gives that fact as a premise ({lit}`uniform`), and the premise holds for a sent script
-({lit}`sendStatements_branch_shape`). The clock must give one date at every index, because a read that
+({lit}`sendStatements_branch_shape`) when no statement of the script is written as INSERT from a query: such a
+statement can have more than one execution, so a sent script that has one can reach different connections. The clock must give one date at every index, because a read that
 moves the statement index must not change the migration.
 -/
 
