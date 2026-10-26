@@ -17,10 +17,10 @@ def translated (text : String) : IO (Array (Located Syntax.Statement)) := do
   | .ok items => return items.map (·.statement)
   | .error refusal => throw <| IO.userError s!"the translation refuses {text}: {refusal.message}"
 
-/-- The result columns of a SELECT statement and its subqueries' names for the check. -/
-def selectColumns : Syntax.Statement → List Syntax.ResultColumn
-  | .select columns _ _ _ _ _ _ _ _ _ _ _ => columns
-  | _ => []
+/-- The result columns of a SELECT statement; none for another statement. -/
+def selectColumns : Syntax.Statement → Option (List Syntax.ResultColumn)
+  | .select columns _ _ _ _ _ _ _ _ _ _ _ => some columns
+  | _ => none
 
 /-- Fail unless the tokens of the column at `column` stand at the ranges of their paths; give the
 number of tokens checked. -/
@@ -56,16 +56,21 @@ def checkOccurrences (column : Nat) (source : Syntax.SourceText) (trace : NameTr
   return checked
 
 /-- Resolve the statements one after the other, each translated alone, and check the tokens of the
-columns of each SELECT; give the numbers of tokens and of occurrences checked in each. -/
-def checkScript (statements : List String) : IO (List (Nat × Nat)) := do
+columns of each statement marked as checked, which must be a SELECT, so that a statement of another
+form cannot bypass the check unnoticed; give the numbers of tokens and of occurrences checked in
+each. -/
+def checkScript (statements : List (String × Bool)) : IO (List (Nat × Nat)) := do
   let mut state : ResolveState := { catalog := [] }
   let mut counts := []
-  for text in statements do
+  for (text, checked) in statements do
     let #[item] ← translated text | throw <| IO.userError s!"expected one statement in {text}"
     let (result, trace) := resolveStatementTraced { profile := Profile.pinned, mode := .execution } state item.value
     let mut tokens := 0
     let mut occurrences := 0
-    for (column, index) in (selectColumns item.value).zipIdx do
+    let columns ← match selectColumns item.value with
+      | some columns => pure columns
+      | none => if checked then throw <| IO.userError s!"{text} is no SELECT" else pure []
+    for (column, index) in columns.zipIdx do
       if let .expression _ _ source := column then
         tokens := tokens + (← checkTokenRanges item index source)
         occurrences := occurrences + (← checkOccurrences index source trace)
@@ -77,13 +82,14 @@ def checkScript (statements : List String) : IO (List (Nat × Nat)) := do
 
 #eval show IO Unit from do
   let counts ← checkScript [
-    "CREATE TABLE t(a INTEGER PRIMARY KEY, b TEXT UNIQUE, c REAL);",
-    "CREATE TABLE u(a INTEGER, d TEXT);",
-    "SELECT a + 1, \"b\" || t.c, [a], t.a FROM t;",
-    "SELECT max(a), (a) * (c + 1) FROM t;",
-    "SELECT (SELECT u.d FROM u WHERE u.a = t.a), EXISTS (SELECT 1 FROM u WHERE d = b) FROM t;",
-    "SELECT a IN (SELECT a FROM u WHERE d > (SELECT b FROM t)) FROM t;",
-    "SELECT 1, 'a', a FROM t;"]
-  -- The tokens include names that are no column or table (`max`, `IN`), so some counts are higher.
-  unless counts == [(0, 0), (0, 0), (7, 7), (4, 3), (10, 10), (7, 6), (1, 1)] do
+    ("CREATE TABLE t(a INTEGER PRIMARY KEY, b TEXT UNIQUE, c REAL);", false),
+    ("CREATE TABLE u(a INTEGER, d TEXT);", false),
+    ("SELECT a + 1, \"b\" || t.c, [a], t.a FROM t;", true),
+    ("SELECT max(a), (a) * (c + 1) FROM t;", true),
+    ("SELECT (SELECT u.d FROM u WHERE u.a = t.a), EXISTS (SELECT 1 FROM u WHERE d = b) FROM t;", true),
+    ("SELECT a IN (SELECT a FROM u WHERE d > (SELECT b FROM t)) FROM t;", true),
+    ("SELECT 1, 'a', a FROM t;", true),
+    ("SELECT t.'a' + 1, t.\"b\", `c` FROM t;", true)]
+  -- The tokens include names that are no column or table (`max`), so one count is higher.
+  unless counts == [(0, 0), (0, 0), (7, 7), (4, 3), (10, 10), (6, 6), (1, 1), (5, 5)] do
     throw <| IO.userError s!"the statements have {counts} tokens and occurrences"

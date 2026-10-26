@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T11:49:39+00:00",
+  "finding": "20261026T113647Z-9b5f7fa8#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Names are marked by the translator (Span.isName) instead of found by text; t.'a' is a token of kind single, covered by a syntax test and the trace fixture."
+}

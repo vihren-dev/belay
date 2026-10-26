@@ -65,6 +65,14 @@ def test_names_of_an_expression_have_offsets_paths_and_quotes(parse_sql: Callabl
     assert [1] in paths_of(third, "[x y]") and [2] in paths_of(third, "`z`")
 
 
+def test_a_single_quoted_name_where_the_grammar_expects_a_name_is_a_token(parse_sql: Callable[..., Translation]) -> None:
+    """SQLite reads `t.'a'` as the column `a` of `t`, so its text has the token `'a'` of the kind
+    `single`, while the string literal of `'a' || b` is no name token."""
+    qualified, literal = column_texts(parse_sql, "SELECT t.'a' + 1, 'a' || b FROM t;")
+    assert written(qualified) == [("t", "none", None), ("'a'", "single", None)]
+    assert written(literal) == [("b", "none", None)]
+
+
 def test_a_text_without_a_name_is_a_plain_string(parse_sql: Callable[..., Translation]) -> None:
     """A literal has no name token, so its text keeps the plain form that it had before the tokens."""
     assert column_texts(parse_sql, "SELECT 1, 'a b', 2.5 + 1 FROM t;") == ["1", "'a b'", "2.5 + 1"]

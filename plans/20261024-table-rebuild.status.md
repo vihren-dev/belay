@@ -156,12 +156,15 @@ rebuild proof is separate.
     definitions, derived tables and subqueries record their own tokens. A plain string
     coerces to a text without tokens, so no construction of a result column changed; the JSON
     of a text without tokens is the plain string.
-  - Decision: tokens carry the paths of every range-tree node with the token's range
-    (an identifier and its two parts, the list around a single call argument, absent parts at
-    the position of a name). The name trace's path is one of them, and the fixture
+  - Decision: the translator marks the range-tree nodes that are one name token (`Span.isName`,
+    set by `plainName`, the expression identifier and bare aliases), not by reading the text.
+    A token carries the paths of every marked node with its range (an identifier and its two
+    parts). The name trace's path is one of them, and the fixture
     `tests/surface/NameTokenPaths.lean` checks that every exact trace occurrence inside a result
-    column has a token with its path. The tokens include names that are no column or table
-    (`max`, `IN`, aliases); a client takes the token by the path of an occurrence.
+    column has a token with its path. Names that are no column or table (`max`, aliases) are
+    tokens too; a client takes the token by the path of an occurrence. A string where the
+    grammar expects a name (`t.'a'`) is a token of the new quote kind `single`; a string
+    literal is no token. Review finding R19 (a text heuristic missed `t.'a'`) led to this.
   - Decision: `ResultColumn.reindexM` (the copy for another subquery list) keeps only the
     text. Mapping the tokens' subquery indexes through the reindex function made 6 predictions
     unsupported (`subquery-here`), because the CTE copy's mapping has no entry for an unused

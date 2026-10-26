@@ -64,7 +64,8 @@ def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) 
 def alias (tree : SqlTree) (node : ParseNode) : TranslateM (Located (Option Identifier)) := do
   let parts := tree.children node
   if tree.symbols node == ["AS", "nm"] then return (← identifierName tree parts[1]!).present
-  if h : 0 < parts.size then return leaf (some (Identifier.ofString (dequote (tree.text parts[0])))) node.start node.stop
+  if h : 0 < parts.size then
+    return { value := some (Identifier.ofString (dequote (tree.text parts[0]))), span := nameSpanOf node }
   return missing node.start node.stop
 
 /-- {lit}`*`, {lit}`source.*`, or an expression with its optional alias and its text, which SQLite

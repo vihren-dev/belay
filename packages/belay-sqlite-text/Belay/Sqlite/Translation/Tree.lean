@@ -17,6 +17,9 @@ deriving instance Inhabited for Belay.Sqlite.ParseNode
 /-- The range of a node, without parts. -/
 def spanOf (node : ParseNode) : Span := { start := node.start, stop := node.stop }
 
+/-- The range of a node that is one name token ({name}`Span.isName`). -/
+def nameSpanOf (node : ParseNode) : Span := { spanOf node with isName := true }
+
 /-- The checked parse tree of an SQL text: the text's UTF-8 bytes and the nodes of the parse
 document, which {name}`Belay.Sqlite.decodeParse` checked. -/
 structure SqlTree where

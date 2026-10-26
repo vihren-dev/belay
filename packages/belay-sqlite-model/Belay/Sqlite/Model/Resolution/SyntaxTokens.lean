@@ -23,6 +23,9 @@ inductive QuoteKind where
   | bracket
   /-- An identifier in backticks, such as {lit}`` `a` ``. -/
   | backtick
+  /-- A string in single quotes where the grammar expects a name, such as {lit}`t.'a'`. An
+  expression never holds an identifier of this kind: a string there is a literal. -/
+  | single
   deriving Repr, DecidableEq
 
 /-- One name token of a source text. Its {lit}`start` and {lit}`stop` are byte offsets in the
