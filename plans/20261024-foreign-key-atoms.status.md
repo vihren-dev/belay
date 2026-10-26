@@ -7,7 +7,8 @@ Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` fo
 Part 2 is implemented and passed `just test-full` and `just verdict` (section "Part-2 acceptance"
 at the end): the ADD COLUMN execution correction, the ADD COLUMN preservation laws, the run
 contracts of the schema statements, the matrix in ADR 0022 and the action and DDL necessity
-fixtures. Separate corpus-v54 evidence (the judge change) and the whole-task checks remain open.
+fixtures. The corpus-v54 evidence (the judge change, PR #262) and the whole-task checks are complete
+(section "Done (2026-10-26)" at the end).
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
