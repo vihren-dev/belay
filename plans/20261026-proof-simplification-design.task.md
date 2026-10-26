@@ -3,7 +3,7 @@
 Date: 2026-10-26. Status: IN PROGRESS. Audience: the implementation team.
 Owner request: create a separate workspace, run experiments, and prepare ADRs
 and tasks for simplifying the model's theorem and proof API before implementation.
-Status: [design record](20261026-proof-simplification-design.status.md).
+Record: [design record](20261026-proof-simplification-design.status.md).
 
 ## Required outcome
 

@@ -12,6 +12,8 @@ Workspace: `/home/codex/work/sqlite-verifier-proof-simplification`.
 - The owner authorizes replacing public theorem contracts; there are no users
   requiring compatibility aliases. Mathematical guarantees remain explicit.
 - Implementation of production refactors has not started.
+- The initial task review found no must findings and one wording issue. The
+  task now labels its status-file link as a record to avoid two status headings.
 
 ## Acceptance evidence
 
