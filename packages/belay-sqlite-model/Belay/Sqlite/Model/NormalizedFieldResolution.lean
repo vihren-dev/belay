@@ -105,7 +105,7 @@ theorem resolve_lower_column {dqs : Bool} {tableName name : Identifier}
     resolveOperand dqs (Scope.single tableName columns rowid) {} true
       (.call "lower" [.identifier name .none]) =
       .ok (.scalar .lower (.cons (.column source) .nil), none) := by
-  rw [resolveOperand, resolveArguments, resolveOperand_identifier_single found]
+  rw [resolveOperand_arm_call, resolveArguments_arm_cons, resolveArguments_arm_nil, resolveOperand_identifier_single found]
   rfl
 
 end Belay.Sqlite.Model.NormalizedField

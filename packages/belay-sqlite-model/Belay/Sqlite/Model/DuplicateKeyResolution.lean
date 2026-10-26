@@ -57,7 +57,7 @@ theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : Subque
     resolveOperand dqs scope shapes false (.compare .gt (.callStar name) (.numeric "1")) =
       .ok (.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary, none) := by
   have literal : queryNumeric "1" false = .ok (.integer 1) := by rfl
-  simp [resolveOperand, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
+  simp [traced_arms, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
     comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, Bind.bind, Except.bind]
   rfl
 

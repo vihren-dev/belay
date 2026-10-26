@@ -125,7 +125,7 @@ theorem resolveOperand_tableInfo_name (dqs : Bool) (reference : Syntax.TableRefe
     (rows : List (List Value)) (quote : Syntax.QuoteKind) (shapes : SubqueryShapes) (misuse : Bool) :
     resolveOperand dqs (tableInfoScope reference argument rows) shapes misuse (.identifier (name! "name") quote) =
       .ok (.column 1, some .blob) := by
-  simp only [resolveOperand, tableInfoScope_resolveName_name]
+  simp only [traced_arms, tableInfoScope_resolveName_name]
   simp [Scope.nameRead, Scope.nameOperand, Scope.affinityAt, tableInfoScope, pragmaSource, Scope.place, Scope.argumentCell,
     Scope.triggerCell, Scope.columns, tableInfoNames, CatalogColumn.affinity, affinityOf]
 

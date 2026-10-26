@@ -9,33 +9,14 @@ resolved statement. A trace lists the occurrences in the order in which the reso
 
 namespace Belay.Sqlite.Model
 
-/-- What kind of object a source of a scope is. -/
-inductive SourceKind where
-  /-- A table of the catalog. -/
-  | baseTable
-  /-- A table of the fixed initial database of a two-state query, written {lit}`before.t`. -/
-  | initialTable
-  /-- A stored view of the catalog. -/
-  | storedView
-  /-- A {lit}`WITH` definition of the statement. -/
-  | commonTable
-  /-- A subquery in {lit}`FROM`. -/
-  | derivedTable
-  /-- A table-valued function such as {lit}`json_each`, or a table-valued pragma. -/
-  | tableFunction
-  /-- The row that an upsert proposed, named {lit}`excluded`. -/
-  | proposedRow
-  /-- The {lit}`NEW` or {lit}`OLD` row of a trigger. -/
-  | triggerRow
-  deriving Repr, DecidableEq
-
 /-- One source of a scope as a name sees it. -/
 structure SourceRef where
   /-- What the source is. -/
   kind : SourceKind
   /-- The name that qualifies its columns: the alias as written, else the table name as declared. -/
   name : Identifier
-  /-- The position of the source in the scope, counted from the outermost query. -/
+  /-- The position of the source among the sources of its query, in the order of its {lit}`FROM`
+  list; the {lit}`depth` tells which query that is. -/
   index : Nat
   /-- How many queries out the source is: 0 for a source of the query that holds the name. -/
   depth : Nat

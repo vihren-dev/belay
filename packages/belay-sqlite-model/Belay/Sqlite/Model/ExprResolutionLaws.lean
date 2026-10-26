@@ -65,7 +65,7 @@ theorem resolveOperand_identifier_single {name : Identifier} {quote : Syntax.Quo
     {columns : List CatalogColumn} {hasRowid : Bool} {index : Nat} (found : columnPosition columns name = some index) :
     resolveOperand dqs (Scope.single source columns hasRowid) shapes misuse (.identifier name quote) =
       .ok (.column index, columns[index]?.map CatalogColumn.affinity) := by
-  simp only [resolveOperand, resolveName_one_source found]
+  simp only [traced_arms, resolveName_one_source found]
   simp [Scope.nameRead, Scope.nameOperand, Scope.affinityAt, Scope.single, Scope.argumentCell, Scope.triggerCell, Scope.columns]
 
 /-- A name of a column of the table at a catalog position resolves to the column at its position,
@@ -95,7 +95,7 @@ theorem resolveOperand_compare {operator : Comparison} (left right : Syntax.Expr
   have plain : ∀ b : Resolved.Expr, truthTest operator right b = false := by
     intro b
     cases operator <;> simp_all [truthTest]
-  simp [resolveOperand, plain]
+  simp [traced_arms, plain]
 
 /-- {lit}`x COLLATE c` with a collation name that the model knows resolves as {lit}`x` does, and an
 issue of {lit}`x` is under position 0. A collation name that the model does not know is not covered. Proof
@@ -104,7 +104,7 @@ theorem resolveOperand_collate (operand : Syntax.Expr) {name : Identifier}
     (known : (Collation.named? name).isNone = false) :
     resolveOperand dqs scope shapes misuse (.collate operand name) =
       (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0]) := by
-  simp [resolveOperand, known, Bind.bind, Except.bind]
+  simp [traced_arms, known, Bind.bind, Except.bind]
   cases resolveOperand dqs scope shapes misuse operand <;> rfl
 
 /-- {lit}`x AND y` resolves both operands as conditions and is the {lit}`AND` of the two
@@ -115,7 +115,7 @@ theorem resolveOperand_and (left right : Syntax.Expr) :
       let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
       let b ← condition [1] (resolveOperand dqs scope shapes misuse right)
       .ok (.and a b, none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- {lit}`x OR y` resolves both operands as conditions and is the {lit}`OR` of the two
 expressions, without affinity. An issue of the left operand is under position 0 and an issue of the right
@@ -125,7 +125,7 @@ theorem resolveOperand_or (left right : Syntax.Expr) :
       let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
       let b ← condition [1] (resolveOperand dqs scope shapes misuse right)
       .ok (.or a b, none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- {lit}`NOT x` resolves its operand as a condition and is the {lit}`NOT` of the expression,
 without affinity. An issue of the operand is under position 0. Proof sketch: the definition of the resolver. -/
@@ -133,7 +133,7 @@ theorem resolveOperand_not (operand : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.not operand) = (do
       let a ← condition [0] (resolveOperand dqs scope shapes misuse operand)
       .ok (.not a, none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- {lit}`x IS NULL` and {lit}`x IS NOT NULL` resolve the operand and test the expression, without
 affinity. An issue of the operand is under position 0. Proof sketch: the definition of the resolver. -/
@@ -141,7 +141,7 @@ theorem resolveOperand_isNull (operand : Syntax.Expr) (negated : Bool) :
     resolveOperand dqs scope shapes misuse (.isNull operand negated) = (do
       let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
       .ok (.isNull a.1 negated, none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- {lit}`x BETWEEN low AND high` resolves the three operands and is {lit}`x >= low AND x <= high`,
 each comparison with its own affinity and collation. The operands are resolved in the order {lit}`x`,
@@ -154,7 +154,7 @@ theorem resolveOperand_between (operand low high : Syntax.Expr) :
       let h ← (resolveOperand dqs scope shapes misuse high).mapError (·.under [2])
       .ok (.and (.compare .ge (comparisonAffinity a.2 l.2) a.1 l.1 (comparisonCollation scope operand low))
         (.compare .le (comparisonAffinity a.2 h.2) a.1 h.1 (comparisonCollation scope operand high)), none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- {lit}`x NOT BETWEEN low AND high` is the {lit}`NOT` of {lit}`x BETWEEN low AND high`
 ({name}`resolveOperand_between`), with the same issues. Proof sketch: the definition of the resolver. -/
@@ -165,7 +165,7 @@ theorem resolveOperand_not_between (operand low high : Syntax.Expr) :
       let h ← (resolveOperand dqs scope shapes misuse high).mapError (·.under [2])
       .ok (.not (.and (.compare .ge (comparisonAffinity a.2 l.2) a.1 l.1 (comparisonCollation scope operand low))
         (.compare .le (comparisonAffinity a.2 h.2) a.1 h.1 (comparisonCollation scope operand high))), none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- A {lit}`WHERE` term that names no alias and resolves to an operand resolves to the expression of
 the operand, as {name}`FilterResolves` says. Proof sketch: the second disjunct of the definition. -/

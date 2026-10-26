@@ -15,14 +15,14 @@ variable {dqs : Bool} {scope : Scope} {shapes : SubqueryShapes} {misuse : Bool}
 subquery. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_exists {index : Nat} {shape : SubqueryShape} (found : shapes.find index = some shape) :
     resolveOperand dqs scope shapes misuse (.exists index) = .ok (.exists index, none) := by
-  simp [resolveOperand, found]
+  simp [traced_arms, found]
 
 /-- A scalar subquery resolves to its value, with the affinity of its result column, when the shapes know
 the subquery as one with one result column. Proof sketch: the definition of the resolver, with
 the shape of the subquery. -/
 theorem resolveOperand_subquery {index : Nat} {shape : SubqueryShape} (found : shapes.column index = .ok shape) :
     resolveOperand dqs scope shapes misuse (.subquery index) = .ok (.subquery index, shape.affinity) := by
-  simp [resolveOperand, found, Except.map]
+  simp [traced_arms, found, Except.map]
 
 /-- {lit}`x [NOT] IN (q)` resolves the operand and reads the one result column of the subquery
 ({name}`SubqueryShapes.column`); it compares under the affinity of the two
@@ -34,7 +34,7 @@ theorem resolveOperand_inQuery (operand : Syntax.Expr) (index : Nat) (negated : 
       let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
       let shape ← shapes.column index
       .ok (.inQuery a.1 index (comparisonAffinity a.2 shape.affinity) (inCollation scope operand shape) negated, none)) := by
-  simp [resolveOperand]
+  simp [traced_arms]
 
 /-- For a statement with one subquery whose shape has no parent, the only subquery is known to the
 statement's own query: its shapes find index 0. Proof sketch: the base of the shapes of the statement's

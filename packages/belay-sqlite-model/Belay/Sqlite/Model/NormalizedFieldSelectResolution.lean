@@ -54,7 +54,7 @@ comparison affinity. Proof sketch: resolve the one argument, then reduce the kno
 theorem resolve_lower_parameter {dqs : Bool} (scope : Scope) (number : Nat) :
     resolveOperand dqs scope {} true (.call "lower" [.parameter number]) =
       .ok (.scalar .lower (.cons (.parameter number) .nil), none) := by
-  rw [resolveOperand, resolveArguments, resolveOperand_parameter]
+  rw [resolveOperand_arm_call, resolveArguments_arm_cons, resolveArguments_arm_nil, resolveOperand_parameter]
   rfl
 
 /-- In the scope of one table, the written filter {lit}`lower(source) = lower(?n)` resolves to

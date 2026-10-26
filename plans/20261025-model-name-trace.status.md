@@ -64,7 +64,12 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
   projection lemmas, `resolveOperand` and its mutual functions, the clause and
   source resolvers, subqueries and compounds, the write resolvers, then
   `resolveStatementTraced` and the projection law.
-- Proof repairs are counted here: so far none.
+- Proof repairs are counted here. Layer 1 (the monad `Traced` and the operand
+  resolution): 5 manual changes (a `rw` that used the old equation of
+  `resolveOperand` or `resolveArguments`, now the equation lemmas
+  `resolveOperand_arm_call` and `resolveArguments_arm_cons`; the negation arm of
+  `ResolveReadsBelow`) and about 42 mechanical line changes (`resolveOperand` in a
+  simp list became `traced_arms`). Total so far 47 of the limit of about 80.
 - Tests: kernel `#guard` examples; a Lean surface fixture and pytest check that
   each exact path selects the name token.
 - Prediction files: baseline `build/predictions-baseline` (55 files), compared
@@ -77,3 +82,12 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 
 Compound ORDER BY terms are in the coverage (`resolveCompoundOrderBy` resolves
 them through result-alias lookup and `resolveOperand`).
+
+- 2026-10-26: layer 1 done in the working copy: `Traced` (the monad with the trace
+  that survives errors), the operand resolution threaded with the trace
+  (`resolveOperandTraced`, `resolveArgumentsTraced`, `resolveCaseTraced`),
+  `resolveOperand` and its mutual functions as their projections, the arm
+  equations (`traced_arms`) that the old proofs use, and kernel examples
+  (`Resolution/NameTraceExamples.lean`). `SourceRef.index` is the position among
+  the sources of the same depth (the position in the `FROM` list). The full model
+  and `just dev-build` pass.
