@@ -22,6 +22,24 @@ def test_interfaces_translation_and_simulations_hold_for_applications(runtime_ro
     check_module_chain(runtime_root, tmp_path, (("ApplicationShop", 5), ("ApplicationSimulations", 7)))
 
 
+def test_restricted_domain_needs_the_domain_condition(runtime_root: Path, tmp_path: Path) -> None:
+    """The domain condition of the full-state simulation is needed. A migration that stores the clock
+    of its statement commutes with one read at the start context, because the clock is the same at
+    statements 0 and 1. The read leaves the start context, so no simulation exists over it, and the
+    application with two reads does not commute with the migration. Every theorem uses only logical
+    axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ApplicationRestrictedDomain", 4),))
+
+
+def test_application_branches_keep_choices_errors_stops_and_snapshots(runtime_root: Path, tmp_path: Path) -> None:
+    """The branches of an application are the branches of its program. A raw choice between results
+    leads to the default call, and each concrete alternative leads to another call. A modeled error is
+    an output followed by the next call. A stop ends the application before the next call. A relation
+    that names the transaction snapshot tells apart two programs with equal outputs, and a relation
+    that ignores it does not. Every theorem uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ApplicationBranchKinds", 7),))
+
+
 def test_interface_mistakes_are_diagnosed_where_they_are_written(runtime_root: Path, tmp_path: Path) -> None:
     """Lean rejects each mistake of an interface, pairing or application at its own line: a call
     outside the interface, an argument of the wrong type, a missing entry, an entry with another
