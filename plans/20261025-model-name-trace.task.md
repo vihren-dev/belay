@@ -1,6 +1,6 @@
 # Model name trace: what each name of a statement resolved to
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE (2026-10-26).
 Status: [progress](20261025-model-name-trace.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), the editor requirements of S1;
 [editor task](20261024-surface-editor.task.md), section "Part 2a and the model

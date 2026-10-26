@@ -1,6 +1,6 @@
 # Status: model name trace
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE (2026-10-26).
 Task: [task file](20261025-model-name-trace.task.md).
 Specs: ADR 0017 S1 editor requirements; [editor task](20261024-surface-editor.task.md).
 
@@ -200,6 +200,9 @@ module `SingleSourceNameLaws`.
   (checked by compiling each mutated file against the built model; the mutant suites themselves run
   daily in CI). `tests/surface_name_trace_test.py` is owned by the `surface` suite in
   `tests/nix_suites.json`, because its fixture needs the shared libraries of that suite.
+- Surface-proof commit (`75a083ca`, review 22): a must (R2, the new arm `resolveGroupTerm_collate`
+  lacked a docstring) and a should (R19, the status cited local results) were fixed in `adcfbbd9`
+  (review 23: no findings).
 
 ## Proof repairs and consumer proofs (2026-10-26)
 
@@ -216,3 +219,17 @@ module `SingleSourceNameLaws`.
   `SuccessBalanceMissing` unfold the traced forms (`traced_drop`, `traced_arms`) in place of the
   old ones. The four claim fixtures needed only the new sql_simp laws. These are consumer proofs, not
   repairs inside the model; they are not counted in the 73 + 99 repairs of the model.
+
+## Gates (2026-10-26, all passed, Nix results)
+
+- `just test-full`: test reports `/nix/store/csv3ss69xfc0jf4kkjcrpk4knbffvp92-sqlite-verifier-test-reports`;
+  public documentation inventory
+  `/nix/store/biybhq1ii9822bflbgrnzlqgni5w2way-sqlite-verifier-public-documentation-1`.
+- `just verdict`: `/nix/store/96df20rk29bv9bjkywh6ialk4v2waz6l-sqlite-verifier-verdict`.
+- `just test-nix`: 71 passed (`requires_nix` tests).
+- `just test-scheduled-checks`:
+  `/nix/store/walhg9m56ar02m26xlpvhd01siiqg7bh-sqlite-verifier-scheduled-check-reports`.
+
+## DONE
+
+All required outcomes of the task file hold; the task is DONE.
