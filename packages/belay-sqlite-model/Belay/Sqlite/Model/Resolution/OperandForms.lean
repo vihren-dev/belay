@@ -67,7 +67,7 @@ def qualifiedTraced (scope : Scope) (source column : Identifier) (schema : Optio
     let candidates := scope.ambiguousCandidates column (some source) schema
     let chosen := match candidates with
       | .column binding :: _ => some binding.source
-      | _ => none
+      | .resultAlias .. :: _ | .source _ :: _ | [] => none
     Traced.recordAll (scope.qualifierOccurrences source schema chosen)
     Traced.record (Scope.columnOccurrence column (.ambiguous candidates))
     throw (.prepare (.ambiguousColumn (qualifiedName schema source column)))

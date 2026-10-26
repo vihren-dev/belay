@@ -52,6 +52,20 @@ private def foundNameIsBound : Bool := (match onlyResult (traced true tableT (id
 
 #guard foundNameIsBound
 
+/-- Where a result alias is legal, a name that no column has lists the aliases after the columns, in
+the order of the result columns, and a result column without an alias is skipped. -/
+private def missingNameListsAliasesAfterColumns : Bool :=
+  (match (identifierTraced true tableT (name "z") .none
+      (aliasCandidates [some (name "x"), none, some (name "y")])).trace with
+    | [occurrence] =>
+      (match occurrence.result with
+        | .missing .error [.column first, .column second, .resultAlias x 0, .resultAlias y 2] =>
+          first.column.name == name "a" && second.column.name == name "b" && x == name "x" && y == name "y"
+        | _ => false)
+    | _ => false)
+
+#guard missingNameListsAliasesAfterColumns
+
 /-- A name that no column has is missing, with all columns as candidates, and the traced resolution
 fails as {lit}`no such column`. -/
 private def missingNameFails : Bool := (match (traced true tableT (identifier "z")).trace, (traced true tableT (identifier "z")).drop with
