@@ -63,3 +63,8 @@ tasks/status files, eight checked experiment modules, their reproducible Nix
 target, and an exact deletion inventory. The implementation tasks remain READY,
 not DONE. The final documentation clarification commit receives the usual
 independent commit review; its record is retained with this workspace.
+
+Final review: Claude reviewed `6915dc4e` with no findings
+(`reviews/20261026T090601Z-6915dc4e/review.json`). All required design reviews
+are complete. The Nix experiment inputs are unchanged since the accepted result.
+No design question or experiment failure remains pending.
