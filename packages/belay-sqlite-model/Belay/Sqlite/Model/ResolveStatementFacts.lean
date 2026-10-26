@@ -42,6 +42,14 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
     exact plain _ ok fun _ _ found => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found
   case addColumn =>
     exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ _ found
+  case renameTable =>
+    exact plain _ ok fun _ _ found => by
+      obtain ⟨_, _, rfl⟩ := resolveRenameTable_unchanged _ _ _ _ _ found
+      trivial
+  case renameColumn =>
+    exact plain _ ok fun _ _ found => by
+      obtain ⟨_, _, rfl⟩ := resolveRenameColumn_unchanged _ _ _ _ _ _ found
+      trivial
   case dropTable =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
   case dropView =>

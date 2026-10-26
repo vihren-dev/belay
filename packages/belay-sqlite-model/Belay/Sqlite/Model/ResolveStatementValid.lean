@@ -74,6 +74,16 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_valid _ _ _ _ _ _ _ current (by assumption))
+  | renameTable table newName =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨same, _⟩ := resolveRenameTable_unchanged _ _ _ _ _ (by assumption)
+    exact keep _ (same ▸ current)
+  | renameColumn table column newName columnToken quoted =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨same, _⟩ := resolveRenameColumn_unchanged _ _ _ _ _ _ (by assumption)
+    exact keep _ (same ▸ current)
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found

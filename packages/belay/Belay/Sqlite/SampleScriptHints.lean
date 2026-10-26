@@ -55,7 +55,7 @@ def statementHints : Syntax.Statement → SchemaHints
   | .delete table filter returning subqueries => writeHints table [] filter.toList returning subqueries
   | .createIndex _ _ table terms filter =>
     writeHints table [] (terms.map (·.expression) ++ filter.toList) [] []
-  | .createTable .. | .createView .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback
+  | .createTable .. | .createView .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback
   | .pragma _ | .createTrigger .. | .dropTrigger .. => {}
 
 /-- Infer names and literal/bound values from each script statement in order. Bindings are

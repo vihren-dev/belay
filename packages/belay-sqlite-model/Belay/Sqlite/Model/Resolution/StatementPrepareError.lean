@@ -62,6 +62,19 @@ inductive PrepareError where
   | viewNotIndexed
   /-- {lit}`Cannot add a column to a view` ({lit}`sqlite3AlterBeginAddColumn`). -/
   | viewAddColumn
+  /-- {lit}`there is already another table or index with this name: %s` ({lit}`sqlite3AlterRenameTable`):
+  a table, view or index has the new name, also the renamed table itself under another letter case.
+  The name is the new name as written. -/
+  | renameTargetTaken (name : Identifier)
+  /-- {lit}`view %s may not be altered` ({lit}`sqlite3AlterRenameTable`). The name keeps the
+  catalog's declared spelling. -/
+  | viewNotAltered (name : Identifier)
+  /-- {lit}`cannot rename columns of view "%s"` ({lit}`isRealTable` of
+  {lit}`sqlite3AlterRenameColumn`). The name keeps the catalog's declared spelling. -/
+  | viewColumnsNotRenamed (name : Identifier)
+  /-- {lit}`no such column: "%T"` ({lit}`sqlite3AlterRenameColumn`): the table has no column of the
+  old name. The text is the token of the statement with its quotes, as SQLite prints it. -/
+  | renameNoSuchColumn (token : String)
   /-- {lit}`cannot create BEFORE trigger on view: %S` or {lit}`cannot create AFTER trigger on view: %S`
   ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
   The name is the name as written. -/

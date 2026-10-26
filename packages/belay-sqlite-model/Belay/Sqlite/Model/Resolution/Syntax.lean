@@ -96,6 +96,16 @@ inductive Statement where
       (filter : Option Expr)
   /-- {lit}`ALTER TABLE table ADD COLUMN column`. -/
   | addColumn (table : Identifier) (column : ColumnDefinition)
+  /-- {lit}`ALTER TABLE table RENAME TO newName` (ADR 0019, D4). The table is path step 0 and the
+  new name step 1. SQLite always writes the new name quoted into the stored text, so the form needs
+  no quoting flag. -/
+  | renameTable (table newName : Identifier)
+  /-- {lit}`ALTER TABLE table RENAME [COLUMN] column TO newName` (ADR 0019, D4). The table is path
+  step 0, the column step 1 and the new name step 2. {lit}`columnToken` is the old column name as the
+  statement spells it, with its quotes, because SQLite prints that token in
+  {lit}`no such column: "token"`. {lit}`quoted` is true when the new name is written with a
+  quote, which makes SQLite quote it in every stored text that it rewrites. -/
+  | renameColumn (table column newName : Identifier) (columnToken : String) (quoted : Bool)
   /-- {lit}`DROP TABLE [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
   {lit}`IF EXISTS`. -/
   | dropTable (name : Identifier) (ifExists : Bool)

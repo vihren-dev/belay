@@ -41,6 +41,11 @@ instance : Lean.ToJson PrepareError where
     | .viewModify name => Lean.Json.mkObj [("viewModify", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .viewNotIndexed => Lean.Json.str "viewNotIndexed"
     | .viewAddColumn => Lean.Json.str "viewAddColumn"
+    | .renameTargetTaken name => Lean.Json.mkObj [("renameTargetTaken", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewNotAltered name => Lean.Json.mkObj [("viewNotAltered", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewColumnsNotRenamed name =>
+      Lean.Json.mkObj [("viewColumnsNotRenamed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .renameNoSuchColumn token => Lean.Json.mkObj [("renameNoSuchColumn", Lean.Json.mkObj [("token", Lean.toJson token)])]
     | .viewTrigger before name =>
       Lean.Json.mkObj [("viewTrigger", Lean.Json.mkObj [("before", Lean.toJson before), ("name", Lean.toJson name)])]
     | .expression error => Lean.toJson error

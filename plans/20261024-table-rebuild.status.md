@@ -343,3 +343,27 @@ rebuild proof is separate.
   `just verdict` passes with no DISAGREE, output
   `/nix/store/3lqr3pxr2xk5gbfdmbzwfr8rg1al1dpm-sqlite-verifier-verdict`, predictions
   `/nix/store/07yg9qqpjvv7z1kznsqsbw5hzqfv6ysh-sqlite-verifier-predictions` (identical to `build/predictions-b3`).
+
+### Part 2, unit 2.1: rename syntax, SQLite-ordered prepare errors, temporary restriction
+
+- New syntax `Statement.renameTable table newName` and `Statement.renameColumn table column newName
+  columnToken quoted` (`columnToken` is the old column name as written, `quoted` tells whether the new name
+  was written with a quote). The translator `Translation/Renames.lean` maps the two productions (an
+  unqualified table name only); `ALTER TABLE ... DROP COLUMN` stays unsupported until part 3.
+- `Resolution/Renames.lean`: `resolveRenameTable` and `resolveRenameColumn` give the prepare errors in the order
+  that native SQLite 3.51.0 gives them (probes in the task file): no such table; new name taken
+  (`renameTargetTaken`); system table; reserved new name; view (`viewNotAltered` for RENAME TO,
+  `viewColumnsNotRenamed` for RENAME COLUMN); no such column (`renameNoSuchColumn` prints the token as written).
+  A rename that passes all checks is the new restriction `alter-rename` until unit 2.5 models the rewrite.
+- Laws in `Resolution/RenameSpec.lean` (catalog unchanged, a step of `CatalogStep.same`); the new arms of the
+  spec files (`NamesSpec`, `ResolveStateSpec`, `ResolveStatementValid`, `ResolveStatementFacts`,
+  `ResolveStatementSingle`, `TransactionSpec`) use them. Exhaustive-match arms in the editor modules of
+  `packages/belay` (`SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings`, `SqlTableOrigins`) and
+  `SampleScriptHints` are the minimal ones; `SqlTableSlots` gives the two statements the slot of their table.
+- Tests: `RenameExamples.lean` (kernel `#guard` checks of the error order and the restriction),
+  `tests/syntax_mapping_test.py`, `conformance/restriction_examples.py` (example of `alter-rename`),
+  `tests/surface/DbBangErrors.lean` (the message that lists the modeled statements).
+- Checks: model, `just dev-build`, translator and conformance-runner builds pass; the focused tests
+  (`syntax_mapping`, `conformance_restriction_examples`, `restriction_registry`, `docs`, `resolution_cleanup`,
+  `syntax_*` of schemas, drops, names, views and triggers) pass. Manual proof repairs in this unit: 0 (new
+  cases only).

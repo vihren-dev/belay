@@ -79,7 +79,8 @@ def PrepareError.viewModified? : PrepareError → Option Identifier
   | .viewVariables | .tableExists _ | .viewExists _ | .indexNameUsed _ | .tableNameUsed _
   | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
   | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
-  | .noSuchTrigger _ | .triggerExists _ | .viewNotIndexed | .viewAddColumn | .viewTrigger ..
+  | .noSuchTrigger _ | .triggerExists _ | .viewNotIndexed | .viewAddColumn | .viewTrigger .. | .renameTargetTaken _
+  | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _
   | .expression _ => none
 
 /-- Whether a resolved statement is the refusal of a write to a view

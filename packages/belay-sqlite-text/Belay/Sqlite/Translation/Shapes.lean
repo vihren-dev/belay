@@ -9,7 +9,7 @@ namespace Belay.Sqlite.Translation
 
 /-- The corrective action for a production that has no syntax constructor. -/
 def modeledForms : String :=
-  "rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, " ++
+  "rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, ALTER TABLE RENAME, " ++
   "BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES, UPDATE ... SET ... [WHERE column = value] and " ++
   "SELECT ... FROM table [WHERE] [GROUP BY] [ORDER BY] [LIMIT]"
 

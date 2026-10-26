@@ -35,7 +35,7 @@ moves the positions of the objects after it. Only a query, a transaction stateme
 leave the rows as they were; a later {lit}`ROLLBACK` follows the write that it undoes. -/
 def mayChangeRows : Syntax.Statement → Bool
   | .select .. | .begin | .commit | .rollback | .pragma _ => false
-  | .insert .. | .insertSelect .. | .update .. | .delete .. | .dropTable .. | .createTable .. | .addColumn ..
+  | .insert .. | .insertSelect .. | .update .. | .delete .. | .dropTable .. | .createTable .. | .addColumn .. | .renameTable .. | .renameColumn ..
   | .createView .. | .createIndex .. | .dropView .. | .dropIndex .. | .createTrigger ..
   | .dropTrigger .. => true
 

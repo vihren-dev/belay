@@ -52,6 +52,16 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
 
 
+def test_renames_keep_names_and_the_spelling_of_the_column_tokens(parse_sql: Callable[..., Translation]) -> None:
+    """RENAME TO and RENAME COLUMN map without a schema name; the old column name stays as written, with its
+    quotes, and the new name records whether it was written with a quote."""
+    sql = ('ALTER TABLE "T" RENAME TO u; ALTER TABLE t RENAME COLUMN [Old] TO "New"; ALTER TABLE t RENAME a TO b;')
+    assert mapped(parse_sql, sql) == [
+        {"renameTable": {"table": "T", "newName": "u"}},
+        {"renameColumn": {"table": "t", "column": "Old", "newName": "New", "columnToken": "[Old]", "quoted": True}},
+        {"renameColumn": {"table": "t", "column": "a", "newName": "b", "columnToken": "a", "quoted": False}}]
+
+
 def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Translation]) -> None:
     """`COLLATE` maps on a column, quoted or not, and as an expression, also in `ORDER BY` and
     an index term, with the name as written; resolution decides what the name means
@@ -101,7 +111,8 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),
     ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
     ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
-    ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
+    ("ALTER TABLE t DROP COLUMN a;", "ALTER TABLE t DROP COLUMN a"),
+    ("ALTER TABLE main.t RENAME TO u;", "main.t"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "SELECT 1"),
     ("INSERT INTO t VALUES (a & 1);", "a & 1"), ("UPDATE t SET a = 1 WHERE a IN u;", "a IN u"),
     ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),
@@ -116,7 +127,7 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
 
 
 @pytest.mark.parametrize(("sql", "advice"), [
-    ("ALTER TABLE t RENAME TO u;", "rewrite it with the modeled forms: CREATE TABLE"),
+    ("ALTER TABLE t DROP COLUMN a;", "rewrite it with the modeled forms: CREATE TABLE"),
     ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
     ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "write INSERT ... VALUES (...)"),
     ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),

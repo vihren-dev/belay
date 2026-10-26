@@ -1,6 +1,7 @@
 import Belay.Sqlite.Parse
 import Belay.Sqlite.ParserLibrary
 import Belay.Sqlite.Translation.Schema
+import Belay.Sqlite.Translation.Renames
 import Belay.Sqlite.Translation.Tables
 import Belay.Sqlite.Translation.Triggers
 import Belay.Sqlite.Translation.Views
@@ -39,6 +40,9 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
   if symbols == ["create_table", "create_table_args"] then return ← createTable tree command
   if symbols.take 3 == ["createkw", "uniqueflag", "INDEX"] then return ← createIndex tree command
   if symbols.take 3 == ["createkw", "temp", "VIEW"] then return ← createView tree command
+  if symbols == ["ALTER", "TABLE", "fullname", "RENAME", "TO", "nm"] then return ← renameTable tree command
+  if symbols == ["ALTER", "TABLE", "fullname", "RENAME", "kwcolumn_opt", "nm", "TO", "nm"] then
+    return ← renameColumn tree command
   if symbols.take 2 == ["ALTER", "TABLE"] then return ← addColumn tree command
   if symbols == ["createkw", "trigger_decl", "BEGIN", "trigger_cmd_list", "END"] then return ← createTrigger tree command
   if [["DROP", "TABLE"], ["DROP", "VIEW"], ["DROP", "INDEX"], ["DROP", "TRIGGER"]].contains (symbols.take 2) then
@@ -56,7 +60,7 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
       command.start command.stop (clauses.selectSpans subqueries)
   if symbols.take 1 == ["PRAGMA"] then return ← pragma tree command
   unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE VIEW, CREATE INDEX, " ++
-    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
+    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, ALTER TABLE RENAME, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
     "ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys")
 
 /-- One command as a statement with its parameter tokens: the tokens are numbered first

@@ -278,6 +278,8 @@ import Belay.Sqlite.Model.Resolution.StatementTraced
 import Belay.Sqlite.Model.Resolution.StatementAttr
 import Belay.Sqlite.Model.Resolution.WriteTracedLaws
 import Belay.Sqlite.Model.Resolution.InsertQueries
+import Belay.Sqlite.Model.Resolution.Renames
+import Belay.Sqlite.Model.Resolution.RenameSpec
 import Belay.Sqlite.Model.Resolution.ResolveStatement
 import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
