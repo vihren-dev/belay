@@ -31,4 +31,7 @@ modules (681 model/codec, 203 surface, 29 text, 15 conformance) and exports
 31,098 declarations plus 2,615 external boundary nodes. Counts include generated
 declarations. Final artifact paths will be recorded after completion checks.
 
-The implementation commit review and standard task-completion checks are pending.
+The implementation review found no must findings and one documentation issue:
+the public guide used an internal task label for proof-cost JSON. The guide and
+CLI help now give the command that creates the report. Standard completion
+checks and review of this correction are pending.
