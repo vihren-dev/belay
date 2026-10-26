@@ -33,7 +33,9 @@ Workspace: `/home/codex/work/sqlite-verifier-theorem-dependencies`.
 The focused Nix suite passed all 27 tests. A Nix report covers all 928 selected
 modules (681 model/codec, 203 surface, 29 text, 15 conformance) and exports
 31,098 declarations plus 2,615 external boundary nodes. Counts include generated
-declarations. Final artifact paths will be recorded after completion checks.
+declarations. The report and its complete JSON data are at
+`/nix/store/qlc4jzjxq83i9s8lkj5kxl80bgxhizfn-sqlite-verifier-theorem-dependencies`.
+The workspace links that output at `build/theorem-dependencies`.
 
 The implementation review found no must findings and one documentation issue:
 the public guide used an internal task label for proof-cost JSON. The guide and
@@ -41,11 +43,23 @@ CLI help now give the command that creates the report. The correction review
 had no findings. The packaging simplification passed the 27-test Nix suite at
 `/nix/store/vsyxsqqxjln57s0li149h98xilq7726x-sqlite-verifier-test-theoremDependencies-1`.
 
-The verdict and scheduled checks passed. An initial full run hit the existing
-documentation inventory's 60-second deadline during concurrent cold builds.
 The packaging review had no findings. Full source checks identified the missing
-Lean build-category entries for the directly executed exporter and its fixtures;
-their exact paths are now registered in the existing direct-fixture category.
-The first infrastructure run completed its cold local build but reached the
-outer recipe deadline. It is rerunning with that build available. Final full
-checks and infrastructure checks are pending.
+Lean build-category entries for the directly executed exporter and its fixtures.
+Their exact paths are now registered in the existing direct-fixture category;
+the correction review had no findings.
+
+The verdict passed at
+`/nix/store/pv8yv3gjwkbwli4bd5h3akpf50ysnrhi-sqlite-verifier-verdict`.
+The scheduled check report passed at
+`/nix/store/id752rh1ffdllb1v7dw9xszj4jbfyhy1-sqlite-verifier-scheduled-check-reports`.
+Infrastructure checks completed. No semantic mutant table changed.
+
+The full Nix run reached 96% of the existing 407-case surface suite without an
+assertion failure, then hit that suite's 1,200-second limit. The same issue is
+already fixed by the reviewed `tasks/surface-suite-split` branch. Integration of
+that existing fix and completion of the full check are pending.
+
+Initial validation hit the documentation inventory's 60-second deadline during
+concurrent cold builds and the infrastructure recipe's outer deadline after a
+cold local build. The final runs use the unchanged documentation package and
+available build artifacts; neither timeout required a test-policy change.
