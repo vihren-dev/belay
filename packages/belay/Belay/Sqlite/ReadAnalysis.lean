@@ -73,10 +73,12 @@ def ReadAnalysis.analyze (width : Nat) : Resolved.Statement → ReadAnalysis.Res
             else .unknown .notCalm
           else .unknown .readsBeyondWidth
         else .unknown .notSimpleTableRead
-      | _ => .unknown .notSimpleTableRead
-    | _ => .unknown .notSimpleTableRead
-  | .query _ _ => .unknown .hasSubqueries
-  | _ => .unknown .notQuery
+      | .initialTable _ | .each .. | .subquery .. | .pragma _ => .unknown .notSimpleTableRead
+    | [] | _ :: _ :: _ => .unknown .notSimpleTableRead
+  | .query _ (_ :: _) => .unknown .hasSubqueries
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
+  | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _ | .setting .. =>
+    .unknown .notQuery
 
 /-- For every width and resolved statement: if the analysis certifies the statement with a certificate, then
 the certificate is valid, its width is the given width, and the statement is the statement of the certificate

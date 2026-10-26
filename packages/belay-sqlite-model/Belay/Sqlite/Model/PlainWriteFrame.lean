@@ -18,7 +18,9 @@ triggers and foreign keys. Any other statement, including a write with rules, ha
 write with a trigger can change a second table, so it has no plain target. -/
 def Resolved.Statement.plainWriteTarget : Resolved.Statement → Option Nat
   | .insert target _ _ _ none | .update target _ _ _ _ none | .delete target _ _ _ none => some target
-  | _ => none
+  | .insert _ _ _ _ (some _) | .update _ _ _ _ _ (some _) | .delete _ _ _ _ (some _) => none
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
+  | .commit | .rollback | .upsert .. | .prepareError _ | .query .. | .setting .. => none
 
 /-- For every database, target, keys, table, supplied rows and result table: a failed write of the
 result gives an error that keeps the input database and has the reason

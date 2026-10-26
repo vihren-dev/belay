@@ -380,6 +380,7 @@ import Belay.Sqlite.Model.CertifiedQueryOutputs
 import Belay.Sqlite.Model.AddColumnEffect
 import Belay.Sqlite.Model.NonQueryOutput
 import Belay.Sqlite.Model.ReadOnlyFrame
+import Belay.Sqlite.Model.ShelterFrame
 import Belay.Sqlite.Model.PlainInsertEffect
 import Belay.Sqlite.Model.PlainDeleteEffect
 import Belay.Sqlite.Model.RowwiseExpr

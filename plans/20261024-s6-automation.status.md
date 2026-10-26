@@ -55,14 +55,16 @@ Modules added (each below 200 lines, checked Verso docstrings; all general):
   `PlainUpdateEffect` (stored rows of an error-free plain UPDATE, no choice output), `AddColumnEffect`
   (database after ADD COLUMN), `NonQueryOutput` (a step of a statement that is not a query gives no choice
   output), `PlainWriteFrame` (a plain INSERT, UPDATE or DELETE changes only the rows of its target and keeps
-  snapshot and settings), `ReadOnlyFrame` (a query or prepare error step keeps the connection),
+  snapshot and settings), `ReadOnlyFrame` (a query or prepare error step keeps the connection), `ShelterFrame` (`Connection.shelter`,
+  `Statement.ShelteredFrom`, `Connection.shelter_step`: a plain write of another table or a read keeps the
+  catalog, the table at a position, the snapshot and the settings),
   `SimpleQueryAppend` (a simple query that reads only columns below a width gives the same results when cells
   are appended to its rows) and `CertifiedQueryOutputs` (step outputs of such a query on two connections whose
   table scans differ by appended cells, for any table and any added cells).
 - Surface (registered in the `belay` `lakefile.lean` globs and in `Belay/Sqlite.lean`):
   `PlainUpdateEffect` and `AddColumnEffect` (fresh-run `ifOk` rules for UPDATE and ADD COLUMN, like
   `Sql.ifOk_send_plainInsert`), `SqlFrames` (`Sql.Frame` as a claim about every branch, with pure, one-step,
-  bind, map and composition rules), `PlainWriteFrames` (`Connection.shelter`, `Statement.ShelteredAt` and
+  bind, map and composition rules), `PlainWriteFrames` (`Statement.ShelteredAt` and
   `Sql.Frame.sendStatements_sheltered`: scripts of plain writes of other tables and reads keep the catalog, the
   table at a position, the snapshot and the settings), `ReadCertificate` (certificate, validity, obligations,
   `output_eq`), `ReadAnalysis` (the untrusted analyzer that may return unknown, `analyze_sound`),
@@ -97,5 +99,8 @@ Open points:
   rules would need an `appended` obligation for every database of the site. Options: (a) leave it, (b) state
   the obligations for a site structure in a fixture. Recommendation: (a) for part 1; revisit in part 2 when the
   tactics need a source of obligations.
-- Commutation of a lookup needs a constant clock and a restricted `admitted` predicate (original connection
-  and clock). A moving clock is a negative fixture. This is by design: the rule is sound only then.
+- The rule `ReadCertificate.commutesOn_send` takes a constant clock, the obligations at the connection of
+  the run, and the premise `admittedKept` as premises; it accepts any `admitted` predicate that meets them. The
+  fixture `S6RulesQueryPattern.lean` chooses the `admitted` predicate that holds only at the original connection
+  and clock,; a wider predicate must also satisfy `admittedKept`. A moving clock is a negative fixture
+  (`S6RulesNegativeClock.lean`): the premise of a constant clock fails and the commutation claim is false.
