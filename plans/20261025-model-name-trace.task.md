@@ -26,7 +26,8 @@ except where the translator's spans must locate a traced name (see below).
   trace is returned for failure as well as for success: after a failure it
   holds the occurrences that the resolver decided up to and including the
   failing name, with that name's admissible candidates, because editor typo
-  corrections need them. The law
+  corrections need them. This holds for failures in the statement's own text;
+  a write that fails inside a stored trigger body is a documented gap. The law
   `(resolveStatementTraced ctx st s).1 = resolveStatement ctx st s` is a
   theorem, for success and for failure. A script-level wrapper over the
   statement list is welcome where it is cheap.
@@ -142,8 +143,13 @@ dev-build and independent review. One acceptance part: after final review run
   (`SubqueryScopes.lean`) each decide part of the result. The resolver is large
   (167 files in `Resolution/`): the trace is threaded through the functions that
   lead from `resolveStatement` to a name decision, which are about 40 to 60
-  functions. Functions that no name decision reaches (DDL, defaults, checks and
-  trigger bodies) stay untraced and call the projections.
+  functions. Functions that no name decision reaches (DDL, defaults and checks)
+  stay untraced and call the projections. Stored trigger programs are an
+  intentional coverage gap: `ResolveState.withWrite` resolves them through
+  `triggerPrograms` after the write's own names, and their text is not in the
+  statement's spans. A write that fails inside a trigger body therefore returns
+  the full trace of the write's own names but no record for the trigger body,
+  so the failing-name guarantee covers the statement's own text only.
 - Restrictions already carry node paths (`NodeRestriction`), so the resolver
   already knows where it is for error reporting; the trace's paths must use the
   same layout so that one `Span` serves both.
