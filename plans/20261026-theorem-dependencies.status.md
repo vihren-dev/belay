@@ -56,8 +56,10 @@ Infrastructure checks completed. No semantic mutant table changed.
 
 The full Nix run reached 96% of the existing 407-case surface suite without an
 assertion failure, then hit that suite's 1,200-second limit. The same issue is
-already fixed by the reviewed `tasks/surface-suite-split` branch. Integration of
-that existing fix and completion of the full check are pending.
+already fixed by the reviewed `tasks/surface-suite-split` branch. Merged its
+`43a4c304` head, preserving both new suites in the suite-ownership assertion.
+The split changes no test or timeout. Its restored review records are also
+retained. Completion checks are pending on the combined tree.
 
 Initial validation hit the documentation inventory's 60-second deadline during
 concurrent cold builds and the infrastructure recipe's outer deadline after a
