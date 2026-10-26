@@ -115,9 +115,9 @@ alternate SQL execution engine is required.
   differ: `IN` and `=` take the collation from different operands, so
   `customers.id TEXT COLLATE BINARY` with `'a'` and `blocked.customer_id TEXT
   COLLATE NOCASE` with `'A'` give different rows. The checked claims state
-  explicit sufficient premises: `customers.id` is an `INTEGER PRIMARY KEY`
-  (never NULL and always an integer, so no collation or affinity difference
-  applies) and no `blocked.customer_id` is NULL (the `where` condition, or
+  explicit sufficient premises: `customers.id` is a rowid alias (the
+  `INTEGER PRIMARY KEY` of a table that is not `WITHOUT ROWID`: never NULL and
+  always an integer, so no collation or affinity difference applies) and no `blocked.customer_id` is NULL (the `where` condition, or
   `NOT NULL` in the schema for the `sql_auto` form without `where`). The three
   counterexamples (NULL blocked id, NULL customer id, collation) stay checked,
   and native SQLite confirms each of them. The guide text that omits the key
