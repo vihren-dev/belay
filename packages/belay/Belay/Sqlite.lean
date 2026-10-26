@@ -123,6 +123,9 @@ import Belay.Sqlite.ScopedAgreement
 import Belay.Sqlite.ScopedAgreementBind
 import Belay.Sqlite.ScopedSimulation
 import Belay.Sqlite.ExecutionDeterministic
+import Belay.Sqlite.ExecutionIndexFree
+import Belay.Sqlite.MigrationQueryFrames
+import Belay.Sqlite.ApplicationQuerySimulation
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with

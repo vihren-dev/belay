@@ -118,4 +118,43 @@ theorem Sql.ScopedAt.of_one_branch {α : Type} {related : ExecutionContext → E
       rw [(Sql.branch_iff_actual right _ _ _ one rightOne).1 branch]
       exact ⟨agree.1.symm, agree.2.1.symm, agree.2.2⟩⟩⟩
 
+/-- For every program, every clock that gives one date at every index (or no clock), every pair of start
+indices and every connection: the check {name}`Sql.hasOneBranch` gives the same answer at both indices.
+Plain words: whether a program has one branch does not depend on the start index when the clock is
+constant. Proof sketch: induction on the program. One step runs the same at both indices
+({name}`runScriptStep_index`), so the output and the connection that the check reads are equal. -/
+theorem Sql.hasOneBranch_index {α : Type} (program : Sql α) (clock : Option Clock)
+    (constant : ∀ assignment ∈ clock, ∀ one other, assignment one = assignment other) :
+    ∀ (first second : Nat) (connection : Connection),
+      program.hasOneBranch clock first connection = program.hasOneBranch clock second connection := by
+  induction program with
+  | pure value => intro first second connection; rfl
+  | exec statement values rest later =>
+    intro first second connection
+    have same := runScriptStep_index runContext clock first second connection statement values
+      (fun assignment member => constant assignment member _ _)
+    simp only [Sql.hasOneBranch, same]
+    cases runScriptStep runContext clock second connection statement values with
+    | ended reason => rfl
+    | continued output next => simp only [later output (first + 1) (second + 1) next]
+
+/-- Two programs that each have one branch at a context have equal weak views there when the projected
+actual observations are equal. Proof sketch: each side realizes exactly its projected actual
+observation, so the two realization conditions both say "equals that observation". -/
+theorem Sql.View.ObservationEquivAt.of_one_branch {α : Type} {first second : Sql α}
+    {left : Sql.View first} {right : Sql.View second} {state : ExecutionContext}
+    (leftOne : first.hasOneBranch state.clock state.index state.connection = true)
+    (rightOne : second.hasOneBranch state.clock state.index state.connection = true)
+    (same : left.observation (first.runFrom state.clock state.index state.connection) =
+      right.observation (second.runFrom state.clock state.index state.connection)) :
+    left.ObservationEquivAt right state :=
+  ⟨same, fun observation => by
+    constructor
+    · rintro ⟨result, branch, rfl⟩
+      rw [Sql.branch_iff_actual first _ _ _ result leftOne] at branch
+      exact ⟨_, Sql.Branch.actual second _ _ _, by rw [branch, ← same]⟩
+    · rintro ⟨result, branch, rfl⟩
+      rw [Sql.branch_iff_actual second _ _ _ result rightOne] at branch
+      exact ⟨_, Sql.Branch.actual first _ _ _, by rw [branch, same]⟩⟩
+
 end Belay.Sqlite
