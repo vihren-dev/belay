@@ -61,6 +61,12 @@ already fixed by the reviewed `tasks/surface-suite-split` branch. Merged its
 The split changes no test or timeout. Its restored review records are also
 retained. Completion checks are pending on the combined tree.
 
+The combined full check found an existing surface-build allowlist that omitted
+the new report. Registered the report's three exact build references and added
+an explicit check that the conformance runtime names no surface package. This
+preserves ADR 0016 D2: standalone inspection is above the libraries, while the
+model, translation and conformance layers stay below the surface.
+
 Initial validation hit the documentation inventory's 60-second deadline during
 concurrent cold builds and the infrastructure recipe's outer deadline after a
 cold local build. The final runs use the unchanged documentation package and
