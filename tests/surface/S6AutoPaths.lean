@@ -91,14 +91,15 @@ theorem sent_select_keeps_connection (env : Env) :
   sql_run [quantities_modeled env]
   all_goals (intros; rfl)
 
-/-- Two goals at once: the tactic works on the first goal, and the second goal is still there when the
-first is done. -/
+/-- Two goals at once: {lit}`sql_run` works on the first goal while the second goal is visible, and the second
+goal is still there, after the one obligation of the first, when the tactic is done. -/
 theorem second_goal_stays (env : Env) :
     (query quantities).check (keepsConnection env) (ExecutionContext.initial sample env) ∧
     (single quantities).check (keepsConnection env) (ExecutionContext.initial sample env) := by
-  refine ⟨?_, ?_⟩
-  · sql_run [quantities_modeled env]
-    all_goals (intros; rfl)
+  constructor
+  sql_run [quantities_modeled env]
+  · intros
+    rfl
   · exact single_keeps_connection env
 
 #print axioms purge_empties_items

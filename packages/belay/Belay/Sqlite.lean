@@ -86,6 +86,7 @@ import Belay.Sqlite.PlainDeleteStepRule
 import Belay.Sqlite.AddColumnStepRule
 import Belay.Sqlite.ReadStepRule
 import Belay.Sqlite.SqlRun
+import Belay.Sqlite.SqlCommute
 import Belay.Sqlite.SingleStatementChecks
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand

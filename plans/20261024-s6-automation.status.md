@@ -171,3 +171,10 @@ Commit 1 (step rules and `sql_run`):
   four write rules restate the quantifiers of their success and failure premises; fixture `S6AutoPaths` covers the
   DELETE, ADD COLUMN, query, single and sent SELECT paths; named policy definitions (`traversalFuel`,
   `blockingPremises`); docstrings for the helpers and the rule modules.
+- 2026-10-26: review 20261026T222942Z-da9e0c53 (1 must): the fixture `second_goal_stays` hid the sibling goal in a
+  bullet; it now runs `sql_run` while both goals are visible.
+- Coordinator note (2026-10-26): the table-rebuild work changes `runScriptStep_others`, `Succeeds.script_iff`,
+  `Succeeds.of_default`, `Sql.branch_continued_iff` and the `found_eq` and `branch_shape` signatures. Part 2 code
+  reaches them through few places: `runScriptStep_others` in `SendStepRules` (one use), `Sql.Branch.found_eq` in
+  `ReadStepRule` (three uses), `sendStatements_branch_shape` in the part 1 certificate rules and the new
+  `sql_commute` (through the rules). No new code uses `Succeeds.*` or `Sql.branch_continued_iff`.
