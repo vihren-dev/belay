@@ -19,70 +19,73 @@ theorem resolveStatementTraced_fst (context : ResolveContext) (state : ResolveSt
     (statement : Syntax.Statement) :
     (resolveStatementTraced context state statement).1 = resolveStatement context state statement := rfl
 
-/-- BEGIN keeps the first saved catalog. -/
+/-- BEGIN always succeeds. It keeps the saved catalog when there is one, else it saves the current
+catalog. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_begin (context : ResolveContext) (state : ResolveState) :
     resolveStatement context state .begin = .ok (.begin, { state with saved := state.saved.getD state.catalog }) := rfl
 
-/-- COMMIT drops the saved catalog. -/
+/-- COMMIT always succeeds and drops the saved catalog, whether there is one or not. Proof sketch: both
+sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_commit (context : ResolveContext) (state : ResolveState) :
     resolveStatement context state .commit = .ok (.commit, { state with saved := none }) := rfl
 
-/-- ROLLBACK restores the saved catalog. -/
+/-- ROLLBACK always succeeds. It restores the saved catalog when there is one, keeps the current catalog
+otherwise, and drops the saved catalog in both cases. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_rollback (context : ResolveContext) (state : ResolveState) :
     resolveStatement context state .rollback =
       .ok (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none }) := rfl
 
-/-- A pragma resolves with {name}`resolveStatementPragma`. -/
+/-- A pragma resolves with {name}`resolveStatementPragma`. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_pragma (context : ResolveContext) (state : ResolveState)
     (pragma : Syntax.Pragma) :
     resolveStatement context state (.pragma pragma) = resolveStatementPragma context state pragma := rfl
 
-/-- CREATE TABLE resolves against the catalog of the state. -/
+/-- CREATE TABLE resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createTable (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (options : Syntax.TableOptions) :
     resolveStatement context state (.createTable name columns constraints options) =
       state.withCatalog (resolveCreateTable context state.catalog name columns constraints options) := rfl
 
-/-- CREATE VIEW resolves against the catalog of the state. -/
+/-- CREATE VIEW resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createView (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifNotExists : Bool) (columns : Option (List Identifier)) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) :
     resolveStatement context state (.createView name ifNotExists columns query subqueries) =
       state.withCatalog (resolveCreateView state.catalog name ifNotExists { columns, query, subqueries }) := rfl
 
-/-- CREATE INDEX resolves against the catalog of the state. -/
+/-- CREATE INDEX resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createIndex (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (unique : Bool) (table : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr) :
     resolveStatement context state (.createIndex name unique table terms filter) =
       state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter) := rfl
 
-/-- ALTER TABLE ADD COLUMN resolves against the catalog and the foreign key setting of the state. -/
+/-- ALTER TABLE ADD COLUMN resolves against the catalog and the foreign key setting of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_addColumn (context : ResolveContext) (state : ResolveState)
     (table : Identifier) (column : Syntax.ColumnDefinition) :
     resolveStatement context state (.addColumn table column) =
       state.withCatalog (resolveAddColumn context state.catalog state.foreignKeys table column) := rfl
 
-/-- DROP TABLE is a write: it checks the foreign keys of the state. -/
+/-- DROP TABLE is a write: it checks the foreign keys of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_dropTable (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifExists : Bool) :
     resolveStatement context state (.dropTable name ifExists) =
       state.withWrite context (resolveDropTable state.catalog name ifExists) := rfl
 
-/-- DROP VIEW resolves against the catalog of the state. -/
+/-- DROP VIEW resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_dropView (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifExists : Bool) :
     resolveStatement context state (.dropView name ifExists) =
       state.withCatalog (resolveDropView state.catalog name ifExists) := rfl
 
-/-- DROP INDEX resolves against the catalog of the state. -/
+/-- DROP INDEX resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_dropIndex (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifExists : Bool) :
     resolveStatement context state (.dropIndex name ifExists) =
       state.withCatalog (resolveDropIndex state.catalog name ifExists) := rfl
 
-/-- CREATE TRIGGER resolves against the catalog of the state. -/
+/-- CREATE TRIGGER resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createTrigger (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifNotExists : Bool) (time : Syntax.TriggerTime) (event : Syntax.TriggerEvent)
     (table : Identifier) (condition : Option Syntax.Expr) (body : List Syntax.BodyStatement) :
@@ -90,14 +93,14 @@ theorem resolveStatementTraced_fst (context : ResolveContext) (state : ResolveSt
       state.withCatalog (resolveCreateTrigger state.catalog name ifNotExists
         { table, time, event, condition, body }) := rfl
 
-/-- DROP TRIGGER resolves against the catalog of the state. -/
+/-- DROP TRIGGER resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_dropTrigger (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifExists : Bool) :
     resolveStatement context state (.dropTrigger name ifExists) =
       state.withCatalog (resolveDropTrigger state.catalog name ifExists) := rfl
 
 /-- INSERT is a write: its CTEs and views are copied first, then the rows, conflicts and
-{lit}`RETURNING` resolve. -/
+{lit}`RETURNING` resolve. Proof sketch: unfold the entry point and the projection of the traced write with {lit}`traced_drop`; then both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_insert (context : ResolveContext) (state : ResolveState)
     (table : Identifier) (columns : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
@@ -111,7 +114,7 @@ theorem resolveStatementTraced_fst (context : ResolveContext) (state : ResolveSt
   rfl
 
 /-- UPDATE is a write: its CTEs and views are copied first, then the assignments, filter and
-{lit}`RETURNING` resolve. -/
+{lit}`RETURNING` resolve. Proof sketch: unfold the entry point and the projection of the traced write with {lit}`traced_drop`; then both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_update (context : ResolveContext) (state : ResolveState)
     (table : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Syntax.Subquery) :
@@ -125,7 +128,7 @@ theorem resolveStatementTraced_fst (context : ResolveContext) (state : ResolveSt
   rfl
 
 /-- DELETE is a write: its CTEs and views are copied first, then the filter and {lit}`RETURNING`
-resolve. -/
+resolve. Proof sketch: unfold the entry point and the projection of the traced write with {lit}`traced_drop`; then both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_delete (context : ResolveContext) (state : ResolveState)
     (table : Identifier) (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn)
     (subqueries : List Syntax.Subquery) :
@@ -137,7 +140,7 @@ resolve. -/
     traced_drop]
   rfl
 
-/-- SELECT resolves against the catalog of the state. -/
+/-- SELECT resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_select (context : ResolveContext) (state : ResolveState)
     (columns : List Syntax.ResultColumn) (source : Option Syntax.TableReference) (joins : List Syntax.Join)
     (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
