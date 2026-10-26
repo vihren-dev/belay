@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 

@@ -21,7 +21,9 @@ have alternative executions ({name}`Resolved.Statement.insertSelect`). With rule
 enforced foreign key) the model describes the statement only for one production of the query. -/
 def Resolved.Statement.fromQuery : Resolved.Statement → Bool
   | .insertSelect _ _ _ _ _ _ _ none => true
-  | _ => false
+  | .insertSelect _ _ _ _ _ _ _ (some _) => false
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+  | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting .. => false
 
 /-- For every clock, counters, values, statement that is no INSERT from a query without rules
 ({name}`Resolved.Statement.fromQuery`), database and initial database, the run of the

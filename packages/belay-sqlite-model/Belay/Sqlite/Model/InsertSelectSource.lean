@@ -53,14 +53,16 @@ namespace Resolved
 
 /-- Whether the query reads one table by a scan, row by row, without a step that holds rows back: one
 table as the only source, no compound, no aggregate, no {lit}`DISTINCT`, no {lit}`ORDER BY`, and no
-{lit}`OFFSET`. SQLite then evaluates the {lit}`WHERE` condition and the result columns of each row
+{lit}`OFFSET` (after the binding of a parameter of the window, {name}`Query.bindWindow`). SQLite then evaluates the {lit}`WHERE` condition and the result columns of each row
 when it reads the row, so the first row that fails stops the production. -/
 def Query.scansRows (query : Query) : Bool :=
   query.compound.isNone && !query.aggregate && query.groupBy.isEmpty && query.distinct.isNone &&
     query.orderBy.isEmpty && query.offset == 0 &&
     (match query.sources with
-      | [join] => (match join.source with | .table _ => true | _ => false)
-      | _ => false)
+      | [join] => (match join.source with
+        | .table _ => true
+        | .initialTable _ | .each .. | .subquery .. | .pragma _ => false)
+      | [] | _ :: _ :: _ => false)
 
 /-- The fault of reading one source row of a query that {name}`Query.scansRows`: the fault of the
 {lit}`WHERE` condition, else, for a row that it keeps, the fault of the result columns. -/
@@ -86,19 +88,22 @@ def Query.hasOrCondition (query : Query) : Bool :=
 cannot fail gives its rows ({name}`Query.run`). A failure that SQLite finds before it gives a row is
 a production without rows: a window value that is no integer, the overflow of an aggregate without
 {lit}`GROUP BY`, which SQLite computes after all rows, and a failing query without {lit}`FROM`. A
-query that {name}`Query.scansRows` and fails in one row gives the rows before that row when
-{lit}`streaming`, else none, because SQLite then collects all rows first. A fault that the model does not describe is none. -/
+query that {name}`Query.scansRows` (after the binding of its window) and fails in one row gives the rows before that row when
+{lit}`streaming`, else none, because SQLite then collects all rows first. A fault that the model does not describe is none,
+and so is a fault of reading the source rows themselves ({name}`SourceRows.fault`). -/
 def Query.productionOver (context : EvalContext) (query : Query) (source : SourceRows) (streaming : Bool) :
     Option SourceProduction :=
   let run := query.run context source.rows
-  if run.mismatch then some { rows := [], failure := some .datatypeMismatch }
+  if source.fault != .none then none
+  else if run.mismatch then some { rows := [], failure := some .datatypeMismatch }
   else if run.overflow then (if query.groupBy.isEmpty then some { rows := [], failure := some .integerOverflow } else none)
   else if run.fault == .must then some { rows := [], failure := some .functionError }
   else if run.fault == .none then some { rows := run.rows, failure := none }
-  else if !query.scansRows || source.fault != .none || query.filter.any (·.mayFailOn context []) then none
+  else if query.filter.any (·.mayFailOn context []) then none
   else match query.bindWindow context.parameters with
     | none => none
     | some bound =>
+      if !bound.scansRows then none else
       let faults := source.rows.map (bound.rowFault context)
       if faults.any (· == .may) then none
       else match faults.findIdx? (· == .must) with

@@ -261,3 +261,20 @@ rebuild proof is separate.
     possible-executions task (single premises on `Succeeds.script_iff`, `branch_shape` and others);
     the authored corpus freeze (corpus numbers, the Nix corpus list, evidence writers, the lock) is
     for the judge PR and is not done here.
+  - Review of stage (b), round 1 (`20261026T195228Z-408913ec`: 8 musts, 1 should; the test commit
+    `20261026T194601Z-f9c925f6`: 1 should), all fixed in the `refactor:` commit that follows:
+    a source fault is no described production (`productionOver` returns none for it), a window
+    parameter is bound before `scansRows` is asked, `last_insert_rowid()` in an INSERT from a query
+    is the restriction `connectionCounterRead` (the counter changes with each streamed row), the
+    catch-all cases of `fromQuery`, `isInsertSelect`, `scansRows` and `cellsOf` list their
+    constructors, the docs of the three run-law restatements and the proof sketch of
+    `runScriptStepFailure_continued` say what they cover, the `Scope.ownSources` rule has checked
+    examples (`SubqueryResolutionExamples`), and the new or grown files are split under 200 lines
+    (`ResolveStatementSingle*`, `ScriptRunContinued`, `ScriptRunPositions`, `StepCatalogLiteral`,
+    `ScriptRunResolved`, `ScopeOwn`, and `insert_query_setups.py`). New checked examples:
+    `InsertSelectSourceFaultExamples`.
+  - `Sql.branch_continued_iff` takes the proof that the step has no further execution as a last
+    argument with the default `by rfl`, so the surface fixtures that name a step with `[]` stay as
+    they were; its four package call sites and one fixture (`ExecutionEquivalence`) follow the
+    argument order. The surface fixtures of the execution and the migration patterns suites compile
+    (no `sorryAx`). Proof repairs by hand: about 80 in total.

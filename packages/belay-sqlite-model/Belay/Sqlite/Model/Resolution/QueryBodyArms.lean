@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Queries
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 

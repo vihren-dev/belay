@@ -183,7 +183,7 @@ inductive RestrictionKind where
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch: SQLite reports the
   first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder
-  /-- {lit}`last_insert_rowid()` in an INSERT or an upsert, and {lit}`total_changes()` in a write that runs trigger
+  /-- {lit}`last_insert_rowid()` in an INSERT, an INSERT from a query or an upsert, and {lit}`total_changes()` in a write that runs trigger
   programs or foreign-key actions: these writes change the counter while they run (ADR 0024, D2). -/
   | connectionCounterRead
   /-- A call of {lit}`changes()`, {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` or

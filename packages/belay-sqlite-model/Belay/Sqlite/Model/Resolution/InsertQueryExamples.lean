@@ -110,7 +110,10 @@ def refused : Except NodeRestriction (Resolved.Statement × ResolveState) → Op
 /-- The cells of the resolved INSERT from a query, if the resolution is one. -/
 def cellsOf : Except NodeRestriction (Resolved.Statement × ResolveState) → Option (List Resolved.SourceCell)
   | .ok (.insertSelect _ cells .., _) => some cells
-  | _ => none
+  | .ok (.prepareError _, _) | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
+  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
+  | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.upsert .., _) | .ok (.update .., _) | .ok (.delete .., _)
+  | .ok (.query .., _) | .ok (.setting .., _) | .error _ => none
 
 -- A statement that SQLite prepares is an INSERT from a query: the named column reads the first result
 -- column, and the omitted columns have the cells of their defaults.
@@ -125,5 +128,13 @@ def cellsOf : Except NodeRestriction (Resolved.Statement × ResolveState) → Op
 
 -- A query of a table that the catalog lacks is a prepare error of the table.
 #guard prepared (run "t" none (body ["x", "y"] "nosuch")) == some (.noSuchTable (name "nosuch"))
+
+-- last_insert_rowid() in an INSERT from a query is a restriction, as in INSERT: the counter changes
+-- with each row that the query streams. changes() is described.
+#guard (refused (run "t" (some ["b"]) { body ["x"] with columns :=
+    [.expression (.call "last_insert_rowid" []) none "last_insert_rowid()"] })).map (·.2) ==
+  some .connectionCounterRead
+#guard (refused (run "t" (some ["b"]) { body ["x"] with columns :=
+    [.expression (.call "changes" []) none "changes()"] })).isNone
 
 end Belay.Sqlite.Model.InsertQueryExamples

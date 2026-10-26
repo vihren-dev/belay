@@ -79,12 +79,13 @@ theorem Sql.branch_continued_executions_iff {α : Type} {statement values} {rest
 /-- For a continuing step, a proposed branch is exactly an allowed selected output followed
 by a branch of its continuation from the actual next connection and index. The selected
 output prefixes that branch's trace. A step with no further execution ({lit}`others = []`, as for every
-statement that is no INSERT from a query) has the step's own execution as its only one. Proof sketch:
+statement that is no INSERT from a query; the proof {lit}`single` is found by {lit}`rfl` when the step's type shows it) has the step's own execution as its only one. Proof sketch:
 {name}`Sql.branch_continued_executions_iff` with the one execution of the step. -/
 theorem Sql.branch_continued_iff {α : Type} {statement values} {rest : Output → Sql α}
     {clock index connection actual next others} (step :
       runScriptStep runContext clock index connection statement values = .continued actual next others)
-    (single : others = []) (result : SqlRun α) : (.exec statement values rest : Sql α).Branch clock index connection result ↔
+    (result : SqlRun α) (single : others = [] := by rfl) :
+    (.exec statement values rest : Sql α).Branch clock index connection result ↔
       ∃ selected later, OutputChoice actual selected ∧ (rest selected).Branch clock (index + 1) next later ∧
         result = { later with outputs := selected :: later.outputs } := by
   subst single

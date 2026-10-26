@@ -102,12 +102,6 @@ def Scope.place (sources : List ScopeSource) (start : Nat := 0) : Scope :=
 /-- The sources of the query whose expressions resolution resolves, at depth 0. -/
 def Scope.inner (scope : Scope) : Scope := scope.filter (·.depth == 0)
 
-/-- The sources that the {lit}`GROUP BY` and {lit}`ORDER BY` terms of a query can name: its own sources
-and the rows of a trigger. SQLite resolves these terms without the columns of the queries around it,
-so a term that names one is {lit}`no such column` (checked natively with 3.51.0), while the rows
-{lit}`NEW` and {lit}`OLD` of a trigger stay visible. -/
-def Scope.ownSources (scope : Scope) : Scope := scope.filter fun source => source.depth == 0 || source.trigger
-
 /-- The scope of a subquery: the sources of the scope around it, one depth further out,
 followed by its own sources, which {name}`Scope.place` put after the outer cells. -/
 def Scope.enclose (outer inner : Scope) : Scope :=

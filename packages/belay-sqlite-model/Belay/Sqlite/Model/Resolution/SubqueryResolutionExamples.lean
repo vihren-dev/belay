@@ -135,4 +135,23 @@ def joinOnExists : Join := { operator := [], source := table "u", condition := s
 #guard restrictedOne (.select [written (.call "json" [.subquery 0])] none [] none [] [] none none
   [fromU [written (name "s")] none])
 
+-- GROUP BY and ORDER BY of a subquery cannot name a column of the query around it ({name}`Scope.ownSources`): v is a
+-- column of t only, so it is "no such column" there, while the same name in the WHERE of the subquery is the outer cell.
+#guard errorOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with orderBy := [{ expression := name "v", descending := false }] }]) ==
+  some (.expression (.noSuchColumn (Identifier.ofString "v")))
+#guard errorOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with groupBy := [name "v"] }]) ==
+  some (.expression (.noSuchColumn (Identifier.ofString "v")))
+#guard (queryOf (fromT [written (.subquery 0)] none
+    [fromU [written (name "x")] (some (.compare .eq (name "v") (.numeric "1")))])).isSome
+-- A name of the subquery's own table in ORDER BY still resolves.
+#guard (queryOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with orderBy := [{ expression := name "s", descending := false }] }])).isSome
+
+-- The rows NEW and OLD of a trigger stay visible to GROUP BY and ORDER BY, and a source of a query around is dropped.
+#guard (let source : ScopeSource := { name := Identifier.ofString "a", columns := [] }
+    (Scope.ownSources [{ source with depth := 1 }, { source with trigger := true, depth := 1 }, source]).map
+      (fun entry => (entry.depth, entry.trigger))) == [(1, true), (0, false)]
+
 end Belay.Sqlite.Model.Resolution.SubqueryResolutionExamples

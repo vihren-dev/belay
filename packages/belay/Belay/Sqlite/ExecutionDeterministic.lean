@@ -60,7 +60,7 @@ theorem Sql.branch_iff_actual {α : Type} (program : Sql α) :
         rcases choice with same | other
         · exact same
         · cases output <;> simp_all [Model.Output.choosesResults]
-      rw [Sql.branch_continued_iff step rfl]
+      rw [Sql.branch_continued_iff step _ rfl]
       simp only [Sql.runFrom, step]
       constructor
       · rintro ⟨selected, tail, choice, branch, rfl⟩

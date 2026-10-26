@@ -71,11 +71,11 @@ theorem sendStatements_single_branch (statement : Syntax.Statement) (values : Li
     constructor
     · rintro ⟨result, branch, rfl⟩
       obtain ⟨selected, tail, choice, tailBranch, rfl⟩ :=
-        (Sql.branch_continued_iff step (runScriptStep_others_of_single step single) result).mp branch
+        (Sql.branch_continued_iff step result (runScriptStep_others_of_single step single)).mp branch
       rw [(Sql.branch_pure_iff _ _ _ _ _).mp tailBranch]
       exact ⟨selected, choice, by simp [singleObservation, quiet, SqlRun.observation]⟩
     · rintro ⟨selected, choice, rfl⟩
-      exact ⟨_, (Sql.branch_continued_iff step (runScriptStep_others_of_single step single) _).mpr ⟨selected, { outputs := [], connection := next, value := some [selected] },
+      exact ⟨_, (Sql.branch_continued_iff step _ (runScriptStep_others_of_single step single)).mpr ⟨selected, { outputs := [], connection := next, value := some [selected] },
         choice, .pure _ _ _ _, rfl⟩, by simp [singleObservation, quiet, SqlRun.observation]⟩
 
 /-- For two programs that each send one statement, at any inputs, when neither statement resolves to

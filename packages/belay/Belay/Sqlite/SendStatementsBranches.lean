@@ -88,7 +88,7 @@ theorem sendStatements_branch_shape (statements : List (Syntax.Statement × List
     | continued output next others =>
       obtain ⟨noOthers, restSingle⟩ := ScriptConditionsWith.single_step single step
       obtain ⟨selected, tail, _, tailBranch, rfl⟩ :=
-        (Sql.branch_continued_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step noOthers _).mp branch
+        (Sql.branch_continued_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _ noOthers).mp branch
       obtain ⟨first, firstBranch, rfl⟩ := (Sql.branch_map_iff _ _ _ _ _ _).mp tailBranch
       obtain ⟨connectionEq, lengthEq⟩ := later _ _ _ first restSingle firstBranch
       simp [runScriptFrom, step, connectionEq, lengthEq]

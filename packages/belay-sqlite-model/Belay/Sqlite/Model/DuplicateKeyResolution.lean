@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.CountStatementResolution
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution

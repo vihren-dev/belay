@@ -97,7 +97,8 @@ resolved statement and the error, and the error is not {name}`ExecutionError.unm
 {name}`Output.error` of the error's {name}`ExecutionError.primaryCode`, with some next
 connection and some list of further executions. This is the converse of {name}`runScriptStep_error_failure`: the two functions take
 the same steps. Proof sketch: unfold both functions and follow their common cases (resolution, clock,
-counters, readiness); in the ready case the halted run gives the error output and no alternatives. -/
+counters, readiness); in the ready case the halted error of the own run gives the error output ({name}`Output.ofStep_halted`), and the further
+executions are the executions of the alternatives of the run, whatever they are, which the claim leaves open. -/
 theorem runScriptStepFailure_continued {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {resolved : Resolved.Statement}
     {failure : ExecutionError}

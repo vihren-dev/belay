@@ -86,7 +86,7 @@ private theorem unit_step_branch {statement values clock index connection next}
     (result : SqlRun Unit) :
     (Sql.exec statement values (fun _ => .pure ())).Branch clock index connection result ↔
       result = { outputs := [.done 0], connection := next, value := some () } := by
-  rw [Sql.branch_continued_iff step]
+  rw [Sql.branch_continued_iff step _ rfl]
   simp [OutputChoice, Sql.branch_pure_iff]
 
 /-- Set the connection's enforcement flag and return unit, retaining the done output. -/
