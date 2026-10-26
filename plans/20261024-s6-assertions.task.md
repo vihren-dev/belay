@@ -1,8 +1,8 @@
 # S6: fresh-run triples and initial/current assertions
 
-Created 2026-10-24. Status: OPEN. Refreshed 2026-10-25 for assignment on the
+Created 2026-10-24. Status: DONE (2026-10-26). Refreshed 2026-10-25 for assignment on the
 completed execution contracts (PR #250) and migration patterns part 1 (PR #254,
-source `e3baff02`). The initial/current query prerequisite is not implemented.
+source `e3baff02`). The initial/current query prerequisite was integrated for part 1b (PR #265).
 Status: [progress](20261024-s6-assertions.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 and the owner decisions
 of 2026-10-24; [execution contracts](20261024-s6-execution-contracts.task.md);

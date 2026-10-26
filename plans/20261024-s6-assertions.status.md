@@ -1,10 +1,8 @@
 # Status: S6 fresh-run triples and assertions
 
-Created 2026-10-24. Status: OPEN. Task refreshed 2026-10-25 and assigned for
-implementation of part 1 in workspace `sqlite-verifier-s6-assertions`, based on
-`e3baff02` (published PR #254, above the S6 execution contracts of PR #250).
-Part 1 is in progress: the context observation unit is implemented (see Part 1
-progress). Nix acceptance is not claimed yet; it is recorded at the end of the part.
+Created 2026-10-24. Status: DONE (2026-10-26). Parts 1, 2 and 1b passed their
+part gates; the task-end gates passed on the integration with the stack (last
+section). The global form of the signup invariant is a separate later task.
 Task: [task file](20261024-s6-assertions.task.md).
 Specs: ADR17 S6; accepted fresh-run and explicit effect-premise decisions.
 
@@ -539,3 +537,27 @@ the OR purge (`purgeOrFinal`).
   It includes `test_purge_frame_claim_over_every_database` and the other surface assertion examples.
 - `just verdict` (Nix): exit 0. Output: `/nix/store/j6n12zbqaaigp2ilmmis9f506q2r03qc-sqlite-verifier-verdict`.
 - Final review of the last code commit 35529cfd: no findings (20261025T214627Z-35529cfd).
+
+## Integration and task-end gates (2026-10-26)
+
+Merge `28174c12` joins the task line (`2ca1fd69`) with the stack top `47349333`
+(PR #266). Single merge base `86546fb9`. The two plans files take the task side;
+the other side holds their earlier version `d4fd7321`. The model lakefile takes the
+union of both module lists. Four more files that both sides changed equal the
+result of `git merge-file`, and the other 827 changed files match their one side.
+
+- `just test-full` exit 0: `/nix/store/dm92wjf8k0qss6hrsg5aallfv0s8xlp9-sqlite-verifier-test-reports`
+  (394 passed). The first run stopped at the 1500 s Nix test build limit, 12%
+  into the surface suite on a loaded host, without a failed test; the rerun passed.
+- `just verdict` exit 0: `/nix/store/hshgcp10164qsjcflawil0nq08n6ng14-sqlite-verifier-verdict`.
+  Its content is equal to that of PR #266's verdict output.
+- `just test-nix`: 71 passed. `just test-scheduled-checks` exit 0 (49 passed):
+  `/nix/store/2daj051hyid43kyplkw714nlphg0jgkx-sqlite-verifier-scheduled-check-reports`.
+
+## Owner decision on the global invariant (2026-10-26)
+
+The per-value `signup_keeps` stays the delivered claim of this task. The global
+form (a filtered duplicate-keys query law for `WHERE deleted_at IS NULL GROUP BY
+email HAVING count(*) > 1`, its belay lemma and the bridge from the partial
+unique index) becomes a separate task. It starts after the model name-trace task,
+because that task changes the resolver definitions that the query laws unfold.
