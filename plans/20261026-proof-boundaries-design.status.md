@@ -1,6 +1,6 @@
 # Shared proof boundary design status
 
-Date: 2026-10-26. Status: ACTIVE.
+Date: 2026-10-26. Status: DONE.
 Audience: the implementation team.
 Task: [design task](20261026-proof-boundaries-design.task.md).
 Workspace: `/home/codex/work/sqlite-verifier-proof-boundaries`.
@@ -11,9 +11,9 @@ Prior design baseline: `0cadcde9` (ADR 0025 and its checked experiments).
 
 - Created an isolated jj workspace with both reviewed baselines as parents.
 - Recorded the current experiment/design scope immediately before assignment.
-- Production implementation remains outside this task. Specifications will
-  follow measured prototype results; implementation task files are deferred
-  until implementation work is about to be assigned.
+- Production implementation remains outside this task. Specifications follow
+  measured prototype results; implementation task files remain deferred until
+  implementation work is about to be assigned.
 - Completed seven candidate assessments and authored proposed ADR 0026 plus
   three outcome specifications. Adopt query outputs, source agreement, resolver
   certification, observation profiles and the demonstrated import moves. Narrow
@@ -25,6 +25,10 @@ Prior design baseline: `0cadcde9` (ADR 0025 and its checked experiments).
 - Independent Claude review of `771604b5` found no must findings and two should
   findings. Clarified the owner's present import-cleanup request and the boundary
   with ADR 0025; recorded both resolutions. No experimental source changed.
+- Independent Claude review of `cc487d53` passed with no findings. The initial
+  task commit `80ca2061` also passed with no findings.
+- Completed the existing required check recipes. Production implementation and
+  implementation task-file creation remain outside this completed design task.
 
 ## Evidence
 
@@ -35,6 +39,27 @@ surface copies, without Lean warnings. All 70 requested proof-closure audits
 use only the allowed standard axioms. Exact logs, paths and module closures
 are retained in the output. See the [evidence record](../experiments/proof-boundaries/README.md).
 
-The production packages, runtime/build integration, tests, judge and conformance
-inputs remain unchanged. Independent commit review and final existing Nix
-checks are pending; this design task is not yet marked DONE.
+## Repository acceptance
+
+The required `just test-full`, `just verdict`, `just test-nix` and
+`just test-scheduled-checks` recipes all completed successfully. Unchanged Nix
+inputs reused their accepted outputs:
+
+- Full test reports:
+  `/nix/store/s6rzxwmnqyg68lrn79fmydjnlyqip7xx-sqlite-verifier-test-reports`.
+- Checked public documentation:
+  `/nix/store/x8scdjxfyn7dbzkgg63b2hrhazv3nh50-sqlite-verifier-public-documentation-1`.
+- Conformance verdict:
+  `/nix/store/pv8yv3gjwkbwli4bd5h3akpf50ysnrhi-sqlite-verifier-verdict`.
+- Scheduled checks:
+  `/nix/store/id752rh1ffdllb1v7dw9xszj4jbfyhy1-sqlite-verifier-scheduled-check-reports`.
+
+The first host source-check attempt reached the existing 30-second limit for
+`SyntaxEquality` during a concurrent fresh development build. After that build,
+the full recipe passed with the original timeouts. No source or test change was
+needed. Host recipe diagnostics are not additional semantic acceptance evidence.
+
+The final diff against production baseline `3fe5caef` has no changes under
+packages, runtime/build integration, tests, judge, integrity or conformance.
+No mutants, claims, corpora or native oracle changed. Specifications are proposed
+for implementation review; no production refactor is represented as delivered.

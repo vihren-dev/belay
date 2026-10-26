@@ -1,10 +1,14 @@
 # Experiment with shared semantic proof boundaries
 
-Date: 2026-10-26. Status: ACTIVE.
+Date: 2026-10-26. Status: DONE.
 Audience: the implementation team.
 Owner request: run experiments, then specify the proof refactor justified by
 their results. Record: [status](20261026-proof-boundaries-design.status.md).
 Related: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
+
+Completed: 2026-10-26. Experiments, proposed ADR 0026 and its three outcome
+specifications are complete. Production implementation remains a separate task.
+The status record lists the accepted Nix evidence and independent reviews.
 
 ## Required result
 
