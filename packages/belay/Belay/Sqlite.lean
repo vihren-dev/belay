@@ -127,6 +127,10 @@ import Belay.Sqlite.ExecutionIndexFree
 import Belay.Sqlite.MigrationQueryFrames
 import Belay.Sqlite.ApplicationQuerySimulation
 import Belay.Sqlite.ScopedRowSteps
+import Belay.Sqlite.ScopedSimulationReverse
+import Belay.Sqlite.ApplicationClaims
+import Belay.Sqlite.ApplicationSyntax
+import Belay.Sqlite.ApplicationExplanation
 import Belay.Sqlite.NormalizedFieldPlan
 import Belay.Sqlite.NormalizedFieldLookupSimulation
 
