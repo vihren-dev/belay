@@ -83,4 +83,4 @@ successful preparation does not turn this stop into a SQLite error or a successf
 example : (match Model.runScriptStep runContext none 0 commonTableTrigger.raw.connection
     commonTableTriggerInsert.statements[0].1 [] with
   | .ended _ => true
-  | .continued _ _ => false) = true := by decide +kernel
+  | .continued _ _ _ => false) = true := by decide +kernel

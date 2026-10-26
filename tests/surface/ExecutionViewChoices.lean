@@ -20,7 +20,7 @@ Proof sketch: reduce the installed interpreter on the two-row fixture. -/
 theorem choices_step :
     let (statement, values) := (sql r"SELECT x FROM t LIMIT 1").statements[0]
     runScriptStep runContext initial.clock initial.index initial.connection statement values =
-      .continued (.oneOf [[[1]], [[2]]]) initial.connection := by rfl
+      .continued (.oneOf [[[1]], [[2]]]) initial.connection [] := by rfl
 
 /-- Every raw/concrete branch of either program has one of the two quiet observations.
 Proof sketch: invert the step and pure continuation, then enumerate its three choices. -/
@@ -48,7 +48,7 @@ theorem choices_member (swapped : Bool) (value : Nat) (member : value = 1 ∨ va
     split
     · exact OutputChoice.rows (by simp)
     · exact .actual _
-  refine ⟨_, Sql.Branch.continued choices_step choice (Sql.Branch.pure (selectedValue swapped selected) _ _ _), ?_⟩
+  refine ⟨_, Sql.Branch.continued_own choices_step choice (Sql.Branch.pure (selectedValue swapped selected) _ _ _), ?_⟩
   rcases member with rfl | rfl <;> cases swapped <;> rfl
 
 /-- Both programs have exactly the same weak projected branch-observation set.

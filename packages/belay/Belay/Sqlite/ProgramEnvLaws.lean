@@ -65,16 +65,18 @@ theorem Sql.runFrom_counters {α : Type} (program : Sql α) (clock : Option Cloc
           change reason = other at sameStep
           subst sameStep
           exact ⟨rfl, rfl, same⟩
-        | continued otherOutput otherNext => rw [secondStep] at sameStep; exact absurd sameStep id
-    | continued output next =>
+        | continued otherOutput otherNext otherOthers => rw [secondStep] at sameStep; exact absurd sameStep id
+    | continued output next others =>
       rw [firstStep] at step
       rcases step with ⟨kind, known⟩ | sameStep
       · exact absurd known (by simp)
       · cases secondStep : runScriptStep runContext clock index second statement values with
         | ended other => rw [secondStep] at sameStep; exact absurd sameStep id
-        | continued otherOutput otherNext =>
+        | continued otherOutput otherNext otherOthers =>
+          obtain rfl := runScriptStep_others firstStep
+          obtain rfl := runScriptStep_others secondStep
           rw [secondStep] at sameStep
-          obtain ⟨sameOutput, sameNext⟩ := sameStep
+          obtain ⟨⟨sameOutput, sameNext⟩, _⟩ := sameStep
           subst sameOutput
           simp only [firstStep] at modeled ⊢
           have inner := later output (index + 1) sameNext

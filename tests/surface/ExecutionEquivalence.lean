@@ -49,12 +49,13 @@ theorem other_branch_absent : ¬ failsOffset.Branch daily.clock 0 initial.connec
   unfold observe at first
   cases first with
   | stopped step => contradiction
-  | continued step choice later =>
+  | continued step member choice later =>
     have actual : runScriptStep runContext daily.clock 0 initial.connection
         (sql r"SELECT x FROM t LIMIT 1").statements[0].1 [] =
-        .continued (.oneOf [[[1]], [[2]]]) initial.connection := rfl
+        .continued (.oneOf [[[1]], [[2]]]) initial.connection [] := rfl
     have equal := actual.symm.trans step
     cases equal
+    cases Sql.Branch.found_eq step member
     cases later
     simp only [OutputChoice, List.mem_cons, List.not_mem_nil, or_false] at choice
     rcases choice with rfl | ⟨rows, (rfl | rfl), rfl⟩
@@ -81,7 +82,7 @@ theorem failed_traces_distinguish : ¬ failsRandom.EquivAt failsOffset initial :
 
 /-- A deterministic done step followed by pure has one complete branch. -/
 private theorem unit_step_branch {statement values clock index connection next}
-    (step : runScriptStep runContext clock index connection statement values = .continued (.done 0) next)
+    (step : runScriptStep runContext clock index connection statement values = .continued (.done 0) next [])
     (result : SqlRun Unit) :
     (Sql.exec statement values (fun _ => .pure ())).Branch clock index connection result ↔
       result = { outputs := [.done 0], connection := next, value := some () } := by

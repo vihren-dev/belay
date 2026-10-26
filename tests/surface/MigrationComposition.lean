@@ -14,7 +14,7 @@ theorem one_unique (clock : Option Clock) (index : Nat) (result : SqlRun Nat) :
       result = { outputs := [.rows [[1]]], connection := initial.connection, value := some 7 } := by
   have step : let (statement, values) := (sql r"SELECT 1").statements[0]
       runScriptStep runContext clock index initial.connection statement values =
-        .continued (.rows [[1]]) initial.connection := rfl
+        .continued (.rows [[1]]) initial.connection [] := rfl
   constructor
   · intro branch
     obtain ⟨selected, later, choice, tail, rfl⟩ := (Sql.branch_continued_iff step result).mp branch
@@ -24,7 +24,7 @@ theorem one_unique (clock : Option Clock) (index : Nat) (result : SqlRun Nat) :
     subst later
     rfl
   · rintro rfl
-    exact .continued (rest := fun _ => .pure 7) step (.actual _) (.pure 7 _ _ _)
+    exact Sql.Branch.continued_own (rest := fun _ => .pure 7) step (.actual _) (.pure 7 _ _ _)
 
 /-- Two copies of the constant query also have one complete branch, with two raw steps.
 Proof sketch: split bind and use the one-step classification for both segments. -/

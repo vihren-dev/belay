@@ -10,8 +10,11 @@ resolution that assumes that earlier statements succeed.
 RUN = "belay-sqlite-model/Belay/Sqlite/Model/ScriptRun.lean"
 """The model's run of a script, with the connection after each statement."""
 
+CONNECTION = "belay-sqlite-model/Belay/Sqlite/Model/Connection.lean"
+"""The connection after a statement that halted, with its transaction and counters."""
+
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "error_closes_the_transaction": (RUN,
+    "error_closes_the_transaction": (CONNECTION,
         "  | .pending persisted visible _ =>\n"
         "    { state := { connection.state with\n"
         "                 database := visible, snapshot := some persisted, counters := connection.state.counters.apply counts },\n"
@@ -20,7 +23,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    { state := { connection.state with\n"
         "                 database := persisted, snapshot := none, counters := connection.state.counters.apply counts },\n"
         "      foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers }"),
-    "rollback_keeps_the_transaction": (RUN,
+    "rollback_keeps_the_transaction": (CONNECTION,
         "  | .success database | .failure _ _ database =>\n"
         "    { state := { connection.state with\n"
         "                 database := database, snapshot := none, counters := connection.state.counters.apply counts },\n"

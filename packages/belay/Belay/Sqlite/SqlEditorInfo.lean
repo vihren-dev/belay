@@ -3,15 +3,17 @@ import Belay.Sqlite.SqlTableSlots
 import Belay.Sqlite.SqlStatementContexts
 import Belay.Sqlite.SqlTableDescription
 import Belay.Sqlite.SqlTableOrigins
+import Belay.Sqlite.SqlNameInfo
 
 set_option doc.verso true
 
-/-! The entry point that gives located SQL its editor information (the editor task, part 2a). A
+/-! The entry point that gives located SQL its editor information (the editor task, parts 2a and 2b). A
 caller supplies the located statements, the mapping of the SQL bytes to the Lean source
 ({lit}`SqlEditorSource`), what it knows about the database ({lit}`KnownDatabase`) and the
 context of each statement ({lit}`StatementContext`). The module resolves no name itself: it finds
 the table names that the syntax fixes ({lit}`tableSlotsOf`), asks the catalog of the statement's
-context, and emits one hover for each place. {lit}`sql!` and later the SQL files and
+context, and emits one hover for each place. The names below the table level come from the name
+trace of the resolver run that decides the statement ({lit}`nameSites`). {lit}`sql!` and later the SQL files and
 documentation blocks call it. -/
 
 namespace Belay.Sqlite
@@ -44,14 +46,25 @@ the script created or dropped a table of the name ({name}`replacedTable?`),
 because the table is then not the one that the database had at the start. -/
 def slotInformation (known : KnownDatabase) (replaced : List (List UInt8)) (context : StatementContext)
     (slot : TableSlot) : Option (String × Option DeclarationLocation) := do
-  let (position, table) ← context.catalog.findTable slot.name
+  let (position, table) ← context.state.catalog.findTable slot.name
   let rows := context.rows?.map fun rows => (rows.getD position []).length
   let location := if replaced.contains slot.name.folded then none else known.origin? slot.name
   pure (tableDescription known.owner slot.name table rows, location)
 
-/-- Emit the information of the table names of the statements. The statements and contexts pair
-by position; a statement without a context gets nothing. A place whose bytes the source cannot map
-exactly gets nothing ({name}`SqlEditorSource.identifier?`). -/
+/-- The information of the names below the table level of one statement: the resolver runs on the
+statement from the state of its context, and the name trace of that run supplies each place
+({name}`resolveStatementTraced`, {name}`nameSites`). The trace also holds the names up to the one
+that fails, so an unknown name gets its corrections. -/
+def emitStatementNames (source : SqlEditorSource) (file : FileMap) (bytes : ByteArray)
+    (item : Located Syntax.Statement) (context : StatementContext) : TermElabM Unit := do
+  let (_, trace) := resolveStatementTraced runContext context.state item.value
+  for site in nameSites bytes item trace do
+    emitNameSite source file bytes context.state.catalog site
+
+/-- Emit the information of the names of the statements: the table names (part 2a) and the names
+below them, which the name trace gives (part 2b). The statements and contexts pair by position; a
+statement without a context gets nothing. A place whose bytes the source cannot map exactly gets
+no hover and no edit ({name}`SqlEditorSource.identifier?`). -/
 def emitSqlEditorInfo (source : SqlEditorSource) (items : List (Located Syntax.Statement))
     (known : KnownDatabase) (contexts : List StatementContext) : TermElabM Unit := do
   let file ← getFileMap
@@ -63,6 +76,7 @@ def emitSqlEditorInfo (source : SqlEditorSource) (items : List (Located Syntax.S
       if let some (description, location?) := slotInformation known replaced context slot then
         if let some identifier := source.identifier? file slot.start slot.stop (Name.mkSimple name) then
           addSqlTableInfo identifier name description location?
+    emitStatementNames source file bytes item context
     replaced := replaced ++ ((replacedTable? item.value).map (·.folded)).toList
 
 end Belay.Sqlite

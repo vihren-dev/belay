@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.RunHoldsReady
 import Belay.Sqlite.Model.ScriptRunHolds
+import Belay.Sqlite.Model.ScriptRunSingleton
 
 set_option doc.verso true
 
@@ -25,30 +26,12 @@ theorem runScriptStep_holds_ready (keeps : StatementKeepsReady property conditio
     (statement : Syntax.Statement) (parameters : List Value)
     (met : ∀ resolved after, resolveStatement context connection.resolveState statement = .ok (resolved, after) →
       condition resolved connection.state.database)
-    {output : Output} {next : Connection}
-    (continued : runScriptStep context clock index connection statement parameters = .continued output next) :
+    {output : Output} {next : Connection} {others : List StatementExecution}
+    (continued : runScriptStep context clock index connection statement parameters = .continued output next others) :
     next.state.Holds property := by
-  unfold runScriptStep runScriptStepWith ranScriptStep at continued
-  split at continued
-  · nomatch continued
-  · rename_i resolved after resolvedEq
-    split at continued
-    · nomatch continued
-    · rename_i value _
-      split at continued
-      · nomatch continued
-      · dsimp only at continued
-        split at continued
-        · nomatch continued
-        · rename_i passes
-          have ready : (connection.state.statementRun value parameters resolved).ready = true := by simpa using passes
-          split at continued
-          · nomatch continued
-          all_goals
-            injection continued with _ same
-            subst same
-            exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
-              (keeps value _ parameters resolved _ holds.1 (met resolved after resolvedEq) (Bool.and_eq_true_iff.mp ready).1)))
+  obtain ⟨_, resolved, after, value, resolution, _, _, ready, _, _, rfl⟩ := runScriptStep_continued_spec continued
+  exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
+    (keeps value _ parameters resolved _ holds.1 (met resolved after resolution) (Bool.and_eq_true_iff.mp ready).1)))
 
 /-- The run theorem of {name}`runScriptFrom`, for a statement theorem with the support check and a condition
 that the invariant gives. For every context and clock: if the statement theorem holds
@@ -68,15 +51,30 @@ theorem runScriptFrom_holds_derived (keeps : StatementKeepsReady property condit
         (runScriptFrom context clock index connection script).connection.state.Holds property
   | _, _, [], holds => holds
   | index, connection, (statement, parameters) :: rest, holds => by
-    have step : ∀ output next, runScriptStep context clock index connection statement parameters = .continued output next →
-        next.state.Holds property := fun _ _ =>
-      runScriptStep_holds_ready keeps context clock index holds statement parameters
-        (fun resolved after found => derive connection statement resolved after holds found)
     unfold runScriptFrom
-    revert step
-    cases runScriptStep context clock index connection statement parameters with
-    | ended _ => exact fun _ => holds
-    | continued output next =>
-      exact fun step => runScriptFrom_holds_derived keeps context clock derive (index + 1) rest (step output next rfl)
+    cases step : runScriptStep context clock index connection statement parameters with
+    | ended _ => exact holds
+    | continued output next others =>
+      obtain rfl := runScriptStep_others step
+      have kept := runScriptStep_holds_ready keeps context clock index holds statement parameters
+        (fun resolved after found => derive connection statement resolved after holds found) step
+      exact runScriptFrom_holds_derived keeps context clock derive (index + 1) rest kept
+
+/-- The run theorem of {name}`runScriptAllFrom`, for a statement theorem with the support check and a
+condition that the invariant gives. For the hypotheses of {name}`runScriptFrom_holds_derived`: for every
+index, connection and statements with their values, if the state of the connection satisfies
+{name}`SqlState.Holds`, the state of the connection of every complete execution of the script satisfies
+it. Proof sketch: {name}`runScriptFrom_holds_derived` holds for the traversal
+({name}`runScriptAllFrom_forall`). -/
+theorem runScriptAllFrom_holds_derived (keeps : StatementKeepsReady property condition) (context : ResolveContext)
+    (clock : Option Clock)
+    (derive : ∀ (connection : Connection) (statement : Syntax.Statement) resolved after,
+      connection.state.Holds property → resolveStatement context connection.resolveState statement = .ok (resolved, after) →
+        condition resolved connection.state.database)
+    (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
+    (holds : connection.state.Holds property) :
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds property :=
+  runScriptAllFrom_forall context clock index connection script
+    (runScriptFrom_holds_derived keeps context clock derive index script holds)
 
 end Belay.Sqlite.Model

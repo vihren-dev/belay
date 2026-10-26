@@ -17,7 +17,8 @@ open Belay.Sqlite Model
 
 /-- For every script of one statement and every post and context: a program that reads the single
 value of the script checks the post exactly when the step of the statement continues, and the post
-holds for every selected output, with the single value of its rows, at the context after the step.
+holds for every execution of the statement and every selected output of it, with the single value of
+its rows, at the context after that execution.
 Proof sketch: {name}`check_single` and {name}`check_query`; unpack the one statement of the script. -/
 theorem check_single_of_statement {statement : Syntax.Statement} {values : List Value}
     (script : Script) (one : script.statements.length = 1) (isStatement : script.statements = [(statement, values)])
@@ -25,9 +26,10 @@ theorem check_single_of_statement {statement : Syntax.Statement} {values : List 
     (single script one).check post state ↔
       match runScriptStep runContext state.clock state.index state.connection statement values with
       | .ended _ => False
-      | .continued actual connection =>
-        ∀ selected, OutputChoice actual selected →
-          post (singleValue (queryResult selected)) (state.next selected connection) := by
+      | .continued actual connection others =>
+        ∀ found ∈ (RunStep.continued actual connection others).executions, ∀ selected,
+          OutputChoice found.output selected →
+            post (singleValue (queryResult selected)) (state.next selected found.next) := by
   rw [check_single, check_query]
   obtain ⟨statements⟩ := script
   simp only at isStatement

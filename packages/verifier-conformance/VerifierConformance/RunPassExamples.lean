@@ -4,7 +4,7 @@ import Belay.Sqlite.Model.ScriptRunExamples
 set_option doc.verso true
 
 /-! Examples of the classification pass of the run that continues after an error
-({name}`Belay.Sqlite.Model.Conformance.runPassFrom`), checked by the kernel when the package
+({name}`Belay.Sqlite.Model.Conformance.runPassAllFrom`), checked by the kernel when the package
 builds. They check what the comparison with a recorder that runs on reads after a failed
 statement: the transaction status, the primary code and the phase after each statement, and the
 outputs of later statements, for an error inside a transaction, {lit}`OR ROLLBACK` inside a
@@ -14,11 +14,17 @@ namespace Belay.Sqlite.Model.Conformance.RunPassExamples
 
 open Belay.Sqlite.Model Syntax Resolution.Examples ScriptRunExamples
 
-/-- The pass of the statements from the empty database, with the default profile, without a
-clock and without bound values. -/
-def passOf (script : List Syntax.Statement) : RunPass :=
-  runPassFrom { profile := defaults, mode := .execution } none 0 { state := { database := {} } }
+/-- The passes of the complete executions of the statements from the empty database, with the default
+profile, without a clock and without bound values. -/
+def passesOf (script : List Syntax.Statement) : List RunPass :=
+  runPassAllFrom { profile := defaults, mode := .execution } none 0 { state := { database := {} } }
     (bindValues script [])
+
+/-- The one pass of the statements: each statement here has one execution, so the list of passes
+({name}`passesOf`) has one pass. For a script with no pass it is the pass of a run that ends at once. -/
+def passOf (script : List Syntax.Statement) : RunPass :=
+  (passesOf script).headD (RunPass.ended "no complete execution")
+
 
 /-- The transaction status, the primary code and the phase of the error after each statement
 of a pass. -/
@@ -34,6 +40,10 @@ def namesOutput (rows : List ResultRow) : Option StatementOutput :=
 same key with the algorithm, {lit}`COMMIT` and a query of the names. -/
 def failedInsert (algorithm : Option ConflictAlgorithm) : List Syntax.Statement :=
   [createT, .begin, insertT "1" "a", insertT "1" "b" algorithm, .commit, selectNames]
+
+-- Each statement here has one execution, so the script has one complete execution and one pass.
+example : (passesOf (failedInsert none)).length = 1 := by
+  decide +kernel
 
 -- A constraint failure under ABORT inside a transaction fails at step and keeps the transaction
 -- open; COMMIT then closes it, and the query gives the first row.
