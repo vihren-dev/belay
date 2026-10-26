@@ -114,3 +114,21 @@ Open points:
   fixture `S6RulesQueryPattern.lean` chooses the `admitted` predicate that holds only at the original connection
   and clock,; a wider predicate must also satisfy `admittedKept`. A moving clock is a negative fixture
   (`S6RulesNegativeClock.lean`): the premise of a constant clock fails and the commutation claim is false.
+
+## Part 1 accepted; integration on the open PR stack (2026-10-26)
+
+- Decision on the first open point: (a). Part 1 keeps the claim for one concrete database. Part 2 states
+  the universal claim over a site, as a fixture in `tests/surface` that uses the general certificate rules,
+  not the example-specific parts of the `NormalizedField*` modules (they are due for the cleanup task).
+- The task file now says that outcomes are general laws and guide examples are test fixtures only
+  (commit `spec: S6 automation outcomes are general laws; ...`, review `20261026T201455Z-11ea972d`: no
+  findings).
+- The branch has the merge of the open stack top (#275, the global signup invariant) and sits on top of
+  stack 273. The two barrel conflicts (`Model.lean`, `lakefile.toml`) keep the modules of both sides.
+  Checks on the merged tree:
+  - `just test-full`: exit 0, `/nix/store/ba3574xwy2b7rx4a3yzc5kbv1xwvil6j-sqlite-verifier-test-reports`
+    (the first run ended with exit 124 at the 1500 s limit with no failed test, beside another test-full;
+    the rerun passed).
+  - `just verdict`: exit 0, `/nix/store/qqlwfhcc7d9xdjwg58447dri5d52wy6g-sqlite-verifier-verdict`
+    (55 corpora, AGREE 5170, MODEL_UNSUPPORTED 2430).
+- Next: part 2 (tactics, checker and code-action integration, the guide examples except the rebuild).
