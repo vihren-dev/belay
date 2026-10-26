@@ -28,10 +28,12 @@ unfold the traced form; the name is found, so the lookup of the operand is the r
   simp only [resolveGroupTerm, resolveGroupTermTraced, found, identifierTraced, traced_drop]
   cases scope.nameRead reads <;> rfl
 
-/-- For every grouping term that is a name under one {lit}`COLLATE`: a term that is a column under that
-collation resolves as the operand of the term does, with the collation of the term, and an issue is moved to
-the term; any other term is {name}`RestrictionKind.groupByTerm`. Proof sketch: unfold the traced form and
-split on whether the term is a collated column; the operand is the traced operand of the term. -/
+/-- For every grouping term that is an expression under one {lit}`COLLATE`: if the term is a collated column
+({name}`Syntax.Expr.collatedColumn`: an unqualified name that reads a column of the scope, or any qualified
+name, which enters operand resolution even when its lookup fails), it resolves as its operand does, with
+the collation of the term, and an issue is moved to the term; any other term is
+{name}`RestrictionKind.groupByTerm`. Proof sketch: unfold the traced form and split on whether the term is a
+collated column; the operand is the traced operand of the term. -/
 @[traced_arms] theorem resolveGroupTerm_collate (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
     (aliases : List (Option Identifier)) (outputs : List (Resolved.Output × String × Option Affinity))
     (collations : List Collation) (item : Nat) (operand : Syntax.Expr) (name : Identifier) :

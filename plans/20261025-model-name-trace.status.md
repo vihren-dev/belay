@@ -201,13 +201,12 @@ module `SingleSourceNameLaws`.
   daily in CI). `tests/surface_name_trace_test.py` is owned by the `surface` suite in
   `tests/nix_suites.json`, because its fixture needs the shared libraries of that suite.
 
-## Local checks before the gates (2026-10-26)
+## Proof repairs and consumer proofs (2026-10-26)
 
-- `just test-source`: 481 passed, 71 deselected.
-- `just dev-build` passed (2030 jobs) before the doc-only commits; the predictions of the
-  working copy equal the baseline (55 files, store `/nix/store/939qb81cy71nz7y9bsrfwf24rkllf0zm-sqlite-verifier-predictions`).
-- Proof repairs: 73 manual (5 + 16 + 27 + about 7 + about 18 by layer) and 99 mechanical (about 42 + 57),
-  below the stop limit of about 80 manual repairs.
+- The predictions of the working copy equal the baseline (55 files, Nix store
+  `/nix/store/939qb81cy71nz7y9bsrfwf24rkllf0zm-sqlite-verifier-predictions`).
+- Proof repairs in the model: 73 manual (5 + 16 + 27 + about 7 + about 18 by layer) and 99 mechanical
+  (about 42 + 57), below the stop limit of about 80 manual repairs.
 - Surface fixtures (found by the first `just test-full`, which ran the `surface` suite): six
   fixtures unfolded the resolver or the single-source scope of the old shape. The sql_simp set now
   has the laws of a scope that is read from the catalog (`Scope.columns_singleAt`,
