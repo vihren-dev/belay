@@ -38,12 +38,11 @@ def bodyStep : StatementResolution → Except NodeRestriction (Except PrepareErr
     if error == .expression .raiseOutsideTrigger then .error (triggerRestriction .raiseForm) else .ok (.error error)
   | .ok (.insert table rows _ subqueries _, _) => writeStep (.insert table rows [] none subqueries)
   | .ok (.upsert table rows clauses _ algorithm subqueries _, _) => writeStep (.insert table rows clauses algorithm subqueries)
-  | .ok (.insertSelect .., _) => .error (triggerRestriction .querySourceInsert)
   | .ok (.update table assignments filter _ subqueries _, _) => writeStep (.update table assignments filter subqueries)
   | .ok (.delete table filter _ subqueries _, _) => writeStep (.delete table filter subqueries)
   | .ok (.query query subqueries, _) => queryStep (.query query subqueries)
   | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
-  | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
+  | .ok (.insertSelect .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
     .error (triggerRestriction .triggerForm)
 
 /-- Resolve a SELECT of a trigger's body as {lit}`resolveSelect` does, with the trigger's rows as

@@ -281,3 +281,10 @@ rebuild proof is separate.
   - `just test-full` (test-source) found that `InsertSelectRun` imported the resolver
     (`SubqueryResolution`) for `Query.readsTable`, which put `Lean.Meta` into the import closure of
     the model laws (`tests/test_model_ownership.py`). `Query.readsTable` moved to `QueryForm`.
+  - `just test-full` (restriction examples) found that the restriction `query-source-insert` was
+    reached by no text any more: the frontend refuses INSERT from a query in a trigger body before
+    the model sees it, and a statement INSERT from a query is described. The registry must not keep
+    a restriction that no SQL reaches (`tests/conformance_restriction_examples_test.py`), so the
+    restriction is retired (constructor, text, registry map, documentation row, example); the form
+    of a trigger body that a body statement cannot have stays `trigger-form`. The refusal that
+    users see is the frontend's: "Only VALUES rows are modeled as an INSERT source".
