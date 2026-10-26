@@ -214,3 +214,50 @@ rebuild proof is separate.
   surface split and the raised limits), `just verdict` passes, and the 55 predictions are
   byte-identical to the stage (a) ones. Stage (b) waits for the coordinator.
 
+- Merge gates before stage (b) (Nix results, from the coordinator): test-reports
+  `/nix/store/yc98h3yg6vgh1iv732dcgz53sjqfx9bl-sqlite-verifier-test-reports`, verdict
+  `/nix/store/2ws8nqmj8qllb2psmlxy0wg2953l788z-sqlite-verifier-verdict`, predictions
+  `/nix/store/a08msf5g6062f0hwwdhnkmahmizqgkdb-sqlite-verifier-predictions` (identical to
+  `build/predictions-a2`, the 55-file baseline).
+- 2026-10-26, part 1, stage (b): INSERT from a query gets its possible executions through the
+  `StatementExecution` interface.
+  - Model: `Resolved.Query.productions` gives one production for each order in which SQLite may
+    read the source (`Table.accessOrders`: the scan, then each index), or one for a total ORDER BY;
+    `insertSelectRun` runs the first as the statement's own run and the others as
+    `StatementRun.alternatives`. A statement with rules (a trigger or an enforced foreign key) is
+    described for one production only. A source error after rows that all succeed ends the statement
+    and keeps no row (also with OR FAIL); streaming against collecting only changes
+    `last_insert_rowid()`. The transfer optimization is a candidate only for a query whose result
+    columns are the columns of the source in order (a new conjunct; `abs(x)` is no candidate).
+    `statementOutput` gives a failed INSERT from a query with a source failure its RETURNING names,
+    no rows and the changes of its run. The laws moved: `InsertSelectLaws` (141 lines) and
+    `InsertSelectOutcomeLaws` (183 lines); the examples are `InsertSelectExamples` and
+    `InsertSelectTransferExamples`.
+  - Native facts (SQLite 3.51.0): the recorder's `check_write_window` reads the whole source before
+    a limited write, so a LIMIT write whose uncut source fails cannot be recorded; the Lean examples
+    keep that case (`limitedCopy`).
+  - Conformance: `conformance/authored_insert_queries.py` (62 cases, version 7 records, which run on
+    after an error and hold the counters; a version 5 record uses the halting classifier, which
+    knows one execution only). 55 agree. 7 stay unmodeled, with kernel proofs of the boundary:
+    GROUP BY, compounds, ORDER BY over a source that may fail (2), the transfer optimization (2)
+    and a trigger with a source that has two orders. `tests/conformance_insert_queries_test.py`
+    checks the verdicts natively and in the kernel. No case disagrees.
+  - Mutants: `conformance/insert_query_mutants.py` (9 mutants: scan order only, alternatives dropped,
+    always streams, always collects, RETURNING does not collect, transfer rowids ignored, transfer
+    takes any projection, rules with two orders, source failure has no output), all killed by
+    `tests/conformance_insert_query_mutants_test.py` (run by name); guards checked by
+    `tests/mutant_guards_test.py`. One planned mutant (`any trigger collects`) is equivalent:
+    ON CONFLICT DO UPDATE on a table with a trigger is refused, so no update program reaches the
+    source analysis. The modules are in `build-support/tests.nix` and the tests in
+    `tests/nix_suites.json` (entries only).
+  - Surface: `tests/surface/InsertSelectExecutions.lean` (5 checks over `decide +kernel`), in
+    `tests/surface_execution_test.py`.
+  - Predictions (Nix, `build/predictions-b2`, same as b1): the 55 files compared with the baseline: 42
+    cases go from unsupported (`query-source-insert`) to predicted; 6 are unsupported with another
+    reason (3 `row-dependent-key`, 2 `trigger-form`, 1 `alias-in-expression`); no predicted case
+    changed.
+  - Proof repairs by hand in this stage: about 75 in total so far.
+  - Scope notes for the report: the stage touches run-law and belay surface law files of the
+    possible-executions task (single premises on `Succeeds.script_iff`, `branch_shape` and others);
+    the authored corpus freeze (corpus numbers, the Nix corpus list, evidence writers, the lock) is
+    for the judge PR and is not done here.
