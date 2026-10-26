@@ -187,3 +187,33 @@ module `SingleSourceNameLaws`.
   form of the comparison is part of the key, with examples at the settled level and the statement
   level.
 - Fix commit (`ca5e6f1d`, review 17): no findings.
+- Write-layer and entry-point commit (`4d221c63`, review 18): two musts. R2: the rollback arm of the
+  statement equations lacked a docstring case; R3: the equations of `StatementArms` lacked proof
+  sketches. Both fixed in `2e0245cf` (review 19: no findings), which states every case of the
+  statement equations.
+- Instances commit (`231c8185`, review 20): no findings. The public documentation inventory of
+  `just test-full` needed docstrings for four instances of the traced monad and of the issue
+  class; this commit adds them.
+- Mutant and suite commit (`0b6826d5`, review 21): no findings. The 24 mutants whose text lived in
+  the untraced resolver now change the traced declarations (`resolveOperandTraced` and the other
+  `*Traced` forms), their guards name those declarations, and every changed mutant text elaborates
+  (checked by compiling each mutated file against the built model; the mutant suites themselves run
+  daily in CI). `tests/surface_name_trace_test.py` is owned by the `surface` suite in
+  `tests/nix_suites.json`, because its fixture needs the shared libraries of that suite.
+
+## Local checks before the gates (2026-10-26)
+
+- `just test-source`: 481 passed, 71 deselected.
+- `just dev-build` passed (2030 jobs) before the doc-only commits; the predictions of the
+  working copy equal the baseline (55 files, store `/nix/store/939qb81cy71nz7y9bsrfwf24rkllf0zm-sqlite-verifier-predictions`).
+- Proof repairs: 73 manual (5 + 16 + 27 + about 7 + about 18 by layer) and 99 mechanical (about 42 + 57),
+  below the stop limit of about 80 manual repairs.
+- Surface fixtures (found by the first `just test-full`, which ran the `surface` suite): six
+  fixtures unfolded the resolver or the single-source scope of the old shape. The sql_simp set now
+  has the laws of a scope that is read from the catalog (`Scope.columns_singleAt`,
+  `resolveName_one_source_at`, `resolveOperand_identifier_singleAt`), because `tableScope` records
+  the catalog position of its source; the model has the arm `resolveGroupTerm_collate`; and the
+  proofs of `SuccessUniqueEmail`, `SuccessBalanceResolution`, `SuccessBalanceResolveGuard` and
+  `SuccessBalanceMissing` unfold the traced forms (`traced_drop`, `traced_arms`) in place of the
+  old ones. The four claim fixtures needed only the new sql_simp laws. These are consumer proofs, not
+  repairs inside the model; they are not counted in the 73 + 99 repairs of the model.

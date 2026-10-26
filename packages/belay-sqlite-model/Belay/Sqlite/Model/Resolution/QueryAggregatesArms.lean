@@ -28,4 +28,22 @@ unfold the traced form; the name is found, so the lookup of the operand is the r
   simp only [resolveGroupTerm, resolveGroupTermTraced, found, identifierTraced, traced_drop]
   cases scope.nameRead reads <;> rfl
 
+/-- For every grouping term that is a name under one {lit}`COLLATE`: a term that is a column under that
+collation resolves as the operand of the term does, with the collation of the term, and an issue is moved to
+the term; any other term is {name}`RestrictionKind.groupByTerm`. Proof sketch: unfold the traced form and
+split on whether the term is a collated column; the operand is the traced operand of the term. -/
+@[traced_arms] theorem resolveGroupTerm_collate (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
+    (aliases : List (Option Identifier)) (outputs : List (Resolved.Output × String × Option Affinity))
+    (collations : List Collation) (item : Nat) (operand : Syntax.Expr) (name : Identifier) :
+    resolveGroupTerm dqs scope shapes aliases outputs collations item (.collate operand name) =
+      if (Syntax.Expr.collate operand name).collatedColumn scope then
+        ((resolveOperand dqs scope shapes true (.collate operand name)).map fun resolved =>
+          (resolved.1, (Syntax.Expr.collate operand name).collationIn scope)).mapError (ValueIssue.under [4, item])
+      else .error (.restriction [4, item] .groupByTerm) := by
+  simp only [resolveGroupTerm, resolveGroupTermTraced, resolveOperand]
+  split
+  · simp only [traced_drop]
+    cases (resolveOperandTraced dqs scope shapes true (operand.collate name)).drop <;> rfl
+  · simp [traced_drop]
+
 end Belay.Sqlite.Model

@@ -38,9 +38,9 @@ theorem guard_bodies (catalog : Catalog) (position index : Nat) (table : Catalog
     (pragmaPending table.infoRows) _ (typed_resolves _ _ _) (resolvePendingSources_pragma _ _ _)
   have rangeFour : List.range 4 = [0, 1, 2, 3] := rfl
   dsimp only [oneQuery] at rangeOk accountOk typeOk
-  unfold resolveSubqueryBodies
+  unfold resolveSubqueryBodies resolveSubqueryBodiesTraced
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp [rangeFour, List.lookup, subqueryShape, balanceQueries, oneQuery, countSyntax, QueryScope.refresh, Scope.refreshSources, QueryScope.sourceIndexes, compoundColumnsIssue, compoundOf,
+  simp [traced_drop, resolveQueryBodyTraced_drop, rangeFour, List.lookup, subqueryShape, balanceQueries, oneQuery, countSyntax, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, QueryScope.sourceIndexes, compoundColumnsIssue, compoundOf,
     ledgerScope, pragmaScope, around, rangeOk, column, atIndex, countOk, accountOk, typeOk,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
   simp [guardQueries, guardShapes, rangeShape, balanceCountShape, rangeQuery, metadataQuery,
@@ -90,14 +90,16 @@ theorem guard_select (catalog : Catalog) (position index : Nat) (table : Catalog
   dsimp only [around] at scopes bodies
   dsimp only [mainSyntax, guardShapes, rangeShape, balanceCountShape] at main
   have ordinary := guard_no_copies catalog position table found
-  unfold resolveSelect resolveSelectDetails
-  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  simp only [mainSyntax, noMain]
-  simp [CommonTableCopies.recursionIssue, dqs, scopes, bodies, main, around, mainSyntax, starIssue, resultAliases,
-    QueryScope.refresh, Scope.refreshSources, guardShapes, rangeShape, balanceCountShape,
+  unfold subqueryScopes at scopes
+  unfold resolveSubqueryBodies at bodies
+  unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
+  simp only [prepareQuerySourcesTraced, ordinary, Bool.false_eq_true, ↓reduceIte, traced_drop, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [mainSyntax, resolveSourcesTraced_drop, noMain]
+  simp [traced_drop, resolveQueryBodyTraced_drop, CommonTableCopies.recursionIssue, dqs, scopes, bodies, main, around, mainSyntax, starIssue, resultAliases,
+    QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, guardShapes, rangeShape, balanceCountShape,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
-  simp [Resolved.Query.selectOneWhere, Resolved.Query.simple, Resolved.Query.expressions,
+  simp [traced_drop, Resolved.Query.selectOneWhere, Resolved.Query.simple, Resolved.Query.expressions,
     Resolved.Query.keptExpressions, Resolved.Output.scalars, Resolved.Output.operands,
     guardCondition, Resolved.Expr.any, Resolved.Expr.isFallibleCall]
 
