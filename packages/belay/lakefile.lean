@@ -55,6 +55,7 @@ lean_lib Belay where
       .one `Belay.Sqlite.ProofCostUnits, .one `Belay.Sqlite.ProofCostReport,
       .one `Belay.Sqlite.ProofCostCompare, .one `Belay.Sqlite.ProofCostArguments,
       .one `Belay.Sqlite.ProofCostModuleData, .one `Belay.Sqlite.ProofCostRun]
+    ++ #[.one `Belay.Sqlite.ApplicationCalls, .one `Belay.Sqlite.Application, .one `Belay.Sqlite.ApplicationTranslation, .one `Belay.Sqlite.ApplicationSimulation, .one `Belay.Sqlite.ScopedAgreement, .one `Belay.Sqlite.ScopedAgreementBind, .one `Belay.Sqlite.ScopedSimulation]
   precompileModules := true
 
 /-- The SQL-file checker (ADR 0017, S7), run as {lit}`lake exe belay-sql-check`. It is the only
