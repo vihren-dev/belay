@@ -20,11 +20,9 @@ inductive RestrictionKind where
   | unmodeledDefault
   /-- A string literal or a double-quoted non-column name as a key term of CREATE INDEX: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
   | indexStringTerm
-  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock
-  only when it writes a row (ADR 0014, slice 1). -/
+  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock only when it writes a row (ADR 0014, slice 1). -/
   | indexDateFunction
-  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row is written, which the
-  model's key check does not describe (ADR 0014, slice 1). -/
+  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row is written, which the model's key check does not describe (ADR 0014, slice 1). -/
   | indexJsonFunction
   /-- A {lit}`COLLATE` in an expression with a name that names no collation: SQLite looks the name up only where it
   uses the collation, and its query planner decides some of those uses, so the model cannot tell whether the statement
@@ -78,7 +76,7 @@ inductive RestrictionKind where
   /-- A rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`) that is not a column is not modeled in an expression
   (ADR 0012 slice 3a; extended 2026-10-14), where SQLite reads the rowid and the model would report
   {lit}`no such column`. As the column of a {lit}`SET` assignment it assigns the rowid alias; for a table without one
-  it is this restriction, since a resolved write cannot assign the physical rowid (2026-10-21). -/
+  it is this restriction, since a resolved write cannot assign the physical rowid (2026-10-21); so does a rowid name in an INSERT column list. -/
   | rowidName
   /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as {lit}`INNER OUTER JOIN`, is not
   modeled: the model has no such prepare error (ADR 0012, amendment 2; ADR 0013, amendment 2). -/
@@ -194,9 +192,7 @@ inductive RestrictionKind where
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
-  /-- INSERT from a query ({lit}`INSERT INTO t SELECT ...`) that SQLite prepares: the model resolves the table, the
-  column list, the query, the column counts, the clauses and {lit}`RETURNING` in SQLite's order, but does not run the
-  rows yet (ADR 0017, S6; ADR 0019, D4). -/
+  /-- INSERT from a query that SQLite prepares: the model resolves it in SQLite's order but does not run its rows yet (ADR 0019, D4). -/
   | querySourceInsert
   deriving Repr, DecidableEq
 

@@ -14,6 +14,7 @@ import Belay.Sqlite.Model.Resolution.ColumnSpec
 import Belay.Sqlite.Model.Resolution.RowSpec
 import Belay.Sqlite.Model.Resolution.CatalogSpec
 import Belay.Sqlite.Model.Resolution.NamesSpec
+import Belay.Sqlite.Model.Resolution.NamesSpecScript
 import Belay.Sqlite.Model.Resolution.PrepareSpec
 import Belay.Sqlite.Model.Resolution.UpdateSpec
 import Belay.Sqlite.Model.Resolution.DefinitionSpec

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:21:05+00:00",
+  "finding": "20261026T100318Z-7d3e84be#5",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "local dev-verdict text removed from the status file"
+}

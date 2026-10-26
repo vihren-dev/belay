@@ -643,7 +643,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table, or as the SET column of a table without an `INTEGER PRIMARY KEY`; in VALUES it resolves as any other name, and as the SET column of a table with an `INTEGER PRIMARY KEY` it assigns that column | ADR 0012 slice 3a; extended 2026-10-14 and 2026-10-21 |
+| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table, as the SET column of a table without an `INTEGER PRIMARY KEY`, or in the column list of an `INSERT` into a table with a rowid; in VALUES it resolves as any other name, and as the SET column of a table with an `INTEGER PRIMARY KEY` it assigns that column | ADR 0012 slice 3a; extended 2026-10-14, 2026-10-21 and 2026-10-26 |
 
 ## Execution
 

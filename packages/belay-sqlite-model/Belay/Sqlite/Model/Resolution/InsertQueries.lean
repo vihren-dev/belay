@@ -30,6 +30,7 @@ def resolveInsertQueryTraced (context : ResolveContext) (catalog : Catalog) (tab
     (resolveViewTargetTraced context catalog tableName (Traced.lift (resolveViewModify catalog tableName)))
     (Traced.lift (prepareError catalog (.noSuchTable tableName))) fun position table =>
   let scope := Scope.singleAt (some position) tableName table.columns !table.withoutRowid
+  if insertRowidTarget table names then Traced.lift (restrict [1] .rowidName) else
   Traced.stage catalog [1] ((insertPositionsTraced tableName table.columns scope names).mapError ValueIssue.prepare)
     fun positions =>
   Traced.sourceStage catalog ((resolveSelectDetailsTraced context catalog body.query body.subqueries).under [2])

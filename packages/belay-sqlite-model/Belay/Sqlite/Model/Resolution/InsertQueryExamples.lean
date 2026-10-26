@@ -46,12 +46,23 @@ def run (table : String) (columns : Option (List String)) (source : Syntax.Selec
 /-- The prepare error of a resolution, if it is one. -/
 def prepared : Except NodeRestriction (Resolved.Statement × ResolveState) → Option PrepareError
   | .ok (.prepareError error, _) => some error
-  | _ => none
+  | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
+  | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _)
+  | .ok (.upsert .., _) | .ok (.update .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _)
+  | .error _ => none
 
 /-- The restriction of a resolution with its path, if it is one. -/
 def refused : Except NodeRestriction (Resolved.Statement × ResolveState) → Option (List Nat × RestrictionKind)
   | .error restriction => some (restriction.path, restriction.kind)
   | .ok _ => none
+
+-- A rowid name in the column list is a restriction, not the error that the table has no such column.
+#guard refused (run "t" (some ["rowid"]) (body ["x"])) == some ([1], .rowidName)
+#guard refused (run "t" (some ["b", "OID"]) (body ["x", "y"])) == some ([1], .rowidName)
+
+-- An earlier unknown name stays the error of the table.
+#guard prepared (run "t" (some ["nosuch", "rowid"]) (body ["x", "y"])) ==
+  some (.expression (.tableHasNoColumn (name "t") (name "nosuch")))
 
 -- A table that the catalog lacks is the error of the table before any error of the query.
 #guard prepared (run "nosuch" none (body ["nosuch"])) == some (.noSuchTable (name "nosuch"))

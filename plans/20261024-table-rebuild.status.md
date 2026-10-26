@@ -133,6 +133,12 @@ rebuild proof is separate.
     modeled as an INSERT source" or an unsupported `selectnowith`; now
     `query-source-insert` (48), a recursive-common-table restriction (13), or another
     later restriction (2)). One is newly predicted (`select1:select1-4.5:66` in
-    corpus-v5): a prepare error of an INSERT SELECT, which the native record
-    agrees with. `just dev-verdict` reports 5171 AGREE, 2429 MODEL_UNSUPPORTED, and no
-    DISAGREE over all corpora.
+    corpus-v5): a prepare error of an INSERT SELECT; the Nix verdict
+    of the part checks it against the native record.
+- 2026-10-26: review `20261026T100318Z-7d3e84be` of stage (a): 3 musts and 2 shoulds, all fixed.
+  Finding: a rowid name in an INSERT column list (`INSERT INTO t(rowid) ...`) was resolved as
+  "table has no column named rowid", while SQLite stores the rowid. This was already so for
+  VALUES inserts. Both forms now give the existing `rowid-name` restriction
+  (`insertRowidTarget`; an earlier unknown or generated name stays an error). The file-size
+  musts were fixed by shortening `Restrictions.lean` and moving `resolve_namesUnique` to
+  `NamesSpecScript.lean`.

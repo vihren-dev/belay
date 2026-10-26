@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:21:02+00:00",
+  "finding": "20261026T100318Z-7d3e84be#4",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "resolve_namesUnique moved to NamesSpecScript.lean"
+}
