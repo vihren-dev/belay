@@ -27,9 +27,15 @@ Nothing says that the final contexts of the two sides are equal. -/
 structure ScopedClaim {Name : Type} {signature : Signature Name} {μ : Type} (migration : Sql μ)
     (admitted : ExecutionContext → Prop) (related : ExecutionContext → ExecutionContext → Prop)
     (pairing : Pairing signature) : Prop where
-  /-- The migration enters the relation. -/
+  /-- The migration enters the relation. For every admitted context where the migration succeeds at the
+  original context ({name}`Migration.Domain`), and for every branch of the migration that returns a
+  value, the original context is related to the context that the quiet view reaches. A context outside
+  the domain, and a branch that fails or stops, require nothing. -/
   entry : MigrationEntry migration admitted related
-  /-- Each paired call agrees under the relation. -/
+  /-- Each paired call agrees under the relation. For every call name, every argument and every pair of
+  related contexts, the old call and its partner agree ({name}`Sql.ScopedAt`): equal actual results
+  and outputs, related final contexts, and a matching branch for every branch of either side. A pair
+  of contexts that the relation does not relate requires nothing. -/
   calls : ScopedSimulation related pairing
 
 /-- For every scoped claim and every application: at every admitted context where the migration

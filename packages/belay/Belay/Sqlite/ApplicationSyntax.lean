@@ -4,6 +4,12 @@ import Belay.Sqlite.ContextObservation
 
 set_option doc.verso true
 
+/-! Notation for the two simulation claims of a migration (ADR 0017, S8). The forms
+{lit}`M simulates P` and {lit}`M simulates P scoped by R`, each with an optional {lit}`where` guard,
+elaborate to the public claims {name}`Belay.Sqlite.Simulation` and {lit}`Belay.Sqlite.ScopedClaim`. The
+notation adds no meaning of its own, so a user who needs a context predicate that is not a query guard
+writes the primitive. -/
+
 namespace Belay.Sqlite
 
 open Lean Elab Term

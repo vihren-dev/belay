@@ -1,6 +1,6 @@
 import Belay
 
-/-! A fixture module of `tests/surface_application_test.py`: the simulation syntax and the
+/-! A fixture module of `tests/surface_application_syntax_test.py`: the simulation syntax and the
 {lit}`#explain` command (ADR 0017, S8). The four forms {lit}`M simulates P`, {lit}`M simulates P where G`,
 {lit}`M simulates P scoped by R` and {lit}`M simulates P scoped by R where G` elaborate to the public
 claims {name}`Belay.Sqlite.Simulation` and {name}`Belay.Sqlite.ScopedClaim`. The fixture checks that each

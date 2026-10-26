@@ -2,6 +2,11 @@ import Belay.Sqlite.ApplicationClaims
 
 set_option doc.verso true
 
+/-! The plain-word explanation of the two simulation claims, for the {lit}`#explain` command (ADR 0017,
+S8). The text reads the head and the arguments of the elaborated claim, so it states the admitted
+contexts, the migration domain, the context relation and the call conditions of the claim that the
+user wrote, and it tells the full-state claim from the scoped claim. It gives no semantics of its own. -/
+
 namespace Belay.Sqlite
 
 open Lean
