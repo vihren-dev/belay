@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T17:11:41+00:00",
+  "finding": "20261026T171103Z-f5bfc2f7#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docstrings and status file say the laws do not cover a non-calm filter and never read it as false"
+}

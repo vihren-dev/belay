@@ -1,140 +1,142 @@
 import Belay.Sqlite.Model.CountStatementResolution
-import Belay.Sqlite.Model.Resolution.ScopeOwn
+import Belay.Sqlite.Model.DuplicateKeyGroupTerm
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 
-/-! The resolution of {lit}`SELECT 1 FROM t GROUP BY k HAVING count(*) > 1` (ADR 0017, S4): the body of the query
+/-! The resolution of {lit}`SELECT c FROM t [WHERE w] GROUP BY k HAVING count(*) > 1` (ADR 0017, S4 and S6): the body of the query
 resolves to the duplicate-key query ({name}`Belay.Sqlite.Model.Resolved.Query.duplicateKeys`) of its resolved sources,
 grouping key and collation. The lemma takes the resolved sources and grouping term as hypotheses, because the catalog
 is free. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The grouping term {lit}`k` resolves ({name}`resolveGroupTerm`), for a query whose one result column is the literal
-one named {lit}`"1"` and which has no alias, in a scope and with shapes of subqueries, to the key {lit}`key` under the
-collation {lit}`collation`. The formula is exactly that equation of the resolver: resolution succeeds, and its result
-is that key and that collation. It restricts the term only as the resolver does, so the cases are those of the
-resolver: a name of a column of the scope (also under one {lit}`COLLATE`) or a qualified name resolves to the column,
-and a name that is no column can resolve in the other ways that {name}`resolveOperand` allows, such as a quoted text
-when the profile allows it ({lit}`dqs`) or the constants {lit}`TRUE` and {lit}`FALSE`. The collation is the
-explicit one if there is one, else the collation of the column, else {lit}`BINARY`. A parameter resolves to a constant
-value, and the result-column number {lit}`1` to the literal one, both with {lit}`BINARY`. A term that the resolver
-rejects, such as an aggregate call, a number other than {lit}`1` or an expression, makes the equation false. -/
-def GroupTermResolves (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (term : Syntax.Expr) (key : Resolved.Expr)
-    (collation : Collation) : Prop :=
-  resolveGroupTerm dqs scope shapes [none] [(.scalar (.literal (.integer 1)), "1", none)] [.binary] 0 term =
-    .ok (key, collation)
-
-/-- For every catalog, table reference, position, table, shapes, name and quote kind, if the table has a column of that
-name at a position, the grouping term of that name resolves, in the scope of the table, to the cell of that column
-under the collation of the column ({lit}`BINARY` when the column has none). The formula requires nothing of a name that
-the table does not have. Proof sketch: the name resolves to the column alone ({name}`resolveName_one_source`) and the
-collation is the column collation of {name}`Syntax.Expr.columnCollation_identifier_table`. -/
-theorem GroupTermResolves.identifier_table {dqs : Bool} {catalog : Catalog} {reference : Syntax.TableReference}
-    {position : Nat} {table : CatalogTable} {shapes : SubqueryShapes} {name : Identifier} {quote : Syntax.QuoteKind}
-    {index : Nat} (found : columnPosition table.columns name = some index) :
-    GroupTermResolves dqs (tableScope catalog reference position table) shapes (.identifier name quote) (.column index)
-      ((table.columns[index]?.map (·.collation)).getD .binary) := by
-  have resolved : (tableScope catalog reference position table).resolveName name = .found index [index] :=
-    resolveName_one_source_at found
-  have collation := Syntax.Expr.columnCollation_identifier_table (catalog := catalog) (reference := reference)
-    (position := position) (quote := quote) found
-  unfold GroupTermResolves
-  rw [resolveGroupTerm_identifier_found (found := resolved) ..]
-  simp only [tableScope, Scope.singleAt] at collation
-  simp [tableScope, Scope.nameRead, Scope.nameOperand, Scope.singleAt, Scope.argumentCell, Scope.triggerCell,
-    Scope.columns, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, collation]
-  rfl
-
-/-- For every scope, shapes and name of a call, the condition {lit}`count(*) > 1` resolves, when the
-aggregate calls of the query are the one call {lit}`count(*)`, to the comparison of the value of aggregate 0 with
-the literal one, under {lit}`BINARY`, with no affinity. Proof sketch: unfold the resolver; the call is the aggregate
-with index 0, and neither operand names a column. -/
-theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (name : String)
-    (aggregates : shapes.aggregates = [.callStar name]) :
-    resolveOperand dqs scope shapes false (.compare .gt (.callStar name) (.numeric "1")) =
-      .ok (.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary, none) := by
-  have literal : queryNumeric "1" false = .ok (.integer 1) := by rfl
-  simp [traced_arms, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
-    comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, Bind.bind, Except.bind]
-  rfl
-
-/-- For every query {lit}`SELECT 1 FROM … GROUP BY k HAVING count(*) > 1` without join, {lit}`WHERE`, ordering and window,
-whose scope has only own sources ({name}`Scope.ownSources`), whose pending sources resolve and whose grouping term resolves ({name}`GroupTermResolves`) with the aggregate call
-{lit}`count(*)`, the body resolves to the duplicate-key query of its sources, key and collation
-({name}`Resolved.Query.duplicateKeys`), named {lit}`"1"`, with no affinity. Proof sketch: unfold the resolver; the
-query is an aggregate query whose one aggregate is the call of {lit}`HAVING`, the result column is the literal one,
-{name}`resolveOperand_moreThanOne` gives {lit}`HAVING`, and every clause that the query lacks resolves to its empty
-form. -/
+/-- For every query {lit}`SELECT c FROM … [WHERE w] GROUP BY k HAVING count(*) > 1` without join, ordering and window,
+whose result column {lit}`c` has no alias, calls no aggregate and resolves to a column that the grouping key
+covers ({name}`Resolved.Expr.grouped`) and that feeds no aggregate value to a fallible call, whose scope has only own
+sources ({name}`Scope.ownSources`), whose pending sources resolve, whose {lit}`WHERE` condition resolves as {name}`FilterResolves` says (it names no alias) and whose grouping
+term resolves ({name}`GroupTermResolvesIn`) with the aggregate call {lit}`count(*)`, the body resolves to the
+duplicate-key query of its sources, condition, result column, key and collation ({name}`Resolved.Query.duplicateKeys`),
+with the affinity of the result column. With the literal {lit}`1` as the column and no {lit}`WHERE`, this is the query
+of S4. Proof sketch: unfold the resolver; the query is an aggregate query whose one aggregate is the call of
+{lit}`HAVING`, {name}`resolveOperand_moreThanOne` gives {lit}`HAVING`, the hypotheses give the other clauses, and every
+clause that the query lacks resolves to its empty form. -/
 theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : Option Nat) (later : List SubqueryShape)
     (outerAliases : List Identifier) (pending : List PendingSource) (source : Option Syntax.TableReference)
-    (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count") (key : Resolved.Expr)
-    (collation : Collation) (sources : List Resolved.QuerySource)
+    (value : Syntax.Expr) (text : String) (filter : Option Syntax.Expr) (term : Syntax.Expr) (name : String)
+    (count : normalizeIdentifier name = "count") (column : Resolved.Expr) (columnName : String)
+    (affinity : Option Affinity) (key : Resolved.Expr) (collation : Collation) (sources : List Resolved.QuerySource)
+    (whereCondition : Option Resolved.Expr) (notCall : aggregateCall value = false) (noCalls : value.aggregateCalls = [])
+    (columnResolves : resolveAll (resolveResultColumn dqs scope { current, later, aggregates := [.callStar name] })
+      [.expression value none text] = .ok [[(.scalar column, columnName, affinity)]])
+    (columnGrouped : column.grouped [key] = true)
+    (columnFeeds : (column.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false)
+    (filterResolves : FilterResolves dqs scope outerAliases filter whereCondition
+      { current, later, aggregates := [.callStar name] })
+    (groupResolves : GroupTermResolvesIn dqs scope { current, later, aggregates := [.callStar name] }
+      (.scalar column, columnName, affinity) (value.collationIn scope) term key collation)
     (own : scope.ownSources = scope)
-    (groupResolves : GroupTermResolves dqs scope { current, later, aggregates := [.callStar name] } term key collation)
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
-        (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] none [term] [] none none none
+        (Syntax.Subquery.mk [.expression value none text] source [] filter [term] [] none none none
           (some (.compare .gt (.callStar name) (.numeric "1"))) false none none) =
-      .ok (Resolved.Query.duplicateKeys sources key collation, none) := by
+      .ok (Resolved.Query.duplicateKeys sources whereCondition column columnName key collation, affinity) := by
   have called : aggregateCall (.callStar name) = true := by simp [aggregateCall, count]
-  have columns := resolveColumns_one dqs scope { current, later, aggregates := [.callStar name] }
   have havingCalls : (Syntax.Expr.compare .gt (.callStar name) (.numeric "1")).aggregateCalls = [.callStar name] := by
     simp [Syntax.Expr.aggregateCalls, aggregateCall, count]
-  have oneCalls : (Syntax.Expr.numeric "1").aggregateCalls = [] := by simp [Syntax.Expr.aggregateCalls, aggregateCall]
   have calls : Syntax.Expr.distinctList [.callStar name] = [.callStar name] := by simp [Syntax.Expr.distinctList]
   have aggregates : resolveAll (fun _ call => resolveAggregateCall dqs scope { current, later, aggregates := [.callStar name] } call)
       [.callStar name] = .ok [.countRows] := by
     simp [resolveAll, resolveAllFrom, resolveAggregateCall_callStar, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  have aliases : resultAliases scope [.expression (.numeric "1") none "1"] = [none] := by simp [resultAliases]
-  have collations : resultCollations scope [.expression (.numeric "1") none "1"] = [.binary] := by
-    simp [resultCollations, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation]
+  have aliases : resultAliases scope [.expression value none text] = [none] := by simp [resultAliases]
+  have collations : resultCollations scope [.expression value none text] = [value.collationIn scope] := by
+    simp [resultCollations]
   have terms : resolveAll (resolveGroupTerm dqs scope { current, later, aggregates := [.callStar name] } [none]
-      [(.scalar (.literal (.integer 1)), "1", none)] [.binary]) [term] = .ok [(key, collation)] := by
+      [(.scalar column, columnName, affinity)] [value.collationIn scope]) [term] = .ok [(key, collation)] := by
     simp [resolveAll, resolveAllFrom, show resolveGroupTerm dqs scope { current, later, aggregates := [.callStar name] } [none]
-      [(.scalar (.literal (.integer 1)), "1", none)] [.binary] 0 term = .ok (key, collation) from groupResolves, Bind.bind,
-      Except.bind, Pure.pure, Except.pure]
+      [(.scalar column, columnName, affinity)] [value.collationIn scope] 0 term = .ok (key, collation) from groupResolves,
+      Bind.bind, Except.bind, Pure.pure, Except.pure]
   have names : ∀ list, namesAlias scope list (.compare .gt (.callStar name) (.numeric "1")) = false := by
     intro list; simp [namesAlias]
   have having := resolveOperand_moreThanOne dqs scope { current, later, aggregates := [.callStar name] } name rfl
+  have outputGrouped : groupedOutput [key] (.scalar column) = true := columnGrouped
   rw [resolveQueryBody_arm]
   dsimp only
-  simp only [aliasJoinItem?, List.zipIdx_nil, List.find?_nil, Option.map_none, oneCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
-    List.isEmpty_cons, List.isEmpty_nil, List.any_cons, List.any_nil, aggregateCall, Bool.false_or, Bool.not_false, Bool.true_or, Bool.false_eq_true, ↓reduceIte, List.nil_append, Bool.not_true, Bool.and_false, Bool.false_and]
-  simp only [own, aggregates, columns, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil, terms,
-    names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [aliasJoinItem?, List.zipIdx_nil, List.find?_nil, Option.map_none, notCall, noCalls, havingCalls, calls, Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+    List.isEmpty_cons, List.isEmpty_nil, List.any_cons, List.any_nil, Bool.false_or, Bool.not_false, Bool.true_or, Bool.false_eq_true, ↓reduceIte, List.nil_append, Bool.not_true, Bool.and_false]
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
-  simp [nothing, condition, groupedOutput, Resolved.Expr.grouped, windowSkipsFailure, windowValue, Resolved.Expr.any,
-    Resolved.Expr.isFallibleCall, Resolved.Query.duplicateKeys]
+  have havingFeeds : ((Resolved.Expr.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary).any
+      fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false := by
+    simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
+  rcases filterResolves with ⟨rfl, rfl⟩ | ⟨filterTerm, expression, filterAffinity, rfl, rfl, filterNames, filterOk⟩
+  · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
+      aggregates, terms, names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
+    simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, Resolved.Expr.grouped,
+      Resolved.Query.duplicateKeys]
+    exact ⟨columnFeeds, havingFeeds⟩
+  · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
+      aggregates, terms, names, having, filterOk, Bind.bind, Except.bind, Pure.pure, Except.pure]
+    simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, filterNames,
+      Resolved.Expr.grouped, Resolved.Query.duplicateKeys]
+    exact ⟨columnFeeds, havingFeeds⟩
 
-/-- For every statement {lit}`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t GROUP BY k HAVING count(*) > 1)` of a table that
-the catalog of the state has at a position, without table-function arguments, where {lit}`k` resolves in the scope
-of the table to a key under a collation ({name}`GroupTermResolves`), resolution gives the simple query without source
-and with the condition {lit}`NOT EXISTS` of subquery 0, and the duplicate-key query of the first source of the table as
-its one subquery, and leaves the state as it is. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
+/-- The result column {lit}`1` meets the conditions of {name}`resolveQueryBody_duplicateKeys` on the result column: it is
+no aggregate call, it calls no aggregate, it resolves in any scope to the literal one named {lit}`"1"` with no affinity,
+every grouping key covers it, and it feeds no aggregate value to a fallible call. Proof sketch: the definitions
+compute; {name}`resolveColumns_one` resolves the column. -/
+theorem resultColumn_one_facts (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (key : Resolved.Expr) :
+    aggregateCall (.numeric "1") = false ∧ (Syntax.Expr.numeric "1").aggregateCalls = [] ∧
+    resolveAll (resolveResultColumn dqs scope shapes) [.expression (.numeric "1") none "1"] =
+      .ok [[(.scalar (.literal (.integer 1)), "1", none)]] ∧
+    (Resolved.Expr.literal (.integer 1)).grouped [key] = true ∧
+    ((Resolved.Expr.literal (.integer 1)).any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) =
+      false :=
+  ⟨by simp [aggregateCall], by simp [Syntax.Expr.aggregateCalls, aggregateCall], resolveColumns_one dqs scope shapes,
+    by simp [Resolved.Expr.grouped], by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]⟩
+
+/-- For every statement {lit}`SELECT 1 WHERE NOT EXISTS (SELECT c FROM t [WHERE w] GROUP BY k HAVING count(*) > 1)` of a
+table that the catalog of the state has at a position, without table-function arguments, where the result column
+{lit}`c` (without alias), the condition {lit}`w` and the grouping term {lit}`k` resolve in the scope of the table as
+{name}`resolveQueryBody_duplicateKeys` requires, resolution gives the simple query without source and with the
+condition {lit}`NOT EXISTS` of subquery 0, and the duplicate-key query of the first source of the table as its one
+subquery, and leaves the state as it is. With the literal {lit}`1` as the column and no {lit}`WHERE`, this is the
+statement of S4. The source reference has no indexed query. The table reference names no schema: it is not a
+{lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
 {name}`resolveSelect_noFrom_one_subquery`; the subquery resolves by {name}`resolveQueryBody_duplicateKeys` in the scope
 of its table ({name}`resolveSources_table`, {name}`resolvePendingSources_table`), and the statement's query by
 {name}`resolveQueryBody_simple` in the empty scope with the shape of the subquery, as for the other forms of
 {lit}`NOT EXISTS`. -/
 theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveContext) (state : ResolveState)
-    (reference : Syntax.TableReference) (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count")
-    (position : Nat) (table : CatalogTable) (key : Resolved.Expr) (collation : Collation)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
-    (groupResolves : GroupTermResolves context.profile.dqsDml (tableScope state.catalog reference position table)
-      { current := some 0, aggregates := [.callStar name] } term key collation) :
+    (reference : Syntax.TableReference) (value : Syntax.Expr) (text : String) (filter : Option Syntax.Expr)
+    (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count")
+    (position : Nat) (table : CatalogTable) (column : Resolved.Expr) (columnName : String) (affinity : Option Affinity)
+    (key : Resolved.Expr) (collation : Collation) (whereCondition : Option Resolved.Expr)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
+    (found : state.catalog.findTable reference.table = some (position, table))
+    (notCall : aggregateCall value = false) (noCalls : value.aggregateCalls = [])
+    (columnResolves : resolveAll (resolveResultColumn context.profile.dqsDml (tableScope state.catalog reference position table)
+      { current := some 0, aggregates := [.callStar name] }) [.expression value none text] =
+      .ok [[(.scalar column, columnName, affinity)]])
+    (columnGrouped : column.grouped [key] = true)
+    (columnFeeds : (column.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false)
+    (filterResolves : FilterResolves context.profile.dqsDml (tableScope state.catalog reference position table) [] filter
+      whereCondition { current := some 0, aggregates := [.callStar name] })
+    (groupResolves : GroupTermResolvesIn context.profile.dqsDml (tableScope state.catalog reference position table)
+      { current := some 0, aggregates := [.callStar name] } (.scalar column, columnName, affinity)
+      (value.collationIn (tableScope state.catalog reference position table)) term key collation) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] []
         none none
-        [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
+        [Syntax.Subquery.mk [.expression value none text] (some reference) [] filter [term] [] none none none
           (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none) =
       .ok (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-        [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] key collation], state) := by
+        [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] whereCondition column columnName key collation],
+        state) := by
   have simple : ∀ source filter, (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] filter [] [] none none
       none none false none none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have noFeed : (([[(Resolved.Output.scalar (.literal (.integer 1)), "1", (none : Option Affinity))]] :
@@ -143,10 +145,13 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
       | .aggregate _ => none).any (fun expression =>
         expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false := by
     simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
-  have ownTable : (tableScope state.catalog reference position table).ownSources = tableScope state.catalog reference position table := by
+  have ownTable : (tableScope state.catalog reference position table).ownSources =
+      tableScope state.catalog reference position table := by
     simp [Scope.ownSources, tableScope, Scope.singleAt]
   have subBody := resolveQueryBody_duplicateKeys context.profile.dqsDml (tableScope state.catalog reference position table)
-    (some 0) [] [] _ (some reference) term name count key collation _ ownTable groupResolves (resolvePendingSources_table _ _ position)
+    (some 0) [] [] _ (some reference) value text filter term name count column columnName affinity key collation _ whereCondition
+    notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves ownTable
+    (resolvePendingSources_table _ _ position)
   have mainResolves : ∀ shape : SubqueryShape, shape.parent = none →
       FilterResolves context.profile.dqsDml [] [] (some (.not (.exists 0))) (some (.not (.exists 0))) { later := [shape] } :=
     fun _ parentless => FilterResolves.of_term (term := .not (.exists 0)) (result := (.not (.exists 0), none))

@@ -23,7 +23,7 @@ theorem group_nocase {table : CatalogTable} {index : Nat}
   have operand := resolveOperand_identifier_table (catalog := db.raw.catalog) (reference := {table := name! "customers", alias := none})
     (position := position) (dqs := true) (shapes := {current := some 0, aggregates := [.callStar "count"]})
     (misuse := true) (quote := Syntax.QuoteKind.none) found
-  simp only [GroupTermResolves, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, resolved]
+  simp only [GroupTermResolves, GroupTermResolvesIn, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, resolved]
   rw [resolveOperand_collate _ (by rfl)]
   rw [operand]
   have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl

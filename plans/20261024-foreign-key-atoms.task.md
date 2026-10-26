@@ -1,6 +1,6 @@
 # Foreign-key facts and their preservation
 
-Created 2026-10-24. Status: OPEN. Implementation follows review of this task.
+Created 2026-10-24. Status: DONE (2026-10-26).
 Status: [status file](20261024-foreign-key-atoms.status.md).
 Scope: [ADR 0022](../docs/adr-0022-database-validity.md), slice 5 and its
 2026-10-24 amendment; [ADR 0017](../docs/adr-0017-user-surface.md), S6.

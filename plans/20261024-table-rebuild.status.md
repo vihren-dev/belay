@@ -312,3 +312,26 @@ rebuild proof is separate.
   - Stage (b) gates in Nix: `just test-full` passes (run 6) and `just verdict` passes (no DISAGREE;
     the 55-file predictions baseline holds). The manual proof repair count is about 87, over the line of
     80, so work stops here for a report to the coordinator before part 2 (renames).
+
+### Merge of S6 automation part 1 (PR #277)
+
+- Merged `tasks/s6-automation-part1@origin` (96dc386f) into the head of stage (b) with a merge commit.
+  Conflicts: `packages/belay-sqlite-model/lakefile.toml` (modules of both sides kept) and
+  `DuplicateKeyResolution.lean` (the generalized `Query.duplicateKeys` of #275 kept; the theorem
+  `resolveQueryBody_duplicateKeys` takes the premise `scope.ownSources = scope`, given by `ownTable` for
+  the table scope).
+- The new S6 files used laws whose premises stage (b) changed. Repairs, with general statements:
+  - Model: `Resolved.Statement.plainWriteTarget` has no target for `insertSelect`;
+    `runScriptStep_plainWrite_frame` and `runScriptStep_readOnly_keeps` read the new shape of
+    `runScriptStep_continued_spec` and give `runScriptStep_others` the premise `fromQuery = false`.
+  - Belay: `Sql.Frame.sendStatements_sheltered` takes the shelter step's `others = []`;
+    `ReadAnalysis.analyze` answers `notQuery` for `insertSelect`; `Sql.ifOk_send_plainUpdate` and
+    `Sql.ifOk_send_addColumn` give the single-execution premise as `Sql.ifOk_send_plainInsert` does;
+    new `ReadCertificate.Obligations.single_original` and `single_other` (a certified statement
+    resolves to a query); `ReadCertificate.preservesAt_send` and `commutesOn_send` take
+    `∀ entry ∈ script.statements, entry.1.isInsertSelect = false`.
+  - Fixtures: `S6RulesEffects` gives the premise of `check_send_single_of_step`; `S6RulesQueryPattern`
+    proves `expansion_single` by kernel evaluation and passes it.
+- Proof repairs by hand in this merge: about 16 (about 103 in total).
+- Checks on the merged tree: model, belay, translator and conformance-runner builds pass, `just dev-build`
+  passes, `tests/surface_s6_rules_test.py` and the surface tests of the files above pass.
