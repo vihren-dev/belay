@@ -8,7 +8,8 @@ name trace was threaded through them: proofs about {lit}`FROM` clauses unfold th
 
 namespace Belay.Sqlite.Model
 
-/-- A join without a condition resolves to no condition. -/
+/-- For every scope and join position: a join without a condition resolves to no condition. Proof
+sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveJoinCondition_none (dqs : Bool) (scope : Scope) (index : Nat) :
     resolveJoinCondition dqs scope index .none = .ok none := rfl
 

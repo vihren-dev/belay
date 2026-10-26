@@ -79,4 +79,18 @@ private def failureKeepsTrace : Bool :=
 
 #guard failureKeepsTrace
 
+/-- A failure in the pass that lists the aggregate calls keeps the occurrences of the calls before it:
+in {lit}`SELECT max(a)+1, max(z)+1`, the trace holds {lit}`a` and then the missing {lit}`z`. -/
+private def failureAfterAggregateKeepsEarlierCalls : Bool :=
+  (match traced (query [
+      .expression (.arithmetic .add (.call "max" [identifier "a"]) (.numeric "1")) none "max(a)+1",
+      .expression (.arithmetic .add (.call "max" [identifier "z"]) (.numeric "1")) none "max(z)+1"]) with
+    | ⟨.error (.prepare (.noSuchColumn missing)), [first, second]⟩ =>
+      missing == name "z" && first.path == [0, 0, 0, 1, 1, 0] && second.path == [0, 1, 0, 1, 1, 0] &&
+      (match first.result with | .found [_] => true | _ => false) &&
+      (match second.result with | .missing .error _ => true | _ => false)
+    | _ => false)
+
+#guard failureAfterAggregateKeepsEarlierCalls
+
 end Belay.Sqlite.Model.NameTraceQueryExamples

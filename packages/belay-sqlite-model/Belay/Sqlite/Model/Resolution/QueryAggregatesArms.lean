@@ -9,7 +9,8 @@ steps as before. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The call {lit}`count(*)` is the aggregate that counts rows, for every scope and shapes. Proof
+/-- For every scope, shapes and function name: the call with a star in place of its arguments, for
+example {lit}`count(*)`, is the aggregate that counts rows. Proof
 sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveAggregateCall_callStar (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
     (name : String) : resolveAggregateCall dqs scope shapes (.callStar name) = .ok .countRows := rfl

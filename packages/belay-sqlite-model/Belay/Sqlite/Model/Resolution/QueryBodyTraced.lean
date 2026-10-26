@@ -30,7 +30,13 @@ result columns among its candidates, because the term could have named one. -/
 def orderOperandTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool)
     (aliases : List (Option Identifier)) : Syntax.Expr → Traced ValueIssue Operand
   | .identifier name quote => identifierTraced dqs scope name quote (aliasCandidates aliases)
-  | term => resolveOperandTraced dqs scope shapes misuse term
+  | term@(.null) | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.parameter _)
+  | term@(.currentTime _) | term@(.qualified ..) | term@(.negate _) | term@(.positive _)
+  | term@(.compare ..) | term@(.and ..) | term@(.or ..) | term@(.not _) | term@(.isNull ..)
+  | term@(.callStar _) | term@(.call ..) | term@(.arithmetic ..) | term@(.cast ..) | term@(.collate ..)
+  | term@(.exists _) | term@(.inQuery ..) | term@(.subquery _) | term@(.inList ..) | term@(.between ..)
+  | term@(.caseOf ..) | term@(.concatenate ..) | term@(.raise ..) =>
+    resolveOperandTraced dqs scope shapes misuse term
 
 /-- The position of the first join whose {lit}`ON` condition names one of the result column aliases
 {lit}`visibleAliases`, if there is one. -/
@@ -92,8 +98,8 @@ def resolveQueryBodyTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
     (if aggregate then query.having.toList.flatMap Syntax.Expr.aggregateCalls ++
       query.orderBy.flatMap (·.expression.aggregateCalls) else [])) |> Syntax.Expr.distinctList
   let shapes := { shapes with aggregates := calls }
-  let aggregates ← resolveAllTraced (fun _ call =>
-    (resolveAggregateCallTraced dqs scope shapes call).keepOnFailure.underTrace (query.callLocation call)) calls
+  let aggregates ← (resolveAllTraced (fun _ call =>
+    (resolveAggregateCallTraced dqs scope shapes call).underTrace (query.callLocation call)) calls).keepOnFailure
   let outputs := (← resolveAllTraced (resolveResultColumnTraced dqs scope shapes) query.columns).flatten
   -- SQLite resolves the result columns before it checks HAVING.
   if query.having.isSome && !aggregate then throw (.prepare .havingNonAggregate)
