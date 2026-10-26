@@ -210,4 +210,7 @@ rebuild proof is separate.
   name-trace, translation, views and editor tests (local scratch runtime). The review of the
   merge (`20261026T135851Z-cbcd2647`) found two musts in the editor agent's plan files, which the
   merge does not change; both rejected with that reason. Gates on the merge: see the entry below.
+- Gates on the merge (Nix results): `just test-full` passes (no exception; the base now has the
+  surface split and the raised limits), `just verdict` passes, and the 55 predictions are
+  byte-identical to the stage (a) ones. Stage (b) waits for the coordinator.
 
