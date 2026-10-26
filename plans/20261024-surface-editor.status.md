@@ -425,3 +425,10 @@ breaks an ordinary literal. `SqlEditorSource.accepts` (`SqlLiteral.replacementKe
 refuses a replacement that would end the literal, add an escape or a carriage return; the
 correction list is then dropped as a whole. Tests: four literal forms and an applied quoted edit
 in an `r#` literal.
+
+### Fix: Nix surface suite input — 2026-10-26
+
+The first `just test-full` failed to collect the two new test files in the Nix surface suite:
+`tests/surface_editor_support.py` was not an input of the suite. `build-support/tests.nix` lists it
+now. The names test also checks that a checked `sql!` equals `sql` by `rfl` with the editor
+information active.

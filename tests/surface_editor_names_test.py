@@ -24,6 +24,7 @@ def ambiguous := sql! shop r"SELECT id FROM orders, orders AS again"
 def sequence := sql! shop r"CREATE TABLE t(x INTEGER); SELECT x FROM t; DROP TABLE t; CREATE TABLE t(x TEXT); SELECT x FROM t"
 def viewed := sql! shop r"SELECT next, key FROM totals"
 def plain := sql r"SELECT qty FROM orders"
+example : (sql! shop r"SELECT qty FROM orders") = sql r"SELECT qty FROM orders" := rfl
 def escaped := sql! shop "SELECT qty FROM orders; SELECT 'a\\nb', label FROM orders"
 def finished : Nat := 0
 '''
@@ -99,7 +100,8 @@ def test_tokens_and_exclusions(runtime_root: Path, tmp_path: Path) -> None:
     """Our semantic tokens and exclusions (`SqlNameInfo.emitNameSite`): a found column is a `variable`
     token at its exact range, a view column named by an alias is described, and an ambiguous name, a
     name in plain `sql`, a name in an escaped literal, and keywords get no hover or token. The
-    ambiguous name is the only error of the fixture."""
+    ambiguous name is the only error of the fixture, so the editor information leaves the term of a
+    checked `sql!` equal to the term of `sql` (the `example` of the fixture)."""
     server = LeanServer(runtime_root, tmp_path)
     try:
         uri = server.open(SOURCE)
