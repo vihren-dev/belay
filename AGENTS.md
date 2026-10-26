@@ -163,8 +163,8 @@ table gives, and not more frequently.
 | --- | --- |
 | Each edit of `packages/` | `just dev-build`. Also `just dev-verdict` when the edit can change a prediction. |
 | Each commit | The tests that touch the change, for example its test files with `python3 -m pytest`, then `just review`. The status file names the tests. |
-| End of each slice of the task file | After the review of the slice's last commit: `just test-full` and `just verdict`. |
-| End of the task, before its pull requests | `just test-nix` and `just test-scheduled`, once. |
+| End of each slice of the task file | After the review of the slice's last commit: `just test-full`, `just verdict`, and the mutant tests of the mutant tables that the slice adds or changes. |
+| End of the task, before its pull requests | `just test-nix` and `just test-scheduled-checks`, once. |
 
 Rules for the time while checks run:
 
@@ -173,6 +173,10 @@ Rules for the time while checks run:
   the main line.
 - A question to the owner does not stop the work. Continue with the work that
   does not need the answer. Stop only when no such work remains.
+- Run only the mutant tests that a change touches, by name, for example
+  `python3 -m pytest tests/conformance_query_mutants_test.py -k parameter`. Do not run
+  the mutant suites locally (`just test-scheduled` or `just test-mutants`): they overload
+  the machine, and CI runs all of them every day.
 - Before `just review`, check the change yourself against R3 (proof sketches)
   and R19 (specifications against current reality). Most "must" findings come
   from these two conditions.
