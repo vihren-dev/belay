@@ -111,12 +111,17 @@ alternate SQL execution engine is required.
   in general: a NULL `blocked.customer_id` makes `NOT IN` drop every row, and a
   NULL `customers.id` with a non-NULL blocked id makes `NOT IN` drop that row
   while `NOT EXISTS` keeps it. The guide's `where` condition (no NULL
-  `customer_id` in `blocked`) excludes only the first case. The checked claims
-  state explicit sufficient premises for both: no NULL `blocked.customer_id`
-  (the `where` condition, or `NOT NULL` in the schema for the `sql_auto` form
-  without `where`) and no NULL `customers.id` (for example, an `INTEGER PRIMARY
-  KEY`), and both counterexamples stay checked. The guide text that omits the
-  second premise is one of the recorded guide changes. Record every needed change of the private guide's
+  `customer_id` in `blocked`) excludes only the first case. Text keys also
+  differ: `IN` and `=` take the collation from different operands, so
+  `customers.id TEXT COLLATE BINARY` with `'a'` and `blocked.customer_id TEXT
+  COLLATE NOCASE` with `'A'` give different rows. The checked claims state
+  explicit sufficient premises: `customers.id` is an `INTEGER PRIMARY KEY`
+  (never NULL and always an integer, so no collation or affinity difference
+  applies) and no `blocked.customer_id` is NULL (the `where` condition, or
+  `NOT NULL` in the schema for the `sql_auto` form without `where`). The three
+  counterexamples (NULL blocked id, NULL customer id, collation) stay checked,
+  and native SQLite confirms each of them. The guide text that omits the key
+  premise is one of the recorded guide changes. Record every needed change of the private guide's
   tactic/footprint descriptions (the actual supported analysis and remaining
   obligations) in the status file for the guide acceptance task; do not edit
   the private guide in this task. The scope of the primitive contracts is
