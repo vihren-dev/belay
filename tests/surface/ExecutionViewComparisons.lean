@@ -31,7 +31,7 @@ Proof sketch: reduce the installed statement interpreter on this valid fixture. 
 theorem one_step :
     let (statement, values) := (sql r"SELECT 1").statements[0]
     runScriptStep runContext initial.clock initial.index initial.connection statement values =
-      .continued (.rows [[1]]) initial.connection := by rfl
+      .continued (.rows [[1]]) initial.connection [] := by rfl
 
 /-- Every branch of the quiet query returns 7 with no projected outputs.
 Proof sketch: its single non-alternative step has only the actual output choice. -/

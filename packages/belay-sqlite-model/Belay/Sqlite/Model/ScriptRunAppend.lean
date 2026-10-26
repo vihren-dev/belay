@@ -23,7 +23,7 @@ theorem runScriptFrom_clock (context : ResolveContext) (clock : Option Clock) (i
     simp only [runScriptFrom]
     split
     · rfl
-    · rename_i output next continued
+    · rename_i output next others continued
       rw [later, (runScriptStep_continued continued).1]
 
 /-- For every context, optional clock, two indexes, connection and statements with values: if
@@ -76,7 +76,7 @@ theorem runScriptFrom_append (context : ResolveContext) (clock : Option Clock) (
     simp only [List.cons_append, runScriptFrom]
     split
     · simp [ScriptRun.andThen, ScriptRun.ended, Output.endsRun]
-    · rename_i output next continued
+    · rename_i output next others continued
       have quiet := (runScriptStep_continued continued).2
       rw [later (index + 1) next]
       simp only [ScriptRun.andThen, ScriptRun.ended, List.any_cons, quiet, Bool.false_or, List.length_cons,

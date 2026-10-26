@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.ScriptRunSingleton
 
 set_option doc.verso true
 
@@ -114,7 +114,7 @@ theorem runScriptStep_index (context : ResolveContext) (clock : Option Clock) (f
     runScriptStep context clock first connection statement parameters =
       runScriptStep context clock second connection statement parameters := by
   simp only [runScriptStep, runScriptStepWith, ranScriptStep, statementClock_index same, advanceRun_atPosition second first, Output.ofStep_atPosition,
-    Connection.afterStep_atPosition]
+    Connection.afterStep_atPosition, StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
 
 /-- For every state, position, effect and next state: if the effect's transition
 ({name}`SqlState.publish`) continues with the next state, the next state has the clock of the
@@ -165,23 +165,13 @@ theorem Connection.afterStep_clock (connection : Connection) (after : ResolveSta
 /-- For every context, optional clock, index, connection, statement and list of values: if the
 step with the values continues with an output and a next connection, the next connection has
 the clock assignment of the connection, and the output does not end the run
-({name}`Output.endsRun`). Proof sketch: unfold the step; a continuing step's output is one of
-the four outputs that do not end the run, and its connection is {name}`Connection.afterStep` of
-a transition ({name}`Connection.afterStep_clock`). -/
+({name}`Output.endsRun`). Proof sketch: {name}`runScriptStep_continued_spec` gives the output and
+the connection as {name}`Connection.afterStep` of a transition ({name}`Connection.afterStep_clock`). -/
 theorem runScriptStep_continued {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value} {output : Output}
-    (continued : runScriptStep context clock index connection statement parameters = .continued output next) :
+    {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
+    (continued : runScriptStep context clock index connection statement parameters = .continued output next others) :
     next.state.clock = connection.state.clock ∧ output.endsRun = false := by
-  unfold runScriptStep runScriptStepWith ranScriptStep at continued
-  split at continued
-  · cases continued
-  · split at continued
-    · cases continued
-    · split at continued
-      · cases continued
-      · dsimp only at continued
-        split at continued
-        · cases continued
-        · split at continued <;> cases continued <;> exact ⟨Connection.afterStep_clock .., rfl⟩
+  obtain ⟨_, resolved, after, value, _, _, _, _, _, noStop, rfl⟩ := runScriptStep_continued_spec continued
+  exact ⟨Connection.afterStep_clock .., noStop⟩
 
 end Belay.Sqlite.Model

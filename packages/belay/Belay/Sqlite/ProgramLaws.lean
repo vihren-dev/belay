@@ -56,21 +56,23 @@ theorem Sql.runFrom_send (clock : Option Clock) :
     simp only [sendStatements, Sql.runFrom, runScriptFrom]
     cases step : runScriptStep runContext clock index connection statement values with
     | ended reason => simp [SqlRun.ofScript, ScriptRun.ended, Output.endsRun]
-    | continued output next =>
+    | continued output next others =>
       simp only [Sql.runFrom_map, Sql.runFrom_send clock (index + 1) next rest, SqlRun.ofScript]
       have quiet := (runScriptStep_continued step).2
       cases ended : (runScriptFrom runContext clock (index + 1) next rest).ended <;>
         simp_all [ScriptRun.ended]
 
 /-- For every database, script and environment, the final database of the model's script
-run is valid under the pinned profile. Proof sketch: the general model run theorem starts
-from the valid database and an idle transaction. -/
+run is valid under the pinned profile. Proof sketch: the general model run theorem for all complete
+executions starts from the valid database and an idle transaction, and the model's own run is one
+of them ({name}`runScriptFrom_mem_runScriptAllFrom`). -/
 theorem Script.run_database_valid (script : Script) (db : Database) (env : Env) :
     (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters) script.statements).connection.state.database.Valid
       Profile.pinned :=
-  (runScriptFrom_valid (profile := Profile.pinned) runContext env.clock 0
+  (runScriptAllFrom_valid (profile := Profile.pinned) runContext env.clock 0
     (connection := db.raw.connection env.counters) script.statements rfl rfl
-    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩).1
+    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩ _
+    (runScriptFrom_mem_runScriptAllFrom runContext env.clock 0 _ script.statements)).1
 
 /-- For every database, script and environment, the public script run bundles the model's
 script result with its validity proof, preserving every field. Proof sketch:
@@ -116,7 +118,7 @@ theorem Sql.runFrom_env {α : Type} (program : Sql α) (clock : Option Clock) :
     simp only [Sql.runFrom, same] at clockFree ⊢
     split
     · rfl
-    · rename_i output next step
+    · rename_i output next others step
       rw [step] at clockFree
       rw [later output (index + 1) next (fun found => clockFree (List.mem_cons_of_mem _ found))]
 

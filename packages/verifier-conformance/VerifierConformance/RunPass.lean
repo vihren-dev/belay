@@ -4,14 +4,17 @@ import Belay.Sqlite.Model.ScriptRun
 
 set_option doc.verso true
 
-/-! The classification pass of the run that continues after an error (ADR 0017, D3, amended
-2026-10-22), for the records of a recorder that runs on after an SQL error. Each statement takes
-the model's step ({name}`Belay.Sqlite.Model.runScriptStepWith` and
-{name}`Belay.Sqlite.Model.ranScriptStep`, of which {name}`Belay.Sqlite.Model.runScriptStep` is
-made), so the pass and {name}`Belay.Sqlite.Model.runScriptFrom` are one run
-({lit}`VerifierConformance.RunPassLaws` proves it). The pass keeps what
-the comparison needs and the run's output does not hold: the observation after each statement,
-with the error and its phase, and the columns, rows and changes of each statement. -/
+/-! The classification passes of the run that continues after an error (ADR 0017, D3, amended
+2026-10-22), for the records of a recorder that runs on after an SQL error. A statement can have
+several possible executions (ADR 0019, D4, amended 2026-10-25), so there is one pass for each
+complete execution of the statements ({lit}`runScriptAllWith`): each pass takes
+one execution of each statement, and a later statement runs from the connection of the execution
+that reached it. Each statement takes the model's step ({name}`Belay.Sqlite.Model.runScriptStepWith`
+and {name}`Belay.Sqlite.Model.ranScriptStep`, of which {name}`Belay.Sqlite.Model.runScriptStep` is
+made), so the passes and {lit}`runScriptAllFrom` are the same runs
+({lit}`VerifierConformance.RunPassLaws` proves it). A pass keeps what the comparison needs and the
+run's output does not hold: the observation after each statement, with the error and its phase, and
+the columns, rows and changes of each statement. -/
 
 namespace Belay.Sqlite.Model.Conformance
 
@@ -44,26 +47,103 @@ transition stops ({name}`haltError`), at the index. -/
 def observeStep (index : Nat) (next : Connection) (transition : SqlTransition) : Observation :=
   { observeState next.state with error := (haltError transition).map ((index, ·)) }
 
-/-- The pass over statements, each with the values bound to its parameters, from a zero-based
-index on the connection, with an optional clock. Each statement takes the model's step
-({name}`runScriptStepWith`, then {name}`ranScriptStep`). A step that ends the run ends the pass
-({name}`RunPass.ended`). A step that continues gives the observation after it
-({name}`observeStep`), its output and possible results from its transition, and the run's
-output, and the pass goes on from the next connection, also after an error. -/
-def runPassFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection) :
-    List (Syntax.Statement × List Value) → RunPass
-  | [] => { observations := [], counters := [], outputs := [], possible := [], results := [], supported := true }
-  | (statement, parameters) :: rest =>
-    runScriptStepWith RunPass.ended (fun resolved foreignKeys value run transition =>
-      match ranScriptStep parameters connection resolved foreignKeys value run transition with
-      | .ended reason => RunPass.ended reason
-      | .continued output next =>
-        let later := runPassFrom context clock (index + 1) next rest
-        { observations := observeStep index next transition :: later.observations,
-          counters := next.state.counters :: later.counters,
-          outputs := statementOutput value parameters resolved connection.state run transition :: later.outputs,
-          possible := possibleOutput value parameters resolved connection.state transition :: later.possible,
-          results := output :: later.results, supported := later.supported })
-      context clock index connection statement parameters
+/-- One possible execution of a statement, as the pass keeps it: the connection after the statement,
+the observation, counters, output and possible results after it, and the output of the run
+({name}`Output`). -/
+structure ExecutionPass where
+  /-- The connection after the statement in this execution. -/
+  next : Connection
+  /-- The observation after the statement ({name}`observeStep`). -/
+  observation : Observation
+  /-- The writer counters after the statement. -/
+  counters : Counters
+  /-- The output of the statement ({name}`statementOutput`). -/
+  output : Option StatementOutput
+  /-- The results that SQLite may give for the statement ({name}`possibleOutput`). -/
+  possible : Option (List (List ResultRow))
+  /-- The output of the statement in the run ({name}`Output`). -/
+  result : Output
+
+/-- What the pass takes from one statement: the reason why the run ends at it, or its possible
+executions, the model's own execution first. -/
+inductive RunPassStep where
+  /-- The model does not describe the statement; the run ends. -/
+  | ended (reason : String)
+  /-- The statement ran, with one pass entry for each possible execution. -/
+  | continued (executions : List ExecutionPass)
+
+/-- The entry of one execution of a statement at a zero-based index on the connection, from the
+values bound to its parameters, the resolved statement, its clock value, the execution and the run
+and transition that gave it. -/
+def ExecutionPass.ofExecution (index : Nat) (parameters : List Value) (connection : Connection)
+    (resolved : Resolved.Statement) (value : Int) (execution : StatementExecution) (run : StatementRun)
+    (transition : SqlTransition) : ExecutionPass :=
+  { next := execution.next, observation := observeStep index execution.next transition,
+    counters := execution.next.state.counters,
+    output := statementOutput value parameters resolved connection.state run transition,
+    possible := possibleOutput value parameters resolved connection.state transition,
+    result := execution.output }
+
+/-- The step of the pass for a statement that ran, from the values bound to its parameters, the
+connection before it, the resolved statement, the resolution state {lit}`after` it, its clock value, its
+run and its transition. It takes the model's step ({name}`ranScriptStep`); a step that ends the run ends
+the pass. A step that continues gives the entry of its own execution and the entry of each further
+execution ({name}`StatementExecution.ofAlternatives`), each with the run and transition that gave it. -/
+def ranPassStep (index : Nat) (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
+    (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) : RunPassStep :=
+  match ranScriptStep index parameters connection resolved after value run transition with
+  | .ended reason => .ended reason
+  | .continued output next _ =>
+    match StatementExecution.ofAlternatives index parameters connection resolved after value run with
+    | .error reason => .ended reason
+    | .ok further =>
+      .continued (ExecutionPass.ofExecution index parameters connection resolved value { output, next } run transition ::
+        further.map fun traced =>
+          ExecutionPass.ofExecution index parameters connection resolved value traced.execution traced.run
+            traced.transition)
+
+/-- The step of the pass for one statement: the model's steps ({name}`runScriptStepWith`), then
+{name}`ranPassStep` for a statement that runs. -/
+def runPassStep (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
+    (statement : Syntax.Statement) (parameters : List Value) : RunPassStep :=
+  runScriptStepWith RunPassStep.ended (ranPassStep index parameters connection) context clock index connection
+    statement parameters
+
+/-- The passes over the complete executions of statements, each with the values bound to its
+parameters, from a zero-based index on a connection, for a function that gives the step of each
+statement ({name}`RunPassStep`). A step that ends the run ends the pass ({name}`RunPass.ended`). A
+step that continues gives, for each of its executions, the passes of the rest from the connection of
+that execution, each with the entry of that execution first, also after an error. The function
+argument lets a caller run the executions of a statement that it describes itself. -/
+def runPassAllWith (step : Nat → Connection → Syntax.Statement × List Value → RunPassStep) :
+    Nat → Connection → List (Syntax.Statement × List Value) → List RunPass
+  | _, _, [] => [{ observations := [], counters := [], outputs := [], possible := [], results := [], supported := true }]
+  | index, connection, entry :: rest =>
+    match step index connection entry with
+    | .ended reason => [RunPass.ended reason]
+    | .continued executions =>
+      executions.flatMap fun execution =>
+        (runPassAllWith step (index + 1) execution.next rest).map fun later =>
+          { observations := execution.observation :: later.observations,
+            counters := execution.counters :: later.counters,
+            outputs := execution.output :: later.outputs,
+            possible := execution.possible :: later.possible,
+            results := execution.result :: later.results, supported := later.supported }
+
+/-- The passes over the complete executions of statements with their values, from a zero-based
+index on the connection, with an optional clock: {name}`runPassAllWith` with the step
+{name}`runPassStep`. -/
+def runPassAllFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
+    (script : List (Syntax.Statement × List Value)) : List RunPass :=
+  runPassAllWith (fun index connection (statement, parameters) =>
+    runPassStep context clock index connection statement parameters) index connection script
+
+/-- The pass of the model's own execution of the statements: the first of the passes over the complete
+executions ({name}`runPassAllFrom`), which takes the model's own execution of each statement. The
+prediction of a case comes from this pass, because a prediction is one answer. A script always has a
+pass, so the reason of {name}`RunPass.ended` only stands for a run that has none. -/
+def runPassFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
+    (script : List (Syntax.Statement × List Value)) : RunPass :=
+  (runPassAllFrom context clock index connection script).headD (RunPass.ended "the model gives no execution")
 
 end Belay.Sqlite.Model.Conformance

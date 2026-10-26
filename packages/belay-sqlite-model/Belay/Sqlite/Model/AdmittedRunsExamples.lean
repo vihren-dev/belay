@@ -9,7 +9,7 @@ import Belay.Sqlite.Model.ForeignKeyExamples
 set_option doc.verso true
 
 /-! Examples of the run theorems of the Admitted atoms (ADR 0022, slice 4, part 3), each checked by the
-kernel: the corollary {lit}`runScriptFrom_valid` applied to a script with CREATE INDEX, ADD COLUMN, DROP TABLE
+kernel: the corollary {lit}`runScriptAllFrom_valid` applied to a script with CREATE INDEX, ADD COLUMN, DROP TABLE
 of a table with an index and a trigger, a DELETE that cascades and a ROLLBACK, with no hypothesis on the
 statements; the facts of the resolver on concrete statements; the conditions that stay in the theorems of
 {lit}`runSqlFrom` and {lit}`runSql`, each with a run that breaks the atom when the condition fails. -/
@@ -57,18 +57,22 @@ def Output.failed : Output → Bool
 #guard mixedRun.outputs.length == 13 && !mixedRun.outputs.any Output.failed &&
   mixedRun.connection.state.database.catalog.length == 5 && mixedRun.connection.state.snapshot.isNone
 
-/-- The corollary applied to {name}`mixedSyntax`: the database of the run is valid, and so is the snapshot
-when a transaction is open. The proof has no fact about CREATE INDEX, ADD COLUMN, DROP TABLE, the cascade or
+/-- The corollary applied to {name}`mixedSyntax`: the database of every complete execution of the script is
+valid, and so is the snapshot when a transaction is open. The proof has no fact about CREATE INDEX, ADD COLUMN, DROP TABLE, the cascade or
 ROLLBACK: the theorem needs only the start state, the mode and the limits. -/
-theorem mixedRun_valid : mixedRun.connection.state.Holds (Database.Valid keysOn) :=
-  runScriptFrom_valid mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
+theorem mixedRun_valid :
+    ∀ run ∈ runScriptAllFrom mixedContext none 0 start (bindValues mixedSyntax []),
+      run.connection.state.Holds (Database.Valid keysOn) :=
+  runScriptAllFrom_valid mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
     ⟨Database.valid_empty keysOn, fun _ same => nomatch same⟩
 
-/-- The theorem of "rows aliased" applied to {name}`mixedSyntax`: the database of the run satisfies
-{name}`Database.RowsAliased` and has a valid catalog under the limits of the profile, and so does the snapshot
+/-- The theorem of "rows aliased" applied to {name}`mixedSyntax`: the database of every complete execution of the
+script satisfies {name}`Database.RowsAliased` and has a valid catalog under the limits of the profile, and so does the snapshot
 when a transaction is open. The theorem has no hypothesis on the statements either. -/
-theorem mixedRun_rowsAliased : mixedRun.connection.state.Holds (Database.RowsAliasedSupported keysOn.limits) :=
-  runScriptFrom_rowsAliased mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
+theorem mixedRun_rowsAliased :
+    ∀ run ∈ runScriptAllFrom mixedContext none 0 start (bindValues mixedSyntax []),
+      run.connection.state.Holds (Database.RowsAliasedSupported keysOn.limits) :=
+  runScriptAllFrom_rowsAliased mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
     ⟨⟨(Database.valid_empty keysOn).admitted.rowsAliased, (Database.valid_empty keysOn).admitted.catalogSupported⟩, fun _ same => nomatch same⟩
 
 end Belay.Sqlite.Model.AdmittedRunsExamples

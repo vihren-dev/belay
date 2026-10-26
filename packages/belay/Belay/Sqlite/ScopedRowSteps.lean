@@ -25,9 +25,9 @@ theorem Sql.ScopedAt.of_row_steps {β : Type} {related : ExecutionContext → Ex
     {firstStatement secondStatement : Syntax.Statement} {firstValues secondValues : List Value}
     {left right : List Output → β} {first second : ExecutionContext} {rows : List (List Value)}
     (leftStep : runScriptStep runContext first.clock first.index first.connection firstStatement firstValues =
-      .continued (.rows rows) first.connection)
+      .continued (.rows rows) first.connection [])
     (rightStep : runScriptStep runContext second.clock second.index second.connection secondStatement
-      secondValues = .continued (.rows rows) second.connection)
+      secondValues = .continued (.rows rows) second.connection [])
     (sameResult : left [.rows rows] = right [.rows rows])
     (closed : related
       (first.finish { outputs := [.rows rows], connection := first.connection, value := some (left [.rows rows]) })

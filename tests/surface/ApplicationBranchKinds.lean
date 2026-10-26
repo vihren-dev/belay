@@ -92,14 +92,14 @@ theorem chooser_actual_takes_the_default :
 theorem chooser_row_one_takes_low :
     ∃ result, (chooser.interp interface).Branch start.clock start.index start.connection result ∧
       result.value = some 100 ∧ result.outputs = [.rows [[1]], .rows [[100]]] := by
-  refine ⟨_, Sql.Branch.continued (selected := .rows [[1]]) (by rfl)
+  refine ⟨_, Sql.Branch.continued_own (selected := .rows [[1]]) (by rfl)
     (OutputChoice.rows (by decide +kernel)) (Sql.Branch.actual _ _ _ _), by rfl, by rfl⟩
 
 /-- The concrete row 2 selects the call {lit}`high`. -/
 theorem chooser_row_two_takes_high :
     ∃ result, (chooser.interp interface).Branch start.clock start.index start.connection result ∧
       result.value = some 200 ∧ result.outputs = [.rows [[2]], .rows [[200]]] := by
-  refine ⟨_, Sql.Branch.continued (selected := .rows [[2]]) (by rfl)
+  refine ⟨_, Sql.Branch.continued_own (selected := .rows [[2]]) (by rfl)
     (OutputChoice.rows (by decide +kernel)) (Sql.Branch.actual _ _ _ _), by rfl, by rfl⟩
 
 /-- A modeled error is an output, and the application sends its next call. Proof sketch: the program

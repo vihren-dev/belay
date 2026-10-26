@@ -240,6 +240,12 @@ delay the first evidence and make each review larger.
 specify it, it depends on the query plan, and ADR 0005 already compares such
 results without it.
 
+Clarification accepted 2026-10-25: when INSERT SELECT consumes query rows, order
+and evaluation barriers can change write states, errors and counters. ADR19 D4
+therefore represents possible write executions and quantifies public proofs
+over their admitted branches. This does not turn the fixed query traversal
+into a claim about SQLite's optimizer or change standalone result comparison.
+
 ## Not decided here
 
 - Collations other than BINARY, and the `COLLATE` operator.
@@ -476,6 +482,10 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
    DROP statements of the script meet a condition; they assume `Database.AdmittedWith profile atom` and the
    limits of the profile, and `runScriptFrom_valid` states `Database.Valid` for the run of the surface. No
    theorem of "foreign keys hold" (slice 5) exists yet.
+
+   Amended 2026-10-26: the theorems of `runScriptFrom` named in the two paragraphs above are now
+   `runScriptAllFrom_X` and state the invariant for every complete execution of the script (ADR 0022,
+   amendment of 2026-10-26); their assumptions did not change.
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.

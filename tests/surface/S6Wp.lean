@@ -30,21 +30,23 @@ def Context.next (state : Context) (output : Output) (connection : Connection) :
 
 /-- Every modeled branch reaches the postcondition. When {lit}`rejectErrors = true`,
 each output must also be free of SQL errors. Pure programs check their value and current
-context. An unmodeled step requires false. A continuing step checks its actual continuation
-and, for {name}`Output.oneOf`, every listed concrete result; an empty list adds no requirement.
+context. An unmodeled step requires false. A continuing step checks each of its executions
+({name}`RunStep.executions`): the actual continuation from the connection of that execution and,
+for {name}`Output.oneOf`, every listed concrete result; an empty list adds no requirement.
 The model's existing step supplies every transition; this definition only adds proof obligations. -/
 def check (rejectErrors : Bool) {α : Type} : Sql α → (α → Context → Prop) → Context → Prop
   | .pure value, post, state => post value state
   | .exec statement values rest, post, state =>
     match runScriptStep runContext state.clock state.index state.connection statement values with
     | .ended _ => False
-    | .continued output connection =>
-      (rejectErrors = true → output.isError = false) ∧
-      check rejectErrors (rest output) post (state.next output connection) ∧
-        match output with
-        | .oneOf results => ∀ rows ∈ results,
-          check rejectErrors (rest (.rows rows)) post (state.next (.rows rows) connection)
-        | .done _ | .rows _ | .error _ | .unmodeled _ => True
+    | .continued output connection others =>
+      ∀ found ∈ (RunStep.continued output connection others).executions,
+        (rejectErrors = true → found.output.isError = false) ∧
+        check rejectErrors (rest found.output) post (state.next found.output found.next) ∧
+          match found.output with
+          | .oneOf results => ∀ rows ∈ results,
+            check rejectErrors (rest (.rows rows)) post (state.next (.rows rows) found.next)
+          | .done _ | .rows _ | .error _ | .unmodeled _ => True
 
 /-- A finite program and decidable postcondition give a decidable check. This instance
 allows kernel reduction of the concrete fixtures without an unchecked evaluation axiom. -/
@@ -57,10 +59,18 @@ noncomputable instance checkDecidable {α : Type} (reject : Bool) (program : Sql
     unfold check
     split
     · exact isFalse id
-    · rename_i output connection step
-      haveI : ∀ output, Decidable (check reject (rest output) post (state.next output connection)) :=
-        fun output => later output (state.next output connection)
-      cases output <;> dsimp <;> infer_instance
+    · rename_i output connection others step
+      haveI : ∀ output next, Decidable (check reject (rest output) post (state.next output next)) :=
+        fun output next => later output (state.next output next)
+      haveI : ∀ found : StatementExecution, Decidable ((reject = true → found.output.isError = false) ∧
+          check reject (rest found.output) post (state.next found.output found.next) ∧
+            match found.output with
+            | .oneOf results => ∀ rows ∈ results,
+              check reject (rest (.rows rows)) post (state.next (.rows rows) found.next)
+            | .done _ | .rows _ | .error _ | .unmodeled _ => True) := by
+        rintro ⟨output, next⟩
+        cases output <;> dsimp <;> infer_instance
+      infer_instance
 
 /-- For either error policy and all programs, checking both postconditions together is
 exactly checking each separately. Proof sketch: induction on the program; distribute
@@ -76,9 +86,33 @@ theorem check_and {α : Type} (reject : Bool) (program : Sql α) :
     simp only [check]
     split
     · simp
-    · rename_i output connection step
-      cases output <;> simp only [later, forall_and]
-      all_goals simp [and_assoc, and_left_comm, and_comm]
+    · rename_i output connection others step
+      have each (found : StatementExecution) :
+          ((reject = true → found.output.isError = false) ∧
+            check reject (rest found.output) (fun value state => first value state ∧ second value state)
+              (state.next found.output found.next) ∧
+            match found.output with
+            | .oneOf results => ∀ rows ∈ results, check reject (rest (.rows rows))
+                (fun value state => first value state ∧ second value state) (state.next (.rows rows) found.next)
+            | .done _ | .rows _ | .error _ | .unmodeled _ => True) ↔
+          ((reject = true → found.output.isError = false) ∧
+            check reject (rest found.output) first (state.next found.output found.next) ∧
+            match found.output with
+            | .oneOf results => ∀ rows ∈ results, check reject (rest (.rows rows)) first
+                (state.next (.rows rows) found.next)
+            | .done _ | .rows _ | .error _ | .unmodeled _ => True) ∧
+          ((reject = true → found.output.isError = false) ∧
+            check reject (rest found.output) second (state.next found.output found.next) ∧
+            match found.output with
+            | .oneOf results => ∀ rows ∈ results, check reject (rest (.rows rows)) second
+                (state.next (.rows rows) found.next)
+            | .done _ | .rows _ | .error _ | .unmodeled _ => True) := by
+        obtain ⟨output, next⟩ := found
+        cases output <;> simp only [later, forall_and]
+        all_goals simp [and_assoc, and_left_comm, and_comm]
+      simp only [each]
+      exact ⟨fun all => ⟨fun found member => (all found member).1, fun found member => (all found member).2⟩,
+        fun ⟨left, right⟩ found member => ⟨left found member, right found member⟩⟩
 
 /-- For either error policy and all programs, checking bind is checking the first program
 with the continuation's check as its postcondition. The continuation receives the exact
@@ -94,7 +128,7 @@ theorem check_bind {α β : Type} (reject : Bool) (program : Sql α) (next : α 
     simp only [Sql.bind, check]
     split
     · rfl
-    · rename_i output connection step
+    · rename_i output connection others step
       simp only [later]
 
 /-- The isolated total-success transformer. SQL errors and model restrictions both fail its

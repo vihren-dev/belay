@@ -67,7 +67,7 @@ def executedContexts (index : Nat) (connection : Connection) :
       { state := connection.resolveState, rows? := some connection.state.database.rows }
     match runScriptStep runContext none index connection item.value [] with
     | .ended _ => ([here], [])
-    | .continued output next =>
+    | .continued output next others =>
       let later := executedContexts (index + 1) next rest
       (here :: later.1, output :: later.2)
 
