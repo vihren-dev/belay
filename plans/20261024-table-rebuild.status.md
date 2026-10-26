@@ -194,3 +194,13 @@ rebuild proof is separate.
   - Reviews: `20261026T113647Z-9b5f7fa8` (1 must: single-quoted names; 1 should: the fixture's
     catch-all; both fixed) and `20261026T115129Z-0d0f790e` (1 should, rejected with a reason:
     the fixture marks its statements and fails when a marked one is no SELECT).
+  - Gates of the token change (Nix results): `just verdict` passes; the 55 predictions are
+    byte-identical to stage (a). `just test-full` on this base (4fc773a5) cannot pass for reasons
+    of the base that the possible-executions branch (95b61eb4) repairs: the documentation
+    inventory runs out of its 60 s compiler limit (the run takes 70 to 85 s of CPU; the
+    inventory itself reports 5320 of 5320 declarations documented), the surface suite ends with
+    exit 124, the frozen suite's `test_review_corpus_extends_and_replays` runs out of the 30 s
+    classifier limit, and `test_signup_invariant_with_partial_unique_index` needs the
+    `resolveOperand_arm_compare` rewrite (commit 9193ed53 of that branch). No other test fails
+    (the other suites and the host source tests pass). The gates are to be rerun on the merge
+    with 95b61eb4.
