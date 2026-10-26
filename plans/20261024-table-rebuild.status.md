@@ -335,3 +335,11 @@ rebuild proof is separate.
 - Proof repairs by hand in this merge: about 16 (about 103 in total).
 - Checks on the merged tree: model, belay, translator and conformance-runner builds pass, `just dev-build`
   passes, `tests/surface_s6_rules_test.py` and the surface tests of the files above pass.
+- Reviews: `20261026T225245Z-1e62c949` (2 musts about docstrings in `ReadCertificate.lean` and
+  `CertifiedQueryCommutation.lean`, both fixed in `refactor: answer the review of the merge ...`) and
+  `20261026T225449Z-307b2940` (no findings).
+- Gates on the merged tree in Nix: `just test-full` passes (surface suite 383 passed, all other suites
+  pass), output `/nix/store/wg3i1d06xiy3lmkkldsi47cx254ny809-sqlite-verifier-test-reports`;
+  `just verdict` passes with no DISAGREE, output
+  `/nix/store/3lqr3pxr2xk5gbfdmbzwfr8rg1al1dpm-sqlite-verifier-verdict`, predictions
+  `/nix/store/07yg9qqpjvv7z1kznsqsbw5hzqfv6ysh-sqlite-verifier-predictions` (identical to `build/predictions-b3`).
