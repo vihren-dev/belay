@@ -15,4 +15,6 @@ of 2026-10-25, and the table-rebuild task.
 
 ## Progress
 
-- 2026-10-26: task specified.
+- 2026-10-26: task specified. Review `20261026T094225Z-6cae4c16` had one must (R19,
+  the singleton law and query result alternatives), fixed in `0bb7a035`; review
+  `20261026T094522Z-0bb7a035` had no findings.
