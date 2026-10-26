@@ -24,10 +24,10 @@ structure Table where
   deriving Repr, DecidableEq
 
 /-- The schema and the stored rows. {lit}`rows` has one entry for each catalog object,
-at the object's position; an index object has no rows. {lean}`({} : Database)` is the
+at the object's position; indexes, views and triggers have no rows. {lean}`({} : Database)` is the
 empty database. -/
 structure Database where
-  /-- The schema: every table and index, in creation order. -/
+  /-- The schema: every catalog object, in creation order. -/
   catalog : Catalog := []
   /-- The stored rows of the object at each catalog position, in observation order,
   including physical rowids. -/
@@ -35,7 +35,7 @@ structure Database where
   deriving Repr, DecidableEq
 
 /-- The table at a catalog position: its catalog entry with its stored rows, or
-{lean}`(none : Option Table)` for a position that holds an index or is past the end. -/
+{lean}`(none : Option Table)` for a non-table or past-end position. -/
 def Database.table (database : Database) (position : Nat) : Option Table :=
   (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
 
@@ -59,26 +59,50 @@ position past the end of {lit}`rows` is unchanged. -/
 def Database.setRows (database : Database) (position : Nat) (rows : List Row) : Database :=
   { database with rows := database.rows.set position rows }
 
-/-- Whether a key is nonempty, names no column twice and names only positions below
-the width: {assert}`supportedKey 2 [1, 0] = true`. -/
+/-- Whether a key is nonempty and names only positions below the width. A key may name a
+column twice, as SQLite accepts {lit}`PRIMARY KEY(a, a)`:
+{assert}`supportedKey 2 [1, 0] = true`, {assert}`supportedKey 2 [1, 1] = true`. -/
 def supportedKey (width : Nat) (key : List Nat) : Bool :=
-  !key.isEmpty && key.eraseDups.length == key.length && key.all (· < width)
+  !key.isEmpty && key.all (· < width)
+
+/-- Whether the rowid alias of a table is as the resolver makes it: a table without an alias
+requires nothing. An alias is a position below the number of columns, whose column is not
+generated and has INTEGER affinity, and it is the whole primary key, in a table that is not
+{lit}`WITHOUT ROWID`. This is a rule of the model's catalog, not of SQLite: SQLite makes such an
+alias only from an INTEGER PRIMARY KEY, and the resolver does too, but a table that a Lean user
+builds can break the rule, and then the model does not describe the table. -/
+def CatalogTable.aliasSupported (table : CatalogTable) : Bool :=
+  match table.rowidAlias with
+  | none => true
+  | some position => table.primaryKey == [position] && !table.withoutRowid &&
+      (table.columns[position]?.any fun column => column.generated.isNone && column.affinity == .integer)
+
+/-- Whether every CHECK constraint of the table, of a column or of the table, reads only
+columns below the number of columns of the table ({name}`Resolved.Expr.readsBelow`). This is a
+rule of the model's catalog, not of SQLite: the resolver resolves each CHECK over the columns of
+its table, but a table that a Lean user builds can have a CHECK that reads a missing column, which
+reads NULL, and then the model does not describe the table. -/
+def CatalogTable.checksReadBelow (table : CatalogTable) : Bool :=
+  table.allChecks.all fun check => check.condition.readsBelow table.columns.length
 
 /-- Admit a table entry under the limits: at least one column and at most the
-column limit, no two columns with one folded name, no rowid column name, and keys that
-satisfy {name}`supportedKey`. A rowid alias is admitted (slice 5b). -/
+column limit, no two columns with one folded name, no rowid column name, keys that
+satisfy {name}`supportedKey`, a rowid alias as {name}`CatalogTable.aliasSupported` says, and
+CHECK constraints that read only columns of the table ({name}`CatalogTable.checksReadBelow`). -/
 def CatalogTable.supported (limits : Limits) (table : CatalogTable) : Bool :=
   !table.columns.isEmpty && table.columns.length ≤ limits.columns &&
     (table.columns.map (·.name.folded)).eraseDups.length == table.columns.length &&
     !table.columns.any (rowidName ·.name) &&
     (table.primaryKey.isEmpty || supportedKey table.columns.length table.primaryKey) &&
-    table.uniqueKeys.all (supportedKey table.columns.length)
+    table.uniqueKeys.all (supportedKey table.columns.length) &&
+    table.aliasSupported && table.checksReadBelow
 
 /-- Admit one catalog object. A table satisfies {lit}`CatalogTable.supported`, and
 a reserved name is allowed only for a statistics table with exactly its typeless
 columns and no keys. An index names a table position of the catalog, a supported
 key of that table and a name that is not reserved. A trigger has a name that is not reserved
-and names a table of the catalog. -/
+and names a table of the catalog. A view has a name that is not reserved. Its body
+may refer to missing objects or other views; validity imposes no resolved-body condition. -/
 def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : CatalogObject) : Bool :=
   match object.entry with
   | .table table => table.supported limits && (!reservedName object.name ||
@@ -87,8 +111,9 @@ def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : Cata
   | .index index => !reservedName object.name &&
       (catalog.tableAt index.table).any fun table => index.supported table.columns.length
   | .trigger trigger => !reservedName object.name && (catalog.findTable trigger.table).isSome
+  | .view _ => !reservedName object.name
 
-/-- Admit a catalog: unique folded names of its tables and indexes, and every object
+/-- Admit a catalog: unique folded names of its tables, views and indexes, and every object
 supported. -/
 def Catalog.supported (limits : Limits) (catalog : Catalog) : Bool :=
   catalog.foldedNames.eraseDups.length == (catalog.filter (!·.isTrigger)).length &&

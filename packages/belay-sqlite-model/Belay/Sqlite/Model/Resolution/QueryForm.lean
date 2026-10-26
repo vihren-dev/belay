@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ResolvedExprForm
+import Belay.Sqlite.Model.Resolution.PragmaSource
 
 set_option doc.verso true
 
@@ -26,22 +27,26 @@ inductive JoinKind where
   deriving Repr, DecidableEq
 
 /-- A source of a {lit}`FROM` clause (ADR 0013, D5): a table, a {lit}`json_each(json [, path])`
-call whose arguments read the joined row before it, or a subquery. -/
+call whose arguments read the joined row before it, a subquery, or the rows of a pragma
+(ADR 0019, D2). -/
 inductive Source where
   /-- The table at the catalog position, with its rows in rowid order. -/
   | table (position : Nat)
   /-- {lit}`json_each` with its JSON argument and optional path, over the row before it
   (ADR 0012, amendment 5, slice 6d). -/
   | each (json : Expr) (path : Option Expr)
-  /-- A subquery. Resolution does not give it yet (ADR 0013, amendment 2); its payload
-  comes with the subquery ADR, and execution treats it as unmodeled. -/
-  | subquery
+  /-- The result rows of query {lit}`index` in the statement's indexed query list, with
+  {lit}`width` result columns. It reads the enclosing query's outer cells, not sibling sources. -/
+  | subquery (index width : Nat)
+  /-- The rows of a pragma ({name}`PragmaRows`), as {lit}`PRAGMA table_info(t)` or
+  {lit}`pragma_table_info('t')` gives them. -/
+  | pragma (rows : PragmaRows)
   deriving Repr, DecidableEq
 
 /-- Whether the source is {lit}`json_each`. -/
 def Source.isEach : Source → Bool
   | .each .. => true
-  | .table _ | .subquery => false
+  | .table _ | .subquery .. | .pragma _ => false
 
 /-- One source of {lit}`FROM` in written order: how it joins the row so far, the source,
 and its {lit}`ON` condition over the row so far and its cells; {lean}`(none : Option Expr)`
@@ -58,6 +63,24 @@ structure QuerySource where
 /-- The first source of a {lit}`FROM`: the table at the catalog position, as an inner join
 without a condition. -/
 def QuerySource.first (position : Nat) : QuerySource := { kind := .inner, source := .table position, condition := none }
+
+/-- The terms of a resolved compound {lit}`SELECT` (ADR 0019, D3), each a query of the
+statement's list of subqueries by its index: the left-most term, each operator with the term on
+its right from left to right, and the collation of each result column. Two rows are equal when
+each column compares equal under its collation, NULL equal to NULL; the collation of a column is
+that of the left-most term whose expression has one, {lit}`BINARY` when none has one. -/
+structure Compound where
+  /-- The index of the left-most term. -/
+  first : Nat
+  /-- Each operator with the index of the term on its right, from left to right. -/
+  rest : List (CompoundOperator × Nat)
+  /-- The collation of each result column. -/
+  collations : List Collation
+  deriving Repr, DecidableEq
+
+/-- The indexes of the terms of a compound, from left to right. -/
+def Compound.terms (compound : Compound) : List Nat :=
+  compound.first :: compound.rest.map (·.2)
 
 /-- A resolved {lit}`SELECT`: its sources, the {lit}`WHERE` condition, whether it is an
 aggregate query with its grouping terms, the result columns with their names, the
@@ -107,6 +130,11 @@ structure Query where
   /-- The collation of each result column of {lit}`SELECT DISTINCT`, under which equal rows are
   one row; {lean}`(none : Option (List Collation))` without {lit}`DISTINCT`. -/
   distinct : Option (List Collation) := none
+  /-- The terms of a compound {lit}`SELECT` ({name}`Compound`), or
+  {lean}`(none : Option Compound)` for one {lit}`SELECT`. A compound query has no sources, no
+  filter and no columns of its own; its rows are those of its terms, its names those of the
+  left-most term, and its {lit}`ORDER BY` terms name result columns. -/
+  compound : Option Compound := none
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model.Resolved

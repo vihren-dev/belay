@@ -1,10 +1,12 @@
-"""Derive the version 3 model case from frozen translator-independent evidence."""
+"""Derive the version 5 model case from frozen translator-independent evidence."""
 
 from conformance.record_parser import NO_PARSER_REASON, record_parser
+from conformance.replay_scope import HIDDEN_ROWID_REASON, OBSERVED_VIEW_REASON, HiddenRowid, ObservedView
 
 from conformance.case_format import CASE_VERSION, UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
 from conformance.profile_scope import foreign_key_scope, modeled_profile
-from conformance.record_versions import PROFILED, WITH_OUTPUTS
+from conformance.record_counters import counters_input
+from conformance.record_versions import CONTINUING, PROFILED, WITH_OUTPUTS
 from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
 from conformance.native_call_recording import validate_recording
@@ -58,21 +60,14 @@ def output_wire(event: dict[str, Json]) -> dict[str, Json]:
     return {"result": {"columns": columns, "rows": event["rows"], "changes": changes}, "groups": groups}
 
 
-HIDDEN_ROWID_REASON = "column names rowid, _rowid_ and oid are not modeled; rename the column"
-"""The reason of a case whose table hides its rowid, as the model's restriction of these names says."""
-
-
-class HiddenRowid(ValueError):
-    """A recorded table whose columns take every rowid name, so SQLite's rowid has none and the
-    recorder keys the rows by all columns; the model refuses the names, so the case is out of scope."""
-
-
 def native_tables(observation: dict[str, Json]) -> list[Json]:
     """Decode every recorded table with its PRAGMA metadata and rows; Lean compares them. A
     `WITHOUT ROWID` table has no rowid: its rows get the rowid 0, and Lean compares them by
     their cells in key order."""
     result: list[Json] = []
     for item in observation["tables"]:
+        if item["kind"] == "view":
+            raise ObservedView(f"view {item['name']} is not a table")
         without_rowid = bool(item["withoutRowid"])
         if item["kind"] != "table":
             raise ValueError("Unexpected row identity in an observed table")
@@ -111,7 +106,11 @@ def model_case(record: dict[str, Json], translator: Translator) -> dict[str, Jso
     script = migration_text.statements()
     foreign_key_scope(record, [*schema, *script])
     trace = record["trace"]
-    if (len(trace) > len(script) or any(event["primaryCode"] for event in trace[:-1])
+    continues = record["nativeVersion"] in CONTINUING
+    # A recorder that runs on gives one event for each statement; one that stops gives one for
+    # each statement up to and including the first error.
+    if (len(trace) != len(script) if continues else
+            len(trace) > len(script) or any(event["primaryCode"] for event in trace[:-1])
             or (not trace or not trace[-1]["primaryCode"]) and len(trace) != len(script)):
         raise ValueError("Native/frontend statement-count mismatch")
     offset = 0
@@ -135,7 +134,8 @@ def model_case(record: dict[str, Json], translator: Translator) -> dict[str, Jso
             "requirements": record["requirements"], "provenance": [["fixture", record["name"]], ["sourceId", str(profile["sourceId"])]],
             "outputs": outputs, "parameters": [event["parameters"] for event in trace] if outputs is not None else [],
             "clocks": [event["clockUnixMilliseconds"] + UNIX_EPOCH_JULIAN_MILLISECONDS for event in trace]
-            if trace and all("clockUnixMilliseconds" in event for event in trace) else []}
+            if trace and all("clockUnixMilliseconds" in event for event in trace) else [],
+            "continues": continues, **counters_input(record)}
 
 
 def prepare(record: dict[str, Json], translator: Translator) -> tuple[dict[str, Json] | None, dict[str, Json]]:
@@ -153,6 +153,8 @@ def prepare(record: dict[str, Json], translator: Translator) -> tuple[dict[str, 
                                and bool(record.get("trace")) and record["trace"][-1].get("primaryCode") == 1)
         return None, {"verdict": "MODEL_UNSUPPORTED" if error.status == "UNSUPPORTED" or native_syntax_error else "HARNESS_ERROR",
                       "frontendStatus": error.status, "error": str(error)}
+    except ObservedView as error:
+        return None, {"verdict": "MODEL_UNSUPPORTED", "reason": OBSERVED_VIEW_REASON, "error": str(error)}
     except HiddenRowid as error:
         return None, {"verdict": "MODEL_UNSUPPORTED", "reason": HIDDEN_ROWID_REASON, "error": str(error)}
     except (ValueError, KeyError, TypeError, IndexError, OSError, RuntimeError) as error:

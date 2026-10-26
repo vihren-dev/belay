@@ -29,7 +29,8 @@ inductive RestrictionRegistry where
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall
-  | .subqueryReadsTarget | .distinctOrderBy | .triggerWritesOwnTable | .schemaTriggerOrder => .undecided
+  | .subqueryReadsTarget | .distinctOrderBy | .triggerWritesOwnTable | .schemaTriggerOrder
+  | .foreignKeyMismatchOrder => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
@@ -37,9 +38,9 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .addColumnStrictType
   | .dropConstraintIndex | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
-  | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
+  | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .viewBodyCheck | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
   | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
-  | .foreignKeyUpsert | .raiseForm | .triggerForm => .unsupported
+  | .recursiveCommonTable | .foreignKeyUpsert | .raiseForm | .triggerForm | .sourceColumnName | .compoundOrderByTerm | .connectionCounterRead | .nondeterministicErrorOrder => .unsupported
 
 end Belay.Sqlite.Model

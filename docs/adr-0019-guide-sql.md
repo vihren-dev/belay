@@ -110,6 +110,31 @@ What the code has today, after slice 1 of ADR 0018:
   failures that only they cause do not occur. (Amended 2026-10-22: the first text related the
   `ok` row to `LiteralData.constraints`, because `Database.Valid` did not include the
   constraints before ADR 0022.)
+- Amended 2026-10-23 (owner decisions of the slice 2 task file):
+  - **The order of the tables.** The forms without a table name walk SQLite's schema hash
+    table. Its order depends on the hash of the names, on the size of the bucket array and on
+    the history of the connection. The model gives exact rows when at most one table gives
+    rows or has a `foreign key mismatch`. When two or more tables give rows or have a
+    mismatch, the output is `Output.unmodeled`. Thus the order of the tables never shows in
+    the output. (Amended 2026-10-23 during the slice: a `foreign key mismatch` fails the
+    statement at prepare, before SQLite reads a row. Thus one table with a mismatch gives its
+    error, also when other tables give rows; checked natively. The mismatches of two or more
+    tables are the restriction `foreign-key-mismatch-order`, whose output is
+    `Output.unmodeled`.)
+  - **The checks that the laws do not name.** `integrity_check` also checks the stored form of
+    each cell of a table that is not `STRICT` (`NUMERIC value in t.a`, `TEXT value in t.a`),
+    and the key order of a `WITHOUT ROWID` table (`row not in PRIMARY KEY order for t`). Under
+    `Database.Admitted` the first check never fails (`Table.RowsStored`). The second fails
+    only when two rows have the same primary key. A key column of a `WITHOUT ROWID` table is
+    NOT NULL, so `NotNull` and `KeysUnique` together exclude this. Thus the laws above stay
+    true. The model gives the key-order row and not the stored-form rows.
+  - **The evidence.** No modeled statement reaches a database whose constraints fail (ADR 0022,
+    D5). Thus the corpora show only the row `ok`. Lean examples with kernel proofs over
+    databases built in Lean show the failure rows, and native probes are their reference.
+  - **`recursive_triggers` in the corpora.** The model starts from the setting of the profile.
+    The model's profile check accepts a profile with the setting on, and the authored corpus
+    has such a profile. A change of the setting inside a script has Lean examples only,
+    because the recorder accepts a setting only at the value of the profile.
 - `PRAGMA foreign_key_check`, with and without a table name: the rows of SQLite, over the
   foreign keys of the catalog (ADR 0014) and the checks of ADR 0018 D4.
 - `PRAGMA table_info` and `PRAGMA foreign_key_list`, and their table-valued forms
@@ -130,25 +155,73 @@ What the code has today, after slice 1 of ADR 0018:
   `INSERT` (D4). Its row order without `ORDER BY` is SQLite's plan, which the harness
   compares as a multiset and which a scalar subquery reads only when every order gives the
   same first value, as in ADR 0018 slice 1.
+- Amended 2026-10-23: the collation of a compound column applies to the duplicate rule and to
+  an `ORDER BY` term without `COLLATE`. Two rules of SQLite differ from it, and the model
+  follows SQLite:
+  - `x IN (q)` over a compound reads the affinity and the collation of the right-most
+    `SELECT`'s column, and a scalar subquery `(q)` reads only its affinity, because SQLite
+    gives a subquery no collation. For example, over `t(n TEXT COLLATE NOCASE)` with `'a'` and
+    `u(m TEXT)`, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0. The next item
+    gives the exception to this rule.
+  - When an operator is not `UNION ALL` and an `ORDER BY` term has `COLLATE`, SQLite sorts the
+    compound as the subquery of `SELECT * FROM (compound)`. Then a term without `COLLATE` sorts
+    under the collation of the left-most `SELECT`'s expression, `BINARY` when it has none. Also,
+    `x IN (q)` then reads the column of that subquery: the collation of the left-most
+    `SELECT`'s expression, and the affinity that SQLite gives to a column of a subquery in
+    `FROM` (D5). A scalar `(q)` reads only that affinity, and has no collation. For example,
+    `'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is
+    1. Slice 3 refuses such an `IN` or scalar subquery with a restriction, and slice 4 adds it
+    with the columns of a subquery in `FROM`. The result columns of such a statement have the
+    names of that subquery's columns (`sqlite3ColumnsFromExprList`), which SQLite gives before it
+    resolves the names, not the names of the first `SELECT`: a name or `x.c` without `AS` under
+    `COLLATE` has that name as written, and a second column of the same name gets the suffix
+    `:1`. For example,
+    `SELECT a COLLATE NOCASE FROM t EXCEPT SELECT a FROM u ORDER BY 1 COLLATE BINARY` names its
+    column `a`, and the same statement without `COLLATE BINARY` names it `a COLLATE NOCASE`.
+    (Amended 2026-10-23, from a native check.)
+- Amended 2026-10-23: slice 3 does not include a compound `SELECT` as a statement of a trigger
+  body; the frontend refuses it. A compound subquery in a statement of a trigger body is in
+  slice 3. A later slice adds the statement form when a measurement or a guide example needs
+  it.
 
 ### D4. The table rebuild
 
 - `INSERT ... SELECT`, with the conflict algorithms and `ON CONFLICT` clauses of the model.
-  The model computes the rows of the `SELECT` before it writes, as SQLite does when the
-  `SELECT` reads the written table, and in the order of the `SELECT`.
+  The model follows SQLite's source-evaluation and insertion order, including
+  streaming rows and materializing them when required by the actual statement.
+  It preserves expression-error precedence, conflict behavior and partial writes.
 - `ALTER TABLE t RENAME TO u`, `ALTER TABLE t RENAME COLUMN a TO b` and
   `ALTER TABLE t DROP COLUMN a`, with SQLite's rewrite of the references in indexes, foreign
   keys, triggers and views, and its prepare errors (for example, a column of a key or an
   index cannot be dropped). Only SQLite's default, `legacy_alter_table` off, is modeled.
 
+Amended 2026-10-24 by owner decision: the earlier rule that always computed all
+source rows before writing was too strong. Pinned SQLite 3.51.0 can stream an
+independent source; a read of the destination or a row trigger can require
+materialization. With source values `2, 1, -9223372036854775808`, destination
+`x UNIQUE` already containing `1`, and `INSERT OR FAIL INTO dest SELECT abs(x)
+FROM src`, the streaming case stops at the unique conflict after inserting `2`.
+An AFTER INSERT trigger whose body is `SELECT 1` makes this example materialize
+the source first: integer overflow occurs and `2` is not inserted. Both outcomes
+were checked against the pinned native binary. Slice 5 must model the exact
+behavior; it must not use an unsupported restriction in place of this work.
+
 ### D5. Queries as sources
 
 - A subquery in `FROM` (a derived table), a view (`CREATE VIEW`, `DROP VIEW`, and a view in
-  `FROM`) and a common table expression of `WITH` without `RECURSIVE` are one form: a
+  `FROM`) and a nonrecursive common table expression of `WITH` without `RECURSIVE` are one form: a
   resolved query as a source, which fills the `Source.subquery` placeholder.
 - The rows of a source query are its result rows. When SQLite's plan can change them (a
   `LIMIT` that cuts ties, ADR 0018 slice 1), the statement is not described.
-- `WITH RECURSIVE`, `INSTEAD OF` triggers and `MATERIALIZED` hints stay out of scope.
+- Recursive CTEs, the `RECURSIVE` keyword, `INSTEAD OF` triggers and
+  `MATERIALIZED` hints stay out of scope.
+
+Amended 2026-10-24 by owner decision: the recursion restriction is semantic,
+not only lexical. SQLite accepts a recursive CTE without the `RECURSIVE`
+keyword. Slice 4 refuses actual recursion regardless of spelling and also
+continues to refuse the keyword when the CTE itself is nonrecursive. Ordinary
+forward references and nested nonrecursive CTEs remain in scope.
+See [the slice-4 task](../plans/20261024-query-sources.task.md).
 
 ### D6. Bitwise operators
 
@@ -207,9 +280,53 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 
 ## Not decided here
 
-- `WITH RECURSIVE`, window functions, `ORDER BY` inside an aggregate call and `FILTER`.
+- Recursive CTEs, the `RECURSIVE` keyword, window functions, `ORDER BY` inside an
+  aggregate call and `FILTER`.
 - Pragmas other than those of D2, and `ATTACH`.
 - The details of each slice: its task file decides them from SQLite's code.
+
+## Implementation record
+
+2026-10-24, slice 4 part 1 complete: resolved sources can read an indexed query
+through the statement's evaluation context. Complete-row certainty is separate from
+first-column certainty. Column metadata now distinguishes absent expression affinity
+from BLOB affinity and combines every column of compound terms. D3's ORDER BY COLLATE
+exception is implemented for IN and scalar subqueries. Derived SELECT sources now pass
+through SQL translation, indexed source resolution and the same evaluator. Source expansion
+precedes expression resolution; derived bodies follow FROM order and preserve enclosing
+versus sibling binding. Part 1 passed native, full-suite and verdict acceptance at
+`c8db1a54`; draft corpus v53 remains separate from the subject publication and needs
+owner approval before merge. The publication checkpoint has its own final gates.
+Parts 2 and 3 cover ordinary CTEs and views. Part 1 alone does not complete D5 or slice 4.
+
+2026-10-24, slice 4 part 2 complete: ordinary WITH definitions use the same
+indexed query-source machinery. Definition names use lexical WITH scope; each use
+receives its permitted enclosing column scope. Explicit column lists retain the
+resolved affinity and collation. Supported SELECT and VALUES INSERT, UPDATE and
+DELETE forms share this expansion, including nested queries in trigger bodies.
+Unused definitions remain unprepared. Valid recursion ends in a model restriction.
+Circular references, column-count errors, repeated recursive references and
+recursive aggregates retain their checked SQL errors.
+The RECURSIVE keyword and materialization hints remain excluded. Focused Nix
+model, public surface and restriction checks pass. Independent review of the CTE
+implementation found no issues. The combined S4 and foreign-key integration passed
+all 923 Nix-selected tests and the frozen verdict. Final publication checks passed
+36 selected cases, including both guide proofs and the S6/S7 prototypes; integration
+review found no issues. All previously predicted corpus records are unchanged.
+Views were part 3 (completed on 2026-10-25, below).
+
+2026-10-25, slice 4 part 3 complete, and with it D5 and slice 4. Views are catalog definitions that
+keep the written SELECT and resolve it at each use, through the same indexed query-source machinery as
+derived tables and CTEs. CREATE VIEW, CREATE VIEW IF NOT EXISTS, DROP VIEW and DROP VIEW IF EXISTS, optional
+column lists, shared object names, late binding, nested views, cycles, wrong-kind and write errors,
+PRAGMA table_info of a view, changed catalog positions and rollback follow SQLite. The generic validity
+proofs cover CREATE and DROP VIEW. Writes, indexes, ADD COLUMN and BEFORE or AFTER triggers on views give
+SQLite's prepare errors. The native recorder keeps an unreadable view as evidence, and the judge forwards the
+setup clock. Corpus v53 holds 178 authored native cases (158 agreements, 20 documented restrictions); its
+corpus, claim and lock changes await owner approval in the judge PR. Remaining restrictions: recursive CTEs, the
+RECURSIVE keyword, MATERIALIZED hints, INSTEAD OF triggers, TEMP views, the table-valued pragma_table_info of a
+view, errors that SQLite finds only when a statement runs a view, uncertain LIMIT membership and fallible source
+bodies. Task-end Nix checks passed on the integration `431cdd16`.
 
 ## Owner decisions
 

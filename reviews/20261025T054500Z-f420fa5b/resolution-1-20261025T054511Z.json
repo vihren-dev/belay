@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T05:45:11+00:00",
+  "finding": "20261025T054500Z-f420fa5b#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "SqlFileErrors.lean now checks the complete duplicate-section message with guard_msgs"
+}

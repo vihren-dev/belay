@@ -9,13 +9,14 @@ See {lit}`PrepareSpec.lean` for the prepare-error rule. -/
 namespace Belay.Sqlite.Model
 
 /-- For every ADD COLUMN whose resolution is a prepare error that names a catalog
-object: the error is {lit}`no such table` for the statement's table, no table has the
-folded name, and the catalog is unchanged. -/
+object: the error is {lit}`no such table` for the statement's table and no table has the
+folded name, or it is {lit}`Cannot add a column to a view`; the catalog is unchanged. -/
 theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (error : PrepareError)
     (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveAddColumn context catalog tableName definition = .ok (.prepareError error, after)) :
-    error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
+    ((error = .noSuchTable tableName ∧ catalog.findTable tableName = none) ∨ error = .viewAddColumn) ∧
+      after = catalog := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
   repeat' split at ok
@@ -23,17 +24,19 @@ theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catal
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr rfl, rfl⟩
     | (simp_all; done)
 
-/-- For every ADD COLUMN: when no table has the folded name, the resolution is
+/-- For every ADD COLUMN: when no table or view has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveAddColumn_missing (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition)
-    (missing : catalog.findTable tableName = none) :
+    (missing : catalog.findTable tableName = none)
+    (notView : catalog.findView tableName = none) :
     resolveAddColumn context catalog tableName definition =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveAddColumn
-  simp [missing, prepareError]
+  simp [missing, notView, prepareError]
 
 /-- For every column name, constraint list and error: when the first parse error of the
 constraints ({name}`Syntax.ColumnConstraint.parseError`) is the error, it is no
@@ -80,7 +83,8 @@ theorem resolveAddColumn_duplicate (context : ResolveContext) (catalog : Catalog
 
 /-- For every CREATE INDEX whose resolution is a prepare error
 that names a catalog object: either no table has the folded table name and the error
-is {lit}`no such table`, or an object has the folded index name; and the catalog is
+is {lit}`no such table`, or an object has the folded index name, or the error is
+{lit}`views may not be indexed` ({name}`PrepareError.viewNotIndexed`); and the catalog is
 unchanged. -/
 theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
@@ -88,7 +92,7 @@ theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Cat
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveCreateIndex context catalog name unique tableName terms filter = .ok (.prepareError error, after)) :
     ((catalog.findTable tableName = none ∧ error = .noSuchTable tableName) ∨
-      (catalog.find name).isSome = true) ∧ after = catalog := by
+      (catalog.find name).isSome = true ∨ error = .viewNotIndexed) ∧ after = catalog := by
   unfold resolveCreateIndex at ok
   simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
@@ -96,18 +100,20 @@ theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Cat
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr (.inr rfl), rfl⟩
     | (simp_all; done)
 
-/-- For every CREATE INDEX: when no table has the folded table name, the resolution is
+/-- For every CREATE INDEX: when no table or view has the folded table name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveCreateIndex_missing (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr)
-    (missing : catalog.findTable tableName = none) :
+    (missing : catalog.findTable tableName = none)
+    (notView : catalog.findView tableName = none) :
     resolveCreateIndex context catalog name unique tableName terms filter =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveCreateIndex
-  simp [missing, prepareError]
+  simp [missing, notView, prepareError]
 
 /-- For every CREATE INDEX on a table that the folded name
 finds, where SQLite reserves neither name: when an object has the folded index name,

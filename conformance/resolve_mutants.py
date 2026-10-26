@@ -5,10 +5,10 @@ ADR 0008 ("How `resolve` is tested", Mutants) requires that each listed change o
 suite is known to test each rule. Resolution functions are called through dot
 notation (`catalog.find`), so a copy of single definitions in a private namespace
 would still call the originals. Each mutant is therefore a real copy of the
-`belay-sqlite-model` and `verifier-conformance` packages with one text change, which Lake
+`belay-sqlite-model` and `verifier-conformance` packages with one logical fault, which Lake
 rebuilds from one shared base build. The build covers only the import closure of
-`VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
-proof still builds. The Lean interpreter then classifies the cases, given as the
+`VerifierConformance.Classify`, which does not import the law modules, so a mutant that
+breaks a law still builds. The Lean interpreter then classifies the cases, given as the
 Lean terms that the conformance runner emits, with the mutant's `classifyCase`.
 
 The authored model cases must all agree, so a mutant is killed when any case
@@ -16,6 +16,7 @@ gets another verdict: `DISAGREE`, or `MODEL_UNSUPPORTED` where the mutant moves
 an agreeing case out of the model's scope.
 """
 
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
@@ -25,6 +26,7 @@ from tempfile import TemporaryDirectory
 
 from conformance.case_format import Json
 from conformance.model_check import compiled_many
+from conformance.mutation_edits import Mutation, source_edits
 
 SQLITE = "belay-sqlite-model/Belay/Sqlite/Model/"
 """The model sources, relative to `packages/`."""
@@ -50,8 +52,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "table.columns.length + 1 > context.profile.limits.columns", "table.columns.length + 1 > 2000"),
     "no_table_exists": (SQLITE + "Resolution/Definitions.lean",
         "  | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)\n"
+        "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .trigger _, .. }) | none =>",
+        "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
     "no_too_many_columns": (SQLITE + "Resolution/AddColumn.lean",
@@ -61,11 +65,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    else if (columnPosition table.columns definition.name).isSome then\n"
         "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
     "no_such_table": (SQLITE + "Resolution/AddColumn.lean",
-        "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
+        "    else prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
-        "  | none => restrict [] .engineTable\n  | some (position, table) =>\n"
+        "    else restrict [] .engineTable\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))"),
-    "commit_without_transaction": (SQLITE + "StatementStep.lean",
+    "commit_without_transaction": (SQLITE + "SqlAdvance.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
         "    | some _ => .next { state with snapshot := none }",
         "    | none => .next state\n    | some _ => .next { state with snapshot := none }"),
@@ -110,7 +114,7 @@ def classifier(terms: list[str]) -> str:
     definitions = "".join(f"def case{index} : Case :=\n  " + term.replace("\n", "\n  ") + "\n"
                           for index, term in enumerate(terms))
     names = ", ".join(f"case{index}" for index in range(len(terms)))
-    return ("import VerifierConformance.Case\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
+    return ("import VerifierConformance.Classify\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
@@ -129,26 +133,26 @@ def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
 def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
     """Build the case classification of the copy and print one verdict for each case."""
     conformance = packages / "verifier-conformance"
-    run(["lake", "build", "VerifierConformance.Case"], conformance, lean, BUILD_TIMEOUT_SECONDS)
+    run(["lake", "build", "VerifierConformance.Classify"], conformance, lean, BUILD_TIMEOUT_SECONDS)
     (conformance / "Classify.lean").write_text(program)
     return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
 
-def mutate(base: Path, root: Path, name: str, change: tuple[str, str, str], lean: Path, program: str) -> list[str]:
-    """Copy the built base, apply one mutant's change, and classify the cases with it."""
-    target, before, after = change
+def mutate(base: Path, root: Path, name: str, change: Mutation, lean: Path, program: str) -> list[str]:
+    """Copy the built base, apply every edit of one fault, then classify the cases with it."""
     copy = root / name
     shutil.copytree(base, copy, symlinks=True)
-    source = copy / target
-    text = source.read_text()
-    if text.count(before) != 1:
-        raise ValueError(f"Mutant {name} does not match exactly one place in {target}; update its text")
-    source.write_text(text.replace(before, after))
+    for target, before, after in source_edits(change):
+        source = copy / target
+        text = source.read_text()
+        if text.count(before) != 1:
+            raise ValueError(f"Mutant {name} does not match exactly one place in {target}; update its text")
+        source.write_text(text.replace(before, after))
     return verdicts(copy, lean, program)
 
 
 def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
-            mutants: dict[str, tuple[str, str, str]] = MUTANTS,
+            mutants: Mapping[str, Mutation] = MUTANTS,
             targets: dict[str, tuple[str, ...]] | None = None, expected: str = AGREE) -> dict[str, Json]:
     """Classify the cases with the unchanged model and with each of `mutants`, in parallel.
     `runtime` is the conformance runtime: its runner emits the case terms, and its

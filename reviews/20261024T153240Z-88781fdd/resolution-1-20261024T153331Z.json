@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-24T15:33:31+00:00",
+  "finding": "20261024T153240Z-88781fdd#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "This report records verified Nix measurements and links to the authoritative current task acceptance state. Its wording does not claim that final acceptance passed. R19 requires accuracy, not a duplicated mutable status line; repeating pending here would become stale after the gates pass. The earlier ambiguity was fixed by explicitly saying current acceptance state."
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T06:06:03+00:00",
+  "finding": "20261025T060556Z-561834a0#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the entry now points to the acceptance entry that records the gates"
+}

@@ -20,7 +20,7 @@ mutual
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
 or the coalesce of the columns that full joins merged; two columns that no join merged
 are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
-({name}`rowidName`) is a model restriction when a source with a rowid is in scope
+({name}`rowidName`) is a model restriction when a source with visible names and a rowid is in scope
 ({name}`ScopeSource.hasRowid`), because SQLite reads the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
@@ -39,8 +39,8 @@ is the resolved {lit}`x`, whose collation the expression that uses it decides; a
 {name}`RestrictionKind.unknownCollation`. A subquery form names a subquery that resolution
 resolved before ({name}`SubqueryShapes.find`), else it is {name}`RestrictionKind.subqueryHere`; a
 scalar subquery has the affinity of its result column, {lit}`x IN (q)` compares under
-{name}`comparisonAffinity` and {name}`inCollation`, and both need one result column, else SQLite's
-{lit}`sub-select returns %d columns - expected 1`. An aggregate whose arguments read a cell
+{name}`comparisonAffinity` and {name}`inCollation`, and both read one result column
+({name}`SubqueryShapes.column`). An aggregate whose arguments read a cell
 of a query around the current one is {name}`RestrictionKind.outerAggregate`. {lit}`x IN (list)`
 compares under the affinity and the collation of {lit}`x`, but a list of one constant value with an
 explicit collation is {lit}`x = +c`, as SQLite's parser reads it; {lit}`x BETWEEN a AND b` is
@@ -51,16 +51,16 @@ outside a trigger's statements is {name}`ExprError.raiseOutsideTrigger`. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) :
     Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
-    | .found _ reads => .ok (scope.nameOperand reads)
+    | .found _ reads => scope.nameRead reads
     | .missing =>
-      if rowidName name && scope.any (·.hasRowid) then .error (.restriction [] .rowidName)
+      if rowidName name && scope.any (fun source => source.namesVisible && source.hasRowid) then .error (.restriction [] .rowidName)
       else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
       else .error (.prepare (.noSuchColumn name))
     | .ambiguous => .error (.prepare (.ambiguousColumn name))
   | .qualified source column => match scope.resolveQualified source column with
-    | .found _ reads => .ok (scope.nameOperand reads)
+    | .found _ reads => scope.nameRead reads
     | .missing =>
       if rowidName column && scope.rowidSource source then .error (.restriction [] .rowidName)
       else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
@@ -124,10 +124,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
   | .exists index => match shapes.find index with
     | some _ => .ok (.exists index, none)
     | none => .error (.restriction [] .subqueryHere)
-  | .subquery index => match shapes.find index with
-    | some shape =>
-      if shape.columns == 1 then .ok (.subquery index, shape.affinity) else .error (.prepare (.subqueryColumns shape.columns))
-    | none => .error (.restriction [] .subqueryHere)
+  | .subquery index => (shapes.column index).map fun shape => (.subquery index, shape.affinity)
   | .inList operand values negated => do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     let resolved ← resolveArguments dqs scope shapes misuse 0 values
@@ -157,12 +154,8 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
   | .raise .. => .error (.prepare .raiseOutsideTrigger)
   | .inQuery operand index negated => do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
-    match shapes.find index with
-    | some shape =>
-      if shape.columns == 1 then
-        .ok (.inQuery a.1 index (comparisonAffinity a.2 shape.affinity) (inCollation scope operand shape) negated, none)
-      else .error (.prepare (.subqueryColumns shape.columns))
-    | none => .error (.restriction [] .subqueryHere)
+    let shape ← shapes.column index
+    .ok (.inQuery a.1 index (comparisonAffinity a.2 shape.affinity) (inCollation scope operand shape) negated, none)
 
 /-- Resolve the arguments of a call in written order ({name}`resolveOperand`), from
 argument {lit}`index`; the issue of argument {lit}`k` is at {lit}`[1, k]`. -/

@@ -12,14 +12,15 @@ namespace Belay.Sqlite.Model
 {lit}`RETURNING` columns. SQLite's own tables are a model restriction, as in
 {lit}`SELECT`. The filter may name the statement's resolved subqueries, whose shapes are
 {lit}`shapes`. In a trigger's body, the filter also sees the trigger's rows {lit}`trigger`,
-after the table's cells (ADR 0018, D5). -/
+after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`. -/
 def resolveDelete (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
     (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
   | none =>
-    if reservedName tableName then restrict [0] .systemTable
+    if (catalog.findView tableName).isSome then resolveViewModify catalog tableName
+    else if reservedName tableName then restrict [0] .systemTable
     else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let scope := Scope.single tableName table.columns !table.withoutRowid

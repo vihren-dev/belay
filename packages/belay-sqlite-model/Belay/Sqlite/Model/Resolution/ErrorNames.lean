@@ -17,6 +17,8 @@ name with two dots, which the text seldom writes, so a tool then shows the error
 statement. A function name is the name as written, and so is the text of a hexadecimal
 literal. -/
 def ExprError.name? : ExprError → Option Identifier
+  | .commonTable error => error.name
+  | .view error => some error.name
   | .reservedName name | .tooManyColumns name | .duplicateColumn name | .multiplePrimaryKeys name
   | .defaultNotConstant name | .tableHasNoColumn _ name | .valueCount name _ _
   | .tableMayNotBeAltered name | .tableMayNotBeIndexed name | .primaryKeyMissing name
@@ -29,12 +31,13 @@ def ExprError.name? : ExprError → Option Identifier
   | .noSuchFunction text => some (Identifier.ofString text)
   | .valuesForColumns _ _ | .valuesDiffer | .cannotAddPrimaryKey | .cannotAddUnique
   | .conflictingAlgorithms | .foreignKeyColumnCount | .generatedInPrimaryKey | .defaultOnGenerated
-  | .nondeterministicGenerated | .onlyGeneratedColumns | .qualifiedGenerated | .qualifiedIndexTerm
+  | .nondeterministicGenerated | .emptyKeyList | .onlyGeneratedColumns | .qualifiedGenerated | .qualifiedIndexTerm
   | .nondeterministicIndex _ | .aggregateInGroupBy | .orderByOutOfRange _ _ | .groupByOutOfRange _ _
   | .likelihoodArgument | .tooManyTables | .returningSourceStar | .naturalJoinCondition
   | .conflictTargetMismatch | .noTablesSpecified | .tooManyEachArguments | .subqueryColumns _
   | .havingNonAggregate | .raiseOutsideTrigger | .triggerOnSystemTable | .parameterInCheck
-  | .parameterInGenerated | .parameterInIndex _ | .triggerVariables => none
+  | .parameterInGenerated | .parameterInIndex _ | .triggerVariables | .compoundColumns _
+  | .orderByNoMatch _ => none
 
 /-- The name in the message of the prepare error ({name}`ExprError.name?` for an error that
 names no catalog object). For a foreign key mismatch it is the child table, which the write
@@ -42,10 +45,12 @@ names. The name can be absent from the statement's text, for example the parent 
 foreign key; a tool then shows the error at the statement. For example
 {assert}`(PrepareError.noSuchTable (name! "u")).name? = some (name! "u")`. -/
 def PrepareError.name? : PrepareError → Option Identifier
-  | .tableExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
-  | .noSuchTable name | .noSuchIndex name | .tableMayNotBeDropped name
+  | .viewVariables | .viewNotIndexed | .viewAddColumn => none
+  | .tableExists name | .viewExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
+  | .noSuchTable name | .noSuchView name | .useDropTable name | .useDropView name
+  | .noSuchIndex name | .tableMayNotBeDropped name
   | .noSuchReferencedTable name | .foreignKeyMismatch name _ | .noSuchTrigger name
-  | .triggerExists name => some name
+  | .triggerExists name | .viewModify name | .viewTrigger _ name => some name
   | .expression error => error.name?
 
 end Belay.Sqlite.Model

@@ -5,18 +5,15 @@ import Belay.Sqlite.Model.Resolution.IndexTerms
 import Belay.Sqlite.Model.Resolution.GeneratedColumns
 import Belay.Sqlite.Model.Resolution.TableOptions
 import Belay.Sqlite.Model.Resolution.ParentKeys
-
 set_option doc.verso true
 
 /-! Name resolution of CREATE TABLE and CREATE INDEX ({lit}`AddColumn.lean` resolves ALTER
 TABLE ADD COLUMN). The prepare checks follow the order of SQLite 3.51.0's
 {lit}`sqlite3StartTable`, {lit}`sqlite3AddColumn`, {lit}`sqlite3AddPrimaryKey`,
 {lit}`sqlite3EndTable` and {lit}`sqlite3CreateIndex`, because SQLite reports the first error it finds.
-Model restrictions follow the prepare checks: a statement that SQLite refuses needs
-no model. -/
+Model restrictions follow the prepare checks: a statement that SQLite refuses needs no model. -/
 
 namespace Belay.Sqlite.Model
-
 /-- The positions of key columns, or {lit}`no such column: %s` for the first name
 that no column has. -/
 def keyPositions (columns : List CatalogColumn) : List Identifier → Except ExprError (List Nat)
@@ -97,6 +94,7 @@ is deferred ({name}`CatalogTable.deferLast`). -/
 def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
+  | .primaryKey [] _ :: _ | .unique [] _ :: _ => throw .emptyKeyList
   | .primaryKey names algorithm :: rest => do
     if !table.primaryKey.isEmpty then throw (.multiplePrimaryKeys tableName)
     let positions ← keyPositions table.columns names
@@ -134,7 +132,7 @@ and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
 {lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions and of a
 {lit}`STRICT` table's types ({name}`strictTypeError`), whose key columns are NOT NULL
 ({name}`CatalogTable.withStrictKeys`); then the CHECK
-constraints resolve ({name}`resolveTableChecks`) under the profile's {lit}`DQS_DDL`. -/
+constraints resolve under the profile's {lit}`DQS_DDL`. An existing view gives {name}`PrepareError.viewExists`. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
     (constraints : List Syntax.TableConstraint) (options : Syntax.TableOptions := {}) : StatementResolution :=
@@ -144,6 +142,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
     else prepareError catalog (.expression (.reservedName name))
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
+  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)
   | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)
   | some (_, { entry := .trigger _, .. }) | none =>
     match addDefinitions context.profile.limits.columns name { columns := [], strict := options.strict } columns >>=
@@ -173,17 +172,20 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
 table, its reserved name, the index name, the name in use, the key terms
 ({name}`indexKeys`, path 3) and the filter ({name}`indexFilter`, path 4), both over the
 table alone and under the profile's {lit}`DQS_DDL`. A CREATE INDEX that runs builds the
-index over the existing rows in execution. -/
+index over the existing rows in execution. A view target is {name}`PrepareError.viewNotIndexed`, without a look at the view's query or at
+the other names. -/
 def resolveCreateIndex (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr) : StatementResolution :=
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none => if (catalog.findView tableName).isSome then prepareError catalog .viewNotIndexed
+      else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeIndexed tableName))
     else if reservedName name then prepareError catalog (.expression (.reservedName name))
     else match catalog.find name with
-    | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
+    | some (_, { entry := .table _, .. }) | some (_, { entry := .view _, .. }) =>
+      prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | some (_, { entry := .trigger _, .. }) | none =>
       let scope := Scope.single tableName table.columns !table.withoutRowid
@@ -195,5 +197,4 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog)
         | .ok resolvedFilter =>
           let created := { table := position, keys, unique, filter := resolvedFilter }
           .ok (.createIndex catalog.length name created, catalog.createIndex name created)
-
 end Belay.Sqlite.Model

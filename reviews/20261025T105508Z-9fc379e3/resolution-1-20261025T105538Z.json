@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T10:55:38+00:00",
+  "finding": "20261025T105508Z-9fc379e3#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Added test_only_sql_errors_of_a_view_are_evidence for codes 1, 9 and 10"
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T08:29:41+00:00",
+  "finding": "20261025T082934Z-bda4beec#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the unsupported link-check claim is removed from the status entry"
+}

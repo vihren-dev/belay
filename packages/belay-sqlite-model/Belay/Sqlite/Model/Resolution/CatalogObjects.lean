@@ -11,7 +11,7 @@ import Belay.Sqlite.Model.Resolution.Triggers
 
 set_option doc.verso true
 
-/-! The objects of the catalog that name resolution reads and updates. Tables and indexes share
+/-! The objects of the catalog that name resolution reads and updates. Tables, views and indexes share
 one namespace, as in {lit}`sqlite_schema`, and triggers have one of their own. Names keep their case as written;
 lookup compares SQLite's ASCII-folded form ({name}`Belay.Sqlite.Model.Identifier.sameName`).
 Columns keep their declared type text, and the affinity function
@@ -68,6 +68,11 @@ structure CatalogTable where
   primaryKeyAlgorithm : Option ConflictAlgorithm := none
   /-- The column positions of each UNIQUE constraint, in written order. -/
   uniqueKeys : List (List Nat) := []
+  /-- The number of keys of {name}`CatalogTable.uniqueKeys` whose index SQLite creates before
+  the index of the primary key, which numbers the indexes {lit}`sqlite_autoindex_t_N` in that
+  order: the UNIQUE constraints written before the PRIMARY KEY. Use {lean}`0` when the primary
+  key comes first or has no index. -/
+  uniqueBeforePrimary : Nat := 0
   /-- The {lit}`ON CONFLICT` algorithm of each UNIQUE constraint, in the order of
   {lit}`uniqueKeys`, none without the clause; a constraint without an entry has none. -/
   uniqueAlgorithms : List (Option ConflictAlgorithm) := []
@@ -100,10 +105,25 @@ names the first of this list (SQLite 3.51, measured with the {lit}`sqlite3` shel
 def CatalogTable.allChecks (table : CatalogTable) : List CheckConstraint :=
   table.columns.flatMap (·.checks) ++ table.checks
 
+/-- A view's unresolved SELECT and its indexed subqueries. Each use resolves these
+names against the current catalog. Use {lean}`(none : Option (List Identifier))`
+to derive output names, as in {lit}`CREATE VIEW v AS SELECT x FROM t`.
+The body may refer to a table that does not yet exist. -/
+structure CatalogView where
+  /-- Explicit output names, or none to derive them from the SELECT. -/
+  columns : Option (List Identifier) := none
+  /-- The SELECT root as written, with no enclosing query. -/
+  query : Syntax.Subquery
+  /-- The root's indexed expression, source, compound and WITH queries. -/
+  subqueries : List Syntax.Subquery := []
+  deriving Repr, DecidableEq
+
 /-- The kind and content of one catalog object. -/
 inductive CatalogEntry where
   /-- A table. -/
   | table (table : CatalogTable)
+  /-- An unresolved view, without stored rows. -/
+  | view (view : CatalogView)
   /-- An index. -/
   | index (index : CatalogIndex)
   /-- A trigger (ADR 0018, D5). Triggers have a namespace of their own. -/
@@ -131,13 +151,13 @@ def findPosition (test : α → Bool) : List α → Option (Nat × α)
 /-- Whether the entry is a trigger. -/
 def CatalogEntry.isTrigger : CatalogEntry → Bool
   | .trigger _ => true
-  | .table _ | .index _ => false
+  | .table _ | .view _ | .index _ => false
 
 /-- Whether the object is a trigger, whose name is in a namespace of its own. -/
 def CatalogObject.isTrigger (object : CatalogObject) : Bool := object.entry.isTrigger
 
-/-- The first table or index of the catalog whose folded name equals the folded given name;
-tables and indexes share one namespace, and triggers are not in it. -/
+/-- The first table, view or index whose folded name equals the given name's folded
+form. These objects share one namespace; triggers have their own namespace. -/
 def Catalog.find (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogObject) :=
   findPosition (fun object => object.name.sameName name && !object.isTrigger) catalog
 
@@ -145,7 +165,8 @@ def Catalog.find (catalog : Catalog) (name : Identifier) : Option (Nat × Catalo
 def Catalog.findTable (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogTable) :=
   match catalog.find name with
   | some (position, { entry := .table table, .. }) => some (position, table)
-  | some (_, { entry := .index _, .. }) | some (_, { entry := .trigger _, .. }) => none
+  | some (_, { entry := .view _, .. }) | some (_, { entry := .index _, .. })
+  | some (_, { entry := .trigger _, .. }) => none
   | none => none
 
 /-- The columns of the table with the name in the catalog, in table order, or

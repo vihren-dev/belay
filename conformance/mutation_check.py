@@ -16,7 +16,7 @@ MUTANTS = {
     "update_ignored": ("StatementStep", "LiteralData.updated context table assignments filter", "table"),
     "add_unpadded": ("Execution", "(database.addColumn target column value)",
                      "{ database with catalog := database.catalog.addColumn target column }"),
-    "rollback_ignored": ("StatementStep", ".next { state with database := original, snapshot := none }",
+    "rollback_ignored": ("SqlAdvance", ".next { state with database := original, snapshot := none }",
                          ".next { state with snapshot := none }"),
     "unique_disabled": ("LiteralData", "keys.all fun key => uniqueRows key table.rows", "true"),
 }
@@ -45,7 +45,7 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
     hashes: dict[str, str] = {}
     for name, (target, before, after) in MUTANTS.items():
         for filename in (*(f"packages/belay-sqlite-model/Belay/Sqlite/Model/{name}.lean"
-                           for name in ("Execution", "LiteralData", "StatementRun", "StatementStep", "SqlExecution",
+                           for name in ("Execution", "LiteralData", "StatementRun", "StatementStep", "SqlAdvance", "SqlExecution",
                                         "StatementOutput", "PossibleOutput")),
                          *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
                            for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):
@@ -76,7 +76,7 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
         copied = {"initial": f"c.initial.map {table}", "nativeTrace": native, "outputs": outputs}
         conversion = ", ".join(field + " := " + ("(" + copied[field] + ")" if field in copied else "c." + field) for field in fields)
         source += f'\ndef convert_{name} (c : Belay.Sqlite.Model.Conformance.Case) : Belay.Sqlite.Model.{name}.Conformance.Case := {{ {conversion} }}\n'
-        source += f'#eval IO.println (String.intercalate "\\n" (originals.zipIdx.map fun (c, i) => s!"MUTANT|{name}|{{i}}|{{reprStr (Belay.Sqlite.Model.{name}.Conformance.classifyCase (convert_{name} c))}}"))\n'
+        source += f'#eval IO.println (String.intercalate "\\n" (originals.zipIdx.map fun (c, i) => s!"MUTANT|{name}|{{i}}|{{reprStr (Belay.Sqlite.Model.{name}.Conformance.classifyHaltingCase (convert_{name} c))}}"))\n'
     with TemporaryDirectory(prefix="model-mutants-") as directory:
         lean = Path(directory) / "Mutants.lean"
         lean.write_text(source)

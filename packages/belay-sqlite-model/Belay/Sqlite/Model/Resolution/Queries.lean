@@ -27,7 +27,7 @@ operand. A name is the {lit}`AS` alias, else the defined name of a referenced co
 ({name}`definedName`), else the source text as written. -/
 def resolveResultColumn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String × Option Affinity))
-  | .star => if scope.inner.isEmpty then .error (.prepare .noTablesSpecified) else
+  | .star => if !(scope.inner.any (·.namesVisible)) then .error (.prepare .noTablesSpecified) else
       scope.visible.mapM fun (position, defined) =>
         (fun (operand : Operand) => (.scalar operand.1, defined.name.text, operand.2)) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
@@ -84,11 +84,11 @@ def resultAliases (scope : Scope) (results : List Syntax.ResultColumn) : List (O
 
 /-- The explicit collation and the column collation of the first result column, as
 {name}`inCollation` needs them for a subquery: those of its expression, or the collation of
-the first column of {lit}`*` or {lit}`x.*`. -/
+the first expanded operand of {lit}`*` or {lit}`x.*`. -/
 def firstCollations (scope : Scope) : List Syntax.ResultColumn → Option Collation × Option Collation
   | .expression value _ _ :: _ => (value.explicitCollation, value.columnCollation scope)
-  | .star :: _ => (none, (scope.visible.head?.map (·.2.collation)))
-  | .sourceStar name :: _ => (none, ((scope.starColumns? name).bind (·.head?)).map (·.2.collation))
+  | .star :: _ => (none, (scope.visible.head?.bind fun (position, column) => scope.starCollation position column))
+  | .sourceStar name :: _ => (none, ((scope.starColumns? name).bind (·.head?)).bind fun (position, column) => scope.starCollation position column)
   | [] => (none, none)
 
 /-- Resolve the clauses of a query over its scope ({lit}`resolveSources`, enclosed by the
@@ -127,6 +127,10 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     | some term =>
       if namesAlias scope visibleAliases term then throw (aliasInExpression.under [3])
       else some <$> condition [3] (resolveOperand dqs scope shapes true term)
+  -- SQLite resolves a result column alias in an ON condition as it does in WHERE.
+  if let some item := (query.joins.zipIdx.find? fun (join, _) =>
+      join.condition.any (namesAlias scope visibleAliases)).map (·.2) then
+    throw (aliasInExpression.under [2, item, 2])
   let sources ← resolvePendingSources dqs scope pending
   let collations := resultCollations scope query.columns
   let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy

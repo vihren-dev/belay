@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Database
+import Belay.Sqlite.Model.Counters
 import Belay.Sqlite.Model.Resolution.QueryForm
 import Belay.Sqlite.Model.Comparison
 import Belay.Sqlite.Model.Json.JsonApply
@@ -108,9 +109,28 @@ def comparisonOperands : Option Affinity → Value → Value → Value × Value
     if left.isText || right.isText then (Value.store .text left, Value.store .text right) else (left, right)
   | some .blob, left, right | none, left, right => (left, right)
 
+/-- How SQLite ends the run of a query, before the model softens the faults of a subquery
+(ADR 0019, D3): a compound {lit}`SELECT` reads it for each of its terms, because SQLite runs a
+term of a statement's compound as its own query. Use {lean}`RunEnd.done` for a run without a
+failure. -/
+inductive RunEnd where
+  /-- The run ends without a failure. -/
+  | done
+  /-- The run may fail, or fails in a way that the model does not describe. -/
+  | may
+  /-- A function call certainly fails, with {lit}`Fault.must`. -/
+  | function
+  /-- An aggregate certainly overflows. {lit}`grouped` is true for a query with
+  {lit}`GROUP BY`, which may give the rows of earlier groups before the error. -/
+  | overflow (grouped : Bool)
+  /-- A value of {lit}`LIMIT` or {lit}`OFFSET` is not an integer: {lit}`datatype mismatch`. -/
+  | mismatch
+  deriving Repr, DecidableEq
+
 /-- The rows that a subquery gives for one outer row, with the fault of its evaluation
 (ADR 0018, D1), and whether SQLite's plan can change the rows that a scalar subquery or
-{lit}`IN` reads. Use {lean}`true` for both flags when the rows are certain. -/
+{lit}`IN` reads, and whether its complete rows are certain for a source of {lit}`FROM`.
+Use {lean}`true` for the certainty flags when the respective values are certain. -/
 structure SubqueryRun where
   /-- The result rows, in the order of the subquery. -/
   rows : List (List Value)
@@ -122,11 +142,17 @@ structure SubqueryRun where
   /-- Whether the first values of the rows are the same in every order in which SQLite may
   give the rows, as a multiset; {lit}`IN` reads them. -/
   rowsCertain : Bool := true
+  /-- Whether the complete result rows are the same multiset in every permitted order.
+  A derived source reads every column, so certainty of only the first column is insufficient. -/
+  sourceCertain : Bool := true
+  /-- How the run ended without the softened fault ({name}`RunEnd`), which a compound
+  {lit}`SELECT` reads for its terms. -/
+  ending : RunEnd := .done
 
 /-- What the evaluation of an expression reads besides its row (ADR 0018, D1): the
 statement's clock value in Julian-day milliseconds, the results of the statement's
 subqueries, by index, for the row of the expression that reads them, and the values bound to
-the statement's parameters (ADR 0019, D1). Use {lit}`EvalContext.plain` for a statement
+the statement's parameters (ADR 0019, D1), and the counters of the connection (ADR 0024, D2). Use {lit}`EvalContext.plain` for a statement
 without subqueries and without values. -/
 structure EvalContext where
   /-- The statement's clock value. -/
@@ -139,6 +165,10 @@ structure EvalContext where
   /-- The values bound to the statement's parameters: item {lit}`n` from 1 is the value of
   parameter {lit}`n`. Empty for a statement that binds none, so that each parameter is NULL. -/
   parameters : List Value := []
+  /-- The counters of the connection before the statement (ADR 0024, D2), which
+  {lit}`changes()`, {lit}`total_changes()` and {lit}`last_insert_rowid()` read. A counter that
+  the context does not know reads as NULL, and the run of the statement is then not described. -/
+  counters : Counters := {}
 
 /-- The context of a statement without subqueries at a clock value: a subquery that it
 names gives no rows and no fault, which resolution never needs. -/

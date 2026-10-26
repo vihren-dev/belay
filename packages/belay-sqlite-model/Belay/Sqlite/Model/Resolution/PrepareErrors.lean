@@ -1,4 +1,7 @@
 import Belay.Sqlite.Model.Identifier
+import Belay.Sqlite.Model.Operators
+import Belay.Sqlite.Model.Resolution.CommonTableErrors
+import Belay.Sqlite.Model.Resolution.ViewErrors
 
 set_option doc.verso true
 
@@ -14,6 +17,10 @@ a misused function, a term out of range, a duplicate column, or a form that SQLi
 refuses. {lit}`PrepareError.expression` carries them; resolution of expressions
 ({lit}`ValueIssue`) can give only these. -/
 inductive ExprError where
+  /-- An invalid WITH definition, as described by {name}`CommonTableError`. -/
+  | commonTable (error : CommonTableError)
+  /-- A failed use of a stored view, as described by {name}`ViewError`. -/
+  | view (error : ViewError)
   /-- {lit}`object name reserved for internal use: %s` ({lit}`sqlite3CheckObjectName`). -/
   | reservedName (name : Identifier)
   /-- {lit}`too many columns on %s` ({lit}`sqlite3AddColumn`). -/
@@ -72,6 +79,11 @@ inductive ExprError where
   | errorInGenerated (name : Identifier)
   /-- {lit}`non-deterministic functions prohibited in generated columns`: a time keyword. -/
   | nondeterministicGenerated
+  /-- {lit}`near ")": syntax error`: a list of key terms or key columns with no entry, as in
+  {lit}`CREATE INDEX i ON t()` and {lit}`UNIQUE()`. SQLite's grammar needs at least one entry,
+  so its parser refuses the text before it resolves a name; SQL text cannot give such a list,
+  but a syntax tree that a Lean user builds can. -/
+  | emptyKeyList
   /-- {lit}`must have at least one non-generated column`: a table whose columns are all
   generated. -/
   | onlyGeneratedColumns
@@ -167,6 +179,14 @@ inductive ExprError where
   | parameterInIndex (filter : Bool)
   /-- {lit}`trigger cannot use variables`: a parameter anywhere in CREATE TRIGGER. -/
   | triggerVariables
+  /-- {lit}`SELECTs to the left and right of %s do not have the same number of result columns`:
+  two terms of a compound {lit}`SELECT` with a different number of result columns, with the
+  operator between them ({lit}`sqlite3SelectWrongNumTermsError`; ADR 0019, D3). -/
+  | compoundColumns (operator : CompoundOperator)
+  /-- {lit}`%r ORDER BY term does not match any column in the result set`: an {lit}`ORDER BY`
+  term of a compound {lit}`SELECT` that names no result column, with the one-based term
+  ({lit}`resolveCompoundOrderBy`). -/
+  | orderByNoMatch (term : Nat)
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

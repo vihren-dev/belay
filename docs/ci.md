@@ -55,6 +55,11 @@ derivations as `checks.<system>`:
 
 - `tests.model`: production SQL translation and concrete Lean model assertions,
   compared with pinned native SQLite on authored and generated cases.
+- `tests.coverageStatements` and `tests.coverageFeatures`: the authored coverage cases
+  (`tests/conformance_query_coverage_test.py` and `tests/conformance_feature_coverage_test.py`),
+  each with a kernel proof of its verdict. They were part of `tests.model`, which took more
+  than 1160 s on hosted macOS with them; the three suites now each take about a third of the
+  former time.
 - `tests.frozen`: replay and classification of the frozen corpora (v1 to v28)
   and checks of the retained evidence reports.
 - `tests.corpora`: complete validation of each locked frozen corpus.
@@ -139,7 +144,7 @@ sandbox is supplied or tested. Nix daemon tests run on the host.
 Cheap unit tests rerun normally. Direct `just test-cases FILE` always executes
 pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
-`tests.model`, `tests.frozen` and `tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
+`tests.model`, the two coverage suites, `tests.frozen` and `tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
 fresh. Every scope from `test` up runs all Nix targets of `tests`.
 

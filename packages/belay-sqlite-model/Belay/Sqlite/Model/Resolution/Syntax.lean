@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.SyntaxDefinitions
 import Belay.Sqlite.Model.Resolution.ConflictAlgorithm
 import Belay.Sqlite.Model.Resolution.SyntaxEquality
+import Belay.Sqlite.Model.Resolution.SyntaxPragma
 
 set_option doc.verso true
 
@@ -82,6 +83,10 @@ inductive BodyStatement where
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
 inductive Statement where
+  /-- Store an unresolved view body, with optional output names and indexed subqueries.
+  Use {lean}`(none : Option (List Identifier))` to derive names when the view is used. -/
+  | createView (name : Identifier) (ifNotExists : Bool) (columns : Option (List Identifier))
+      (query : Subquery) (subqueries : List Subquery := [])
   /-- {lit}`CREATE TABLE name (columns, constraints) options`. -/
   | createTable (name : Identifier) (columns : List ColumnDefinition)
       (constraints : List TableConstraint) (options : TableOptions := {})
@@ -94,6 +99,8 @@ inductive Statement where
   /-- {lit}`DROP TABLE [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
   {lit}`IF EXISTS`. -/
   | dropTable (name : Identifier) (ifExists : Bool)
+  /-- {lit}`DROP VIEW [IF EXISTS] name`; the definition need not resolve to be dropped. -/
+  | dropView (name : Identifier) (ifExists : Bool)
   /-- {lit}`DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
   {lit}`IF EXISTS`. -/
   | dropIndex (name : Identifier) (ifExists : Bool)
@@ -129,13 +136,16 @@ inductive Statement where
   {lit}`LIMIT offset, limit` gives both expressions. The subqueries of the statement are
   {lit}`subqueries`, in the order of their text ({name}`Subquery`); empty without one. The
   {lit}`HAVING` condition is {lit}`having` and {lit}`SELECT DISTINCT` has {lit}`distinct`
-  (ADR 0018, D3). -/
+  (ADR 0018, D3). A compound {lit}`SELECT` (ADR 0019, D3) has no columns and no {lit}`FROM`,
+  and {lit}`compound` names its terms among the subqueries ({name}`Compound`), each with the
+  statement's query as its parent; its {lit}`ORDER BY`, {lit}`LIMIT` and {lit}`OFFSET` are
+  those of the compound. Use {lean}`(none : Option Compound)` for one {lit}`SELECT`. -/
   | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
       (subqueries : List Subquery := []) (having : Option Expr := none) (distinct : Bool := false)
-  /-- {lit}`PRAGMA foreign_keys = value`, with the value as {lit}`sqlite3GetBoolean` reads it,
-  or the query {lit}`PRAGMA foreign_keys` with {lean}`(none : Option Bool)` (ADR 0018, D4). -/
-  | pragmaForeignKeys (value : Option Bool)
+      (compound : Option Compound := none)
+  /-- A {lit}`PRAGMA` statement ({name}`Pragma`; ADR 0018, D4; ADR 0019, D2). -/
+  | pragma (pragma : Pragma)
   /-- {lit}`CREATE TRIGGER [IF NOT EXISTS] name time event ON table [FOR EACH ROW] [WHEN
   condition] BEGIN body END` (ADR 0018, D5), with the statements of the body in order;
   {lit}`ifNotExists` is true with {lit}`IF NOT EXISTS`. -/

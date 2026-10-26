@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T06:43:35+00:00",
+  "finding": "20261025T064316Z-54721ff5#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the messages name the library and the build command; the docstrings name the checked definitions"
+}

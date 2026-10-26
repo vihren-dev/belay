@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import shutil
 import shlex
+from uuid import uuid4
 
 import pytest
 
@@ -42,14 +43,15 @@ def expression(root: Path) -> str:
 
 def test_bounded_commands_keep_complete_suite_ownership() -> None:
     """The real Nix command runs every owned file with a per-test limit and full reporting; the
-    suite limit is 1200 seconds, and 2700 for a mutant suite, which runs alone on its CI runner."""
+    suite limit is 1200 seconds, and 2700 for a mutant suite, which runs alone on its CI runner.
+    Only mutant suites stop after a reported failure, preserving diagnostics before their deadline."""
     result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
         '--extra-experimental-features', 'nix-command flakes', '--expr',
         f'builtins.mapAttrs (_: test: test.installPhase) ({expression(ROOT)})'], cwd=ROOT, timeout=30)
     assert result.returncode == 0, result.diagnostic()
     scripts = json.loads(result.stdout)
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
-    assert set(scripts) == set(ownership) == {'model', 'frozen', 'corpora', 'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
+    assert set(scripts) == set(ownership) == {'model', 'coverageStatements', 'coverageFeatures', 'frozen', 'corpora', 'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
                                                'documentation', 'mutants', 'tableMutants', 'functionMutants', 'surface',
                                                'writers'}
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
@@ -60,8 +62,9 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
         assert command[:5] == ['timeout', limit, 'python3', '-m', 'pytest'], (name, command[:5])
         runtime_index = command.index('--runtime-root')
         assert command[5:runtime_index] == ownership[name], (name, command)
+        early_failure = ['--exitfirst'] if name in mutant_suites else []
         assert command[runtime_index + 2:] == ['-p', 'no:cacheprovider', '-p', 'pytest_timeout', '--timeout=300',
-            '--junitxml', '$out/junit.xml', '-v', '--durations=10'], (name, command)
+            *early_failure, '--junitxml', '$out/junit.xml', '-v', '--durations=10'], (name, command)
 
 
 @pytest.fixture
@@ -119,3 +122,26 @@ def test_flake_checks_reuse_existing_targets(system: str, flake_source: Path) ->
     scheduled = set(json.loads((ROOT / 'tests/nix_scheduled_suites.json').read_text()))
     assert set(checks) == set(json.loads((ROOT / 'tests/nix_suites.json').read_text())) - scheduled
     assert checks == json.loads(legacy.stdout)
+
+
+def test_surface_manifest_evaluates_before_filtered_source_is_stored(tmp_path: Path) -> None:
+    """Our dependency pin/mapping must evaluate read-only when the filtered surface is cold.
+    A unique source nonce prevents a warm store from hiding a read of an unrealized source."""
+    package = tmp_path / "packages/belay"
+    package.mkdir(parents=True)
+    for name in ("lake-manifest.json", "lean-toolchain"):
+        shutil.copy2(ROOT / "packages/belay" / name, package / name)
+    (package / "ColdProbe.lean").write_text(f"-- Cold evaluation source {uuid4()}\n")
+    builds = f'({import_file("default.nix")} {{ root = /. + {nix_string(tmp_path)}; }})'
+    command = ["nix-instantiate", "--eval", "--strict", "--json",
+               "--extra-experimental-features", "nix-command flakes", "--expr"]
+    source = run_command([*command, f"toString {builds}.sources.surface"], cwd=ROOT, timeout=30)
+    assert source.returncode == 0, source.diagnostic()
+    filtered = Path(json.loads(source.stdout))
+    assert not filtered.exists(), f"cold probe unexpectedly materialized {filtered}"
+    manifest = run_command([*command, f"{builds}.surfacePackage.postPatch"], cwd=ROOT, timeout=30)
+    assert manifest.returncode == 0, manifest.diagnostic()
+    script = json.loads(manifest.stdout)
+    assert 'require plausible from ".lake/packages/plausible"' in script, script
+    assert "surface-lake-manifest.json" in script, script
+    assert not filtered.exists(), f"read-only manifest evaluation materialized {filtered}"

@@ -38,12 +38,12 @@ structure ResolvedScript where
   nextCatalog : Catalog
   deriving Repr, BEq
 
-/-- Whether a schema statement can describe a catalog: CREATE TABLE, CREATE INDEX or CREATE
+/-- Whether a schema statement can describe a catalog: CREATE TABLE, CREATE VIEW, CREATE INDEX or CREATE
 TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
-  | .createTable .. | .createIndex .. | .createTrigger .. => true
-  | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
-  | .delete .. | .select .. | .pragmaForeignKeys _ => false
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. => true
+  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
+  | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
 def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restriction :=
@@ -53,8 +53,8 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 /-- The prepare error of a resolved statement, if it is one. -/
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
-  | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting _ => none
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+  | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting .. => none
 
 /-- Whether two triggers of a schema may both fire for one write, so that their order matters:
 the same folded table name, the same time and the same kind of event. -/
@@ -75,8 +75,8 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       let trigger : CatalogTrigger := { table, time, event, condition, body }
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
-    | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin
-    | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragmaForeignKeys _ =>
+    | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
+    | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 
 /-- The zero-based index and error of the first prepare error in a list of
@@ -87,13 +87,12 @@ def firstPrepareErrorFrom (index : Nat) : List Resolved.Statement → Option (Na
     | some error => some (index, error)
     | none => firstPrepareErrorFrom (index + 1) rest
 
-/-- Resolve a schema, then a script. The schema statements resolve in description
-mode against the empty catalog; each must be CREATE TABLE, CREATE INDEX or CREATE TRIGGER and must
-prepare without an error. The script statements resolve in execution mode against
-the resulting catalog; a prepare error there stays in the resolved statements. Two triggers that
-overlap in the schema are a restriction ({name}`schemaTriggerRestriction`). -/
-def resolveSchemaAndScript (profile : Profile) (schema script : List Syntax.Statement) :
-    Except ScriptIssue ResolvedScript :=
+/-- Resolve a schema to the catalog that it describes. The schema statements resolve in
+description mode against the empty catalog; each must be CREATE TABLE, CREATE VIEW, CREATE INDEX or CREATE
+TRIGGER and must prepare without an error. Two triggers that overlap in the schema are a
+restriction ({name}`schemaTriggerRestriction`). The result is never
+{name}`ScriptIssue.scriptRestricted`. -/
+def resolveSchema (profile : Profile) (schema : List Syntax.Statement) : Except ScriptIssue Catalog :=
   match schemaStatementRestriction schema <|> schemaTriggerRestriction 0 [] schema with
   | some restriction => .error (.schemaRestricted restriction)
   | none =>
@@ -102,9 +101,16 @@ def resolveSchemaAndScript (profile : Profile) (schema script : List Syntax.Stat
     | .resolved described startCatalog =>
       match firstPrepareErrorFrom 0 described with
       | some (index, error) => .error (.schemaPrepareError index error)
-      | none =>
-        match resolve { profile, mode := .execution } startCatalog script with
-        | .restricted restriction => .error (.scriptRestricted restriction)
-        | .resolved resolved nextCatalog => .ok { profile, schema, startCatalog, script, resolved, nextCatalog }
+      | none => .ok startCatalog
+
+/-- Resolve a schema ({name}`resolveSchema`), then a script. The script statements resolve in
+execution mode against the catalog of the schema; a prepare error there stays in the resolved
+statements. -/
+def resolveSchemaAndScript (profile : Profile) (schema script : List Syntax.Statement) :
+    Except ScriptIssue ResolvedScript := do
+  let startCatalog ← resolveSchema profile schema
+  match resolve { profile, mode := .execution } startCatalog script with
+  | .restricted restriction => .error (.scriptRestricted restriction)
+  | .resolved resolved nextCatalog => .ok { profile, schema, startCatalog, script, resolved, nextCatalog }
 
 end Belay.Sqlite.Model

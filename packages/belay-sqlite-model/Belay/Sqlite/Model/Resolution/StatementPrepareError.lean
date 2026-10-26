@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Resolution.PrepareErrors
 set_option doc.verso true
 
 /-! The error that {lit}`sqlite3_prepare_v2` reports for a statement (ADR 0013, D8): one that
-names a catalog object, or an error of an expression ({lit}`ExprError`). -/
+checks a statement, names a catalog object, or reports an expression error ({lit}`ExprError`). -/
 
 namespace Belay.Sqlite.Model
 
@@ -12,8 +12,12 @@ scope. Each constructor names the SQLite message format it corresponds to. This
 is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
 then stops at this one. -/
 inductive PrepareError where
+  /-- {lit}`parameters are not allowed in views`, before name checks at CREATE VIEW. -/
+  | viewVariables
   /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
   | tableExists (name : Identifier)
+  /-- {lit}`view %T already exists` ({lit}`sqlite3StartTable`). -/
+  | viewExists (name : Identifier)
   /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
   | indexNameUsed (name : Identifier)
   /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/
@@ -22,6 +26,14 @@ inductive PrepareError where
   | indexExists (name : Identifier)
   /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
   | noSuchTable (name : Identifier)
+  /-- {lit}`no such view: %s` ({lit}`sqlite3LocateTable` for DROP VIEW). -/
+  | noSuchView (name : Identifier)
+  /-- {lit}`use DROP TABLE to delete table %s`: DROP VIEW names a physical table.
+  The name keeps the catalog's declared spelling. -/
+  | useDropTable (name : Identifier)
+  /-- {lit}`use DROP VIEW to delete view %s`: DROP TABLE names a view.
+  The name keeps the catalog's declared spelling. -/
+  | useDropView (name : Identifier)
   /-- {lit}`no such index: %S` ({lit}`sqlite3DropIndex`). -/
   | noSuchIndex (name : Identifier)
   /-- {lit}`table %s may not be dropped` ({lit}`sqlite3DropTable`), for SQLite's schema
@@ -43,6 +55,17 @@ inductive PrepareError where
   /-- {lit}`trigger %T already exists` ({lit}`sqlite3BeginTrigger`), for CREATE TRIGGER without
   {lit}`IF NOT EXISTS` (ADR 0018, D5). -/
   | triggerExists (name : Identifier)
+  /-- {lit}`cannot modify %s because it is a view` ({lit}`sqlite3IsReadOnly`): INSERT, UPDATE or
+  DELETE of a view that has no INSTEAD OF trigger. The name keeps the catalog's declared spelling. -/
+  | viewModify (name : Identifier)
+  /-- {lit}`views may not be indexed` ({lit}`sqlite3CreateIndex`). -/
+  | viewNotIndexed
+  /-- {lit}`Cannot add a column to a view` ({lit}`sqlite3AlterBeginAddColumn`). -/
+  | viewAddColumn
+  /-- {lit}`cannot create BEFORE trigger on view: %S` or {lit}`cannot create AFTER trigger on view: %S`
+  ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
+  The name is the name as written. -/
+  | viewTrigger (before : Bool) (name : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

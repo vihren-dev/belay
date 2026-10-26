@@ -95,13 +95,14 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- A query over a database at a clock value, with the values bound to the parameters and the
+/-- A query over a database at a clock value, with the connection counters that it reads and the
+values bound to the parameters and the
 subqueries of its statement: its source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
 both in the statement's context ({name}`Resolved.statementContext`); none when a table is
 missing. -/
-def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (parameters : List Value) (database : Database)
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
     (subqueries : List Resolved.Query) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  let context := Resolved.statementContext clock parameters database subqueries
+  let context := Resolved.statementContext clock counters parameters database subqueries
   (query.source context database).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
@@ -132,11 +133,11 @@ constraint an existing row with the default fails with
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
-to the catalog ({name}`Catalog.createTrigger`) with no rows.
+to the catalog ({name}`Catalog.createTrigger`) with no rows; CREATE VIEW stores an unresolved definition the same way.
 DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
-the statement's run ({lit}`runStatement`). {lit}`PRAGMA foreign_keys = value` changes nothing.
-CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
+the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.
+CREATE TABLE, VIEW, INDEX or TRIGGER at a position other than the end of the catalog (or over
 rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
 {lit}`resolve` gives no such statement for a conforming database. A query changes nothing: its run over its source rows
@@ -145,10 +146,11 @@ COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
 {lean}`ExecutionError.integerOverflow` when it overflows, else with
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
-separately. {lit}`clock` is the statement's clock value and {lit}`parameters` are the values
+separately. {lit}`clock` is the statement's clock value, {lit}`counters` are the counters that its
+expressions read ({name}`Counters.view`) and {lit}`parameters` are the values
 bound to its parameters, which a query's expressions may read; use {lean}`([] : List Value)` for a statement
 that binds none. -/
-def step (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) : Effect :=
+def step (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database) : Effect :=
   match statement with
   | .createTable target name table =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then
@@ -178,14 +180,18 @@ def step (clock : Int) (parameters : List Value) (statement : Resolved.Statement
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
+  | .createView target name view =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createView name view, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
   | .createTrigger target name trigger =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then
       .ok { catalog := database.catalog.createTrigger name trigger, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
   | .drop positions _ => .ok (database.drop positions)
-  | .setting _ => .ok database
+  | .setting .. => .ok database
   | .prepareError error => .error (.prepare error, database)
-  | .query query subqueries => queryEffect database (query.runOn clock parameters database subqueries)
+  | .query query subqueries => queryEffect database (query.runOn clock counters parameters database subqueries)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 

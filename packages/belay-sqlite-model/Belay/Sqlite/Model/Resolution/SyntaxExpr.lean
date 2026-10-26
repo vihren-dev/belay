@@ -129,16 +129,20 @@ inductive ResultColumn where
   deriving Repr, BEq
 
 /-- A table in {lit}`FROM`, or a table-valued function such as {lit}`json_each(json)`: its
-name and its optional alias, both as written, and the arguments of a function. Use
+name and its optional alias, both as written, and the arguments of a function; or an
+indexed query with its optional alias. Use
 {lean}`(none : Option Identifier)` for no alias, and {lean}`(none : Option (List Expr))` for a
 table. -/
 structure TableReference where
-  /-- The table name, or the function name. -/
+  /-- The table or function name; ignored when {lit}`query` names a derived source. -/
   table : Identifier
   /-- The alias of {lit}`table AS alias` or {lit}`table alias`. -/
   alias : Option Identifier
-  /-- The arguments of a table-valued function in written order; none for a table. -/
+  /-- The arguments of a table-valued function in written order; none for a table or SELECT. -/
   arguments : Option (List Expr) := none
+  /-- The indexed SELECT supplying this source. Use none for a named table or function;
+  a derived source has no function arguments and uses its optional alias for qualification. -/
+  query : Option Nat := none
   deriving Repr, BEq
 
 /-- One join of {lit}`FROM` after the first table: the keywords of its operator, the
@@ -163,37 +167,6 @@ structure OrderTerm where
   expression : Expr
   /-- Whether the term is {lit}`DESC`; {lean}`false` for {lit}`ASC` or no direction. -/
   descending : Bool
-  deriving Repr, BEq
-
-/-- A subquery of a statement as written (ADR 0018, D1): its clauses, as those of
-{lit}`Syntax.Statement.select`, and the query around it, an earlier subquery by its index in
-the statement's list or {lean}`(none : Option Nat)` for the statement's query. The frontend
-lists the subqueries in the order of their text, so a subquery comes after the query around
-it; an expression names a subquery by its index ({lit}`Expr.exists`, {lit}`Expr.inQuery`,
-{lit}`Expr.subquery`). -/
-structure Subquery where
-  /-- The result columns. -/
-  columns : List ResultColumn
-  /-- The first table of {lit}`FROM`, or none without {lit}`FROM`. -/
-  source : Option TableReference
-  /-- The joins after the first table, in order. -/
-  joins : List Join
-  /-- The {lit}`WHERE` condition. -/
-  filter : Option Expr
-  /-- The {lit}`GROUP BY` terms. -/
-  groupBy : List Expr
-  /-- The {lit}`ORDER BY` terms. -/
-  orderBy : List OrderTerm
-  /-- The {lit}`LIMIT` expression. -/
-  limit : Option Expr
-  /-- The {lit}`OFFSET` expression. -/
-  offset : Option Expr
-  /-- The index of the subquery around this one, or none for the statement's query. -/
-  parent : Option Nat
-  /-- The {lit}`HAVING` condition (ADR 0018, D3). -/
-  having : Option Expr := none
-  /-- Whether the query is {lit}`SELECT DISTINCT`. -/
-  distinct : Bool := false
   deriving Repr, BEq
 
 end Belay.Sqlite.Model.Syntax

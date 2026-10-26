@@ -69,7 +69,7 @@ task file, and each ends with users able to do more than before.
 | S4. Claims over every database | `Holds`, `Empty` and `Fails` over every database; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
 | S6. Triples and equivalence | Triples from `Std.Do`, `≈` and its patterns, level 3 | "Level 3"; open questions 2, 11 and 12 |
-| S7. SQL files | `sql_file`, `sql_module`, `against :=`, and the check tool | "SQL in separate files" |
+| S7. SQL files | `sql_file`, `sql_module`, `against :=`, the check tool, and optional named proof-body cost reports | "SQL in separate files", "Stable proofs" |
 | S8. The whole application | `simulates`, level 4 | "Level 4" |
 
 The order follows three rules. Risk first: S1 is the step that nobody has tried, and
@@ -78,6 +78,89 @@ it needs no new model semantics apart from `Output.oneOf`, whose examples wait (
 names the learning curve as the main risk of the design, and the verification systems
 review shows that a cheap first answer is what makes people adopt a verifier, so S5
 comes before S6.
+
+S7 cost clarification, accepted by the owner on 2026-10-24 after the checked
+collector prototype: collection is optional. It measures completed body
+elaboration for named theorems and definitions whose values are proofs, including
+ordinary and native mutual declarations. Reports identify other coverage as
+missing or unsupported; embedded proofs and generated helpers have no promised
+separate cost. Counts include instrumentation in the body region, exclude
+header elaboration and later kernel checking, and require a successful compile.
+They retain exact internal heartbeat units, with 1000 internal units per Lean
+budget unit. CI compares compatible measurements and fails when growth exceeds
+an additive allowance chosen by the user; missing data never means zero. The guide must disclose
+measurement overhead and count variation. The prototype measured about 9%
+heartbeat overhead in its sample (commit `489b22f6`,
+`docs/s7-proof-cost-findings.md`); this is not a general bound. Production
+collection and native mutual coverage remain implementation work.
+
+S6 clarification, accepted by the owner on 2026-10-24 after the checked
+foundations prototype:
+
+- `≈` compares the full execution context and every permitted branch outcome,
+  so that bind and append can preserve it. Equal final tables and output rows
+  alone are insufficient: a continuation can observe counters, pragmas and
+  transaction snapshots. Compare actual full runs and the set of complete
+  branch outcomes at the same clock, statement index and full connection. Each
+  outcome retains its optional return value, full output trace and final
+  connection, including errors and unmodeled reasons/partial traces. Branches
+  follow the existing statement step: the raw continuation is included and
+  `oneOf` also permits each concrete rows continuation. Ordinary SQL errors
+  continue; unmodeled outcomes stop. Branch enumeration duplicates/order are
+  not extra observations beyond the raw outputs already retained.
+- Separately named weaker visible comparisons remain available. Their use does
+  not imply the stronger bind/append congruence without the required premises.
+- Universal guide examples must state the schema and trigger/foreign-key effect
+  conditions they need. A successful INSERT can be followed by a trigger that
+  deletes the new row; a DELETE trigger can remove rows outside its direct
+  filter. Retain these counterexamples and correct the lookup/frame claims
+  with explicit premises, rather than replacing the universal examples with
+  fixed-schema proofs. Convenient premises must not remove the more general
+  semantic effect/frame primitives.
+- Migration output suppression is an explicit observation view, accepted on
+  2026-10-24. It describes which segment's outputs a named pattern compares;
+  it does not change SQL execution, return values, errors, unmodeled termination,
+  counters or clock advancement. Ordinary `≈` retains the complete-execution
+  contract above. Query preservation/translation may use a separately named
+  output comparison; migration commutation compares the projected observation
+  and complete final context. Correct guide formulas that treated quiet as an
+  ordinary action able to erase the trace from every comparison.
+- S8's full-state program theorem requires a contextual commuting condition for
+  every paired interface call, including queries, accepted on 2026-10-24.
+  Moving the old call before a migration must agree with moving its partner
+  after it under the explicit migration view, including return values, complete
+  final context and all actual/concrete outcomes. A query advances the statement
+  clock too. Weak output translation alone cannot establish this condition.
+  Keep the weak relation available, with sufficient context/frame premises for
+  a bridge to the stronger call condition. Restricted simulations preserve their
+  invariant at every reached call, including result-dependent continuations.
+- A fresh-run helper is accepted on 2026-10-24. It fixes a valid starting
+  database, complete environment, empty trace and initial connection, and
+  captures that start for postconditions. Prove its equivalence to ordinary
+  Std.Do triples with those exact entry assumptions. Ordinary triples retain
+  arbitrary contexts for composition; query assertions alone do not imply a
+  fresh entry. The guide uses the explicit helper for fresh-run claims and
+  the exact success bridge. Existing `Holds` keeps its default observation;
+  an assertion that observes the execution clock/counters is named separately.
+- S8 also has explicit interface-scoped simulation, accepted on 2026-10-24
+  after a pinned native counterexample. A field-normalizing expansion and a
+  write can have identical final rows but different total-change counters
+  depending on their order (3 versus 4 in the one-row example). The guide's
+  expansion therefore does not establish full-state simulation. Retain that
+  counterexample and the full-state relation. The scoped variant names a
+  relation on execution contexts and proves equivalent observations and
+  preservation of that relation for every permitted call, argument and branch.
+  Counter/clock-sensitive calls need the same obligations; no hidden field is
+  ignored by default. Its whole-application theorem states the weaker scoped
+  conclusion explicitly, with the invariant conditions needed for composition.
+
+The [initial/current query task](../plans/20261024-s6-before-context.task.md)
+specifies the fixed `before` observation through the existing model. The
+[execution task](../plans/20261024-s6-execution-contracts.task.md) supplies the
+production branch/WP/equivalence contracts, and the
+[assertion task](../plans/20261024-s6-assertions.task.md) supplies fresh-run
+notation and proof rules. The foundations task is a completed prototype;
+these production tasks remain open.
 
 ### D2. S1: SQL text in Lean, measured before it is built
 
@@ -142,9 +225,10 @@ The guide's run needs model work that this decision did not name, and S2 does it
 - **A run that continues after an error.** The model gets a run that resolves each statement
   against the state at the time that it runs (`resolveStatement`), runs it, and continues
   after an error, as the guide's "Scripts" section describes. A theorem states that it agrees
-  with `runSqlFrom` up to and including the first error. The native oracle stops at the first
-  error, so no corpus case shows the statements after one; that evidence is deferred (see
-  "Deferred, with their triggers").
+  with `runSqlFrom` up to and including the first error. Amended 2026-10-23: corpus-v51 holds
+  the evidence for the statements after an error. Its cases are the authored cases of
+  `conformance/authored_after_error.py`, recorded as version 6 records by the recorder that
+  runs on after a failed statement.
 - **A statement that the model does not describe, found when it runs**, gives
   `Output.unmodeled` with the model's restriction, and the run stops there: the model cannot
   say what SQLite does next, and it never approximates (D4). `sql` does not resolve at
@@ -157,11 +241,12 @@ sentences on the surface's `Database`:
 
 - **The `Database` carries its validity in S2.** It holds a model database and its proof of
   `Database.Valid`, and `Database.Raw` is the model database without the proof. `db!` and each
-  run decide `Database.Valid` for the database that they give, and the decision is the proof
-  ([ADR 0022](adr-0022-database-validity.md), D5, amended). So `db.notNull`, `db.check`,
-  `db.unique` and `db.rowid_unique` need no hypothesis, as the guide says. A run whose result
-  is not valid ends with `Output.unmodeled`, and its database is the one at its start. For a
-  claim over every database, the check must be proved, which ADR 0022's theorems do before S4.
+  run in S2 decided `Database.Valid` for the database that they gave, and the decision was
+  the proof ([ADR 0022](adr-0022-database-validity.md), D5, amended). Thus `db.notNull`,
+  `db.check`, `db.unique` and `db.rowid_unique` need no hypothesis. Completed in S4 on
+  2026-10-24: `db!` still decides validity at elaboration, while a run uses
+  `Sql.runFrom_database_valid` and `Run.ofValid` to bundle exactly the model result.
+  The redundant runtime decision, invalid-result output and fallback database are removed.
 - **`Holds`, `Empty` and `Fails` for one database.** Their definitions come in S2, so the
   examples of the guide's "Queries as propositions" over one database are proved by `decide`.
   Their lemmas, and the claims over every database, stay in S4.
@@ -199,6 +284,21 @@ part of this ADR; this ADR only names them and when the surface needs them:
 Subqueries block S4, so their ADR should start before S3 ends.
 
 ### D6. Elaboration is outside the trusted base
+
+S7 clarification, accepted by the owner on 2026-10-24: omitting source positions
+from semantic terms does not guarantee that whitespace or comment edits leave
+importers unchanged. SQLite can retain expression spelling as a result-column
+name. Keep that exact metadata and use ordinary Lake input dependency tracking
+and the freshness checker. Correct the guide's blanket rebuild promise; S7 is
+not deferred for a custom semantic cache.
+
+S7 package-root clarification, accepted 2026-10-25: retain automatic discovery
+and provide an explicit source-relative root when nested Lake projects make
+ownership ambiguous. An explicit-root file-reading primitive remains available.
+Compiled records retain package identity and relative SQL paths, not absolute
+roots. The freshness checker uses the current Lake package mapping. The exact
+option and consumer checks are in the
+[SQL-file task](../plans/20261024-surface-s7-files.task.md).
 
 The elaborated term holds the model's syntax of the SQL, and the kernel checks the
 model's semantics over that term; the kernel never runs the parser (guide "What is
@@ -253,12 +353,11 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 
 | Deferred part | Why | Picked up |
 | --- | --- | --- |
-| Evidence for the statements after an error: the native oracle runs on after a failed statement, and a new corpus records such scripts | The oracle and the corpora stop at the first error; the change is a judge change (ADR 0011), with its own pull request and the owner's approval | Before S4, whose claims quantify over runs that can contain errors; earlier if a guide example depends on it |
-| `Env` with a clock, so that `CURRENT_TIMESTAMP` and `date('now')` run | S2 gives `Output.unmodeled` for a statement that reads the clock (D3, amended 2026-10-22) | S3 (D1) |
-| `random()`, `randomblob()`, `changes()`, `last_insert_rowid()` and `total_changes()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work | A model ADR, before the slice whose examples use them |
-| The theorems that replace the check of a run of the bundled database, so that a claim over every database gets the facts of the run's result | S2's run checks `Database.Valid` for each concrete run (D3, amended 2026-10-22) | ADR 0022, slices 2 to 4, before S4 |
+| `withTransaction`, which the guide writes with a savepoint inside an open transaction | The model has no `SAVEPOINT`: a statement is `BEGIN`, `COMMIT` or `ROLLBACK` (owner decision, 2026-10-23) | When the model has `SAVEPOINT` |
+| The choice of profile in the guide's `Env` | The runs of S3 use the pinned profile, and no slice gives the choice | When a second profile is in the model |
+| `random()` and `randomblob()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work (`changes()`, `last_insert_rowid()` and `total_changes()` have a meaning since ADR 0024, slice 1, amended 2026-10-23) | [ADR 0024](adr-0024-connection-state-and-random-values.md) (ACCEPTED): slice 2 (random values), when an example needs them |
 | The name of the failed constraint in a `db!` error for a write that runs a trigger or checks foreign keys; such a write gives `constraint failed` and says that the model does not name it | The model's write with triggers or foreign-key checks does not keep why a row failed, and resolution drops the text of `RAISE`; the work is about 150 to 250 lines (owner decision, 2026-10-22) | When a user needs these messages |
-| `pragma_table_info` and the other table-valued pragma functions, with which the guide states facts of a schema | The model resolves them as a restriction | [ADR 0019](adr-0019-guide-sql.md), slice 2 (D2), before S4, whose claims over every database need schema facts |
+| `pragma_table_info` and `pragma_foreign_key_list`, the table-valued pragma functions with which the guide states facts of a schema (narrowed 2026-10-23: the other table-valued pragma functions stay out of scope, ADR 0019 D2) | The model resolves them as a restriction | [ADR 0019](adr-0019-guide-sql.md), slice 2 (D2), before S4, whose claims over every database need schema facts |
 
 ## Not decided here
 
@@ -266,6 +365,11 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 - The candidate of D2 item 2, until its measurement.
 - The editor features that the guide lists (hovers, code actions, warnings for traps)
   and SQL in docstrings: each comes with the slice whose users need it.
+  Task allocation on 2026-10-24, under the owner's request to finish this ADR:
+  [editor information](../plans/20261024-surface-editor.task.md) completes the
+  existing S2/S3 forms; [checked SQL doc blocks](../plans/20261024-sql-doc-blocks.task.md)
+  accompany S7. The [coordination record](../plans/20261024-adr17-coordination.status.md)
+  records the accepted Verso header correction and its published guide revision.
 - A benchmark of SQL tasks for agents (verification systems review, lesson 5).
 - The engine interface for PostgreSQL and MariaDB (ADR 0016, deferred).
 
@@ -286,6 +390,7 @@ Decided on 2026-10-22, for the S2 task file:
 5. **The clock.** S2 has no clock: a statement that reads it gives `Output.unmodeled`, and
    `Env` with a clock comes with S3.
 6. **The bundled database in S2** (D3, amended 2026-10-22; ADR 0022, owner decision 5): the
-   surface's `Database` carries its proof of `Database.Valid`, and a run checks it.
+   surface's `Database` carries its proof of `Database.Valid`; a run obtains it from the
+   preservation theorem (S4, completed 2026-10-24).
 7. **`Holds`, `Empty` and `Fails` for one database in S2**; their lemmas and the claims over
    every database stay in S4.

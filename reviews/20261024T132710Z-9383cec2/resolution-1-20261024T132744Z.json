@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-24T13:27:44+00:00",
+  "finding": "20261024T132710Z-9383cec2#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "ADR 0017 explicitly keeps the guide as the target and says editor features come with the slice whose users need them; Not decided here leaves their task-level design open, rather than deferring them beyond ADR completion. These are specified public SQL surface behaviors for existing S2/S3 forms, not speculative supporting infrastructure. The owner requested completion of ADR 0017. Removing required guide outcomes on this reading would silently narrow that request."
+}

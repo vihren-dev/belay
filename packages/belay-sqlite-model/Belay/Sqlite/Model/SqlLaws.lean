@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SqlExecution
 import Belay.Sqlite.Model.SqlStateLaws
+import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.Resolution.StatementCatalog
 
 set_option doc.verso true
@@ -25,14 +26,16 @@ source. This is a syntax guard, not a success claim; the empty script satisfies 
 statement:
 * is not a write ({name}`Resolved.Statement.Kind.write`),
 * if it is a DROP, checks no foreign keys, and
-* if it is a query, has no subqueries, no {lit}`DISTINCT`, no fallible call and no
-  {lit}`json_each` source. -/
+* if it is a query, has no subqueries, no {lit}`DISTINCT`, no fallible call, no
+  {lit}`json_each` source, no compound terms ({name}`Resolved.Query.compound`) and no call of a
+  counter function ({name}`Resolved.Statement.counterReads` is empty). -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind ≠ .write ∧
     (∀ positions keys, statement = .drop positions keys → keys = none) ∧
     ∀ query subqueries, statement = .query query subqueries →
     subqueries = [] ∧ query.distinct = none ∧ query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true ∧
-      query.sources.all (!·.source.isEach) = true
+      query.sources.all (!·.source.isEach) = true ∧ query.compound = none ∧
+      (Resolved.Statement.query query subqueries).counterReads = []
 
 /-- Each definition in the script is one that the model describes: each ADD COLUMN has a time
 default ({name}`CatalogColumn.clockDefault`) or a successful {name}`readDefaultValue` result,
@@ -43,9 +46,9 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .createTrigger .. | .drop .. => True
+    | .createView .. | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
-    | .query .. | .setting _ => True
+    | .query .. | .setting .. => True
 
 /-- For every position and connection state, and every script of statements with values whose
 statements are {name}`NoWrites` with {name}`ModeledDefinitions`, the script passes the
@@ -62,41 +65,44 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
     have firstModeled := modeled statement (by simp)
     have tail : NoWrites (rest.map (·.1)) := fun item member => guard item (by simp_all)
     have tailModeled : ModeledDefinitions (rest.map (·.1)) := fun item member => modeled item (by simp_all)
-    have ready : statementReady (state.clock position) parameters statement state.database = true := by
+    have ready : (state.statementRun (state.clock position) parameters statement).ready = true := by
       cases statement with
       | query query subqueries =>
-        obtain ⟨none, single, plain, noEach⟩ : subqueries = [] ∧ query.distinct = none ∧
+        obtain ⟨none, single, plain, noEach, single_select, reads⟩ : subqueries = [] ∧ query.distinct = none ∧
             (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
-            query.sources.all (!·.source.isEach) = true := first.2.2 query subqueries rfl
+            query.sources.all (!·.source.isEach) = true ∧ query.compound = none ∧
+            (Resolved.Statement.query query subqueries).counterReads = [] := first.2.2 query subqueries rfl
         subst none
-        simp only [statementReady, runStatement, Resolved.Query.runOn, Resolved.statementContext_nil, Resolved.subqueriesPlain, List.all_nil,
-          Bool.true_and]
-        cases found : query.source { Resolved.EvalContext.plain (state.clock position) with parameters }
+        simp only [SqlState.statementRun, reads, Counters.view_nil, Counters.firstUnknown_nil, Option.isNone_none,
+          Bool.and_true, runStatement, Resolved.Query.runOn, Resolved.statementContext_nil,
+          Resolved.Query.nestedSubqueries, single_select, Resolved.subqueriesPlain, List.all_nil, Bool.true_and]
+        cases found : query.source { Resolved.EvalContext.plain (state.clock position) with parameters, counters := {} }
             state.database with
         | none => rfl
         | some source =>
           have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
           cases window : query.bindWindow parameters with
-          | none => simp [Resolved.Query.run, window, clean]
+          | none => simp [Resolved.Query.run, single_select, window, clean]
           | some bound =>
             obtain ⟨_, _, shape⟩ := Resolved.Query.bindWindow_some parameters query bound window
             have boundSingle : bound.distinct = none := by rw [shape]; exact single
             have boundPlain : (bound.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true := by
               rw [shape]; exact plain
-            by_cases must : bound.mustFail { Resolved.EvalContext.plain (state.clock position) with parameters }
+            by_cases must : bound.mustFail { Resolved.EvalContext.plain (state.clock position) with parameters, counters := {} }
                 source.rows = true <;>
-              simp [Resolved.Query.run, window, Resolved.Query.mayFail_of_plain
-                  { Resolved.EvalContext.plain (state.clock position) with parameters } (fun _ _ => ⟨rfl, rfl, rfl⟩)
+              simp [Resolved.Query.run, single_select, window, Resolved.Query.mayFail_of_plain
+                  { Resolved.EvalContext.plain (state.clock position) with parameters, counters := {} } (fun _ _ => ⟨rfl, rfl, rfl⟩)
                   bound _ boundPlain, clean, must, Resolved.Query.distinctCertain, boundSingle]
       | drop positions keys =>
         have none := first.2.1 positions keys rfl
         subst none
-        simp [statementReady, runStatement, StatementRun.withKeys]
-      | createTable | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
-      | prepareError | setting => simp_all [statementReady, runStatement]
-    have run : (runStatement (state.clock position) parameters statement state.database).ready = true := ready
+        simp [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, Resolved.WriteRules.expressions, runStatement, StatementRun.withKeys]
+      | createTable | createView | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | prepareError | setting =>
+        simp_all [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, runStatement]
+    have run : (state.statementRun (state.clock position) parameters statement).ready = true := ready
     simp only [supportedSqlFrom, run, Bool.true_and]
-    cases advanceWith position statement state (runStatement (state.clock position) parameters statement state.database).effect with
+    cases advanceRun position statement state (state.statementRun (state.clock position) parameters statement) with
     | halt outcome => rfl
     | next next => exact ih tail tailModeled
 
@@ -111,12 +117,12 @@ theorem supportedSqlFrom_schemaOnly (guard : SchemaOnly (script.map (·.1)))
     have first := guard statement member
     cases statement <;> simp_all) modeled
 
-/-- For every clock value, list of values, statement, database, reason and kept database: if
+/-- For every clock value, counters, list of values, statement, database, reason and kept database: if
 {name}`step` fails with the reason and the kept database, the kept database is the input database.
 Proof sketch: every error branch of {name}`step` keeps its input. -/
-theorem step_error_keeps {clock : Int} {parameters : List Value} {statement : Resolved.Statement}
+theorem step_error_keeps {clock : Int} {counters : Counters} {parameters : List Value} {statement : Resolved.Statement}
     {database kept : Database} {reason : ExecutionError}
-    (failed : step clock parameters statement database = .error (reason, kept)) : kept = database := by
+    (failed : step clock counters parameters statement database = .error (reason, kept)) : kept = database := by
   cases statement <;> simp only [step, queryEffect] at failed
   all_goals (repeat' split at failed)
   all_goals first | (cases failed; rfl) | cases failed
@@ -129,18 +135,19 @@ the guard to exclude transaction control and literal-write constructors, and
 theorem advance_schemaOnly
     (guard : SchemaOnly [statement]) :
     advance position statement parameters { database := database } =
-      match step 0 parameters statement database with
+      match step 0 {} parameters statement database with
       | .ok result => .next { database := result }
       | .error (reason, _) => .halt (.failure position reason database) := by
   have first := guard statement (by simp)
-  have literal : literalStep 0 parameters statement database = step 0 parameters statement database := by
+  have literal : literalStep 0 {} parameters statement database = step 0 {} parameters statement database := by
     cases statement <;> simp_all [literalStep, runStatement]
   have control : statement.isControl = false := by cases statement <;> simp_all [Resolved.Statement.isControl]
   have ordinary : advance position statement parameters { database := database } =
-      ({ database := database } : SqlState).publish position (step 0 parameters statement database) := by
-    cases statement <;> simp_all [advance, advanceWith, Resolved.Statement.isControl]
+      ({ database := database } : SqlState).publish position (step 0 {} parameters statement database) := by
+    cases statement <;> simp_all [advance, advanceRun, SqlState.statementRun, Resolved.Statement.counterReads,
+      Resolved.Statement.clockExpressions, runStatement, advanceWith, Resolved.Statement.isControl]
   rw [ordinary]
-  cases stepped : step 0 parameters statement database with
+  cases stepped : step 0 {} parameters statement database with
   | ok result => rfl
   | error failure =>
     obtain ⟨reason, kept⟩ := failure
@@ -169,7 +176,7 @@ theorem runSqlFrom_schemaOnly_append (guard : SchemaOnly (initial.map (·.1))) :
       exact guard statement (by simp)
     have tail : SchemaOnly (rest.map (·.1)) := fun item member => guard item (by simp_all)
     simp only [List.cons_append, runSqlFrom, advance_schemaOnly first]
-    cases executed : step 0 parameters statement database with
+    cases executed : step 0 {} parameters statement database with
     | error failure => rfl
     | ok result => simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
         (ih tail (database := result) (position := position + 1))

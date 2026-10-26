@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.Collations
 import Belay.Sqlite.Model.Resolution.QueryAffinity
 import Belay.Sqlite.Model.Resolution.SyntaxEquality
+import Belay.Sqlite.Model.Resolution.Values
 
 set_option doc.verso true
 
@@ -11,9 +12,12 @@ query needs the affinity and the collation of the subquery's result column. -/
 namespace Belay.Sqlite.Model
 
 /-- A resolved subquery as the query around it sees it: the query around it, its number of
-result columns, the affinity, the explicit collation and the column collation of its first
-result column, and the lowest cell position that it or a subquery inside it reads, which is
-below its own cells when it reads a cell of a query around it. -/
+result columns, the affinity, FLEXNUM flag, collations and declared-type origin
+of its first result column, the lowest cell position that it or a subquery inside it reads, which is
+below its own cells when it reads a cell of a query around it, and whether {lit}`IN` and a scalar
+subquery would read the column of a derived table. For a compound {lit}`SELECT` the first
+column is that of its right-most term, except SQLite's ORDER BY COLLATE rewrite
+(ADR 0019, D3). A FROM source also records every derived column in {lit}`source`. -/
 structure SubqueryShape where
   /-- The index of the subquery around it, or none for the statement's query. -/
   parent : Option Nat
@@ -22,12 +26,24 @@ structure SubqueryShape where
   /-- The affinity of the first result column: a scalar subquery has it
   ({lit}`sqlite3ExprAffinity`). -/
   affinity : Option Affinity
+  /-- The declared-type origin of the first result expression, or none when it
+  has no column origin. A compound follows its right-most term. -/
+  originType : Option String := none
+  /-- Whether the first expression has SQLite's FLEXNUM metadata. False for
+  ordinary physical columns; inherited query columns can retain it. -/
+  flexibleNumeric : Bool := false
   /-- The explicit collation of the first result column. -/
   explicitCollation : Option Collation
   /-- The column collation of the first result column. -/
   columnCollation : Option Collation
   /-- The lowest cell position that the subquery or a subquery inside it reads, if any. -/
   lowest : Option Nat
+  /-- Whether SQLite sorts the subquery, a compound, as {lit}`SELECT * FROM (compound)`, so that
+  {lit}`IN` and a scalar subquery read the column of that derived table; false for one
+  {lit}`SELECT`. -/
+  derived : Bool := false
+  /-- All columns when this query supplies a FROM source; none for an expression subquery. -/
+  source : Option ScopeSource := none
   deriving Repr, DecidableEq
 
 /-- What an expression of the current query may name besides its row: the subqueries after
@@ -61,6 +77,15 @@ def SubqueryShapes.find (shapes : SubqueryShapes) (index : Nat) : Option Subquer
   if index < shapes.base then none
   else (shapes.later[index - shapes.base]?).filter (·.parent == shapes.current)
 
+/-- The shape of the subquery whose one result column {lit}`IN` or a scalar subquery reads
+({name}`SubqueryShapes.find`): {name}`RestrictionKind.subqueryHere` when resolution has none, and SQLite's {lit}`sub-select returns %d columns - expected 1`
+for another number of columns. -/
+def SubqueryShapes.column (shapes : SubqueryShapes) (index : Nat) : Except ValueIssue SubqueryShape :=
+  match shapes.find index with
+  | none => .error (.restriction [] .subqueryHere)
+  | some shape =>
+    if shape.columns == 1 then .ok shape else .error (.prepare (.subqueryColumns shape.columns))
+
 /-- The smaller of two optional positions. -/
 def minPosition : Option Nat → Option Nat → Option Nat
   | some a, some b => some (min a b)
@@ -72,7 +97,7 @@ mutual
 names ({name}`SubqueryShape.lowest`); none when it reads no cell. -/
 def Resolved.Expr.lowestRead (shapes : SubqueryShapes) : Resolved.Expr → Option Nat
   | .column position => some position
-  | .literal _ | .now _ | .aggregateValue _ | .parameter _ => none
+  | .literal _ | .now _ | .aggregateValue _ | .parameter _ | .counter _ => none
   | .exists index | .subquery index => (shapes.find index).bind (·.lowest)
   | .inQuery operand index .. => minPosition (operand.lowestRead shapes) ((shapes.find index).bind (·.lowest))
   | .compare _ _ left right _ | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>

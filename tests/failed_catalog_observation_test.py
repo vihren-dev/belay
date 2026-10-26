@@ -39,9 +39,17 @@ example : compareSteps 0 [failed] [{ expected with visible := [] }] = .disagree 
 -- The committed view is compared under the committed catalog, not the visible one.
 example : compareSteps 0 [failed] [{ expected with persisted := expected.visible }] = .disagree (some 0) := by
   decide +kernel
-#guard (stepJson failed).getObjValD "visible" == predictedTables visible
-#guard (stepJson failed).getObjValD "persisted" == predictedTables committed
-#guard predictedTables visible != predictedTables committed
+/-- The profile that the prediction functions read for views. -/
+def profile : Profile := Profile.documented "3.51.0" "build"
+/-- The predicted tables of a database, or none when a view cannot be observed. -/
+def tables (database : Database) : Option Lean.Json := (predictedTables profile none {} database).toOption
+/-- One part of the predicted step JSON of the failed observation, or none on an observation issue. -/
+def step (part : String) : Option Lean.Json :=
+  (stepJson profile none {} failed).toOption.map (·.getObjValD part)
+#guard (tables visible).isSome && (tables committed).isSome
+#guard step "visible" == tables visible
+#guard step "persisted" == tables committed
+#guard tables visible != tables committed
 """
 
 

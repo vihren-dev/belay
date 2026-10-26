@@ -57,6 +57,8 @@ catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value V
 A write names its table by catalog position; execution reads the table's columns, keys
 and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
+  /-- Append the unresolved named view at the given catalog position, with empty storage. -/
+  | createView (position : Nat) (name : Identifier) (view : CatalogView)
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
   | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/
@@ -116,11 +118,12 @@ inductive Statement where
   subqueries are those that its expressions name by index (ADR 0018, D1); a subquery's
   expressions name only subqueries after it in the list. -/
   | query (query : Query) (subqueries : List Query)
-  /-- {lit}`PRAGMA foreign_keys = value`, with the setting after it: the value outside a
-  transaction, and the setting before it inside one, where SQLite ignores the pragma. It
-  changes no table, gives no row and never fails; resolution follows the setting (ADR 0018,
-  D4). -/
-  | setting (foreignKeys : Bool)
+  /-- {lit}`PRAGMA setting = value`, with the value of the setting after it. For
+  {lit}`foreign_keys`, the value is the new value outside a transaction, and the value before
+  it inside one, where SQLite ignores the pragma (ADR 0018, D4); {lit}`recursive_triggers`
+  takes the new value also inside a transaction (ADR 0019, D2). It changes no table, gives no
+  row and never fails; resolution follows the setting. -/
+  | setting (setting : Syntax.PragmaSetting) (on : Bool)
   deriving Repr, DecidableEq
 
 end Resolved

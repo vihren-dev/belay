@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.TriggerRun
+import Belay.Sqlite.Model.LiteralAdmittedRow
 
 set_option doc.verso true
 
@@ -31,40 +32,39 @@ def actionDefault (column : CatalogColumn) : Option Value :=
   | some { form := .literal (.value value) _, .. } => some value
   | some { form := .literal (.hexLiteralTooBig _) _, .. } | some { form := .clock _, .. } => none
 
-/-- The place in the parent key's pairs of the key column of the link at the written index: 0
-for a rowid key. -/
-def pairIndex (link : ForeignKeyLink) (key : ParentKey) (index : Nat) : Nat :=
-  match key with
-  | .rowid => 0
-  | .columns pairs => (pairs.findIdx? (·.1 == link.key.columns.getD index 0)).getD index
-
 /-- The cells that an action writes into a child row: the new parent key for {lit}`CASCADE`,
-NULL for {lit}`SET NULL`, the defaults for {lit}`SET DEFAULT` ({name}`actionDefault`). -/
+NULL for {lit}`SET NULL`, the defaults for {lit}`SET DEFAULT` ({name}`actionDefault`).
+Targets follow {name}`childPositions`, including repeated selected columns; unused declared
+columns stay unchanged. Each target receives its corresponding parent-key cell. -/
 def actionCells (child parent : CatalogTable) (link : ForeignKeyLink) (key : ParentKey) (new : Row) :
     Syntax.ForeignKeyAction → Option (List (Nat × Value))
-  | .cascade => some (link.key.columns.zipIdx.map fun (position, index) =>
-      (position, (parentCell parent key new (pairIndex link key index)).1))
-  | .setNull => some (link.key.columns.map (·, .null))
-  | .setDefault => link.key.columns.mapM fun position => (child.columns[position]?.bind actionDefault).map (position, ·)
+  | .cascade => some ((childPositions link key).zipIdx.map fun (position, index) =>
+      (position, (parentCell parent key new index).1))
+  | .setNull => some ((childPositions link key).map (·, .null))
+  | .setDefault => (childPositions link key).mapM fun position =>
+      (child.columns[position]?.bind actionDefault).map (position, ·)
   | .noAction | .restrict => some []
 
 /-- The state after the new row of an UPDATE of a row is checked ({name}`LiteralData.checkedRow`
 over the table with the old row replaced): a rowid alias that is no integer is
-{lit}`datatype mismatch`, and a failed constraint fails as ABORT. -/
+{lit}`datatype mismatch`, a failed constraint fails as ABORT, and a new row that is not admitted
+({name}`LiteralData.rowAdmitted`) is not described. -/
 def checkedUpdate (catalog : Catalog) (state : KeyState) (position : Nat) (old new : Row) : Except KeyStop Unit :=
   match (state.database catalog).table position with
   | none => throw .undescribed
   | some table =>
-    if LiteralData.aliasCellMismatch table.shape.rowidAlias new then throw (.error .datatypeMismatch)
+    if LiteralData.aliasCellMismatch table.shape.rowidAlias new then throw (.error .datatypeMismatch state)
     else match LiteralData.checkedRow (catalog.uniqueKeys position table.shape)
         (LiteralData.replaceRow table old new) new with
-      | .ok _ => pure ()
-      | .error reason => throw (.error reason)
+      | .ok _ => if LiteralData.rowAdmitted table.shape new then pure () else throw .undescribed
+      | .error reason => throw (.error reason state)
 
 /-- The action of a link for the old row of the parent table at the position, with the new row
 of an update, where {lit}`run` runs the write of the action: nothing for {lit}`NO ACTION` or an
 update that keeps the parent key; otherwise the child rows of the old row, which
-{lit}`RESTRICT` refuses with a constraint failure and every other action writes. -/
+{lit}`RESTRICT` refuses with a constraint failure and every other action writes. An UPDATE
+passes the selected targets as its assigned columns and computes generated-column dependencies
+from them, so an UPDATE OF trigger on an unused declaration column does not fire. -/
 def runAction (catalog : Catalog) (run : RowWork → KeyState → Except KeyStop KeyState) (link : ForeignKeyLink)
     (action : Syntax.ForeignKeyAction) (position : Nat) (old : Row) (new : Option Row) (state : KeyState) :
     Except KeyStop KeyState :=
@@ -75,13 +75,15 @@ def runAction (catalog : Catalog) (run : RowWork → KeyState → Except KeyStop
     if new.any (keyUnchanged parent key old ·) then pure state else
     match action, new with
     | .noAction, _ => pure state
-    | .restrict, _ => if targets.isEmpty then pure state else throw (.error .constraintViolation)
+    | .restrict, _ => if targets.isEmpty then pure state else throw (.error .constraintViolation state)
     | .cascade, none => acted <$> run (.delete link.child targets false false true) state
     | .cascade, some _ | .setNull, _ | .setDefault, _ =>
       match actionCells child parent link key (new.getD old) action with
       | none => throw .undescribed
-      | some cells => acted <$> run (.update link.child (setCells child cells) link.key.columns
-          (child.changedColumns link.key.columns) targets false) state
+      | some cells =>
+        let assigned := childPositions link key
+        acted <$> run (.update link.child (setCells child cells) assigned
+          (child.changedColumns assigned) targets false) state
   | .located .., none, _ | .located .., some _, none | .mismatch _, _, _ | .missing, _, _ => pure state
 
 /-- The frame of the write of a foreign-key action: SQLite runs it as a program whose writes
@@ -102,7 +104,7 @@ def deleteRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : Nested
   let some row := ((state.database catalog).rowsAt position).find? (·.rowid == rowid) | pure state
   let state ← oldSteps catalog state position row (childLinks links position) (parentLinks links position) ignore
   let written := if record then state.written ++ [row] else state.written
-  let state := { state.changeRows position fun rows => rows.filter (·.rowid != rowid) with written }
+  let state := { state.changeRows position fun rows => rows.filter (·.rowid != rowid) with written, own := state.own + 1 }
   let state ← (parentLinks links position).foldlM (fun state link =>
     runAction catalog (nested frame.action) link link.key.onDelete position row none state) state
   if fire then return (← runPrograms catalog nested frame position .after .delete row.values state).1
@@ -124,9 +126,9 @@ def updateRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : Nested
   | some old, some { name, entry := .table shape } => do
     let new := change old
     let event := Resolved.TriggerEvent.update (some assigned)
-    if LiteralData.aliasCellMismatch shape.rowidAlias new then throw (.error .datatypeMismatch)
+    if LiteralData.aliasCellMismatch shape.rowidAlias new then throw (.error .datatypeMismatch state)
     if !(frame.fired position .before event).isEmpty && !LiteralData.typesFit shape new then
-      throw (.error .constraintViolation)
+      throw (.error .constraintViolation state)
     let (state, ended) ← runPrograms catalog nested frame position .before event (new.values ++ old.values) state
     if ended then return state
     match checkedUpdate catalog state position old new with
@@ -143,12 +145,13 @@ def updateRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : Nested
     let checked ← if level != 0 then newSteps catalog removed position new children parents true stale changed
       else pure removed
     let written := if record then checked.written ++ [new] else checked.written
-    let state := { checked with rows := before.rows, written }.changeRows position fun rows =>
+    let state := { checked with rows := before.rows, written, own := checked.own + 1 }.changeRows position fun rows =>
       rows.map fun (row : Row) => if row.rowid == rowid then new else row
     let state ← parents.foldlM (fun state link =>
       runAction catalog (nested frame.action) link link.key.onUpdate position old (some new) state) state
     return (← runPrograms catalog nested frame position .after event (new.values ++ old.values) state).1
-  | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .trigger _, .. } | some _, none =>
+  | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .view _, .. }
+  | some _, some { entry := .trigger _, .. } | some _, none =>
     pure state
 
 end Belay.Sqlite.Model

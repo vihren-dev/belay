@@ -18,6 +18,8 @@ def ordinal (number : Nat) : String :=
 /-- SQLite's message for an error that names no catalog object, for example
 {lit}`no such column: a`. -/
 def ExprError.message : ExprError → String
+  | .commonTable error => error.message
+  | .view error => error.message
   | .reservedName name => s!"object name reserved for internal use: {name}"
   | .tooManyColumns table => s!"too many columns on {table}"
   | .duplicateColumn column => s!"duplicate column name: {column}"
@@ -44,6 +46,7 @@ def ExprError.message : ExprError → String
   | .defaultOnGenerated => "cannot use DEFAULT on a generated column"
   | .errorInGenerated name => s!"error in generated column \"{name}\""
   | .nondeterministicGenerated => "non-deterministic functions prohibited in generated columns"
+  | .emptyKeyList => "near \")\": syntax error"
   | .onlyGeneratedColumns => "must have at least one non-generated column"
   | .qualifiedGenerated => "the \".\" operator prohibited in generated columns"
   | .unknownDatatype table column type => s!"unknown datatype for {table}.{column}: \"{type}\""
@@ -55,6 +58,9 @@ def ExprError.message : ExprError → String
   | .misuseOfAggregate function => s!"misuse of aggregate function {function}()"
   | .aggregateInGroupBy => "aggregate functions are not allowed in the GROUP BY clause"
   | .orderByOutOfRange term columns => s!"{ordinal term} ORDER BY term out of range - should be between 1 and {columns}"
+  | .orderByNoMatch term => s!"{ordinal term} ORDER BY term does not match any column in the result set"
+  | .compoundColumns operator =>
+    s!"SELECTs to the left and right of {operator.keywords} do not have the same number of result columns"
   | .groupByOutOfRange term columns => s!"{ordinal term} GROUP BY term out of range - should be between 1 and {columns}"
   | .wrongArgumentCount function => s!"wrong number of arguments to function {function}()"
   | .noSuchFunction function => s!"no such function: {function}"
@@ -85,11 +91,16 @@ def quotedName (name : Identifier) : String :=
 
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
+  | .viewVariables => "parameters are not allowed in views"
   | .tableExists name => s!"table {name} already exists"
+  | .viewExists name => s!"view {name} already exists"
   | .indexNameUsed name => s!"there is already an index named {name}"
   | .tableNameUsed name => s!"there is already a table named {name}"
   | .indexExists name => s!"index {name} already exists"
   | .noSuchTable name => s!"no such table: {name}"
+  | .noSuchView name => s!"no such view: {name}"
+  | .useDropTable name => s!"use DROP TABLE to delete table {name}"
+  | .useDropView name => s!"use DROP VIEW to delete view {name}"
   | .noSuchIndex name => s!"no such index: {name}"
   | .tableMayNotBeDropped name => s!"table {name} may not be dropped"
   | .noSuchReferencedTable name => s!"no such table: main.{name}"
@@ -97,6 +108,11 @@ def PrepareError.message : PrepareError → String
   | .triggerExists name => s!"trigger {name} already exists"
   | .foreignKeyMismatch child parent =>
     s!"foreign key mismatch - \"{quotedName child}\" referencing \"{quotedName parent}\""
+  | .viewModify name => s!"cannot modify {name} because it is a view"
+  | .viewNotIndexed => "views may not be indexed"
+  | .viewAddColumn => "Cannot add a column to a view"
+  | .viewTrigger before name =>
+    s!"cannot create {if before then "BEFORE" else "AFTER"} trigger on view: {name}"
   | .expression error => error.message
 
 end Belay.Sqlite.Model

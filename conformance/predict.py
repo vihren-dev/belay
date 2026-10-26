@@ -22,6 +22,8 @@ from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, cell_w
 from conformance.predict_render import output_record, view_record
 from conformance.profile_scope import foreign_key_scope, modeled_profile
 from conformance.record_parser import NO_PARSER_REASON, record_parser
+from conformance.record_counters import counters_input
+from conformance.record_versions import CONTINUING
 from conformance.sql_text import Translator, runtime_translator
 
 RUNNER_TIMEOUT_SECONDS = 600
@@ -53,6 +55,17 @@ def julian_clocks(given: dict[str, Json]) -> list[int]:
     return [clock + UNIX_EPOCH_JULIAN_MILLISECONDS for clock in clocks]
 
 
+def julian_setup_clock(given: dict[str, Json]) -> int | None:
+    """The clock of the setup in Julian-day milliseconds, from the Unix milliseconds that the
+    judge supplies; `None` when it supplies none, so that the first snapshot has no clock."""
+    clock = given.get("setupClockUnixMilliseconds")
+    if clock is None:
+        return None
+    if type(clock) is not int:
+        raise ValueError("setupClockUnixMilliseconds must be an integer")
+    return clock + UNIX_EPOCH_JULIAN_MILLISECONDS
+
+
 def bound_values(given: dict[str, Json]) -> list[Json]:
     """The values bound to the parameters of each executed statement, as typed cells; empty when
     the judge supplies none. Statement i of the script gets list i."""
@@ -65,7 +78,8 @@ def bound_values(given: dict[str, Json]) -> list[Json]:
 def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Json], list[Located]]:
     """The model input of one case and its statements; frontend refusals, execution
     settings that the model does not implement, and a foreign key in a record without a
-    profile raise `SqlError` (`profile_scope`)."""
+    profile raise `SqlError` (`profile_scope`). The input of a record whose recorder ran on
+    after an error (`CONTINUING`) asks for the model's run that continues."""
     profile = modeled_profile(given)
     parser = record_parser(translator, given)
     schema = parser.translate(given["initialSchemaSql"].encode(), "corpus-schema.sql").statements()
@@ -73,7 +87,9 @@ def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Js
     foreign_key_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given),
-            "parameters": bound_values(given)}, script
+            "setupClock": julian_setup_clock(given),
+            "parameters": bound_values(given), "continues": given.get("nativeVersion") in CONTINUING,
+            **counters_input(given)}, script
 
 
 def refusal(given: dict[str, Json], error: Exception) -> dict[str, Json]:
@@ -94,7 +110,7 @@ def prediction(given: dict[str, Json], script: list[Located], model: dict[str, J
         return {"name": given["name"], "status": "error", "reason": str(model["error"])}
     if "restricted" in model:
         return {"name": given["name"], "status": "unsupported", "reason": str(model["restricted"]),
-                "restriction": str(model["restriction"])}
+                **({"restriction": str(model["restriction"])} if "restriction" in model else {})}
     steps = [{"visible": view_record(step["visible"]), "persisted": view_record(step["persisted"]),
               "transactionOpen": step["transactionOpen"], "primaryCode": step["primaryCode"],
               "phase": step["phase"], **({"start": script[index - 1].start} if index else {})}

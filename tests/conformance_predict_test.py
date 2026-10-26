@@ -69,7 +69,7 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     with the frontend's reason, and a restricted one also names the restriction's stable id."""
     admitted = record_sql("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (7);", "INSERT INTO t(a) VALUES (1);",
                           name="admitted")
-    refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE VIEW v AS SELECT a FROM t;", name="refused")
+    refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE TABLE u AS SELECT a FROM t;", name="refused")
     restricted = record_sql("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;", name="restricted")
     first, second, third = predict(runtime_root, admitted, refused, restricted)
     assert first["status"] == "predicted" and first["supported"] and len(first["steps"]) == 2
@@ -101,12 +101,16 @@ def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> Non
     """`conformance.profile_scope.modeled_profile` and `VerifierConformance.Predict`: a record
     whose profile uses only the default execution settings is predicted under its recorded
     limits, with the error phase; one with foreign keys on is predicted with them on (ADR 0018,
-    D4), so its write without a parent row fails; one with recursive triggers is out of scope,
-    and the reason names the setting."""
+    D4), so its write without a parent row fails; one with recursive triggers on is predicted
+    with them on (ADR 0019, D2), so the row that `INSERT OR REPLACE` deletes fires the DELETE
+    trigger, and the predicted tables are the native ones."""
     default = profiled(runtime_root, "default")
     keyed = profiled(runtime_root, "keyed", "CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(x REFERENCES p);",
                      "INSERT INTO c VALUES (1);", foreign_keys=True)
-    recursive = profiled(runtime_root, "recursive", recursive_triggers=True)
+    recursive = profiled(runtime_root, "recursive",
+                         "CREATE TABLE t(k UNIQUE, v); CREATE TABLE log(x); INSERT INTO t VALUES (1, 'a'); "
+                         "CREATE TRIGGER d AFTER DELETE ON t BEGIN INSERT INTO log VALUES (old.v); END;",
+                         "INSERT OR REPLACE INTO t VALUES (1, 'b');", recursive_triggers=True)
     assert default["nativeVersion"] == 5 and default["trace"][0]["phase"] == "step"
     first, second, third = predict(runtime_root, default, keyed, recursive)
     assert first["status"] == "predicted" and first["supported"], first
@@ -114,8 +118,10 @@ def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> Non
     assert first["steps"][1]["primaryCode"] == 19
     assert second["status"] == "predicted" and second["supported"], second
     assert second["steps"][1]["primaryCode"] == 19 and keyed["trace"][0]["primaryCode"] == 19
-    assert third["status"] == "unsupported"
-    assert third["reason"].startswith("recursive: the model does not implement recursive triggers")
+    assert third["status"] == "predicted" and third["supported"], third
+    assert tables_form(third["steps"][1]["visible"]) == tables_form(recursive["trace"][0]["visible"])
+    [log] = [table for table in third["steps"][1]["visible"]["tables"] if table["name"] == "log"]
+    assert [row["values"] for row in log["rows"]] == [[{"text": {"bytes": list(b"a")}}]]
 
 
 def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:
@@ -127,3 +133,29 @@ def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:
     [prediction] = predict(runtime_root, record)
     assert prediction["status"] == "predicted" and prediction["supported"], prediction
     assert (prediction["steps"][1]["primaryCode"], prediction["steps"][1]["phase"]) == (1, "prepare")
+
+
+def test_version_6_input_predicts_the_run_that_continues(runtime_root: Path) -> None:
+    """`conformance.predict.mapped` and `VerifierConformance.Predict.predictRun`: the input of a
+    native record of version 6, whose recorder runs on after an SQL error, is predicted with the
+    model's run that continues: one step after each statement of the migration. A constraint
+    failure inside a transaction keeps it open, `OR ROLLBACK` closes it, `COMMIT` then fails at
+    step, and the query after it gives no row. The same input as version 5 stops at the first
+    error. The version 6 input is written by hand from a version 5 record: only its version and
+    its parameter list (one empty list for each statement) differ."""
+    migration = ("BEGIN; INSERT INTO t VALUES (1); INSERT INTO t VALUES (1); INSERT OR ROLLBACK INTO t VALUES (1);"
+                 " COMMIT; SELECT a FROM t;")
+    stopped = profiled(runtime_root, "stopped", "CREATE TABLE t(a INTEGER PRIMARY KEY);", migration)
+    assert stopped["nativeVersion"] == 5 and len(stopped["trace"]) == 3
+    continued = {**stopped, "name": "continued", "nativeVersion": 6, "trace": [{"parameters": []} for _ in range(6)]}
+    first, second = predict(runtime_root, stopped, continued)
+    assert first["status"] == "predicted" and first["supported"] and len(first["steps"]) == 4, first
+    assert second["status"] == "predicted" and second["supported"], second
+    steps = second["steps"]
+    assert [step["transactionOpen"] for step in steps] == [False, True, True, True, False, False, False]
+    assert [step["primaryCode"] for step in steps] == [0, 0, 0, 19, 19, 1, 0]
+    assert [step["phase"] for step in steps] == [None, None, None, "step", "step", "step", None]
+    assert [step.get("start") for step in steps[1:]] == [migration.index(text) for text in (
+        "BEGIN", "INSERT INTO t VALUES (1); INSERT", "INSERT INTO t VALUES (1); INSERT OR", "INSERT OR", "COMMIT",
+        "SELECT")]
+    assert second["outputs"][-1] == {"columns": ["a"], "changes": None, "rows": []}, second["outputs"]

@@ -16,6 +16,8 @@ structure Pass where
   /-- The initial snapshot and one observation after each executed statement; a halt ends
   them. -/
   observations : List Observation
+  /-- Writer counters at each observation, including the counts of a halting statement. -/
+  counters : List Counters
   /-- The output of each executed statement, up to and including a halting one. -/
   outputs : List (Option StatementOutput)
   /-- The results that SQLite may give for each executed statement ({name}`possibleOutput`). -/
@@ -25,25 +27,27 @@ structure Pass where
 
 /-- Run the script from a position and connection state once, each statement with the values
 bound to its parameters. Each statement runs once ({lit}`runStatement`), which gives its support check and its effect; it is advanced with
-that effect ({lit}`advanceWith`) and observed; a halt ends the pass with the observation of
+its run ({lit}`advanceRun`, which also applies the counts of the run to the counters) and observed; a halt ends the pass with the observation of
 its outcome. -/
 def passFrom (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Pass :=
   match script with
-  | [] => { observations := [observeState state], outputs := [], possible := [], supported := true }
+  | [] => { observations := [observeState state], counters := [state.counters], outputs := [], possible := [], supported := true }
   | (statement, parameters) :: rest =>
     let clock := state.clock position
-    let run := runStatement clock parameters statement state.database
+    let run := SqlState.statementRun state clock parameters statement
     let ready := run.ready
-    let transition := advanceWith position statement state run.effect
-    let output := statementOutput clock parameters statement state transition
+    let transition := advanceRun position statement state run
+    let output := statementOutput clock parameters statement state run transition
     let possible := possibleOutput clock parameters statement state transition
     match transition with
     | .next next =>
       let later := passFrom (position + 1) rest next
-      { observations := observeState state :: later.observations, outputs := output :: later.outputs,
+      { observations := observeState state :: later.observations,
+        counters := state.counters :: later.counters, outputs := output :: later.outputs,
         possible := possible :: later.possible, supported := ready && later.supported }
     | .halt outcome =>
-      { observations := [observeState state, observeOutcome outcome], outputs := [output], possible := [possible],
+      { observations := [observeState state, observeOutcome outcome],
+        counters := [state.counters, state.counters.apply run.counts], outputs := [output], possible := [possible],
         supported := ready }
 
 /-- The observations of a complete case, which begins outside a transaction as
@@ -62,14 +66,14 @@ theorem passFrom_final (position : Nat) (script : List (Resolved.Statement × Li
   | nil => simp [passFrom, runSqlFrom, observeState]
   | cons entry rest ih =>
     obtain ⟨statement, parameters⟩ := entry
-    cases h : advanceWith position statement state
-        (runStatement (state.clock position) parameters statement state.database).effect with
+    cases h : advanceRun position statement state
+        (SqlState.statementRun state (state.clock position) parameters statement) with
     | next next =>
       have later := ih (position + 1) next
-      simp only [passFrom, runSqlFrom, advance, literalStep, h] at later ⊢
+      simp only [passFrom, runSqlFrom, advance, h] at later ⊢
       rw [List.getLast?_cons, later]
       rfl
-    | halt outcome => simp [passFrom, runSqlFrom, advance, literalStep, h]
+    | halt outcome => simp [passFrom, runSqlFrom, advance, h]
 
 /-- For every script of statements with values and starting database, the last observation of
 {name}`trace` is the
@@ -89,8 +93,8 @@ theorem passFrom_supported (position : Nat) (script : List (Resolved.Statement �
   | nil => rfl
   | cons entry rest ih =>
     obtain ⟨statement, parameters⟩ := entry
-    cases h : advanceWith position statement state
-        (runStatement (state.clock position) parameters statement state.database).effect with
+    cases h : advanceRun position statement state
+        (SqlState.statementRun state (state.clock position) parameters statement) with
     | next next => simp [passFrom, supportedSqlFrom, h, ih]
     | halt outcome => simp [passFrom, supportedSqlFrom, h]
 

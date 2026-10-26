@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T14:21:00+00:00",
+  "finding": "20261025T142047Z-431cdd16#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docs/native-corpus-format.md now describes the unreadable view entry and the failures that still stop acquisition"
+}

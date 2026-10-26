@@ -28,8 +28,26 @@ join merged into a left column. -/
 structure ScopeSource where
   /-- The name of the source. -/
   name : Identifier
-  /-- The columns of the source's table. -/
+  /-- The source columns, including their normalized declarations for a query
+  source. Expression origins and affinities have separate fields. -/
   columns : List CatalogColumn
+  /-- Expression affinities for a derived source, including no affinity; none uses each
+  catalog column's declared type. For example, the column of {lit}`SELECT 1` has none. -/
+  affinities : Option (List (Option Affinity)) := none
+  /-- Original declarations followed through a query source. None reads the
+  declarations in {lit}`columns`, as for physical tables. -/
+  originTypes : Option (List (Option String)) := none
+  /-- SQLite's FLEXNUM flags for query columns. Empty means ordinary affinities,
+  as for physical tables; this distinction controls normalized type names. -/
+  flexibleNumeric : List Bool := []
+  /-- The indexed query that supplies this source; none for catalog tables and functions. -/
+  queryIndex : Option Nat := none
+  /-- Whether a qualifier can name the source; false for an anonymous derived table. -/
+  qualified : Bool := true
+  /-- Whether SQL names and stars can see this source. Keep true for ordinary
+  sources. A stored view hides ordinary caller names while retaining their cells
+  so trigger rows keep their offsets. -/
+  namesVisible : Bool := true
   /-- The position in the joined row of the source's first cell: the number of cells of
   the sources before it ({lit}`Scope.place`). 0 for the first source and for the table of a
   write. -/
@@ -45,6 +63,10 @@ structure ScopeSource where
   {lit}`x.*` do not show and names do see: the {lit}`json` and {lit}`root` columns of
   {lit}`json_each`. Empty for a table. -/
   hidden : List Nat := []
+  /-- The positions in {name}`ScopeSource.columns` of the hidden columns whose conditions SQLite
+  passes to a table-valued pragma as its arguments: {lit}`arg` and {lit}`schema`. A name of one
+  is the restriction {lit}`table-function`. Empty for every other source. -/
+  arguments : List Nat := []
   /-- Whether the source has a rowid that {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` name: a
   table that is not {lit}`WITHOUT ROWID`, and {lit}`json_each`. -/
   hasRowid : Bool := true
@@ -75,6 +97,11 @@ followed by its own sources, which {name}`Scope.place` put after the outer cells
 def Scope.enclose (outer inner : Scope) : Scope :=
   outer.map (fun source => { source with depth := source.depth + 1 }) ++ inner
 
+/-- Retain outer-cell positions while hiding ordinary caller names from a stored
+view. Trigger NEW/OLD names remain available at their original offsets. -/
+def Scope.forStoredView (scope : Scope) : Scope :=
+  scope.map fun source => { source with namesVisible := source.namesVisible && source.trigger }
+
 /-- The scope of one table under its name, as a write or a query of one table has;
 {lit}`hasRowid` is false for a {lit}`WITHOUT ROWID` table. -/
 def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
@@ -85,8 +112,43 @@ def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : 
 def Scope.triggerCell (scope : Scope) (position : Nat) : Bool :=
   scope.any fun source => source.trigger && source.offset ≤ position && position < source.offset + source.columns.length
 
+/-- Whether the position of the concatenated row is a cell of an argument column of a
+table-valued pragma ({name}`ScopeSource.arguments`). -/
+def Scope.argumentCell (scope : Scope) (position : Nat) : Bool :=
+  scope.any fun source => source.arguments.any (source.offset + · == position)
+
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
+
+/-- The affinity of a source column: its expression affinity for a derived source, otherwise
+its declared affinity. An out-of-range position has no affinity. -/
+def ScopeSource.columnAffinity (source : ScopeSource) (index : Nat) : Option Affinity :=
+  match source.affinities with
+  | some affinities => affinities[index]?.join
+  | none => source.columns[index]?.map CatalogColumn.affinity
+
+/-- The affinity of a cell in the concatenated scope, including a derived column without
+an affinity. Use this instead of a catalog column's declared type for query expressions. -/
+def Scope.affinityAt (scope : Scope) (position : Nat) : Option Affinity :=
+  match scope.find? fun source => source.affinities.isSome && source.offset ≤ position &&
+      position < source.offset + source.columns.length with
+  | some source => source.columnAffinity (position - source.offset)
+  | none => scope.columns[position]?.map CatalogColumn.affinity
+
+/-- The original declaration behind a source cell. Query sources can retain a
+different origin from their normalized column declaration. -/
+def Scope.originTypeAt (scope : Scope) (position : Nat) : Option String :=
+  match scope.find? fun source => source.originTypes.isSome && source.offset ≤ position &&
+      position < source.offset + source.columns.length with
+  | some source => source.originTypes.bind fun types => types[position - source.offset]?.join
+  | none => scope.columns[position]?.bind (·.declaredType)
+
+/-- Whether a cell has SQLite's FLEXNUM metadata. Ordinary catalog columns and
+out-of-range positions return false. -/
+def Scope.flexibleNumericAt (scope : Scope) (position : Nat) : Bool :=
+  (scope.find? fun source => !source.flexibleNumeric.isEmpty && source.offset ≤ position &&
+    position < source.offset + source.columns.length).any fun source =>
+      (source.flexibleNumeric[position - source.offset]?).getD false
 
 /-- The number of cells before the source at {lit}`index` of the query's own sources
 ({name}`Scope.inner`): its offset, or the number of cells of the whole scope for an index past
@@ -101,18 +163,18 @@ def ScopeSource.placedColumns (source : ScopeSource) (keep : Nat → Bool) : Lis
     fun (index, column) => (source.offset + index, column)
 
 /-- The columns that {lit}`*` reads, with their positions in the concatenated row: every
-column of every source of the query's own sources ({name}`Scope.inner`), except a trigger's rows,
+column of every source with visible names among the query's own sources ({name}`Scope.inner`), except a trigger's rows,
 that is not merged ({name}`ScopeSource.merged`) or hidden ({name}`ScopeSource.hidden`). -/
 def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
-  (scope.inner.filter (!·.trigger)).flatMap fun source =>
+  (scope.inner.filter (fun source => source.namesVisible && !source.trigger)).flatMap fun source =>
     source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index
 
 /-- The positions in the concatenated row of the columns that an unqualified name
-names: the first column with the folded name in each source that has one and is no trigger's
+names: the first column with the folded name in each visible source that has one and is no trigger's
 row, unless that column is merged ({name}`ScopeSource.merged`). One position is a name; none is a missing
 name; two or more are SQLite's {lit}`ambiguous column name`. -/
 def Scope.matches (scope : Scope) (name : Identifier) : List Nat :=
-  (scope.filter (!·.trigger)).flatMap fun source =>
+  (scope.filter (fun source => source.namesVisible && !source.trigger)).flatMap fun source =>
     (((columnPosition source.columns name).filter (!source.merged.contains ·)).map (source.offset + ·)).toList
 
 end Belay.Sqlite.Model

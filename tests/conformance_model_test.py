@@ -41,7 +41,7 @@ def test_native_model(name: str, runtime_root: Path, tmp_path: Path) -> None:
     # Retained fixtures have no defaults; their syntax and native observations are unchanged.
     # They predate the clock, and their recorder controlled none, so a replay has no clock values.
     from conformance.case_format import CASE_VERSION
-    assert case == {**frozen, "version": CASE_VERSION, "clocks": []}, \
+    assert case == {**frozen, "version": CASE_VERSION, "clocks": [], "continues": False}, \
         "Native replay differs from the frozen pinned-engine record"
     expected = [native_expected(table) for table in sorted(old.after, key=lambda table: table.name)]
     assert case["nativeTrace"][-1]["visible"] == expected
@@ -90,7 +90,7 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
     assert compiled(wrong, runtime_root)["verdict"] == "DISAGREE"
     wrong["outputs"].pop()
     assert compiled(wrong, runtime_root)["verdict"] == "HARNESS_ERROR"
-    unsupported = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", "SELECT 1 UNION SELECT 2;",
+    unsupported = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", "EXPLAIN SELECT 1;",
                              name="unsupported-output", outputs=True)
     assert prepare(unsupported, runtime_translator(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
     # The translation numbers the parameters, and the model binds the case's values (ADR 0019).

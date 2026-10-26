@@ -21,7 +21,9 @@ in rec {
     pname = "belay-sqlite-model";
     directory = "packages/belay-sqlite-model";
     source = sources.model;
-    targets = [ "Belay.Sqlite.Model" "Belay.Sqlite.Model.Codec" ];
+    # Downstream precompiled modules replay these objects and shared libraries.
+    targets = [ "Belay.Sqlite.Model" "Belay.Sqlite.Model.Codec"
+                "Belay.Sqlite.Model:shared" "Belay.Sqlite.Model.Codec:shared" ];
   };
   sqlite3534 = native.sqlite3534;
   docGen4 = import ./doc-gen4.nix { inherit pkgs leanToolchain; };
@@ -55,9 +57,9 @@ in rec {
   # The scheduled suites of the mutants of the model, which CI runs in their own job, one runner
   # each (`just test-mutants SUITE`); tests/nix_mutant_suites.json lists them.
   mutantSuites = builtins.fromJSON (builtins.readFile ../tests/nix_mutant_suites.json);
-  # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus
+  # `just test` skips the slow model comparisons, the kernel proofs of the coverage cases, the frozen evidence and the locked-corpus
   # validation; `just test-full` runs them.
-  developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" ];
+  developmentTests = pkgs.lib.removeAttrs tests [ "model" "coverageStatements" "coverageFeatures" "frozen" "corpora" ];
   # One folder per suite, named after the suite, for the justfile recipes: for example
   # build/nix-tests-full/frozen/junit.xml. `nix-build -A tests` would instead number its
   # out-links in alphabetical order of the suites.
@@ -82,19 +84,44 @@ in rec {
     executables = true;
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
+  # Sampling belongs to the surface; the model and conformance runner do not require it.
+  plausiblePackage = import ./plausible.nix { inherit pkgs leanToolchain; };
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
   # tests.surface checks it and its layer rules.
-  surfacePackage = leanPackage {
+  surfacePackage = let
+    # Read-only evaluation can compute a filtered store path before that path exists.
+    manifest = builtins.fromJSON (builtins.readFile (root + /packages/belay/lake-manifest.json));
+    sampler = pkgs.lib.findFirst (entry: entry.name == "plausible") null manifest.packages;
+    url = "https://github.com/leanprover-community/plausible";
+    localManifest = manifest // { packages = map (entry:
+      if entry.name != "plausible" then entry else {
+        inherit (entry) name scope inherited manifestFile configFile;
+        type = "path"; dir = ".lake/packages/plausible";
+      }) manifest.packages; };
+  in assert sampler.type == "git" && sampler.url == url && sampler.rev == plausiblePackage.revision;
+  (leanPackage {
     pname = "belay";
     directory = "packages/belay";
     source = sources.surface;
     # The shared library is what Lake loads for a file that imports `Belay`, after the text package's.
-    targets = [ "Belay" "Belay:shared" ];
+    # The SQL-file checker is the only executable (ADR 0017, S7); it is not part of the conformance runtime.
+    targets = [ "Belay" "Belay:shared" "belay-sql-check" ];
+    executables = true;
     requires."packages/belay-sqlite-model" = modelPackage;
     requires."packages/belay-sqlite-text" = textPackage;
-    sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text" ];
+    requires."packages/belay/.lake/packages/plausible" = plausiblePackage;
+    sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text"
+      "packages/belay/.lake/packages/plausible" ];
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
-  };
+  }).overrideAttrs (_: {
+    # Nix supplies this exact source; Lake must use the local output without cloning it.
+    postPatch = ''
+      substituteInPlace lakefile.lean --replace-fail \
+        'require plausible from git "${url}" @ "${plausiblePackage.revision}"' \
+        'require plausible from ".lake/packages/plausible"'
+      cp ${pkgs.writeText "surface-lake-manifest.json" (builtins.toJSON localManifest)} lake-manifest.json
+    '';
+  });
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs root; };
   verifierConformance = leanPackage {

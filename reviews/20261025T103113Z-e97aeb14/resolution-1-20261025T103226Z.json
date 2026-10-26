@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T10:32:26+00:00",
+  "finding": "20261025T103113Z-e97aeb14#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "ReadScalar.lean is now 198 lines; the docstring and the readString call are shorter."
+}

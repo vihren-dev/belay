@@ -58,6 +58,8 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;"),
     "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT json(count(*)) FROM t;"),
     "alias-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT a AS b FROM t WHERE b = 1;"),
+    "view-body-check": ("CREATE TABLE t(a);\nCREATE VIEW v AS SELECT (SELECT a, a FROM t) AS x;",
+                        "PRAGMA table_info(v);"),
     "group-by-term": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a + 1;"),
     "bare-column": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT a, count(*) FROM t GROUP BY b;"),
     "aggregate-order-by": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY b;"),
@@ -72,6 +74,10 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "subquery-here": ("CREATE TABLE t(a);", "SELECT * FROM t JOIN t AS b ON EXISTS (SELECT 1);"),
     "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
     "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
+    "source-column-name": ("CREATE TABLE t(a);", "SELECT * FROM (SELECT 1 AS a, 2 AS a, 3 AS a, 4 AS a, 5 AS a, 6 AS a);"),
+    "recursive-common-table": ("CREATE TABLE t(a);",
+                               "WITH c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 3) SELECT * FROM c;"),
+    "compound-order-by-term": ("CREATE TABLE t(a);", "SELECT a FROM t UNION SELECT 1 ORDER BY max(a);"),
     "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
     "distinct-order-by": ("CREATE TABLE t(a, b);", "SELECT DISTINCT a FROM t ORDER BY b;"),
     "deferred-foreign-key": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(x REFERENCES p DEFERRABLE INITIALLY DEFERRED);",
@@ -89,6 +95,12 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                              "CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO log VALUES (1); END; "
                              "CREATE TRIGGER s AFTER INSERT ON t BEGIN INSERT INTO log VALUES (2); END;",
                              "INSERT INTO t VALUES (1);"),
+    "foreign-key-mismatch-order": ("CREATE TABLE p(x); CREATE TABLE c1(a REFERENCES p(x)); "
+                                   "CREATE TABLE c2(a REFERENCES p(x));",
+                                   "PRAGMA foreign_key_check;"),
+    "connection-counter-read": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t VALUES (last_insert_rowid());"),
+    "nondeterministic-error-order": ("CREATE TABLE t(a INTEGER);",
+                                     "CREATE TABLE u(a INTEGER, b AS (changes() + count(a)));"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 
@@ -102,6 +114,7 @@ def resolve_example(runtime: Path, schema: str, migration: str) -> dict[str, Jso
     parser = record_parser(runtime_translator(runtime), {"sourceId": SOURCE_ID})
     try:
         model_input = {"profile": modeled_profile({}), "initial": [], "clocks": [], "parameters": [],
+                       "continues": False,
                        "schema": [item.value for item in parser.translate(schema.encode(), "schema.sql").statements()],
                        "script": [item.value for item in parser.translate(migration.encode(), "migration.sql").statements()]}
     except SqlError as error:

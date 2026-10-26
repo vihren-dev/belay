@@ -5,8 +5,10 @@ import Belay.Sqlite.Model.StatementClock
 
 set_option doc.verso true
 
-/-! The run of the trigger programs of one row (ADR 0018, D5). A program runs when no program of
-the same trigger runs around it, SQLite's rule with recursive triggers off, and when its
+/-! The run of the trigger programs of one row (ADR 0018, D5). With recursive triggers off, a
+program runs only when no program of the same trigger runs around it; with them on
+({lit}`PRAGMA recursive_triggers`, ADR 0019, D2), also when one does. SQLite then counts the
+frame of the program against its trigger depth limit, and the program runs its steps when its
 {lit}`WHEN` condition is true for the row's cells. Its steps run in order: a write is a nested
 write of the row engine, whose own triggers fire in turn; a SELECT may fail; a raising SELECT
 ends the row with {lit}`RAISE(IGNORE)`, or fails the statement with the algorithm of the other
@@ -16,14 +18,18 @@ fuel, so the depth of the programs is bounded as SQLite bounds it by its trigger
 namespace Belay.Sqlite.Model
 
 /-- What the rows of a write run with besides their table: the statement's clock value, the
-programs of the triggers that may fire, the triggers whose programs run around the rows, and the
-conflict algorithm that the programs of the rows inherit, none for the default. Start with the
-programs of the write's rules and nothing running. -/
+programs of the triggers that may fire, whether recursive triggers are on, the triggers whose
+programs run around the rows, and the conflict algorithm that the programs of the rows inherit,
+none for the default. Start with the programs and the setting of the write's rules and nothing
+running. -/
 structure RowFrame where
   /-- The statement's clock value. -/
   clock : Int
   /-- The programs of the triggers that the write may fire ({name}`Resolved.WriteRules`). -/
   programs : List Resolved.Program
+  /-- Whether a trigger fires again while it runs, and the rows that REPLACE deletes fire the
+  DELETE triggers. -/
+  recursive : Bool := false
   /-- The catalog positions of the triggers whose programs run around the rows. -/
   running : List Nat := []
   /-- The conflict algorithm that the programs inherit. -/
@@ -32,7 +38,7 @@ structure RowFrame where
 /-- The rows of one write of the row engine, in order, with the rowids of the rows that it
 deletes or updates: a DELETE, with {lit}`record` for a statement's own rows, {lit}`ignore` for the
 DELETE of DROP TABLE ({name}`oldSteps`) and {lit}`fire` when the table's DELETE triggers fire
-(not for the rows that REPLACE deletes and not for DROP TABLE); an UPDATE, each row to its new
+(not for DROP TABLE, and for the rows that REPLACE deletes only with recursive triggers on); an UPDATE, each row to its new
 row, with the {lit}`SET` columns, which decide its UPDATE triggers, and the changed positions;
 and an INSERT of full rows of values with its conflict policy, clauses and whether it is a
 write of several rows ({lit}`isMultiWrite`). -/
@@ -82,7 +88,7 @@ def raisedKind (context : Resolved.EvalContext) (cells : List Value) (filter : O
 the statement as a constraint failure, and FAIL and ROLLBACK stop it with their algorithm. -/
 def raiseEffect (state : KeyState) : Syntax.RaiseKind → Except KeyStop (KeyState × Bool)
   | .ignore => pure (state, true)
-  | .abort => throw (.error .constraintViolation)
+  | .abort => throw (.error .constraintViolation state)
   | .fail => throw (.stopped .fail state)
   | .rollback => throw (.stopped .rollback state)
 
@@ -101,7 +107,7 @@ def runStep (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells :
   | .insert table rows clauses own subqueries => do
     let database := state.database catalog
     let some target := database.table table | throw .undescribed
-    let context := Resolved.statementContext frame.clock [] database subqueries
+    let context := Resolved.statementContext frame.clock {} [] database subqueries
     let algorithm := frame.algorithm <|> own
     let values := rowsWith context cells target.shape.columns rows
     let work := RowWork.insert table values (catalog.writePolicy table target.shape algorithm) clauses true false
@@ -109,7 +115,7 @@ def runStep (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells :
   | .update table assignments filter subqueries => do
     let database := state.database catalog
     let some target := database.table table | throw .undescribed
-    let context := Resolved.statementContext frame.clock [] database subqueries
+    let context := Resolved.statementContext frame.clock {} [] database subqueries
     let change (row : Row) := LiteralData.movedRowid target.shape.rowidAlias
       (LiteralData.assignFrom context target.shape.columns assignments (row.values ++ cells) row)
     let assigned := assignments.map (·.1)
@@ -119,31 +125,42 @@ def runStep (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells :
   | .delete table filter subqueries => do
     let database := state.database catalog
     let some target := database.table table | throw .undescribed
-    let context := Resolved.statementContext frame.clock [] database subqueries
+    let context := Resolved.statementContext frame.clock {} [] database subqueries
     let work := RowWork.delete table (selectedRowids context cells target filter) false false true
     return ((← nested frame work state).afterStep table subqueries, false)
   | .query query subqueries => do
     let database := state.database catalog
-    let context := Resolved.statementContext frame.clock [] database subqueries
+    let context := Resolved.statementContext frame.clock {} [] database subqueries
     let some source := query.sourceAfter context cells database | throw .undescribed
     let run := query.run context source.rows
     if source.fault == .may || run.fault == .may || !Resolved.subqueriesPlain subqueries then throw .undescribed
-    if run.mismatch then throw (.error .datatypeMismatch)
-    if run.overflow then throw (.error .integerOverflow)
-    if run.fault == .must then throw (.error .functionError)
+    if run.mismatch then throw (.error .datatypeMismatch state)
+    if run.overflow then throw (.error .integerOverflow state)
+    if run.fault == .must then throw (.error .functionError state)
     return ({ state with subqueried := state.subqueried || !subqueries.isEmpty }, false)
   | .raise filter arms otherwise =>
     match raisedKind (.plain frame.clock) cells filter arms otherwise with
     | some kind => raiseEffect state kind
     | none => pure (state, false)
 
-/-- Run the program over the trigger's cells: nothing when the frame runs it already, or when its
-condition is not true; else its steps in order, in the frame with the program's trigger running,
-up to the first that ends the row. The second result is true when a step ended the row. -/
+/-- Enter the frame of a program of a trigger on the table at the position: SQLite counts the
+frame when it enters the program, before it tests the {lit}`WHEN` condition, and fails beyond its
+trigger depth limit, which the model does not describe. The nested run has one less fuel than
+the write of the row, so it can run a write exactly when the depth limit allows one more frame;
+the check runs a nested DELETE of no rows, which changes nothing. -/
+def enterProgram (nested : NestedRun) (frame : RowFrame) (table : Nat) (state : KeyState) : Except KeyStop Unit :=
+  (fun _ => ()) <$> nested frame (.delete table [] false false false) state
+
+/-- Run the program over the trigger's cells: nothing when the frame runs it already and recursive
+triggers are off; else the program enters its frame ({name}`enterProgram`), and nothing more
+when its condition is not true; else its steps in order, in the frame with the program's trigger
+running, up to the first that ends the row. The second result is true when a step ended the
+row. -/
 def runProgram (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells : List Value) (state : KeyState)
-    (program : Resolved.Program) : Except KeyStop (KeyState × Bool) :=
-  if frame.running.contains program.trigger ||
-      !(program.condition.all fun condition => Resolved.truthy (condition.eval (.plain frame.clock) cells)) then
+    (program : Resolved.Program) : Except KeyStop (KeyState × Bool) := do
+  if !frame.recursive && frame.running.contains program.trigger then return (state, false)
+  enterProgram nested frame program.table state
+  if !(program.condition.all fun condition => Resolved.truthy (condition.eval (.plain frame.clock) cells)) then
     pure (state, false)
   else
     let inner := { frame with running := program.trigger :: frame.running }

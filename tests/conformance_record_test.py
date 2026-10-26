@@ -8,6 +8,7 @@ from conformance.corpus import native_replay, replay
 from conformance.native_connection import Connection, NativeError, library_path, load_library
 from conformance.native_record import execute, record_sql
 from conformance.native_replay import prepare
+from conformance.replay_scope import OBSERVED_VIEW_REASON
 from conformance.model_check import compiled
 from conformance.sql_text import runtime_translator
 
@@ -16,7 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
 
 
 def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Constraints, WITHOUT ROWID, views and triggers are observable before model support."""
+    """`record_sql` keeps constraints, WITHOUT ROWID, views and triggers; `prepare` reports the view as unsupported."""
     def reject(*args: object, **kwargs: object) -> None:
         """Recording must not invoke frontend parsing even indirectly."""
         raise AssertionError("translator invoked by native recording")
@@ -29,10 +30,9 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
             "BEGIN; INSERT INTO t VALUES('a',1); ROLLBACK;", name="out-of-subset")
     assert len(record["initial"]["visible"]["schema"]) == 3
     assert record["trace"][1]["visible"]["tables"][0]["rows"][0]["values"][1] == {"integer": {"value": 2}}
-    assert record["trace"][1]["persisted"] == record["initial"]["visible"]
-    assert record["trace"][-1]["visible"] == record["initial"]["visible"]
+    assert record["trace"][1]["persisted"] == record["initial"]["visible"] == record["trace"][-1]["visible"]
     case, result = prepare(record, runtime_translator(runtime_root))
-    assert case is None and result["verdict"] == "MODEL_UNSUPPORTED"
+    assert case is None and result["verdict"] == "MODEL_UNSUPPORTED" and result["reason"] == OBSERVED_VIEW_REASON
     assert record["migrationSql"] and record["trace"]
 
 
@@ -89,17 +89,16 @@ def test_native_semantic_errors_are_recorded(tmp_path: Path) -> None:
 
 
 def test_trailing_queries_do_not_hide_migration_progress(runtime_root: Path) -> None:
-    """Report only an agreeing migration prefix as query-blocked; keep queries and settings honest."""
+    """Check that `replay` and `without_trailing_queries` query-block only an agreeing prefix.
+
+    `PRAGMA index_list`, which the model does not describe, ends the first script."""
     records = [record_sql("CREATE TABLE t(v BLOB); INSERT INTO t VALUES(1);", sql, name=str(index))
-               for index, sql in enumerate([
-                   "ALTER TABLE t ADD x TEXT; SELECT * FROM t; PRAGMA table_info(t);",
-                   "ALTER TABLE t RENAME TO renamed; SELECT * FROM renamed;",
-                   "PRAGMA user_version=4;",
+               for index, sql in enumerate(["ALTER TABLE t ADD x TEXT; SELECT * FROM t; PRAGMA index_list(t);",
+                   "ALTER TABLE t RENAME TO renamed; SELECT * FROM renamed;", "PRAGMA user_version=4;",
                    "SELECT * FROM t; ALTER TABLE t ADD x TEXT;", "EXPLAIN SELECT * FROM t;"])]
     report = replay(records, runtime_root)
     assert report["queryDiagnostics"] == {"BLOCKED_ONLY_BY_QUERIES": 1, "PREFIX_MODEL_UNSUPPORTED": 1, "OTHER_UNSUPPORTED": 2}
     assert records[0]["trace"][-2]["rows"] == [[{"integer": {"value": 1}}, "null"]]
-    # A single-table SELECT before a modeled write is in scope since ADR 0012.
     assert report["counts"] == {"MODEL_UNSUPPORTED": 4, "AGREE": 1}
 
 

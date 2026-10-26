@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Codec.Resolution
-import VerifierConformance.Case
+import VerifierConformance.Classify
 
 /-! Conformance-case transport. The structural codecs for model types live in
 `Belay.Sqlite.Model.Codec`, shared with ADR 0003's bundle checker. These codecs are transport,
@@ -10,22 +10,24 @@ open Belay.Sqlite.Model
 namespace Belay.Sqlite.Model
 
 deriving instance Lean.FromJson, Lean.ToJson for Limits
-/-- A profile as JSON, with {lit}`foreignKeys` only for a profile that turns foreign keys on, so
-the records of other profiles keep their form. -/
+/-- A profile as JSON, with {lit}`foreignKeys` and {lit}`recursiveTriggers` only for a profile
+that turns the setting on, so the records of other profiles keep their form. -/
 instance : Lean.ToJson Profile where
   toJson profile := Lean.Json.mkObj ([("release", Lean.toJson profile.release),
       ("sourceId", Lean.toJson profile.sourceId), ("limits", Lean.toJson profile.limits),
       ("dqsDml", Lean.toJson profile.dqsDml), ("dqsDdl", Lean.toJson profile.dqsDdl)] ++
-    (if profile.foreignKeys then [("foreignKeys", Lean.toJson true)] else []))
+    (if profile.foreignKeys then [("foreignKeys", Lean.toJson true)] else []) ++
+    (if profile.recursiveTriggers then [("recursiveTriggers", Lean.toJson true)] else []))
 
-/-- Read a profile ({name}`Profile`); a missing {lit}`foreignKeys` is a profile with foreign keys
-off. -/
+/-- Read a profile ({name}`Profile`); a missing {lit}`foreignKeys` or {lit}`recursiveTriggers`
+is a profile with that setting off. -/
 instance : Lean.FromJson Profile where
   fromJson? json := do
     let foreignKeys : Bool := (json.getObjValAs? Bool "foreignKeys").toOption.getD false
+    let recursiveTriggers : Bool := (json.getObjValAs? Bool "recursiveTriggers").toOption.getD false
     return { release := ← json.getObjValAs? String "release", sourceId := ← json.getObjValAs? String "sourceId",
              limits := ← json.getObjValAs? Limits "limits", dqsDml := ← json.getObjValAs? Bool "dqsDml",
-             dqsDdl := ← json.getObjValAs? Bool "dqsDdl", foreignKeys }
+             dqsDdl := ← json.getObjValAs? Bool "dqsDdl", foreignKeys, recursiveTriggers }
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
 /-- A native column as JSON, with {lit}`hidden` only for a generated column, so the records of
 other columns keep their form. -/
@@ -87,7 +89,21 @@ instance : Lean.FromJson Conformance.NativeTable where
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeObservation
 deriving instance Lean.FromJson, Lean.ToJson for StatementOutput, Conformance.OutputGroup,
   Conformance.NativeOutput
+deriving instance Lean.FromJson, Lean.ToJson for Counters
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
+
+/-- Write a case without the field {lit}`counters` when the field is {lean}`none`, so that the
+case of a record of a version without counters has the form that it had before the counters. -/
+def Conformance.Case.toJsonOmittingUnknownCounters (c : Conformance.Case) : Lean.Json :=
+  match Lean.toJson c, c.counters with
+  | .obj fields, none => .obj (fields.erase "counters")
+  | .obj fields, some _ => .obj fields
+  | json@(.null ..), _ | json@(.bool ..), _ | json@(.num ..), _ | json@(.str ..), _ | json@(.arr ..), _ => json
+
+/-- Write a case with {name}`Conformance.Case.toJsonOmittingUnknownCounters`; it replaces the
+derived writer above for later uses. -/
+instance : Lean.ToJson Conformance.Case where
+  toJson := Conformance.Case.toJsonOmittingUnknownCounters
 
 namespace Conformance
 

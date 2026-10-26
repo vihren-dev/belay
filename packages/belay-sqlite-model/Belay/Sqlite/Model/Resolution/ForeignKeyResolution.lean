@@ -43,8 +43,8 @@ def foreignKeyWrite (catalog : Catalog) : Resolved.Statement → Option (Nat × 
   | .delete table _ _ _ _ => some (table, .delete, false, catalog.keyed table)
   | .drop (table :: _) _ => (catalog.tableAt table).map fun _ =>
     (table, .delete, true, !(parentLinks catalog.foreignKeyLinks table).isEmpty)
-  | .drop [] _ | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
-  | .prepareError _ | .query .. | .setting _ => none
+  | .drop [] _ | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
+  | .prepareError _ | .query .. | .setting .. => none
 /-- The write with the rules that it runs row by row ({name}`Resolved.WriteRules`): those of a
 write that has a key to check ({name}`foreignKeyWrite`) or a trigger that it may fire. -/
 def Resolved.Statement.withRules (rules : Resolved.WriteRules) : Resolved.Statement → Resolved.Statement
@@ -55,16 +55,16 @@ def Resolved.Statement.withRules (rules : Resolved.WriteRules) : Resolved.Statem
     .update table assignments filter returning subqueries (some rules)
   | .delete table filter returning subqueries _ => .delete table filter returning subqueries (some rules)
   | .drop positions _ => .drop positions (some rules)
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.createTrigger ..) | statement@(.addColumn ..)
+  | statement@(.createTable ..) | statement@(.createView ..) | statement@(.createIndex ..) | statement@(.createTrigger ..) | statement@(.addColumn ..)
   | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) | statement@(.query ..)
-  | statement@(.setting _) => statement
+  | statement@(.setting ..) => statement
 
 /-- Whether the statement is an INSERT with a {lit}`DO UPDATE` clause. -/
 def Resolved.Statement.updatesOnConflict : Resolved.Statement → Bool
   | .upsert _ _ clauses .. => clauses.any fun clause => (clause.action matches .update ..)
-  | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
-  | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting _ => false
+  | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn ..
+  | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting .. => false
 
 /-- The foreign keys of a resolved write, over the catalog before it,
 with foreign keys on: the prepare error of its keys ({name}`Catalog.foreignKeyIssues`); a key
