@@ -36,4 +36,12 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     (pending : List PendingSource) (query : Syntax.Subquery) : Except ValueIssue (Resolved.Query × Option Affinity) :=
   (resolveQueryBodyTraced dqs scope shapes outerAliases pending query).drop
 
+/-- For every input: the projection of the traced query body is {name}`resolveQueryBody`. A proof that
+meets the projection inside a traced resolver rewrites it with this equation. Proof sketch: both sides
+are equal by definition. -/
+theorem resolveQueryBodyTraced_drop (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
+    (outerAliases : List Identifier) (pending : List PendingSource) (query : Syntax.Subquery) :
+    (resolveQueryBodyTraced dqs scope shapes outerAliases pending query).drop =
+      resolveQueryBody dqs scope shapes outerAliases pending query := rfl
+
 end Belay.Sqlite.Model

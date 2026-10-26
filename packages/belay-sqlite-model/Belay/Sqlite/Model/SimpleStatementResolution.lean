@@ -65,8 +65,8 @@ theorem resolveStatement_select_missing_table (context : ResolveContext) (state 
       query.groupBy query.orderBy query.limit query.offset [] query.having query.distinct query.compound) =
       state.withCatalog (resolveSelect context state.catalog { query with parent := none, commonTable := none } []) := rfl
   rw [unfolded]
-  unfold resolveSelect resolveSelectDetails
-  simp [prepareQuerySources, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, CommonTableCopies.originalIssue, source, noJoins, resolveSources_some, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, traced_drop, missing, notView, notReserved,
+  unfold resolveSelect resolveSelectTraced
+  simp [resolveSelectDetailsTraced, prepareQuerySourcesTraced, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, CommonTableCopies.originalIssue, source, noJoins, resolveSourcesTraced_drop, resolveSources_some, resolveReference, resolveReferenceTraced, namedSource, current, arguments, resolveTableReferenceTraced, traced_drop, missing, notView, notReserved,
     notFunction, Except.mapError, SourceIssue.under, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.map]
 
 /-- For every SELECT without subqueries, joins, compound or a parent, whose sources resolve,

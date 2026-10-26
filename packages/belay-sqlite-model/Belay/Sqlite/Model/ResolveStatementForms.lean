@@ -114,7 +114,8 @@ theorem resolveSelect_schemaLink (context : ResolveContext) (catalog after : Cat
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     statement.SchemaLink catalog := by
-  unfold resolveSelect resolveSelectDetails at ok
+  unfold resolveSelect resolveSelectTraced at ok
+  dsimp only [Traced.drop] at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)

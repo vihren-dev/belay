@@ -33,4 +33,13 @@ sketch: unfold the traced form and push the projection through the monad. -/
         scope)) := by
   simp only [resolveSources, resolveSourcesTraced, mergeJoins, traced_drop]
 
+/-- For every input: the projection of the traced sources of {lit}`FROM` is {name}`resolveSources`. A proof
+that meets the projection inside a traced resolver rewrites it with this equation, then with
+{name}`resolveSources_some`. Proof sketch: both sides are equal by definition. -/
+theorem resolveSourcesTraced_drop (catalog : Catalog) (source : Option Syntax.TableReference)
+    (joins : List Syntax.Join) (start : Nat)
+    (queries : Nat → Except SourceIssue ScopeSource) (prefix_ : List Nat) (initial : Option Catalog) :
+    (resolveSourcesTraced catalog source joins start queries prefix_ initial).drop =
+      resolveSources catalog source joins start queries prefix_ initial := rfl
+
 end Belay.Sqlite.Model

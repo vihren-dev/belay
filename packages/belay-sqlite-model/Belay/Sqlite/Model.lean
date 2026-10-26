@@ -246,7 +246,8 @@ import Belay.Sqlite.Model.Resolution.OperandTraced
 import Belay.Sqlite.Model.Resolution.OperandProjection
 import Belay.Sqlite.Model.Resolution.OperandArms
 import Belay.Sqlite.Model.Resolution.OperandArmsMore
-import Belay.Sqlite.Model.Resolution.NameTraceExamples
+import Belay.Sqlite.Model.Resolution.NameTraceSettled
+import Belay.Sqlite.Model.Resolution.NameResultSources
 import Belay.Sqlite.Model.Resolution.TracedList
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
 import Belay.Sqlite.Model.Resolution.ResultColumnArms
@@ -259,8 +260,6 @@ import Belay.Sqlite.Model.Resolution.SourceReference
 import Belay.Sqlite.Model.Resolution.SourceListArms
 import Belay.Sqlite.Model.Resolution.SourceListFromArms
 import Belay.Sqlite.Model.Resolution.JoinMerge
-import Belay.Sqlite.Model.Resolution.NameTraceQueryExamples
-import Belay.Sqlite.Model.Resolution.NameTraceSourceExamples
 import Belay.Sqlite.Model.OutputResultsLaws
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.QueryOutputOn

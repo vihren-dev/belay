@@ -17,40 +17,43 @@ query and its subqueries, or SQLite's {lit}`no such table: %s`, a prepare error 
 restriction. Used WITH and stored-view definitions are copied before ordinary
 resolution; unused definitions do not enter the executable query list. Stored views
 resolve against the current catalog and hide ordinary caller names. SQLite expands the {lit}`*` of the statement's query ({name}`starIssue`) before
-its subqueries. A compound query resolves from its terms ({name}`resolveCompoundBody`). A query
+its subqueries. A compound query resolves from its terms ({name}`resolveCompoundBodyTraced`). A query
 without {lit}`FROM`, or a term of the compound without {lit}`FROM`, that has a call that can
 fail, in a statement with a subquery that is no term, is
 {name}`RestrictionKind.subqueryFallibleCall`. The optional {lit}`initial` is the catalog of the initial database
-of a two-state query: a source {lit}`before.t` resolves there ({name}`resolveReference`); without it such a
-source is {name}`RestrictionKind.initialDatabase`. -/
-def resolveSelectDetails (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
+of a two-state query: a source {lit}`before.t` resolves there ({name}`resolveReferenceTraced`); without it such a
+source is {name}`RestrictionKind.initialDatabase`. The occurrences are those of the sources, the
+subqueries and the clauses of the query; a name of a copy of a {lit}`WITH` definition or a stored view is
+moved to the written statement ({name}`CommonTableCopies.originalOccurrence`), and each name is
+recorded once ({name}`NameTrace.settled`). -/
+def resolveSelectDetailsTraced (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) :
-    Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
+    Traced SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
   let dqs := context.profile.dqsDml
   do
-    let expanded ← prepareQuerySources catalog 8 query subqueries initial
+    let expanded ← prepareQuerySourcesTraced catalog 8 query subqueries initial
     let query := expanded.query
     let subqueries := expanded.copies.queries.toList
     let columnNames := expanded.copies.columnNames
     let viewRoots := expanded.copies.viewRoots
-    let result : Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) := do
-      let (pending, scope) ← resolveSources catalog query.source query.joins 0
+    let result : Traced SourceIssue (Resolved.Query × List Resolved.Query × Scope) := do
+      let (pending, scope) ← resolveSourcesTraced catalog query.source query.joins 0
         (fun index => sourceExpansion catalog 8 subqueries none index columnNames initial) [] initial
       if let some issue := starIssue scope query.columns then throw (.value issue)
       let main : QueryScope := { scope, pending, outer := 0, outerAliases := [],
                                  aliases := (resultAliases scope query.columns).filterMap id }
-      let scopes ← subqueryScopes catalog 8 main query.compound subqueries columnNames viewRoots initial
-      let (resolvedSubqueries, shapes) ← (resolveSubqueryBodies dqs catalog 8 main query.compound scopes subqueries columnNames viewRoots initial).mapError .value
-      let main ← (main.refresh catalog shapes query initial).mapError .value
+      let scopes ← subqueryScopesTraced catalog 8 main query.compound subqueries columnNames viewRoots initial
+      let (resolvedSubqueries, shapes) ← (resolveSubqueryBodiesTraced dqs catalog 8 main query.compound scopes subqueries columnNames viewRoots initial).mapError .value
+      let main ← (main.refreshTraced catalog shapes query initial).mapError .value
       let scope := main.scope
       let pending := main.pending
       let scopes := scopes.map fun scope => { scope with scope := scope.scope.refreshSources shapes }
-      let body : Except ValueIssue (Resolved.Query × List Resolved.Query) := match query.compound with
+      let body : Traced ValueIssue (Resolved.Query × List Resolved.Query) := match query.compound with
         | some compound => do
           let terms ← compoundTerms 0 none compound (scopes.map QueryScope.scope) subqueries resolvedSubqueries shapes
-          pure ((← resolveCompoundBody dqs 0 query compound terms).1, terms.map CompoundTerm.query)
+          pure ((← resolveCompoundBodyTraced dqs 0 query compound terms).1, terms.map CompoundTerm.query)
         | none => do
-          let (resolved, _) ← resolveQueryBody dqs scope { later := shapes } [] pending query
+          let (resolved, _) ← resolveQueryBodyTraced dqs scope { later := shapes } [] pending query
           pure (resolved, [resolved])
       let (resolvedQuery, ran) ← body.mapError SourceIssue.value
       if let some issue := expanded.copies.recursionIssue 8 resolvedSubqueries then throw (.value issue)
@@ -59,18 +62,32 @@ def resolveSelectDetails (context : ResolveContext) (catalog : Catalog) (query :
           ran.any fun (ran : Resolved.Query) => ran.sources.isEmpty && ran.expressions.any (·.any Resolved.Expr.isFallibleCall) then
         throw (SourceIssue.value (ValueIssue.restriction [] .subqueryFallibleCall))
       pure (resolvedQuery, resolvedSubqueries, scope)
-    result.mapError (expanded.copies.originalIssue 8)
+    (result.settle.mapError (expanded.copies.originalIssue 8)).mapOccurrences (expanded.copies.originalOccurrence 8)
+
+/-- The query, the subqueries and the scope of a {lit}`SELECT`:
+{name}`resolveSelectDetailsTraced` without its trace. -/
+def resolveSelectDetails (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
+    (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) :
+    Except SourceIssue (Resolved.Query × List Resolved.Query × Scope) :=
+  (resolveSelectDetailsTraced context catalog query subqueries initial).drop
 
 /-- Resolve a SELECT to its query statement or prepare error, with the input catalog unchanged.
 Model restrictions retain their original syntax paths. This uses the same query and source
-metadata resolution as {name}`resolveSelectDetails`; the statement needs only its executable
-queries. -/
+metadata resolution as {name}`resolveSelectDetailsTraced`; the statement needs only its executable
+queries. The trace holds the names that were decided, also when the resolution fails. -/
+def resolveSelectTraced (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
+    (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) :
+    Traced NodeRestriction (Resolved.Statement × Catalog) :=
+  let details := resolveSelectDetailsTraced context catalog query subqueries initial
+  ⟨match details.drop with
+    | .ok (resolvedQuery, resolvedSubqueries, _) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
+    | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
+    | .error (.value issue) => issueResolution catalog [] issue, details.trace⟩
+
+/-- The statement of a SELECT: {name}`resolveSelectTraced` without its trace. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) (initial : Option Catalog := none) : StatementResolution :=
-  match resolveSelectDetails context catalog query subqueries initial with
-  | .ok (resolvedQuery, resolvedSubqueries, _) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
-  | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
-  | .error (.value issue) => issueResolution catalog [] issue
+  (resolveSelectTraced context catalog query subqueries initial).drop
 
 /-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged and the
 resolved statement applied to the input catalog gives the input catalog again
@@ -81,7 +98,8 @@ theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
-  unfold resolveSelect resolveSelectDetails at ok
+  unfold resolveSelect resolveSelectTraced at ok
+  dsimp only [Traced.drop] at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl, rfl⟩) | (cases ok)

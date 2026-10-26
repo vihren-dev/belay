@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Returning
+import Belay.Sqlite.Model.Resolution.ResolveAll
 
 set_option doc.verso true
 
@@ -7,19 +8,6 @@ is an expression over the sources in scope, resolved as in {lit}`SELECT`, and a 
 that names no column folds to the literal of its stored value. -/
 
 namespace Belay.Sqlite.Model
-
-/-- Resolve the items in order from a starting position, and stop at the first issue. -/
-def resolveAllFrom (resolveOne : Nat → α → Except ε β) (start : Nat) :
-    List α → Except ε (List β)
-  | [] => .ok []
-  | item :: rest => do
-    let value ← resolveOne start item
-    let values ← resolveAllFrom resolveOne (start + 1) rest
-    return value :: values
-
-/-- Resolve a list in order from position zero, and stop at the first issue. -/
-def resolveAll (resolveOne : Nat → α → Except ε β) (items : List α) : Except ε (List β) :=
-  resolveAllFrom resolveOne 0 items
 
 /-- The resolved value of one {lit}`SET` assignment for the column at
 {lit}`position`: the literal of its stored value ({name}`Value.store`) when the
