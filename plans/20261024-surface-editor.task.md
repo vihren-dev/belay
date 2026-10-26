@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
@@ -151,7 +151,7 @@ Only Nix results are acceptance evidence in status files and PRs.
 The resolver records no fact about a name token: a resolved statement holds
 catalog positions and rewritten queries, a prepare error holds only a name, and
 `Span.leaves` is not a role trace. Part 2b therefore needs a model-side name
-trace, planned as a separate model task, not an editor edit. For each name
+trace, which the model name-trace task added (PR #270), not an editor edit. For each name
 occurrence of a statement, the trace gives:
 
 - the syntax path of the occurrence in the statement as written, for a name

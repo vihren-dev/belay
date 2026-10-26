@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b is in progress (the model name trace is merged).
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -456,3 +456,22 @@ cut, still need a Nix result.
 - Open for the integration: the table-rebuild constructor `Syntax.Statement.insertSelect` forces arms in
   `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, and part 2b has
   to cover the table slots of its subqueries and the names of its query.
+
+### Integration on the possible write executions — 2026-10-26
+
+The part 2b chain (`24ca98cb`) was merged onto the possible write executions on the model name
+trace (`95b61eb4`) in `f5e85829`. The only conflict was `build-support/tests.nix`: the merge keeps
+the split of the surface suite into `surface` and `surfaceChecks` and adds
+`tests/surface_editor_support.py` to the inputs of both. Main after #270 was merged in after the
+checks (`b70a04bb`, no file change).
+
+- `just test-full`: `/nix/store/4skhz2ks5dbc7f7zlvc1lzfb9xnx1fbb-sqlite-verifier-test-reports`. A
+  first run reached the 1500 s limit (exit 124) while a second `test-full` ran on the machine, with
+  no failed test in its log; the second run passed.
+- `just verdict`: `/nix/store/s03bkmji6nix413ln30210d6nl10lh8b-sqlite-verifier-verdict`, the same
+  output as the verdict of the possible write executions.
+
+Part 2b is accepted. Still open: the table-rebuild task adds `Syntax.Statement.insertSelect` and its
+arms in `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, without
+editor information for its subqueries and the names of its query. A follow-up of this task covers
+them after that task.
