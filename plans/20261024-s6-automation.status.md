@@ -1,6 +1,6 @@
 # Status: S6 effect rules and automation
 
-Created 2026-10-24. Status: OPEN. Part 1 in progress (started 2026-10-26); parts 2 and 3 have not started.
+Created 2026-10-24. Status: OPEN. Part 1 done (2026-10-26); parts 2 and 3 have not started.
 Task: [task file](20261024-s6-automation.task.md).
 Specs: ADR17 S6; production execution/assertion/pattern tasks; S5 checker.
 
@@ -29,7 +29,17 @@ No production automation, general footprint engine or completion is claimed.
   acceptance task. Assigned for part 1.
 - 2026-10-26: part 1 commit 1: statement effect rules (UPDATE, ADD COLUMN), frames and shelter rule, read
   certificates with the untrusted analyzer, weak preservation and full commutation rules, positive and negative
-  fixtures and `tests/surface_s6_rules_test.py`. Local fixture runs pass; Nix results follow at the end of part 1.
+  fixtures and `tests/surface_s6_rules_test.py`. Local fixture runs pass.
+- 2026-10-26: review 20261026T191757Z-6bec4bb9 (4 musts: R5 constructor enumeration in `plainWriteTarget` and
+  `ReadAnalysis.analyze`, R6 shelter laws moved to model `ShelterFrame`, R19 commutation premises) fixed in the
+  `refactor:` commit; re-review 20261026T192140Z-92a4ce94 has no findings.
+- 2026-10-26: end of part 1 gates at the refactor commit. `just test-full`:
+  `/nix/store/nh9g4vv5gpqxxjnxwcc1ri21rz801lb3-sqlite-verifier-test-reports` (the first run ended at the 1500 s
+  limit with no failed test, the rerun passed). `just verdict`:
+  `/nix/store/cjzhc4ilbgbgbirqmhrv4hlxq1zv0s52-sqlite-verifier-verdict`. Predictions
+  `/nix/store/1pngxqkmdkg1k09aq739y7nqxmrsnv32-sqlite-verifier-predictions` are byte-identical to the base
+  `/nix/store/vghpgg7nyb4nifg434ddx5dcrmzmh216-sqlite-verifier-predictions` (55 entries, `diff -r`). Part 1 is
+  done; parts 2 and 3 have not started.
 
 ## Part 1 plan, 2026-10-26
 
