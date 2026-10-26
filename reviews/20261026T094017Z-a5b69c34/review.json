@@ -1,0 +1,58 @@
+{
+  "caller": "claude",
+  "commit": "a5b69c34f3d79fb58a6861bbc2e7d0c9b5b66ec0",
+  "date": "2026-10-26T09:40:17+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/DbBang.lean",
+    "packages/belay/Belay/Sqlite/SqlEditorInfo.lean",
+    "packages/belay/Belay/Sqlite/SqlEditorSource.lean",
+    "packages/belay/Belay/Sqlite/SqlKeywords.lean",
+    "packages/belay/Belay/Sqlite/SqlNameCorrections.lean",
+    "packages/belay/Belay/Sqlite/SqlNameDescription.lean",
+    "packages/belay/Belay/Sqlite/SqlNameInfo.lean",
+    "packages/belay/Belay/Sqlite/SqlNameSites.lean",
+    "packages/belay/Belay/Sqlite/SqlStatementContexts.lean",
+    "packages/belay/lakefile.lean",
+    "plans/20261024-surface-editor.status.md",
+    "reviews/20261026T093707Z-a8faf31c/review.json",
+    "tests/nix_suites.json",
+    "tests/surface_editor_corrections_test.py",
+    "tests/surface_editor_names_test.py",
+    "tests/surface_editor_support.py"
+  ],
+  "findings": [
+    {
+      "id": "20261026T094017Z-a5b69c34#1",
+      "line": 56,
+      "path": "tests/surface_editor_corrections_test.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The keyword-correction test only inspects an edit inside an `r##` literal, missing that inserting `\"select\"` into an ordinary or unhashed raw literal terminates the Lean string and produces invalid syntax. Fix: add tests that apply and re-elaborate these corrections, and make replacement emission encode or suppress edits that would break the enclosing literal."
+    }
+  ],
+  "id": "20261026T094017Z-a5b69c34",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

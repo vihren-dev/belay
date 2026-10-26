@@ -33,6 +33,10 @@ error: UNIQUE constraint failed: t.a; correct the row, or the statement that wri
 ---
 @ +1:114...116
 error: table t has no column named zz
+---
+@ +1:114...116
+info: Nearest name in scope:
+  [apply] a
 -/
 #guard_msgs (positions := true) in
 def keyConflict : Database := db! r"CREATE TABLE t (a PRIMARY KEY); INSERT INTO t VALUES (1), (1); INSERT INTO t (zz) VALUES (1)"
@@ -41,6 +45,10 @@ def keyConflict : Database := db! r"CREATE TABLE t (a PRIMARY KEY); INSERT INTO 
 /--
 @ +1:72...74
 error: table t has no column named zz
+---
+@ +1:72...74
+info: Nearest name in scope:
+  [apply] a
 -/
 #guard_msgs (positions := true) in
 def prepareError : Database := db! r"CREATE TABLE t (a); INSERT INTO t (zz) VALUES (1)"

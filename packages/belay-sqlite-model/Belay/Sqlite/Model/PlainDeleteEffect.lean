@@ -18,12 +18,12 @@ the values bound to its parameters. Proof sketch: {name}`runScriptStep_effect` g
 run; the run of a delete without rules is the successful write of the kept rows. -/
 theorem plainDelete_database {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output}
+    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
     {target : Nat} {filter : Option Resolved.Expr} {after : ResolveState} {table : Table}
     (found : resolveStatement context connection.resolveState statement =
       .ok (.delete target filter [] [] none, after))
     (present : connection.state.database.table target = some table)
-    (step : runScriptStep context clock index connection statement parameters = .continued output next)
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ value : Int, statementClock clock index (.delete target filter [] [] none) = some value ∧
       next.state.database = connection.state.database.setRows target
@@ -59,11 +59,11 @@ step is not a choice between results. Proof sketch: {name}`runScriptStep_ran` gi
 {name}`Output.ofStep` of the resolved statement, which {name}`Output.ofStep_delete_ne_oneOf` treats. -/
 theorem runScriptStep_delete_ne_oneOf {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {target : Nat}
+    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution} {target : Nat}
     {filter : Option Resolved.Expr} {returning subqueries rules} {after : ResolveState}
     (found : resolveStatement context connection.resolveState statement =
       .ok (.delete target filter returning subqueries rules, after))
-    (step : runScriptStep context clock index connection statement parameters = .continued output next)
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
     (alternatives : List (List (List Value))) : output ≠ .oneOf alternatives := by
   obtain ⟨resolved, later, value, same, -, -, -, outputEq, -⟩ := runScriptStep_ran step
   rw [found] at same

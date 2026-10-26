@@ -38,12 +38,12 @@ statement context is that of the clock value of the step. Proof sketch:
 {name}`runScriptStep_effect` gives the effect of the run, and {name}`insertOutcome_ok` reads it. -/
 theorem plainInsert_database {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output}
+    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
     {target : Nat} {cells : List (List Resolved.Cell)} {after : ResolveState} {table : Table}
     (found : resolveStatement context connection.resolveState statement =
       .ok (.insert target cells [] [] none, after))
     (present : connection.state.database.table target = some table)
-    (step : runScriptStep context clock index connection statement parameters = .continued output next)
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ value : Int, statementClock clock index (.insert target cells [] [] none) = some value ∧
       next.state.database = connection.state.database.setRows target
@@ -79,10 +79,11 @@ def RunStep.continues : RunStep → Bool
   | .continued .. => true
   | .ended _ => false
 
-/-- For every step, it continues exactly when some output and next connection give it. Proof sketch:
+/-- For every step, it continues exactly when some output, next connection and list of further
+executions give it. Proof sketch:
 case split on the step. -/
 theorem RunStep.continues_iff {step : RunStep} :
-    step.continues = true ↔ ∃ output next, step = .continued output next := by
+    step.continues = true ↔ ∃ output next others, step = .continued output next others := by
   cases step <;> simp [RunStep.continues]
 
 /-- For every connection, statement that resolves to an insert, and step that continues: the output
@@ -91,11 +92,11 @@ as {name}`Output.ofStep` of the resolved statement, which {name}`Output.ofStep_i
 treats. -/
 theorem runScriptStep_insert_ne_oneOf {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {target : Nat}
+    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution} {target : Nat}
     {cells : List (List Resolved.Cell)} {returning subqueries rules} {after : ResolveState}
     (found : resolveStatement context connection.resolveState statement =
       .ok (.insert target cells returning subqueries rules, after))
-    (step : runScriptStep context clock index connection statement parameters = .continued output next)
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
     (alternatives : List (List (List Value))) : output ≠ .oneOf alternatives := by
   obtain ⟨resolved, later, value, same, -, -, -, outputEq, -⟩ := runScriptStep_ran step
   rw [found] at same

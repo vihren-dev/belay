@@ -14,9 +14,9 @@ theorem Sql.Branch.bind_stopped {α β : Type} {program : Sql α} {clock index c
   induction branch with
   | pure => cases stopped
   | stopped step => exact .stopped step
-  | @continued statement values rest clock index connection actual state selected result step choice _ later =>
+  | @continued statement values rest clock index connection actual state others found selected result step member choice _ later =>
     exact Sql.Branch.continued (rest := fun output => (rest output).bind next)
-      (result := { result with value := none }) step choice (later stopped)
+      (result := { result with value := none }) step member choice (later stopped)
 
 /-- For every returning prefix branch and continuation branch from its exact reached
 connection and next index, bind permits their concatenated result. The same clock is used
@@ -30,9 +30,9 @@ theorem Sql.Branch.bind_return {α β : Type} {program : Sql α} {clock index co
   induction branch with
   | pure => cases returned; simpa [Sql.bind] using later
   | stopped => cases returned
-  | @continued statement values rest clock index connection actual state selected result step choice _ hypothesis =>
+  | @continued statement values rest clock index connection actual state others found selected result step member choice _ hypothesis =>
     exact Sql.Branch.continued (rest := fun output => (rest output).bind next)
-      (result := { last with outputs := result.outputs ++ last.outputs }) step choice
+      (result := { last with outputs := result.outputs ++ last.outputs }) step member choice
       (hypothesis returned (by simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using later))
 
 /-- Every bind branch splits into a prefix branch and its exact continuation behavior.
@@ -59,10 +59,10 @@ theorem Sql.branch_bind_iff {α β : Type} (program : Sql α) (next : α → Sql
       | ended reason =>
         have same := (Sql.branch_stopped_iff step result).mp branch
         exact ⟨_, .stopped step, same⟩
-      | continued actual state =>
+      | continued actual state others =>
         obtain ⟨selected, after, choice, tail, rfl⟩ := (Sql.branch_continued_iff step result).mp branch
         obtain ⟨first, before, continuation⟩ := (hypothesis selected clock (index + 1) state after).mp tail
-        refine ⟨{ first with outputs := selected :: first.outputs }, .continued step choice before, ?_⟩
+        refine ⟨{ first with outputs := selected :: first.outputs }, .continued_own step choice before, ?_⟩
         cases returned : first.value with
         | none =>
           simp only [returned] at continuation ⊢

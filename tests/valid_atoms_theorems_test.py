@@ -20,10 +20,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 THEOREMS = [
-    "runStatement_notNull", "runSqlFrom_notNull", "runSql_notNull", "runScriptFrom_notNull",
-    "runStatement_typesFit", "runSqlFrom_typesFit", "runSql_typesFit", "runScriptFrom_typesFit",
-    "runStatement_checksHold", "runSqlFrom_checksHold", "runSql_checksHold", "runScriptFrom_checksHold",
-    "runSqlFrom_constraintAtoms", "runSql_constraintAtoms", "runScriptFrom_constraintAtoms",
+    "runStatement_notNull", "runSqlFrom_notNull", "runSql_notNull", "runScriptAllFrom_notNull",
+    "runStatement_typesFit", "runSqlFrom_typesFit", "runSql_typesFit", "runScriptAllFrom_typesFit",
+    "runStatement_checksHold", "runSqlFrom_checksHold", "runSql_checksHold", "runScriptAllFrom_checksHold",
+    "runSqlFrom_constraintAtoms", "runSql_constraintAtoms", "runScriptAllFrom_constraintAtoms",
 ]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -48,9 +48,9 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile Database.NotNull)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
-      (Database.AdmittedWith profile Database.NotNull) :=
-  runScriptFrom_notNull context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.AdmittedWith profile Database.NotNull) :=
+  runScriptAllFrom_notNull context clock index script execution same holds
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.TypesFit database) (condition : statement.TypesFitCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.TypesFit :=
@@ -66,9 +66,9 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile Database.TypesFit)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
-      (Database.AdmittedWith profile Database.TypesFit) :=
-  runScriptFrom_typesFit context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.AdmittedWith profile Database.TypesFit) :=
+  runScriptAllFrom_typesFit context clock index script execution same holds
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.ChecksHold database) (condition : statement.ChecksHoldCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.ChecksHold :=
@@ -84,9 +84,9 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile Database.ChecksHold)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
-      (Database.AdmittedWith profile Database.ChecksHold) :=
-  runScriptFrom_checksHold context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.AdmittedWith profile Database.ChecksHold) :=
+  runScriptAllFrom_checksHold context clock index script execution same holds
 example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
     (holds : state.Holds Database.ConstraintAtoms) (conditions : AtomsRunConditions position script state) :
     (runSqlFrom position script state).Holds Database.ConstraintAtoms :=
@@ -99,9 +99,9 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile Database.ConstraintAtoms)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
-      (Database.AdmittedWith profile Database.ConstraintAtoms) :=
-  runScriptFrom_constraintAtoms context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.AdmittedWith profile Database.ConstraintAtoms) :=
+  runScriptAllFrom_constraintAtoms context clock index script execution same holds
 """ + "".join(f"#print axioms {name}\n" for name in THEOREMS)
 
 

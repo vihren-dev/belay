@@ -1,6 +1,6 @@
+import Belay.Sqlite.Model.ScriptRunSingleton
 import Belay.Sqlite.Model.ScriptRunClock
 import Belay.Sqlite.Model.StepCatalogLaws
-import Belay.Sqlite.Model.Resolution.ResolveStateSpec
 
 set_option doc.verso true
 
@@ -88,10 +88,10 @@ theorem runScriptStep_resolved {context : ResolveContext} {clock : Option Clock}
     ∃ next, runScriptStep context clock index connection statement parameters = .continued
         (Output.ofStep (connection.state.clock index) parameters resolved connection.state
           (connection.state.statementRun (connection.state.clock index) parameters resolved)
-          (advance index resolved parameters connection.state)) next ∧
+          (advance index resolved parameters connection.state)) next [] ∧
       next = connection.afterStep after (connection.state.statementRun (connection.state.clock index) parameters resolved).counts
         (advance index resolved parameters connection.state) := by
-  simp only [runScriptStep, runScriptStepWith, ranScriptStep, ok]
+  simp only [runScriptStep, runScriptStepWith, ranScriptStep, ok, StatementExecution.ofAlternatives_of_single, SqlState.statementRun_alternatives, Except.map, List.map_nil]
   split
   · exact .inl ⟨_, rfl⟩
   · rename_i value valued

@@ -18,7 +18,7 @@ theorem another_unique (result : SqlRun Nat) :
       result = { outputs := [.rows [[2]]], connection := initial.connection, value := some 7 } := by
   have step : let (statement, values) := (sql r"SELECT 2").statements[0]
       runScriptStep runContext initial.clock initial.index initial.connection statement values =
-        .continued (.rows [[2]]) initial.connection := rfl
+        .continued (.rows [[2]]) initial.connection [] := rfl
   constructor
   · intro branch
     obtain ⟨selected, later, choice, tail, rfl⟩ := (Sql.branch_continued_iff step result).mp branch
@@ -28,7 +28,7 @@ theorem another_unique (result : SqlRun Nat) :
     subst later
     rfl
   · rintro rfl
-    exact .continued (rest := fun _ => .pure 7) step (.actual _) (.pure 7 _ _ _)
+    exact Sql.Branch.continued_own (rest := fun _ => .pure 7) step (.actual _) (.pure 7 _ _ _)
 
 /-- Quiet prefixes compare fully despite different raw traces. Both connections, raw
 counts and returned values agree. Proof sketch: classify the two deterministic branches. -/

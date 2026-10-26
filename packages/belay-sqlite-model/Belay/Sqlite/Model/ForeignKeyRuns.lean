@@ -36,17 +36,19 @@ theorem runSql_rowReferences (profile : Profile) (script : List (Resolved.Statem
   runSql_holds (rowReferences_statementKeeps profile) script holds conditions
 
 /-- For any surface script, resolution context, clock and connection, selected row
-references hold in the final database and snapshot if they hold in both initial stores and
-each reached resolved statement meets its FK conditions. Failed resolution and halted
-suffixes impose no extra condition. Proof: apply the existing surface-run invariant law. -/
-theorem runScriptFrom_rowReferences (profile : Profile) (context : ResolveContext) (clock : Option Clock)
+references hold in the final database and snapshot of every complete execution of the script
+({name}`runScriptAllFrom`) if they hold in both initial stores and each reached resolved statement
+meets its FK conditions. Failed resolution and halted
+suffixes impose no extra condition. Proof sketch: apply the surface-run invariant law for every
+complete execution. -/
+theorem runScriptAllFrom_rowReferences (profile : Profile) (context : ResolveContext) (clock : Option Clock)
     (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeyRowsCondition profile database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runScriptFrom_holds (rowReferences_statementKeeps profile) context clock index script holds conditions
+  runScriptAllFrom_holds (rowReferences_statementKeeps profile) context clock index script holds conditions
 
 /-- For any supplied mapping compatible with a database's parent schemas, row truth
 under that mapping is equivalent to row truth under the catalog-selected mapping. Empty
@@ -113,17 +115,17 @@ theorem runSql_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping)
   runSql_holds (foreignKeyAtoms_statementKeeps profile mapping) script holds conditions
 
 /-- For any supplied mapping and surface script, both FK atoms hold in the final current
-database and snapshot when they hold in both initial stores and each reached resolved
+database and snapshot of every complete execution of the script ({name}`runScriptAllFrom`) when they hold in both initial stores and each reached resolved
 statement keeps the catalog and meets its row condition. Failed resolution and unreached
 suffixes add no premise.
 Proof sketch: apply the existing surface-run invariant law to the conjunction. -/
-theorem runScriptFrom_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping) (context : ResolveContext)
+theorem runScriptAllFrom_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping) :=
-  runScriptFrom_holds (foreignKeyAtoms_statementKeeps profile mapping) context clock index script holds conditions
+  runScriptAllFrom_holds (foreignKeyAtoms_statementKeeps profile mapping) context clock index script holds conditions
 
 end Belay.Sqlite.Model

@@ -18,12 +18,12 @@ SQL error would not suffice. Proof sketch: resolution either chooses the exact a
 or a prepare error; success excludes the latter and the actual effect gives
 the database operation. -/
 theorem add_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection next : Connection} {parameters : List Value} {output : Output}
+    {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
     {tableName name : Identifier} {position : Nat} {table : Table}
     (found : connection.state.database.catalog.findTable tableName = some (position, table.shape))
     (present : connection.state.database.table position = some table)
     (step : runScriptStep context clock index connection
-      (.addColumn tableName (textDefinition name)) parameters = .continued output next)
+      (.addColumn tableName (textDefinition name)) parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ counters, next = { connection with state := { connection.state with
       database := connection.state.database.addColumn position (textColumn name table.shape.strict) .null,
@@ -76,11 +76,11 @@ trigger may have any admitted written body; registration does not execute it.
 Proof sketch: success excludes preparation errors and the executor's storage
 alignment failure, leaving its single append effect. -/
 theorem trigger_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection next : Connection} {parameters : List Value} {output : Output}
+    {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
     (name : Identifier) (trigger : CatalogTrigger)
     (step : runScriptStep context clock index connection
       (.createTrigger name false trigger.time trigger.event trigger.table trigger.condition trigger.body)
-      parameters = .continued output next)
+      parameters = .continued output next others)
     (noError : output.isError = false) :
     ∃ counters, next = { connection with state := { connection.state with
       database := { catalog := connection.state.database.catalog.createTrigger name trigger,

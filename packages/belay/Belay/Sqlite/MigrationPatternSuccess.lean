@@ -81,7 +81,7 @@ theorem Sql.View.project_quiet_of_allOk {α : Type} {program : Sql α} {clock in
   induction branch with
   | pure => rfl
   | stopped => simp [List.allOk, Output.endsRun] at ok
-  | @continued statement values rest clock index connection actual next selected result step choice later hypothesis =>
+  | @continued statement values rest clock index connection actual next others found selected result step member choice later hypothesis =>
     have parts : selected.isError = false ∧ selected.endsRun = false ∧ result.outputs.allOk = true := by
       simpa [List.allOk, Bool.and_eq_true, and_assoc] using ok
     simp only [quiet, uniform, project, parts.1, parts.2.1, Bool.false_eq_true, ↓reduceIte, Bool.not_false, Bool.true_and]
