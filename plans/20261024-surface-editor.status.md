@@ -432,3 +432,13 @@ The first `just test-full` failed to collect the two new test files in the Nix s
 `tests/surface_editor_support.py` was not an input of the suite. `build-support/tests.nix` lists it
 now. The names test also checks that a checked `sql!` equals `sql` by `rfl` with the editor
 information active.
+
+### Fix: fixtures that the new information changes — 2026-10-26
+
+The second `just test-full` run found two failing surface tests before the 1500 s limit ended the
+suite (exit 124, at 96%). `DbBangErrors.lean` expects the info message of the native quick fix
+(`Nearest name in scope`) for the two unknown column names. `AccountSignupQueries.lean` failed
+at the base commit already (`rw [resolveOperand]` makes no progress after the name trace); the
+same one-line fix (`resolveOperand_arm_compare`) is in the name-trace integration workspace, so
+the two copies agree and merge without a conflict. The 20 automatic-check tests, which the limit
+cut, pass locally.
