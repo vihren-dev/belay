@@ -37,7 +37,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "cte_outer_scope_ignored": "rule:findCommonTable",
     "cte_recursion_not_registered": "rule:copyCommonTableQuery",
-    "source_sibling_binding": "rule:subqueryScope",
+    "source_sibling_binding": "rule:subqueryScopeTraced",
     "source_affinity_lost": "rule:derivedScopeSource",
     "source_collation_lost": "rule:derivedScopeSource",
     "source_uncertainty_ignored": "rule:Query.subqueryRun",

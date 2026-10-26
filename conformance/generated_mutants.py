@@ -23,8 +23,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      values.set position (Value.store (positionAffinity columns position) (expression.eval context cells))) "
         "row.values }"),
     "stored_hidden_virtual": (NATIVE, "  | some { stored := true, .. } => 3", "  | some { stored := true, .. } => 2"),
-    "insert_fills_generated": (WRITES, "      | none => .ok (writablePositions table.columns)",
-        "      | none => .ok (List.range table.columns.length)"),
+    "insert_fills_generated": (WRITES, "  | none => pure (writablePositions columns)",
+        "  | none => pure (List.range columns.length)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement.
 The names follow the list in the task of slice 5: a generated value that UPDATE does not
@@ -41,7 +41,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "generated_not_recomputed": "rule:assignFrom",
     "stored_hidden_virtual": "rule:columnHidden",
-    "insert_fills_generated": "rule:resolveInsert",
+    "insert_fills_generated": "rule:insertPositionsTraced",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

@@ -10,7 +10,7 @@ measurement copies only the model and the conformance runner, so they are not in
 
 from conformance.resolve_mutants import SQLITE
 
-OPERANDS = SQLITE + "Resolution/QueryExprs.lean"
+OPERANDS = SQLITE + "Resolution/OperandTraced.lean"
 """The resolution of the operands of an expression, with their affinities."""
 TERMS = SQLITE + "Resolution/QueryTerms.lean"
 """The result column that an `ORDER BY` or `GROUP BY` term names."""
@@ -19,8 +19,8 @@ WINDOW = SQLITE + "QueryWindow.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "parameter_affinity": (OPERANDS,
-        "  | .parameter number => .ok (.parameter number, none)",
-        "  | .parameter number => .ok (.parameter number, some .numeric)"),
+        "  | .parameter number => pure (.parameter number, none)",
+        "  | .parameter number => pure (.parameter number, some .numeric)"),
     "order_by_parameter_column": (TERMS,
         "  | .identifier name _ => (aliasIndex names name).map .ok\n"
         "  | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.parameter _) | term@(.currentTime _)",
@@ -47,7 +47,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_parameters` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "parameter_affinity": "rule:resolveOperand",
+    "parameter_affinity": "rule:resolveOperandTraced",
     "order_by_parameter_column": "rule:namedResult",
     "limit_accepts_fraction": "rule:windowInteger",
 }

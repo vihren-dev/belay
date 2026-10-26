@@ -26,8 +26,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "later_using_left_most": (MERGED_LEFT,
         "  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))",
         "  | first :: rest => some (left.nameOperand (if false then first :: rest else [first]))"),
-    "ambiguous_reference_accepted": (MERGED_LEFT, "  if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name",
-        "  if true then .ok name"),
+    "ambiguous_reference_accepted": (MERGED_LEFT, "  ((left.namedColumns name).drop 1).all (·.2.2)",
+        "  true"),
     "star_shows_own_column": (MERGED_NAMES, "  if rightAfter && mergedLater then match scope.resolveName column.name with",
         "  if false then match scope.resolveName column.name with"),
 }
@@ -49,7 +49,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "right_merged_uses_left": "rule:Scope.resolveStep", "full_merged_uses_left": "rule:Scope.resolveStep",
     "coalesce_keeps_affinity": "rule:Scope.nameOperand", "later_using_left_most": "rule:mergedLeft",
-    "ambiguous_reference_accepted": "rule:usingReferenceChecked", "star_shows_own_column": "rule:Scope.starOperand",
+    "ambiguous_reference_accepted": "rule:Scope.usingUnambiguous", "star_shows_own_column": "rule:Scope.starOperand",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

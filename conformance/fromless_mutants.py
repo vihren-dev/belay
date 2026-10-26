@@ -12,7 +12,8 @@ from conformance.mutation_edits import Guard, Mutation, MutationGroup
 
 FUNCTIONS = SQLITE + "QueryFunctions.lean"
 """The source rows of a query, joined from the one row with no cells."""
-QUERIES = SQLITE + "Resolution/Queries.lean"
+QUERIES = SQLITE + "Resolution/ResultColumnTraced.lean"
+QUERY_BODY = SQLITE + "Resolution/QueryBodyTraced.lean"
 """The resolution of a SELECT."""
 
 MUTANTS: dict[str, Mutation] = {
@@ -20,12 +21,12 @@ MUTANTS: dict[str, Mutation] = {
         "{ rows := [], width := 0, fault := .none }"),
     "fromless_two_rows": (FUNCTIONS, "{ rows := [[]], width := 0, fault := .none }",
         "{ rows := [[], []], width := 0, fault := .none }"),
-    "fromless_where_ignored": (QUERIES,
+    "fromless_where_ignored": (QUERY_BODY,
         "  return ({ sources, filter := condition,",
         "  return ({ sources, filter := if sources.isEmpty then none else condition,"),
     "fromless_star_accepted": MutationGroup((
-        (QUERIES, "  | .star => if !(scope.inner.any (·.namesVisible)) then .error (.prepare .noTablesSpecified) else",
-         "  | .star => if false then .error (.prepare .noTablesSpecified) else"),
+        (QUERIES, "  | .star => if !(scope.inner.any (·.namesVisible)) then throw (.prepare .noTablesSpecified) else",
+         "  | .star => if false then throw (.prepare .noTablesSpecified) else"),
         (SQLITE + "Resolution/CompoundTerms.lean",
          "    | .star => if !(scope.inner.any (·.namesVisible)) then some (.prepare .noTablesSpecified) else none",
          "    | .star => if false then some (.prepare .noTablesSpecified) else none"),
@@ -44,7 +45,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, Guard] = {
     "fromless_no_row": "rule:Query.source", "fromless_two_rows": "rule:Query.source",
-    "fromless_where_ignored": "rule:resolveQueryBody", "fromless_star_accepted": ("rule:resolveResultColumn", "rule:starIssue"),
+    "fromless_where_ignored": "rule:resolveQueryBodyTraced", "fromless_star_accepted": ("rule:resolveResultColumnTraced", "rule:starIssue"),
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes, one link per grouped edit. `conformance.mutant_guards` checks every entry."""
