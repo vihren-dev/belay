@@ -1,6 +1,5 @@
 import Belay.Sqlite.Model.InsertSelectSource
 import Belay.Sqlite.Model.UpsertRun
-import Belay.Sqlite.Model.Resolution.SubqueryResolution
 import Belay.Sqlite.Model.PlainCounts
 import Belay.Sqlite.Model.StatementRun
 import Belay.Sqlite.Model.StatementClock

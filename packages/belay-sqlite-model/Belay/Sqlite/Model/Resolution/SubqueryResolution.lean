@@ -170,8 +170,4 @@ def resolveSubqueries (dqs : Bool) (catalog : Catalog) (field : Nat) (main : Que
     Except SourceIssue (List Resolved.Query × List SubqueryShape) :=
   (resolveSubqueriesTraced dqs catalog field main subqueries columnNames viewRoots initial).drop
 
-/-- Whether a subquery reads the table at the catalog position directly. -/
-def Resolved.Query.readsTable (position : Nat) (query : Resolved.Query) : Bool :=
-  query.sources.any (·.source == .table position)
-
 end Belay.Sqlite.Model

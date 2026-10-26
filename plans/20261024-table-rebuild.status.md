@@ -278,3 +278,6 @@ rebuild proof is separate.
     they were; its four package call sites and one fixture (`ExecutionEquivalence`) follow the
     argument order. The surface fixtures of the execution and the migration patterns suites compile
     (no `sorryAx`). Proof repairs by hand: about 80 in total.
+  - `just test-full` (test-source) found that `InsertSelectRun` imported the resolver
+    (`SubqueryResolution`) for `Query.readsTable`, which put `Lean.Meta` into the import closure of
+    the model laws (`tests/test_model_ownership.py`). `Query.readsTable` moved to `QueryForm`.
