@@ -10,8 +10,11 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.public_doc_coverage import coverage_report, mapping, position, sequence
 
-COMPILER_TIMEOUT_SECONDS = 60
-"""Bound each compiler call: the prefix query and the metadata query."""
+COMPILER_TIMEOUT_SECONDS = 180
+"""Bound each compiler call: the prefix query and the metadata query. The limit only stops a hang.
+The metadata query walks every declaration of the public import closure; with the model name trace
+the whole inventory step took 58 s on an otherwise idle slot and ran out of a 60 s limit next to one
+other build, so the limit is about three times the measured time."""
 
 
 def inventory(root: Path, entry: str, lean: Path, output: Path, tools: Path) -> dict[str, object]:
