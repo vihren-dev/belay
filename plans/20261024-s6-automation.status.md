@@ -166,3 +166,8 @@ Commit 1 (step rules and `sql_run`):
 - Decision for the failure goal of a total (`andOk`) claim: `sql_run` leaves it as an obligation, since the
   model coverage hint cannot show that the statement does not fail. The claim for the conditional form (`ifOk`)
   closes it without a hint.
+- 2026-10-26: review 20261026T221752Z-30d94d7d of commit 1 (3 musts, 3 shoulds), all fixed in the `refactor:` commit:
+  `sql_run` kept no sibling goals after the main goal (fixed, fixture `second_goal_stays`); the docstrings of the
+  four write rules restate the quantifiers of their success and failure premises; fixture `S6AutoPaths` covers the
+  DELETE, ADD COLUMN, query, single and sent SELECT paths; named policy definitions (`traversalFuel`,
+  `blockingPremises`); docstrings for the helpers and the rule modules.

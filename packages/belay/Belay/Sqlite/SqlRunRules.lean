@@ -16,6 +16,15 @@ goal. -/
 namespace Belay.Sqlite.Run
 open Lean Elab Tactic
 
+/-- The most rules that one run of {lit}`sql_run` applies along one path of the program. The limit stops a
+program that unfolds without end; a real program is far below it. -/
+def traversalFuel : Nat := 400
+
+/-- The premises that, when they stay open, block the entry into the outcomes of their rule: the outcome
+goals speak of the reached connection, and the reached connection is not known without the resolution, the
+table, and the shape of the statement. -/
+def blockingPremises : List Name := [`found, `present, `isStatement, `isSelect]
+
 /-- What the tactic does with one premise of a rule. -/
 inductive Role where
   /-- A premise about the context, the statement or the model. The tactic tries the hints and the

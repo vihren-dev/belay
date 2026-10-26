@@ -4,6 +4,9 @@ import Belay.Sqlite.ExecutionSpecifications
 
 set_option doc.verso true
 
+/-! The rules for one sent or read SELECT at any context (ADR 0017, S6): the post must hold for every
+output that SQLite may select from the output of the step, and the connection stays. -/
+
 namespace Belay.Sqlite
 open Belay.Sqlite Model
 

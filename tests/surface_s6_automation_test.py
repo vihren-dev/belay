@@ -28,6 +28,14 @@ def test_sql_run_proves_an_update_claim(runtime_root: Path, tmp_path: Path) -> N
                        timeout=CHAIN_TIMEOUT_SECONDS)
 
 
+def test_sql_run_covers_every_statement_rule(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql_run` applies `Sql.check_send_plainDelete`, `Sql.check_send_addColumn`, `Sql.check_query_select`,
+    `Sql.check_single_select` and `Sql.check_send_select`, and it keeps the sibling goal of a conjunction while
+    it works on the first goal. The claims are about one concrete database and every complete environment."""
+    check_module_chain(runtime_root, tmp_path, (("S6RulesEffects", 3), ("S6AutoPaths", 6)),
+                       timeout=CHAIN_TIMEOUT_SECONDS)
+
+
 def test_sql_run_refuses_unreadable_programs(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` fails with a message, and keeps the goal, for a raw execution step and for a variable program.
     After a rule it leaves an unreadable part as a goal and warns. The fixture checks the exact messages."""

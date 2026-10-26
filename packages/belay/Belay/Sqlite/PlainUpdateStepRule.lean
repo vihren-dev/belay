@@ -3,24 +3,31 @@ import Belay.Sqlite.PlainUpdateEffect
 
 set_option doc.verso true
 
+/-! The rule for one sent plain update at any context (ADR 0017, S6): the premises that a proof of a program
+needs, and nothing about the other statements of the program. -/
+
 namespace Belay.Sqlite
 open Belay.Sqlite Model
 
-/-- For every context in which the connection is valid, plain update that resolves from the connection and
-is modeled, and post: a program that sends the update checks the post when it holds in the two cases of the
-step:
+/-- For every context {lit}`ctx`, statement, values and post, with a valid connection in {lit}`ctx`: the program
+that sends the statement checks the post at {lit}`ctx` if these premises hold.
 
-* the update succeeds: the next connection is {name}`Model.Connection.afterWrite` with the database in which
-  the target holds the rows that {name}`LiteralData.updated` gives, and that connection is valid;
-* the update fails: the next connection is {name}`Model.Connection.afterWrite` with the same database, and that
-  connection is valid.
+* {lit}`found`: the statement resolves from the connection of {lit}`ctx` to a plain update on position {lit}`target`.
+* {lit}`present`: that position holds a table.
+* {lit}`modeled`: the model runs the statement at {lit}`ctx` to a step that continues.
+* {lit}`success`: for every output that is not an error and does not end the run ({name}`Output.endsRun`), for
+  every clock value that the statement reads at the index of {lit}`ctx`, and for every connection that is
+  {name}`Model.Connection.afterWrite` with the database in which the target holds the rows that {name}`LiteralData.updated` gives, and with the
+  counts of the statement for that clock value: if that connection is valid, the post holds for the list of that
+  one output and the context after it.
+* {lit}`failure`: for every output that is an error and does not end the run, for every integer taken as the clock
+  value, and for every connection that is {name}`Model.Connection.afterWrite` with the unchanged database and the
+  counts of the statement for that value: if that connection is valid, the post holds for the list of that
+  one output and the context after it. The premise does not tie the integer to the clock, so a proof of it
+  cannot use the clock.
 
-In both cases the output list is the one output of the step, which does not end the run
-({name}`Output.endsRun`), and the context is the next context after it.
-The counters of the connection are those after the counts of the statement, for the clock value that the
-statement reads. Proof sketch: {name}`Sql.check_send_of_step`; {name}`runScriptStep_effect` and
-{name}`plainUpdate_database` give the connection after a success, and {name}`runScriptStep_plainWrite_failed` after a
-failure. -/
+Proof sketch: {name}`Sql.check_send_of_step`; {name}`runScriptStep_effect` and {name}`plainUpdate_database` give the connection
+after a success, and {name}`runScriptStep_plainWrite_failed` gives it after a failure. -/
 theorem Sql.check_send_plainUpdate {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {assignments : List (Nat × Resolved.Expr)} {filter : Option Resolved.Expr} {after : ResolveState}
     {table : Table} {post : List Output → ExecutionContext → Prop}

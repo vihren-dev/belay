@@ -44,6 +44,8 @@ partial def runGoal (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) 
       let goal ← goal.replaceTargetDefEq (mkAppN target.getAppFn (target.getAppArgs.set! 1 unfolded))
       runGoal hints first (fuel - 1) goal
 where
+  /-- Apply the rule of a read to a goal whose program is a single or a query of one SELECT statement. The
+  goals of the rule are the model coverage and the post for every selected output. -/
   runRead (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) (single : Bool) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
       | stuck first goal "the script is not a list of statements that Lean can read."
@@ -57,6 +59,8 @@ where
     else
       evalTactic (← `(tactic| refine Sql.check_query_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
     processPremises hints fuel ``Model.Syntax.Statement.select (← getGoals)
+  /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
+  statement, so that each statement gets its own rule at the context that the earlier ones reach. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
       | stuck first goal "the script is not a list of statements that Lean can read."
@@ -74,6 +78,9 @@ where
     setGoals [goal]
     evalTactic (← sendRule kind)
     processPremises hints fuel kind (← getGoals)
+  /-- Process the premises that a rule leaves. A premise about the context is closed from the hints or stays
+  open. An outcome premise is entered, and the rest of the program runs inside it. The outcome premises stay
+  open when a premise that they depend on is open. -/
   processPremises (hints : Hints) (fuel : Nat) (kind : Name) (goals : List MVarId) : TacticM (List MVarId) := do
     let mut open_ := []
     let mut blocked := false
@@ -85,7 +92,7 @@ where
       | .side =>
         unless ← closeSide hints tag new do
           open_ := open_ ++ [new]
-          blocked := blocked || ([`found, `present, `isStatement, `isSelect].contains tag)
+          blocked := blocked || blockingPremises.contains tag
       | .outcome names replacesNext =>
         if blocked then
           open_ := open_ ++ [new]
@@ -108,8 +115,9 @@ syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
     | `(tactic| sql_run [$hints,*]) => hints.getElems
     | _ => #[]
   let goal ← getMainGoal
-  let remaining ← runGoal hints true 400 goal
+  let siblings := (← getGoals).drop 1
+  let remaining ← runGoal hints true traversalFuel goal
   let tidied ← remaining.mapM tidy
-  setGoals (tidied ++ (← getGoals).drop 1)
+  setGoals (tidied ++ siblings)
 
 end Belay.Sqlite.Run

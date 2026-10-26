@@ -112,6 +112,8 @@ where
         if (← goal.getType).containsFVar stateVar then
           try goal := (← substCore goal local_.fvarId (symm := false) (tryToSkip := true)).2 catch _ => pure ()
     return goal
+  /-- Replace each introduced variable that an introduced equation defines, so that the hints speak about the
+  initial context and not about a name for it. -/
   substEquations (goal : MVarId) (fvars : Array FVarId) : TacticM MVarId := goal.withContext do
     let mut goal := goal
     for fvar in fvars do
