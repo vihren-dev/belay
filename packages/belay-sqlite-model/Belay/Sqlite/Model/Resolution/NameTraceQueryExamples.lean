@@ -110,4 +110,13 @@ private def failureAfterAggregateKeepsEarlierCalls : Bool :=
 
 #guard failureAfterAggregateKeepsEarlierCalls
 
+/-- Giving each name once keeps both comparisons of a {lit}`BETWEEN`, which have one path and one role:
+in {lit}`SELECT a BETWEEN 0 AND 2`, the settled trace holds the column, the lower bound and the upper bound. -/
+private def settledBetweenKeepsBothBounds : Bool :=
+  (traced (query [.expression (.between (identifier "a") (.numeric "0") (.numeric "2") false) none
+      "a BETWEEN 0 AND 2"])).trace.settled.map (fun occurrence => occurrence.result.comparisonForm) ==
+    [none, some ComparisonForm.betweenLow, some ComparisonForm.betweenHigh]
+
+#guard settledBetweenKeepsBothBounds
+
 end Belay.Sqlite.Model.NameTraceQueryExamples
