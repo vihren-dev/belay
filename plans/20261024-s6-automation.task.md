@@ -1,14 +1,14 @@
 # S6: checked effect rules and reproducible proof automation
 
 Created 2026-10-24. Status: OPEN. Inputs refreshed on 2026-10-26 against main
-after PR #270 and the possible write executions (PR #271).
+after PR #270 and the possible write executions (PR #271). Corrected on
+2026-10-26: guide examples are test fixtures only (owner decision).
 Status: [progress](20261024-s6-automation.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6;
 [execution contracts](20261024-s6-execution-contracts.task.md),
 [assertions](20261024-s6-assertions.task.md),
 [before context](20261024-s6-before-context.task.md),
-[migration patterns](20261024-s6-migration-patterns.status.md) (status file; its
-task file is not on main),
+[migration patterns](20261024-s6-migration-patterns.task.md),
 [possible write executions](20261026-possible-write-executions.task.md) and
 [S5 checker](20261024-surface-s5.task.md).
 
@@ -16,9 +16,18 @@ task file is not on main),
 
 The guide promises sql_run, sql_commute and sql_auto that produce kernel-checked
 proofs and reusable proof scripts. This task supplies those tactics over the
-production semantic contracts. It adds the effect/frame lemmas required by
-their advertised SQL examples, with explicit schema and context premises.
-The same lemmas remain usable without tactics.
+production semantic contracts. It adds general effect and frame laws for the
+statement families that the advertised SQL examples use, stated over every
+schema with explicit schema and context premises. The same laws remain usable
+without tactics.
+
+The guide's examples (customers, accounts, signup, purge, `notBlocked`, the
+normalized-field expansion and the rebuild) are not part of the model or the
+surface. They are test fixtures in `tests/surface` and their pytest drivers
+only. No module or declaration under `packages/` is named after or shaped for
+one example. When an example cannot be proved from the general laws, record
+it as an open point in the status file; do not add an example-specific lemma
+to a package.
 
 A disjoint-table check is insufficient for full commutation: counters,
 catalog resolution, triggers, FK actions, transactions and statement clocks
@@ -31,14 +40,14 @@ alternate SQL execution engine is required.
 
 - **Statement rules describe actual effects.** Reuse existing row/schema laws
   and add the missing usable specifications for supported insert, update,
-  delete and ADD COLUMN statements required by the guide's assertions and
-  migration patterns. Rules state resolution, constraints, conflict handling,
+  delete and ADD COLUMN statements, the families that the guide's assertions
+  and migration patterns use. Rules state resolution, constraints, conflict handling,
   generated-column, trigger/FK and context assumptions. They cover modeled
   errors and partial effects when applicable. No specification replaces SQL
   execution with an idealized storage update or assumes its own postcondition.
 - **Frame rules account for indirect effects.** Expose semantic frame premises
-  over every reached branch and usable structural sufficient conditions for
-  the guide examples. A target table alone is not the write set. Trigger/FK
+  over every reached branch and usable structural sufficient conditions that
+  are general enough to cover the guide examples. A target table alone is not the write set. Trigger/FK
   closure, catalog dependencies, generated columns, assigned-column triggers,
   counters, settings and transaction snapshots remain relevant. A missing
   closure proof leaves an explicit goal or unsupported result. Keep flexible
@@ -105,7 +114,8 @@ alternate SQL execution engine is required.
   replay/certification path, retaining unknown for unsupported certification.
 - **The guide examples have checked scripts.** Check the corrected insertion,
   purge-frame, partial-index invariant, query equivalence, expansion read-query
-  and rebuild claims with the advertised routes and explicit premises. Keep
+  and rebuild claims with the advertised routes and explicit premises, as
+  fixtures in `tests/surface` that use only the general laws. Keep
   their counterexamples. The query-equivalence example is the guide's
   `notBlockedIn ≈ notBlockedEx` (`NOT IN` against `NOT EXISTS`). It is false
   in general: a NULL `blocked.customer_id` makes `NOT IN` drop every row, and a
@@ -185,8 +195,9 @@ and do not redefine them:
 - Migration patterns (part 1 accepted): `MigrationPattern.lean`,
   `MigrationPatternFresh.lean`, `MigrationPatternSyntax.lean`, the frame rules
   `TranslatesAt.commutes_of_frames` and `TranslatesOn.commutes_of_query`
-  (`MigrationPatternFrames.lean`, `MigrationQueryFrames.lean`), and the
-  normalized-field expansion (`NormalizedFieldExpansion.lean`).
+  (`MigrationPatternFrames.lean`, `MigrationQueryFrames.lean`). The
+  normalized-field expansion (`NormalizedFieldExpansion.lean`) is the guide's
+  example and is due for the cleanup above; fixtures may use it until then.
 - S5 checker (parts 1 to 3 accepted): `Check.check` (`CheckOperation.lean`) with
   its `prove` callback, which defaults to `tryProof` (`CheckProof.lean`);
   `checkCandidates`, `certify`, `#sql_check` and `sql_refute`. Claim recognition
@@ -205,8 +216,12 @@ and do not redefine them:
   (`NormalizedFieldEffects.lean`) give the stored rows of a successful UPDATE
   without a foreign-key or trigger plan (`LiteralData.updated`); there is no
   surface UPDATE rule over `Sql.Branch` and no law of the effects of a fired
-  trigger. The required outcomes above add only these missing rules, for the
-  advertised examples, on top of the existing laws. `DatabaseWriteLaws`, `WriteLaws`,
+  trigger. The required outcomes above add only these missing general rules
+  on top of the existing laws. A later cleanup task keeps the general ADD
+  COLUMN, backfill and scan laws of the `NormalizedField*` modules under
+  general names and moves their example-specific parts to `tests/surface`
+  (owner decision of 2026-10-26, in the migration-patterns status file); do
+  not build new package code on those example-specific parts. `DatabaseWriteLaws`, `WriteLaws`,
   `TriggerRun`, `Statement.counterReads`, `Statement.Calm`/`Quiet` and the clock
   and counter laws are inputs, not a proved whole-program footprint.
 - Foreign keys (DONE): `ForeignKeyMapping`, `Database.RowReferencesHold`,
