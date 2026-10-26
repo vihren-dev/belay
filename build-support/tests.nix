@@ -185,6 +185,23 @@ let
   authoredCorpora = builtins.filter (path: (builtins.fromJSON (builtins.readFile (path + "/manifest.json"))) ? evidenceKind)
     lockedCorpora;
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
+  # The surface suites share their inputs. One suite took 1130 s of its 1200 s limit, so the
+  # checker, proof-search and sampling tests are in `surfaceChecks`; each suite takes about half.
+  # Two support modules of the checker tests are test files of the `surface` suite.
+  surfaceSuite = name: suite name {
+    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (root + /tests/lean_server_support.py) (root + /tests/proof_cost_support.py)
+               (root + /tests/sql_file_support.py)
+               (root + /tests/shared_table_shape_test.py)
+               (root + /tests/surface_replay_test.py) (root + /tests/surface_execution_test.py)
+               (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
+             ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
+    runtime = surfaceRoot;
+    environment.BELAY_PARSER_LIBRARY = surfacePackage.BELAY_PARSER_LIBRARY;
+    # The real Lean server reads the UTC zone file when its watchdog starts.
+    environment.TZDIR = "${pkgs.tzdata}/share/zoneinfo";
+    tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
+  };
 in {
   sample = suite "sample" {
     inputs = frontend ++ [
@@ -255,19 +272,8 @@ in {
     inputs = map (name: root + "/tests/${name}.py") [ "parser_inputs" "parser_library_inputs" "parser_library_support" ];
     runtime = parserLibrary;
   };
-  surface = suite "surface" {
-    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
-               (root + /tests/lean_server_support.py) (root + /tests/proof_cost_support.py)
-               (root + /tests/sql_file_support.py)
-               (root + /tests/shared_table_shape_test.py)
-               (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
-             ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
-    runtime = surfaceRoot;
-    environment.BELAY_PARSER_LIBRARY = surfacePackage.BELAY_PARSER_LIBRARY;
-    # The real Lean server reads the UTC zone file when its watchdog starts.
-    environment.TZDIR = "${pkgs.tzdata}/share/zoneinfo";
-    tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
-  };
+  surface = surfaceSuite "surface";
+  surfaceChecks = surfaceSuite "surfaceChecks";
   packages = suite "packages" {
     inputs = [ ];
     runtime = packageRoot;
