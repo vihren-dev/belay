@@ -142,3 +142,8 @@ rebuild proof is separate.
   (`insertRowidTarget`; an earlier unknown or generated name stays an error). The file-size
   musts were fixed by shortening `Restrictions.lean` and moving `resolve_namesUnique` to
   `NamesSpecScript.lean`.
+- 2026-10-26: predictions recompared after the review fixes (55 files): the same 64 changes
+  as before, and 86 `rowid-name` predictions whose message text now names the INSERT column
+  list; no status changed. Reviews `20261026T102355Z-3a5d704e` (1 must, fixed) and
+  `20261026T102455Z-2c17775a` (no findings). Stage (a) is at a reviewed stopping point; the
+  part's `just test-full` and `just verdict` run at the end of part 1.
