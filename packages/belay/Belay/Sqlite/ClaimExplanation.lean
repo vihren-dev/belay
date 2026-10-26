@@ -1,4 +1,5 @@
 import Belay.Sqlite.MigrationExplanation
+import Belay.Sqlite.ApplicationExplanation
 import Belay.Sqlite.FreshNotation
 
 set_option doc.verso true
@@ -103,8 +104,9 @@ def freshExplanation (claim : Expr) : Option MessageData :=
     m!"Success claim. It covers every valid bundled database that satisfies the predicate and every complete environment. At index 0 with an empty trace, the program must run without a modeled SQL error and without an unmodeled stop on the actual output and, for a oneOf output, on each concrete choice of its rows. It equals the fresh-run claim with andOk ⌜True⌝. A database that fails the predicate adds no obligation.\n{observationExplanation claim}"
   | _ => none
 
-/-- Explain a migration pattern or a fresh-run, ordinary-triple or success claim. -/
+/-- Explain a migration pattern, a simulation claim of a pairing, or a fresh-run, ordinary-triple or
+success claim. -/
 def claimExplanation (claim : Expr) : Option MessageData :=
-  migrationExplanation claim <|> freshExplanation claim
+  migrationExplanation claim <|> applicationExplanation claim <|> freshExplanation claim
 
 end Belay.Sqlite
