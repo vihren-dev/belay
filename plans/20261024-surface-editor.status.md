@@ -442,3 +442,17 @@ at the base commit already (`rw [resolveOperand]` makes no progress after the na
 same one-line fix (`resolveOperand_arm_compare`) is in the name-trace integration workspace, so
 the two copies agree and merge without a conflict. The automatic-check tests, which the limit
 cut, still need a Nix result.
+
+### Gate state at the end of the work — 2026-10-26
+
+- `just verdict`: `/nix/store/pglhlk3pbcmzjic5prk7g8qs9f4sdhbj-sqlite-verifier-verdict`.
+- `just test-full` is not green: the Nix `surface` suite of this branch reaches the fixed 1500 s limit
+  (exit 124) at 87% to 96% in three runs, with no failed test in the last three logs
+  (`build/agent-logs/test-full-{3,4,5}-exit124.log`). The editor tests of part 2b pass in that suite
+  (`surface_editor_names_test.py`, `surface_editor_corrections_test.py`). The name-trace integration
+  branch splits the suite into `surface` and `surfaceChecks` for the same reason; this branch does not
+  have that split. Part 2b waits for a branch with the split to run `just test-full` again.
+- Not run yet: `just test-nix` and `just test-scheduled-checks` (end of the whole task).
+- Open for the integration: the table-rebuild constructor `Syntax.Statement.insertSelect` forces arms in
+  `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, and part 2b has
+  to cover the table slots of its subqueries and the names of its query.
