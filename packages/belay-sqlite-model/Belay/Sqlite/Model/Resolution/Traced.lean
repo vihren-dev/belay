@@ -39,6 +39,8 @@ protected def bind (first : Traced ε α) (next : α → Traced ε β) : Traced 
   | .error issue => ⟨.error issue, first.trace⟩
   | .ok value => ⟨(next value).drop, first.trace ++ (next value).trace⟩
 
+/-- The traced computations form a monad: {lit}`bind` joins the traces in order, and a failure ends the
+computation with the trace so far. -/
 instance : Monad (Traced ε) where
   pure := Traced.ok
   bind := Traced.bind
@@ -49,6 +51,7 @@ protected def tryCatch (first : Traced ε α) (handler : ε → Traced ε α) : 
   | .error issue => ⟨(handler issue).drop, first.trace ++ (handler issue).trace⟩
   | .ok value => ⟨.ok value, first.trace⟩
 
+/-- A traced computation can throw an issue and recover from it; the trace of the failed part stays. -/
 instance : MonadExceptOf ε (Traced ε) where
   throw := Traced.error
   tryCatch := Traced.tryCatch
@@ -56,6 +59,7 @@ instance : MonadExceptOf ε (Traced ε) where
 /-- A computation without a trace, such as a lookup that decides no name. -/
 def lift (result : Except ε α) : Traced ε α := ⟨result, []⟩
 
+/-- A result without a trace can run inside a traced computation. -/
 instance : MonadLift (Except ε) (Traced ε) := ⟨Traced.lift⟩
 
 /-- Record one occurrence. -/

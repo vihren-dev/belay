@@ -8,6 +8,7 @@ of its parent, and an operand is taken as a condition. -/
 
 namespace Belay.Sqlite.Model
 
+/-- A value issue moves below a node with {name}`ValueIssue.under`. -/
 instance : Traced.Underable ValueIssue := ⟨ValueIssue.under⟩
 
 /-- For every path and issue: moving an issue below a node is {name}`ValueIssue.under`. Proof sketch: both sides are equal by definition. -/
