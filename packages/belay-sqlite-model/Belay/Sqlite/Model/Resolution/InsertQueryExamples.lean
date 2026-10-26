@@ -60,6 +60,10 @@ def refused : Except NodeRestriction (Resolved.Statement × ResolveState) → Op
 #guard refused (run "t" (some ["rowid"]) (body ["x"])) == some ([1], .rowidName)
 #guard refused (run "t" (some ["b", "OID"]) (body ["x", "y"])) == some ([1], .rowidName)
 
+-- The same holds for an INSERT of VALUES rows, which shares the check.
+#guard refused (resolveStatement { profile := Profile.pinned, mode := .execution } { catalog }
+    (.insert (name "t") (some [name "rowid"]) [[.null]] [] none [] [])) == some ([1], .rowidName)
+
 -- An earlier unknown name stays the error of the table.
 #guard prepared (run "t" (some ["nosuch", "rowid"]) (body ["x", "y"])) ==
   some (.expression (.tableHasNoColumn (name "t") (name "nosuch")))
