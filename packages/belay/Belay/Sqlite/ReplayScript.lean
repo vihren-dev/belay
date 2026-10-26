@@ -84,7 +84,7 @@ def observations (database : Database) (script : Script) : Except String (List O
     | .ended reason => throw reason
     | .continued output next others =>
       unless others.isEmpty do
-        throw "the model gives a statement more than one possible execution, and the replay follows one"
+        throw s!"statement {index + 1} has more than one possible execution in the model, and the replay follows only one; write a statement that has one execution, or use the checked witness without replay"
       outputs := outputs ++ [output]; connection := next
   return outputs
 

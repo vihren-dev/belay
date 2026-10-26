@@ -32,8 +32,8 @@ of 2026-10-25, and the table-rebuild task.
   script, each one sequence of executions, each statement run from the connection
   of the execution that reached it. `ScriptRunSingleton.lean` proves the singleton
   law for the current model (`runScriptStep_others`, `runScriptStep_executions`,
-  `runScriptAllFrom_eq`) and that the model's own run is admitted
-  (`runScriptFrom_mem_runScriptAllFrom`). `Output.oneOf` stays as the special case
+  `runScriptAllFrom_eq`); `ScriptRunAll.lean` proves that the model's own run is
+  admitted (`runScriptFrom_mem_runScriptAllFrom`). `Output.oneOf` stays as the special case
   of several results on one unchanged state; `StatementExecution.expand` is its
   correspondence to executions with the same next connection.
 - Public run laws: `runScriptFrom_X` became `runScriptAllFrom_X` and quantify over
@@ -74,3 +74,7 @@ in another), `tests/admitted_atoms_run_theorems_test.py`,
   with 55 files, byte-identical to the baseline `/nix/store/dzr0k54rmcd6bm0ngvmvvb85a5bayhmy-sqlite-verifier-predictions`
   (`diff -r` is empty), taken before the surface edits; the model did not change after it
   except for docstrings.
+- Review `20261026T115202Z-2bf644fe` of commit `2bf644fe`: three musts (R2 twice, R10)
+  and one should (R19), all fixed in the next commit (docstrings of
+  `StatementExecution.mem_expand_rows` and the foreign-key run laws; the replay error
+  names the statement and the action; this attribution).

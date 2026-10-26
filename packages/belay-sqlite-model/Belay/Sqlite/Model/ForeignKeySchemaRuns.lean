@@ -43,8 +43,9 @@ theorem runSql_parentSchemasCompatible (mapping : ForeignKeyMapping)
 
 /-- For every mapping, resolution context, clock, index, connection and surface script, if
 the connection's database and saved snapshot have compatible parent schemas, and each reached
-resolved statement keeps the catalog, then the final connection's database and snapshot have
-compatible parent schemas. Failed resolution and halted suffixes impose no extra condition.
+resolved statement keeps the catalog, then in every complete execution of the script
+({name}`runScriptAllFrom`) the final connection's database and snapshot have compatible parent
+schemas. Failed resolution and halted suffixes impose no extra condition.
 Proof sketch: apply {name}`runScriptAllFrom_holds` with the same schema statement theorem. -/
 theorem runScriptAllFrom_parentSchemasCompatible (mapping : ForeignKeyMapping) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection}

@@ -45,8 +45,8 @@ theorem runSql_parentSchemasCompatibleSelected (script : List (Resolved.Statemen
 
 /-- For every resolution context, clock, index, connection and surface script: if the database and
 the saved snapshot of the connection have compatible parent schemas under their selected mappings,
-and every reached resolved statement meets its schema condition, the final connection has them in
-both. Failed resolution and halted suffixes add no condition. Proof sketch: apply
+and every reached resolved statement meets its schema condition, then in every complete
+execution of the script ({name}`runScriptAllFrom`) the final connection has them in both. Failed resolution and halted suffixes add no condition. Proof sketch: apply
 {name}`runScriptAllFrom_holds` with the statement theorem. -/
 theorem runScriptAllFrom_parentSchemasCompatibleSelected (context : ResolveContext) (clock : Option Clock)
     (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
@@ -100,8 +100,8 @@ theorem runSql_foreignKeyAtomsSelected (profile : Profile) (script : List (Resol
 
 /-- For every resolution context, clock, index, connection and surface script: if both atoms hold
 under the selected mappings on the database and the saved snapshot of the connection, and every
-reached resolved statement meets its atoms condition, both hold in the final connection's database
-and snapshot. Failed resolution and halted suffixes add no condition. Proof sketch: apply
+reached resolved statement meets its atoms condition, then in every complete execution of the
+script ({name}`runScriptAllFrom`) both hold in the final connection's database and snapshot. Failed resolution and halted suffixes add no condition. Proof sketch: apply
 {name}`runScriptAllFrom_holds` with the statement theorem. -/
 theorem runScriptAllFrom_foreignKeyAtomsSelected (profile : Profile) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))

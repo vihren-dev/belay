@@ -26,8 +26,8 @@ theorem StatementExecution.expand_next (execution : StatementExecution) :
 
 /-- For every execution with the output {name}`Output.oneOf` of the results and every list of
 rows: some execution that it stands for ({name}`StatementExecution.expand`) has the output
-{name}`Output.rows` of the rows exactly when the rows are one of the results. It requires nothing
-of rows outside the list. Proof sketch: the executions are the results, one for each. -/
+{name}`Output.rows` of the rows exactly when the rows are one of the results. Rows outside the
+list occur in no execution that it stands for. Proof sketch: the executions are the results, one for each. -/
 theorem StatementExecution.mem_expand_rows {execution : StatementExecution} {results : List (List (List Value))}
     (output : execution.output = .oneOf results) (rows : List (List Value)) :
     (∃ other ∈ execution.expand, other.output = .rows rows) ↔ rows ∈ results := by

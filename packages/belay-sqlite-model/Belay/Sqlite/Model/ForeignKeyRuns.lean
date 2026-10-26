@@ -36,8 +36,9 @@ theorem runSql_rowReferences (profile : Profile) (script : List (Resolved.Statem
   runSql_holds (rowReferences_statementKeeps profile) script holds conditions
 
 /-- For any surface script, resolution context, clock and connection, selected row
-references hold in the final database and snapshot if they hold in both initial stores and
-each reached resolved statement meets its FK conditions. Failed resolution and halted
+references hold in the final database and snapshot of every complete execution of the script
+({name}`runScriptAllFrom`) if they hold in both initial stores and each reached resolved statement
+meets its FK conditions. Failed resolution and halted
 suffixes impose no extra condition. Proof sketch: apply the surface-run invariant law for every
 complete execution. -/
 theorem runScriptAllFrom_rowReferences (profile : Profile) (context : ResolveContext) (clock : Option Clock)
@@ -114,7 +115,7 @@ theorem runSql_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping)
   runSql_holds (foreignKeyAtoms_statementKeeps profile mapping) script holds conditions
 
 /-- For any supplied mapping and surface script, both FK atoms hold in the final current
-database and snapshot when they hold in both initial stores and each reached resolved
+database and snapshot of every complete execution of the script ({name}`runScriptAllFrom`) when they hold in both initial stores and each reached resolved
 statement keeps the catalog and meets its row condition. Failed resolution and unreached
 suffixes add no premise.
 Proof sketch: apply the existing surface-run invariant law to the conjunction. -/
