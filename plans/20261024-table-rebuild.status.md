@@ -300,3 +300,6 @@ rebuild proof is separate.
     in total, above the line of 80 that asks for a stop; the report flags this.
   - Reviews: `20261026T213513Z-7de3cfdd` (mutant file list) and `20261026T213607Z-769be6ba` (surface
     fixtures and `runScriptStep_select_others`): no findings.
+  - `just test-full` (test-model, mutants, run 4) found that the Nix inputs of the model suites did not
+    carry `InsertSelectRun.lean`, which the production mutants read; `build-support/tests.nix` lists it
+    with the other run files. The local run reads the whole tree, so only the Nix run shows this.
