@@ -71,6 +71,14 @@ import Belay.Sqlite.FreshFromNotation
 import Belay.Sqlite.ClaimExplanation
 import Belay.Sqlite.PlainInsertEffect
 import Belay.Sqlite.PlainDeleteEffect
+import Belay.Sqlite.PlainUpdateEffect
+import Belay.Sqlite.AddColumnEffect
+import Belay.Sqlite.SqlFrames
+import Belay.Sqlite.PlainWriteFrames
+import Belay.Sqlite.ReadCertificate
+import Belay.Sqlite.ReadAnalysis
+import Belay.Sqlite.ReadCertificatePreservation
+import Belay.Sqlite.CertifiedQueryCommutation
 import Belay.Sqlite.SingleStatementChecks
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand

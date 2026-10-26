@@ -373,6 +373,13 @@ import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
 import Belay.Sqlite.Model.PartialUniqueCount
+import Belay.Sqlite.Model.PlainUpdateEffect
+import Belay.Sqlite.Model.PlainWriteFrame
+import Belay.Sqlite.Model.SimpleQueryAppend
+import Belay.Sqlite.Model.CertifiedQueryOutputs
+import Belay.Sqlite.Model.AddColumnEffect
+import Belay.Sqlite.Model.NonQueryOutput
+import Belay.Sqlite.Model.ReadOnlyFrame
 import Belay.Sqlite.Model.PlainInsertEffect
 import Belay.Sqlite.Model.PlainDeleteEffect
 import Belay.Sqlite.Model.RowwiseExpr

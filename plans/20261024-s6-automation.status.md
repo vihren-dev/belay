@@ -27,8 +27,21 @@ No production automation, general footprint engine or completion is claimed.
   modules, the query-equivalence example, three acceptance parts (the rebuild example
   waits for the table-rebuild task) and the guide changes recorded here for the guide
   acceptance task. Assigned for part 1.
+- 2026-10-26: part 1 commit 1: statement effect rules (UPDATE, ADD COLUMN), frames and shelter rule, read
+  certificates with the untrusted analyzer, weak preservation and full commutation rules, positive and negative
+  fixtures and `tests/surface_s6_rules_test.py`. Local fixture runs pass; Nix results follow at the end of part 1.
 
 ## Part 1 plan, 2026-10-26
+
+Scope rule from the owner (2026-10-26, applies to all parts): the specific examples of the user guide
+(customers, accounts, signup, purge, notBlocked, the email_lower expansion and so on) are not part of the
+core (model package) or the surface (belay package). Everything under `packages/` is general: laws about
+statement families, frames, certificates and their soundness, stated over arbitrary tables, columns and
+schemas with explicit premises, with no module, declaration or premise shaped around one guide example.
+Guide examples appear only as test fixtures under `tests/surface` and their pytest drivers. Part 1 adds no
+`NormalizedField*`-style module and does not extend the existing `NormalizedField*` modules. A guide
+example that general rules cannot prove is recorded below as an open point, not as an example-specific
+lemma in a package.
 
 Scope: acceptance part 1 only (effect and frame specifications, conservative dependency
 certificates, all-continuation program rules). No tactics, S5 integration or code actions (part 2)
@@ -36,25 +49,53 @@ and no INSERT SELECT, RENAME or DROP COLUMN (part 3). The table-rebuild agent ow
 statement and INSERT SELECT files and the surface execution proofs for several executions; part 1
 adds new modules only and adds lines to the shared registries.
 
-Modules to add (each below 200 lines, checked Verso docstrings):
+Modules added (each below 200 lines, checked Verso docstrings; all general):
 
 - Model (registered in the model `lakefile.toml` globs and in `Belay/Sqlite/Model.lean`):
-  `PlainUpdateEffect` (stored rows of an error-free plain UPDATE step, no choice output),
-  `PlainWriteErrors` (a failed plain INSERT, UPDATE or DELETE step keeps database and snapshot),
-  `SimpleQueryAppend` (a simple query that reads only columns below a width gives the same results
-  when cells are appended to its rows), `CertifiedQueryOutputs` (step outputs of such a query on two
-  connections whose table scans differ by appended cells).
+  `PlainUpdateEffect` (stored rows of an error-free plain UPDATE, no choice output), `AddColumnEffect`
+  (database after ADD COLUMN), `NonQueryOutput` (a step of a statement that is not a query gives no choice
+  output), `PlainWriteFrame` (a plain INSERT, UPDATE or DELETE changes only the rows of its target and keeps
+  snapshot and settings), `ReadOnlyFrame` (a query or prepare error step keeps the connection),
+  `SimpleQueryAppend` (a simple query that reads only columns below a width gives the same results when cells
+  are appended to its rows) and `CertifiedQueryOutputs` (step outputs of such a query on two connections whose
+  table scans differ by appended cells, for any table and any added cells).
 - Surface (registered in the `belay` `lakefile.lean` globs and in `Belay/Sqlite.lean`):
-  `PlainUpdateEffect` and `AddColumnEffect` (fresh-run `ifOk` rules for UPDATE and for ADD COLUMN of a
-  plain TEXT field, like `Sql.ifOk_send_plainInsert`), `SqlFrames` (a frame as a statement about every
-  branch, with pure, bind, one-step and `Output.oneOf` rules), `PlainWriteFrames` (structural
-  sufficient frames of plain writes: other tables, catalog, snapshot, settings), `ReadCertificate`
-  (certificate structure, validity, soundness theorem), `ReadAnalysis` (the untrusted analyzer that may
-  return unknown), `ReadCertificateExpansion` (weak preservation across the lowercase-field expansion
-  from a certificate) and `CertifiedQueryCommutation` (full commutation of a certified query with a
-  migration, using `QueryFrames`).
-- Tests: Lean fixtures `tests/surface/S6Rules*.lean` (positive rules, negative fixtures) and
-  `tests/surface_s6_rules_test.py`.
-- Shared files touched, added lines only: the two lakefiles, the two barrels, the guide notes below.
+  `PlainUpdateEffect` and `AddColumnEffect` (fresh-run `ifOk` rules for UPDATE and ADD COLUMN, like
+  `Sql.ifOk_send_plainInsert`), `SqlFrames` (`Sql.Frame` as a claim about every branch, with pure, one-step,
+  bind, map and composition rules), `PlainWriteFrames` (`Connection.shelter`, `Statement.ShelteredAt` and
+  `Sql.Frame.sendStatements_sheltered`: scripts of plain writes of other tables and reads keep the catalog, the
+  table at a position, the snapshot and the settings), `ReadCertificate` (certificate, validity, obligations,
+  `output_eq`), `ReadAnalysis` (the untrusted analyzer that may return unknown, `analyze_sound`),
+  `ReadCertificatePreservation` (weak preservation of a certified read across any migration whose
+  obligations hold) and `CertifiedQueryCommutation` (full commutation of a certified read with a migration under
+  a constant clock).
+- Tests: `tests/surface_s6_rules_test.py` (six tests, listed in `tests/nix_suites.json`) with fixtures
+  `tests/surface/S6RulesEffects.lean` (UPDATE and ADD COLUMN effects, conditional and total fresh triples),
+  `S6RulesFrames.lean` (frames of a program with an output-dependent continuation, a read with two permitted
+  results, the snapshot of an open transaction), `S6RulesQueryPattern.lean` (the migration query pattern of the
+  guide proved by the general certificate rules for every bound value), and the negative fixtures
+  `S6RulesNegativeReads.lean` (SELECT star, metadata, counter read), `S6RulesNegativeCertificates.lean` (different
+  change counts, unmodeled syntax, a certificate whose soundness obligation fails), `S6RulesNegativeFrames.lean`
+  (trigger, foreign-key action, generated column, rollback) and `S6RulesNegativeClock.lean` (moving clock).
+- Shared files touched, added lines only: the two lakefiles, the two barrels, `tests/nix_suites.json`.
 
-Guide changes to record for the guide acceptance task: none yet.
+Dropped from the first plan: `PlainWriteErrors` (the failure cases are inside `PlainWriteFrame`) and
+`ReadCertificateExpansion` (replaced by the general `ReadCertificatePreservation`, which has no expansion in it).
+
+Rules that the tests exercise by name: `Sql.ifOk_send_plainUpdate`, `Sql.ifOk_send_addColumn`,
+`plainUpdate_database`, `Sql.Frame.bind`, `Sql.Frame.sendStatements_sheltered`, `ReadAnalysis.analyze_sound`,
+`ReadCertificate.output_eq`, `ReadCertificate.preservesAt_send`, `ReadCertificate.commutesOn_send`.
+
+Guide changes to record for the guide acceptance task: none so far. The guide's lookup-after-expansion
+claim is now also provable by the general certificate rules; the guide text needs no change.
+
+Open points:
+
+- The guide's migration query pattern is proved for one concrete database and every bound value
+  (`S6RulesQueryPattern.lean`), not for every admitted database with a site. The existing
+  `NormalizedField*` lemmas already prove the universal output equality for the guide table, and the general
+  rules would need an `appended` obligation for every database of the site. Options: (a) leave it, (b) state
+  the obligations for a site structure in a fixture. Recommendation: (a) for part 1; revisit in part 2 when the
+  tactics need a source of obligations.
+- Commutation of a lookup needs a constant clock and a restricted `admitted` predicate (original connection
+  and clock). A moving clock is a negative fixture. This is by design: the rule is sound only then.
