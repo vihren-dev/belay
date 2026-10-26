@@ -1,0 +1,114 @@
+# Source agreement and expression congruence
+
+Date: 2026-10-26. Status: PROPOSED; ready for implementation assignment review.
+Audience: implementers and reviewers.
+Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
+Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).
+
+## Required source behavior
+
+A shared agreement contract compares the observations that a query source makes
+of current and optional initial databases. Current table sources compare the full
+optional table lookup. Initial sources compare the lookup through the optional
+initial database. Pragmas compare their optional rows result. JSON and derived
+sources impose no additional database premise under the common evaluation
+context and intermediate source rows.
+
+Table absence and shape are retained. Pragma agreement includes unsupported
+results and database-dependent rows; it does not assert that all pragmas are
+constant. The sufficient contract may compare table metadata unused by a query.
+Minimal read footprints are outside this work.
+
+One join argument, one source-fold induction and one subquery-depth induction
+provide the source, correlated source, subquery run and context equalities.
+Query `runOn` and `possibleOn` follow through this chain. Current and initial
+origin tests supply short adapters, without their own evaluator inductions.
+
+Replace the fourteen mirrored helper stages in `TwoStateReads` and
+`TwoStateCurrentLaws`, identified in the findings. Preserve the two
+statement-context formulas and the three downstream query formulas in
+`TwoStateStatementLaws` under their original assumptions. Useful independent
+source/read predicates remain available, owned below their proof consumers.
+The new agreement API also admits simultaneous changes to both databases when
+the selected observations agree, including fixed-pragma cases excluded by the
+older syntactic read flags.
+
+## Required expression behavior
+
+A single mutual expression/argument induction proves equality of evaluation
+value, fault and JSON subtype under agreement on allowed primitive node reads.
+It uses the existing expression traversal and can constrain nodes with a mask.
+It need not calculate a minimum set of reads. Different evaluation contexts and
+rows can agree even when their complete records differ.
+
+Primitive observations include column positions, parameters, counters, clock,
+aggregates and the relevant subquery projection. Existence uses emptiness and
+fault; scalar use uses the first value and first-row-certainty-sensitive fault;
+membership uses first-column values and row-set-certainty-sensitive fault.
+These cannot be merged into one certainty flag. Date functions may conservatively
+require equal clocks. JSON subtype and lazy scalar operand behavior are retained.
+
+The common proof derives the old `evaluate_append` and `Rowwise.evaluate_congr`
+formulas. It derives stronger `evaluate_withSubqueries` and
+`evaluate_certainFirst` formulas, preserving subtype and dropping their old
+no-fallible-call exclusion. Other exclusions, including scalar subqueries where
+required by certain-first replacement, remain. A caller may still need a
+fallible-call restriction for admission or a different theorem.
+
+A read-locality specialization permits local arithmetic, casts, JSON and scalar
+calls when rows and parameters agree. Existing Rowwise expressions satisfy it
+through a syntax adapter. `Rowwise.fault_none` and `Rowwise.calm` retain separate
+proofs and their narrower hypotheses. Locality does not imply either claim.
+
+Delete the replaced equality inductions and obsolete wrappers after migration.
+Keep useful read adapters and semantic simplification facts with real consumers.
+This is a congruence refactor, not an expression transformation framework or a
+change to accepted SQL syntax.
+
+## Boundaries that matter
+
+`TwoStateReads` currently owns `readsInitial` and `readsCurrent` beside a
+specialized chain. `ExprAppendLaws` owns `EvalContext.RowFree` and
+`ExprContextLaws` owns `SubqueryRun.certainFirst`. Put these definitions below
+the shared proofs that use them. The experimental source core imports
+`Execution` and `PossibleResults`; the expression core imports `ExprEval` and
+`Resolution.ExprAny`. They do not call the endpoints they replace.
+
+Actual expression consumers include `Expr.eval_append`,
+`Connection.queryContext_selectOne`, `Connection.queryContext_selectOne_rows`
+and `Query.simple_results_congr`. Preserve their guarantees while migrating
+their use of congruence. Source consumers in `TwoStateStatementLaws` feed later
+statement/output laws. Import moves must compile those consumers too.
+
+## Acceptance checks
+
+- Recover every removed source helper formula and all five nominated context/
+  query endpoints as kernel-checked formula tests with original assumptions.
+  Include arbitrary subquery depth and correlated source traversal.
+- Keep examples for absent versus present tables, unequal shape, a fixed
+  pragma independent of both databases, and a database-dependent pragma.
+  Equal row lists alone must not silently imply the full source contract.
+- Recover the four nominated expression equality formulas, and kernel-check
+  the two strengthened context-replacement formulas. Include a fallible local
+  JSON call which the old hypothesis excluded.
+- Keep regressions for scalar first certainty, membership rows certainty,
+  lazy scalar arguments and JSON subtype. Equal value/fault pairs alone must
+  not be treated as subtype equality. Include a local expression that is not
+  Rowwise and one that can fault.
+- Compile all actual consumers and checked public documentation. Audit standard
+  axiom closures and inspect simp/instance/export uses before deleting names.
+- Report the combined cost of the common proof, masks, adapters, caller changes
+  and formula tests. The prototype establishes shared reasoning and stronger
+  contracts; it does not establish net source or compilation-time savings.
+
+Use existing proof-test and Nix infrastructure with explicit timeouts. Execution,
+conformance inputs and judge claims remain unchanged. No additional traversal
+generator or testing framework is needed.
+
+## Assignment and coordination
+
+Source and expression work can be assigned independently. Their import ownership
+must agree with the foundational specification. Generalized congruence may
+simplify query output work, but the query prototype does not depend on this
+migration. Create dated task/status files only at assignment, using the then
+current formulas and consumers as the migration inventory.
