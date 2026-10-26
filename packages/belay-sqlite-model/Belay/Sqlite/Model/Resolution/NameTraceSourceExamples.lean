@@ -68,16 +68,21 @@ private def usingName : Bool :=
 
 #guard usingName
 
-/-- A name of {lit}`USING` that a side lacks fails, and the occurrence lists the common columns. -/
+/-- Whether a result is a missing name whose only candidate is the column {lit}`a` of the table {lit}`r`,
+which is the only column of {lit}`r` that {lit}`t` also has. -/
+private def listsOnlyCommonColumn : NameResult → Bool
+  | .missing .error [.column binding] => binding.source.name == name! "r" && binding.column.name == name! "a"
+  | .missing .error _ | .missing .textLiteral _ | .missing .booleanKeyword _ | .missing .rowidName _
+  | .found _ | .ambiguous _ | .source _ | .schema _ | .resultColumn _ | .declares | .compared ..
+  | .unreached _ => false
+
+/-- A name of {lit}`USING` that a side lacks fails, and the occurrence lists the columns that both sides
+have as candidates. -/
 private def usingMissing : Bool :=
   (match traced (table (name! "t")) [usingJoin [] (name! "r") [name! "zz"]] with
     | ⟨.error _, trace⟩ =>
       (match trace.getLast? with
-        | some last => last.path == [2, 0, 3, 0] && (match last.result with
-            | .missing .error _ => true
-            | .missing .textLiteral _ | .missing .booleanKeyword _ | .missing .rowidName _ | .found _
-            | .ambiguous _ | .source _ | .schema _ | .resultColumn _ | .declares | .compared ..
-            | .unreached _ => false)
+        | some last => last.path == [2, 0, 3, 0] && listsOnlyCommonColumn last.result
         | none => false)
     | ⟨.ok _, _⟩ => false)
 
