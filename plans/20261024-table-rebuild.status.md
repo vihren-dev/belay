@@ -182,3 +182,6 @@ rebuild proof is separate.
     locally (`TranslationChecks.lean`: the range of an INSERT query keeps the space before
     RETURNING).
   - Predictions: the 55 files are byte-identical to the stage (a) ones (`diff -r` clean).
+  - Reviews: `20261026T113647Z-9b5f7fa8` (1 must: single-quoted names; 1 should: the fixture's
+    catch-all; both fixed) and `20261026T115129Z-0d0f790e` (1 should, rejected with a reason:
+    the fixture marks its statements and fails when a marked one is no SELECT).
