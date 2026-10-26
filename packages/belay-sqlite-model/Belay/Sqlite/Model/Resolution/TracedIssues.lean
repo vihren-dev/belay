@@ -10,11 +10,11 @@ namespace Belay.Sqlite.Model
 
 instance : Traced.Underable ValueIssue := ⟨ValueIssue.under⟩
 
-/-- For every path and issue: moving an issue below a node is {name}`ValueIssue.under`. -/
+/-- For every path and issue: moving an issue below a node is {name}`ValueIssue.under`. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem Traced.underable_valueIssue (path : List Nat) (issue : ValueIssue) :
     Traced.Underable.under path issue = issue.under path := rfl
 
-/-- For every path: moving an issue below a node is {name}`ValueIssue.under`, as a function. -/
+/-- For every path: moving an issue below a node is {name}`ValueIssue.under`, as a function. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem Traced.underable_valueIssue_function (path : List Nat) :
     (Traced.Underable.under path : ValueIssue → ValueIssue) = ValueIssue.under path := rfl
 
@@ -25,7 +25,7 @@ def Traced.condition (path : List Nat) (operand : Traced ValueIssue Operand) : T
   (operand.under path).map (·.1)
 
 /-- For every path and operand computation: the projection of {name}`Traced.condition` is
-{name}`condition` of the projection. -/
+{name}`condition` of the projection. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_drop] theorem Traced.drop_condition (path : List Nat) (operand : Traced ValueIssue Operand) :
     (Traced.condition path operand).drop = Belay.Sqlite.Model.condition path operand.drop := by
   unfold Traced.condition

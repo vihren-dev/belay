@@ -27,15 +27,34 @@ def Scope.identifierOccurrence (name : Identifier) (quote : Syntax.QuoteKind) (r
 def Scope.columnOccurrence (column : Identifier) (result : NameResult) : NameOccurrence :=
   { path := [1], role := .columnReference, name := some column, result }
 
-/-- The occurrences of the schema (part {lit}`2`) and the source (part {lit}`0`) of a qualified name,
-with the sources that the schema qualifier leaves ({name}`Scope.inSchema`). -/
-def Scope.qualifierOccurrences (scope : Scope) (source : Identifier) (schema : Option Identifier) : NameTrace :=
+/-- The occurrences of the schema (part {lit}`2`) and the source (part {lit}`0`) of a qualified name.
+The source is the one that the resolver selected ({lit}`chosen`, the source of the binding of the
+name), else the nearest source with the name ({name}`Scope.nearestSourceNamed?`), else it is missing
+with the sources that the schema qualifier leaves ({name}`Scope.inSchema`) as candidates. -/
+def Scope.qualifierOccurrences (scope : Scope) (source : Identifier) (schema : Option Identifier)
+    (chosen : Option SourceRef) : NameTrace :=
   (schema.toList.map fun name =>
     { path := [2], role := .qualifier, name := some name, result := .schema name.isInitialSchema }) ++
   [{ path := [0], role := .qualifier, name := some source,
-     result := match scope.sourceNamed? source schema with
+     result := match chosen <|> scope.nearestSourceNamed? source schema with
        | some found => .source found
        | none => .missing .error (scope.sourceCandidates schema) : NameOccurrence }]
+
+/-- The occurrence of the qualifier of {lit}`x.*` at the node of the qualifier. -/
+def Scope.starQualifierOccurrence (scope : Scope) (source : Identifier) : NameOccurrence :=
+  { path := [], role := .qualifier, name := some source,
+    result := match scope.innerSourceNamed? source with
+      | some found => .source found
+      | none => .missing .error scope.innerSourceCandidates }
+
+/-- The occurrence of the alias that a result column declares, at {lit}`[0, column, 1]`. -/
+def resultAliasOccurrence (column : Nat) (alias : Identifier) : NameOccurrence :=
+  { path := [0, column, 1], role := .resultAlias, name := some alias, result := .declares }
+
+/-- The occurrence of a name in {lit}`GROUP BY` or {lit}`ORDER BY` that names the result column at
+{lit}`column` by its alias, at the node of the term. -/
+def aliasUseOccurrence (name : Identifier) (quote : Syntax.QuoteKind) (column : Nat) : NameOccurrence :=
+  { path := [], role := .columnReference, name := some name, quote := some quote, result := .resultColumn column }
 
 /-- The occurrence of a comparison at the node of the comparing expression, with the affinity and
 the collation that the resolver applied. -/

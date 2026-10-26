@@ -9,11 +9,14 @@ that the projection of the traced resolution gives the same result. -/
 
 namespace Belay.Sqlite.Model.NameTraceExamples
 
+/-- A column with a name and a declared type. -/
 private def column (text declaredType : String) : CatalogColumn :=
   { name := Identifier.ofString text, declaredType := some declaredType }
 
+/-- The identifier of a text. -/
 private def name (text : String) : Identifier := Identifier.ofString text
 
+/-- A source of a scope with a name and columns, at depth 0. -/
 private def sourceOf (text : String) (columns : List CatalogColumn) : ScopeSource :=
   { name := name text, columns }
 
@@ -25,9 +28,11 @@ private def tablesTU : Scope :=
   Scope.place [sourceOf "t" [column "a" "INTEGER", column "b" "TEXT"],
     sourceOf "u" [column "b" "TEXT", column "c" "NUMERIC"]]
 
+/-- The traced resolution of an expression over a scope, without shapes and with aggregates as misuse. -/
 private def traced (dqs : Bool) (scope : Scope) (expr : Syntax.Expr) :=
   resolveOperandTraced dqs scope {} true expr
 
+/-- An unqualified column name with a quote kind. -/
 private def identifier (text : String) (quote : Syntax.QuoteKind := .none) : Syntax.Expr :=
   .identifier (name text) quote
 
@@ -97,9 +102,23 @@ private def qualifiedNameParts : Bool := (match (traced true tablesTU (.qualifie
 
 #guard qualifiedNameParts
 
+/-- A qualified name whose qualifier names a source of the query and one of the query around it takes
+the qualifier from the nearer source, as the column does. -/
+private def qualifierShadowing : Bool :=
+  (match (traced true (Scope.enclose tableT (Scope.place [sourceOf "t" [column "a" "TEXT"]] 2))
+      (.qualified (name "t") (name "a"))).trace with
+    | [source, column] =>
+      (match source.result, column.result with
+        | .source reference, .found [binding] =>
+          reference.depth == 0 && binding.source.depth == 0 && binding.column.affinity == some .text
+        | _, _ => false)
+    | _ => false)
+
+#guard qualifierShadowing
+
 /-- A name that only the enclosing query has is found at depth 1, and the source keeps its index in
 the enclosing query. -/
-private def enclosingQueryDepth : Bool := (match onlyResult (traced true (Scope.enclose tablesTU (Scope.place [sourceOf "v" [column "d" ""]]))
+private def enclosingQueryDepth : Bool := (match onlyResult (traced true (Scope.enclose tablesTU (Scope.place [sourceOf "v" [column "d" ""]] 4))
       (identifier "c")).trace with
     | some (.found [binding]) => binding.source.depth == 1 && binding.source.index == 1
     | _ => false)

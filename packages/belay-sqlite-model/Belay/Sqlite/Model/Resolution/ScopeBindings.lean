@@ -84,10 +84,31 @@ def Scope.ambiguousCandidates (scope : Scope) (name : Identifier) (qualifier : O
   (kept.filter fun (_, source) => source.depth == depth).flatMap fun (sourceIndex, source) =>
     source.candidates sourceIndex fun index => columnPosition source.columns name == some index
 
-/-- The reference of the first source that a qualifier names under a schema qualifier, if any. -/
-def Scope.sourceNamed? (scope : Scope) (qualifier : Identifier) (schema : Option Identifier := none) :
+/-- The reference of the nearest source that a qualifier names under a schema qualifier: the first
+one at the smallest depth. A name that is bound takes its source from its binding; this is for a
+qualifier whose column is missing, when the resolver selects no source. -/
+def Scope.nearestSourceNamed? (scope : Scope) (qualifier : Identifier) (schema : Option Identifier := none) :
     Option SourceRef :=
-  (scope.indexed.find? fun (_, source) => source.named qualifier && source.inSchema schema).map
+  ((scope.indexed.filter fun (_, source) => source.named qualifier && source.inSchema schema).foldl
+    (fun best (sourceIndex, source) => match best with
+      | some (_, nearest) => if source.depth < nearest.depth then some (sourceIndex, source) else best
+      | none => some (sourceIndex, source)) none).map fun (sourceIndex, source) => source.reference sourceIndex
+
+/-- The reference of the first source of the query itself that a qualifier names, with a trigger's
+rows left out, as {lit}`x.*` reads it ({name}`Scope.starColumns?`). -/
+def Scope.innerSourceNamed? (scope : Scope) (qualifier : Identifier) : Option SourceRef :=
+  (scope.indexed.find? fun (_, source) => source.depth == 0 && source.named qualifier && !source.trigger).map
     fun (sourceIndex, source) => source.reference sourceIndex
+
+/-- The sources of the query itself that {lit}`x.*` could name, as candidates. -/
+def Scope.innerSourceCandidates (scope : Scope) : List Candidate :=
+  (scope.indexed.filter fun (_, source) =>
+    source.depth == 0 && source.namesVisible && source.qualified && !source.trigger).map
+    fun (sourceIndex, source) => .source (source.reference sourceIndex)
+
+/-- The aliases of result columns as candidates for a name, each with the position of its result
+column; a result column without an alias gives none. -/
+def aliasCandidates (aliases : List (Option Identifier)) : List Candidate :=
+  (aliases.mapIdx fun position alias => alias.map (Candidate.resultAlias · position)).filterMap id
 
 end Belay.Sqlite.Model

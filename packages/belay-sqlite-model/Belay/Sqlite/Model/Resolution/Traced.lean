@@ -89,67 +89,80 @@ def underTrace (prefix_ : List Nat) (computation : Traced ε α) : Traced ε α 
 
 attribute [traced_drop] Traced.bind Traced.tryCatch
 
+/-- For every value: the projection of a success is the success. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_ok (value : α) : (Traced.ok value : Traced ε α).drop = .ok value := rfl
+/-- For every issue: the projection of a failure is the failure. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_error (issue : ε) : (Traced.error issue : Traced ε α).drop = .error issue := rfl
+/-- For every result: lifting a result into the traced monad does not change it. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_lift (result : Except ε α) : (Traced.lift result).drop = result := rfl
+/-- For every occurrence: recording it gives a success with no value. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_record (occurrence : NameOccurrence) :
     (Traced.record occurrence : Traced ε Unit).drop = .ok () := rfl
+/-- For every list of occurrences: recording them gives a success with no value. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_recordAll (occurrences : NameTrace) :
     (Traced.recordAll occurrences : Traced ε Unit).drop = .ok () := rfl
+/-- For every change of issues and computation: the projection of the changed computation is the
+changed projection. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_mapError (change : ε → ε') (computation : Traced ε α) :
     (computation.mapError change).drop = computation.drop.mapError change := rfl
+/-- For every change of values and computation: the projection of the changed computation is the
+changed projection. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_map (change : α → β) (computation : Traced ε α) :
     (computation.map change).drop = computation.drop.map change := rfl
+/-- For every prefix and computation: moving a computation below a node moves the paths of its
+issue and leaves its value. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_under [Underable ε] (prefix_ : List Nat) (computation : Traced ε α) :
     (computation.under prefix_).drop = computation.drop.mapError (Underable.under prefix_) := rfl
+/-- For every prefix and computation: moving only the occurrences below a node leaves the
+projection unchanged. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_underTrace (prefix_ : List Nat) (computation : Traced ε α) :
     (computation.underTrace prefix_).drop = computation.drop := rfl
 
 /-- For every computation and continuation: the projection of a sequence is the sequence of the
-projections, so tracing changes no result. -/
+projections, so tracing changes no result. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_drop] theorem drop_bind (first : Traced ε α) (next : α → Traced ε β) :
     (first >>= next).drop = first.drop >>= fun value => (next value).drop := by
   show (Traced.bind first next).drop = _
   unfold Traced.bind
   cases first.drop <;> rfl
 
-/-- For every issue: the projection of a thrown issue is the thrown issue. -/
+/-- For every issue: the projection of a thrown issue is the thrown issue. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_throw (issue : ε) : (throw issue : Traced ε α).drop = .error issue := rfl
 
-/-- For every condition: the projection of a choice is the choice of the projections. -/
+/-- For every condition: the projection of a choice is the choice of the projections. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_drop] theorem drop_ite (condition : Prop) [Decidable condition] (yes no : Traced ε α) :
     (if condition then yes else no).drop = if condition then yes.drop else no.drop := by
   split <;> rfl
 
-/-- For every condition: the projection of a dependent choice is the choice of the projections. -/
+/-- For every condition: the projection of a dependent choice is the choice of the projections. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_drop] theorem drop_dite (condition : Prop) [Decidable condition] (yes : condition → Traced ε α)
     (no : ¬condition → Traced ε α) :
     (if h : condition then yes h else no h).drop = if h : condition then (yes h).drop else (no h).drop := by
   split <;> rfl
 
-/-- For every value: the projection of {lit}`pure` is {lit}`pure`. -/
+/-- For every value: the projection of {lit}`pure` is {lit}`pure`. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_pure (value : α) : (pure value : Traced ε α).drop = pure value := rfl
 
-/-- For every value and continuation: a success followed by a continuation is the continuation. -/
+/-- For every value and continuation: a success followed by a continuation is the continuation. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_ok_bind (value : α) (next : α → Except ε β) :
     (Except.ok value >>= next) = next value := rfl
 
-/-- For every issue and continuation: a failure followed by a continuation is the failure. -/
+/-- For every issue and continuation: a failure followed by a continuation is the failure. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_error_bind (issue : ε) (next : α → Except ε β) :
     (Except.error issue >>= next) = Except.error issue := rfl
 
-/-- For every issue: {lit}`throw` in {lit}`Except` is {lit}`Except.error`. -/
+/-- For every issue: {lit}`throw` in {lit}`Except` is {lit}`Except.error`. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_throw (issue : ε) : (throw issue : Except ε α) = Except.error issue := rfl
 
-/-- For every value and change: changing the failure of a success leaves it. -/
+/-- For every value and change: changing the failure of a success leaves it. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_mapError_ok (change : ε → ε') (value : α) :
     Except.mapError change (Except.ok value) = Except.ok value := rfl
 
-/-- For every issue and change: changing the failure of a failure changes the issue. -/
+/-- For every issue and change: changing the failure of a failure changes the issue. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_mapError_error (change : ε → ε') (issue : ε) :
     Except.mapError change (Except.error issue : Except ε α) = Except.error (change issue) := rfl
 
-/-- For every value: {lit}`pure` in {lit}`Except` is {lit}`Except.ok`. -/
+/-- For every value: {lit}`pure` in {lit}`Except` is {lit}`Except.ok`. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem except_pure (value : α) : (pure value : Except ε α) = Except.ok value := rfl
 
 end Traced

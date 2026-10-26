@@ -26,16 +26,17 @@ def qualifiedName (schema : Option Identifier) (source column : Identifier) : Id
 
 /-- The operand of an unqualified column name over a scope, with its occurrence: the name of the
 columns that {name}`Scope.resolveName` finds, the error or the fallback that {name}`missingUse`
-chooses for a name no column has, or {lit}`ambiguous column name`. -/
-def identifierTraced (dqs : Bool) (scope : Scope) (name : Identifier) (quote : Syntax.QuoteKind) :
-    Traced ValueIssue Operand :=
+chooses for a name no column has, or {lit}`ambiguous column name`. A name that no column has lists
+{lit}`aliases` after the columns as candidates, for a place where a result alias is legal. -/
+def identifierTraced (dqs : Bool) (scope : Scope) (name : Identifier) (quote : Syntax.QuoteKind)
+    (aliases : List Candidate := []) : Traced ValueIssue Operand :=
   match scope.resolveName name with
   | .found _ reads => do
     Traced.record (Scope.identifierOccurrence name quote (.found (scope.bindingsAt reads)))
     Traced.lift (scope.nameRead reads)
   | .missing => do
     let use := missingUse dqs scope name quote
-    Traced.record (Scope.identifierOccurrence name quote (.missing use scope.columnCandidates))
+    Traced.record (Scope.identifierOccurrence name quote (.missing use (scope.columnCandidates ++ aliases)))
     match use with
     | .rowidName => throw (.restriction [] .rowidName)
     | .textLiteral => pure (.literal (.text name.bytes), none)
@@ -46,22 +47,29 @@ def identifierTraced (dqs : Bool) (scope : Scope) (name : Identifier) (quote : S
     throw (.prepare (.ambiguousColumn name))
 
 /-- The operand of a qualified column name over a scope, with the occurrences of its schema, its
-source and its column. -/
+source and its column. The source is recorded as the resolver selected it. -/
 def qualifiedTraced (scope : Scope) (source column : Identifier) (schema : Option Identifier) :
-    Traced ValueIssue Operand := do
-  Traced.recordAll (scope.qualifierOccurrences source schema)
+    Traced ValueIssue Operand :=
   match scope.resolveSchemaQualified source column schema with
   | .found _ reads => do
-    Traced.record (Scope.columnOccurrence column (.found (scope.bindingsAt reads)))
+    let bindings := scope.bindingsAt reads
+    Traced.recordAll (scope.qualifierOccurrences source schema (bindings.head?.map (·.source)))
+    Traced.record (Scope.columnOccurrence column (.found bindings))
     Traced.lift (scope.nameRead reads)
   | .missing => do
     let use := if rowidName column && scope.rowidSource source then MissingUse.rowidName else .error
+    Traced.recordAll (scope.qualifierOccurrences source schema none)
     Traced.record (Scope.columnOccurrence column (.missing use (scope.qualifiedCandidates source schema)))
     match use with
     | .rowidName => throw (.restriction [] .rowidName)
-    | _ => throw (.prepare (.noSuchColumn (qualifiedName schema source column)))
+    | .error | .textLiteral | .booleanKeyword => throw (.prepare (.noSuchColumn (qualifiedName schema source column)))
   | .ambiguous => do
-    Traced.record (Scope.columnOccurrence column (.ambiguous (scope.ambiguousCandidates column (some source) schema)))
+    let candidates := scope.ambiguousCandidates column (some source) schema
+    let chosen := match candidates with
+      | .column binding :: _ => some binding.source
+      | _ => none
+    Traced.recordAll (scope.qualifierOccurrences source schema chosen)
+    Traced.record (Scope.columnOccurrence column (.ambiguous candidates))
     throw (.prepare (.ambiguousColumn (qualifiedName schema source column)))
 
 /-- The comparison of two resolved operands: a truth test such as {lit}`x IS TRUE`

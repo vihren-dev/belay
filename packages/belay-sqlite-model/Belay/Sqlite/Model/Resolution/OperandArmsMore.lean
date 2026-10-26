@@ -11,7 +11,8 @@ namespace Belay.Sqlite.Model
 variable (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool)
 
 /-- For every call: the arguments resolve first, an aggregate that reads an outer query is a model
-restriction, a listed aggregate is its value by index, and any other call is {name}`callOperand`. -/
+restriction, and then, when {lit}`misuse` is false, a listed aggregate is its value by index; with
+{lit}`misuse` true, or for a call that is not listed, the call is {name}`callOperand`. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_arms] theorem resolveOperand_arm_call (name : String) (arguments : List Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.call name arguments) = (do
     let resolved ← resolveArguments dqs scope shapes misuse 0 arguments
@@ -26,8 +27,9 @@ restriction, a listed aggregate is its value by index, and any other call is {na
   all_goals simp_all [traced_drop]
 
 
-/-- For every call of a function on {lit}`*`: a listed aggregate is its value by index, and any other
-is an aggregate misuse or the issue of a star call. -/
+/-- For every call of a function on {lit}`*`: when {lit}`misuse` is false, a listed aggregate is its
+value by index; with {lit}`misuse` true, or for a call that is not listed, it is an aggregate misuse or
+the issue of a star call. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_arms] theorem resolveOperand_arm_callStar (name : String) :
     resolveOperand dqs scope shapes misuse (.callStar name) = (
     match misuse, (Syntax.Expr.callStar name).indexIn shapes.aggregates with
@@ -37,28 +39,28 @@ is an aggregate misuse or the issue of a star call. -/
   repeat' split
   all_goals simp_all [traced_drop]
 
-/-- For every constant: the null literal has the value null and no affinity. -/
+/-- For every constant: the null literal has the value null and no affinity. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_null :
     resolveOperand dqs scope shapes misuse .null = .ok (.literal .null, none) := rfl
 
-/-- For every text literal: its bytes as a text value. -/
+/-- For every text literal: its bytes as a text value. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_string (bytes : List UInt8) :
     resolveOperand dqs scope shapes misuse (.string bytes) = .ok (.literal (.text bytes), none) := rfl
 
-/-- For every blob literal: its bytes as a blob value. -/
+/-- For every blob literal: its bytes as a blob value. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_blob (bytes : List UInt8) :
     resolveOperand dqs scope shapes misuse (.blob bytes) = .ok (.literal (.blob bytes), none) := rfl
 
-/-- For every time keyword: the clock value of the statement. -/
+/-- For every time keyword: the clock value of the statement. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_currentTime (keyword : String) :
     resolveOperand dqs scope shapes misuse (.currentTime keyword) = .ok (.now (timeKeywordNamed keyword), none) := rfl
 
-/-- For every parameter: the parameter of its number. -/
+/-- For every parameter: the parameter of its number. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_parameter (number : Nat) :
     resolveOperand dqs scope shapes misuse (.parameter number) = .ok (.parameter number, none) := rfl
 
 /-- For every {lit}`EXISTS`: it names a subquery that resolution resolved before, else it is a model
-restriction. -/
+restriction. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_arms] theorem resolveOperand_arm_exists (index : Nat) :
     resolveOperand dqs scope shapes misuse (.exists index) = (match shapes.find index with
     | some _ => .ok (.exists index, none)
@@ -66,14 +68,14 @@ restriction. -/
   simp only [resolveOperand, resolveOperandTraced]
   cases shapes.find index <;> simp [traced_drop]
 
-/-- For every scalar subquery: it has the affinity of its result column. -/
+/-- For every scalar subquery: it has the affinity of its result column. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_subquery (index : Nat) :
     resolveOperand dqs scope shapes misuse (.subquery index) =
     (shapes.column index).map fun shape => (.subquery index, shape.affinity) := rfl
 
 /-- For every {lit}`IN` over a list: the operand and the list resolve, and the comparison uses the
 affinity and the collation of the operand, except that a list of one constant value with an explicit
-collation is {lit}`x = +c`. -/
+collation is {lit}`x = +c`. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_arms] theorem resolveOperand_arm_inList (operand : Syntax.Expr) (values : List Syntax.Expr) (negated : Bool) :
     resolveOperand dqs scope shapes misuse (.inList operand values negated) = (do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
@@ -93,7 +95,7 @@ collation is {lit}`x = +c`. -/
   all_goals repeat' split
   all_goals simp_all [traced_drop]
 
-/-- For every {lit}`BETWEEN`: it is {lit}`x >= a AND x <= b`, negated when written with {lit}`NOT`. -/
+/-- For every {lit}`BETWEEN`: it is {lit}`x >= a AND x <= b`, negated when written with {lit}`NOT`. Proof sketch: unfold the definitions and push the projection through the monad with {lit}`traced_drop`. -/
 @[traced_arms] theorem resolveOperand_arm_between (operand low high : Syntax.Expr) (negated : Bool) :
     resolveOperand dqs scope shapes misuse (.between operand low high negated) = (do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
@@ -104,14 +106,14 @@ collation is {lit}`x = +c`. -/
     .ok (if negated then .not both else both, none)) := by
   simp only [resolveOperand, resolveOperandTraced, betweenTraced, traced_drop]
 
-/-- For every {lit}`CASE`: its operands are the arguments of {lit}`iif`. -/
+/-- For every {lit}`CASE`: its operands are the arguments of {lit}`iif`. Proof sketch: unfold the definitions and push the projection through the monad with {lit}`traced_drop`. -/
 @[traced_arms] theorem resolveOperand_arm_caseOf (operands : List Syntax.Expr) (hasBase : Bool) :
     resolveOperand dqs scope shapes misuse (.caseOf operands hasBase) = (do
     let arguments ← resolveCase dqs scope shapes misuse hasBase none 0 operands
     .ok (.scalar .iif arguments, none)) := by
   simp only [resolveOperand, resolveOperandTraced, resolveCase, traced_drop]
 
-/-- For every {lit}`||`: the scalar function of the operator over both operands. -/
+/-- For every {lit}`||`: the scalar function of the operator over both operands. Proof sketch: unfold the definitions and push the projection through the monad with {lit}`traced_drop`. -/
 @[traced_arms] theorem resolveOperand_arm_concatenate (left right : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.concatenate left right) = (do
     let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [0])
@@ -119,12 +121,12 @@ collation is {lit}`x = +c`. -/
     .ok (.scalar .pipes (.cons a.1 (.cons b.1 .nil)), none)) := by
   simp only [resolveOperand, resolveOperandTraced, traced_drop]
 
-/-- For every {lit}`RAISE`: it is an error outside a trigger's statements. -/
+/-- For every {lit}`RAISE`: it is an error outside a trigger's statements. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveOperand_arm_raise (kind : Syntax.RaiseKind) (message : Option Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.raise kind message) = .error (.prepare .raiseOutsideTrigger) := rfl
 
 /-- For every {lit}`IN` over a query: the operand resolves, and the comparison uses the affinity of
-{name}`comparisonAffinity` and the collation of {name}`inCollation`. -/
+{name}`comparisonAffinity` and the collation of {name}`inCollation`. Proof sketch: unfold the definitions and push the projection through the monad with {lit}`traced_drop`. -/
 @[traced_arms] theorem resolveOperand_arm_inQuery (operand : Syntax.Expr) (index : Nat) (negated : Bool) :
     resolveOperand dqs scope shapes misuse (.inQuery operand index negated) = (do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
@@ -132,12 +134,12 @@ collation is {lit}`x = +c`. -/
     .ok (.inQuery a.1 index (comparisonAffinity a.2 shape.affinity) (inCollation scope operand shape) negated, none)) := by
   simp only [resolveOperand, resolveOperandTraced, inQueryTraced, traced_drop]
 
-/-- For no arguments: nothing resolves. -/
+/-- For no arguments: nothing resolves. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveArguments_arm_nil (index : Nat) :
     resolveArguments dqs scope shapes misuse index [] = .ok .nil := rfl
 
 /-- For an argument and the rest: each resolves in written order, the issue of argument {lit}`k` at
-{lit}`[1, k]`. -/
+{lit}`[1, k]`. Proof sketch: unfold the definitions and push the projection through the monad with {lit}`traced_drop`. -/
 @[traced_arms] theorem resolveArguments_arm_cons (index : Nat) (argument : Syntax.Expr) (rest : List Syntax.Expr) :
     resolveArguments dqs scope shapes misuse index (argument :: rest) = (do
     let a ← (resolveOperand dqs scope shapes misuse argument).mapError (·.under [1, index])
@@ -145,13 +147,13 @@ collation is {lit}`x = +c`. -/
     .ok (.cons a.1 tail)) := by
   simp only [resolveArguments, resolveArgumentsTraced, resolveOperand, traced_drop]
 
-/-- For no operands: nothing resolves. -/
+/-- For no operands: nothing resolves. Proof sketch: both sides are equal by definition. -/
 @[traced_arms] theorem resolveCase_arm_nil (needsBase : Bool) (base : Option (Syntax.Expr × Operand)) (index : Nat) :
     resolveCase dqs scope shapes misuse needsBase base index [] = .ok .nil := rfl
 
 /-- For an operand and the rest of a {lit}`CASE`: the base comes first when it is needed, a
 {lit}`WHEN` value is compared with the base as {lit}`=` compares them, and every other operand is
-kept as it is. -/
+kept as it is. Proof sketch: unfold the definitions, push the projection through the monad with {lit}`traced_drop`, and split on the cases of the arm. -/
 @[traced_arms] theorem resolveCase_arm_cons (needsBase : Bool) (base : Option (Syntax.Expr × Operand)) (index : Nat)
     (operand : Syntax.Expr) (rest : List Syntax.Expr) :
     resolveCase dqs scope shapes misuse needsBase base index (operand :: rest) = (do
