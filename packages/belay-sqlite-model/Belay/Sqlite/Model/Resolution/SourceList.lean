@@ -126,20 +126,26 @@ def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (
     scope)
 
 /-- Resolve the expressions of the pending sources over the complete scope: first every
-{lit}`ON` condition in order ({name}`resolveJoinCondition`), then the arguments of every
-{lit}`json_each` source in order ({name}`resolveEachArguments`), as SQLite resolves them
-after {lit}`WHERE`. -/
-def resolvePendingSources (dqs : Bool) (scope : Scope) (sources : List PendingSource) :
-    Except ValueIssue (List Resolved.QuerySource) := do
-  let conditions ← resolveAll (fun index (source : PendingSource) => resolveJoinCondition dqs scope index source.condition)
+{lit}`ON` condition in order ({name}`resolveJoinConditionTraced`), then the arguments of every
+{lit}`json_each` source in order ({name}`resolveEachArgumentsTraced`), as SQLite resolves them
+after {lit}`WHERE`. The names of the expressions are recorded. -/
+def resolvePendingSourcesTraced (dqs : Bool) (scope : Scope) (sources : List PendingSource) :
+    Traced ValueIssue (List Resolved.QuerySource) := do
+  let conditions ← resolveAllTraced (fun index (source : PendingSource) => resolveJoinConditionTraced dqs scope index source.condition)
     sources
-  resolveAll (fun index ((source : PendingSource), condition) => do
+  resolveAllTraced (fun index ((source : PendingSource), condition) => do
     let resolved ← match source.item with
       | .table position => pure (Resolved.Source.table position)
       | .initialTable position => pure (Resolved.Source.initialTable position)
-      | .each path arguments => resolveEachArguments dqs scope index path arguments
+      | .each path arguments => resolveEachArgumentsTraced dqs scope index path arguments
       | .pragma rows => pure (Resolved.Source.pragma rows)
       | .subquery index width => pure (Resolved.Source.subquery index width)
-    .ok { kind := source.kind, source := resolved, condition }) (sources.zip conditions)
+    pure { kind := source.kind, source := resolved, condition }) (sources.zip conditions)
+
+/-- The resolved sources of the pending sources: {name}`resolvePendingSourcesTraced` without its
+trace. -/
+def resolvePendingSources (dqs : Bool) (scope : Scope) (sources : List PendingSource) :
+    Except ValueIssue (List Resolved.QuerySource) :=
+  (resolvePendingSourcesTraced dqs scope sources).drop
 
 end Belay.Sqlite.Model

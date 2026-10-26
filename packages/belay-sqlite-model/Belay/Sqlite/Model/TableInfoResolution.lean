@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleStatementResolution
 import Belay.Sqlite.Model.Resolution.FunctionSources
+import Belay.Sqlite.Model.Resolution.SourceListArms
 
 set_option doc.verso true
 
@@ -60,7 +61,7 @@ join condition check; there is no condition to resolve. -/
 theorem resolvePendingSources_pragma (dqs : Bool) (scope : Scope) (rows : Resolved.PragmaRows) :
     resolvePendingSources dqs scope [{ item := .pragma rows, kind := .inner, condition := .none }] =
       .ok [Resolved.QuerySource.pragma rows] := by
-  simp [resolvePendingSources, resolveJoinCondition, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure,
+  simp [resolvePendingSources_arm, resolveJoinCondition_none, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure,
     Except.pure, Resolved.QuerySource.pragma]
 
 /-- For every statement {lit}`SELECT 1 FROM pragma_table_info('t') WHERE p` (or without {lit}`WHERE`) whose reference

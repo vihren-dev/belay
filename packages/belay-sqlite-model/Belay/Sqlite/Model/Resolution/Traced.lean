@@ -95,6 +95,9 @@ attribute [traced_drop] Traced.bind Traced.tryCatch
 @[traced_drop] theorem drop_error (issue : ε) : (Traced.error issue : Traced ε α).drop = .error issue := rfl
 /-- For every result: lifting a result into the traced monad does not change it. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_lift (result : Except ε α) : (Traced.lift result).drop = result := rfl
+/-- For every result: lifting an {lit}`Except` result with {lit}`liftM` into the traced monad does not
+change it. Proof sketch: both sides are equal by definition. -/
+@[traced_drop] theorem drop_liftM (result : Except ε α) : (liftM result : Traced ε α).drop = result := rfl
 /-- For every occurrence: recording it gives a success with no value. Proof sketch: both sides are equal by definition. -/
 @[traced_drop] theorem drop_record (occurrence : NameOccurrence) :
     (Traced.record occurrence : Traced ε Unit).drop = .ok () := rfl

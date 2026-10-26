@@ -91,3 +91,19 @@ them through result-alias lookup and `resolveOperand`).
   (`Resolution/NameTraceExamples.lean`). `SourceRef.index` is the position among
   the sources of the same depth (the position in the `FROM` list). The full model
   and `just dev-build` pass.
+- 2026-10-26: layer 2 done in the working copy: the traced forms of the clause
+  resolvers (`resolveQueryBodyTraced`, `resolveResultColumnTraced`,
+  `resolveAggregateCallTraced`, `resolveGroupTermTraced`, `resolveOrderTermTraced`,
+  `resolveJoinConditionTraced`, `resolveEachArgumentsTraced`, `resolvePendingSourcesTraced`,
+  `sourceStarColumnsTraced`) with the old functions as projections, the list helpers
+  `resolveAllTraced` and `Traced.keepOnFailure` (`TracedList.lean`), the arm equations
+  (`QueryBodyArms`, `ResultColumnArms`, `QueryAggregatesArms`, `SourceListArms`) and kernel
+  examples for aliases, aggregate operands, GROUP BY candidates and failure traces
+  (`NameTraceQueryExamples.lean`). The names inside aggregate calls are recorded by the operand
+  pass at the paths of the operands; the separate pass that lists the calls keeps its trace only
+  when it is the one that fails. Review 10 of the layer-1 refactor gave two musts (a catch-all match
+  on `Candidate`; no example with alias candidates), fixed here. Proof repairs of layer 2: 16
+  manual changes (arm lemmas for `resolveQueryBody`, `resolveResultColumn`,
+  `resolvePendingSources`, `resolveJoinCondition`, `resolveAggregateCall`, `resolveGroupTerm` in
+  eight proof files). Total so far 63 of the limit of about 80. The `if let` over the joins of
+  a query became `aliasJoinItem?`, so that the projection can be pushed through it.

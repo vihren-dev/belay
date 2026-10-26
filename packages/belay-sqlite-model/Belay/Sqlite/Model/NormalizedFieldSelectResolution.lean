@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.NormalizedFieldQueries
 import Belay.Sqlite.Model.NormalizedFieldResolution
 import Belay.Sqlite.Model.SimpleStatementResolution
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -46,7 +47,7 @@ theorem resolveColumns_identifier (dqs : Bool) (shapes : SubqueryShapes) (tableN
     ∃ (name : String) (affinity : Option Affinity),
       resolveAll (resolveResultColumn dqs (Scope.single tableName columns rowid) shapes)
         [.expression (.identifier id quote) alias text] = .ok [[(.scalar (.column idPosition), name, affinity)]] := by
-  simp [resolveAll, resolveAllFrom, resolveResultColumn, resolveOperand_identifier_single found, Bind.bind,
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, resolveOperand_identifier_single found, Bind.bind,
     Except.bind, Pure.pure, Except.pure, Except.mapError]
 
 /-- Lowercase of a parameter resolves to the lowercase expression of that parameter, without

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.Sources
 import Belay.Sqlite.Model.Resolution.PragmaRows
+import Belay.Sqlite.Model.Resolution.TracedList
 
 set_option doc.verso true
 
@@ -41,17 +42,23 @@ def eachReference (path : List Nat) (reference : Syntax.TableReference) (argumen
 reference is at {lit}`path`: each argument resolves over the whole scope, as SQLite does,
 and then must read only the sources before it
 ({name}`RestrictionKind.laterSourceInArguments`). The first argument is the JSON and the
-second, if any, the path. -/
-def resolveEachArguments (dqs : Bool) (scope : Scope) (index : Nat) (path : List Nat)
-    (arguments : List Syntax.Expr) : Except ValueIssue Resolved.Source := do
+second, if any, the path. The names of the arguments are recorded. -/
+def resolveEachArgumentsTraced (dqs : Bool) (scope : Scope) (index : Nat) (path : List Nat)
+    (arguments : List Syntax.Expr) : Traced ValueIssue Resolved.Source := do
   let bound := scope.cellsBefore index
-  let resolved ← resolveAll (fun position argument => do
-    let (resolved, _) ← (resolveOperand dqs scope {} true argument).mapError (·.under (path ++ [2, position]))
-    if resolved.readsBelow bound then .ok resolved
-    else .error (.restriction (path ++ [2, position]) .laterSourceInArguments)) arguments
+  let resolved ← resolveAllTraced (fun position argument => do
+    let (resolved, _) ← (resolveOperandTraced dqs scope {} true argument).under (path ++ [2, position])
+    if resolved.readsBelow bound then pure resolved
+    else throw (.restriction (path ++ [2, position]) .laterSourceInArguments)) arguments
   match resolved with
-  | json :: rest => .ok (.each json rest.head?)
-  | [] => .error (.restriction path .tableFunction)
+  | json :: rest => pure (.each json rest.head?)
+  | [] => throw (.restriction path .tableFunction)
+
+/-- The source of the arguments of a {lit}`json_each` source: {name}`resolveEachArgumentsTraced`
+without its trace. -/
+def resolveEachArguments (dqs : Bool) (scope : Scope) (index : Nat) (path : List Nat)
+    (arguments : List Syntax.Expr) : Except ValueIssue Resolved.Source :=
+  (resolveEachArgumentsTraced dqs scope index path arguments).drop
 
 /-- The source of a table-valued pragma with the column names and rows of its pragma: each row
 with the hidden cells {lit}`arg`, the argument, and {lit}`schema`, NULL, whose names are the

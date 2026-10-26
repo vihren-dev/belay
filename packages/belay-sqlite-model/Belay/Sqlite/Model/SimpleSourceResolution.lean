@@ -1,4 +1,6 @@
 import Belay.Sqlite.Model.SimpleSelectResolution
+import Belay.Sqlite.Model.Resolution.SourceListArms
+import Belay.Sqlite.Model.Resolution.ResultColumnArms
 
 set_option doc.verso true
 
@@ -35,7 +37,7 @@ theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableRefere
 /-- No pending source resolves to no source, for any scope and quote setting. Proof sketch: there is no
 condition and no argument to resolve. -/
 theorem resolvePendingSources_nil (dqs : Bool) (scope : Scope) : resolvePendingSources dqs scope [] = .ok [] := by
-  simp [resolvePendingSources, resolveAll, resolveAllFrom, resolveEachArguments, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [resolvePendingSources_arm, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- The one inner source without a condition, which {name}`resolveSources_table` gives, resolves to the
 first source of the table, {name}`Resolved.QuerySource.first`, for any scope and quote setting.
@@ -44,7 +46,7 @@ Proof sketch: unfold the resolver and the join condition check; there is no cond
 theorem resolvePendingSources_table (dqs : Bool) (scope : Scope) (position : Nat) :
     resolvePendingSources dqs scope [{ item := .table position, kind := .inner, condition := .none }] =
       .ok [Resolved.QuerySource.first position] := by
-  simp [resolvePendingSources, resolveJoinCondition, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure,
+  simp [resolvePendingSources_arm, resolveJoinCondition_none, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure,
     Resolved.QuerySource.first]
 
 /-- The result column {lit}`1` resolves, in any scope and with any shapes of subqueries, to the integer
@@ -54,7 +56,7 @@ Proof sketch: unfold the resolver; a numeric literal needs no scope. -/
 theorem resolveColumns_one (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) :
     resolveAll (resolveResultColumn dqs scope shapes) [.expression (.numeric "1") none "1"] =
       .ok [[(.scalar (.literal (.integer 1)), "1", none)]] := by
-  simp [resolveAll, resolveAllFrom, resolveResultColumn, resolveOperand, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, resolveOperand, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rfl
 
 end Belay.Sqlite.Model

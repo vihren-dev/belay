@@ -13,11 +13,19 @@ namespace Belay.Sqlite.Model
 
 /-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
 ({name}`Scope.starOperand`), as operands with their affinities, and their names, or SQLite's
-{lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
+{lit}`no such table: source` when no source has the name. The qualifier is recorded at the node of
+the qualifier ({name}`Scope.starQualifierOccurrence`). -/
+def sourceStarColumnsTraced (scope : Scope) (source : Identifier) :
+    Traced ValueIssue (List (Operand × String)) := do
+  Traced.record (scope.starQualifierOccurrence source)
   match scope.starColumns? source with
-  | some columns => columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column
-  | none => .error (.prepare (.noSuchSource source))
+  | some columns => Traced.lift (columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column)
+  | none => throw (.prepare (.noSuchSource source))
+
+/-- The columns of {lit}`source.*` with their names: {name}`sourceStarColumnsTraced` without its
+trace. -/
+def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
+  (sourceStarColumnsTraced scope source).drop
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
 def maximumJoinTables : Nat := 64
@@ -141,14 +149,21 @@ def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat) :
 /-- Resolve the condition of the source at {lit}`index` of the scope: a merged condition is
 resolved already; a written one resolves over the whole scope, as SQLite does, and then
 must read only the sources up to this one, which the model evaluates while it joins
-({name}`RestrictionKind.laterTableInOn`). -/
-def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondition → Except ValueIssue (Option Resolved.Expr)
-  | .none => .ok none
-  | .merged condition => .ok (some condition)
+({name}`RestrictionKind.laterTableInOn`). The names of a written condition are recorded. -/
+def resolveJoinConditionTraced (dqs : Bool) (scope : Scope) (index : Nat) :
+    JoinCondition → Traced ValueIssue (Option Resolved.Expr)
+  | .none => pure none
+  | .merged condition => pure (some condition)
   | .written path term => do
-    let resolved ← condition path (resolveOperand dqs scope {} true term)
+    let resolved ← Traced.condition path (resolveOperandTraced dqs scope {} true term)
     let bound := scope.cellsBefore (index + 1)
-    if resolved.readsBelow bound then .ok (some resolved)
+    if resolved.readsBelow bound then pure (some resolved)
     else throw (.restriction path .laterTableInOn)
+
+/-- The condition of the source at {lit}`index` of the scope: {name}`resolveJoinConditionTraced`
+without its trace. -/
+def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) (condition : JoinCondition) :
+    Except ValueIssue (Option Resolved.Expr) :=
+  (resolveJoinConditionTraced dqs scope index condition).drop
 
 end Belay.Sqlite.Model

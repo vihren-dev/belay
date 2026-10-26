@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleQueryLaws
 import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.QuerySourceCopyLaws
 
 set_option doc.verso true
@@ -114,8 +115,8 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
       | sourceStar source => simp [sourceStar source]
       | expression value alias text => simp [expression value alias text member]
   have distinctNil : Syntax.Expr.distinctList [] = [] := rfl
-  unfold resolveQueryBody
-  simp only [noJoins, List.zipIdx_nil, List.find?_nil, Option.map_none, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
+  rw [resolveQueryBody_arm]
+  simp only [aliasJoinItem?, noJoins, List.zipIdx_nil, List.find?_nil, Option.map_none, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
   rw [notAggregate _ ?flagColumn rfl (fun _ => rfl)]
   simp only [List.isEmpty_nil, Bool.not_true, Bool.or_false, Bool.false_and, Option.toList_none, List.flatMap_nil,
     List.append_nil, ite_false, Bool.false_eq_true]
