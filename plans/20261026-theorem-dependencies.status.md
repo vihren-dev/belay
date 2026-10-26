@@ -1,6 +1,6 @@
 # Theorem dependency report status
 
-Date: 2026-10-26. Status: ACTIVE. Audience: the implementation team.
+Date: 2026-10-26. Status: DONE. Audience: the implementation team.
 Task: [dependency report](20261026-theorem-dependencies.task.md).
 Base: integration commit `6413afe3ff50`.
 Workspace: `/home/codex/work/sqlite-verifier-theorem-dependencies`.
@@ -52,22 +52,25 @@ The verdict passed at
 `/nix/store/pv8yv3gjwkbwli4bd5h3akpf50ysnrhi-sqlite-verifier-verdict`.
 The scheduled check report passed at
 `/nix/store/id752rh1ffdllb1v7dw9xszj4jbfyhy1-sqlite-verifier-scheduled-check-reports`.
-Infrastructure checks completed. No semantic mutant table changed.
+All required completion commands passed: `just test-full`, `just verdict`,
+`just test-nix` and `just test-scheduled-checks`. No semantic mutant table changed.
+
+The full Nix report contains 1,368 passing tests across 14 suites, with no
+failures, errors or skips:
+`/nix/store/s6rzxwmnqyg68lrn79fmydjnlyqip7xx-sqlite-verifier-test-reports`.
+Its surface suites passed 366 and 41 tests respectively. The workspace links
+this report at `build/nix-tests-full`.
 
 The full Nix run reached 96% of the existing 407-case surface suite without an
 assertion failure, then hit that suite's 1,200-second limit. The same issue is
 already fixed by the reviewed `tasks/surface-suite-split` branch. Merged its
 `43a4c304` head, preserving both new suites in the suite-ownership assertion.
 The split changes no test or timeout. Its restored review records are also
-retained. Completion checks are pending on the combined tree.
+retained. The merge review had no findings.
 
 The combined full check found an existing surface-build allowlist that omitted
 the new report. Registered the report's three exact build references and added
 an explicit check that the conformance runtime names no surface package. This
 preserves ADR 0016 D2: standalone inspection is above the libraries, while the
-model, translation and conformance layers stay below the surface.
-
-Initial validation hit the documentation inventory's 60-second deadline during
-concurrent cold builds and the infrastructure recipe's outer deadline after a
-cold local build. The final runs use the unchanged documentation package and
-available build artifacts; neither timeout required a test-policy change.
+model, translation and conformance layers stay below the surface. The correction
+review had no findings, and the final full Nix run passed that check.

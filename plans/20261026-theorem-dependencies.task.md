@@ -1,6 +1,6 @@
 # Compiled theorem dependency report
 
-Date: 2026-10-26. Status: ACTIVE. Audience: the implementation team.
+Date: 2026-10-26. Status: DONE. Audience: the implementation team.
 Owner request: implement the investigated dependency exporter and local report
 to support the current theorem and proof refactoring work.
 Record: [status](20261026-theorem-dependencies.status.md).
