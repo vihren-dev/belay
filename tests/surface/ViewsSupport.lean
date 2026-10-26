@@ -39,7 +39,7 @@ def prepareMessage (script : Script) (database : Database) : Option String := do
   | .ok (.prepareError error, _) => some error.message
   | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
   | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
-  | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _) | .ok (.upsert .., _)
+  | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.upsert .., _)
   | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => none
 
 /-- A model restriction retains its SQL use path; successful/native-error
@@ -60,7 +60,7 @@ def queryRows (script : Script) (database : Database) (clock : Int) (counters : 
     (query.runOn clock counters parameters database.raw subqueries).map (·.2.rows)
   | .error _ | .ok (.prepareError .., _) | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
   | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
-  | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _)
+  | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _)
   | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.setting .., _) => none
 
 /-- Two source rows with distinct numeric/text metadata and an unrelated earlier object. -/

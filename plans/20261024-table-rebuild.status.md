@@ -288,3 +288,13 @@ rebuild proof is separate.
     restriction is retired (constructor, text, registry map, documentation row, example); the form
     of a trigger body that a body statement cannot have stays `trigger-form`. The refusal that
     users see is the frontend's: "Only VALUES rows are modeled as an INSERT source".
+  - `just test-full` (test-model, mutants) found that the production mutants did not carry
+    `InsertSelectRun` although `StatementStep` calls it; `conformance/mutation_check.py` now copies it.
+  - `just test-full` (surface) found fixtures that name every resolved statement or use the laws whose
+    premises changed: `ClaimsViewCatalog`, `ViewsSupport` and `ClaimsCommonTables` list the arm
+    `insertSelect`; `SuccessUniqueEmail` needs the absent name for the own sources of the scope;
+    `S6WpSoundness` takes the first execution of a step that may have further ones; `AddCustomerClaims`
+    uses the new law `runScriptStep_select_others` (a SELECT has one next state) and the premise of
+    `check_send_single_of_step`; `ExpansionCountClaims` gives the condition of
+    `Sql.succeedsFrom_sendStatements` from `expansion_noInsertSelect`. Proof repairs by hand: about 87
+    in total, above the line of 80 that asks for a stop; the report flags this.

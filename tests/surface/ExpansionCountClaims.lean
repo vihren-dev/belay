@@ -44,7 +44,9 @@ theorem expansion_keeps_the_customer_count (n : Int64) (first second : Identifie
   have ok := Script.allOk_env success env
   rw [Database.run_script] at ok
   have ranOk : (send (customersExpansion first second firstValues secondValues thirdValues fourthValues)).SucceedsFrom
-      env.clock 0 (db.raw.connection env.counters) := (Sql.succeedsFrom_sendStatements _ _ _ _).2 ok
+      env.clock 0 (db.raw.connection env.counters) := (Sql.succeedsFrom_sendStatements _ _ _ _
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _
+        (expansion_noInsertSelect _ _ _ _ _ _ _ _ _))).2 ok
   refine ifOk_send_expansion (name! "customers") (name! "id") (name! "email") (name! "email_lower") first second
     firstValues secondValues thirdValues fourthValues db env site ranOk ?_
   intro outputs final reached valid

@@ -77,7 +77,7 @@ example : deferred.all (fun statement => match resolveStatement runContext
       | .ok (.prepareError _, _) => true
       | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
       | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
-      | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _)
+      | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _)
       | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => false)
       = true := by
   decide +kernel

@@ -91,6 +91,22 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
   have sameDatabase : database = connection.state.database := keeps
   rw [nextEq, noCounts, sameDatabase, Counters.apply_default]
 
+/-- For every SELECT statement and every step of it that continues: the step has no further execution.
+Plain words: a SELECT has one next state. Proof sketch: a SELECT resolves to a query or to a prepare error,
+and neither is an INSERT from a query ({name}`runScriptStep_others`). -/
+theorem runScriptStep_select_others {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    (isSelect : statement =
+      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+    {output : Output} {next : Connection} {others : List StatementExecution}
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
+    others = [] := by
+  subst isSelect
+  obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_ran step
+  obtain ⟨-, -, shape⟩ := resolveStatement_select_shape found
+  exact runScriptStep_others step found (by rcases shape with ⟨_, _, rfl⟩ | ⟨_, rfl⟩ <;> rfl)
+
 /-- For every SELECT statement and every step of it that gives rows: the step continues with those
 rows and keeps the connection. Plain words: a SELECT that gives rows changes nothing. Proof sketch: the
 step does not end the run because its output is rows, and a SELECT step that does not give an error
@@ -106,10 +122,8 @@ theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clo
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => rw [step] at output; simp [RunStep.output] at output
   | continued out next others =>
+    obtain rfl := runScriptStep_select_others isSelect step
     subst isSelect
-    obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_ran step
-    obtain ⟨-, -, shape⟩ := resolveStatement_select_shape found
-    obtain rfl := runScriptStep_others step found (by rcases shape with ⟨_, _, rfl⟩ | ⟨_, rfl⟩ <;> rfl)
     rw [step] at output
     simp only [RunStep.output] at output
     subst output
