@@ -23,3 +23,4 @@ stopped at a gap (2026-10-27)".
   resolutions were recorded as fixed before the fix existed. The fix is the next commit.
 - 2026-10-27: review `20261027T130242Z-a51577be` (1 must: a premise on direct foreign keys does not
   exclude a cascade through other tables; fixed in the next commit).
+- 2026-10-27: review `20261027T130345Z-06c93a5f` (no findings).
