@@ -16,6 +16,14 @@ ALLOWED_PROOF_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 
+LOWERCASE_LIBRARY: tuple[tuple[str, int], ...] = (
+    ("LowercaseFilters", 0), ("LowercaseLookups", 0), ("LowercaseExpansion", 0), ("LowercaseQueries", 0),
+    ("LowercasePlan", 0), ("LowercaseSimulation", 0))
+"""The fixture library that states the guide's lowercase expansion as an instance of the general
+derived-column laws, in import order. The modules state definitions and lemmas and audit nothing, so
+they have no axiom reports. A fixture that imports one of them is checked after the modules it needs."""
+
+
 def axiom_reports(stdout: str) -> list[set[str]]:
     """The axiom sets of all `#print axioms` reports in the output of one Lean run."""
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", stdout)
@@ -71,7 +79,8 @@ def test_preserved_count_claim_over_every_database(runtime_root: Path, tmp_path:
     condition that the expansion runs without an error. The fixture shows that the site and the condition
     are satisfiable on a database, and keeps the counterexample that the site excludes: a trigger on UPDATE
     that existed before the expansion and removes the rows when the backfill fires it."""
-    check_module_chain(runtime_root, tmp_path, (("ExpansionCountQueries", 1), ("ExpansionCountClaims", 3)))
+    check_module_chain(runtime_root, tmp_path, (
+        ("ExpansionCountQueries", 1), *LOWERCASE_LIBRARY[:3], ("ExpansionCountClaims", 3)))
 
 
 def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path: Path) -> None:

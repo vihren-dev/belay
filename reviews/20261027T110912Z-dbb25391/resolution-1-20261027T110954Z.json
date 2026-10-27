@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T11:09:54+00:00",
+  "finding": "20261027T110912Z-dbb25391#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The files exist in the next commit of the same branch; the status file describes the branch, and the commit split only separates the fixtures from the library layer."
+}

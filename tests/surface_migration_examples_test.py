@@ -8,6 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
+from tests.surface_assertion_examples_test import LOWERCASE_LIBRARY, check_module_chain
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
@@ -30,19 +31,13 @@ def counter_cell(cell: object) -> str | int:
 
 
 def test_normalized_field_laws_cover_arbitrary_values(runtime_root: Path, tmp_path: Path) -> None:
-    """Installed model laws derive the appended-field UPDATE row map and exact
+    """Installed general model laws derive the appended-field UPDATE row map and exact
     preservation/translation query results. Their universal Value parameters
     and nonempty consumers cover all Value constructors and transport both
     rowid order and descending NOCASE primary-key order through the UPDATE.
     Exact-effect laws derive the stored table from an actual successful UPDATE;
     a nonempty successful effect witnesses that the conditional law is inhabited."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldLaws.lean", tmp_path),
-                         cwd=tmp_path, timeout=120)
-    assert result.returncode == 0, result.diagnostic()
-    reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
-    assert len(reports) == 23, result.diagnostic()
-    for report in reports:
-        assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
+    check_module_chain(runtime_root, tmp_path, (*LOWERCASE_LIBRARY[:1], ("NormalizedFieldLaws", 23)))
 
 
 def test_normalized_field_expansion_laws_cover_concrete_expansion(runtime_root: Path, tmp_path: Path) -> None:
@@ -50,13 +45,8 @@ def test_normalized_field_expansion_laws_cover_concrete_expansion(runtime_root: 
     retained customers expansion: it is an instance of the general four-statement script, its
     database has a site, and the original and stored lookups give equal observations at its
     initial context for every bound value. Every audited declaration uses only logical axioms."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "NormalizedFieldExpansionLaws.lean", tmp_path),
-                         cwd=tmp_path, timeout=180)
-    assert result.returncode == 0, result.diagnostic()
-    reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
-    assert len(reports) == 8, result.diagnostic()
-    for report in reports:
-        assert set(filter(None, map(str.strip, report.split(",")))) <= LOGICAL_AXIOMS, result.diagnostic()
+    check_module_chain(runtime_root, tmp_path, (*LOWERCASE_LIBRARY[:4], ("NormalizedFieldExpansionLaws", 8)),
+                       timeout=180)
 
 
 def test_expansion_counter_refutes_full_commutation(runtime_root: Path, tmp_path: Path) -> None:

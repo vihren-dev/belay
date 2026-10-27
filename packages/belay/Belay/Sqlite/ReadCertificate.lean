@@ -63,33 +63,13 @@ structure ReadCertificate.Valid (certificate : ReadCertificate) : Prop where
     expression.Calm
 
 /-- For every valid certificate and result names, the statement of the certificate is calm
-({name}`Resolved.Statement.Calm`). Proof sketch: the expressions that the statement reads are the filter, the
-scalar columns and the operands of aggregate columns; a column that reads below a width is scalar, so it
-has no operands; and the source of a table has no expression. -/
+({name}`Resolved.Statement.Calm`). Proof sketch: a column that reads below a width is scalar, so it has no
+operands ({name}`Resolved.Output.operands_of_readsBelow`), and a one-table read with calm parts is calm
+({name}`Resolved.Statement.simpleTable_calm`). -/
 theorem ReadCertificate.Valid.statement_calm {certificate : ReadCertificate} (valid : certificate.Valid)
-    (names : List String) : (certificate.statement names).Calm := by
-  have scalar : ∀ column ∈ certificate.columns, column.operands = [] := by
-    intro column member
-    have below := valid.columnsBelow column member
-    cases column with
-    | scalar term => rfl
-    | aggregate function => simp [Resolved.Output.readsBelow] at below
-  intro expression member
-  simp only [ReadCertificate.statement, ReadCertificate.query, Resolved.Statement.clockExpressions,
-    Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple,
-    Resolved.QuerySource.first, Resolved.QuerySource.expressions, List.mem_append, List.mem_flatMap,
-    List.flatMap_nil, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false, List.map_nil] at member
-  apply valid.calm
-  simp only [List.mem_append, List.mem_flatMap]
-  rcases member with (member | ⟨source, rfl, member⟩) | (member | member) | member
-  · exact Or.inl member
-  · simp at member
-  · obtain ⟨column, columnMember, member⟩ := member
-    exact Or.inr ⟨column, columnMember, member⟩
-  · obtain ⟨column, columnMember, member⟩ := member
-    rw [scalar column columnMember] at member
-    simp at member
-  · simp at member
+    (names : List String) : (certificate.statement names).Calm :=
+  Resolved.Statement.simpleTable_calm certificate.position certificate.filter certificate.columns names valid.calm
+    fun column member => Resolved.Output.operands_of_readsBelow (valid.columnsBelow column member)
 
 /-- The facts that a migration must give for a read, so that the statement keeps its output from the
 original connection to the other connection. In plain words, for a certificate, resolution context and

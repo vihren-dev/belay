@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.NormalizedFieldRows
+import Belay.Sqlite.Model.AdmittedCellLaws
 import Belay.Sqlite.Model.QueryEval
 import Belay.Sqlite.Model.ExprFault
 import Belay.Sqlite.Model.ExprEvalLaws
@@ -34,7 +34,7 @@ theorem LiteralData.inserted_plain (table : Table) (first : Int) (rest : List Va
     (LiteralData.inserted table [.integer first :: rest]).rows =
       table.rows ++ [⟨LiteralData.newRowid table (.integer first :: rest), .integer first :: rest⟩] := by
   simp only [LiteralData.inserted, LiteralData.insertRow, List.foldl_cons, List.foldl_nil, LiteralData.newCells]
-  rw [NormalizedField.generatedCells_plain _ _ noGenerated]
+  rw [LiteralData.generatedCells_plain _ _ noGenerated]
   rcases alias with none | some
   · simp [none]
   · have : LiteralData.newRowid table (.integer first :: rest) = first := by
@@ -164,7 +164,7 @@ theorem LiteralData.newCells_getElem?_of_plain (table : Table) (values : List Va
     {other : Nat} (different : other ≠ position) :
     (LiteralData.newCells table values rowid)[other]? = values[other]? := by
   unfold LiteralData.newCells
-  rw [NormalizedField.generatedCells_plain _ _ noGenerated]
+  rw [LiteralData.generatedCells_plain _ _ noGenerated]
   rcases alias with none | some
   · simp [none]
   · simp [some, List.getElem?_set_ne (Ne.symm different)]

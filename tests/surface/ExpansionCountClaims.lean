@@ -1,4 +1,5 @@
 import ExpansionCountQueries
+import LowercaseExpansion
 
 /-! A fixture of `tests/surface_assertion_examples_test.py`: the guide's preserved-count claim as a fresh-run triple
 over every admitted database (ADR 0017, S6). The claim reads: if the table of customers has `n` rows, and the
@@ -12,11 +13,11 @@ set_option maxRecDepth 200000
 set_option exponentiation.threshold 2048
 
 namespace AssertionExamples
-open Belay.Sqlite Std.Do Belay.Sqlite.NormalizedFieldExpansion Belay.Sqlite.Model.NormalizedField
+open Belay.Sqlite Std.Do LowercaseFixture
 open Belay.Sqlite.Model hiding Database
 
 /-- The table, its id column, the column that the field lowers and the new field of the guide's expansion. -/
-abbrev CustomersSite (db : Database) := Site db.raw (name! "customers") (name! "id") (name! "email")
+abbrev CustomersSite (db : Database) := LowercaseSite db.raw (name! "customers") (name! "id") (name! "email")
   (name! "email_lower")
 
 /-- The expansion of the guide's customers for chosen triggers and bound values: add the field, fill it, create
@@ -30,8 +31,9 @@ def customersExpansion (first second : Identifier × CatalogTrigger) (firstValue
 bound values: if the table has {lit}`n` rows and the expansion runs without an error on the database, the table
 has {lit}`n` rows afterwards. The success is a condition of the claim because the expansion fails, for example,
 when a trigger of that name exists; the claim then says nothing. Proof sketch:
-{name}`ifOk_send_expansion` gives the database {lit}`expandedDatabase`; its table keeps the number of rows of
-the old one, because the backfill replaces each row by the row with one more cell. -/
+{name}`DerivedColumnMigration.ifOk_send_derivedColumn` gives the database {name}`DerivedColumnMigration.Site.reached`
+of the site {name}`LowercaseSite.toSite`; its table keeps the number of rows of the old one, because the backfill
+replaces each row by the row with one more cell. -/
 theorem expansion_keeps_the_customer_count (n : Int64) (first second : Identifier × CatalogTrigger)
     (firstValues secondValues thirdValues fourthValues : List Value) :
     FreshEnsures (send (customersExpansion first second firstValues secondValues thirdValues fourthValues))
@@ -46,32 +48,20 @@ theorem expansion_keeps_the_customer_count (n : Int64) (first second : Identifie
   have ranOk : (send (customersExpansion first second firstValues secondValues thirdValues fourthValues)).SucceedsFrom
       env.clock 0 (db.raw.connection env.counters) := (Sql.succeedsFrom_sendStatements _ _ _ _
       (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _
-        (expansion_noInsertSelect _ _ _ _ _ _ _ _ _))).2 ok
-  refine ifOk_send_expansion (name! "customers") (name! "id") (name! "email") (name! "email_lower") first second
-    firstValues secondValues thirdValues fourthValues db env site ranOk ?_
+        (DerivedColumnMigration.migration_noInsertSelect _ _ _ _ _ _))).2 ok
+  refine DerivedColumnMigration.ifOk_send_derivedColumn (name! "customers") (textDefinition (name! "email_lower"))
+    (lowerCall (name! "email")) firstValues secondValues [(first, thirdValues), (second, fourthValues)] db env
+    site.toSite ranOk ?_
   intro outputs final reached valid
   show Holds.reached (customerCountIs n) final (by check_query)
   rw [Holds.reached_iff_holds_of_valid (customerCountIs n) final (by check_query) valid]
   generalize hv : final.connection.state.database = reachedDatabase at reached valid ⊢
   subst reached
-  have oldRows : site.table.rows = db.raw.rows.getD site.position [] := by
-    have := Database.table_of_findTable db.raw _ site.position site.table.shape site.found
-    rw [site.present] at this
-    exact congrArg Table.rows (Option.some.inj this)
-  have newTable := Database.table_of_findTable
-    (expandedDatabase db.raw site.position site.source site.table (name! "email_lower") first second) _ site.position
-    (expandedTable site.table (name! "email_lower") site.source).shape
-    (expandedDatabase_findTable _ first second site.found)
-  rw [expandedDatabase_table (name! "email_lower") first second site.present
-    (Model.Database.position_lt_rows db.valid.admitted.rowsShaped site.found)] at newTable
-  have newRows : (expandedDatabase db.raw site.position site.source site.table (name! "email_lower") first
-      second).rows.getD site.position [] = (expandedTable site.table (name! "email_lower") site.source).rows :=
-    (congrArg Table.rows (Option.some.inj newTable)).symm
-  rw [customer_count_is_iff _ n site.position _ (expandedDatabase_findTable _ first second site.found)]
+  rw [customer_count_is_iff _ n site.position _ (Model.Database.findTable_addDerivedColumn _ _ _ site.found)]
   dsimp only
-  rw [newRows]
   rw [customer_count_is_iff db n site.position site.table.shape site.found] at count
-  simpa [expandedTable, loweredRows, oldRows] using count
+  exact Eq.trans (congrArg Nat.cast (DerivedColumnMigration.Site.reached_rows_length site.toSite _
+    (Model.Database.position_lt_rows db.valid.admitted.rowsShaped site.found))) count
 
 /-- The body of both maintenance triggers: copy the lowercase of the new email into the stored field of the
 changed row. -/
