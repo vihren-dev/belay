@@ -52,8 +52,9 @@ theorem Identifier.sameName_comm (left right : Identifier) : left.sameName right
   · have different : ¬ right.folded = left.folded := fun h => same h.symm
     rw [beq_eq_false_iff_ne.mpr same, beq_eq_false_iff_ne.mpr different]
 
-/-- For every position, index, slot and object: the drop keeps the name of the object. Proof sketch: only a table
-at the dropped position changes, and only in its entry. -/
+/-- For every position, index, slot and object: the drop keeps the name of the object. Proof sketch: the drop
+changes only the entry of a table at the dropped position and the entry of an index, and it leaves the name field
+as it is. -/
 @[simp] theorem CatalogObject.name_dropColumn (position index slot : Nat) (object : CatalogObject) :
     (object.dropColumn position index slot).name = object.name := by
   rcases object with ⟨name, entry⟩
