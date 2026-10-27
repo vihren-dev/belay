@@ -29,3 +29,7 @@ including unrelated private history or copying private contents publicly.
   update the task's conditional wording after the view and S8 decisions were
   accepted. The task now names those accepted contracts and the separate
   still-pending fresh-run helper decision.
+- 2026-10-27: the task file is refreshed against the current state (section "State on 2026-10-27"):
+  the done tasks, the open S6 tasks, the public stack, the private guide PR chain #6 to #9, the unpublished
+  S2/S3 guide commits, and the list of recorded guide changes. Workspace `sqlite-verifier-guide-accept`
+  on `tasks/surface-editor-part3`.

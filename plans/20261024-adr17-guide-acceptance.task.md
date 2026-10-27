@@ -1,6 +1,6 @@
 # ADR17: complete surface and guide acceptance
 
-Created 2026-10-24. Status: OPEN. Final acceptance follows all required slices.
+Created 2026-10-24. Status: OPEN. Final acceptance follows all required slices. Refreshed 2026-10-27 (see "State on 2026-10-27").
 Status: [progress](20261024-adr17-guide-acceptance.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), its accepted clarifications
 and explicit deferrals; [ADR 0016](../docs/adr-0016-model-and-surface.md).
@@ -120,3 +120,57 @@ semantic/specification contradiction before changing its meaning, and continue
 unaffected validation. A missing substantial feature returns to its specified
 task rather than becoming an unrecorded implementation inside this audit.
 Honor the temporary ban on herdr review tabs before Monday, 2026-10-26 UTC.
+
+## State on 2026-10-27
+
+This section replaces the prerequisite text above where they differ.
+
+- **Done:** the feature tasks S4, S5 (except its guide commit), S7 files, the S7 proof-cost prototype and
+  production proof costs, the SQL doc blocks, S8, the editor (with part 3), the S6 assertions, the table
+  rebuild, the NOT IN laws and the derived-column laws.
+- **Still open:** S6 automation and S6 migration patterns. Both close with part 2 of the schema-script task
+  (`plans/20261027-schema-script-laws.task.md`), which is in progress. Its rebuild fixture proves the
+  guide's three rebuild claims.
+- **Public stack:** stack 284 is #282 → #283 → #285 → #286 → #287 → #288 → #289. This task starts on
+  `tasks/surface-editor-part3` (#289). It merges the schema-script part 2 branch before its final gates.
+- **Private guide:** the open product PRs #6 → #7 → #8 → #9 form one chain (`docs/guide-database-validity`,
+  `docs/guide-profile-defaults`, `docs/guide-success-and-inputs`, `docs/guide-s5-check`). Their review and
+  publication complete the S5 guide commit. The product `default` workspace holds unpublished S2/S3 guide
+  commits (for example "guide: parameters as S3 implements them" and "guide: programs, runs and the clock
+  as S3 implements them"). This task reconciles them and does not lose them. The guide changes of this task go
+  on top of #9 as one new product PR, or as a short chain on top of it.
+
+### Recorded guide changes
+
+The status files of the done tasks record guide changes that their tasks did not make. Each one is applied,
+or the status file of this task says why it does not apply:
+
+- `20261024-s6-assertions.status.md`, "Guide changes to make";
+- `20261024-surface-editor.status.md`: the order-warning idiom (an `INSERT ... SELECT` or query with
+  `LIMIT` and no `ORDER BY` now gets a warning);
+- `20261024-surface-s8.status.md`, "Owner decision on the write theorem": the write claims through the
+  expansion triggers are checked instances, not universal theorems;
+- `20261024-s6-automation.status.md`: the three rebuild changes (a new connection has foreign keys off, so
+  the unsafe rebuild needs `PRAGMA foreign_keys = ON` first; `requireName` preserves `allSessions` for the
+  databases of the guide's schema, not for every database; `requireName` does not abort when
+  `PRAGMA foreign_key_check` reports rows);
+- `20261027-not-in-subquery-laws.status.md`, "Guide change to record": the premises of
+  `notBlockedIn ≈ notBlockedEx`;
+- `20261027-derived-column-laws.status.md`, "Guide change to record": the moved modules and the renamed
+  theorems;
+- the schema-script task's status file, at the end of its part 2.
+
+Other tasks may record more. Search all `plans/*.status.md` for guide changes.
+
+### Acceptance on 2026-10-27
+
+The acceptance rules above stay. Notes:
+
+- The guide's examples are checked against the installed library of the final tree, with the commands
+  that the private records name. The guide's own text and derived contents stay private.
+- The capability inventory names, for each required behavior, its public declaration, its task and its
+  Nix-selected test, on the final tree.
+- The final gates run once, on the tree that contains schema-script part 2: `just dev-build`, then
+  `just test-full` and `just verdict`, then `just test-nix` and `just test-scheduled-checks`.
+- When a guide claim is false for the installed library and the fix is not a recorded guide change, the
+  task stops and reports, with options.
