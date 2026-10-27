@@ -12,6 +12,18 @@ namespace Belay.Sqlite.Model
 
 open Syntax
 
+/-- The bytes of a quoted text up to its closing quote {lit}`close`, a doubled closing quote standing for one
+quote ({lit}`sqlite3Dequote`). A text that ends before a closing quote gives the bytes read so far. For example,
+the bytes of {lit}`a""b"` with the closing quote {lit}`"` are those of {lit}`a"b`. -/
+def dequoteBytes (close : UInt8) : List UInt8 → List UInt8
+  | [] => []
+  | byte :: more =>
+    if byte == close then
+      match more with
+      | next :: after => if next == close then close :: dequoteBytes close after else []
+      | [] => []
+    else byte :: dequoteBytes close more
+
 /-- SQLite's {lit}`sqlite3Dequote` of a text: a text that starts with a quote ({lit}`'`, {lit}`"`, {lit}`` ` ``
 or {lit}`[`) becomes the characters up to the closing quote, a doubled quote standing for one quote; another text
 stays. A label is the dequoted text of the constraint, so a text that starts with a quoted table name
@@ -25,16 +37,7 @@ def dequoteLabel (text : String) : String :=
       if first == 39 || first == 34 || first == 96 then some first else if first == 91 then some 93 else none
     match close with
     | none => text
-    | some close =>
-      let rec scan : List UInt8 → List UInt8
-        | [] => []
-        | byte :: more =>
-          if byte == close then
-            match more with
-            | next :: after => if next == close then close :: scan after else []
-            | [] => []
-          else byte :: scan more
-      (String.fromUTF8? (ByteArray.mk (scan rest).toArray)).getD text
+    | some close => (String.fromUTF8? (ByteArray.mk (dequoteBytes close rest).toArray)).getD text
 
 /-- Whether the text has a double quote that no name token of the text covers: a double-quoted string in the
 CHECK constraint, or one inside a single-quoted string. SQLite rewrites such a string to single quotes at every
