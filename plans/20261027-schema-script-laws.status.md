@@ -21,3 +21,5 @@ stopped at a gap (2026-10-27)".
   error: commit d37be705, described as the fix, holds only that review record, because the edit script
   failed before it wrote the file; its review `20261027T130113Z-d37be705` has no findings, and the two
   resolutions were recorded as fixed before the fix existed. The fix is the next commit.
+- 2026-10-27: review `20261027T130242Z-a51577be` (1 must: a premise on direct foreign keys does not
+  exclude a cascade through other tables; fixed in the next commit).

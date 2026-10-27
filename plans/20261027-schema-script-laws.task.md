@@ -45,8 +45,9 @@ claim and no judge file. With its fixture, S6 automation part 3 is complete.
     explicit premise that excludes indirect effects on it. DROP TABLE runs an
     implicit DELETE, so with foreign-key enforcement on it can change a child
     table through a cascade (`RebuildRuns.unsafe_rebuild_cascades`); the
-    premise is, for example, enforcement off, or no foreign key of the
-    observed table that names the dropped table.
+    premise is, for example, foreign-key enforcement off. (A premise on
+    direct foreign keys alone is not enough: a cascade can pass through
+    other tables.)
   Where a law exists at another level (`runStatement`, `step_rewrite_ok`,
   `runScriptStep_failed_frame`, `StatementKeeps.ofOwnRun`, the drop position
   laws), the new law builds on it instead of repeating it.
