@@ -33,25 +33,36 @@ def raiseSelectStep (kinds : List (Option Syntax.RaiseKind)) :
   | .ok (.ok (.insert ..)) | .ok (.ok (.update ..)) | .ok (.ok (.delete ..)) | .ok (.ok (.raise ..)) =>
     .error (triggerRestriction .triggerForm)
 
+/-- The occurrence moved from the column that resolves a message to the place of the message in the written
+column: {lit}`paths` are the places of the messages ({name}`raiseMessagePaths`). -/
+def moveToMessage (paths : List (List Nat)) (occurrence : NameOccurrence) : NameOccurrence :=
+  match occurrence.path with
+  | 0 :: (column + 1) :: 0 :: rest => match paths[column]? with
+    | some place => { occurrence with path := [0, 0, 0] ++ place ++ rest }
+    | none => occurrence
+  | _ => occurrence
+
 /-- Resolve a SELECT whose one result column raises ({name}`raisingColumn`): the SELECT with the
 column whose {lit}`RAISE` results are NULL and a column for each message, which resolves the
 messages for their errors; then its filter and the arms of the column ({name}`raiseSelectStep`). A SELECT of another shape
 is the restriction of a {lit}`RAISE` form. The column keeps the place of the written column and the operands of its
-{lit}`CASE` keep their places, so the names of the trace are at their written paths; the messages
-are text. -/
+{lit}`CASE` keep their places. The message {lit}`m` is the result column {lit}`m + 1` of the SELECT that is
+resolved, and the names of its trace move to the place of the message in the written column
+({name}`raiseMessagePaths`). -/
 def resolveRaiseSelectTraced (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
     (query : Syntax.Subquery) (column : Syntax.Expr) (kinds : List (Option Syntax.RaiseKind))
-    (messages : List Syntax.Expr) : Traced NodeRestriction (Except PrepareError Resolved.Step) :=
+    (messages : List Syntax.Expr) (paths : List (List Nat)) :
+    Traced NodeRestriction (Except PrepareError Resolved.Step) :=
   let extra := messages.map fun message => Syntax.ResultColumn.expression message none ""
   Traced.mapResult (raiseSelectStep kinds)
     (bodyStepTraced (resolveBodySelectTraced context catalog row
-      { query with columns := .expression column none "" :: extra } []))
+      { query with columns := .expression column none "" :: extra } [])) |>.mapOccurrences (moveToMessage paths)
 
 /-- The step of a raising SELECT: {name}`resolveRaiseSelectTraced` without its trace. -/
 def resolveRaiseSelect (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
     (query : Syntax.Subquery) (column : Syntax.Expr) (kinds : List (Option Syntax.RaiseKind))
     (messages : List Syntax.Expr) : Except NodeRestriction (Except PrepareError Resolved.Step) :=
-  (resolveRaiseSelectTraced context catalog row query column kinds messages).drop
+  (resolveRaiseSelectTraced context catalog row query column kinds messages []).drop
 
 /-- The step of a write in a body whose target is a view. SQLite reads the view's query with the
 rows of the trigger in sight, so a column that the model cannot find, such as {lit}`new.a`, may be
@@ -110,7 +121,7 @@ def resolveBodyStatementTraced (context : ResolveContext) (catalog : Catalog) (r
       | some (column, kinds, messages) =>
         if source.isSome || !joins.isEmpty || !groupBy.isEmpty || !orderBy.isEmpty || limit.isSome || offset.isSome ||
             !subqueries.isEmpty || having.isSome || distinct then Traced.lift (.error (triggerRestriction .raiseForm))
-        else resolveRaiseSelectTraced context catalog row query column kinds messages
+        else resolveRaiseSelectTraced context catalog row query column kinds messages (raiseMessagePaths value)
       | none => bodyStepTraced (resolveBodySelectTraced context catalog row query subqueries)
     | [] | [.star] | [.sourceStar _] | _ :: _ :: _ =>
       bodyStepTraced (resolveBodySelectTraced context catalog row query subqueries)

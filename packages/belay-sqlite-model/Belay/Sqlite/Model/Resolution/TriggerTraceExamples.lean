@@ -69,4 +69,18 @@ def raising : CatalogTrigger where
     fun occurrence => occurrence.name.map fun name => (occurrence.path, name.text)) ==
   [([6, 0, 0, 0, 0, 0, 0, 1, 0], "new"), ([6, 0, 0, 0, 0, 0, 0, 1, 1], "a")]
 
+/-- {lit}`BEFORE INSERT ON t BEGIN SELECT CASE WHEN 1 THEN RAISE(ABORT, new.b) END; END`. -/
+def raisingWithName : CatalogTrigger where
+  table := name! "t"
+  time := .before
+  event := .insert
+  body := [.select [.expression (.caseOf [.numeric "1", .raise .abort (some (dotted "new" "b"))] false) none ""] none []
+    none [] [] none none]
+
+-- The message is a result column of the SELECT that is resolved; its names move to the message in the written
+-- CASE: the operand 1 of the CASE, then the child 1 of the RAISE.
+#guard ((resolveProgramTraced { profile := defaults, mode := .execution } tables 2 raisingWithName).trace.filterMap
+    fun occurrence => occurrence.name.map fun name => (occurrence.path, name.text)) ==
+  [([6, 0, 0, 0, 0, 0, 1, 1, 0], "new"), ([6, 0, 0, 0, 0, 0, 1, 1, 1], "b")]
+
 end Belay.Sqlite.Model.Resolution.TriggerTraceExamples

@@ -51,6 +51,19 @@ def raisingColumn : Syntax.Expr → Option (Syntax.Expr × List (Option Syntax.R
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .concatenate .. => none
 
+/-- The paths of the messages that {name}`raisingColumn` lists, in the same order, in the written
+column: the message of a {lit}`RAISE` is its child 1, and the operand {lit}`j` of a {lit}`CASE` is
+{lit}`[0, j]` (the base operand counts). -/
+def raiseMessagePaths : Syntax.Expr → List (List Nat)
+  | written@(.raise ..) => (written.raiseMessage?.map fun _ => [1]).toList
+  | .caseOf operands hasBase =>
+    let skip := if hasBase then 1 else 0
+    ((operands.drop skip).zipIdx.filterMap fun (operand, index) =>
+      if operand.raiseKind?.isSome && operand.raiseMessage?.isSome then some [0, skip + index, 1] else none)
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .concatenate .. => []
+
 /-- The arms of a raising {lit}`CASE` from the arguments of its {lit}`iif` and the kinds of the
 operands: each condition with the kind of its result, and the kind of the {lit}`ELSE` result
 last, none without {lit}`ELSE`. Lists of other lengths give no arm. -/

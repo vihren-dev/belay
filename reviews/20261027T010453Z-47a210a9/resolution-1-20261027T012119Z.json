@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T01:21:19+00:00",
+  "finding": "20261027T010453Z-47a210a9#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the names of a RAISE message move back to the message in the written column (moveToMessage) and the status text says so"
+}

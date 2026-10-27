@@ -388,11 +388,14 @@ rebuild proof is separate.
   `.drop` of their traced forms (`TriggerBodies.lean`, `TriggerStatements.lean`, `TriggerPrograms.lean`), so the
   trace and the resolved program cannot disagree. `triggerEvent` moved to `TriggerPrograms.lean`.
 - A write to a view in a body decides no name (it is a prepare error); the rename of unit 2.5 handles it.
-  A raising SELECT keeps the operands of its CASE in place, so its names have their written paths.
+  A raising SELECT keeps the operands of its CASE in place; the message of a RAISE is resolved as an extra result column, and
+  its names move back to the message in the written column (`raiseMessagePaths`, `moveToMessage`); the message is the child 1 of a RAISE.
 - Tests: `Resolution/TriggerTraceExamples.lean` (`#guard` checks of the paths of a program and of a raising
   SELECT); the existing `TriggerProgramExamples.lean` still passes, and so do `tests/syntax_triggers_test.py`
   and the trigger tests of the conformance suites.
-- Review of unit 2.2: `20261027T004253Z-27fd1515` (2 musts and 1 should, all fixed in the refactor commit).
+- Review of unit 2.2: `20261027T004253Z-27fd1515` (2 musts and 1 should, all fixed in the refactor commit). Review of unit 2.3:
+  `20261027T010453Z-47a210a9` (1 must: the names of the message of a RAISE had the path of the extra column; fixed in unit 2.4's
+  refactor commit).
 - Manual proof repairs in this unit: 0.
 
 ### Part 2, unit 2.4: replace a name of an object by its trace path

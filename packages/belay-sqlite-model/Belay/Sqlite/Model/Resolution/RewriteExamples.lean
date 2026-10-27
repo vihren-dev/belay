@@ -106,6 +106,7 @@ def grouped : Subquery :=
 -- The program of a trigger: the condition, an UPDATE, an INSERT and a SELECT in its body, and a raising SELECT.
 #guard triggerRoundTrips Resolution.TriggerTraceExamples.trigger
 #guard triggerRoundTrips Resolution.TriggerTraceExamples.raising
+#guard triggerRoundTrips Resolution.TriggerTraceExamples.raisingWithName
 
 /-- The name tokens of {lit}`t.a+1`: {lit}`t` is the child 0 of the child 1 of the arithmetic, {lit}`a` the child 1. -/
 def tokensOfSum : SourceText :=

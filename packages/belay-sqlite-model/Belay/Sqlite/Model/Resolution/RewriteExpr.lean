@@ -7,7 +7,7 @@ name trace ({lit}`resolveOperandTraced`): the operand of a unary form is the chi
 comparison or of arithmetic are the children 1 and 2; the sides of {lit}`AND`, {lit}`OR` and {lit}`||`
 the children 0 and 1; {lit}`BETWEEN` has its three operands at 0, 1 and 2; the arguments of a call are
 below the child 1; the operand of {lit}`IN` is the child 0 and the values of a list below the
-child 1; the operands of {lit}`CASE` are below the child 0. In {lit}`source.column`, the source is
+child 1; the operands of {lit}`CASE` are below the child 0; the message of {lit}`RAISE` is the child 1. In {lit}`source.column`, the source is
 the child 0 and the column the child 1. An unqualified name has the path of its node. -/
 
 namespace Belay.Sqlite.Model.Syntax
@@ -32,6 +32,7 @@ def Expr.renameAt (edit : NameEdit) : List Nat → Expr → Option Expr
     (Expr.renameListAt edit index rest values).map (.inList operand · negated)
   | 1 :: index :: rest, .call name arguments => (Expr.renameListAt edit index rest arguments).map (.call name)
   | 0 :: index :: rest, .caseOf operands hasBase => (Expr.renameListAt edit index rest operands).map (.caseOf · hasBase)
+  | 1 :: rest, .raise kind (some message) => (message.renameAt edit rest).map (.raise kind ∘ some)
   | 1 :: rest, .compare operator left right => (left.renameAt edit rest).map (.compare operator · right)
   | 2 :: rest, .compare operator left right => (right.renameAt edit rest).map (.compare operator left ·)
   | 1 :: rest, .arithmetic operator left right => (left.renameAt edit rest).map (.arithmetic operator · right)
