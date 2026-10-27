@@ -346,3 +346,12 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
 - `just verdict`: `/nix/store/896i6lavqnxqp7grcyharlfkmk5w6gh6-sqlite-verifier-verdict`, with the predictions
   `/nix/store/ci6rv6zsmhqfr2ck2q37w8nrwqq3adgl-sqlite-verifier-predictions`. `report.json` and `counts.json` are
   byte-identical to those of `/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict` (#279).
+
+## Owner decisions on the part 2 open points (2026-10-27)
+
+- `notBlockedIn ≈ notBlockedEx` for every database: a separate task adds general NOT IN and correlated NOT
+  EXISTS query laws and the fixture (`plans/20261027-not-in-subquery-laws.task.md`, next on the stack).
+- The partial-index invariant through the tactics: part 3 adds a general unique-index rule to `sql_run`.
+- The migration query claim over every database of a site (coordinator's call): the `NormalizedField*`
+  cleanup task adds the general ADD COLUMN, backfill and scan laws and the fixture.
+- The task file records these (review `20261027T063411Z-aa6ad356`: no findings).
