@@ -353,6 +353,13 @@ import Belay.Sqlite.Model.NormalizedFieldLookups
 import Belay.Sqlite.Model.NormalizedFieldExpandedTable
 import Belay.Sqlite.Model.NormalizedFieldLookupOutputs
 import Belay.Sqlite.Model.InValueLaws
+import Belay.Sqlite.Model.InValueEqualsLaws
+import Belay.Sqlite.Model.NotInValueLaw
+import Belay.Sqlite.Model.NotInIntegerProbe
+import Belay.Sqlite.Model.NotInSubquerySource
+import Belay.Sqlite.Model.NotInSubqueryRun
+import Belay.Sqlite.Model.NotInFilterLaw
+import Belay.Sqlite.Model.NotInRowidAlias
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput
 import Belay.Sqlite.Model.ScalarSubqueryOutput
