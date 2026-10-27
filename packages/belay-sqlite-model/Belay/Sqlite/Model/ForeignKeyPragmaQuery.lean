@@ -10,7 +10,9 @@ parent schemas. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The foreign-key pragma selects its four columns without grouping, order or window. -/
+/-- For every table choice, the query of the foreign-key pragma is simple ({name}`Resolved.Query.Simple`): it selects
+its four columns without grouping, order or window. Proof sketch: each field of the structure is a field of the
+generated query, which {name}`pragmaQuery` sets by definition. -/
 theorem keyCheckQuery_simple (table : Option Nat) :
     (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames).Simple :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -23,7 +25,9 @@ theorem keyCheckQuery_calm (table : Option Nat) : (keyCheckQuery table).Calm := 
     Resolved.Output.operands, foreignKeyCheckNames, List.range_succ] at member
   rcases member with rfl | rfl | rfl | rfl <;> exact ⟨rfl, rfl, fun _ => rfl⟩
 
-/-- When the pragma supplies rows, its single source gives those rows without a fault. -/
+/-- For every context, database, table choice and rows: if the pragma supplies the rows, the source of its query gives
+those rows, with four columns and no fault. Proof sketch: unfold the query, the source and the join of its one
+pragma source; the join of one source is the rows of the pragma. -/
 theorem keyCheckQuery_source (context : Resolved.EvalContext) (database : Database)
     (table : Option Nat) (rows : List (List Value))
     (found : (Resolved.PragmaRows.foreignKeyCheck table).rowsOn database = some rows) :
