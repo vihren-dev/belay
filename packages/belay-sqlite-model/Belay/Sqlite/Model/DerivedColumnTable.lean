@@ -123,8 +123,8 @@ theorem Database.rows_length_addDerivedColumn {database : Database} {tableName :
   simp [Table.addDerivedColumn, oldRows]
 
 /-- For every original table with wide aliased rows, in-range primary-key positions, no generated column,
-appended column without a generated expression, and context-free expression that reads only the old columns,
-the scan of {name}`Table.addDerivedColumn` is the scan of the original with the stored value of the
+appended column without a generated expression, and expression that reads only the old columns, evaluated in
+the plain context without parameters ({name}`EvalContext.plain` with clock 0), the scan of {name}`Table.addDerivedColumn` is the scan of the original with the stored value of the
 expression appended to each row. The row order, the rowids and the key order of the original table decide
 the order, whatever the stored order. Proof sketch: the actual backfill UPDATE computes these rows
 ({name}`updated_derived_append`), and {name}`sourceRows_updated_derived` transports the scan. -/

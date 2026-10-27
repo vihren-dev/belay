@@ -8,8 +8,9 @@ set_option doc.verso true
 stores in it the value of an expression of the old columns, and moves a lookup from the expression to the
 stored column. The laws here are about one row: the comparison on the stored cell is the comparison on the
 expression when the two comparisons give the same value for the computed value and the probe. The
-laws make no claim about affinity or collation; the premise {lit}`agree` states exactly what the stored
-column's affinity must not change, and fails for some pairs of expression and column. -/
+laws make no claim about affinity or collation; the premise {lit}`agree` states exactly what must hold: the
+comparison under the affinity and collation of the stored column and the comparison under those of the
+expression give equal values. It fails for some pairs of expression and column. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -19,8 +20,10 @@ reads only the old cells, value that the expression has on the row, and affinity
 comparison of the stored cell with the probe gives the same value as the comparison of the computed value
 with the probe, then the comparison {lit}`stored op probe` over the row with the stored cell appended gives the
 value of the comparison {lit}`expression op probe` over the row. In plain words, moving a comparison from the
-expression to its stored column changes no result, provided the stored column's affinity changes neither
-operand of the comparison. Here the stored cell is the computed value after the affinity of the column
+expression to its stored column changes no result, provided the two comparisons give equal values: the
+stored cell against the probe under the affinity and collation of the stored column, and the computed value
+against the probe under the affinity and collation of the expression. This holds, for example, when the
+affinity of the stored column changes neither operand and the two collations are equal. Here the stored cell is the computed value after the affinity of the column
 ({name}`Value.store`), and its column position is the width of the row. Proof sketch: the stored column reads
 the appended cell, the probe reads the same value over the longer row ({name}`Expr.eval_append`), and
 {name}`Expr.eval_compare` turns both sides into the comparison of the premise. -/
