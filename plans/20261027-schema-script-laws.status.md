@@ -1,6 +1,6 @@
 # Status: schema-script laws
 
-Created 2026-10-27. Status: OPEN.
+Created 2026-10-27. Status: DONE (2026-10-27).
 Task: [task file](20261027-schema-script-laws.task.md).
 Specs: ADR 0017 S6; the S6 automation task, part 3 outcome "the rebuild
 example", and its status section "Part 3 outcome (a), the rebuild example:
@@ -58,6 +58,9 @@ reason: the model has no earlier law for the statements.
 - 2026-10-27: Part 2 slice 5 committed: the general laws that claim 2 needs. Success of a sent script from a property that each step keeps and the continuation of each step (`SendStatementsSuccess.lean`), the success law of CREATE TABLE, DROP TABLE, rename, a setting, BEGIN, COMMIT and `PRAGMA foreign_key_check` (`StepContinuesOk.lean`, `ForeignKeyCheckContinues.lean`), the rows and fit of a copying INSERT from a query (`CopyInsertFits.lean`, `CopyInsertRows.lean`), and the scan order of a table whose only key is its rowid alias (`AliasIndexOrder.lean`). The fixture of claim 2 follows in the next commit. The size of claim 2 exceeds the limit of about 800 lines of the coordinator: the general laws are about 680 lines and the fixtures about 540. They are general laws that other migrations reuse; this is an open point for the coordinator.
 - 2026-10-27: review `20261027T170511Z-911176f9` of the refactor commit before slice 5 has no findings. Review `20261027T175841Z-11bf71a0` of slice 5 (2 musts: the status listed the fixtures of claim 2 before they landed; no proof sketches on the public key-check query laws) is fixed in `e934336b`, whose review `20261027T180005Z-e934336b` has no findings.
 - 2026-10-27: Part 2 slice 6 committed: claim 2. `requireName_succeeds` in `RebuildSucceeds` proves `Succeeds requireName (fun db => db.raw.catalog = sample.raw.catalog ∧ NoNullName db)`: the rebuild succeeds on every database of the guide's schema in which no customer lacks a name, on the actual run and on every branch. The fixtures are checked by `test_rebuild_succeeds_when_no_customer_lacks_a_name` in `tests/surface_rebuild_test.py`; the proof uses only logical axioms.
+
+- 2026-10-27: end of Part 2 gates (on the tree of the review-record commit `82b7651f`; the working copy above it is empty). `just dev-build` passed (2613 jobs). `just test-full`: the first run ended at the 1500 s limit with no failed test; the rerun passed, `/nix/store/dysgwdn220pr9fvzrbbgb18p2m58l7ij-sqlite-verifier-test-reports` (suite `surface` 377 tests, 659 s; suite `surfaceS6` 65 tests, 631 s). `just verdict` exit 0: `/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict`, predictions `/nix/store/bj9mcif94mpvlfj94i0z0jr6s37kz7yq-sqlite-verifier-predictions`. `just test-nix` exit 0 (71 tests). `just test-scheduled-checks` exit 0: `/nix/store/kn73v2a0nawk5pqjfbsmy0rw52di22v3-sqlite-verifier-scheduled-check-reports`.
+- Review `20261027T180107Z-1a86ccae` of slice 6 (1 should: a catch-all match in `renameKeepsOutline`) is fixed in `db41736a`, whose review `20261027T180303Z-db41736a` has no findings. Part 2 is done.
 
 ## Changes that the guide needs
 
