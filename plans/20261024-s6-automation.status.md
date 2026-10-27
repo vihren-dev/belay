@@ -283,9 +283,11 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   universal lookup claim that has no default proof) and `S6NotBlocked` (`NOT IN` against `NOT EXISTS`: the three
   counterexamples, each refuted with a replay, and one database that meets the premises where the outputs agree).
   The driver `tests/surface_s6_check_programs_test.py` (the `S6NotBlocked` blocks are read by
-  `tests/surface_s6_not_blocked_test.py`; shared helpers are in `tests/s6_check_support.py`) replays each false block in native SQLite and compares the rows
-  (for example 6 and 7 for the two updates, and `[]` against `[[1]]` for a NULL blocked id), and elaborates each
-  printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
+  `tests/surface_s6_not_blocked_test.py`; shared helpers are in `tests/s6_check_support.py`) replays the blocks `triple-false`, `equiv-false`, `equiv-at-false` and
+  `migration-star-false` in native SQLite and compares the rows (for example 6 and 7 for the two updates, and `[]`
+  against `[[1]]` for a NULL blocked id in the `S6NotBlocked` driver). The blocks `lean-continuation-false`,
+  `equiv-shrink-exhausted`, `observation-false` and `view-false` check the report text only, because their native
+  scripts do not show the model-level difference. The driver elaborates each printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
 - Open points. (1) The claim `notBlockedIn ≈ notBlockedEx` under the premises "rowid alias and no NULL blocked id" is
   not proved for every database: the general laws describe `SELECT 1 WHERE x IN (SELECT ...)` and NOT EXISTS
   duplicate-key queries, but not the rows of a filtered scan with a subquery, so a proof needs new row laws

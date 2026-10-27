@@ -195,6 +195,8 @@ let
                (root + /tests/lean_server_support.py) (root + /tests/surface_editor_support.py)
                (root + /tests/proof_cost_support.py)
                (root + /tests/sql_file_support.py)
+               (root + /tests/s6_check_support.py)
+               (root + /tests/surface_automatic_editor_test.py)
                (root + /tests/shared_table_shape_test.py)
                (root + /tests/surface_replay_test.py) (root + /tests/surface_execution_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
