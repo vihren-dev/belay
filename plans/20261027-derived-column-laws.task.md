@@ -137,8 +137,13 @@ test-scheduled-checks`. Only Nix results are acceptance evidence.
 - The table-rebuild task changed `NormalizedFieldResolution`,
   `NormalizedFieldSelectResolution`, `NormalizedFieldUpdateResolution` and
   `NormalizedFieldLookups` (the `aliased` argument of the rename work) and
-  adds DROP COLUMN in its part 3. The implementation starts on a base that
-  contains table rebuild part 3.
+  adds DROP COLUMN in its part 3. Part 3 (in progress on 2026-10-27) touches
+  none of the files of this task, but it changes shared laws: a field
+  `dropped` in `RowLocalAtom` and `TableAtom`, new `dropColumn` constructors
+  of `Syntax.Statement` and `Resolved.Statement`, the rename guard
+  `Catalog.sameOutline`, and the golden text of `DbBangErrors.lean`. The
+  implementation can start before part 3 is published; the branch merges part
+  3 before its final `dev-build` and `test-full`.
 - `Query.simple_results_append` needs a `readsBelow` width premise and
   `RowFree`; the stored-column condition reads the appended column, so it needs
   its own law.

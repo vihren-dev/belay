@@ -84,8 +84,8 @@ Consumers in `tests/surface`: `NormalizedFieldLaws.lean` (23 axiom reports),
 
 ## Progress
 
-- 2026-10-27: task specified on top of the NOT IN task (PR #281). The
-  implementation starts on a base that contains table rebuild part 3.
+- 2026-10-27: task specified on top of the NOT IN task (PR #281). Table rebuild part 3 touches none
+  of this task's files; the branch merges part 3 before its final gates.
 - 2026-10-27: spec reviews `20261027T093454Z-a5ba83bf` (1 must: the survey called the private
   filter-agreement lemma a specialization; 1 should: the source column is of any affinity; both fixed
   in the next commit) and `20261027T093610Z-530aa0f2` (no findings).
