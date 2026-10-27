@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; part 3 (2026-10-27) covers the statements of the table-rebuild task.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
@@ -224,6 +224,49 @@ A comparison has no operator part in the translated syntax. The comparison
 information is therefore the hover of the whole comparison expression, and the
 name hovers of the operands stay more specific. A name that is ambiguous gets
 the existing error and no hover, because no column is the one the resolver chose.
+
+## Part 3: the statements of the table-rebuild task (2026-10-27)
+
+The table-rebuild task (done, PR #282) added `INSERT ... SELECT` (the
+constructor `Syntax.Statement.insertSelect`), `ALTER TABLE ... DROP COLUMN`
+and the rebuild script of the guide. It gave these statements only the arms
+that the editor files need to compile. Part 3 gives them the editor behavior
+of parts 2a and 2b, with the same rules:
+
+- **Table places of the query.** The table slots of an `INSERT ... SELECT`
+  include the target, the `FROM` and join sources of its query, and the
+  sources of the subqueries of its query (`SqlTableSlots`). Each place gets the
+  table hover, the navigation and the semantic token of part 2a.
+- **Names of the query.** The names of the query of an `INSERT ... SELECT`
+  get the column information, the corrections and the DQS warning of part 2b,
+  where the name trace covers them. The target column list gets the same
+  information as the column list of `INSERT ... VALUES`. A position that the
+  trace does not cover is a documented gap in the status file, as in part 2b.
+- **Order warning.** The query of an `INSERT ... SELECT` with `LIMIT` or
+  `OFFSET`, without `ORDER BY`, that reads rows from a source gets the
+  syntactic order warning (`SqlOrderWarnings`), because the inserted rows can
+  depend on an order that SQLite does not promise. The evidence-based warning
+  of `db!` and `#sql` stays only for statement outputs.
+- **Navigation after a rename.** In a script, `ALTER TABLE a RENAME TO b`
+  moves the origin of `a` to the name `b` (`stepCreatedSlots` in
+  `SqlTableOrigins`), so that after the guide's rebuild the name of the new
+  table navigates to the `CREATE TABLE` of the table that the script created.
+  A rename of a table that the script did not create gives `b` the origin of
+  `a` in the database definition, when `a` has one. `DROP COLUMN` keeps the
+  origin.
+
+Tests: server fixtures for the hovers, the navigation and the warnings above,
+with the guide's rebuild script as one fixture (a fixture in `tests/surface`,
+not in the packages), and negative fixtures: a name that a `WITH` definition
+names, an `INSERT ... SELECT` with `ORDER BY` and `LIMIT` (no warning), and a
+rename followed by a drop of the new name (no origin). The new tests go in a
+Nix suite with headroom.
+
+Acceptance: one part. Each coherent commit gets focused checks, dev-build and
+independent review. The part ends with `just dev-build`, then `just test-full`
+and `just verdict`; then `just test-nix` and `just test-scheduled-checks` once,
+as the end of the whole task. No SQL meaning, prediction, corpus, claim or
+judge file changes.
 
 ## Current APIs and ownership constraints
 

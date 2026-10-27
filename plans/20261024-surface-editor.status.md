@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; part 3 (2026-10-27) covers the statements of the table-rebuild task.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -475,3 +475,11 @@ Part 2b is accepted. Still open: the table-rebuild task adds `Syntax.Statement.i
 arms in `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, without
 editor information for its subqueries and the names of its query. A follow-up of this task covers
 them after that task.
+
+
+## Part 3: the statements of the table-rebuild task (specified 2026-10-27)
+
+- The task file has the new section "Part 3: the statements of the table-rebuild task". It replaces the
+  open point of part 2b ("the table-rebuild task adds `Syntax.Statement.insertSelect` ... A follow-up of this
+  task covers them after that task").
+- Base: `tasks/table-rebuild-judge` (PR #287, top of stack 284), workspace `sqlite-verifier-editor-p3`.
