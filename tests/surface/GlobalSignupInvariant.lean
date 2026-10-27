@@ -42,7 +42,7 @@ theorem one_live_iff (db : Database) (position emailIx deletedIx : Nat)
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })).Pairwise
         fun earlier later => emailCell.collation.compare (later.getD emailIx .null) (earlier.getD emailIx .null) ≠ .eq := by
   obtain ⟨columnName, affinity, columns⟩ := NormalizedField.resolveColumns_identifier_at runContext.profile.dqsDml
-    { current := some 0, aggregates := [.callStar "count"] } (some position) _ table.columns _ (quote := .none) emailColumn
+    { current := some 0, aggregates := [.callStar "count"] } (some position) _ table.columns _ _ (quote := .none) emailColumn
     none "email"
   have filterResolves := FilterResolves.of_term (dqs := runContext.profile.dqsDml)
     (scope := tableScope db.raw.catalog { table := name! "accounts", alias := none } position table) (aliases := [])

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T04:48:00+00:00",
+  "finding": "20261027T044740Z-3eb50c9c#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the status names the limits of each test"
+}

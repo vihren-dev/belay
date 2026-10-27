@@ -565,5 +565,9 @@ rebuild proof is separate.
   and `Syntax.Statement.renameTable` / `renameColumn`. The arms were added (these are exhaustive-match arms, not new
   tests); `tests/surface_claims_test.py` and `tests/surface_views_test.py` pass.
 - `surface_sampling_test` and `surface_search_test` timed out in that run only because three Nix test runs shared the
-  machine (they take 55 s and 86 s alone, under the 180 s limit); they pass alone.
+  machine (alone they take 55 s and 86 s; their own command limits are 180 s for the sampling test and 90 s and 240 s
+  for the search test); they pass alone.
+- The third `just test-full` found one more fixture break: `tests/surface/GlobalSignupInvariant.lean` called
+  `NormalizedField.resolveColumns_identifier_at`, which got the argument `aliased` in the rename work; the call passes
+  `_` for it.
 - Manual proof repairs in this unit: 0. Total for the task so far: about 122.
