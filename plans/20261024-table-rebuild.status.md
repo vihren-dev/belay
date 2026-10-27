@@ -818,8 +818,24 @@ For each new public statement: the general form chosen, and what stays specific.
   list of `packages/belay-sqlite-model/lakefile.toml`; I took the union of both sides (`union_globs.py`, 11 modules
   added from part 3, none removed).
 - Adaptation to the five shared-law changes (the `dropped` field, `Syntax.Statement.dropColumn`,
-  `Resolved.Statement.dropColumn`, `Catalog.sameOutline` with its changed arities, and the golden text): none was
-  needed. The NOT IN modules build no `RowLocalAtom` or `TableAtom` instance and match no statement type
-  exhaustively, and the S6 tactics and the S5 checker use the shared theorems only through their general statements.
-  The model package and the whole `dev-build` (2545 jobs) build on the merged tree. The surface fixtures of S6 compile in
-  `just test-full`, whose result is below.
+  `Resolved.Statement.dropColumn`, `Catalog.sameOutline` with its changed arities, and the golden text): the model,
+  the NOT IN modules and the S6 tactics needed none. The NOT IN modules build no `RowLocalAtom` or `TableAtom` instance and
+  match no statement type exhaustively. The first `just test-full` on the merged tree (log only) failed 9 tests of the
+  view and claim fixtures (`ClaimsViewCatalog`, `ClaimsCommonTables`, `ViewsSupport`): their matches over
+  `Resolved.Statement` lacked the `dropColumn` arm, and one arm in `ViewsSupport` that unit 3.1 had written as
+  `some (.renameColumn .. | .dropColumn ..)` was a syntax error that no earlier run compiled. Four one-line arms fixed
+  them (repairs: 4, all mechanical; the total is about 175).
+
+## Part 3 gates (Nix)
+
+- `just dev-build` (2545 jobs), then `just test-full` on the same tree (after the fixture arms): 407 passed,
+  `/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`.
+- `just verdict`: no DISAGREE and no HARNESS_ERROR, `/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`
+  (AGREE 5504, MODEL_UNSUPPORTED 2096). Change from the part 2 verdict
+  (`/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`, AGREE 5318, MODEL_UNSUPPORTED 2282): 186 cases go from
+  MODEL_UNSUPPORTED to AGREE (corpus-v1 28, v2 28, v3 28, v4 51, v5 51) and nothing else changes.
+- Predictions (`/nix/store/4dzghvdn8g8n6k62086i03g9nzzd5w8c-sqlite-verifier-predictions`) against `build/predictions-baseline`
+  (taken before the task): the lines that differ are cases whose old prediction was a restriction; no supported case
+  changed its prediction.
+- Reviews of part 3: 86f55729 (1 must, 1 should, fixed), the refactor 0e19a8a2 (none), e690b7fd (1 must, fixed),
+  26f2cb7b (none), ffa5d786 (none).
