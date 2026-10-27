@@ -16,12 +16,11 @@ namespace Belay.Sqlite.Model
 ROLLBACK or a setting: {name}`Resolved.Statement.isControl` is false) and every execution of the step: if the
 output of the execution is no error, then the effect of some run of the statement is a success with a database,
 and the next connection of the execution is the connection with that database and the counters after the counts
-of that run. The run is the own run or an alternative run, and it is listed among the effects of the statement
-({name}`StatementRun.effects`). In plain words, an execution that does not fail has the effect of one
-successful run, whichever run it comes from; the snapshot, the clock and the settings stay. The formula ties
-the counts to the run that it names, and says only that the effect of that run is listed; it does not say which
-execution of the step the run belongs to.
-Proof sketch: {name}`runScriptStep_continued_spec` gives the own execution and the executions of the
+of that run. The formula says only that the effect of the run is listed among the effects of the statement
+({name}`StatementRun.effects`), which are the effects of the own run and of the alternative runs; it does not say
+which run of the step it is, or which execution of the step the run belongs to. In plain words, an execution
+that does not fail has the effect of one successful run of the statement; the snapshot, the clock and the settings
+stay. Proof sketch: {name}`runScriptStep_continued_spec` gives the own execution and the executions of the
 alternatives; {name}`StatementExecution.ofAlternatives_mem` gives the run, transition and output of an
 alternative. In both cases {name}`successful_output_effect` turns an output that is no error and does not end
 the run into a successful effect and a transition that continues. -/
