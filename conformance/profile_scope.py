@@ -73,7 +73,8 @@ def legacy_alter_scope(record: Mapping[str, Json], statements: Iterable[Located]
     see it. The model implements only the default, off (ADR 0019, D4)."""
     if record.get("nativeVersion") not in PROFILED and any(has_rename(item) for item in statements):
         raise SqlError("UNSUPPORTED", f"{record.get('name', 'case')}: the record has no execution profile, so "
-                       "whether legacy_alter_table is on is unknown; this case stays out of scope")
+                       "whether legacy_alter_table is on is unknown; this case stays out of scope until it is recorded again "
+                       "with an execution profile (version 4 or later) that has legacy_alter_table off")
 
 
 def modeled_profile(record: Mapping[str, Json]) -> Json:

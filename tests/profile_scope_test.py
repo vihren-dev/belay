@@ -61,15 +61,15 @@ RENAME_COLUMN = Located({"renameColumn": {"table": "t", "column": "a", "newName"
 
 
 def test_renames_are_found_for_tables_and_columns() -> None:
-    """Both rename forms count, and other statements do not."""
+    """`conformance.profile_scope.has_rename` finds both rename forms and ignores other statements."""
     assert has_rename([RENAME_TABLE]) and has_rename([RENAME_COLUMN]) and not has_rename([PLAIN])
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 @pytest.mark.parametrize("rename", [RENAME_TABLE, RENAME_COLUMN])
 def test_a_record_without_profile_and_with_a_rename_is_out_of_scope(version: int, rename: Located) -> None:
-    """A record before version 4 may have turned `legacy_alter_table` on in its setup, which the
-    subject cannot see, so a rename in it is UNSUPPORTED, with the reason."""
+    """`conformance.profile_scope.legacy_alter_scope`: a record before version 4 may have turned
+    `legacy_alter_table` on in its setup, which the subject cannot see, so a rename in it is UNSUPPORTED."""
     with pytest.raises(SqlError) as raised:
         legacy_alter_scope({"name": "case", "nativeVersion": version}, [PLAIN, rename])
     assert raised.value.status == "UNSUPPORTED" and "legacy_alter_table" in str(raised.value)
@@ -78,5 +78,6 @@ def test_a_record_without_profile_and_with_a_rename_is_out_of_scope(version: int
 @pytest.mark.parametrize(("version", "statements"), [(4, [RENAME_TABLE]), (7, [RENAME_COLUMN]), (3, [PLAIN]), (1, [])])
 def test_profiled_records_and_records_without_renames_stay_in_scope_of_legacy_alter(
         version: int, statements: list[Located]) -> None:
-    """A profiled record cannot change the setting, and a record without a rename does not depend on it."""
+    """`conformance.profile_scope.legacy_alter_scope` admits a profiled record, which cannot change the
+    setting, and a record without a rename, which does not depend on it."""
     legacy_alter_scope({"name": "case", "nativeVersion": version}, statements)
