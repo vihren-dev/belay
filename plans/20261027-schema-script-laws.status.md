@@ -36,7 +36,7 @@ stopped at a gap (2026-10-27)".
 Decision (coordinator, 2026-10-27): option A, all three guide claims, in the order tactic rules and claim 3,
 claim 1, claim 2. The gates run once, at the end of Part 2, on a tree that contains `tasks/surface-editor-part3`.
 
-Size (2026-10-27): the task file planned about 100 lines for Part 2. The estimate is now 1100 to 1300 lines. The
+Size (2026-10-27): the task file planned about 100 lines for the tactic rules of Part 2. The estimate for all of Part 2 is now 1100 to 1300 lines. The
 reasons: (1) a proof over an abstract database needs the general "step continues" laws, because a rule needs the
 step to continue (`modeled`) and nothing else gives it for CREATE TABLE, DROP TABLE, rename, BEGIN, COMMIT and the
 pragmas (about 300 lines with the pragma `foreign_key_check`); (2) each new statement needs a rule for `sql_run`

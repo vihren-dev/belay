@@ -27,9 +27,26 @@ theorem Output.ofStep_ne_unmodeled (clock : Int) (parameters : List Value) (stat
   unfold Output.ofStep
   cases halted : haltError transition with
   | none =>
-    cases statement with
-    | query query subqueries => exact absurd rfl (notQuery query subqueries)
-    | _ => simp [hasOutput] <;> split <;> simp
+    cases statement
+    case query query subqueries => exact absurd rfl (notQuery query subqueries)
+    case createView => (simp [hasOutput] <;> split <;> simp)
+    case createTable => (simp [hasOutput] <;> split <;> simp)
+    case createIndex => (simp [hasOutput] <;> split <;> simp)
+    case createTrigger => (simp [hasOutput] <;> split <;> simp)
+    case addColumn => (simp [hasOutput] <;> split <;> simp)
+    case drop => (simp [hasOutput] <;> split <;> simp)
+    case rewrite => (simp [hasOutput] <;> split <;> simp)
+    case dropColumn => (simp [hasOutput] <;> split <;> simp)
+    case begin => (simp [hasOutput] <;> split <;> simp)
+    case commit => (simp [hasOutput] <;> split <;> simp)
+    case rollback => (simp [hasOutput] <;> split <;> simp)
+    case insert => (simp [hasOutput] <;> split <;> simp)
+    case update => (simp [hasOutput] <;> split <;> simp)
+    case upsert => (simp [hasOutput] <;> split <;> simp)
+    case insertSelect => (simp [hasOutput] <;> split <;> simp)
+    case delete => (simp [hasOutput] <;> split <;> simp)
+    case prepareError => (simp [hasOutput] <;> split <;> simp)
+    case setting => (simp [hasOutput] <;> split <;> simp)
   | some failure =>
     rw [halted] at calm
     cases failure <;> simp_all
