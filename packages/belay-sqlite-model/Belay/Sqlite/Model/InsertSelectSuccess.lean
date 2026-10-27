@@ -13,17 +13,18 @@ with those rows appended. -/
 namespace Belay.Sqlite.Model
 
 /-- The facts that the rows of an INSERT must have for the statement to succeed, for a list of keys, the
-target table and the full rows to write. In plain words, the table after appending the rows one after the
-other (not the rows alone) meets these conditions:
-* no row has a rowid alias cell that is neither NULL nor an integer
-  ({name}`LiteralData.aliasMismatch`);
-* the rowid alias, if any, is an integer column ({name}`LiteralData.aliasReady`);
-* every row has one cell for each column and every cell is in stored form ({name}`LiteralData.storedForm`);
-* the rows meet NOT NULL ({name}`LiteralData.notNullRows`), the types of a STRICT table
-  ({name}`LiteralData.typedRows`), every CHECK constraint ({name}`LiteralData.checkedRows`) and every unique
-  key ({name}`LiteralData.keysUnique`), also against the rows that the table has;
-* the rowids are distinct ({name}`LiteralData.rowidsDistinct`) and signed 64-bit integers
-  ({name}`LiteralData.boundedInteger`). -/
+target table and the full rows to write. In plain words, the conditions are of three kinds:
+* on the rows to write alone: no row has a rowid alias cell that is neither NULL nor an integer
+  ({name}`LiteralData.aliasMismatch`), and every row has one cell for each column and every cell is in stored
+  form ({name}`LiteralData.storedForm`);
+* on the shape of the table alone: the rowid alias, if any, is an integer column
+  ({name}`LiteralData.aliasReady`);
+* on the table after appending the rows one after the other ({name}`LiteralData.inserted`), so also against
+  the rows that the table has: the rows meet NOT NULL ({name}`LiteralData.notNullRows`), the types of a STRICT
+  table ({name}`LiteralData.typedRows`), every CHECK constraint ({name}`LiteralData.checkedRows`) and every
+  unique key ({name}`LiteralData.keysUnique`), the rowids are distinct ({name}`LiteralData.rowidsDistinct`),
+  and they are signed 64-bit integers ({name}`LiteralData.boundedInteger`).
+The structure requires nothing of the existing rows beyond what the final table needs. -/
 structure InsertFits (keys : List UniqueKey) (table : Table) (values : List (List Value)) : Prop where
   /-- No row has an alias cell that SQLite refuses. -/
   aliasFree : ∀ row ∈ values, LiteralData.aliasMismatch table.shape row = false

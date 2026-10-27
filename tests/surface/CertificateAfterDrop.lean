@@ -1,4 +1,4 @@
-import SchemaStepLaws
+import SchemaDropExamples
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -15,7 +15,7 @@ connections. The frame law of DROP TABLE gives the table at the new position. -/
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 namespace CertificateAfterDrop
-open SchemaStepLaws
+open SchemaStepLaws SchemaDropExamples
 
 /-- The lookup of the note of a child by its id. -/
 def lookupStatement : Syntax.Statement := statementOf (sql r"SELECT note FROM c WHERE id = ?1;" .null)

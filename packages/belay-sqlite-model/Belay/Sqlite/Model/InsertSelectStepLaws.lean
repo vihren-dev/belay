@@ -77,9 +77,11 @@ over a table at the target position, where the query has one certain production 
 hands over fit the target ({name}`InsertFits`), and the statement is in the part that the model describes (the
 premises of {name}`runStatement_insertSelect_none_ok`): the step continues, with an output that is no error and no
 further executions, and the next database is the database with the target rows of the table with the rows
-appended, one after the other ({name}`LiteralData.inserted`). In plain words, this is the success law of INSERT from
-a query: it never fails, whatever the clauses say, and it writes the rows of the query as an upsert of them does when
-no row meets a conflict. The premises are those of {name}`runStatement_insertSelect_none_ok`, with the context of the
+appended, one after the other ({name}`LiteralData.inserted`). The rows that are appended are the full target rows
+that {name}`insertSelectRows` makes of the rows of the production: the cells that the statement selects from the
+source row, the fixed cells, and the affinity of each target column applied to each. In plain words, this is the
+success law of INSERT from a query: it never fails, whatever the clauses say, and it writes those full rows as an
+upsert of them does when no row meets a conflict. The premises are those of {name}`runStatement_insertSelect_none_ok`, with the context of the
 statement at the clock value and the counters that the connection knows. Proof sketch:
 {name}`runStatement_insertSelect_none_ok` gives the run, and {name}`runScriptStep_insertSelect_ok` the step. -/
 theorem runScriptStep_insertSelect_success {context : ResolveContext} {clock : Option Clock} {index : Nat}

@@ -33,7 +33,8 @@ EXPECTED_ERRORS: dict[str, list[str]] = {
 
 
 def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: Path) -> None:
-    """The fixtures SchemaStepLaws, ControlStepExamples, CertificateAfterDrop and InsertSelectExamples apply the
+    """The fixtures SchemaDropExamples, SchemaCreateExamples, ControlStepExamples, CertificateAfterDrop and
+    InsertSelectExamples (with the helpers of SchemaStepLaws) apply the
     step, frame and success laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas foreign_keys and
     foreign_key_check, and INSERT from a query to concrete databases. They include DROP TABLE with foreign keys on
     whose cascade changes the observed table, a read certificate that survives the drop of an earlier table, and
@@ -41,8 +42,8 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
     axioms. The fixture SchemaScriptReplays emits scripts of the same statements. Pinned SQLite 3.51.0 gives the
     rows that the model gives, and refuses the statements that the model refuses, in the same order."""
     stdout = check_module_chain(runtime_root, tmp_path, (
-        ("SchemaStepLaws", 7), ("ControlStepExamples", 7), ("CertificateAfterDrop", 2),
-        ("InsertSelectExamples", 6), ("SchemaScriptReplays", 0)))
+        ("SchemaStepLaws", 0), ("SchemaDropExamples", 4), ("SchemaCreateExamples", 3), ("ControlStepExamples", 7),
+        ("CertificateAfterDrop", 2), ("InsertSelectExamples", 6), ("SchemaScriptReplays", 0)))
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     version = run_command([sqlite, "-version"], cwd=tmp_path, timeout=5)

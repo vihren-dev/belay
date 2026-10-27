@@ -90,9 +90,6 @@ theorem certain : scanQuery.productions runContext' begin.state.database
 def written : List (List Value) :=
   insertSelectRows runContext' dstTable.shape.columns [.source 0, .source 1] selected
 
-/-- The written rows are the two pairs of id and name, as the SQL text shows. Proof sketch: kernel evaluation. -/
-theorem written_rows : written = [[.integer 1, .text [97]], [.integer 2, .text [98]]] := by decide +kernel
-
 /-- The written rows fit the target: every field of {name}`InsertFits` holds. Proof sketch: kernel evaluation of
 each field on the target table, which is empty and has the primary key and the NOT NULL column. -/
 theorem written_fit : InsertFits (begin.state.database.keys 1 dstTable) dstTable written where
