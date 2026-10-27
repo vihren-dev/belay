@@ -20,7 +20,7 @@ def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
 ({lit}`PRAGMA setting = value`), database and result: if {name}`literalStep` with the values succeeds with the result, then the result's catalog is
 {name}`Resolved.Statement.applyCatalog` of the statement on the database's catalog, and the
 statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD
-COLUMN and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
+COLUMN, RENAME and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
 of a write that checks foreign keys over the input catalog, {name}`keyRun_ok_catalog`), a query
 returns the database, and every other statement fails. -/
 theorem literalStep_success_catalog {clock : Int} {counters : Counters} {parameters : List Value} {statement : Resolved.Statement}
@@ -118,6 +118,11 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+  | rewrite renamed =>
+    simp only [literalStep, runStatement, step] at success
+    split at success
+    · cases success; exact ⟨rfl, rfl⟩
+    · cases success
   | createIndex target name index | createView target name index | createTrigger target name index =>
     simp only [literalStep, runStatement, step] at success
     repeat' split at success

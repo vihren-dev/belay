@@ -87,6 +87,10 @@ inductive Statement where
   that foreign keys reference first deletes its rows with their foreign-key actions, as SQLite
   does (ADR 0018, D4), and the triggers that the actions fire run (D5). -/
   | drop (positions : List Nat) (rules : Option WriteRules := none)
+  /-- ALTER TABLE RENAME TO and RENAME COLUMN (ADR 0019, D4): replace the catalog by the catalog that
+  resolution computed ({lit}`renameCatalog`). It has the objects of the catalog at the same positions, with
+  the new name and the rewritten definitions, so every table keeps its rows, rowids and position. -/
+  | rewrite (catalog : Catalog)
   /-- Start a transaction. -/
   | begin
   /-- Commit the transaction. -/

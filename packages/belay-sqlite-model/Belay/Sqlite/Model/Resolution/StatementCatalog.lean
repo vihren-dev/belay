@@ -21,6 +21,7 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .createTrigger _ name trigger, catalog => catalog.createTrigger name trigger
   | .addColumn position column _, catalog => catalog.addColumn position column
   | .drop positions _, catalog => catalog.drop positions
+  | .rewrite renamed, _ => renamed
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
   | .upsert .., catalog | .insertSelect .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog
   | .setting .., catalog => catalog
@@ -38,6 +39,8 @@ inductive Statement.Kind where
   | trigger
   /-- DROP TABLE, VIEW, INDEX or TRIGGER: a removal from the catalog. -/
   | drop
+  /-- ALTER TABLE RENAME TO or RENAME COLUMN: the catalog definitions change, the rows stay. -/
+  | rewrite
   /-- BEGIN, COMMIT or ROLLBACK: transaction control. -/
   | control
   /-- INSERT, INSERT with {lit}`ON CONFLICT` or a conflict algorithm, UPDATE or DELETE. -/
@@ -58,6 +61,7 @@ a statement has reads it, so a new statement form gets a form here first. -/
   | .createIndex .. => .index
   | .createTrigger .. => .trigger
   | .drop .. => .drop
+  | .rewrite _ => .rewrite
   | .begin | .commit | .rollback => .control
   | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. => .write
   | .query .. => .query
@@ -71,6 +75,6 @@ statement is not control. -/
 def Statement.isControl (statement : Statement) : Bool :=
   match statement.kind with
   | .control | .setting => true
-  | .definition | .view | .index | .trigger | .drop | .write | .query | .prepareError => false
+  | .definition | .view | .index | .trigger | .drop | .rewrite | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Model.Resolved

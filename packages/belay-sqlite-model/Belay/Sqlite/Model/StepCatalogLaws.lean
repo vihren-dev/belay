@@ -53,7 +53,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
     simp only [SqlState.statementRun, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | rewrite | drop | insert | update | upsert | insertSelect | delete | prepareError
   | query =>
     simp only [advanceWith] at reached
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
@@ -85,7 +85,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {pa
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | rewrite | drop | insert | update | upsert | insertSelect | delete | prepareError
   | query | setting =>
     simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted

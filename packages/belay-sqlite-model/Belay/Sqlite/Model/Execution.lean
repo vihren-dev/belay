@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.LiteralData
+import Belay.Sqlite.Model.Resolution.CatalogOutline
 import Belay.Sqlite.Model.Resolution.ReadDefaults
 import Belay.Sqlite.Model.Resolution.Resolved
 import Belay.Sqlite.Model.QueryFunctions
@@ -123,7 +124,7 @@ def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.
     else .ok database
   | none => .ok database
 
-/-- The effect of CREATE TABLE, ADD COLUMN, DROP, a query or a prepare error, without a position
+/-- The effect of CREATE TABLE, ADD COLUMN, DROP, RENAME, a query or a prepare error, without a position
 (ADR 0006): the database after it, or the error with the database that it keeps, the
 input database for every error here. SQLite refuses a statement with its prepare error. CREATE
 TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no rows. ADD COLUMN reads
@@ -139,7 +140,9 @@ CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique ind
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
 to the catalog ({name}`Catalog.createTrigger`) with no rows; CREATE VIEW stores an unresolved definition the same way.
-DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
+RENAME replaces the catalog by the rewritten catalog of its statement and keeps every row; it fails with
+{lean}`ExecutionError.unmodeled` unless the rewritten catalog is the catalog after a change of names
+({name}`Catalog.keepsOutline`). DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
 the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.
 CREATE TABLE, VIEW, INDEX or TRIGGER at a position other than the end of the catalog (or over
@@ -195,6 +198,9 @@ def step (clock : Int) (counters : Counters) (parameters : List Value) (statemen
       .ok { catalog := database.catalog.createTrigger name trigger, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
   | .drop positions _ => .ok (database.drop positions)
+  | .rewrite renamed =>
+    if database.catalog.keepsOutline renamed then .ok { database with catalog := renamed }
+    else .error (.unmodeled, database)
   | .setting .. => .ok database
   | .prepareError error => .error (.prepare error, database)
   | .query query subqueries => queryEffect database (query.runOn clock counters parameters database subqueries)

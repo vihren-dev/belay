@@ -452,3 +452,34 @@ rebuild proof is separate.
 - Tests: `RenameEditExamples.lean` (view and trigger edits), `RenameChecksExamples.lean` (labels, tokens, dequote).
   The catalog functions are tested through the statement in unit 2.5c.
 - Manual proof repairs in this unit: 0.
+
+### Unit 2.5c: the rewrite statement and its preservation proofs
+
+- `Resolved.Statement.rewrite (catalog : Catalog)` is the resolved form of a rename: the resolver computes the whole
+  new catalog (`renameCatalog`), the statement replaces the catalog and leaves the rows as they are. `applyCatalog
+  (.rewrite renamed) _ = renamed`; the new statement kind is `Statement.Kind.rewrite` (not a control statement).
+- Execution: `step` stores the new catalog only when `Catalog.keepsOutline` holds for the old and the new catalog, else
+  it fails with `.unmodeled` and the input database. The test is a runtime guard on purpose: every preservation proof
+  follows from the guard, so no proof depends on the resolver. That the resolver passes the guard is a test, not a
+  theorem (examples in unit 2.5d and the differential matrix).
+- `Resolution/CatalogOutline.lean`: `Catalog.outline` (each object with `blankNames`: no column names, no CHECK
+  labels or sources, no foreign key parent names), `Catalog.selectedParents` (parent link of every foreign key of
+  every table), `Catalog.keepsOutline`. Laws for tables: `OutlineTableLaws.lean` (NOT NULL, types, CHECKs),
+  `OutlineDatabaseLaws.lean` (each row-local and table atom), `OutlineKeyLaws.lean` (unique keys),
+  `OutlineForeignKeyLaws.lean` and `OutlineSelectedParentLaws.lean` (foreign key facts for the selected mapping:
+  `Database.RowReferencesHold.of_outline`, `Database.ParentSchemasCompatible.of_outline`).
+- `StatementRewrite.lean`: `runStatement_rewrite_satisfies` and the row-local and table-atom instances. The atom
+  classes `RowLocalAtom` and `TableAtom` gained a field `renamed` (same rows and shape after `blankNames` keep the
+  atom). Every statement theorem of the matrix (Admitted/Valid atoms, unique keys, FK rows and selected mapping) has
+  an arm for `.rewrite`: Valid-catalog takes the `next` hypothesis as for CREATE; the fixed-mapping FK law
+  (`KeepsParentSchema`) is False for a rewrite, the selected-mapping laws hold with no condition.
+- `step_extends` (PreservationLaws) excludes the rewrite (a rename changes names, so the new catalog does not extend
+  the old one); its caller derives that from the statement kind.
+- The belay package needed two `.rewrite _` arms (`ReadAnalysis`, `DbDiagnostics`); no editor module changed.
+- Review of 2.5b (`20261027T015742Z-0a7f0813`): three musts, to fix in the next units: R7 (trigger execution checks
+  must not be rename errors: use the rename-specific name validation in `renameTrigger` and `checkTrigger`), R19
+  (SQLite's `renameFixQuotes` literal normalization is not implemented: a double-quoted string that becomes a column
+  name after a rename; documented here as incomplete until implemented), R11 (direct catalog tests).
+- Manual proof repairs in this unit: about 12 (case arms with a real proof, in `step_extends`, the `StepCatalog`
+  laws, the FK matrix and the key laws). New proofs: about 30 small laws in the Outline modules. Total for the task
+  so far: about 122.

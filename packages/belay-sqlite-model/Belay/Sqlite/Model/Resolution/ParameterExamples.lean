@@ -29,7 +29,7 @@ def fromT : Option TableReference := some { table := name! "t", alias := none }
 def queryOf (expression : Expr) (groupBy : List Expr := []) (orderBy : List OrderTerm := []) : Option Resolved.Query :=
   match (statements (migration catalog [.select [.expression expression none "e"] fromT [] none groupBy orderBy none none])).head? with
   | some (.query query _) => some query
-  | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
+  | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.rewrite _) | some (.drop ..)
   | some .begin | some .commit | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.insertSelect ..)
   | some (.delete ..) | some (.prepareError _) | some (.setting ..) | none => none
 

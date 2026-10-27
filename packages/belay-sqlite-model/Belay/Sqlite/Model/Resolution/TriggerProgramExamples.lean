@@ -47,7 +47,7 @@ def programs (script : List Syntax.Statement) : List Resolved.Program :=
   | some (.delete _ _ _ _ (some rules)) | some (.drop _ (some rules)) => rules.programs
   | some (.insertSelect _ _ _ _ _ _ _ none) | some (.insert _ _ _ _ none) | some (.upsert _ _ _ _ _ _ none) | some (.update _ _ _ _ _ none)
   | some (.delete _ _ _ _ none) | some (.drop _ none) | some (.createTable ..) | some (.createView ..) | some (.createIndex ..)
-  | some (.createTrigger ..) | some (.addColumn ..) | some .begin | some .commit | some .rollback
+  | some (.createTrigger ..) | some (.addColumn ..) | some (.rewrite _) | some .begin | some .commit | some .rollback
   | some (.prepareError _) | some (.query ..) | some (.setting ..) | none => []
 
 /-- Whether the script after the two tables is a restriction of the kind. -/
