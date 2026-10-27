@@ -105,3 +105,10 @@ Existing task links for this decision are batched in one commit.
 Per-commit checks are the existing `tests/docs_test.py`, one-time source/link
 inspection and independent Claude review. These are documentation diagnostics;
 the accepted Nix experiment and production inputs above remain unchanged.
+
+The existing documentation checks passed (three checks). One-time inspection
+confirmed all 205 inventory links, the 84-name preservation expansion and the
+under-200-line limit for each inventory and both ADRs. Source review corrected
+the description of reverse import paths: adding opposite imports would create
+cycles; the existing graph is acyclic. Independent Claude review of `186f9595`
+returned no must or should findings. The refinement is complete.
