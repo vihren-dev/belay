@@ -376,3 +376,21 @@ rebuild proof is separate.
   `Resolution/TableChecks.lean`); there is no second lookup of a spelling. The label that execution reports is
   unchanged, so the rename of unit 2.5 rewrites `source` and the dequoted label together.
 - Tests: `Resolution/CheckTextExamples.lean` (`#guard` checks), `tests/syntax_constraints_test.py`.
+
+### Part 2, unit 2.3: the names of a trigger program are traced
+
+- The trigger gap of the name trace is closed. `resolveProgramTraced` (`Resolution/TriggerPrograms.lean`)
+  records the names of the WHEN condition below the path `[5]` and those of the body statement `k` below
+  `[6, k]`: the fields of a trigger statement are name, IF NOT EXISTS, time, event, table, condition, body.
+  A body statement uses the field numbers of the statement of the same name (`Statement.insert` and
+  `Statement.update` have a RETURNING field that a body lacks; a body SELECT has no compound). The
+  resolvers `resolveBodyStatement`, `resolveRaiseSelect`, `resolveBodySelect` and `resolveProgram` are the
+  `.drop` of their traced forms (`TriggerBodies.lean`, `TriggerStatements.lean`, `TriggerPrograms.lean`), so the
+  trace and the resolved program cannot disagree. `triggerEvent` moved to `TriggerPrograms.lean`.
+- A write to a view in a body decides no name (it is a prepare error); the rename of unit 2.5 handles it.
+  A raising SELECT keeps the operands of its CASE in place, so its names have their written paths.
+- Tests: `Resolution/TriggerTraceExamples.lean` (`#guard` checks of the paths of a program and of a raising
+  SELECT); the existing `TriggerProgramExamples.lean` still passes, and so do `tests/syntax_triggers_test.py`
+  and the trigger tests of the conformance suites.
+- Review of unit 2.2: `20261027T004253Z-27fd1515` (2 musts and 1 should, all fixed in the refactor commit).
+- Manual proof repairs in this unit: 0.
