@@ -26,11 +26,11 @@ all of these hold.
   {lit}`single`).
 - The step of the statement continues at the context (premise {lit}`modeled`).
 - No continuing step of the statement has a choice as output (premise {lit}`notChoice`).
-- The state of the connection of the context holds {name}`SqlState.Holds` for {lit}`Database.Valid Profile.pinned`
+- The state of the connection of the context holds {name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned`
   (premise {lit}`valid`): its database is valid, and its snapshot is valid when it has one. A state without a
   snapshot requires nothing of the snapshot.
 - For every output and next connection of a step that continues with no further execution, when the state of
-  the next connection holds {name}`SqlState.Holds` for {lit}`Database.Valid Profile.pinned` (the same two
+  the next connection holds {name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned` (the same two
   requirements), the post holds for the one output at the context after the step (premise {lit}`reached`).
 In plain words, this rule turns the check of a send into a claim about the connection that the step reaches; the
 claim is only about steps from a start and to an end that hold the validity condition. Proof sketch:
