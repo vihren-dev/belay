@@ -17,7 +17,7 @@ catalog of the state has at positions, without table-function arguments and inde
 {lit}`p1, …` call no aggregate, have no star issue and resolve in the scope of {lit}`t` to scalar projections with names,
 the test {lit}`c` of subquery 0 resolves to the condition {lit}`mainCondition` for the shape of the subquery
 ({name}`FilterResolves`), and the condition {lit}`d` (or its absence) resolves in the scope {name}`correlatedScope` to
-{lit}`innerCondition`, resolution gives two queries and leaves the state as it is: the statement is the query
+{lit}`innerCondition`, and no fallible call in a scalar result column consumes an aggregate value ({lit}`mainNoFeed`), resolution gives two queries and leaves the state as it is: the statement is the query
 {lit}`Resolved.Query.oneTable` of the table {lit}`t` with the width 0, the condition {lit}`mainCondition` and the
 projections of the result columns; the one subquery is the query of the table {lit}`u` with the width {lit}`outer` of a
 row of {lit}`t`, the condition {lit}`innerCondition` and the literal one named {lit}`"1"`. The shape of the subquery is

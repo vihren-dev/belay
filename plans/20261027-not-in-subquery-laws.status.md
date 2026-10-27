@@ -35,7 +35,7 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
   `InSubqueryQueryInLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryExamples` (kernel examples). The statements are calm
   without a premise: the condition, the columns and the subquery use no fallible call, clock or counter.
 
-- 2026-10-27: resolution-law commit (uncommitted until its checks pass): `FromSourceResolution`,
+- 2026-10-27: resolution-law commit: `FromSourceResolution`,
   `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `InSubqueryStatementResolution`,
   `CorrelatedExistsResolution`. The query laws now conclude `out1 = .rows rows` and `out2 = .rows rows` for one list.
 
