@@ -191,7 +191,8 @@
     "tests/surface_search_test.py",
     "tests/surface_sampling_test.py",
     "tests/surface_counterexample_test.py",
-    "tests/surface_inference_test.py"
+    "tests/surface_inference_test.py",
+    "tests/surface_editor_insert_tables_test.py"
   ],
   "surfaceS6": [
     "tests/surface_s6_check_programs_test.py",

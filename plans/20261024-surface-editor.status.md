@@ -483,3 +483,16 @@ them after that task.
   open point of part 2b ("the table-rebuild task adds `Syntax.Statement.insertSelect` ... A follow-up of this
   task covers them after that task").
 - Base: `tasks/table-rebuild-judge` (PR #287, top of stack 284), workspace `sqlite-verifier-editor-p3`.
+
+### Part 3, commit 1: table places of the subqueries of INSERT ... SELECT (2026-10-27)
+
+- `subquerySlots` (`SqlTableSlots`) takes the path of the node that holds the subqueries, not a field number. The
+  query of an `INSERT ... SELECT` holds them as child 8 of its source (the field order of `Syntax.Statement.select`),
+  so the path is `[2, 8]`; the four earlier callers pass `[8]`, `[6]`, `[4]` and `[3]`. Generalization analysis: a
+  node path covers every statement form and every future query holder with one function; nothing is left specific.
+- Test: `tests/surface_editor_insert_tables_test.py` (real server, suite `surfaceChecks`, which has the most headroom):
+  hovers with the rows known before the first write and none after it, the `property` token, navigation to
+  the `CREATE TABLE` of the target, the source, a subquery source and a subquery join source, and the negative
+  cases (a `WITH` definition that names the table in the query and in a subquery, plain `sql`, an escaped
+  literal). The helpers `range_of` and `definitions` moved from the origins test to
+  `tests/surface_editor_support.py`.
