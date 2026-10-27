@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T03:35:45+00:00",
+  "finding": "20261027T033037Z-98fdcbb9#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "PrepareError.reportedWhileRunning lists every constructor"
+}

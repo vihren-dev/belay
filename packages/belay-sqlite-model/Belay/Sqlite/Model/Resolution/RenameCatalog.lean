@@ -46,7 +46,7 @@ def renameObject (context : ResolveContext) (catalog : Catalog) (request : Renam
     Except RenameFailure CatalogObject :=
   match object.entry with
   | .table table =>
-    if table.hasLooseQuote && request.target matches .column .. then throw (.restricted .alterRename)
+    if table.hasLooseQuote && request.target.isColumn then throw (.restricted .alterRename)
     else if position == request.target.position then
       match request.renameOwnTable oldTable oldColumn table with
       | some renamed => pure { name := match request.target with

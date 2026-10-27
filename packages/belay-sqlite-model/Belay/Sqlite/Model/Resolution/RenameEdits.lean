@@ -24,6 +24,11 @@ inductive RenameTarget where
   | column (position index : Nat)
   deriving Repr, DecidableEq
 
+/-- Whether the rename is a rename of a column. -/
+def RenameTarget.isColumn : RenameTarget → Bool
+  | .table _ => false
+  | .column _ _ => true
+
 /-- A rename: what it changes, the new name and the way SQLite writes it. -/
 structure RenameRequest where
   /-- The table or column that is renamed. -/

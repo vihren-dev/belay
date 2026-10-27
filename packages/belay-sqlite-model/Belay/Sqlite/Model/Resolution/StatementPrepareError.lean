@@ -103,7 +103,13 @@ inductive PrepareError where
 ({name}`PrepareError.dependentObject`), because SQLite rewrites the stored definitions with an SQL function
 of the statement. The statement changes nothing in both cases. For example,
 {lean}`(PrepareError.noSuchTable (Identifier.ofString "t")).reportedWhileRunning` is false. -/
-def PrepareError.reportedWhileRunning (error : PrepareError) : Bool :=
-  error matches .dependentObject ..
+def PrepareError.reportedWhileRunning : PrepareError → Bool
+  | .dependentObject .. => true
+  | .viewVariables | .tableExists _ | .viewExists _ | .indexNameUsed _ | .tableNameUsed _
+  | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
+  | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
+  | .noSuchTrigger _ | .triggerExists _ | .viewModify _ | .viewNotIndexed | .viewAddColumn | .viewTrigger ..
+  | .renameTargetTaken _ | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _
+  | .expression _ => false
 
 end Belay.Sqlite.Model
