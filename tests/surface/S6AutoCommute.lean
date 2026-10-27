@@ -69,6 +69,13 @@ theorem second_goal_stays (name : Value) :
   sql_commute [analysis, obligations]
   exact True.intro
 
+/-- error: sql_commute proves only a claim of Migration.PreservesAt or Migration.CommutesOn. Use another tactic for this goal. -/
+#guard_msgs in
+-- A claim for every context is not supported yet: the tactic refuses it before it changes the goal.
+example (name : Value) :
+    Migration.PreservesOn (send expansion) (fun _ => True) (send (lookup name)) := by
+  sql_commute [analysis, obligations]
+
 #print axioms lookup_preserved_by_sql_commute
 #print axioms lookup_commutes_by_sql_commute
 #print axioms second_goal_stays

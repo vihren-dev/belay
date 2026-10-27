@@ -24,7 +24,7 @@ inductive CommuteClaim where
   /-- Commutation: the read and the migration also reach the same connection, counters and index. -/
   | commutation
 
-/-- The claim that a goal states, and the rule that proves it. Only the three claims below have a rule. -/
+/-- The claim that a goal states, and the rule that proves it. Only two claims have a rule: {name}`Migration.PreservesAt` and {name}`Migration.CommutesOn`. -/
 def claimOf? (goalType : Expr) : Option (CommuteClaim × Name) :=
   match goalType.getAppFn.constName? with
   | some name =>

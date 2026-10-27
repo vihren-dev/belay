@@ -198,7 +198,7 @@ Commit 3 (`sql_commute`):
   tactic, the handler has a docstring and the two read errors say what to do.
 - 2026-10-26: review 20261026T223834Z-2826a0a8 of the `sql_commute` commit (2 musts: sibling goals dropped by
   `sql_commute`; `Migration.PreservesOn` claimed but unsupported). This is the fourth review round in a row with
-  new musts, so work stopped; the owner approved a fifth round on 2026-10-27, and the count starts again. The fixes are prepared and uncommitted in the working copy
+  new musts, so work stopped; the owner approved a fifth round on 2026-10-27, and the count starts again. The fixes are committed (2026-10-27)
   (siblings kept, `PreservesOn` removed from the supported claims, fixture `second_goal_stays` in `S6AutoCommute`;
   the negative fixtures are `example`s, not named theorems);
-  the findings are resolved in the next commit.
+  the findings are resolved.
