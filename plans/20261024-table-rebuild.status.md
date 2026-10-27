@@ -411,7 +411,8 @@ rebuild proof is separate.
 - Tests: `Resolution/RewriteExamples.lean` checks, for samples that cover every expression form, the clauses of a
   query, subqueries, the program of a trigger and a raising SELECT, that the rewrite works at the path of every
   occurrence that a rename rewrites and that the trace of the rewritten object has the new name at that path;
-  and the rewrite of the text of a result column (quote rule, moved tokens).
+  and the rewrite of the text of a result column (quote rule; the start and stop of every token after an edit, and a
+  second edit that reads the tokens of the first).
 - Not covered yet (restricted by the guard of the path, decided in unit 2.5): names in the arguments of a
   table-valued function, ON CONFLICT targets, and USING names (to be probed against native SQLite).
 - Manual proof repairs in this unit: 0.

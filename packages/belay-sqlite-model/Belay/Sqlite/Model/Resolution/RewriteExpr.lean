@@ -46,7 +46,11 @@ def Expr.renameAt (edit : NameEdit) : List Nat → Expr → Option Expr
   | 0 :: rest, .between operand low high negated => (operand.renameAt edit rest).map (.between · low high negated)
   | 1 :: rest, .between operand low high negated => (low.renameAt edit rest).map (.between operand · high negated)
   | 2 :: rest, .between operand low high negated => (high.renameAt edit rest).map (.between operand low · negated)
-  | _, _ => none
+  | _, .null | _, .numeric _ | _, .string _ | _, .blob _ | _, .parameter _ | _, .currentTime _
+  | _, .identifier .. | _, .qualified .. | _, .negate _ | _, .positive _ | _, .compare .. | _, .and .. | _, .or ..
+  | _, .not _ | _, .isNull .. | _, .callStar _ | _, .call .. | _, .arithmetic .. | _, .cast .. | _, .collate ..
+  | _, .exists _ | _, .inQuery .. | _, .subquery _ | _, .inList .. | _, .between .. | _, .caseOf ..
+  | _, .concatenate .. | _, .raise .. => none
 
 /-- The list with the name at the path inside the element at the index replaced. -/
 def Expr.renameListAt (edit : NameEdit) (index : Nat) (rest : List Nat) : List Expr → Option (List Expr)

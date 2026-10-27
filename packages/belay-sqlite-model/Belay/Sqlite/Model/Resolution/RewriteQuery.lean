@@ -26,7 +26,7 @@ or the qualifier of {lit}`source.*`. The text of the column is rewritten apart f
 def ResultColumn.renameAt (edit : NameEdit) : List Nat → ResultColumn → Option ResultColumn
   | 0 :: rest, .expression value alias text => (value.renameAt edit rest).map (.expression · alias text)
   | [0], .sourceStar source => (edit.replace? source).map .sourceStar
-  | _, _ => none
+  | _, .star | _, .sourceStar _ | _, .expression .. => none
 
 /-- The join with the name at the path replaced: in its source, its condition or its {lit}`USING`
 list. -/

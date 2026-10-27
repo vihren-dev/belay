@@ -55,7 +55,7 @@ def BodyStatement.renameAt (edit : NameEdit) : List Nat → BodyStatement → Op
     let (renamed, subqueries) ← renameSelectAt { edit with path } query subqueries
     pure (.select renamed.columns renamed.source renamed.joins renamed.filter renamed.groupBy renamed.orderBy
       renamed.limit renamed.offset subqueries renamed.having renamed.distinct)
-  | _, _ => none
+  | _, .insert .. | _, .update .. | _, .delete .. => none
 
 end Belay.Sqlite.Model.Syntax
 
