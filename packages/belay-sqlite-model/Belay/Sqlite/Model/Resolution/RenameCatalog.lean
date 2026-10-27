@@ -66,11 +66,11 @@ def checkRenamedObject (context : ResolveContext) (catalog : Catalog) (position 
     Except RenameFailure Unit :=
   match object.entry with
   | .table table => match table.duplicateColumn? with
-    | some column => throw (.prepare (.dependentObject .table object.name true (.expression (.duplicateColumn column))))
+    | some column => throw (.prepare (.dependentObject .table object.name .afterRename (.expression (.duplicateColumn column))))
     | none => pure ()
   | .index _ => pure ()
-  | .view view => checkView context catalog object.name true view
-  | .trigger trigger => checkTrigger context catalog position object.name true trigger
+  | .view view => checkView context catalog object.name .afterRename view
+  | .trigger trigger => checkTrigger context catalog position object.name .afterRename trigger
 
 /-- The catalog after the rename of the table or column of the request, or why SQLite or the model stops. The
 catalog is also supported under the limits of the profile: a rename to a name that the model does not allow for

@@ -14,7 +14,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  if key.table.sameName old then { key with table := new } else key",
         "  key"),
     "duplicate_column_unchecked": (SQLITE + "Resolution/RenameCatalog.lean",
-        "    | some column => throw (.prepare (.dependentObject .table object.name true (.expression (.duplicateColumn column))))",
+        "    | some column => throw (.prepare (.dependentObject .table object.name .afterRename (.expression (.duplicateColumn column))))",
         "    | some _ => pure ()"),
     "dependent_error_in_prepare_phase": (CONFORMANCE + "Case.lean",
         "some (if error.reportedWhileRunning then .step else .prepare)",

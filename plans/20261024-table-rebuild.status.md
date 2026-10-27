@@ -650,7 +650,8 @@ rebuild proof is separate.
   database) and `runStatement_dropColumn_eachTable`. The clients (`runStatement_rowidsDistinct` and its siblings,
   `runStatement_keysUnique`, `runStatement_catalogSupported`, `runStatement_rowReferences`,
   `runStatement_parentSchemasCompatibleSelected`, `runStatement_foreignKeyAtomsSelected`, the Admitted/ValidAtoms
-  theorems, `literalStep_success_catalog`) add one arm each and do not unfold the run. `ForeignKeyRowsCondition`,
+  theorems) add one arm each and do not unfold the run. The exception is `literalStep_success_catalog`: its new arm
+  unfolds `literalStep`, `runStatement` and `step`, because that theorem reads the stored catalog of the run itself. `ForeignKeyRowsCondition`,
   `ForeignKeySchemaCondition` and `ForeignKeyAtomsCondition` are `True` for the new form, with a bullet that says why:
   the run stores a catalog only when it keeps the outline and the selected parents of the catalog after the drop, and
   `Catalog.droppable` refuses the columns that a foreign key names.
@@ -690,3 +691,87 @@ For each new public statement: the general form chosen, and what stays specific.
   the key and the row.
 - Stays specific, no general form attempted: `Catalog.droppable_spec` and `CatalogTable.droppable_spec` (they are the
   definition unfolded), `Catalog.uniqueKeys_free` (two uses only, both on the dropped table).
+
+#### Shared-law changes of part 3 (for the S6 part 3 work and the NOT IN task at merge)
+
+1. `RowLocalAtom` and `TableAtom` gained the field `dropped` (a table that has the atom and loses a column cleanly
+   still has it). A new instance of either structure must discharge it.
+2. `Syntax.Statement.dropColumn` is a new constructor: every exhaustive match over `Syntax.Statement` needs an arm
+   (the editor modules got the minimal arm).
+3. `Resolved.Statement.dropColumn table index stored` is a new constructor: every exhaustive match over
+   `Resolved.Statement` needs an arm (about 25 theorems; see the open point below).
+4. The golden text in `tests/surface/DbBangErrors.lean` changed: the "not modeled" message lists ALTER TABLE DROP
+   COLUMN.
+
+#### Open point for a later cleanup task: the cost of a new `Resolved.Statement` constructor
+
+- Theorems that needed a new arm (unit 3.3): `runStatement_rowidsDistinct`, `runStatement_keysUnique`
+  (`KeysCondition`), `runStatement_catalogSupported`, the shaped, distinct and table-atom statement theorems
+  (`AdmittedShapedStatement`, `AdmittedDistinctStatement`, `AdmittedTableAtomStatement`, `RowLocalStatement`),
+  `runStatement_rowReferences` and `ForeignKeyRowsCondition`, `runStatement_parentSchemasCompatibleSelected`,
+  `runStatement_foreignKeyAtomsSelected` and their two conditions (`ForeignKeySelectedStatement`),
+  `literalStep_success_catalog`, `step_extends` (`PreservationLaws`), `ValidAtomsStatement`, `KeysUniqueRunStep`,
+  `AtomsConditionsOfLink`, `FailingConstraintLaws`, `StepCatalogLaws`, `RunHoldsStep`, `SqlLaws`, `SqlAdvance`,
+  `StatementClock`, `StatementOutput`, `StatementSingleton`, `ForeignKeySchemaWrites`, `ForeignKeyCreate`,
+  `ResolveStateSpec`, `ResolveStatementForms`, and the output and message definitions.
+- Sketch of a combinator: every table-local invariant theorem has the same shape for a schema statement: the
+  failing run keeps the database; the succeeding run gives a database that is a function of the input
+  (`step` equations) and must be shown to have the invariant. A per-constructor record
+  `Resolved.Statement.Frames` with the fields (a) `keeps_on_failure` (`step_..._of_not_runs`), (b) `eachTable`
+  (a `RowLocalAtom`/`TableAtom`-parametric law, as `runStatement_dropColumn_eachTable`), (c) `catalog` (the catalog
+  of the success: `applyCatalog`), (d) `rows`-shaped and key facts as properties of the stored database, would let one
+  generic theorem `runStatement_of_frames` derive all `Satisfies` statements for the atoms; a new constructor then
+  supplies one `Frames` value and the 25 theorems stay untouched. The rename and DROP COLUMN steps already have this
+  form (`runStatement_rewrite_satisfies` and `runStatement_dropColumn_satisfies` are the generic part).
+- Estimate: about 250 to 350 lines for the record and the generic theorem, and about 25 one-line arms removed per later
+  constructor; the migration of the existing 25 theorems is a mechanical rewrite of about 1 to 3 lines each.
+
+### Unit 3.7: the DROP COLUMN resolver, native conformance evidence and mutants
+
+- Resolver (`Resolution/DropColumnResolve.lean`, `DropColumnDependents.lean`, `DropColumnOutcome.lean`): the checks
+  follow `sqlite3AlterDropColumn` of SQLite 3.51.0 (table, system table, view, column as the statement writes it, PRIMARY
+  KEY before UNIQUE, last column), then the two schema tests. Pass 1 runs over the catalog as it is and finds a view
+  or trigger that does not resolve; pass 2 runs over the objects of the catalog in schema order, with the positions
+  of the columns before the drop, and finds in order: a table that still names the column (table-level UNIQUE key,
+  CHECK, generated expression, foreign key), an index that reads it, and a view or trigger that no longer resolves in
+  the catalog after the drop. The success is `Resolved.Statement.dropColumn` with `Catalog.dropColumn`; late-resolved
+  views and triggers are resolved again in that catalog, so they keep no stale position and are still validated.
+  `PrepareError` gained `dropColumn` (view, primary key, UNIQUE, last column) and `DependentPhase` (`current`,
+  `afterRename`, `afterDropColumn`) replaced the flag `afterRename`; the JSON key is `phase`.
+- Restrictions that remain (`alter-drop`, narrower; text and conformance example changed): the table is the parent of a
+  foreign key (the model does not move the parent columns of other tables; the docstring of `CatalogObject.allowsDrop`
+  says that this is a model restriction and SQLite allows the drop), a trigger with `UPDATE OF` the column, several
+  kinds of definition that name the column, a definition whose spelling the model does not know (quoted, qualified,
+  other letter case), and a catalog after the drop outside the limits. The restriction text and
+  `docs/semantic-subset.md` name them.
+- Outcome laws: `DropOutcome`, `finishDropColumn_outcome`, `resolveDropColumn_outcome`, `DropOutcome.step`,
+  `.applyCatalog`, `.valid` replace the old `resolveDropColumn_no_success`. The call sites in
+  `ResolveStatementFacts`, `ResolveStatementValid`, `ResolveStatementSingle`, `NamesSpec` and `ResolveStateSpec` use them.
+- Bug found by the native cases and fixed: pass 2 first ran over the catalog after the drop, so an index on a column
+  after the dropped one looked as if it read the dropped column (its positions had moved). Pass 2 now reads the objects
+  of the catalog before the drop; `DropColumnExamples` guards it (`shifted`).
+- Compiled-evaluator `#guard` checks (`Resolution/DropColumnExamples.lean`): error order, spellings, index and table
+  failures, restrictions, successful drops with a populated database (cells, order, rowids, other tables kept), the
+  rejection of a catalog that is not the catalog after the drop (the run fails with the database unchanged).
+- Conformance: `conformance/authored_column_drops.py` (38 cases, version 7 records; setups in
+  `column_drop_setups.py`; the existing `authored_drops.py` is the DROP TABLE module) and
+  `tests/conformance_column_drops_test.py`: the judge's verdict is AGREE for every case except
+  `column-drop-parent-unrelated`, which stays a restriction (a parent column that no key names). The kernel proves the
+  table-only cases. `column-drop-index-reads-column` and its siblings check the `step` phase of the dependent-object
+  errors. The prepare errors (primary key, UNIQUE, last column, view, missing table or column) have phase `prepare`.
+  No case disagrees. Savepoints are not modeled, so no savepoint case is included. `just dev-verdict corpus-v1
+  corpus-v4 corpus-v5` (the corpora with `ALTER TABLE ... DROP COLUMN`): no DISAGREE, no HARNESS_ERROR.
+- Mutants: `conformance/column_drop_mutants.py` (9 mutants: primary key, UNIQUE and last column checks removed, index
+  that reads the column allowed, CHECK and generated dependencies ignored, rows lost, cell kept, run always
+  rejected), run by name with `tests/conformance_column_drop_mutants_test.py`; all 9 killed. A mutant that needs a view
+  cannot be measured, because the mutant runner replays tables only; views are judged through the predictions.
+- Review of the unit 3.3 to 3.6 commit (`20261027T074345Z-1230d27d`): 10 musts and 1 should, all fixed in the
+  `refactor:` commit (R11: executable tests for the accepted drop with rows and the rejected run; R7: the foreign-key
+  parent rule is named a model restriction; R2: premises added to six docstrings and `{name}` references; R3: proof
+  sketches; R19: this file names `literalStep_success_catalog` as the one client that unfolds the run).
+- Generalization analysis of the new statements: `DropOutcome` is general in the limits, the catalogs and the statement
+  (it is the outcome of any drop resolution; `resolveDropColumn_outcome` is the instance for the resolver).
+  `DropOutcome.step`, `.applyCatalog` and `.valid` take only the premises their proofs use (the outcome, the limits).
+  `finishDropColumn_outcome` stays specific to the drop: it reads the definition of `finishDropColumn`.
+- Manual proof repairs in this unit: 0 beyond mechanical arms (about 10 one-line replacements of the old stub lemma
+  and updated message constructors). Total for the task so far: about 165, none of them a non-mechanical arm.

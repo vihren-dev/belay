@@ -7,15 +7,51 @@ checks a statement, names a catalog object, or reports an expression error ({lit
 
 namespace Belay.Sqlite.Model
 
-/-- The kind of the object that a rename finds in error ({lit}`PrepareError.dependentObject`). -/
+/-- The kind of the object that a rename or a drop of a column finds in error ({lit}`PrepareError.dependentObject`). -/
 inductive DependentKind where
   /-- A table. -/
   | table
+  /-- An index. -/
+  | index
   /-- A view. -/
   | view
   /-- A trigger. -/
   | trigger
   deriving Repr, DecidableEq
+
+/-- When a statement finds a stored definition in error ({lit}`PrepareError.dependentObject`): while it
+tests the schema before it changes it, or with the definitions after a rename or after the drop of a column. -/
+inductive DependentPhase where
+  /-- Before the statement changes anything. -/
+  | current
+  /-- With the definitions that a rename rewrote. -/
+  | afterRename
+  /-- With the schema after the drop of a column. -/
+  | afterDropColumn
+  deriving Repr, DecidableEq
+
+/-- The words that SQLite adds to the error of a stored definition for the phase of the statement. -/
+def DependentPhase.words : DependentPhase → String
+  | .current => ""
+  | .afterRename => " after rename"
+  | .afterDropColumn => " after drop column"
+
+/-- The errors that {lit}`sqlite3AlterDropColumn` reports before it looks at any other object. The name is the
+name of the table or of the column as the message prints it. -/
+inductive DropColumnError where
+  /-- {lit}`cannot drop column from view "%s"`: the name is the catalog's declared spelling of the view. -/
+  | view (name : Identifier)
+  /-- {lit}`cannot drop PRIMARY KEY column: "%s"`: the name is the column as the statement writes it. -/
+  | primaryKey (column : Identifier)
+  /-- {lit}`cannot drop UNIQUE column: "%s"`: the name is the column as the statement writes it. -/
+  | unique (column : Identifier)
+  /-- {lit}`cannot drop column "%s": no other columns exist`: the name is the column as the statement writes it. -/
+  | lastColumn (column : Identifier)
+  deriving Repr, DecidableEq
+
+/-- The name that the message of the error prints. -/
+def DropColumnError.name : DropColumnError → Identifier
+  | .view name | .primaryKey name | .unique name | .lastColumn name => name
 
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
 scope. Each constructor names the SQLite message format it corresponds to. This
@@ -89,11 +125,14 @@ inductive PrepareError where
   ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
   The name is the name as written. -/
   | viewTrigger (before : Bool) (name : Identifier)
-  /-- {lit}`error in view %s: %s`, {lit}`error in view %s after rename: %s` and the same for a table or a trigger:
-  a rename finds that an object no longer resolves, before the rewrite or with the rewritten text
-  ({lit}`afterRename`). SQLite reports it while the statement runs, and the statement changes nothing, as a
-  prepare error does. The error is the one that the definition of the object gives. -/
-  | dependentObject (kind : DependentKind) (name : Identifier) (afterRename : Bool) (error : PrepareError)
+  /-- A refusal of ALTER TABLE DROP COLUMN ({name}`DropColumnError`). -/
+  | dropColumn (error : DropColumnError)
+  /-- {lit}`error in view %s: %s`, {lit}`error in view %s after rename: %s`, {lit}`error in view %s after drop column: %s`
+  and the same for a table, an index or a trigger: a rename or a drop of a column finds that an object no longer
+  resolves, before the change or with the changed definitions ({name}`DependentPhase`). SQLite reports it while the
+  statement runs, and the statement changes nothing, as a prepare error does. The error is the one that the
+  definition of the object gives. -/
+  | dependentObject (kind : DependentKind) (name : Identifier) (phase : DependentPhase) (error : PrepareError)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq
@@ -109,7 +148,7 @@ def PrepareError.reportedWhileRunning : PrepareError → Bool
   | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
   | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
   | .noSuchTrigger _ | .triggerExists _ | .viewModify _ | .viewNotIndexed | .viewAddColumn | .viewTrigger ..
-  | .renameTargetTaken _ | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _
+  | .renameTargetTaken _ | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _ | .dropColumn _
   | .expression _ => false
 
 end Belay.Sqlite.Model

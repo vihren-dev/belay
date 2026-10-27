@@ -6,7 +6,7 @@ import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.Drops
-import Belay.Sqlite.Model.Resolution.Renames
+import Belay.Sqlite.Model.Resolution.DropColumnResolve
 import Belay.Sqlite.Model.Resolution.ViewDefinitions
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.TriggerDefinitions

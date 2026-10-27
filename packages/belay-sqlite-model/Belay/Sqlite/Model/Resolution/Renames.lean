@@ -97,16 +97,4 @@ def resolveRenameColumn (context : ResolveContext) (catalog : Catalog) (tableNam
               ((table.columns[index]?.map (·.name)).getD column)
         | .index _ | .trigger _ => restrict [] .alterRename
 
-/-- Resolve ALTER TABLE DROP COLUMN. Path 0 is the table and path 1 the column. -/
-def resolveDropColumn (_context : ResolveContext) (_catalog : Catalog) (_tableName _column : Identifier)
-    (_columnToken : String) : StatementResolution :=
-  restrict [] .alterDrop
-
-/-- For every resolution input, {name}`resolveDropColumn` is no success while the statement is only a
-restriction. Proof sketch: the resolver is {name}`restrict`, which is an error. -/
-theorem resolveDropColumn_no_success (context : ResolveContext) (catalog : Catalog)
-    (tableName column : Identifier) (columnToken : String) (result : Resolved.Statement × Catalog) :
-    resolveDropColumn context catalog tableName column columnToken ≠ .ok result := by
-  simp [resolveDropColumn, restrict]
-
 end Belay.Sqlite.Model

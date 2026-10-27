@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveStatementLink
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.ResolveStatementPragmaLink
 
 set_option doc.verso true
@@ -49,7 +50,8 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
     exact plain _ ok fun _ _ found => by
       rcases resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> trivial
   case dropColumn =>
-    exact plain _ ok fun _ _ found => (resolveDropColumn_no_success _ _ _ _ _ _ found).elim
+    exact plain _ ok fun _ _ found => by
+      rcases resolveDropColumn_outcome _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨_, _, rfl, _⟩ <;> trivial
   case dropTable =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
   case dropView =>

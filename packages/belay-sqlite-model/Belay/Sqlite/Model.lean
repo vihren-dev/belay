@@ -33,6 +33,9 @@ import Belay.Sqlite.Model.Resolution.ColumnDropParentLaws
 import Belay.Sqlite.Model.Resolution.ColumnDropParentMapLaws
 import Belay.Sqlite.Model.Resolution.ColumnDropSpec
 import Belay.Sqlite.Model.Resolution.ColumnDropTable
+import Belay.Sqlite.Model.Resolution.DropColumnDependents
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
+import Belay.Sqlite.Model.Resolution.DropColumnResolve
 import Belay.Sqlite.Model.DatabaseConstraints
 import Belay.Sqlite.Model.DatabaseConstraintChecks
 import Belay.Sqlite.Model.KeysUniqueFrame

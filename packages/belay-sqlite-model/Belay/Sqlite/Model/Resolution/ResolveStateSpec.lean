@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ApplyCatalogSpec
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Model.Resolution.DropSpec
 import Belay.Sqlite.Model.Resolution.TriggerDefinitionSpec
@@ -110,7 +111,8 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | dropColumn table column columnToken =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact (resolveDropColumn_no_success _ _ _ _ _ _ (by assumption)).elim
+    obtain ⟨equal, control⟩ := (resolveDropColumn_outcome _ _ _ _ _ _ _ (by assumption)).applyCatalog
+    exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_applyCatalog _ _ _ _ _ found

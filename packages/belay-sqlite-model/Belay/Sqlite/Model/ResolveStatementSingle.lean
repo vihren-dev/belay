@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveStatementSingleOthers
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.StatementSingleton
 
 set_option doc.verso true
@@ -126,7 +127,9 @@ theorem resolveStatement_single (context : ResolveContext) (state next : Resolve
   case renameColumn =>
     exact plain _ ok fun _ _ found => by
       rcases resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> rfl
-  case dropColumn => exact plain _ ok fun _ _ found => (resolveDropColumn_no_success _ _ _ _ _ _ found).elim
+  case dropColumn =>
+    exact plain _ ok fun _ _ found => by
+      rcases resolveDropColumn_outcome _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨_, _, rfl, _⟩ <;> rfl
   case dropTable => exact ResolveState.withWrite_single ok fun _ _ found => resolveDropTable_single _ _ _ found
   case dropView => exact plain _ ok fun _ _ found => resolveDropView_single _ _ _ found
   case dropIndex => exact plain _ ok fun _ _ found => resolveDropIndex_single _ _ _ found
