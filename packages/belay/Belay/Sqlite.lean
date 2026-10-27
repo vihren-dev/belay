@@ -113,6 +113,7 @@ import Belay.Sqlite.SqlSimp
 import Belay.Sqlite.SqlSimpLaws
 import Belay.Sqlite.ExistsQuery
 import Belay.Sqlite.NotExistsQuery
+import Belay.Sqlite.NotInQuery
 import Belay.Sqlite.SelectOneMayFail
 import Belay.Sqlite.ExistsMayFail
 import Belay.Sqlite.ScalarNoFrom

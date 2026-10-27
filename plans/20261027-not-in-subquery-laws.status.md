@@ -39,6 +39,9 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
   `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `InSubqueryStatementResolution`,
   `CorrelatedExistsResolution`. The query laws now conclude `out1 = .rows rows` and `out2 = .rows rows` for one list.
 
+- 2026-10-27: Belay lemma commit: `packages/belay/Belay/Sqlite/NotInQuery.lean` (`Sql.EquivAt.of_select_steps`,
+  `IsSelectStatement`, `Sql.EquivAt.notIn_notExists_of_rowidAlias`, `Sql.EquivAt.in_exists_of_rowidAlias`).
+
 ## Deviations and decisions of the implementation
 
 - The value law is stronger than the task text: it needs no NULL premise, only that the `IN` test and the `=`
@@ -108,3 +111,12 @@ For each new public statement: the general form chosen, and what stays specific 
   (`FilterResolves`, as in `ExistsStatementResolution`), because the model has no law for qualified names in an
   enclosed scope (`correlatedScope`); a user proves it for a given catalog by computation. One outer table with no
   join and one subquery table with no join stay specific: other source shapes need new source-resolution laws.
+- `Sql.EquivAt.of_select_steps`: any two single-statement scripts whose steps give the same rows and keep the
+  connection (no restriction to `NOT IN`). `IsSelectStatement.step_of_rows`: any select statement.
+- `Sql.EquivAt.notIn_notExists_of_rowidAlias` and `Sql.EquivAt.in_exists_of_rowidAlias`: general over the tables
+  (positions), the key, the column, the result columns, the names, the affinity, both collations, the parameters and the
+  syntax of the two statements (any `SELECT` that resolves to the stated queries) and over the connection (the
+  premises are facts about the tables of the connection). They stay specific to a rowid-alias key column and to
+  one-table queries, because the structural premise is a fact about such a column; the general filter and query laws
+  serve other probes. The statement resolution is a hypothesis in the form of the model's resolution laws, so a user
+  proves it for a given catalog by computation or with the resolution laws.
