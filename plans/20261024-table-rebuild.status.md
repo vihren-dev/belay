@@ -518,3 +518,22 @@ rebuild proof is separate.
 - The restriction `alter-rename` is narrower: its text, `docs/semantic-subset.md` and the conformance example
   (a view with a USING-merged column) changed. Nix results for this unit come with the part 2 `just test-full`.
 - Manual proof repairs in this unit: 0 new (the outcome lemmas are short). Total for the task so far: about 122.
+
+### Unit 2.6: contracts, mutants and surface checks of the renames
+
+- Narrow contracts for S6 (`StatementRewrite.lean`): `step_rewrite_of_keeps` (the run succeeds and stores the catalog with the
+  rows of the database), `step_rewrite_of_not_keeps` (it fails as `.unmodeled` with the input database) and
+  `step_rewrite_ok` (what a successful run says: the catalog of the rewrite, the rows of the database, the guard).
+  A client unfolds nothing of `step`.
+- Mutants: `conformance/rename_mutants.py` (8 mutants: parent column and parent table not followed, duplicate column
+  unchecked, dependent error in the prepare phase, taken name ignored, table keeps its old name, rewrite always
+  rejected, rewrite loses rows), all killed by `tests/conformance_rename_mutants_test.py` (run by name, 8 passed);
+  guards checked by `tests/mutant_guards_test.py`. The modules are in `build-support/tests.nix` and the tests in
+  `tests/nix_suites.json` (entries only).
+- Surface: `tests/surface/RenameExecutions.lean` (5 checks over `decide +kernel`: the new names succeed, the rows
+  and rowids are kept, the old names and a taken name fail), in `tests/surface_execution_test.py`.
+- `docs/semantic-subset.md` lists the two ALTER forms and the narrowed restriction `alter-rename`.
+- Reviews: `20261027T025920Z-40b1a98e` (2 musts, both fixed in the commit that follows it and a `refactor:` commit:
+  the recursive aggregate, the quotefix of the text of a view column, and exhaustive matches); the refactor commit
+  `20261027T033625Z-bd168538` has no findings.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.

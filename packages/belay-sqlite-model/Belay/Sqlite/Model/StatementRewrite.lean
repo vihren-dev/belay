@@ -13,6 +13,34 @@ statement, and a theorem about all statements needs one case for it. -/
 
 namespace Belay.Sqlite.Model
 
+/-- The contract of a rewrite that keeps the outline, for a proof about a rename that does not unfold
+{name}`step`: the run succeeds, stores the catalog of the rewrite and keeps every row, so the rows, the rowids
+and the cells of every table are those of the database before. Proof sketch: the guard of {name}`step` holds. -/
+theorem step_rewrite_of_keeps (clock : Int) (counters : Counters) (parameters : List Value) {renamed : Catalog}
+    {database : Database} (kept : database.catalog.keepsOutline renamed = true) :
+    step clock counters parameters (.rewrite renamed) database = .ok { database with catalog := renamed } := by
+  simp [step, kept]
+
+/-- The contract of a rewrite that does not keep the outline: the run fails as
+{lit}`ExecutionError.unmodeled` and returns the database that it was given. Proof sketch: the guard of
+{name}`step` fails. -/
+theorem step_rewrite_of_not_keeps (clock : Int) (counters : Counters) (parameters : List Value) {renamed : Catalog}
+    {database : Database} (rejected : database.catalog.keepsOutline renamed = false) :
+    step clock counters parameters (.rewrite renamed) database = .error (.unmodeled, database) := by
+  simp [step, rejected]
+
+/-- What a successful run of a rewrite tells: the catalog is the one of the rewrite, the rows are those of the
+database before, and the catalog of the rewrite has the outline and the selected parents of the old one. Proof
+sketch: case split on the guard of {name}`step`; the rejected case is an error. -/
+theorem step_rewrite_ok (clock : Int) (counters : Counters) (parameters : List Value) {renamed : Catalog}
+    {database after : Database} (ran : step clock counters parameters (.rewrite renamed) database = .ok after) :
+    after.catalog = renamed ∧ after.rows = database.rows ∧ database.catalog.keepsOutline renamed = true := by
+  cases kept : database.catalog.keepsOutline renamed
+  · simp [step, kept] at ran
+  · simp [step, kept] at ran
+    subst ran
+    exact ⟨rfl, rfl, rfl⟩
+
 /-- For every clock value, counters, parameters, catalog, property and database: if the database
 has the property, and the database with the catalog has it when the catalog has the outline of the
 catalog of the database and selects the same parents ({name}`Catalog.selectedParents`), the effect of

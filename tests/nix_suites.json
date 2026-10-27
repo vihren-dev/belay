@@ -124,7 +124,8 @@
     "tests/conformance_query_mutants_test.py",
     "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py",
-    "tests/conformance_insert_query_mutants_test.py"
+    "tests/conformance_insert_query_mutants_test.py",
+    "tests/conformance_rename_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"
