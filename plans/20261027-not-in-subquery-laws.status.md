@@ -35,6 +35,10 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
   `InSubqueryQueryInLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryExamples` (kernel examples). The statements are calm
   without a premise: the condition, the columns and the subquery use no fallible call, clock or counter.
 
+- 2026-10-27: resolution-law commit (uncommitted until its checks pass): `FromSourceResolution`,
+  `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `InSubqueryStatementResolution`,
+  `CorrelatedExistsResolution`. The query laws now conclude `out1 = .rows rows` and `out2 = .rows rows` for one list.
+
 ## Deviations and decisions of the implementation
 
 - The value law is stronger than the task text: it needs no NULL premise, only that the `IN` test and the `=`
@@ -97,3 +101,10 @@ For each new public statement: the general form chosen, and what stays specific 
   column forms of the filter laws. The statement-level law for any probe, projection and `WHERE` is the composition of
   `resolvedStepOutput_oneTable_congr` with the general filter law; its premises name the contexts of both statements,
   so it was not stated as a separate theorem (about 120 lines of premises). A statement has one subquery.
+- Resolution laws (`resolveStatement_selectFrom_subquery`, `resolveStatement_selectFrom_inQuery`,
+  `resolveStatement_selectFrom_existsTest`, `FilterResolves.exists_only`, `FilterResolves.notExists_only`): general
+  over the outer table, the subquery table, the probe expression, the polarity (`IN` and `NOT IN`, `EXISTS` and
+  `NOT EXISTS`), the projections and the conditions. The resolution of names inside the conditions stays a hypothesis
+  (`FilterResolves`, as in `ExistsStatementResolution`), because the model has no law for qualified names in an
+  enclosed scope (`correlatedScope`); a user proves it for a given catalog by computation. One outer table with no
+  join and one subquery table with no join stay specific: other source shapes need new source-resolution laws.

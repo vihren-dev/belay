@@ -70,11 +70,11 @@ theorem resolvedStepOutput_oneTable_rows (clock : Option Clock) (index position 
     rw [Resolved.Query.oneTable_expressions] at inside
     exact faultless row member expression inside
 
-/-- **Same rows, same output.** For every connection, values, table at a position of the database, two optional
+/-- **Same rows, same output.** The conclusion has a list of rows that both outputs equal. For every connection, values, table at a position of the database, two optional
 conditions, positions of result columns, and two subqueries, when the expressions of both statements are calm and have
 no fault over the empty row and over each row of the table (each in the context of its own statement), and the two
 conditions keep the same rows of the table (each in its own context), the steps of the two statements with any clock
-and index give the same output. The result expressions are the cells of the table at the positions, which do not
+and index both give rows, and the same rows ({lit}`Output.rows` of one list). The result expressions are the cells of the table at the positions, which do not
 depend on the context. Proof sketch: {name}`resolvedStepOutput_oneTable_rows` gives each output as the kept rows with
 the cells; the lists of kept rows are equal by {name}`List.filter_congr`. -/
 theorem resolvedStepOutput_oneTable_congr (clock : Option Clock) (index position : Nat) (connection : Connection)
@@ -98,11 +98,11 @@ theorem resolvedStepOutput_oneTable_congr (clock : Option Clock) (index position
         (Resolved.Query.oneTable position 0 conditionFirst (columns.map .column) namesFirst) [innerFirst]) row =
       Resolved.conditionKeeps conditionSecond (connection.queryContext parameters
         (Resolved.Query.oneTable position 0 conditionSecond (columns.map .column) namesSecond) [innerSecond]) row) :
-    resolvedStepOutput clock index connection parameters
-        (.query (Resolved.Query.oneTable position 0 conditionFirst (columns.map .column) namesFirst) [innerFirst]) =
+    ∃ rows : List (List Value), resolvedStepOutput clock index connection parameters
+        (.query (Resolved.Query.oneTable position 0 conditionFirst (columns.map .column) namesFirst) [innerFirst]) = .rows rows ∧
       resolvedStepOutput clock index connection parameters
         (.query (Resolved.Query.oneTable position 0 conditionSecond (columns.map .column) namesSecond)
-          [innerSecond]) := by
+          [innerSecond]) = .rows rows := by
   have columnsCalm : ∀ expression ∈ columns.map Resolved.Expr.column, expression.Calm := by
     intro expression member
     obtain ⟨column, _, rfl⟩ := List.mem_map.mp member
@@ -111,7 +111,8 @@ theorem resolvedStepOutput_oneTable_congr (clock : Option Clock) (index position
       (columns.map .column) namesFirst innerFirst present calmFirst columnsCalm innerCalmFirst ?_,
     resolvedStepOutput_oneTable_rows clock index position connection parameters table conditionSecond
       (columns.map .column) namesSecond innerSecond present calmSecond columnsCalm innerCalmSecond ?_]
-  · congr 3
+  · refine ⟨_, rfl, Eq.symm ?_⟩
+    congr 3
     · funext row
       simp [Resolved.Expr.eval_column]
     · exact List.filter_congr sameKept

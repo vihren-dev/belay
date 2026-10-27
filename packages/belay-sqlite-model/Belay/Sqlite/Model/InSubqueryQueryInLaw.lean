@@ -11,8 +11,8 @@ namespace Belay.Sqlite.Model
 /-- **Query law of IN.** For every connection, values, outer table at a position and subquery table at a position of the
 database, positions of the result columns, key position {lit}`key` inside the width {lit}`outer` of the outer cells, and
 column {lit}`column` of the subquery table, the step of {lit}`SELECT p1, … FROM t WHERE x IN (SELECT c FROM u)` and the
-step of {lit}`SELECT p1, … FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = x)` give the same output with any clock and
-index, under one premise: for every row of {lit}`t` with a key cell that is not NULL and every row of {lit}`u`, the
+step of {lit}`SELECT p1, … FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = x)` give rows, and the same rows ({lit}`Output.rows` of one list),
+with any clock and index, under one premise: for every row of {lit}`t` with a key cell that is not NULL and every row of {lit}`u`, the
 {lit}`IN` test and the comparison {lit}`=` match the cell equally ({name}`Belay.Sqlite.Model.Resolved.inMatches`;
 {lit}`agree`). A NULL key cell or a NULL cell of {lit}`c` needs no premise: neither makes {lit}`IN` or {lit}`=` true. The
 outputs are the rows of {lit}`t` that the condition keeps, in normal form ({name}`Belay.Sqlite.Model.Resolved.normalForm`). When {lit}`agree` fails, the statements can
@@ -28,15 +28,15 @@ theorem resolvedStepOutput_in_eq_exists (clock : Option Clock)
       ∀ cells ∈ Resolved.sourceRows innerTable,
       Resolved.inMatches inAffinity inCollation (row.getD key .null) (cells.getD column .null) =
         Resolved.inMatches equalsAffinity equalsCollation (row.getD key .null) (cells.getD column .null)) :
-    resolvedStepOutput clock index connection parameters
+    ∃ rows : List (List Value), resolvedStepOutput clock index connection parameters
         (.query (Resolved.Query.oneTable outerPosition 0
           (some (.inQuery (.column key) 0 inAffinity inCollation false)) (columns.map .column) namesMain)
-          [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]) =
+          [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]) = .rows rows ∧
       resolvedStepOutput clock index connection parameters
         (.query (Resolved.Query.oneTable outerPosition 0 (some (.exists 0)) (columns.map .column) namesMain)
           [Resolved.Query.oneTable innerPosition outer
             (some (.compare .eq equalsAffinity (.column (outer + column)) (.column key) equalsCollation))
-            [.literal (.integer 1)] namesExists]) := by
+            [.literal (.integer 1)] namesExists]) = .rows rows := by
   have calmIn := Resolved.Query.inColumn_calm innerPosition outer column namesIn
   have calmExists := Resolved.Query.equalsColumn_calm innerPosition outer column key equalsAffinity equalsCollation
     namesExists

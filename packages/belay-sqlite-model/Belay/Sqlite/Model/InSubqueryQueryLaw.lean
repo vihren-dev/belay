@@ -41,8 +41,8 @@ theorem Resolved.Query.equalsColumn_calm (table outer column key : Nat) (affinit
 of the database, positions of the result columns, key position {lit}`key` inside the width {lit}`outer` of the outer
 cells, and column {lit}`column` of the subquery table, the step of
 {lit}`SELECT p1, … FROM t WHERE x NOT IN (SELECT c FROM u)` and the step of
-{lit}`SELECT p1, … FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)` give the same output with any clock and
-index, under these premises:
+{lit}`SELECT p1, … FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)` give rows, and the same rows ({lit}`Output.rows` of one list),
+with any clock and index, under these premises:
 * the key cell of every row of {lit}`t` is not NULL ({lit}`probe`);
 * the cell of the column {lit}`c` is not NULL in any row of {lit}`u` ({lit}`known`);
 * for every row of {lit}`t` and every row of {lit}`u`, the {lit}`IN` test and the comparison {lit}`=` match the cell
@@ -68,15 +68,15 @@ theorem resolvedStepOutput_notIn_eq_notExists (clock : Option Clock)
     (agree : ∀ row ∈ Resolved.sourceRows outerTable, ∀ cells ∈ Resolved.sourceRows innerTable,
       Resolved.inMatches inAffinity inCollation (row.getD key .null) (cells.getD column .null) =
         Resolved.inMatches equalsAffinity equalsCollation (row.getD key .null) (cells.getD column .null)) :
-    resolvedStepOutput clock index connection parameters
+    ∃ rows : List (List Value), resolvedStepOutput clock index connection parameters
         (.query (Resolved.Query.oneTable outerPosition 0
           (some (.inQuery (.column key) 0 inAffinity inCollation true)) (columns.map .column) namesMain)
-          [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]) =
+          [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]) = .rows rows ∧
       resolvedStepOutput clock index connection parameters
         (.query (Resolved.Query.oneTable outerPosition 0 (some (.not (.exists 0))) (columns.map .column) namesMain)
           [Resolved.Query.oneTable innerPosition outer
             (some (.compare .eq equalsAffinity (.column (outer + column)) (.column key) equalsCollation))
-            [.literal (.integer 1)] namesExists]) := by
+            [.literal (.integer 1)] namesExists]) = .rows rows := by
   have calmIn := Resolved.Query.inColumn_calm innerPosition outer column namesIn
   have calmExists := Resolved.Query.equalsColumn_calm innerPosition outer column key equalsAffinity equalsCollation
     namesExists

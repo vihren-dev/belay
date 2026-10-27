@@ -368,6 +368,11 @@ import Belay.Sqlite.Model.OneTableStatementOutput
 import Belay.Sqlite.Model.InSubqueryQueryLaw
 import Belay.Sqlite.Model.InSubqueryQueryInLaw
 import Belay.Sqlite.Model.InSubqueryQueryRowidAlias
+import Belay.Sqlite.Model.FromSourceResolution
+import Belay.Sqlite.Model.FromSubquerySelectResolution
+import Belay.Sqlite.Model.FromSubqueryStatementResolution
+import Belay.Sqlite.Model.InSubqueryStatementResolution
+import Belay.Sqlite.Model.CorrelatedExistsResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput
 import Belay.Sqlite.Model.ScalarSubqueryOutput
