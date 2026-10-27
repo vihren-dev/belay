@@ -286,8 +286,9 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   `tests/surface_s6_not_blocked_test.py`; shared helpers are in `tests/s6_check_support.py`) replays the blocks `triple-false`, `equiv-false`, `equiv-at-false` and
   `migration-star-false` in native SQLite and compares the rows (for example 6 and 7 for the two updates, and `[]`
   against `[[1]]` for a NULL blocked id in the `S6NotBlocked` driver). The blocks `lean-continuation-false`,
-  `equiv-shrink-exhausted`, `observation-false` and `view-false` check the report text only, because their native
-  scripts do not show the model-level difference. The driver elaborates each printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
+  `equiv-shrink-exhausted`, `observation-false` and `view-false` check the report text only and do not run their replay scripts in SQLite (the scripts of
+  `observation-false` and `view-false` do not show the model-level difference; `equiv-shrink-exhausted` only counts
+  its two replays). The driver elaborates each printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
 - Open points. (1) The claim `notBlockedIn ≈ notBlockedEx` under the premises "rowid alias and no NULL blocked id" is
   not proved for every database: the general laws describe `SELECT 1 WHERE x IN (SELECT ...)` and NOT EXISTS
   duplicate-key queries, but not the rows of a filtered scan with a subquery, so a proof needs new row laws
