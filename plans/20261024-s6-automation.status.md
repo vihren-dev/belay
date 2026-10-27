@@ -331,3 +331,18 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   modeled"). They equal the predictions of the merged table rebuild part 1
   (`/nix/store/m3vcsy6z4m74kr1lp74swki6vbmiis9c-sqlite-verifier-predictions`), so the change comes from that merge
   and not from part 2, which changes no model file.
+
+## Part 2 merged with table rebuild part 2 (#279, 2026-10-27)
+
+- Merge commit `ryoxqmuv` f813d0cc of the part 2 tip 87000f09 and `tasks/table-rebuild-part2@origin` (fa4ec661), no
+  rebase. The only text conflict was the `globs` line of `packages/belay-sqlite-model/lakefile.toml`, resolved as the
+  union of both sides. The new modules and fixtures of part 2 needed no new match arm. The fixture `S6NotBlocked`
+  needed `sql.checkBudget 400000`, because the model runs cost more units after the merge and the
+  explanation did not fit in the default budget. Review `20261027T053948Z-f813d0cc`: no findings.
+- `just test-full`: `/nix/store/l0rf5brmkib27z547sszsxziqjafachx-sqlite-verifier-test-reports`. No failure: surface 404
+  tests in 931.7 s, surfaceChecks 41 in 581.6 s, model 235, harness 288, packages 3. The first run ended with exit code
+  124 at the build limit of 1500 s without a test failure (a cold build of the merged model); the second run used the
+  suites that the first run had built.
+- `just verdict`: `/nix/store/896i6lavqnxqp7grcyharlfkmk5w6gh6-sqlite-verifier-verdict`, with the predictions
+  `/nix/store/ci6rv6zsmhqfr2ck2q37w8nrwqq3adgl-sqlite-verifier-predictions`. `report.json` and `counts.json` are
+  byte-identical to those of `/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict` (#279).
