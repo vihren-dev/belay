@@ -16,8 +16,8 @@ namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
 /-- For every two scripts of one statement each and every context: if the step of the first statement gives the
-rows {lit}`rows` and keeps the connection, and the step of the second statement gives the same rows and keeps the
-connection, the two scripts are equivalent at the context ({name}`Sql.EquivAt`). Plain words: two single queries that
+rows {lit}`rows`, keeps the connection and has no further execution, and the step of the second statement gives the
+same rows, keeps the connection and has no further execution, the two scripts are equivalent at the context ({name}`Sql.EquivAt`). Plain words: two single queries that
 read the same rows and change nothing are equivalent, with the same actual run and the same branches. Proof sketch:
 an output of rows is not a choice, so each program has one branch ({name}`Sql.EquivAt.of_one_branch`), and the two
 actual runs are equal by the two steps. -/
@@ -63,6 +63,9 @@ whose condition is {lit}`NOT EXISTS` subquery 0, with the one subquery that sele
 {lit}`u.c = x` ({lit}`.compare .eq`) with the same affinity, then the two scripts are equivalent at the context
 ({lit}`Sql.EquivAt`), under these premises:
 * both statements have the same values and the same result columns (positions {lit}`columns`) of the outer table;
+* the key position is inside the width {lit}`outer` of an outer row ({lit}`keyInside`), and the connection has the outer
+  table and the inner table at their positions ({lit}`presentOuter`, {lit}`presentInner`); the subqueries see an outer
+  row of the width {lit}`outer`;
 * the key column is the rowid alias of the outer table ({lit}`alias`) and every row of the outer table has its alias cell
   equal to its rowid ({lit}`aliased`), so the key cell is a non-NULL integer;
 * the comparison affinity is not TEXT ({lit}`notText`);
@@ -109,7 +112,7 @@ theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state
 /-- **IN against EXISTS, as execution equivalence.** For the same context, tables, columns and key as in
 {name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with SELECT statements, but with {lit}`x IN` subquery 0 for the first statement and
 {lit}`EXISTS` subquery 0 for the second, the two scripts are equivalent at the context under the premises
-{lit}`alias`, {lit}`aliased` and {lit}`notText`. It needs no premise on NULL cells of the column, and the collations are
+{lit}`keyInside`, {lit}`presentOuter`, {lit}`presentInner`, {lit}`alias`, {lit}`aliased` and {lit}`notText`. It needs no premise on NULL cells of the column, and the collations are
 free. Proof sketch: as for {name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with
 {name}`resolvedStepOutput_in_eq_exists_of_rowidAlias`. -/
 theorem Sql.EquivAt.in_exists_of_rowidAlias {first second : Script} {state : ExecutionContext}
