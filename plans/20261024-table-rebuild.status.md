@@ -896,3 +896,4 @@ Branch `tasks/table-rebuild-judge` on top of `tasks/table-rebuild-part3` (PR #28
   loaded the machine; the rerun with a free machine passed, 377 surface tests). `just verdict`: no DISAGREE and no
   HARNESS_ERROR, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. All 5410 claimed cases are
   AGREE (v1 71 AGREE of 177, v2 77, v3 177, v4 824, v5 3148; corpus-v55 149 AGREE and 13 MODEL_UNSUPPORTED).
+- Review `20261027T145326Z-fa448e66` of this record: no findings.
