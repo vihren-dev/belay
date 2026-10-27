@@ -355,3 +355,39 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
 - The migration query claim over every database of a site (coordinator's call): the `NormalizedField*`
   cleanup task adds the general ADD COLUMN, backfill and scan laws and the fixture.
 - The task file records these (review `20261027T063411Z-aa6ad356`: no findings).
+
+## Part 3 (started 2026-10-27, on `tasks/table-rebuild-part3` b7ec539c)
+
+Part 3 has three outcomes: (b) the unique-index rule for `sql_run` and the partial-index invariant through the
+tactics, (a) the rebuild example, (c) the end-of-task Nix checks. The work starts with (b), which is small.
+
+### Unit 3.1: unique keys of a valid database, and `sql_run` for a statement that Lean cannot read
+
+- Model module `Belay/Sqlite/Model/ValidUniqueKeys.lean` (imported from `Belay/Sqlite/Model.lean`, listed in the
+  model `lakefile.toml`). It states the unique-index rule once, for every valid database:
+  `CatalogIndex.uniqueKey_mem_uniqueKeys` (a unique index of the catalog on the position is one of the unique
+  keys of the table), `Database.Valid.keptRows_pairwise` (a valid database keeps a one-term unique key: no two rows
+  that a guard keeps have equal values at the column, when the column is NOT NULL and the guard implies the filter
+  of the key) and `Database.Valid.countMatching_partial_le_one` (at most one row makes `guard AND cell = value`
+  true). A plain insert that succeeds gives a valid database (the `valid` hypothesis of the `success` outcome of
+  `Sql.check_send_plainInsert`), so the rule applies to the reached database with `valid.1`.
+- Generalization analysis. `uniqueKey_mem_uniqueKeys`: any catalog, position, table and index; nothing is specific.
+  The two database laws: any valid database under any profile, any table at any position and any member of
+  `Catalog.uniqueKeys` (so also the primary key and the UNIQUE constraints, not only indexes), with exactly the
+  premises of the table laws that they wrap. Specific: the key must have one term, because the table laws
+  `Table.KeysUnique.keptRows_pairwise` and `countMatching_partial_le_one` have that form; a multi-term version
+  needs new table laws and was not needed. The table laws stay, because they hold for tables that are not
+  in a database.
+- `sql_run` reads the kind of a sent statement only from a constructor. A statement that is a variable or a field
+  of a structure (the site of a fixture) now takes the rule of the first kind (insert, update, delete, ADD COLUMN)
+  whose blocking premises the hints and hypotheses close (`kindFromHints`, `SqlRunGoals.lean`); `statementKind?`
+  returns a kind only for a constructor, so a projection no longer selects the general rule. The attempt is rolled
+  back and the real application checks every premise, so the change cannot make a false goal pass.
+- Fixtures. `S6AutoSignup.lean` proves `signup_keeps_by_sql_run` and `signup_keeps_global_by_sql_run` with
+  `sql_run`: the hints close the resolution, the table and the coverage, and the `success` goal is closed by
+  `AccountSignupSite.keeps_of_valid` / `GlobalSignupSite.keeps_of_valid` (fixture lemmas, specific to the
+  example, which apply the two database laws to the reached valid database). The explicit-rules proofs
+  `signup_keeps` and `signup_keeps_global` remain. `S6AutoShapes.lean` has the error for an unreadable statement
+  with no fitting hint and a proof where the hypotheses select the DELETE rule. Test:
+  `test_sql_run_proves_the_partial_index_invariant_of_a_signup`.
+- Nix results: see the part 3 gates.
