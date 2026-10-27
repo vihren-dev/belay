@@ -392,3 +392,58 @@ tactics, (a) the rebuild example, (c) the end-of-task Nix checks. The work start
   `test_sql_run_proves_the_partial_index_invariant_of_a_signup`.
 - Review `20261027T112208Z-2be4bcfe` of this commit: no findings.
 - Nix results: see the part 3 gates.
+
+### Part 3 gates for unit 3.1 (2026-10-27, tip 2be4bcfe plus the review record)
+
+- `just test-full`: `/nix/store/iffhbb2kspb5s52zdbb65hiaxx9yy9f8-sqlite-verifier-test-reports`. No failure: surface 408
+  tests in 1020.4 s (the new `test_sql_run_proves_the_partial_index_invariant_of_a_signup` took 7.1 s,
+  `test_sql_run_refuses_unreadable_programs` 1.1 s), surfaceChecks 41 in 576.8 s, model 239, harness 289, packages 3.
+  The first run ended with exit code 124 at the build limit of 1500 s without a test failure (two test-full runs of
+  other workspaces were running at the same time); the second run passed.
+- `just verdict`: `/nix/store/hn1f2s50knj4yx9psfk1ygfs972kpsa6-sqlite-verifier-verdict`. `report.json` and `counts.json`
+  are byte-identical to those of `/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict` (table
+  rebuild part 3). The unit changes no model semantics.
+
+### Part 3 outcome (a), the rebuild example: stopped at a gap (2026-10-27)
+
+The rebuild example is not started as code. The stop rule applies: the laws that its tactic proof needs are
+far more than 200 lines and are not in the task. The table rebuild task supplied the effect contracts of
+INSERT SELECT (`runStatement_insertSelect_none_effects`: an error that keeps the database, or the effect of
+an upsert of known rows), of the rewrite (`step_rewrite_ok`) and of the DROP TABLE positions, but these are laws
+about what a successful or failed step can do. The proofs of the three guide claims need more:
+
+1. `requireName preserves allSessions` for all data. The claim is a fresh claim over every database, so the
+   proof needs a premise on the schema (a pinned catalog, as a site), because with a view `sessions`, a
+   different `customers`, or triggers the claim is not provable; this is a guide change. The proof needs
+   (i) a translation theorem with per-branch reached connections (`Migration.translatesAt_of_observations` takes one
+   `reached` connection and one output count, but the INSERT SELECT has several executions that end at different
+   connections), about 60 lines; (ii) `ReadCertificate.Obligations` and `runScriptStep_simpleTable_output_append` for
+   two positions, because `DROP TABLE customers` moves `sessions` from position 1 to position 0 (a change of
+   every user of `Obligations`, about 10 files); (iii) a frame of the table `sessions`, observed by name,
+   through the nine statements of the script on the error-free branches (pragma, BEGIN, CREATE TABLE, INSERT SELECT,
+   DROP TABLE with foreign keys off, RENAME, `foreign_key_check`, COMMIT), with a step law for each kind (the
+   model has the pieces: `StatementKeeps.ofOwnRun`, `keptAfterDrop`, `step_rewrite_ok`, `runScriptStep_failed_frame`, but no
+   statement-level law for CREATE TABLE, DROP TABLE, pragma, BEGIN and COMMIT at the level of `runScriptStep`),
+   about 250 lines; (iv) `sql_commute` and `sql_run` rules that choose these (about 100 lines).
+2. `requireName succeeds where no NULL names` needs the success direction of the INSERT SELECT: no execution
+   fails when the source rows are valid and have no NULL name. The model has only preservation-if-success laws for
+   `upsertSteps` (`upsertRow_ok`, `upsertSummary_keysUnique`); a success law needs an induction over the rows
+   (distinct keys, NOT NULL, rowids) and a law that every production of a plain scan has rows of the table and no
+   failure (`Query.productions`), about 250 to 350 lines, plus the success laws of the other statements.
+3. `¬ requireNameWrong preserves allSessions` by `sql_refute`: the claim is false in the model and in native SQLite
+   with the default connection, because a new connection has `PRAGMA foreign_keys = OFF` (the guide says the pinned
+   profile enforces foreign keys; this is a guide change). The refutation needs a script that turns the
+   enforcement on first. A probe with `sql_refute with (schema := ...)` was prepared but not run (no free heavy
+   slot); it is the cheapest piece of (a).
+
+Options for the coordinator: (A) a separate task "rebuild frame and success laws" with the pieces above (about 800
+to 1000 lines of model and surface code, three or four commits), then the fixture; (B) a reduced (a): claim 3
+only (the sessions are preserved, a frame on the error-free branches, no success law), claim 1 and the refutation
+as concrete-database facts; (C) accept the existing concrete runs (`RebuildRuns`) and the refutation with enforcement
+on as the rebuild fixture. Recommendation: (B) first, since the frame and the per-branch translation are also what
+the NormalizedField cleanup needs, then (A) for the success law.
+
+Guide changes to record (the private guide is not edited here): (1) "The pinned profile enforces foreign keys" is wrong
+for the model and for native SQLite: a fresh connection has them off; the unsafe-rebuild example needs `PRAGMA
+foreign_keys = ON` first. (2) `requireName preserves allSessions` holds for the databases of the guide's schema, not for
+every database. (3) `requireName` does not abort when `PRAGMA foreign_key_check` reports rows; it only returns them.
