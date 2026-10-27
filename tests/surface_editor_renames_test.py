@@ -21,6 +21,8 @@ def afterDrop := sql! shop r"ALTER TABLE items RENAME TO gone; DROP TABLE gone; 
   SELECT * FROM gone"
 def reused := sql! shop r"ALTER TABLE items RENAME TO other; CREATE TABLE items(q);
   SELECT * FROM items; SELECT * FROM other"
+def rolledBack := sql! shop r"BEGIN; ALTER TABLE items RENAME TO moved; ALTER TABLE keep RENAME TO items; ROLLBACK;
+  SELECT * FROM items; SELECT * FROM keep"
 def dropColumn := sql! shop r"ALTER TABLE items DROP COLUMN name; SELECT * FROM items"
 def scripted := sql! moved r"SELECT * FROM final_name; SELECT * FROM fourth"
 def finished : Nat := 0
@@ -33,7 +35,8 @@ def test_origin_moves_with_a_rename(runtime_root: Path, tmp_path: Path) -> None:
     `CREATE TABLE` of the old name, also after a second rename, a table that the database text created and
     renamed navigates to its `CREATE TABLE` (also after two renames), and `DROP COLUMN` keeps the origin. A
     table that a later statement drops and creates again, and an old name that a statement creates again,
-    have no target, and the new name of the recreated old name still has one."""
+    have no target, and the new name of the recreated old name still has one. After a `ROLLBACK` a name that
+    the transaction renamed has no target, instead of the target of the table that it named inside the transaction."""
     server = LeanServer(runtime_root, tmp_path, module="EditorFixture")
     try:
         uri = server.open(SOURCE)
@@ -46,6 +49,8 @@ def test_origin_moves_with_a_rename(runtime_root: Path, tmp_path: Path) -> None:
         assert definitions(server, uri, SOURCE, "items; SELECT * FROM other") == []
         assert definitions(server, uri, SOURCE, "other\"") == [items]
         assert definitions(server, uri, SOURCE, "items\"") == [items]
+        assert definitions(server, uri, SOURCE, "items; SELECT * FROM keep\"") == []
+        assert definitions(server, uri, SOURCE, "keep\"", 1) == []
         assert definitions(server, uri, SOURCE, "final_name;", 1) == [(uri, range_of(SOURCE, "draft(id", "draft"))]
         assert definitions(server, uri, SOURCE, "fourth\"", 1) == [(uri, range_of(SOURCE, "twice(y", "twice"))]
     finally:

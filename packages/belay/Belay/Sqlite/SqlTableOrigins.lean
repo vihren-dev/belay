@@ -98,12 +98,15 @@ def originSource (sources : OriginSources) (name : Identifier) : Option Identifi
 /-- The sources after one more statement of a script: a {lit}`CREATE TABLE` or {lit}`DROP TABLE` leaves the
 name without an origin, because the table is then not the one that the database had at the start, and
 {lit}`ALTER TABLE a RENAME TO b` gives {lit}`b` the source of {lit}`a` and leaves {lit}`a` without one.
-Every other statement keeps the sources, also {lit}`DROP COLUMN`. -/
+{lit}`ROLLBACK` may undo any of these changes, so it leaves every name that an earlier statement changed
+without an origin; a name that no statement changed keeps its table. Every other statement keeps the
+sources, also {lit}`DROP COLUMN`. -/
 def stepOriginSources (sources : OriginSources) : Syntax.Statement → OriginSources
   | .createTable name .. | .dropTable name _ => (name.folded, none) :: sources
   | .renameTable name newName => (newName.folded, originSource sources name) :: (name.folded, none) :: sources
+  | .rollback => sources.map fun (name, _) => (name, none)
   | .createView .. | .createIndex .. | .addColumn .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
-  | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
+  | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
   | .dropTrigger .. => sources
 
 /-- The places of the {lit}`CREATE TABLE` statements that make the tables a script leaves, in the

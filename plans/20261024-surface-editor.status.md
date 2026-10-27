@@ -532,3 +532,12 @@ them after that task.
 - Test: `tests/surface_editor_renames_test.py` (real server, definition requests, suite `surfaceChecks`): rename and
   second rename of a database table, a table of the database text renamed once and twice, `DROP COLUMN`, and the
   negatives (rename then drop the new name and create it again, an old name created again).
+
+### Part 3, refactor after review 3: ROLLBACK in a sql! script (2026-10-27)
+
+Review finding `20261027T151904Z-f6a020a2#1` (must): a `ROLLBACK` restores the catalog, so a rename inside the
+transaction must not leave the new name with the origin of another table. `stepOriginSources` now leaves every name that
+an earlier statement changed without an origin after `ROLLBACK`. This is conservative: a name that a committed or
+rolled-back change touched loses its jump, and a name that no statement changed keeps it. The restoration of the exact
+origins of a rolled-back transaction is not implemented (a `db!` text with `ROLLBACK` has no origins either).
+The renames test adds a transaction that swaps two names and rolls back.
