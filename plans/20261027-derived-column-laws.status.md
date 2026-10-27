@@ -188,9 +188,9 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
   lakefile; fixed in the next commit).
 - 2026-10-27: review `20261027T093842Z-bcc1caa1` (no findings).
 - 2026-10-27: commit `dbb25391`: general laws, deletion of the `NormalizedField*` modules, the `Lowercase*`
-  fixtures and the driver changes. Nix results: pending (end-of-task gates).
+  fixtures and the driver changes. Nix results: see the end-of-task gates.
 - 2026-10-27: commit `593d6f21`: the universal claim, the kernel examples and the new driver
-  `tests/surface_derived_column_test.py` (in `surfaceChecks` of `tests/nix_suites.json`). Nix results: pending.
+  `tests/surface_derived_column_test.py` (in `surfaceChecks` of `tests/nix_suites.json`). Nix results: see the end-of-task gates.
 - 2026-10-27: review `20261027T110912Z-dbb25391` of `dbb25391`: finding 1 (R19, the status file named files
   of the next commit) is a commit boundary and was rejected; findings 2 and 3 (R2, plain-words statements of
   `Expr.eval_compare_stored_left` and `sourceRows_addDerivedColumn`) were fixed in a `refactor:` commit.
@@ -205,3 +205,18 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
   (union of both sides, with the 13 removed `NormalizedField*` modules dropped). The barrels merged without
   conflict. Part 3's new resolved statement constructor `.dropColumn` needed no change in the new modules.
   The model, belay and verifier-conformance packages build on the merged tree.
+
+## End-of-task Nix checks (on the merged tree, change `merge: table rebuild part 3 ...`)
+
+- `just dev-build`: passes on the merged tree.
+- `just test-full`: passes, `/nix/store/k67m18r5lk2r8qkc51px335xcy9yif59-sqlite-verifier-test-reports`. Suite times
+  (limit 1200 s): `surface` 1039 s with 407 tests
+  (`/nix/store/25gvpf1q5arvqmlnpc7znawj2025b6mc-sqlite-verifier-test-surface-1`), `surfaceChecks` 939 s with 43
+  tests (`/nix/store/inivfhgbca7yc37ajmp3li88mc6i91bq-sqlite-verifier-test-surfaceChecks-1`). Two earlier runs on the
+  same tree failed only by timeout (the recipe at 1500 s, then the `surface` suite at 1200 s) while two other
+  `test-full` runs shared the machine; no test failed. The new driver
+  `tests/surface_derived_column_test.py` takes about 25 s.
+- `just verdict`: passes, `/nix/store/7mrg2ndl2h7nqnb81ms2njwpic17s8wk-sqlite-verifier-verdict`; the model
+  predictions agree with the baseline before this work (checked earlier on the unmerged tree: 55 files, byte-identical).
+- `just test-nix`: 71 passed.
+- `just test-scheduled-checks`: passes, `/nix/store/5qq2c3cc09smhjp08qc3vvx7za05r62p-sqlite-verifier-scheduled-check-reports`.
