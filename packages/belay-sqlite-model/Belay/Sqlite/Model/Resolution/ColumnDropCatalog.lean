@@ -33,7 +33,10 @@ def CatalogTable.hasParent (name : Identifier) (table : CatalogTable) : Bool :=
 
 /-- Whether the object of the catalog keeps the column at {lit}`index` of the table at {lit}`position`
 droppable: an index of the table reads no such column, and no table has the table as the parent of a foreign
-key. A view and a trigger impose nothing here. -/
+key. A view and a trigger impose nothing here. The index rule is a rule of SQLite. The parent rule is a restriction
+of the model, not a rule of SQLite: SQLite can drop a column of a parent table that no foreign key names, but the
+model does not move the parent columns of the foreign keys of other tables, so the resolver restricts
+the statement ({lit}`RestrictionKind.alterDrop`) instead of giving an answer. -/
 def CatalogObject.allowsDrop (name : Identifier) (position index : Nat) (object : CatalogObject) : Bool :=
   match object.entry with
   | .index definition => !definition.readsColumn position index

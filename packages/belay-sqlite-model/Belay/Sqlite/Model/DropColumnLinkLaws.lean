@@ -20,9 +20,11 @@ theorem indexHolds_mapChildren (parent : CatalogTable) (pairs : List (Nat × Nat
   rw [List.zip_map_left, List.all_map]
   rfl
 
-/-- For every links, parent key, function and two value lists: if the cells at the moved child columns of one
-list are the cells at the child columns of the other, the values that the moved parent key selects are the values
-that the parent key selects. Proof sketch: each selected position is a column of the key
+/-- For every two links, function, parent key and two value lists: if the child columns of the second link are those
+of the first, moved by the function; every position that the key selects for the first link is a child column of
+that link; and the cells of the second list at the moved child columns are the cells of the first list at the child
+columns; then the values that the moved parent key selects for the second link are the values that the parent key
+selects for the first. Proof sketch: each selected position is a column of the key
 ({name}`Catalog.parentLink_children`) and moves to the position of the same cell. -/
 theorem childValues_mapChildren {link moved : ForeignKeyLink} {move : Nat → Nat} {found : ParentKey}
     (columns : moved.key.columns = link.key.columns.map move)
@@ -63,7 +65,8 @@ theorem parentFound_mapChildren (parent : CatalogTable) (found : ParentKey) (lin
 /-- For every databases, links and rows: if the child columns of the second link are those of the first, moved, the
 second link finds the first link's parent with moved child positions, the cells of the second row at the moved
 columns are the cells of the first row, and every parent that the first link locates has the same table and the same
-rows in both databases, then the second row satisfies the second link exactly when the first row satisfies the first.
+rows in both databases, and every position that the key of the first link selects for a located parent is a child
+column of that link, then the second row satisfies the second link exactly when the first row satisfies the first.
 Proof sketch: the NULL test and the parent lookup read the same values ({name}`childValues_mapChildren`,
 {name}`parentFound_mapChildren`) in the same parent. -/
 theorem ForeignKeyLink.satisfied_mapChildren {old new : Database} {link moved : ForeignKeyLink} {oldRow newRow : Row}

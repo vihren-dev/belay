@@ -43,7 +43,8 @@ theorem findPosition_spec {α : Type} (test : α → Bool) (items : List α) {sl
       have := ih inRest
       simpa using this
 
-/-- For every names: the folded names are the same in either order. -/
+/-- For every two names: the names are the same in one order exactly when they are the same in the other. Proof
+sketch: the comparison is equality of the folded names, which is symmetric. -/
 theorem Identifier.sameName_comm (left right : Identifier) : left.sameName right = right.sameName left := by
   unfold Identifier.sameName
   by_cases same : left.folded = right.folded
@@ -51,7 +52,8 @@ theorem Identifier.sameName_comm (left right : Identifier) : left.sameName right
   · have different : ¬ right.folded = left.folded := fun h => same h.symm
     rw [beq_eq_false_iff_ne.mpr same, beq_eq_false_iff_ne.mpr different]
 
-/-- For every position, index, slot and object: the drop keeps the name of the object. -/
+/-- For every position, index, slot and object: the drop keeps the name of the object. Proof sketch: only a table
+at the dropped position changes, and only in its entry. -/
 @[simp] theorem CatalogObject.name_dropColumn (position index slot : Nat) (object : CatalogObject) :
     (object.dropColumn position index slot).name = object.name := by
   rcases object with ⟨name, entry⟩
@@ -59,8 +61,9 @@ theorem Identifier.sameName_comm (left right : Identifier) : left.sameName right
   | table _ => by_cases at_position : slot = position <;> simp [CatalogObject.dropColumn, at_position]
   | index _ | view _ | trigger _ => simp [CatalogObject.dropColumn]
 
-/-- For every position, index, slot and object: the drop keeps the kind of the object, so a trigger stays a
-trigger. -/
+/-- For every position, index, slot and object: the object after the drop is a trigger exactly when the object is
+a trigger. The formula says nothing about the other kinds of object. Proof sketch: the drop changes only the entry
+of a table or an index, and neither is a trigger. -/
 @[simp] theorem CatalogObject.isTrigger_dropColumn (position index slot : Nat) (object : CatalogObject) :
     (object.dropColumn position index slot).isTrigger = object.isTrigger := by
   rcases object with ⟨name, entry⟩
@@ -70,10 +73,10 @@ trigger. -/
       simp [CatalogObject.dropColumn, CatalogObject.isTrigger, CatalogEntry.isTrigger, at_position]
   | index _ | view _ | trigger _ => simp [CatalogObject.dropColumn, CatalogObject.isTrigger, CatalogEntry.isTrigger]
 
-/-- For every catalog, indexed change of objects that keeps the name and the kind of each object, and name: the
+/-- For every catalog, indexed change of objects that keeps the name and whether each object is a trigger, and name: the
 first table, view or index with the name in the changed catalog is the first one in the catalog, at the same
-place, with the change applied. Any rewrite of the objects of a catalog that keeps names and kinds therefore keeps
-every lookup by name. Proof sketch: {name}`findPosition_mapIdx`. -/
+place, with the change applied. The lookup skips triggers, so a rewrite that keeps names and the trigger test keeps
+every lookup by name; the formula does not distinguish tables, views and indexes. Proof sketch: {name}`findPosition_mapIdx`. -/
 theorem Catalog.find_mapIdx (catalog : Catalog) (move : Nat → CatalogObject → CatalogObject)
     (name : ∀ slot object, (move slot object).name = object.name)
     (trigger : ∀ slot object, (move slot object).isTrigger = object.isTrigger) (lookup : Identifier) :

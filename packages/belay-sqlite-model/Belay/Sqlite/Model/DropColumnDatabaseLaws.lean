@@ -12,8 +12,10 @@ the outline keeps ({lit}`Database.EveryTable.of_outline`) passes from the one da
 
 namespace Belay.Sqlite.Model
 
-/-- For every rows, position, function and position of a list: the list at the position after the function was
-mapped over the list at the changed position is the mapped list there and the same list elsewhere. Proof
+/-- For every rows, position, other position and function that maps the empty list to the empty list: the list at
+the other position, after the function was applied to the list at the changed position, is the function applied to
+the list there when the two positions are the same, and the list before otherwise. The empty-list premise covers a
+position after the end of the rows, where both sides read the empty list. Proof
 sketch: {lit}`List.getElem?_modify`. -/
 theorem rows_modify_getD (rows : List (List Row)) (position other : Nat) (change : List Row → List Row)
     (empty : change [] = []) :

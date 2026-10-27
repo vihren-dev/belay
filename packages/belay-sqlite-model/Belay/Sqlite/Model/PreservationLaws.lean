@@ -83,7 +83,8 @@ theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Tabl
 /-- For every clock value, counters, list of values, database and statement that is not DROP (its
 {name}`Resolved.Statement.kind` is not {name}`Resolved.Statement.Kind.drop`), the database of
 the primitive {name}`step` effect ({name}`effectDatabase`) extends the input database. A DROP
-removes tables and a RENAME changes the names and the shape of tables, so the theorem says nothing about them. CREATE/ADD extend existing tables or retain
+removes tables, and a RENAME or a DROP COLUMN changes the names or the shape of tables (its kind is
+{name}`Resolved.Statement.Kind.rewrite`), so the theorem says nothing about them. CREATE/ADD extend existing tables or retain
 errors; other constructors return an unchanged error. This is a primitive schema
 fact, not a preservation law for literal SQL writes. The proof follows the
 primitive branches and table-update witnesses. -/

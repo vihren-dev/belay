@@ -8,7 +8,8 @@ under the mapping of the catalog of the statement; neither of them is part of {l
 
 namespace Belay.Sqlite.Model
 
-/-- For every link: moving the child positions of a located or mismatched parent keeps whether it is located. -/
+/-- For every link and function: moving the child positions of a parent link keeps whether it is located. Proof
+sketch: each constructor of the link keeps its own classification when the positions move. -/
 @[simp] theorem ParentLink.isLocated_mapChildren (link : ParentLink) (move : Nat → Nat) :
     (link.mapChildren move).isLocated = link.isLocated := by
   cases link <;> rfl

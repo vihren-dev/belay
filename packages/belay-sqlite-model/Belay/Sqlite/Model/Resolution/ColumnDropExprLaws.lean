@@ -11,7 +11,7 @@ index that survive the drop are evaluated over the shorter row (ADR 0019, D4). -
 namespace Belay.Sqlite.Model.Resolved
 
 /-- For every position of a cell and every index, a position after the index finds, in the row without
-the cell at the index, the cell that it found in the row. Proof sketch: {lit}`List.getElem?_eraseIdx`
+the cell at the index, the cell that it found in the row. Proof sketch: {name}`List.getElem?_eraseIdx`
 and a case split on the position against the index. -/
 theorem dropPosition_getD (index position : Nat) (row : List Value) (other : position ≠ index) :
     ((row.eraseIdx index)[dropPosition index position]?).getD .null = (row[position]?).getD .null := by
@@ -22,12 +22,12 @@ theorem dropPosition_getD (index position : Nat) (row : List Value) (other : pos
     simp [dropPosition, before, List.getElem?_eraseIdx]
     simp only [show ¬(position - 1 < index) by omega, ↓reduceIte, Nat.sub_add_cancel (show 1 ≤ position by omega)]
 
-/-- For every context whose subqueries do not depend on the outer row ({lit}`EvalContext.RowFree`), index,
-row and expression that does not read the column at the index ({lit}`Expr.readsColumn`): the expression
-with its positions changed ({lit}`Expr.dropColumn`) has the same value and fault ({lit}`Expr.evaluate`),
-and the same JSON subtype ({lit}`Expr.givesJson`), over the row without the cell at the index as the
+/-- For every context whose subqueries do not depend on the outer row ({name}`EvalContext.RowFree`), index,
+row and expression that does not read the column at the index ({name}`Expr.readsColumn`): the expression
+with its positions changed ({name}`Expr.dropColumn`) has the same value and fault ({name}`Expr.evaluate`),
+and the same JSON subtype ({name}`Expr.givesJson`), over the row without the cell at the index as the
 expression has over the row. Proof sketch: induction over the mutual expression and argument types, as in
-{lit}`Expr.evaluate_append`; a column reads the cell that {lit}`dropPosition_getD` gives, a subquery form
+{name}`Expr.evaluate_append`; a column reads the cell that {name}`dropPosition_getD` gives, a subquery form
 reads the same results for both rows, and every other node combines the values of its parts, which are
 equal by induction. -/
 theorem Expr.evaluate_dropColumn (context : EvalContext) (rowFree : context.RowFree) (index : Nat)
@@ -71,8 +71,8 @@ theorem Expr.evaluate_dropColumn (context : EvalContext) (rowFree : context.RowF
 
 /-- For every context whose subqueries do not depend on the outer row, index, row and expression that
 does not read the column at the index: the expression with its positions changed has the same value
-({lit}`Expr.eval`) over the row without the cell at the index as the expression has over the row. Proof
-sketch: {lit}`Expr.evaluate_dropColumn`. -/
+({name}`Expr.eval`) over the row without the cell at the index as the expression has over the row. Proof
+sketch: {name}`Expr.evaluate_dropColumn`. -/
 theorem Expr.eval_dropColumn (context : EvalContext) (rowFree : context.RowFree) (index : Nat)
     (row : List Value) {expression : Expr} (free : expression.readsColumn index = false) :
     (expression.dropColumn index).eval context (row.eraseIdx index) = expression.eval context row := by

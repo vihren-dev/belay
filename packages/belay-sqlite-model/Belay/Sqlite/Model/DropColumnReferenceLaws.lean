@@ -11,7 +11,8 @@ the same parent. A row of the child table, without the cell, has its parent exac
 
 namespace Belay.Sqlite.Model
 
-/-- For every key: the key with its child columns mapped by the identity is the key. -/
+/-- For every key: the key with its child columns mapped by the identity is the key. Proof sketch: unfolding the
+mapping leaves the identity map over the child columns. -/
 @[simp] theorem ForeignKey.mapColumns_id (key : ForeignKey) : key.mapColumns id = key := by
   simp [ForeignKey.mapColumns]
 
