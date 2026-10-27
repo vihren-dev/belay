@@ -37,13 +37,15 @@ def RenameRequest.renameOwnTable (request : RenameRequest) (oldTable oldColumn :
   | .column _ _, .table => none
 
 /-- One object of the catalog after the rename, in the first pass of SQLite. A table other than the renamed
-one changes in the parent names of its foreign keys; an index reads its table by position and does not change. -/
+one changes in the parent names of its foreign keys; an index reads its table by position and does not change.
+A table with a double quote in a CHECK text that no name covers is a restriction ({name}`CatalogTable.hasLooseQuote`). -/
 def renameObject (context : ResolveContext) (catalog : Catalog) (request : RenameRequest)
     (oldTable oldColumn : Identifier) (position : Nat) (object : CatalogObject) :
     Except RenameFailure CatalogObject :=
   match object.entry with
   | .table table =>
-    if position == request.target.position then
+    if table.hasLooseQuote then throw (.restricted .alterRename)
+    else if position == request.target.position then
       match request.renameOwnTable oldTable oldColumn table with
       | some renamed => pure { name := match request.target with
           | .table _ => request.new

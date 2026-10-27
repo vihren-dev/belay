@@ -18,7 +18,8 @@ has the property, and the database with the catalog has it when the catalog has 
 catalog of the database and selects the same parents ({name}`Catalog.selectedParents`), the effect of
 {name}`runStatement` for the rewrite satisfies the property ({name}`Effect.Satisfies`). Proof sketch:
 the run is {name}`step`, which stores the catalog when {name}`Catalog.keepsOutline` and else fails
-with the input database. -/
+with the input database. Success and {lit}`constraintFail` need the property. Every other error,
+including the rejection as {lit}`ExecutionError.unmodeled`, puts no obligation on the database. -/
 theorem runStatement_rewrite_satisfies (clock : Int) (counters : Counters) (parameters : List Value)
     (renamed : Catalog) {database : Database} {property : Database → Prop} (kept : property database)
     (stored : renamed.outline = database.catalog.outline → renamed.selectedParents = database.catalog.selectedParents →
@@ -33,7 +34,8 @@ theorem runStatement_rewrite_satisfies (clock : Int) (counters : Counters) (para
 /-- For every atom that is a {name}`RowLocalAtom` and every database whose tables have it: the effect
 of a rewrite satisfies "every table has the atom". Proof sketch:
 {name}`runStatement_rewrite_satisfies` with {name}`Database.EveryTable.of_outline` and the
-renaming fact of the atom. -/
+renaming fact of the atom. Success and {lit}`constraintFail` need the atom, and every other error,
+including the rejection as {lit}`ExecutionError.unmodeled`, puts no obligation on the database. -/
 theorem runStatement_rewrite_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (renamed : Catalog) {database : Database}
     (every : database.EachTable atom) :
@@ -45,7 +47,9 @@ theorem runStatement_rewrite_rowLocal {atom : Table → Prop} (rowLocal : RowLoc
 
 /-- For every atom that is a {name}`TableAtom` and every database whose tables have it: the effect of
 a rewrite satisfies "every table has the atom". Proof sketch: as
-{name}`runStatement_rewrite_rowLocal`. -/
+{name}`runStatement_rewrite_rowLocal`. Success and {lit}`constraintFail` need the atom, and every
+other error, including the rejection as {lit}`ExecutionError.unmodeled`, puts no obligation on the
+database. -/
 theorem runStatement_rewrite_tableAtom {atom : Table → Prop} (tableAtom : TableAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (renamed : Catalog) {database : Database}
     (every : database.EachTable atom) :

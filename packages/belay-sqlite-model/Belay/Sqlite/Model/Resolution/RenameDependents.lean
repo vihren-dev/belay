@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.RenameEdits
+import Belay.Sqlite.Model.Resolution.RenameVerdict
 import Belay.Sqlite.Model.Resolution.TriggerPrograms
 import Belay.Sqlite.Model.Resolution.SelectResolution
 
@@ -26,12 +27,15 @@ def RenameFailure.resolution (catalog : Catalog) : RenameFailure → StatementRe
   | .restricted kind => restrict [] kind
   | .prepare error => prepareError catalog error
 
-/-- The failure of an object: a prepare error of its definition becomes the error of the object that the
-rename reports; a restriction stays. -/
+/-- The failure of an object: a prepare error of its definition that the rename reports
+({name}`PrepareError.raisedByRename`) becomes the error of the object; any other prepare error is a
+restriction, because the model then has no complete trace of the names of the definition; a restriction
+stays. -/
 def RenameFailure.inObject (kind : DependentKind) (name : Identifier) (afterRename : Bool) :
     RenameFailure → RenameFailure
   | .restricted reason => .restricted reason
-  | .prepare error => .prepare (.dependentObject kind name afterRename error)
+  | .prepare error =>
+    if error.raisedByRename then .prepare (.dependentObject kind name afterRename error) else .restricted .alterRename
 
 /-- The failure that an issue of the resolution of a query is. -/
 def SourceIssue.failure : SourceIssue → RenameFailure
@@ -56,7 +60,7 @@ def checkTrigger (context : ResolveContext) (catalog : Catalog) (position : Nat)
     (afterRename : Bool) (trigger : CatalogTrigger) : Except RenameFailure Unit :=
   match (resolveProgramTraced context catalog position trigger).drop with
   | .error restriction => .error (.restricted restriction.kind)
-  | .ok (.error error) => .error (.prepare (.dependentObject .trigger name afterRename error))
+  | .ok (.error error) => .error ((RenameFailure.prepare error).inObject .trigger name afterRename)
   | .ok (.ok _) => .ok ()
 
 /-- The view after the rename. The edits come from the resolution of the view over the catalog before the
@@ -99,7 +103,7 @@ def renameTrigger (context : ResolveContext) (catalog : Catalog) (request : Rena
   let resolution := resolveProgramTraced context catalog position trigger
   match resolution.drop with
   | .error restriction => throw (.restricted restriction.kind)
-  | .ok (.error error) => throw (.prepare (.dependentObject .trigger name false error))
+  | .ok (.error error) => throw ((RenameFailure.prepare error).inObject .trigger name false)
   | .ok (.ok _) => pure ()
   if trigger.body.any BodyStatement.hasConflictClauses then throw (.restricted .alterRename)
   let renamedTable := match request.target with

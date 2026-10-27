@@ -36,6 +36,14 @@ def dequoteLabel (text : String) : String :=
           else byte :: scan more
       (String.fromUTF8? (ByteArray.mk (scan rest).toArray)).getD text
 
+/-- Whether the text has a double quote that no name token of the text covers: a double-quoted string in the
+CHECK constraint, or one inside a single-quoted string. SQLite rewrites such a string to single quotes at every
+rename ({lit}`renameQuotefix`), which the model does not write into the text, so a rename of a table with such a
+text is a restriction. For example, {lit}`a > 0 AND "x" = 1` has a loose quote when {lit}`"x"` is no column. -/
+def CheckText.hasLooseQuote (text : CheckText) : Bool :=
+  text.text.toUTF8.toList.zipIdx.any fun (byte, index) =>
+    byte == 34 && !(text.names.any fun name => name.start ≤ index && index < name.stop)
+
 /-- The code of a label target in the path of a token: the table is 0 and the column {lit}`k` is {lit}`k + 1`.
 It lets {lit}`CheckText.rename` reuse the token rewrite of {name}`SourceText.replaceTokens`. -/
 def LabelTarget.code : LabelTarget → Nat

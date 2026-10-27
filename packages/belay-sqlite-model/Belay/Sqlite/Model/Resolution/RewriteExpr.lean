@@ -15,9 +15,12 @@ namespace Belay.Sqlite.Model.Syntax
 mutual
 /-- The expression with the name at the path replaced, or none when the path leads to no name, or to
 a name other than {name}`NameEdit.old`. The quote of an unqualified name follows
-{name}`RenameStyle.quote`. -/
+{name}`RenameStyle.quote`; an edit that fixes a quote ({name}`NameEdit.fixQuote`) makes the name a string literal
+of its bytes. -/
 def Expr.renameAt (edit : NameEdit) : List Nat → Expr → Option Expr
-  | [], .identifier name quote => (edit.replace? name).map fun new => .identifier new (edit.style.quote quote)
+  | [], .identifier name quote =>
+    if edit.fixQuote then (if name == edit.old then some (.string name.bytes) else none)
+    else (edit.replace? name).map fun new => .identifier new (edit.style.quote quote)
   | [0], .qualified source column schema => (edit.replace? source).map fun new => .qualified new column schema
   | [1], .qualified source column schema => (edit.replace? column).map fun new => .qualified source new schema
   | 0 :: rest, .negate operand => (operand.renameAt edit rest).map .negate

@@ -44,12 +44,10 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
     exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ _ found
   case renameTable =>
     exact plain _ ok fun _ _ found => by
-      obtain ⟨_, _, rfl⟩ := resolveRenameTable_unchanged _ _ _ _ _ found
-      trivial
+      rcases resolveRenameTable_outcome _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> trivial
   case renameColumn =>
     exact plain _ ok fun _ _ found => by
-      obtain ⟨_, _, rfl⟩ := resolveRenameColumn_unchanged _ _ _ _ _ _ found
-      trivial
+      rcases resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> trivial
   case dropTable =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
   case dropView =>

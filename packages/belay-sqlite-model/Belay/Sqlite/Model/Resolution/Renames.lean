@@ -1,13 +1,16 @@
 import Belay.Sqlite.Model.CheckFailures
 import Belay.Sqlite.Model.Resolution.Definitions
 import Belay.Sqlite.Model.Resolution.Drops
+import Belay.Sqlite.Model.Resolution.RenameCatalog
 
 set_option doc.verso true
 
 /-! Name resolution of ALTER TABLE RENAME TO and RENAME COLUMN. The prepare checks follow the order of
 SQLite 3.51.0's {lit}`sqlite3AlterRenameTable` and {lit}`sqlite3AlterRenameColumn`, because SQLite
-reports the first error it finds. A statement that passes them is the model restriction
-{lit}`RestrictionKind.alterRename` until the schema rewrite is modeled. -/
+reports the first error it finds. A statement that passes them rewrites the catalog
+({lit}`renameCatalog`): its resolved form is {lit}`Resolved.Statement.rewrite` with the new catalog. When the
+rewrite fails, the statement is a prepare error of SQLite, or the model restriction
+{lit}`RestrictionKind.alterRename` for a rewrite that the model cannot describe. -/
 
 namespace Belay.Sqlite.Model
 
@@ -43,40 +46,55 @@ def schemaNameTaken (catalog : Catalog) (reported newName : Identifier) : Bool :
   if reported.sameName (name! "sqlite_temp_master") then (schemaTableName? newName).isSome
   else catalog.nameTaken newName
 
+/-- The resolution of a rename that passed the checks of SQLite: the new catalog of {name}`renameCatalog` as a
+rewrite, or the failure of the rewrite with the catalog unchanged. -/
+def finishRename (context : ResolveContext) (catalog : Catalog) (request : RenameRequest)
+    (oldTable oldColumn : Identifier) : StatementResolution :=
+  match renameCatalog context catalog request oldTable oldColumn with
+  | .ok renamed => .ok (.rewrite renamed, renamed)
+  | .error failure => failure.resolution catalog
+
 /-- Resolve ALTER TABLE RENAME TO. Path 0 is the table and path 1 the new name. The checks are, in this order:
 the table or view exists, where a schema table is found under every name of it; no table, view or index
-has the new name; the table is no system table; the new name is not reserved; the target is no view. -/
-def resolveRenameTable (catalog : Catalog) (tableName newName : Identifier) : StatementResolution :=
+has the new name; the table is no system table; the new name is not reserved; the target is no view. Then the
+catalog is rewritten ({name}`finishRename`). -/
+def resolveRenameTable (context : ResolveContext) (catalog : Catalog) (tableName newName : Identifier) :
+    StatementResolution :=
   match schemaTableName? tableName with
   | some reported =>
     if schemaNameTaken catalog reported newName then prepareError catalog (.renameTargetTaken newName)
     else prepareError catalog (.expression (.tableMayNotBeAltered reported))
   | none => match catalog.alterTarget tableName with
     | none => prepareError catalog (.noSuchTable tableName)
-    | some (_, target) =>
+    | some (position, target) =>
       if catalog.nameTaken newName then prepareError catalog (.renameTargetTaken newName)
       else if reservedName target.name then prepareError catalog (.expression (.tableMayNotBeAltered target.name))
       else if reservedName newName then prepareError catalog (.expression (.reservedName newName))
       else match target.entry with
         | .view _ => prepareError catalog (.viewNotAltered target.name)
-        | .table _ | .index _ | .trigger _ => restrict [] .alterRename
+        | .table _ => finishRename context catalog { target := .table position, new := newName, style := .table }
+            target.name target.name
+        | .index _ | .trigger _ => restrict [] .alterRename
 
 /-- Resolve ALTER TABLE RENAME COLUMN. Path 0 is the table, path 1 the column and path 2 the new name. The
 checks are, in this order: the table or view exists, where a schema table is found under every name of it;
-the table is no system table; the target is no view; the table has the column. -/
-def resolveRenameColumn (catalog : Catalog) (tableName column : Identifier) (columnToken : String) :
-    StatementResolution :=
+the table is no system table; the target is no view; the table has the column. Then the catalog is rewritten
+({name}`finishRename`); {lit}`quoted` tells whether the new name was written with a quote. -/
+def resolveRenameColumn (context : ResolveContext) (catalog : Catalog) (tableName column newName : Identifier)
+    (columnToken : String) (quoted : Bool) : StatementResolution :=
   match schemaTableName? tableName with
   | some reported => prepareError catalog (.expression (.tableMayNotBeAltered reported))
   | none => match catalog.alterTarget tableName with
     | none => prepareError catalog (.noSuchTable tableName)
-    | some (_, target) =>
+    | some (position, target) =>
       if reservedName target.name then prepareError catalog (.expression (.tableMayNotBeAltered target.name))
       else match target.entry with
         | .view _ => prepareError catalog (.viewColumnsNotRenamed target.name)
         | .table table => match columnPosition table.columns column with
           | none => prepareError catalog (.renameNoSuchColumn columnToken)
-          | some _ => restrict [] .alterRename
+          | some index => finishRename context catalog
+              { target := .column position index, new := newName, style := .column quoted } target.name
+              ((table.columns[index]?.map (·.name)).getD column)
         | .index _ | .trigger _ => restrict [] .alterRename
 
 end Belay.Sqlite.Model

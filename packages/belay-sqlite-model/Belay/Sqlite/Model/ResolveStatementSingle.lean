@@ -122,12 +122,10 @@ theorem resolveStatement_single (context : ResolveContext) (state next : Resolve
   case addColumn => exact plain _ ok fun _ _ found => resolveAddColumn_single _ _ _ _ _ _ _ found
   case renameTable =>
     exact plain _ ok fun _ _ found => by
-      obtain ⟨_, _, rfl⟩ := resolveRenameTable_unchanged _ _ _ _ _ found
-      rfl
+      rcases resolveRenameTable_outcome _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> rfl
   case renameColumn =>
     exact plain _ ok fun _ _ found => by
-      obtain ⟨_, _, rfl⟩ := resolveRenameColumn_unchanged _ _ _ _ _ _ found
-      rfl
+      rcases resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> rfl
   case dropTable => exact ResolveState.withWrite_single ok fun _ _ found => resolveDropTable_single _ _ _ found
   case dropView => exact plain _ ok fun _ _ found => resolveDropView_single _ _ _ found
   case dropIndex => exact plain _ ok fun _ _ found => resolveDropIndex_single _ _ _ found

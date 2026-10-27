@@ -1,11 +1,14 @@
 import Belay.Sqlite.Model.Resolution.Examples
+import Belay.Sqlite.Model.Execution
 
 set_option doc.verso true
 
 /-! Examples of ALTER TABLE RENAME TO and RENAME COLUMN, checked by {lit}`#guard` when the package builds:
 the order of SQLite 3.51.0's prepare errors (checked against the native probes of the task), the
-{lit}`columnToken` that the error of a missing column prints as written, and the restriction of a rename
-that passes every check. -/
+{lit}`columnToken` that the error of a missing column prints as written, and the rewrite of a rename that
+passes every check: its resolved statement stores the new catalog, and the run of that statement succeeds
+because the new catalog keeps the outline and the selected parents. The catalog after each rename is the
+subject of {lit}`RenameCatalogExamples.lean` and {lit}`RenameFailureExamples.lean`. -/
 
 namespace Belay.Sqlite.Model.Resolution.RenameExamples
 
@@ -22,6 +25,26 @@ def objects : Catalog := catalogOf (schema [
   .createView (name! "v") false none
     { columns := [.expression (.identifier (name! "a") .none) none "a"], source := some { table := name! "t", alias := none },
       joins := [], filter := none, groupBy := [], orderBy := [], limit := none, offset := none, parent := none }])
+
+/-- Whether the statement resolves to the rewrite of the catalog, and the rewrite runs on the empty database of
+{name}`objects`: the run succeeds with the catalog that the resolution gives, and no row changes. -/
+def rewritesAndRuns (statement : Syntax.Statement) : Bool :=
+  let result := migration objects [statement]
+  match statements result with
+  | [resolved@(.rewrite renamed)] =>
+    match step 0 {} [] resolved objects.emptyDatabase with
+    | .ok database => renamed == catalogOf result && database.catalog == renamed && database.rows == objects.emptyDatabase.rows
+    | .error _ => false
+  | _ => false
+
+/-- A rewrite whose catalog differs in outline from the catalog of the database (here the empty catalog) is
+rejected: the run fails as {name}`ExecutionError.unmodeled` and returns the input database unchanged. -/
+def rejectedRewriteKeepsDatabase : Bool :=
+  match step 0 {} [] (.rewrite []) objects.emptyDatabase with
+  | .error (.unmodeled, database) => database == objects.emptyDatabase
+  | _ => false
+
+#guard rejectedRewriteKeepsDatabase
 
 /-- The prepare error of one statement from {name}`objects`, or none. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
@@ -61,8 +84,9 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
 -- A name taken is found before a reserved name or a view.
 #guard errorOf (.renameTable (name! "v") (name! "u")) == some (.renameTargetTaken (name! "u"))
--- A rename that passes every check is the restriction.
-#guard restricted (migration objects [.renameTable (name! "t") (name! "w")])
+-- A rename that passes every check is the rewrite of the catalog, and it runs.
+#guard rewritesAndRuns (.renameTable (name! "t") (name! "w"))
+#guard rewritesAndRuns (.renameTable (name! "t") (name! "w w"))
 
 -- RENAME COLUMN: the error of a missing column prints the token as written.
 #guard errorOf (.renameColumn (name! "nope") (name! "a") (name! "c") "a" false) == some (.noSuchTable (name! "nope"))
@@ -70,6 +94,8 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.renameColumn (name! "t") (name! "zz") (name! "c") "\"zz\"" false) ==
   some (.renameNoSuchColumn "\"zz\"")
 #guard errorOf (.renameColumn (name! "t") (name! "ZZ") (name! "c") "[ZZ]" false) == some (.renameNoSuchColumn "[ZZ]")
-#guard restricted (migration objects [.renameColumn (name! "t") (name! "A") (name! "c") "A" false])
+#guard rewritesAndRuns (.renameColumn (name! "t") (name! "A") (name! "c") "A" false)
+-- SQLite renames a column to {lit}`rowid`; a column of that name is outside the model, so the rewrite is a restriction.
+#guard restricted (migration objects [.renameColumn (name! "t") (name! "b") (name! "rowid") "b" false])
 
 end Belay.Sqlite.Model.Resolution.RenameExamples

@@ -48,6 +48,11 @@ structure NameEdit where
   new : Identifier
   /-- How the new name is written. -/
   style : RenameStyle
+  /-- Whether the edit writes the name as a single-quoted string literal instead of renaming it. SQLite does
+  this in every view and trigger at every rename ({lit}`renameQuotefix`): a double-quoted name that no column
+  has is a string literal, and it must stay one when a rename gives a column that name. Then {lit}`old` is
+  the name and {lit}`new` and {lit}`style` have no effect. -/
+  fixQuote : Bool := false
   deriving Repr, DecidableEq
 
 /-- The edit with its path moved below the node at the prefix. -/

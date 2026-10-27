@@ -77,13 +77,11 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
   | renameTable table newName =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, _⟩ := resolveRenameTable_unchanged _ _ _ _ _ (by assumption)
-    exact keep _ (same ▸ current)
+    exact keep _ ((resolveRenameTable_outcome _ _ _ _ _ _ (by assumption)).valid current)
   | renameColumn table column newName columnToken quoted =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, _⟩ := resolveRenameColumn_unchanged _ _ _ _ _ _ (by assumption)
-    exact keep _ (same ▸ current)
+    exact keep _ ((resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).valid current)
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found

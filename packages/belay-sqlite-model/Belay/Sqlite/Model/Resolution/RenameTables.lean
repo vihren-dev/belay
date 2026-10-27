@@ -40,6 +40,12 @@ def CatalogTable.renameChecks (target : LabelTarget) (style : RenameStyle) (new 
   let checks ← table.checks.mapM (·.rename target style new)
   pure { table with columns, checks }
 
+/-- Whether a CHECK constraint of the table has a double quote that no name covers
+({name}`CheckText.hasLooseQuote`). -/
+def CatalogTable.hasLooseQuote (table : CatalogTable) : Bool :=
+  (table.checks ++ table.columns.flatMap (·.checks)).any fun check =>
+    (check.source.map CheckText.hasLooseQuote).getD false
+
 /-- The table with the name of the column at the index replaced. -/
 def CatalogTable.renameColumnAt (index : Nat) (new : Identifier) (table : CatalogTable) : CatalogTable :=
   { table with columns := table.columns.modify index fun column => { column with name := new } }

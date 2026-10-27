@@ -100,12 +100,12 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | renameTable table newName =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveRenameTable_applyCatalog _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := (resolveRenameTable_outcome _ _ _ _ _ _ (by assumption)).applyCatalog
     exact ordinary _ control equal
   | renameColumn table column newName columnToken quoted =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveRenameColumn_applyCatalog _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := (resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).applyCatalog
     exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [statement_arms] at ok

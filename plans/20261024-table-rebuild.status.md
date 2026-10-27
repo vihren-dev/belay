@@ -483,3 +483,25 @@ rebuild proof is separate.
 - Manual proof repairs in this unit: about 12 (case arms with a real proof, in `step_extends`, the `StepCatalog`
   laws, the FK matrix and the key laws). New proofs: about 30 small laws in the Outline modules. Total for the task
   so far: about 122.
+
+### Unit 2.5d: the rename resolver produces the rewrite
+
+- `resolveRenameTable` and `resolveRenameColumn` keep their check order and then call `finishRename`: `renameCatalog`
+  gives the new catalog, and the statement is `.rewrite renamed`. A failure of `renameCatalog` is a prepare error
+  with the catalog unchanged, or a restriction (`alter-rename`). `RenameSpec.lean` proves the outcome: either a
+  prepare error with the catalog unchanged, or a rewrite whose catalog is `supported` (so it is a valid catalog).
+- Review musts of 2.5b: R7 is fixed by `RenameVerdict.lean`: only the name-resolution class of errors that native
+  SQLite raises during a rename (no such column or table, ambiguous names, JOIN USING and NATURAL checks, HAVING and
+  GROUP BY aggregate checks, compound shape) is a rename error; every other check of a trigger or view body that
+  fails is a restriction, because native SQLite accepts the rename. This is a deviation from the first plan, where
+  every prepare error was a rename error. R19 is fixed: a double-quoted string that is not a name becomes the
+  literal `'z'` in views and triggers (`NameEdit.fixQuote`, same as native `renameQuotefix`); a table with the
+  same text in a CHECK is a restriction. R11 is fixed by `RenameCatalogExamples.lean` and
+  `RenameFailureExamples.lean` (compiled-evaluator `#guard` checks of the new catalog, errors of pass 1 and pass 2).
+- Review musts of 2.5c: R2 and R13 are docstring changes (errors other than success and `constraintFail` put no
+  obligation on the database; `Statement.applyCatalog` returns the supplied catalog for a rewrite). R11 is fixed by
+  `rewritesAndRuns` (a rename resolves to a rewrite and the run succeeds with the same rows) and
+  `rejectedRewriteKeepsDatabase` (an outline mismatch fails as `.unmodeled` with the input database).
+- The restriction `alter-rename` is narrower: its text, `docs/semantic-subset.md` and the conformance example
+  (a view with a USING-merged column) changed. Nix results for this unit come with the part 2 `just test-full`.
+- Manual proof repairs in this unit: 0 new (the outcome lemmas are short). Total for the task so far: about 122.

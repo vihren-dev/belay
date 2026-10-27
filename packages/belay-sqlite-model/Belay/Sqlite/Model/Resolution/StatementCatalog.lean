@@ -11,7 +11,7 @@ change once, so the theorems that relate them can state it. -/
 namespace Belay.Sqlite.Model.Resolved
 
 /-- The catalog after the statement succeeds on the given catalog: CREATE TABLE, CREATE
-INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
+INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, a rewrite (rename) returns the catalog that it carries, and every other statement leaves the catalog unchanged. Transaction control is not a
 catalog change here; {lit}`ResolveState.after` handles it. For example,
 {lean}`(Statement.begin.applyCatalog [] : Catalog)` is the empty catalog. -/
 def Statement.applyCatalog : Statement → Catalog → Catalog
