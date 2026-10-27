@@ -26,6 +26,7 @@ stopped at a gap (2026-10-27)".
 - 2026-10-27: review `20261027T130345Z-06c93a5f` (no findings).
 - 2026-10-27: slice 1 committed: the step, frame and failure laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas `foreign_keys` and `foreign_key_check`, and rename, with the table found by name (`TableByName`). Review `20261027T142434Z-f0c30a5b`: 3 musts (restatements of three drop and failure laws), fixed in the refactor commit after it. Part 1 is checked by `just dev-build` on the full tree; the Nix gates run at the end of Part 1.
 - 2026-10-27: slice 2 committed: read certificates and frames by table name (the single-position form is replaced and all callers moved), and translation over several end states (`Migration.translatesAt_of_observations`).
+- 2026-10-27: slice 3 committed: the success law of INSERT from a query without rules (`runScriptStep_insertSelect_success`), the productions of a plain scan, and the upsert of appended rows. The case with rules (foreign keys on, or triggers) is an open point.
 
 ## Generalization analysis (per statement)
 
@@ -76,3 +77,16 @@ Implementation of the step laws (2026-10-27). All new modules are in
   reached connection and output count, as a statement over branches. The caller
   `DerivedColumnQueries.translatesAt_of_outputs` derives the one-connection form from its uniform-branch
   fact. General form: yes, the premises that fixed one connection and one count are removed.
+- INSERT SELECT success law (`UpsertInserted.lean`, `UpsertInsertedReady.lean`, `InsertSelectSuccess.lean`,
+  `PlainScanProductions.lean`, `InsertSelectStepLaws.lean`). General form: any target table, any
+  clauses (a row with no key conflict reaches no clause), any `RETURNING`, any conflict algorithm, any
+  query whose productions are one certain production with no failure. The premises are exactly the ones
+  the proof uses: `InsertFits` (alias cells, stored form, NOT NULL, STRICT types, CHECK, distinct keys,
+  distinct bounded rowids, all on the table with the rows appended), the clause columns exist, the
+  subqueries are plain, the fixed cells and `RETURNING` cannot fail, and the transfer rowids agree. The law is
+  proved for statements without rules (`rules = none`: no trigger, and no foreign-key check). Left
+  specific: the case with rules (foreign-key enforcement on, or triggers) needs an induction through the
+  row engine (`insertKeys`) and is not covered. It is an open point for the coordinator. The law says
+  nothing about the counts of the run. `Query.productions_scan` gives the productions of any simple
+  query of one table scan, for every quiet context; `productions_scan_single` gives the certain
+  case when the table has one access order.

@@ -481,6 +481,11 @@ import Belay.Sqlite.Model.ControlStepLaws
 import Belay.Sqlite.Model.PragmaStepLaws
 import Belay.Sqlite.Model.ControlStepFrames
 import Belay.Sqlite.Model.RewriteStepLaws
+import Belay.Sqlite.Model.UpsertInserted
+import Belay.Sqlite.Model.UpsertInsertedReady
+import Belay.Sqlite.Model.InsertSelectSuccess
+import Belay.Sqlite.Model.PlainScanProductions
+import Belay.Sqlite.Model.InsertSelectStepLaws
 import Belay.Sqlite.Model.SchemaFailureLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
