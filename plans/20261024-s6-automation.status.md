@@ -310,3 +310,10 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   values) and `view-false` (`Sql.View.EquivAt` with a quiet view against an identity view) cover the wording of
   the other relation kinds. An exhaustion of the explanation itself has no deterministic fixture: the budget at which
   the explanation runs out depends on the heartbeat cost of the explanation, so the case is not tested.
+- Open point (5), universal migration query claim over a site. Not delivered in part 2. The general certificate
+  rules need, for every database of the site, the rows that `ALTER TABLE ... ADD COLUMN` and the `UPDATE` with
+  `lower(name)` produce, as laws about arbitrary rows. The existing laws describe single statements on fixed
+  tables and not these row transformations. The estimate is 150 to 300 lines of new row laws in the model, which is
+  at the limit of the planned work, and the table rebuild task owns the neighbouring model files. The fixture
+  `S6RulesQueryPattern.lean` keeps the claim for one concrete database and every bound value. Decision needed:
+  schedule the row laws after the rebuild task, or accept the concrete claim.
