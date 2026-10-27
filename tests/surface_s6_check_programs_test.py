@@ -9,22 +9,19 @@ import pytest
 
 from tests.lean_server_support import compile_helper_module
 from tests.runtime_support import run_command
+from tests.s6_check_support import CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
 from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
-from tests.surface_replay_test import native_replay, native_rows
 from tests.surface_support import FIXTURES, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3")]
 
-CHAIN_TIMEOUT_SECONDS = 400
-"""The time limit of one fixture module, in seconds."""
-
 PROVED = {"triple-proved", "equiv-proved"}
 """The cases for which the checker finds a proof."""
 
 FALSE = {"triple-false", "lean-continuation-false", "equiv-false", "equiv-at-false", "equiv-shrink-exhausted",
-         "migration-star-false"}
+         "observation-false", "view-false", "migration-star-false"}
 """The cases for which the checker finds a counterexample that SQLite replays."""
 
 UNKNOWN = {"budget-unknown", "undecidable-unknown", "migration-lookup-unknown"}
@@ -48,23 +45,6 @@ def blocks(runtime_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict
     found = split_blocks(output)
     assert set(found) == PROVED | FALSE | UNKNOWN, output
     return found
-
-
-def split_blocks(output: str) -> dict[str, str]:
-    """The text of each labelled command in the output of a fixture module."""
-    return dict(re.findall(r"SQL-COMMAND-BEGIN ([\w-]+)\n(.*?)\nSQL-COMMAND-END \1:", output, re.DOTALL))
-
-
-def replays(block: str) -> list[str]:
-    """The SQLite scripts of the replays of one block, in order."""
-    return [part.split("\nDatabase construction:", 1)[0] for part in block.split("SQLite replay:\n")[1:]]
-
-
-def final_rows(sqlite: str, directory: Path, name: str, script: str, inspect: str) -> list[list[object]]:
-    """Run one replay script in native SQLite and read the rows that the inspection query gives."""
-    result = native_replay(sqlite, script, directory, name, inspect=inspect)
-    assert result.returncode == 0 and not result.stderr, result.diagnostic()
-    return native_rows(result.stdout)
 
 
 def test_each_case_has_the_outcome_that_its_claim_deserves(blocks: dict[str, str]) -> None:
@@ -124,6 +104,19 @@ def test_false_equivalences_show_the_native_difference(blocks: dict[str, str], t
         assert final_rows(sqlite, tmp_path, f"{name}-second", second, inspect) == [[1, 7]], block
 
 
+def test_explanation_names_what_the_relation_compares(blocks: dict[str, str]) -> None:
+    """The explanation depends on the relation of the claim. The observation relation, which ignores the
+    connection, says that the returned values differ and never blames the connection. The relation with views
+    says that the views project the runs to different observations. Both texts show the equal outputs."""
+    observation = blocks["observation-false"]
+    assert ("Failing observation: The actual runs of the two programs differ at this context, in the returned "
+            "value. The outputs of the two runs are equal.") in observation, observation
+    assert "connection" not in observation.split("Database construction:")[0], observation
+    views = blocks["view-false"]
+    assert ("Failing observation: The views of the claim project the actual runs of the two programs to "
+            "observations that differ at this context.") in views, views
+
+
 def test_refutation_survives_the_exhaustion_of_the_shrinking(blocks: dict[str, str]) -> None:
     """With a budget that the shrinking of the witness cannot finish in its share, the checker still reports
     the certified refutation with its database and failing observation, and not unknown: the exhaustion of the
@@ -179,30 +172,3 @@ end S6RulesEffects
     assert audit is not None, result.stdout
     assert set(filter(None, map(str.strip, (audit[1] or "").split(",")))) <= ALLOWED_PROOF_AXIOMS, result.stdout
     assert "sorry" not in result.stdout, result.stdout
-
-
-NOT_BLOCKED = {"null-blocked": ([], [[1]]), "null-customer": ([], [[None]]), "collations": ([["a"]], [])}
-"""The rows that native SQLite gives for `NOT IN` and for `NOT EXISTS`, on each database that refutes their
-equivalence."""
-
-
-def test_not_in_and_not_exists_differ_on_three_databases_and_agree_under_the_premises(
-        runtime_root: Path, tmp_path: Path) -> None:
-    """The guide's `NOT IN` and `NOT EXISTS` queries are not equivalent: the checker refutes the equivalence on
-    a NULL blocked id, on a NULL customer id with a non-NULL blocked id, and on text keys with the collations
-    BINARY and NOCASE. Native SQLite gives the rows that the model gives, which differ, and the failing
-    observation names the initial database and both outputs. The fixture also shows that the two queries
-    agree on one database that meets the sufficient premises (a rowid alias and no NULL blocked id)."""
-    output = check_module_chain(runtime_root, tmp_path, (("S6CheckLabels", 0), ("S6NotBlocked", 1)),
-                                timeout=CHAIN_TIMEOUT_SECONDS)
-    found = split_blocks(output)
-    assert set(found) == set(NOT_BLOCKED), output
-    sqlite = shutil.which("sqlite3")
-    assert sqlite is not None
-    for name, (in_rows, exists_rows) in NOT_BLOCKED.items():
-        block = found[name]
-        assert block.startswith("SQL check: false."), (name, block)
-        assert "Failing observation: The actual runs of the two programs differ at this context." in block, block
-        first, second = replays(block)
-        assert final_rows(sqlite, tmp_path, f"{name}-in", first, "") == in_rows, block
-        assert final_rows(sqlite, tmp_path, f"{name}-exists", second, "") == exists_rows, block

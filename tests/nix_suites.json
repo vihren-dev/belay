@@ -146,6 +146,7 @@
     "tests/surface_s6_auto_editor_test.py",
     "tests/surface_s6_check_programs_test.py",
     "tests/surface_s6_check_editor_test.py",
+    "tests/surface_s6_not_blocked_test.py",
     "tests/surface_two_state_test.py",
     "tests/surface_execution_test.py",
     "tests/surface_execution_views_test.py",

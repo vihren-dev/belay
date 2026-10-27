@@ -282,7 +282,8 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   post without a decision procedure, the migration claim for a read of all columns refuted, and an unknown for the
   universal lookup claim that has no default proof) and `S6NotBlocked` (`NOT IN` against `NOT EXISTS`: the three
   counterexamples, each refuted with a replay, and one database that meets the premises where the outputs agree).
-  The driver `tests/surface_s6_check_programs_test.py` replays each false block in native SQLite and compares the rows
+  The driver `tests/surface_s6_check_programs_test.py` (the `S6NotBlocked` blocks are read by
+  `tests/surface_s6_not_blocked_test.py`; shared helpers are in `tests/s6_check_support.py`) replays each false block in native SQLite and compares the rows
   (for example 6 and 7 for the two updates, and `[]` against `[[1]]` for a NULL blocked id), and elaborates each
   printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
 - Open points. (1) The claim `notBlockedIn ≈ notBlockedEx` under the premises "rowid alias and no NULL blocked id" is
@@ -297,7 +298,12 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   to refute a triple, but not always to explain the refutation of an equivalence.
 - The code action of `sql_auto` is titled "Replace sql_auto with its steps" and its text is built as a string with
   the layout of the call (a `Try this` edit with syntax objects indented the steps of a multi-line script wrongly).
-- The editor test `tests/surface_s6_check_editor_test.py` requests and applies the proof and regression code actions
-  of the automatic check on triples (source ranges, namespace, options), elaborates the offered text alone with the
-  axiom audit, replays the failing script in native SQLite, shows that a too small budget gives no report, and shows
-  that an edit of an earlier command cancels a running check of an equivalence.
+- The editor test `tests/surface_s6_check_editor_test.py` requests the proof and regression code actions of the
+  automatic check on triples (source ranges, namespace, options) and applies the proof action to the document. The
+  text of the regression action is elaborated alone with the axiom audit; its insertion into the original document
+  is not tested. The test replays the failing script in native SQLite, shows that a too small budget gives no
+  report, and shows that an edit of an earlier command cancels a running check of an equivalence.
+- Explanations by relation kind: the fixture blocks `observation-false` (`Sql.ObservationEquivAt`, different returned
+  values) and `view-false` (`Sql.View.EquivAt` with a quiet view against an identity view) cover the wording of
+  the other relation kinds. An exhaustion of the explanation itself has no deterministic fixture: the budget at which
+  the explanation runs out depends on the heartbeat cost of the explanation, so the case is not tested.

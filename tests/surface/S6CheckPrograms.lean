@@ -46,6 +46,17 @@ labelled_sql "equiv-at-false" in
 #sql_check ∀ db : Database, db = sample → ∀ env : Env, env.Complete →
   Sql.EquivAt (send bump) (send bumpTwice) (ExecutionContext.initial db env)
 
+set_option sql.checkBudget 400000 in
+labelled_sql "observation-false" in
+#sql_check ∀ db : Database, db = sample → ∀ env : Env, env.Complete →
+  Sql.ObservationEquivAt (send bump >>= fun _ => pure (1 : Nat)) (send bump >>= fun _ => pure (2 : Nat))
+    (ExecutionContext.initial db env)
+
+set_option sql.checkBudget 400000 in
+labelled_sql "view-false" in
+#sql_check ∀ db : Database, db = sample → ∀ env : Env, env.Complete →
+  Sql.View.EquivAt (Sql.View.quiet (send bump)) (Sql.View.identity (send bump)) (ExecutionContext.initial db env)
+
 -- Shrinking needs about 280000 units and gets half of what is left, so it runs out. The refutation that was
 -- certified and explained before the shrinking stays as the result.
 set_option sql.checkBudget 200000 in
