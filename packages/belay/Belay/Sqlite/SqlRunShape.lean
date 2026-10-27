@@ -76,9 +76,16 @@ def isLast (rest : Expr) : MetaM Bool := do
   return (← whnfD rest).isAppOf ``List.nil
 
 /-- The name of the constructor of {name}`Model.Syntax.Statement` that builds a statement, when it reduces to
-one. A statement that is a variable or a field of a structure has no kind. -/
+one. A statement that is a variable or a field of a structure has no kind. A pragma has the name of the
+constructor of {name}`Model.Syntax.Pragma` that builds it, because the pragmas that set a value and those that
+read a table have different rules. -/
 def statementKind? (statement : Expr) : MetaM (Option Name) := do
-  let head := (← whnfD statement).getAppFn.constName?
-  return head.filter (← getEnv).isConstructor
+  let statement ← whnfD statement
+  let constructor? (term : Expr) : MetaM (Option Name) :=
+    return term.getAppFn.constName?.filter (← getEnv).isConstructor
+  let head ← constructor? statement
+  if head == some ``Model.Syntax.Statement.pragma then
+    return ← constructor? (← whnfD statement.appArg!)
+  return head
 
 end Belay.Sqlite.Run

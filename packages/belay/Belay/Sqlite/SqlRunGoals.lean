@@ -16,17 +16,19 @@ open Lean Meta Elab Tactic Term
 abbrev Hints := Array (TSyntax `term)
 
 /-- The premises that hold by {lit}`rfl` once the program is known: the shape of a script. -/
-def premisesByRfl : List Name := [`isStatement, `isSelect, `notInsertSelect]
+def premisesByRfl : List Name := [`isStatement, `isSelect, `notInsertSelect, `atEnd, `outline]
 
-/-- Try to close a premise about the context. The attempts are, in order, the hints, the hypotheses and
-the facts that follow from a fresh start. A premise that no attempt closes stays open. -/
+/-- Try to close a premise about the context. The attempts are, in order, the hints, each also with all definitions
+unfolded (a resolution of CREATE TABLE needs it), the hypotheses and the facts that follow from a fresh start. A premise that no attempt closes stays open. -/
 def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goal.withContext do
   let mut attempts : Array (TSyntax `tactic) := #[]
-  if premisesByRfl.contains tag then attempts := attempts.push (← `(tactic| exact rfl))
+  if premisesByRfl.contains tag then
+    attempts := attempts ++ #[← `(tactic| exact rfl), ← `(tactic| with_unfolding_all exact rfl)]
   for hint in hints do
-    attempts := attempts.push (← `(tactic| exact $hint))
+    attempts := attempts ++ #[← `(tactic| exact $hint), ← `(tactic| with_unfolding_all exact $hint)]
     unless hint.raw.getKind == ``Lean.Parser.Term.anonymousCtor do
-      attempts := attempts ++ #[← `(tactic| exact $hint _), ← `(tactic| exact $hint _ _), ← `(tactic| exact $hint _ _ _)]
+      attempts := attempts ++ #[← `(tactic| exact $hint _), ← `(tactic| exact $hint _ _), ← `(tactic| exact $hint _ _ _),
+        ← `(tactic| exact $hint _ rfl), ← `(tactic| exact $hint _ _ rfl)]
   attempts := attempts.push (← `(tactic| assumption))
   attempts := attempts.push (← `(tactic| exact ExecutionContext.initial_holds_valid _ _))
   for attempt in attempts do
@@ -41,7 +43,9 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
 them. -/
 def hintedKinds : List Name :=
   [``Model.Syntax.Statement.insert, ``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete,
-    ``Model.Syntax.Statement.addColumn]
+    ``Model.Syntax.Statement.addColumn, ``Model.Syntax.Statement.createTable, ``Model.Syntax.Statement.dropTable,
+    ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting, ``Model.Syntax.Statement.begin,
+    ``Model.Syntax.Statement.commit]
 
 /-- Choose the rule of a sent statement that Lean cannot read, for example a statement that is a field of a
 structure. The kind is the first of {name}`hintedKinds` whose rule has all its blocking premises closed by the

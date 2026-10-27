@@ -48,6 +48,9 @@ reason: the model has no earlier law for the statements.
 
 - 2026-10-27: Part 2 slice 1 committed: `StepContinues` (the laws that the step of CREATE TABLE, DROP TABLE without
   rules, rename, a setting, BEGIN and COMMIT continues). The law for `PRAGMA foreign_key_check` comes with claim 2.
+- 2026-10-27: review `20261027T160128Z-e44aecc8` of slice 1 (1 must: a catch-all case split in `Output.ofStep_ne_unmodeled`; 1 should: the wording of the size note), both fixed in `330639d6`.
+- 2026-10-27: `tasks/surface-editor-part3` is merged into the branch (change `qsttolov`, no conflicts).
+- 2026-10-27: Part 2 slice 2 committed: the rules of `sql_run` for CREATE TABLE, DROP TABLE without rules, a rename, a pragma setting, BEGIN and COMMIT (`SchemaStepRules`, `ControlStepRules`, premise names `atEnd` and `outline`, `statementKind?` reads the constructor of a pragma). The tactic closes the resolution of CREATE TABLE only with all definitions unfolded, so `closeSide` tries each hint also under `with_unfolding_all`; a variable of a rule that takes the tag of a premise name (`after`) is no premise any more. The fixtures `RebuildGuide` (schema, the rebuilds and the read of the guide) and `SchemaRuleExamples` (one program with all six kinds) are checked by `tests/surface_rebuild_test.py`, in the suite `surfaceS6`.
 
 ## Generalization analysis (per statement)
 

@@ -79,7 +79,7 @@ where
     let some kind ← (do match ← statementKind? statement with
         | some kind => pure (some kind)
         | none => kindFromHints hints goal)
-      | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of an insert, update, delete or ADD COLUMN."
+      | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule."
     setGoals [goal]
     evalTactic (← sendRule kind)
     processPremises hints fuel kind (← getGoals)
@@ -89,7 +89,10 @@ where
   processPremises (hints : Hints) (fuel : Nat) (kind : Name) (goals : List MVarId) : TacticM (List MVarId) := do
     let mut open_ := []
     let mut blocked := false
-    let premises ← goals.filterM fun new => return premiseNames.contains (← new.getTag).eraseMacroScopes
+    -- A variable of the rule, such as the resolution state, takes the tag of the goal that the rule is applied to,
+    -- which can be the name of a premise. Only a goal about a proposition is a premise.
+    let premises ← goals.filterM fun new => do
+      return premiseNames.contains (← new.getTag).eraseMacroScopes && (← isProp (← new.getType))
     let variables := goals.filter fun new => !premises.contains new
     for new in premises do
       let tag := (← new.getTag).eraseMacroScopes
