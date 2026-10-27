@@ -128,9 +128,21 @@ This section replaces the prerequisite text above where they differ.
 - **Done:** the feature tasks S4, S5 (except its guide commit), S7 files, the S7 proof-cost prototype and
   production proof costs, the SQL doc blocks, S8, the editor (with part 3), the S6 assertions, the table
   rebuild, the NOT IN laws and the derived-column laws.
-- **Still open:** S6 automation and S6 migration patterns. Both close with part 2 of the schema-script task
-  (`plans/20261027-schema-script-laws.task.md`), which is in progress. Its rebuild fixture proves the
-  guide's three rebuild claims.
+- **Still open:** S6 automation and S6 migration patterns.
+  - S6 automation closes with part 2 of the schema-script task (`plans/20261027-schema-script-laws.task.md`),
+    which is in progress. Its rebuild fixture proves the guide's three rebuild claims.
+  - S6 migration patterns has these remaining requirements ("The rebuild example detects data loss" and
+    "Notation, explanation and guide agree" in its task file):
+    1. The cascade failure when DROP TABLE follows the copy, and the ignored pragma inside a transaction:
+       `tests/surface/RebuildRuns.lean` checks them on concrete databases (done).
+    2. The corrected migration preserves the required query: the preservation claim of schema-script
+       part 2.
+    3. The type-affinity data-loss example, checked against model execution and native SQLite. The
+       derived-column kernel examples (`DerivedColumnExamples`, `a + b` stored in TEXT, probe 5.0, checked by
+       `tests/surface_derived_column_test.py`) are a candidate. This task finds the guide's example and either
+       maps it to an existing check or adds a concrete check in `tests/surface`.
+    4. The private guide integration: this task.
+    The migration-patterns task closes with this task, after items 2 to 4.
 - **Public stack:** stack 284 is #282 → #283 → #285 → #286 → #287 → #288 → #289. This task starts on
   `tasks/surface-editor-part3` (#289). It merges the schema-script part 2 branch before its final gates.
 - **Private guide:** the open product PRs #6 → #7 → #8 → #9 form one chain (`docs/guide-database-validity`,
