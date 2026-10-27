@@ -33,7 +33,7 @@ theorem runScriptStep_drop_plain {context : ResolveContext}
     simp [SqlState.statementRun, runStatement, StatementRun.withKeys, Model.step] at effect
   obtain ⟨noError, value, database, -, effect, nextEq⟩ := runScriptStep_effect_of_unmodeled found rfl
     (by intro _ _ same; cases same) step unmodeled
-  simp only [SqlState.statementRun, runStatement, StatementRun.withKeys, Model.step, Except.ok.injEq] at effect
+  simp only [SqlState.statementRun, runStatement, StatementRun.withKeys, Model.step] at effect
   cases effect
   refine ⟨noError, runScriptStep_others step found rfl, ?_⟩
   rw [nextEq]
@@ -59,15 +59,15 @@ theorem runScriptStep_drop_frame {context : ResolveContext}
   rw [nextEq]
   exact Database.tableNamed_drop_kept present kept
 
-/-- For every connection with foreign keys off, DROP TABLE of a name, and step that continues: the
-statement resolves to a drop without rules, so the step has no error output, no further execution, and
-the next connection has the database after {name}`Database.drop` of the positions. And a table that
-another name finds in the database of the connection is found by that name in the database of the next
-connection with the same rows, at the transported position. In plain words, with foreign keys off
-DROP TABLE of one table leaves every table of another name as it was, and this is the premise that
-excludes a cascade. Proof sketch: {name}`resolveStatement_dropTable_off` gives the drop without rules and
-its positions, {name}`Catalog.tableObjects_not_contains` shows that the other table is kept, and
-{name}`runScriptStep_drop_frame` reads the next database. -/
+/-- For every connection with foreign keys off, DROP TABLE of a name that resolves to a drop of some positions
+(the premise {lit}`found`; a drop that SQLite refuses resolves to a prepare error and is not covered), and step that
+continues: a table that another name finds in the database of the connection, at a position, is found by that name
+in the database of the next connection with the same rows, at the transported position
+({name}`keptBelow` of the dropped positions). In plain words, with foreign keys off DROP TABLE of one table leaves
+every table of another name as it was, and the premise {lit}`off` is what excludes a cascade. The theorem says
+nothing about the table that the drop removes. Proof sketch: {name}`resolveStatement_dropTable_off` shows that the
+resolved drop has no rules and drops at most the table of the name, {name}`Catalog.tableObjects_not_contains` shows
+that the other table is kept, and {name}`runScriptStep_drop_frame` reads the next database. -/
 theorem runScriptStep_dropTable_frame {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {parameters : List Value} {output : Output} {others : List StatementExecution}

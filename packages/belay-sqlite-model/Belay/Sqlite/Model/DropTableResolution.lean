@@ -48,11 +48,12 @@ theorem resolveDropTable_shape {catalog : Catalog} {name : Identifier} {ifExists
     | (simp only [Except.ok.injEq, Prod.mk.injEq] at resolved; exact .inl ⟨_, _, resolved.1.symm⟩)
 
 /-- For every context, state with foreign keys off, positions, rules and catalog: resolving a drop as a
-write gives the drop itself, with the catalog after it and nothing else changed. In plain words, with
-enforcement off DROP TABLE gets no rules: it checks no foreign key and runs no trigger program, because
-the DELETE that it implies fires no trigger. Proof sketch: with foreign keys off the check of keys is
-skipped, {name}`triggerPrograms` has no request for a drop ({name}`Resolved.Statement.fireRequest`), a
-drop reads no counter, and a write without keys and programs gets no rules. -/
+write gives the drop with the rules that it was given, with the catalog after it and nothing else changed.
+In plain words, with enforcement off the wrapper of the write adds no rules to a drop (it adds no foreign-key
+check and no trigger program, because the DELETE that a drop implies fires no trigger); a drop that comes with
+rules keeps them. Proof sketch: with foreign keys off the check of keys is skipped,
+{name}`triggerPrograms` has no request for a drop ({name}`Resolved.Statement.fireRequest`), a drop reads no
+counter, and a write without keys and programs changes nothing. -/
 theorem ResolveState.withWrite_drop_off (context : ResolveContext) (state : ResolveState) (positions : List Nat)
     (rules : Option Resolved.WriteRules) (catalog : Catalog) (off : state.foreignKeys = false) :
     state.withWrite context (.ok (.drop positions rules, catalog)) =

@@ -6,8 +6,10 @@ set_option doc.verso true
 
 /-! The failure laws of CREATE TABLE and DROP TABLE (ADR 0017, S6): a statement that SQLite refuses
 (a name that is in use, a table that does not exist) is a prepare error of the model, and a step of
-a prepare error leaves the connection as it was. A statement that the model runs never fails, so
-every failed step of these two statements keeps the connection. -/
+a prepare error leaves the connection as it was. A CREATE TABLE that the model runs never fails, so every
+failed step of CREATE TABLE keeps the connection. The same holds for DROP TABLE when foreign keys are off. With
+foreign keys on, a drop runs the key run, which can fail during execution; this module has no law for it
+(see {lit}`DropTableStepLaws` for the failure law with a premise on the key run). -/
 
 namespace Belay.Sqlite.Model
 
