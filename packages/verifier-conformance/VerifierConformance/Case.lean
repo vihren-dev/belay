@@ -70,10 +70,11 @@ def primaryCode : Option (Nat × ExecutionError) → Nat
   | some (_, error) => error.primaryCode
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
-in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
+in {lit}`sqlite3_prepare_v2`, except the error that a rename finds in a dependent object
+({name}`PrepareError.reportedWhileRunning`), and every other modeled error in {lit}`sqlite3_step`. -/
 def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
   | none => none
-  | some (_, .prepare _) => some .prepare
+  | some (_, .prepare error) => some (if error.reportedWhileRunning then .step else .prepare)
   | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
   | some (_, .constraintViolation) | some (_, .constraintFail) | some (_, .constraintRollback)
   | some (_, .integerOverflow) | some (_, .datatypeMismatch) | some (_, .functionError)

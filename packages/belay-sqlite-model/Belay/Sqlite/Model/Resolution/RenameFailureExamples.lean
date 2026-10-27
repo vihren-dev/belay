@@ -58,11 +58,21 @@ def restrictedBy (catalog : Catalog) (request : RenameRequest) (oldTable oldColu
 #guard restrictedBy (withObject (triggerOf [.insert (name! "t") none [[.numeric "1"]] []])) tableToW "t" "t"
 #guard errorBy (withObject (triggerOf [.insert (name! "t") none [[.numeric "1"]] []])) tableToW "t" "t" == none
 
--- A CHECK text with a double quote that no name covers is rewritten by SQLite at every rename ({lit}`renameQuotefix`);
--- the model does not write that into the text, so the rename is a restriction.
+-- A CHECK text with a double quote that no name covers is rewritten by SQLite at every column rename
+-- ({lit}`renameQuotefix`); the model does not write that into the text, so the column rename is a restriction.
+-- A table rename leaves the text as written.
 #guard restrictedBy (catalogOf (schema [.createTable (name! "t")
     [{ name := name! "a", declaredType := some "TEXT",
        constraints := [.check (.numeric "1") "\"x\" = 1" { text := "\"x\" = 1", tokens := [] }] }] []]))
-  tableToW "t" "t"
+  columnToZ "t" "a"
+#guard (renamedBy (catalogOf (schema [.createTable (name! "t")
+    [{ name := name! "a", declaredType := some "TEXT",
+       constraints := [.check (.numeric "1") "\"x\" = 1" { text := "\"x\" = 1", tokens := [] }] }] []]))
+  tableToW "t" "t").isSome
+
+-- SQLite reports the errors of dependent objects while the statement runs, and every other prepare error in prepare.
+#guard (PrepareError.dependentObject .view (name! "v") false (.expression (.noSuchColumn (name! "zz")))).reportedWhileRunning
+#guard !(PrepareError.noSuchTable (name! "t")).reportedWhileRunning
+#guard !(PrepareError.renameTargetTaken (name! "t")).reportedWhileRunning
 
 end Belay.Sqlite.Model.Resolution.RenameFailureExamples

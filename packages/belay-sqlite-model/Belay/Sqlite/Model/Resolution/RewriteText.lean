@@ -44,12 +44,16 @@ def NameToken.isEditedAt (edit : NameEdit) (column : List Nat) (token : NameToke
     | none => column ++ path
     | some index => [8, index] ++ path)
 
-/-- The text with the name tokens at the path of the edit written with the new name. -/
+/-- The text with the name tokens at the path of the edit written with the new name; when the edit
+only fixes a quote ({name}`NameEdit.fixQuote`), the tokens are written as single-quoted string literals
+with the name they have, as in the expression. -/
 def SourceText.renameAt (edit : NameEdit) (column : List Nat) (text : SourceText) : Option SourceText :=
   text.replaceTokens fun token =>
     if token.isEditedAt edit column then
-      let quote := edit.style.quote token.quote
-      some (quote, quote.render edit.new.text)
+      if edit.fixQuote then some (.single, QuoteKind.single.render edit.old.text)
+      else
+        let quote := edit.style.quote token.quote
+        some (quote, quote.render edit.new.text)
     else none
 
 end Belay.Sqlite.Model.Syntax

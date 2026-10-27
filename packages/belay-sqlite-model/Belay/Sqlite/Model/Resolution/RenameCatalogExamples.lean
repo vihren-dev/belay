@@ -110,13 +110,31 @@ def quotedView : Subquery :=
 def quoted : Catalog := catalogOf (schema [.createTable (name! "t") [column (name! "a"), column (name! "b")] [],
   .createView (name! "q") false none quotedView])
 
--- SQLite writes a double-quoted string literal of a view with single quotes at every rename, so that a column that
--- gets the name of the literal does not take its place ({lit}`renameQuotefix`).
+-- SQLite writes a double-quoted string literal of a view with single quotes at every column rename, so that a column
+-- that gets the name of the literal does not take its place ({lit}`renameQuotefix`). A table rename leaves it as written.
 #guard ((renamedBy quoted columnToZ "t" "a").bind fun catalog => catalog[1]?.map (·.entry)) ==
   some (.view { query := { quotedView with columns := [.expression (.string [122]) none "", .expression (ident "z") none ""] } })
 #guard ((renamedBy quoted tableToW "t" "t").bind fun catalog => catalog[1]?.map (·.entry)) ==
   some (.view { query := { quotedView with
     source := some { table := name! "w", alias := none }
-    columns := [.expression (.string [122]) none "", .expression (ident "a") none ""] } })
+    columns := [.expression (.identifier (name! "z") .double) none "", .expression (ident "a") none ""] } })
+
+/-- The text {lit}`"z"` of a result column, and the same text after the quote is fixed: a result column
+without an alias has its text as its name. -/
+def doubleQuotedText : SourceText :=
+  { text := "\"z\"", tokens := [{ paths := [[]], start := 0, stop := 3, quote := .double }] }
+
+/-- The text {lit}`'z'` that SQLite writes for {lit}`doubleQuotedText`. -/
+def singleQuotedText : SourceText :=
+  { text := "'z'", tokens := [{ paths := [[]], start := 0, stop := 3, quote := .single }] }
+
+/-- The view {lit}`SELECT "z" FROM t`, whose column is named by its text. -/
+def namedByText : Catalog := catalogOf (schema [.createTable (name! "t") [column (name! "a"), column (name! "b")] [],
+  .createView (name! "q") false none
+    { selectOf [ident "a"] with columns := [.expression (.identifier (name! "z") .double) none doubleQuotedText] }])
+
+-- The name of the view column is the text of its expression, so the fixed quote shows in the name.
+#guard ((renamedBy namedByText columnToZ "t" "a").bind fun catalog => catalog[1]?.map (·.entry)) ==
+  some (.view { query := { selectOf [ident "z"] with columns := [.expression (.string [122]) none singleQuotedText] } })
 
 end Belay.Sqlite.Model.Resolution.RenameCatalogExamples

@@ -13,13 +13,20 @@ model; a rename reports only the errors below, which the probes of the task show
 
 namespace Belay.Sqlite.Model
 
+/-- Whether the rename reports the error of a WITH definition. SQLite reports all of them except a
+recursive term with an aggregate, which it accepts until the query runs. -/
+def CommonTableError.raisedByRename : CommonTableError → Bool
+  | .duplicate _ | .circular _ | .columns .. | .repeatedTable _ | .repeatedReference _ | .functionCall _ => true
+  | .recursiveAggregate => false
+
 /-- Whether the rename reports the error of an expression or query inside a definition, as SQLite does. In
 plain words: unknown or ambiguous names, bad joins, a HAVING without aggregates, an aggregate in GROUP BY,
 the second argument of {lit}`likelihood`, and the shape of a compound SELECT. The terms of ORDER BY and GROUP BY
 out of range are checked by SQLite for a compound SELECT only, and the error does not say which, so the
 model leaves them to the restriction. -/
 def ExprError.raisedByRename : ExprError → Bool
-  | .commonTable _ | .view _ | .noSuchColumn _ | .ambiguousColumn _ | .noSuchSource _ | .joinUsingColumn _
+  | .commonTable error => error.raisedByRename
+  | .view _ | .noSuchColumn _ | .ambiguousColumn _ | .noSuchSource _ | .joinUsingColumn _
   | .naturalJoinCondition | .ambiguousUsingReference _ | .noTablesSpecified | .havingNonAggregate
   | .aggregateInGroupBy | .likelihoodArgument | .compoundColumns _ | .orderByNoMatch _ => true
   | .reservedName _ | .tooManyColumns _ | .duplicateColumn _ | .multiplePrimaryKeys _ | .defaultNotConstant _

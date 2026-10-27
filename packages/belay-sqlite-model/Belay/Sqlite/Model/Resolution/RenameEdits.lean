@@ -58,7 +58,8 @@ def Binding.isColumnOf (binding : Binding) (position index : Nat) (triggerOn : B
 /-- What the rename does with an occurrence of the trace of a view or trigger. A name inside another stored
 view is not exact: that view has its own rewrite. A column bound together with another column (a join that
 merged them) is a restriction. A double-quoted name that is a string literal ({name}`MissingUse.textLiteral`)
-is rewritten to a single-quoted string literal, as SQLite does at every rename ({name}`NameEdit.fixQuote`). -/
+is rewritten to a single-quoted string literal by a column rename, as SQLite does ({name}`NameEdit.fixQuote`); a
+table rename leaves it as written. -/
 def RenameRequest.decide (request : RenameRequest) (triggerOn : Bool) (occurrence : NameOccurrence) :
     EditDecision :=
   match occurrence.name with
@@ -66,7 +67,6 @@ def RenameRequest.decide (request : RenameRequest) (triggerOn : Bool) (occurrenc
   | some old =>
     if !occurrence.exact then .keep else
     let edit : NameEdit := { path := occurrence.path, old, new := request.new, style := request.style }
-    if occurrence.result matches .missing .textLiteral _ then .edit { edit with new := old, fixQuote := true } else
     match request.target with
     | .table position => match occurrence.result with
       | .source source => match occurrence.role with
@@ -82,6 +82,7 @@ def RenameRequest.decide (request : RenameRequest) (triggerOn : Bool) (occurrenc
             if bindings.length == 1 then .edit edit else .restricted .alterRename
           else .keep
         | .tableReference | .qualifier | .aliasDeclaration | .resultAlias | .comparisonSite => .keep
+      | .missing .textLiteral _ => .edit { edit with new := old, fixQuote := true }
       | .source _ | .ambiguous _ | .missing .. | .schema _ | .resultColumn _ | .declares | .compared ..
       | .unreached _ => .keep
 

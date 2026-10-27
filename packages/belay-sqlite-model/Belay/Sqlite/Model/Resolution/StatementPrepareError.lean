@@ -98,4 +98,12 @@ inductive PrepareError where
   | expression (error : ExprError)
   deriving Repr, DecidableEq
 
+/-- Whether SQLite reports the error while the statement runs ({lit}`sqlite3_step`) and not in
+{lit}`sqlite3_prepare_v2`: only the error that a rename finds in a dependent object
+({name}`PrepareError.dependentObject`), because SQLite rewrites the stored definitions with an SQL function
+of the statement. The statement changes nothing in both cases. For example,
+{lean}`(PrepareError.noSuchTable (Identifier.ofString "t")).reportedWhileRunning` is false. -/
+def PrepareError.reportedWhileRunning (error : PrepareError) : Bool :=
+  error matches .dependentObject ..
+
 end Belay.Sqlite.Model

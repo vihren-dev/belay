@@ -494,10 +494,23 @@ rebuild proof is separate.
   SQLite raises during a rename (no such column or table, ambiguous names, JOIN USING and NATURAL checks, HAVING and
   GROUP BY aggregate checks, compound shape) is a rename error; every other check of a trigger or view body that
   fails is a restriction, because native SQLite accepts the rename. This is a deviation from the first plan, where
-  every prepare error was a rename error. R19 is fixed: a double-quoted string that is not a name becomes the
-  literal `'z'` in views and triggers (`NameEdit.fixQuote`, same as native `renameQuotefix`); a table with the
-  same text in a CHECK is a restriction. R11 is fixed by `RenameCatalogExamples.lean` and
-  `RenameFailureExamples.lean` (compiled-evaluator `#guard` checks of the new catalog, errors of pass 1 and pass 2).
+  every prepare error was a rename error. A recursive term with an aggregate is no rename error (SQLite accepts the
+  rename; `CommonTableError.raisedByRename`). R19 is fixed: a double-quoted string that is not a name becomes the
+  literal `'z'` in the views and triggers of a column rename (`NameEdit.fixQuote`, same as native `renameQuotefix`),
+  also in the text that names an unaliased view column (`SourceText.renameAt`); a table rename leaves it as
+  written (checked natively); a column rename of a table with such a text in a CHECK is a restriction. R11 is fixed
+  by `RenameCatalogExamples.lean` and `RenameFailureExamples.lean` (compiled-evaluator `#guard` checks of the new
+  catalog, errors of pass 1 and pass 2).
+- Phase of dependent-object errors: SQLite reports `error in view v ...` and `error in table t after rename ...`
+  while the statement runs (`sqlite3_step`), checked natively; `PrepareError.reportedWhileRunning` is true for
+  `dependentObject` only and `VerifierConformance.errorPhase` gives `step` for it. The other rename errors (no such
+  table or column, target taken) are prepare errors.
+- Conformance: `conformance/authored_renames.py` (47 cases, version 7 records; setups in `rename_setups.py`) and
+  `tests/conformance_renames_test.py`: the judge's verdict of every case through the predict command (views and
+  triggers included) is AGREE except 3 restricted cases (a recursive aggregate in a view, a CHECK with a loose quote
+  in a column rename, and a self-join with USING in a view), and the kernel proves the cases without views. The
+  cases include the dependent-object failures and their `step` phase. No case disagrees. The corpus freeze (corpus
+  number, evidence writer, lock) is for the judge PR.
 - Review musts of 2.5c: R2 and R13 are docstring changes (errors other than success and `constraintFail` put no
   obligation on the database; `Statement.applyCatalog` returns the supplied catalog for a rewrite). R11 is fixed by
   `rewritesAndRuns` (a rename resolves to a rewrite and the run succeeds with the same rows) and
