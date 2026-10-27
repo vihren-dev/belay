@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.lean_server_support import LeanServer, compile_helper_module, hover, position
+from tests.surface_editor_support import definitions, range_of
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -31,25 +32,6 @@ def inImported := sql! helperShop r"SELECT * FROM ledger"
 def inSequence := sql! firstShop r"DROP TABLE items; CREATE TABLE items(z); SELECT * FROM items"
 def finished : Nat := 0
 '''
-
-
-def range_of(text: str, spelling: str, token: str, occurrence: int = 0) -> dict[str, object]:
-    """The LSP range of `token`, which starts at the beginning of the `occurrence` of `spelling`."""
-    start = position(text, spelling, occurrence)
-    return {"start": start, "end": {**start, "character": start["character"] + len(token)}}
-
-
-def definitions(server: LeanServer, uri: str, source: str, spelling: str, occurrence: int = 0
-                ) -> list[tuple[str, dict[str, object]]]:
-    """The targets of a go-to-definition request at the occurrence, as (document, range) pairs."""
-    result = server.request("textDocument/definition", {"textDocument": {"uri": uri},
-                                                         "position": position(source, spelling, occurrence)})
-    assert isinstance(result, list), result
-    targets = []
-    for item in result:
-        assert isinstance(item, dict), item
-        targets.append((item.get("targetUri") or item["uri"], item.get("targetSelectionRange") or item["range"]))
-    return targets
 
 
 def test_table_origins_navigate(runtime_root: Path, tmp_path: Path) -> None:

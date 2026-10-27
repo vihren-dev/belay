@@ -65,16 +65,49 @@ def isRollback : Syntax.Statement → Bool
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- The places after one more statement of a script: a {lit}`CREATE TABLE` replaces the place of
-its name, and a {lit}`DROP TABLE` removes it. Every other statement keeps the places. -/
+its name, a {lit}`DROP TABLE` removes it, and {lit}`ALTER TABLE a RENAME TO b` moves the place of
+{lit}`a` to the name {lit}`b` (the table that the script created keeps its {lit}`CREATE TABLE`) and
+removes any place of {lit}`b`. Every other statement keeps the places, also {lit}`DROP COLUMN`, which does
+not change the identity of the table. -/
 def stepCreatedSlots (bytes : ByteArray) (slots : List TableSlot) (item : Located Syntax.Statement) :
     List TableSlot :=
   match item.value with
   | .createTable name .. =>
     slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
   | .dropTable name _ => slots.filter (·.name.folded != name.folded)
-  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
+  | .renameTable name newName =>
+    slots.filter (fun slot => slot.name.folded != name.folded && slot.name.folded != newName.folded) ++
+      (slots.filter (·.name.folded == name.folded)).map fun slot => { slot with name := newName }
+  | .createView .. | .createIndex .. | .addColumn .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
   | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
   | .dropTrigger .. => slots
+
+/-- Where the origin of each table name of a script comes from, as the script has changed the names
+so far: the table of the database at the start whose origin applies, or none when the script created
+the table. A name that no entry holds still names the table of the database at the start. The
+newest entry comes first. -/
+abbrev OriginSources := List (List UInt8 × Option Identifier)
+
+/-- The table of the database at the start whose origin the name has: itself when no statement of the
+script changed the name, another table after a rename, and none after a creation. -/
+def originSource (sources : OriginSources) (name : Identifier) : Option Identifier :=
+  match sources.lookup name.folded with
+  | some source => source
+  | none => some name
+
+/-- The sources after one more statement of a script: a {lit}`CREATE TABLE` or {lit}`DROP TABLE` leaves the
+name without an origin, because the table is then not the one that the database had at the start, and
+{lit}`ALTER TABLE a RENAME TO b` gives {lit}`b` the source of {lit}`a` and leaves {lit}`a` without one.
+{lit}`ROLLBACK` may undo any of these changes, so it leaves every name that an earlier statement changed
+without an origin; a name that no statement changed keeps its table. Every other statement keeps the
+sources, also {lit}`DROP COLUMN`. -/
+def stepOriginSources (sources : OriginSources) : Syntax.Statement → OriginSources
+  | .createTable name .. | .dropTable name _ => (name.folded, none) :: sources
+  | .renameTable name newName => (newName.folded, originSource sources name) :: (name.folded, none) :: sources
+  | .rollback => sources.map fun (name, _) => (name, none)
+  | .createView .. | .createIndex .. | .addColumn .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
+  | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
+  | .dropTrigger .. => sources
 
 /-- The places of the {lit}`CREATE TABLE` statements that make the tables a script leaves, in the
 order of the script ({name}`stepCreatedSlots`). A script with a {lit}`ROLLBACK` gives none

@@ -54,6 +54,7 @@ theorem first_row_is_a_value :
     copy.andOk (fun _ state => (names state).head? = some (.integer 20) ∨ (names state).head? = some (.integer 10))
       start := by decide +kernel
 
+set_option sql.orderWarnings false in
 /-- A script in which one execution fails and the other succeeds. The source rows are 5 and the smallest
 integer. The scan reaches 5 and stops at the limit. The index reaches the smallest integer first, and
 {lit}`abs` of it is an integer overflow (native SQLite 3.51.0 gives both results). -/
