@@ -1,6 +1,6 @@
 # Derived-column migration laws: general laws in the packages, the guide example as fixtures
 
-Created 2026-10-27. Status: OPEN.
+Created 2026-10-27. Status: DONE (2026-10-27).
 Status: [progress](20261027-derived-column-laws.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 and S8;
 [S6 automation](20261024-s6-automation.task.md), the paragraph on the two guide
