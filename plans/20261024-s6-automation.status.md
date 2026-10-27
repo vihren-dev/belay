@@ -1,6 +1,6 @@
 # Status: S6 effect rules and automation
 
-Created 2026-10-24. Status: OPEN. Part 1 done (2026-10-26); part 2 in progress; part 3 has not started.
+Created 2026-10-24. Status: DONE (2026-10-27). All three parts are done.
 Task: [task file](20261024-s6-automation.task.md).
 Specs: ADR17 S6; production execution/assertion/pattern tasks; S5 checker.
 
@@ -40,6 +40,10 @@ No production automation, general footprint engine or completion is claimed.
   `/nix/store/1pngxqkmdkg1k09aq739y7nqxmrsnv32-sqlite-verifier-predictions` are byte-identical to the base
   `/nix/store/vghpgg7nyb4nifg434ddx5dcrmzmh216-sqlite-verifier-predictions` (55 entries, `diff -r`). Part 1 is
   done; parts 2 and 3 have not started.
+
+## Completion, 2026-10-27
+
+The rebuild example is complete with the schema-script laws task ([status](20261027-schema-script-laws.status.md)): the three claims of the guide's table rebuild are proved or refuted in `tests/surface`. end of Part 2 gates (on the tree of the review-record commit `82b7651f`; the working copy above it is empty). `just dev-build` passed (2613 jobs). `just test-full`: the first run ended at the 1500 s limit with no failed test; the rerun passed, `/nix/store/dysgwdn220pr9fvzrbbgb18p2m58l7ij-sqlite-verifier-test-reports` (suite `surface` 377 tests, 659 s; suite `surfaceS6` 65 tests, 631 s). `just verdict` exit 0: `/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict`, predictions `/nix/store/bj9mcif94mpvlfj94i0z0jr6s37kz7yq-sqlite-verifier-predictions`. `just test-nix` exit 0 (71 tests). `just test-scheduled-checks` exit 0: `/nix/store/kn73v2a0nawk5pqjfbsmy0rw52di22v3-sqlite-verifier-scheduled-check-reports`. The review loop of the last commits has no open finding.
 
 ## Part 1 plan, 2026-10-26
 

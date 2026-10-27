@@ -44,7 +44,7 @@ def premiseAdvice (premise : Name) : String :=
   else if premise == `constant then
     "the clock must give one date at every statement index. A clock that changes is a conflict that this rule does not cover."
   else if premise == `single then
-    "the migration must be a script of statements that are none INSERT from a query. Pass a hint that proves it for each statement."
+    "the migration must be a script of statements that are none INSERT from a query. Pass a hint that proves it for each statement. A migration with an INSERT from a query reaches different connections in different branches, so the rule does not cover it. State the claim with ReadCertificate.preservesAt, and prove the obligations of the certificate at the end of every branch with sendStatements_branch_invariant."
   else if premise == `admittedKept then
     "the predicate of the claim must hold again after the read has run."
   else s!"the premise {premise} is not closed by a hint."

@@ -212,6 +212,7 @@
     "tests/surface_sql_check_test.py",
     "tests/surface_derived_column_test.py",
     "tests/surface_schema_script_test.py",
+    "tests/surface_rebuild_test.py",
     "tests/surface_sql_check_roots_test.py",
     "tests/surface_automatic_cancel_test.py"
   ]

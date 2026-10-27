@@ -1,6 +1,6 @@
 # S6: checked effect rules and reproducible proof automation
 
-Created 2026-10-24. Status: OPEN. Inputs refreshed on 2026-10-26 against main
+Created 2026-10-24. Status: DONE (2026-10-27). Inputs refreshed on 2026-10-26 against main
 after PR #270 and the possible write executions (PR #271). Corrected on
 2026-10-26: guide examples are test fixtures only (owner decision).
 Status: [progress](20261024-s6-automation.status.md).

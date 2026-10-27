@@ -1,6 +1,6 @@
 # Schema-script laws: step, frame and success laws for the table rebuild
 
-Created 2026-10-27. Status: OPEN.
+Created 2026-10-27. Status: DONE (2026-10-27).
 Status: [progress](20261027-schema-script-laws.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6;
 [S6 automation](20261024-s6-automation.task.md), part 3 outcome "the rebuild

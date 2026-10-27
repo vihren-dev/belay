@@ -144,7 +144,7 @@ theorem runScriptStep_execution_runs {context : ResolveContext} {clock : Option 
   simp only [RunStep.executions, List.mem_cons, List.mem_map] at member
   rcases member with rfl | ⟨traced, inFurther, rfl⟩
   · exact ⟨_, StatementRun.effect_mem_effects _, nextEq⟩
-  · obtain ⟨alternative, inAlternatives, _, transitionEq, nextAlternative⟩ :=
+  · obtain ⟨alternative, inAlternatives, _, transitionEq, nextAlternative, -⟩ :=
       StatementExecution.ofAlternatives_mem listed traced inFurther
     exact ⟨alternative.toRun, List.mem_cons_of_mem _ (List.mem_map_of_mem inAlternatives),
       by rw [nextAlternative, transitionEq]; rfl⟩

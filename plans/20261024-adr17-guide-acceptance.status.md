@@ -43,8 +43,7 @@ including unrelated private history or copying private contents publicly.
   refuses 'n/a' with result code 19. Native SQLite 3.51.0 gives the same rows for the three runs and the column name
   in the error text of the STRICT copy. The local focused run is not Nix evidence: the Nix result is recorded in the
   final gates.
-- 2026-10-27: the capability inventory on the tree of `tasks/surface-editor-part3` (#289) is below. The rows that depend on part 2 of the
-  schema-script task are marked PENDING. They are filled in after that branch is merged, before the final gates. The guide
+- 2026-10-27: the capability inventory on the tree of `tasks/surface-editor-part3` (#289) is below. The rebuild rows were filled in after the merge of the part 2 branch (PR #290). The guide
   examples were compiled in a private harness against the installed library of this tree. That harness is not Nix evidence.
 
 ## Capability inventory
@@ -66,7 +65,7 @@ output of a real server. Every row is implemented; no required row is a proposal
 | S6: migration patterns | `Migration.QueryPreserves`, `QueryTranslates`, `Commutes`, `CommutesAs`, `Migration.after`, `quiet`, the `preserves`, `translates` and `commutes with` notation | `20261024-s6-migration-patterns` | `surface_migration_patterns_test`, `surface_migration_examples_test`, `surface_rebuild_affinity_test` |
 | S6: effect rules, frames and automation | `sql_auto`, `sql_run`, `sql_commute`, `Sql.check_send_plainInsert` and the other `check_send_*` rules | `20261024-s6-automation` (part 1) | `surface_s6_automation_test`, `surface_s6_rules_test`, `surface_s6_check_programs_test`, `surface_s6_auto_editor_test`, `surface_s6_check_editor_test` |
 | S6: query laws | `NOT IN` and correlated `NOT EXISTS` laws; the derived-column migration laws (`DerivedColumnMigration`) | `20261027-not-in-subquery-laws`, `20261027-derived-column-laws` | `surface_s6_not_blocked_test`, `surface_derived_column_test` |
-| S6: schema, transaction and pragma statements, the table rebuild | PENDING part 2 of `20261027-schema-script-laws` (step, frame and success laws; the rebuild preserves the sessions) | `20261024-table-rebuild`, PENDING `20261027-schema-script-laws` | `surface_schema_script_test` (suite `surfaceS6`, PENDING after the merge) |
+| S6: schema, transaction and pragma statements, the table rebuild | the step, frame and success laws of CREATE TABLE, DROP TABLE, rename, BEGIN, COMMIT and the pragmas; `Migration.translatesAt_of_observations`; `sendStatements_succeedsFrom`; the guide's rebuild in `tests/surface/Rebuild*.lean`: `requireName_preserves_allSessions`, `requireName_succeeds` and `wrong_rebuild_loses_sessions` (`sql_refute`) | `20261024-table-rebuild`, `20261027-schema-script-laws`, `20261024-s6-automation` (part 2 on PR #290) | `surface_schema_script_test`, `surface_rebuild_test` (suite `surfaceS6`) |
 | S7: SQL in files | `sql_file`, `sql_module`, the Lake `needs` inputs, the package-root option | `20261024-surface-s7-files` | `surface_sql_files_test`, `surface_sql_file_forms_test`, `surface_sql_file_root_test`, `surface_sql_records_test`, `surface_sql_lake_inputs_test` |
 | S7: build freshness | `lake exe belay-sql-check` | `20261024-surface-s7-files` | `surface_sql_check_test`, `surface_sql_check_roots_test` |
 | S7: proof costs | `import Belay.Sqlite.ProofCost`, option `belay.proofCosts`, `belay-sql-check --costs` with `--json`, `--baseline` and `--allowance` | `20261024-s7-proof-cost-prototype`, `20261025-s7-proof-costs` | `surface_proof_cost_collect_test`, `surface_proof_cost_compare_test`, `surface_proof_cost_report_test`, `surface_proof_cost_compat_test`, `surface_proof_cost_automatic_test`, `surface_proof_cost_layers_test` |
@@ -95,8 +94,8 @@ marked as such.
 | Write claims through the expansion triggers are checked instances (`20261024-surface-s8`) | Applied. |
 | Premises of `notBlockedIn ≈ notBlockedEx` (`20261027-not-in-subquery-laws`) | Applied. |
 | Moved modules and renamed theorems of the derived-column laws (`20261027-derived-column-laws`) | Applied. |
-| Rebuild: foreign keys are off on a new connection, `requireName` preserves `allSessions` for the guide's schema only, `requireName` does not abort on `PRAGMA foreign_key_check` rows (`20261024-s6-automation`) | PENDING part 2 of the schema-script task. |
-| Part 2 guide changes of `20261027-schema-script-laws` | PENDING. |
+| Rebuild: foreign keys are off on a new connection, `requireName` preserves `allSessions` for the guide's schema only, `requireName` does not abort on `PRAGMA foreign_key_check` rows (`20261024-s6-automation`) | Applied, with part 2 (merged from `tasks/schema-script-laws-part2`, `8b04d70a`). |
+| Part 2 guide changes (a) to (c) of `20261027-schema-script-laws`: the unsafe rebuild needs `PRAGMA foreign_keys = ON` first; the preservation and success claims state the guide's schema (and `NoNullName`) as premises; `foreign_key_check` rows do not stop the commit | Applied. The guide uses `requireNameWrongEnforced`, `requireName_preserves_allSessions`, `requireName_succeeds`, and the replays `withoutName` and `dangling`. |
 
 ## Generalization of the new statements
 
