@@ -1,6 +1,6 @@
 # Status: S6 migration views and patterns
 
-Created 2026-10-24. Status: OPEN. Assigned for implementation.
+Created 2026-10-24. Status: DONE (2026-10-27).
 Task: [task file](20261024-s6-migration-patterns.task.md).
 Specs: ADR17 S6 and the accepted explicit observation-view decision.
 
@@ -599,3 +599,13 @@ table-rebuild task, keeps their general content (ADD COLUMN, backfill UPDATE and
 any table) under general names and statements, and moves the example-specific parts (the plan,
 the lookup simulation, the expansion theorem) to `tests/surface`. The remaining part-2 examples
 of this task are test fixtures only.
+
+## Completion (2026-10-27)
+
+The remaining items are complete. Item 2, the preservation claim of the safe rebuild, is `requireName_preserves_allSessions` of
+part 2 (`tasks/schema-script-laws-part2`, PR #290). Item 3, the type-affinity example, is `tests/surface/RebuildAffinity.lean`
+with `tests/surface_rebuild_affinity_test.py` (suite `surface`). Item 4, the guide integration, is in the private guide chain;
+the acceptance status file records the checks. The final gates ran on `f8d95f63`, which holds all of these:
+`just test-full` gave `/nix/store/gh1cynzf1bf1qzk81d5zhpwjmfk4j5ys-sqlite-verifier-test-reports` (1408 tests, 0 failures);
+`just verdict` gave `/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict`, the same output as the verdict of part 2.
+The `NormalizedField*` cleanup stays a separate task (owner decision 2026-10-26).

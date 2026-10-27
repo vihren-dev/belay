@@ -1,7 +1,7 @@
 # S6: migration observation views and comparison patterns
 
-Created 2026-10-24. Status: OPEN. Implementation follows reviewed execution
-contracts. Status: [progress](20261024-s6-migration-patterns.status.md).
+Created 2026-10-24. Status: DONE (2026-10-27). The execution contracts, the patterns, the type-affinity example and the guide integration are complete; evidence in the status file.
+Status: [progress](20261024-s6-migration-patterns.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6; accepted observation-view
 and full-context decisions; [execution contracts](20261024-s6-execution-contracts.task.md).
 

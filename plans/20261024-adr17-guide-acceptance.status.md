@@ -1,6 +1,6 @@
 # Status: ADR17 guide and integrated acceptance
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: DONE (2026-10-27). The final gates passed on the tree of `f8d95f63`; see "Final gates" below.
 Task: [task file](20261024-adr17-guide-acceptance.task.md).
 Specs: ADR17 and its accepted decisions; explicit ADR deferrals remain in force.
 
@@ -105,3 +105,28 @@ that the copy stores `Value.store` of the new column affinity for every copied c
 the rebuild laws of part 2 of the schema-script task. This task does not duplicate it. `rebuild_not_preserved` is stated for the weak
 `Migration.QueryPreserves` on the database `addresses`, with the complete environment of the fixture: a fixed database is the least
 that a counterexample needs, and the fixture states the premise `⟨rfl, rfl, rfl, rfl⟩` of the environment explicitly.
+
+## Final gates
+
+The gates ran on the tree of change `wztyvmxp` (`f8d95f63`): the merge of `tasks/adr17-guide-acceptance` and
+`tasks/schema-script-laws-part2` (PR #290, `8b04d70a`). Nix store paths are the evidence; local runs are not.
+
+| Gate | Result | Nix output |
+| --- | --- | --- |
+| `just dev-build` | Passed (2613 jobs). | The build products of the tree; the suites below build on them. |
+| `just test-full` | Passed. 1408 tests in the summed JUnit reports, 0 failures, 0 errors, 0 skips. | `/nix/store/gh1cynzf1bf1qzk81d5zhpwjmfk4j5ys-sqlite-verifier-test-reports` (suite `surface`: `/nix/store/jyp2ghla0y8fzz8yc7qy18qxcikap607-sqlite-verifier-test-surface-1`; `surfaceChecks`: `/nix/store/lcimb6w3ksqi296599n0ffxzfg4asr6c-sqlite-verifier-test-surfaceChecks-1`; `surfaceS6`: `/nix/store/ljvca3f642ygiywqm83y04p3m9vdjys9-sqlite-verifier-test-surfaceS6-1`) |
+| `just verdict` | Passed. 56 corpora, 5653 AGREE, 2109 MODEL_UNSUPPORTED. | `/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict` |
+| `just test-nix` | Passed. 71 tests (`requires_nix`). | Test run; no store output. |
+| `just test-scheduled-checks` | Passed. | `/nix/store/kn73v2a0nawk5pqjfbsmy0rw52di22v3-sqlite-verifier-scheduled-check-reports` |
+
+Verdict comparison. The verdict of this tree has the same store path as the verdict of part 2
+(`/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict`). Nix names the output by the hash of its inputs, so the
+two verdicts are the same output. Their `report.json` and `counts.json` are the same file, and so every case agrees. This task adds no
+model code and no corpus: the merge adds only the guide-example fixtures, the plan files and part 2.
+
+The runtime root of the surface suite is `/nix/store/kdc8k6c0cf9r97z6j0d2gwr6vs4m8jdz-sqlite-verifier-test-surface`. The private
+guide examples compiled against this root, with the same parser library as the installed tree, and the installed-consumer package
+built and passed `belay-sql-check`. The private record names the commands. That run is a check of the guide, not a Nix suite.
+
+Tasks marked DONE with this evidence: this task, `20261024-s6-migration-patterns` (items 2 to 4) and `20261024-surface-s5`
+(its guide commit is in the private guide chain).

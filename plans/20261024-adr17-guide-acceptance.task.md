@@ -1,6 +1,6 @@
 # ADR17: complete surface and guide acceptance
 
-Created 2026-10-24. Status: OPEN. Final acceptance follows all required slices. Refreshed 2026-10-27 (see "State on 2026-10-27").
+Created 2026-10-24. Status: DONE (2026-10-27). Final gates in the status file. Refreshed 2026-10-27 (see "State on 2026-10-27").
 Status: [progress](20261024-adr17-guide-acceptance.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), its accepted clarifications
 and explicit deferrals; [ADR 0016](../docs/adr-0016-model-and-surface.md).
