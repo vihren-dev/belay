@@ -1,6 +1,6 @@
 # Status: derived-column migration laws
 
-Created 2026-10-27. Status: OPEN.
+Created 2026-10-27. Status: DONE (2026-10-27).
 Task: [task file](20261027-derived-column-laws.task.md).
 Specs: ADR 0017 S6 and S8; the S6 automation task and its part 2 open point 5;
 the migration-patterns status section "Owner decision on the example modules
@@ -219,3 +219,18 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
   predictions agree with the baseline before this work (checked earlier on the unmerged tree: 55 files, byte-identical).
 - `just test-nix`: 71 passed.
 - `just test-scheduled-checks`: passes, `/nix/store/5qq2c3cc09smhjp08qc3vvx7za05r62p-sqlite-verifier-scheduled-check-reports`.
+
+## Merge of S6 automation part 3a and the end of the task (2026-10-27)
+
+- Merged `tasks/s6-automation-part3` (PR #283, `433e89cc`) as the change `merge: S6 automation part 3a
+  ...` (`50eb8c78`). The only conflict was the model `lakefile.toml` glob list (union of both sides;
+  `ValidUniqueKeys` is added and the 13 removed `NormalizedField*` modules stay removed).
+- On `50eb8c78`: `just dev-build` passes. `just verdict` passes,
+  `/nix/store/iminflpdjyiic1llnipy3c6jp9bvgs0g-sqlite-verifier-verdict`, identical case by case to the verdict
+  of PR #283 (7600 verdicts). Two `just test-full` runs failed only by time limits while another `test-full`
+  shared the machine: first the recipe at 1500 s, then the single `surface` suite at its 1200 s limit at
+  56 % of its tests. No test failed.
+- The next change of the stack (`test: split the surface tests into three suites below their time limits`,
+  `77c4d600`, a child of `50eb8c78`) passes `just test-full` on the same packages and tests:
+  `/nix/store/9p84ps7g0g3016bkb44yfwgvnvg5mby5-sqlite-verifier-test-reports`.
+- The task is DONE.
