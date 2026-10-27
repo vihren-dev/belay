@@ -192,6 +192,8 @@ inductive RestrictionKind where
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
+  /-- ALTER TABLE RENAME that passes the checks of SQLite's prepare, in a catalog with a view, trigger or table whose names the model cannot rewrite exactly, or with a new name outside the model (ADR 0019, D4). -/
+  | alterRename
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

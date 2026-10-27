@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T04:11:24+00:00",
+  "finding": "20261027T040049Z-61ad56db#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The explanation runs out only at a budget that depends on the heartbeat cost of the explanation, so no fixture can fix that point deterministically; the explanation takes a share of nine tenths and leaves the rest, and the status file records that the case is untested."
+}

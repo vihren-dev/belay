@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T03:28:43+00:00",
+  "finding": "20261027T025920Z-40b1a98e#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "SourceText.renameAt handles fixQuote (example namedByText and conformance cases); quotefix is limited to column renames, checked natively"
+}

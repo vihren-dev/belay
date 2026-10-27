@@ -93,8 +93,8 @@ def Statement.clockExpressions : Statement → List Expr
     filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions ++ WriteRules.expressions rules
   | .drop _ rules => WriteRules.expressions rules
   | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
-  | .prepareError _ | .setting .. => []
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .begin | .commit
+  | .rollback | .prepareError _ | .setting .. => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it
 ({name}`Expr.readsClock`, {name}`Statement.clockExpressions`). The execution gives a

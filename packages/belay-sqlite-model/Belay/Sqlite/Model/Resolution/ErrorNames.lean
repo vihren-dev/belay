@@ -45,12 +45,13 @@ names. The name can be absent from the statement's text, for example the parent 
 foreign key; a tool then shows the error at the statement. For example
 {assert}`(PrepareError.noSuchTable (name! "u")).name? = some (name! "u")`. -/
 def PrepareError.name? : PrepareError → Option Identifier
-  | .viewVariables | .viewNotIndexed | .viewAddColumn => none
+  | .viewVariables | .viewNotIndexed | .viewAddColumn | .renameNoSuchColumn _ => none
   | .tableExists name | .viewExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
   | .noSuchTable name | .noSuchView name | .useDropTable name | .useDropView name
   | .noSuchIndex name | .tableMayNotBeDropped name
   | .noSuchReferencedTable name | .foreignKeyMismatch name _ | .noSuchTrigger name
-  | .triggerExists name | .viewModify name | .viewTrigger _ name => some name
+  | .triggerExists name | .viewModify name | .viewTrigger _ name | .renameTargetTaken name
+  | .viewNotAltered name | .viewColumnsNotRenamed name | .dependentObject _ name _ _ => some name
   | .expression error => error.name?
 
 end Belay.Sqlite.Model

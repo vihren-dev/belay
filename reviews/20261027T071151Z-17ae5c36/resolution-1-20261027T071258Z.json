@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T07:12:58+00:00",
+  "finding": "20261027T071151Z-17ae5c36#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Docstring of evaluate_notIn_eq_notExists_of_rowidAlias now lists the served contexts, the table presence, the key bound and the RowsAliased premise."
+}

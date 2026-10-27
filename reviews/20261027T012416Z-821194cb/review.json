@@ -1,0 +1,67 @@
+{
+  "caller": "claude",
+  "commit": "821194cbb9cea8e57b939ff6df7cbcec0c47b46f",
+  "date": "2026-10-27T01:24:16+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteBody.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteEdit.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteExpr.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteQuery.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteSelect.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteText.lean",
+    "plans/20261024-table-rebuild.status.md",
+    "reviews/20261027T010453Z-47a210a9/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T012416Z-821194cb#1",
+      "line": 48,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteExpr.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "The catch-all silently accepts new expression constructors, and the new `ResultColumn.renameAt` and `BodyStatement.renameAt` matches have the same problem. Fix: enumerate the constructors in each fallback so that new constructors require explicit handling."
+    },
+    {
+      "id": "20261027T012416Z-821194cb#2",
+      "line": 59,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RewriteExamples.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The catalog lacks `log`, so the trigger test stops at `UPDATE log` and passes while checking only WHEN-condition rewrites, leaving its UPDATE, INSERT and SELECT body rewrites untested. Fix: supply the trigger’s complete catalog and assert successful initial resolution before checking its occurrences."
+    },
+    {
+      "id": "20261027T012416Z-821194cb#3",
+      "line": 411,
+      "path": "plans/20261024-table-rebuild.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status claims that tests check moved tokens, but `textAfter` discards token metadata and every assertion starts from the original query, so incorrect token offsets would pass. Fix: mark token-offset verification as pending until an assertion checks updated offsets or successive edits."
+    }
+  ],
+  "id": "20261027T012416Z-821194cb",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@--",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

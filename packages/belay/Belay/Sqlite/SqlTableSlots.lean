@@ -63,7 +63,7 @@ def definitionNames (subqueries : List Syntax.Subquery) : List (List UInt8) :=
 script no longer names the table that the database had at the start. -/
 def replacedTable? : Syntax.Statement → Option Identifier
   | .createTable name .. | .dropTable name _ => some name
-  | .createView .. | .createIndex .. | .addColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
+  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
   | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => none
 
@@ -85,7 +85,7 @@ def tableSlotsOf (bytes : ByteArray) (item : Located Syntax.Statement) : List Ta
     | .delete (table := table) (subqueries := subqueries) .. =>
       (target [0] table ++ subquerySlots bytes span 3 subqueries, subqueries)
     | .createIndex (table := table) .. => (target [2] table, [])
-    | .addColumn table _ => (target [0] table, [])
+    | .addColumn table _ | .renameTable table _ | .renameColumn table .. => (target [0] table, [])
     | .dropTable name _ => (target [0] name, [])
     | .createTrigger (table := table) .. => (target [4] table, [])
     | .createView (query := query) (subqueries := subqueries) .. =>

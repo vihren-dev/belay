@@ -10,6 +10,7 @@ resolves the statements reads it. -/
 namespace Belay.Sqlite.Model
 
 deriving instance Lean.ToJson for ViewError
+deriving instance Lean.ToJson for DependentKind
 deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
@@ -17,8 +18,7 @@ deriving instance Lean.ToJson for ExprError
 does not show the split of the two types. For example, {lit}`no such table: t` is
 {lit}`{"noSuchTable": {"name": "t"}}` and {lit}`no such column: a` is
 {lit}`{"noSuchColumn": {"name": "a"}}`, the derived form of each constructor. -/
-instance : Lean.ToJson PrepareError where
-  toJson
+def PrepareError.toJson : PrepareError → Lean.Json
     | .viewVariables => Lean.Json.str "viewVariables"
     | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .viewExists name => Lean.Json.mkObj [("viewExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
@@ -41,9 +41,19 @@ instance : Lean.ToJson PrepareError where
     | .viewModify name => Lean.Json.mkObj [("viewModify", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .viewNotIndexed => Lean.Json.str "viewNotIndexed"
     | .viewAddColumn => Lean.Json.str "viewAddColumn"
+    | .renameTargetTaken name => Lean.Json.mkObj [("renameTargetTaken", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewNotAltered name => Lean.Json.mkObj [("viewNotAltered", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewColumnsNotRenamed name =>
+      Lean.Json.mkObj [("viewColumnsNotRenamed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .renameNoSuchColumn token => Lean.Json.mkObj [("renameNoSuchColumn", Lean.Json.mkObj [("token", Lean.toJson token)])]
     | .viewTrigger before name =>
       Lean.Json.mkObj [("viewTrigger", Lean.Json.mkObj [("before", Lean.toJson before), ("name", Lean.toJson name)])]
+    | .dependentObject kind name afterRename error =>
+      Lean.Json.mkObj [("dependentObject", Lean.Json.mkObj [("kind", Lean.toJson kind), ("name", Lean.toJson name),
+        ("afterRename", Lean.toJson afterRename), ("error", error.toJson)])]
     | .expression error => Lean.toJson error
+
+instance : Lean.ToJson PrepareError := ⟨PrepareError.toJson⟩
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
 read as {lit}`reason`, and the stable id of its kind as {lit}`restriction`. -/
@@ -100,6 +110,9 @@ deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.TrimSide
 deriving instance Lean.ToExpr for Resolved.ScalarFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
+deriving instance Lean.ToExpr for LabelTarget
+deriving instance Lean.ToExpr for LabelName
+deriving instance Lean.ToExpr for CheckText
 deriving instance Lean.ToExpr for CheckConstraint
 deriving instance Lean.ToExpr for ForeignKey
 deriving instance Lean.ToExpr for GeneratedColumn
@@ -117,6 +130,7 @@ deriving instance Lean.ToExpr for Database
 deriving instance Lean.ToExpr for ViewError
 deriving instance Lean.ToExpr for CommonTableError
 deriving instance Lean.ToExpr for ExprError
+deriving instance Lean.ToExpr for DependentKind
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output

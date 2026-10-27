@@ -4,6 +4,7 @@ import Belay.Sqlite.Model.RowLocalAddColumn
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.InsertSelectLaws
+import Belay.Sqlite.Model.StatementRewrite
 
 set_option doc.verso true
 
@@ -20,10 +21,10 @@ catalog of the database is valid under the limits ({name}`Catalog.Valid`), and t
 {name}`Resolved.Statement.applyCatalog` gives for the statement is valid under the limits, the effect
 of {name}`runStatement` satisfies "the catalog is valid under the limits" ({name}`Effect.Satisfies`):
 the database of a success and that of an error with {name}`ExecutionError.constraintFail` have a valid
-catalog, and any other error requires nothing. For a statement that is not CREATE, ADD COLUMN or DROP,
+catalog, and any other error requires nothing. For a statement that is not CREATE, ADD COLUMN, RENAME or DROP,
 the second condition is the first. The theorem has no condition on the support check
 ({name}`StatementRun.ready`) or on other atoms, and it covers every form of {name}`Resolved.Statement`.
-Proof sketch: a run keeps the catalog, or CREATE, ADD COLUMN and DROP give the catalog of
+Proof sketch: a run keeps the catalog, or CREATE, ADD COLUMN, RENAME and DROP give the catalog of
 {lit}`applyCatalog`; the plain writes keep the catalog ({name}`Database.RowsOnlyAt.catalog`), and the
 row engine keeps it ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds` with {name}`catalogSupportedLaws`). -/
 theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters : Counters)
@@ -64,6 +65,7 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
       show (effectDatabase _).catalog.Valid limits
       rw [eq]
       exact next
+  | rewrite renamed => exact runStatement_rewrite_satisfies clock counters parameters renamed valid fun _ _ => next
   | drop positions rules =>
     cases rules with
     | none =>

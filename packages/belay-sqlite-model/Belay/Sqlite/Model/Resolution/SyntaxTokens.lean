@@ -56,8 +56,9 @@ structure NameToken where
 /-- A source text as written, with the places of its name tokens. A text without recorded tokens
 is a plain string, which the coercion from {name}`String` turns into a text without tokens. -/
 structure SourceText where
-  /-- The text, as it is the name of a view column. -/
-  text : String
+  /-- The text, as it is the name of a view column. It is empty for a CHECK constraint whose label is the name of
+  the constraint. -/
+  text : String := ""
   /-- The name tokens of the text, in text order. -/
   tokens : List NameToken := []
   deriving Repr, DecidableEq

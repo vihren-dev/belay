@@ -122,4 +122,39 @@ theorem Succeeds.iff_ensures {σ α : Type} [Runnable σ α] (program : σ) (pre
   (show Succeeds program pre ↔ Succeeds (Runnable.toSql program) pre from Iff.rfl).trans
     (Sql.andOk_complete_iff (Runnable.toSql program) pre).symm
 
+/-- A plain assertion {lit}`⌜claim⌝` is decidable when its proposition is: the assertion holds exactly when
+the proposition holds. -/
+instance assertionPureDecidable (claim : Prop) [Decidable claim] :
+    Decidable (ULift.down (SPred.pure claim : SPred PostShape.pure.args)) :=
+  inferInstanceAs (Decidable claim)
+
+/-- The conditional postcondition {name}`ifOkWith` at a value and a context is decidable when its
+assertion is: it holds exactly when the trace has an error or the assertion holds. With this instance
+and {name}`Sql.decidableCheck`, {lit}`decide` can check a fresh-run claim about a finite program. -/
+instance ifOkWithDecidable {α : Type} (post : α → ContextAssertion) (value : α) (context : ExecutionContext)
+    [Decidable (post value context).down] :
+    Decidable (((ifOkWith post).1 value context).down) :=
+  inferInstanceAs (Decidable (List.allOk context.outputs = true → (post value context).down))
+
+/-- The total postcondition {name}`andOkWith` at a value and a context is decidable when its assertion
+is: it holds exactly when the trace has no error and the assertion holds. -/
+instance andOkWithDecidable {α : Type} (post : α → ContextAssertion) (value : α) (context : ExecutionContext)
+    [Decidable (post value context).down] :
+    Decidable (((andOkWith post).1 value context).down) :=
+  inferInstanceAs (Decidable (List.allOk context.outputs = true ∧ (post value context).down))
+
+/-- The conditional postcondition {name}`ifOk` at a value and a context is decidable when its assertion
+is, as {name}`ifOkWithDecidable` says for an assertion that ignores the value. -/
+instance ifOkDecidable {α : Type} (post : ContextAssertion) (value : α) (context : ExecutionContext)
+    [Decidable (post context).down] :
+    Decidable (((ifOk post : PostCond α (.arg ExecutionContext .pure)).1 value context).down) :=
+  inferInstanceAs (Decidable (List.allOk context.outputs = true → (post context).down))
+
+/-- The total postcondition {name}`andOk` at a value and a context is decidable when its assertion is,
+as {name}`andOkWithDecidable` says for an assertion that ignores the value. -/
+instance andOkDecidable {α : Type} (post : ContextAssertion) (value : α) (context : ExecutionContext)
+    [Decidable (post context).down] :
+    Decidable (((andOk post : PostCond α (.arg ExecutionContext .pure)).1 value context).down) :=
+  inferInstanceAs (Decidable (List.allOk context.outputs = true ∧ (post context).down))
+
 end Belay.Sqlite

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T02:55:27+00:00",
+  "finding": "20261027T015742Z-0a7f0813#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "renameQuotefix is implemented (NameEdit.fixQuote) and a CHECK with a loose quote is a restriction"
+}

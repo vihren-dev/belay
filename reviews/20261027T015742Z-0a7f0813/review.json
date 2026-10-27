@@ -1,0 +1,73 @@
+{
+  "caller": "claude",
+  "commit": "0a7f0813dea177a78af5dde8b4aa2a65959bc7f4",
+  "date": "2026-10-27T01:57:42+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec/Resolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ErrorNames.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Messages.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameCatalog.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameChecks.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameChecksExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameDependents.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameEditExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameEdits.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameTables.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ScopeNames.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/StatementPrepareError.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ViewColumns.lean",
+    "plans/20261024-table-rebuild.status.md",
+    "reviews/20261027T013734Z-e4138f50/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T015742Z-0a7f0813#1",
+      "line": 102,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameDependents.lean",
+      "rule": "R7",
+      "severity": "must",
+      "text": "Trigger execution checks become rename errors, although SQLite accepts renaming `t(a,b)` with a stored trigger containing `INSERT INTO t VALUES(1)`. Fix: use SQLite’s rename-specific name validation in both `renameTrigger` and `checkTrigger`, excluding write-execution checks."
+    },
+    {
+      "id": "20261027T015742Z-0a7f0813#2",
+      "line": 443,
+      "path": "plans/20261024-table-rebuild.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status describes SQLite’s column-rename procedure as implemented, but the missing `renameFixQuotes` operation lets renaming `a` to `z` change a stored `SELECT \"z\" FROM t` from a string literal into a column reference when double-quoted strings are enabled. Fix: document the required literal normalization and mark this behavior incomplete until implemented."
+    },
+    {
+      "id": "20261027T015742Z-0a7f0813#3",
+      "line": 74,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameCatalog.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The new catalog rewrite and validation behavior has no tests that call it; the added guards cover only edit selection and CHECK text rewriting. Fix: add direct catalog tests for foreign-key rewrites, trigger headers, dependent-object errors, and post-rename validation in this commit."
+    }
+  ],
+  "id": "20261027T015742Z-0a7f0813",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

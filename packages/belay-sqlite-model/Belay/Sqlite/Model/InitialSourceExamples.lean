@@ -39,7 +39,7 @@ def sourcesOf : StatementResolution → Option (List Source)
   | .error _ => none
   | .ok (statement, _) => match statement with
     | .query found _ => some (found.sources.map (·.source))
-    | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
+    | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .drop .. | .begin
     | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .setting .. => none
 
 /-- The sources of a query that reads a column of the one given source, resolved against the current catalog and the

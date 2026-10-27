@@ -343,3 +343,240 @@ rebuild proof is separate.
   `just verdict` passes with no DISAGREE, output
   `/nix/store/3lqr3pxr2xk5gbfdmbzwfr8rg1al1dpm-sqlite-verifier-verdict`, predictions
   `/nix/store/07yg9qqpjvv7z1kznsqsbw5hzqfv6ysh-sqlite-verifier-predictions` (identical to `build/predictions-b3`).
+
+### Part 2, unit 2.1: rename syntax, SQLite-ordered prepare errors, temporary restriction
+
+- New syntax `Statement.renameTable table newName` and `Statement.renameColumn table column newName
+  columnToken quoted` (`columnToken` is the old column name as written, `quoted` tells whether the new name
+  was written with a quote). The translator `Translation/Renames.lean` maps the two productions (an
+  unqualified table name only); `ALTER TABLE ... DROP COLUMN` stays unsupported until part 3.
+- `Resolution/Renames.lean`: `resolveRenameTable` and `resolveRenameColumn` give the prepare errors in the order
+  that native SQLite 3.51.0 gives them (probes in the task file): no such table; new name taken
+  (`renameTargetTaken`); system table; reserved new name; view (`viewNotAltered` for RENAME TO,
+  `viewColumnsNotRenamed` for RENAME COLUMN); no such column (`renameNoSuchColumn` prints the token as written).
+  A rename that passes all checks is the new restriction `alter-rename` until unit 2.5 models the rewrite.
+- Laws in `Resolution/RenameSpec.lean` (catalog unchanged, a step of `CatalogStep.same`); the new arms of the
+  spec files (`NamesSpec`, `ResolveStateSpec`, `ResolveStatementValid`, `ResolveStatementFacts`,
+  `ResolveStatementSingle`, `TransactionSpec`) use them. Exhaustive-match arms in the editor modules of
+  `packages/belay` (`SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings`, `SqlTableOrigins`) and
+  `SampleScriptHints` are the minimal ones; `SqlTableSlots` gives the two statements the slot of their table.
+- Tests: `RenameExamples.lean` (`#guard` checks of the error order and the restriction),
+  `tests/syntax_mapping_test.py`, `conformance/restriction_examples.py` (example of `alter-rename`),
+  `tests/surface/DbBangErrors.lean` (the message that lists the modeled statements).
+- Checks: Nix results are recorded at the end of part 2. Manual proof repairs in this unit: 0 (new cases only).
+
+### Part 2, unit 2.2: the text of a CHECK constraint keeps its name tokens
+
+- `Syntax.ColumnConstraint.check` and `TableConstraint.check` take the trimmed source text of the condition with
+  the places of its name tokens (`text : SourceText`, empty for a constraint with a `CONSTRAINT name`). The
+  translator records them for every unnamed CHECK (`Translation/Constraints.lean`, `NameTokens.lean`).
+- `CheckConstraint.source : Option CheckText` keeps that text and the tokens that the resolver bound to the
+  table (`LabelTarget.table`, a qualifier) or to a column position (`LabelTarget.column`). The binding is read
+  from the occurrences of `resolveOperandTraced` by the node paths of the tokens (`checkText` in
+  `Resolution/TableChecks.lean`); there is no second lookup of a spelling. The label that execution reports is
+  unchanged, so the rename of unit 2.5 rewrites `source` and the dequoted label together.
+- Tests: `Resolution/CheckTextExamples.lean` (`#guard` checks), `tests/syntax_constraints_test.py`.
+
+### Part 2, unit 2.3: the names of a trigger program are traced
+
+- The trigger gap of the name trace is closed. `resolveProgramTraced` (`Resolution/TriggerPrograms.lean`)
+  records the names of the WHEN condition below the path `[5]` and those of the body statement `k` below
+  `[6, k]`: the fields of a trigger statement are name, IF NOT EXISTS, time, event, table, condition, body.
+  A body statement uses the field numbers of the statement of the same name (`Statement.insert` and
+  `Statement.update` have a RETURNING field that a body lacks; a body SELECT has no compound). The
+  resolvers `resolveBodyStatement`, `resolveRaiseSelect`, `resolveBodySelect` and `resolveProgram` are the
+  `.drop` of their traced forms (`TriggerBodies.lean`, `TriggerStatements.lean`, `TriggerPrograms.lean`), so the
+  trace and the resolved program cannot disagree. `triggerEvent` moved to `TriggerPrograms.lean`.
+- A write to a view in a body decides no name (it is a prepare error); the rename of unit 2.5 handles it.
+  A raising SELECT keeps the operands of its CASE in place; the message of a RAISE is resolved as an extra result column, and
+  its names move back to the message in the written column (`raiseMessagePaths`, `moveToMessage`); the message is the child 1 of a RAISE.
+- Tests: `Resolution/TriggerTraceExamples.lean` (`#guard` checks of the paths of a program and of a raising
+  SELECT); the existing `TriggerProgramExamples.lean` still passes, and so do `tests/syntax_triggers_test.py`
+  and the trigger tests of the conformance suites.
+- Review of unit 2.2: `20261027T004253Z-27fd1515` (2 musts and 1 should, all fixed in the refactor commit). Review of unit 2.3:
+  `20261027T010453Z-47a210a9` (1 must: the names of the message of a RAISE had the path of the extra column; fixed in unit 2.4's
+  refactor commit).
+- Manual proof repairs in this unit: 0.
+
+### Part 2, unit 2.4: replace a name of an object by its trace path
+
+- `Resolution/RewriteEdit.lean` (`NameEdit`: path, old name, new name, `RenameStyle`; the quote rule of SQLite for
+  `RENAME TO` and `RENAME COLUMN`), `RewriteExpr.lean` (`Expr.renameAt`), `RewriteQuery.lean` (`TableReference`,
+  `ResultColumn`, `Join`, `Subquery`), `RewriteText.lean` (`SourceText.replaceTokens`, `SourceText.renameAt`: the
+  bytes of the name tokens that have the path of the edit, with the tokens behind them moved), `RewriteSelect.lean`
+  (`renameSelectAt`: query and subqueries of a statement, with the texts of the result columns) and
+  `RewriteBody.lean` (`BodyStatement.renameAt`, `CatalogTrigger.renameAt`). Every function takes the path of a
+  name occurrence of the name trace and gives none when the path does not lead to the old name, so a layout
+  that the engine does not know is a failure of the rewrite, never a silent change of another name.
+- Tests: `Resolution/RewriteExamples.lean` checks, for samples that cover every expression form, the clauses of a
+  query, subqueries, the program of a trigger and a raising SELECT, that the rewrite works at the path of every
+  occurrence that a rename rewrites and that the trace of the rewritten object has the new name at that path;
+  and the rewrite of the text of a result column (quote rule; the start and stop of every token after an edit, and a
+  second edit that reads the tokens of the first).
+- Not covered yet (restricted by the guard of the path, decided in unit 2.5): names in the arguments of a
+  table-valued function, ON CONFLICT targets, and USING names (to be probed against native SQLite).
+- Manual proof repairs in this unit: 0.
+
+### Unit 2.5a: the trace tells an aliased source
+
+- `SourceRef.aliased` and `ScopeSource.aliased` (default false) tell whether the `FROM` item has an alias. A rename of
+  a table renames a qualifier that names the table and keeps a qualifier that names an alias (native SQLite 3.51.0:
+  `select t.a from t as t` stays `t.a`, with `FROM "u" as t`). `tableScope` and the table reference set the flag;
+  `Scope.singleAt` takes it as a last argument with the default false.
+- Tests: `NameTraceSourceExamples.lean` checks the flag for a table with and without an alias.
+- Manual proof repairs in this unit: 7 (the single-source laws and the normalized-field lookup laws gained an
+  `aliased` argument; one call site passes `aliased := false`). Total for the task so far: about 110.
+
+### Unit 2.5b: the catalog after a rename
+
+- `Resolution/RenameEdits.lean`: `RenameRequest.decide` reads the trace of a view or trigger and gives, for each
+  occurrence, keep, an edit, or a restriction. A table rename edits a table reference or a qualifier that names the
+  base table itself, never a qualifier that names an alias. A column rename edits a name whose one binding is the
+  column; a name that a join merged is the restriction `alter-rename`. Names inside another stored view are not exact
+  and keep their spelling. The rows `NEW` and `OLD` of a trigger have `role := .triggerRow`, so a trigger on the
+  renamed table is told from a trigger on another table.
+- `Resolution/RenameChecks.lean`: `CheckText.rename`, `CheckConstraint.rename` and `dequoteLabel` (SQLite's
+  `sqlite3Dequote`): the text of an unnamed CHECK constraint is rewritten token by token and its label is the
+  dequoted new text. `Resolution/RenameTables.lean`: the changes in a table (name of the column, foreign key parent
+  and referenced names, CHECK texts). `Resolution/RenameDependents.lean`: `renameView`, `renameTrigger`
+  (header: trigger table, `UPDATE OF` names), `checkView`, `checkTrigger`, `RenameFailure`.
+  `Resolution/RenameCatalog.lean`: `renameCatalog` in the two passes of SQLite 3.51.0: pass 1 rewrites every
+  object and fails with `error in view v: ...` (native: a runtime error of the statement, a prepare error of the
+  model with no effect); pass 2 resolves every object of the new catalog (`error in view v after rename: ...`,
+  `error in table t after rename: duplicate column name: b`); last the catalog must be supported under the limits.
+- `PrepareError.dependentObject kind name afterRename error` with `DependentKind` (messages, JSON, names).
+- Native facts (SQLite 3.51.0): a rename fails when any view or trigger of the catalog does not resolve, also one that
+  does not read the renamed table; a rename of a column to the name of another gives
+  `error in table t after rename: duplicate column name: b` (the name of the later column); a column may be renamed
+  to `rowid`.
+- Tests: `RenameEditExamples.lean` (view and trigger edits), `RenameChecksExamples.lean` (labels, tokens, dequote).
+  The catalog functions are tested through the statement in unit 2.5c.
+- Manual proof repairs in this unit: 0.
+
+### Unit 2.5c: the rewrite statement and its preservation proofs
+
+- `Resolved.Statement.rewrite (catalog : Catalog)` is the resolved form of a rename: the resolver computes the whole
+  new catalog (`renameCatalog`), the statement replaces the catalog and leaves the rows as they are. `applyCatalog
+  (.rewrite renamed) _ = renamed`; the new statement kind is `Statement.Kind.rewrite` (not a control statement).
+- Execution: `step` stores the new catalog only when `Catalog.keepsOutline` holds for the old and the new catalog, else
+  it fails with `.unmodeled` and the input database. The test is a runtime guard on purpose: every preservation proof
+  follows from the guard, so no proof depends on the resolver. That the resolver passes the guard is a test, not a
+  theorem (examples in unit 2.5d and the differential matrix).
+- `Resolution/CatalogOutline.lean`: `Catalog.outline` (each object with `blankNames`: no column names, no CHECK
+  labels or sources, no foreign key parent names), `Catalog.selectedParents` (parent link of every foreign key of
+  every table), `Catalog.keepsOutline`. Laws for tables: `OutlineTableLaws.lean` (NOT NULL, types, CHECKs),
+  `OutlineDatabaseLaws.lean` (each row-local and table atom), `OutlineKeyLaws.lean` (unique keys),
+  `OutlineForeignKeyLaws.lean` and `OutlineSelectedParentLaws.lean` (foreign key facts for the selected mapping:
+  `Database.RowReferencesHold.of_outline`, `Database.ParentSchemasCompatible.of_outline`).
+- `StatementRewrite.lean`: `runStatement_rewrite_satisfies` and the row-local and table-atom instances. The atom
+  classes `RowLocalAtom` and `TableAtom` gained a field `renamed` (same rows and shape after `blankNames` keep the
+  atom). Every statement theorem of the matrix (Admitted/Valid atoms, unique keys, FK rows and selected mapping) has
+  an arm for `.rewrite`: Valid-catalog takes the `next` hypothesis as for CREATE; the fixed-mapping FK law
+  (`KeepsParentSchema`) is False for a rewrite, the selected-mapping laws hold with no condition.
+- `step_extends` (PreservationLaws) excludes the rewrite (a rename changes names, so the new catalog does not extend
+  the old one); its caller derives that from the statement kind.
+- The belay package needed two `.rewrite _` arms (`ReadAnalysis`, `DbDiagnostics`); no editor module changed.
+- Review of 2.5b (`20261027T015742Z-0a7f0813`): three musts, to fix in the next units: R7 (trigger execution checks
+  must not be rename errors: use the rename-specific name validation in `renameTrigger` and `checkTrigger`), R19
+  (SQLite's `renameFixQuotes` literal normalization is not implemented: a double-quoted string that becomes a column
+  name after a rename; documented here as incomplete until implemented), R11 (direct catalog tests).
+- Manual proof repairs in this unit: about 12 (case arms with a real proof, in `step_extends`, the `StepCatalog`
+  laws, the FK matrix and the key laws). New proofs: about 30 small laws in the Outline modules. Total for the task
+  so far: about 122.
+
+### Unit 2.5d: the rename resolver produces the rewrite
+
+- `resolveRenameTable` and `resolveRenameColumn` keep their check order and then call `finishRename`: `renameCatalog`
+  gives the new catalog, and the statement is `.rewrite renamed`. A failure of `renameCatalog` is a prepare error
+  with the catalog unchanged, or a restriction (`alter-rename`). `RenameSpec.lean` proves the outcome: either a
+  prepare error with the catalog unchanged, or a rewrite whose catalog is `supported` (so it is a valid catalog).
+- Review musts of 2.5b: R7 is fixed by `RenameVerdict.lean`: only the name-resolution class of errors that native
+  SQLite raises during a rename (no such column or table, ambiguous names, JOIN USING and NATURAL checks, HAVING and
+  GROUP BY aggregate checks, compound shape) is a rename error; every other check of a trigger or view body that
+  fails is a restriction, because native SQLite accepts the rename. This is a deviation from the first plan, where
+  every prepare error was a rename error. A recursive term with an aggregate is no rename error (SQLite accepts the
+  rename; `CommonTableError.raisedByRename`). R19 is fixed: a double-quoted string that is not a name becomes the
+  literal `'z'` in the views and triggers of a column rename (`NameEdit.fixQuote`, same as native `renameQuotefix`),
+  also in the text that names an unaliased view column (`SourceText.renameAt`); a table rename leaves it as
+  written (checked natively); a column rename of a table with such a text in a CHECK is a restriction. R11 is fixed
+  by `RenameCatalogExamples.lean` and `RenameFailureExamples.lean` (compiled-evaluator `#guard` checks of the new
+  catalog, errors of pass 1 and pass 2).
+- Phase of dependent-object errors: SQLite reports `error in view v ...` and `error in table t after rename ...`
+  while the statement runs (`sqlite3_step`), checked natively; `PrepareError.reportedWhileRunning` is true for
+  `dependentObject` only and `VerifierConformance.errorPhase` gives `step` for it. The other rename errors (no such
+  table or column, target taken) are prepare errors.
+- Conformance: `conformance/authored_renames.py` (51 cases, version 7 records; setups in `rename_setups.py`) and
+  `tests/conformance_renames_test.py`: the judge's verdict of every case through the predict command (views and
+  triggers included) is AGREE except 4 cases that stay unmodeled (a recursive aggregate in a view, a CHECK with a loose quote
+  in a column rename, a self-join with USING in a view, and a schema-qualified table name that the translation refuses), and the kernel proves the cases without views. The
+  cases include the dependent-object failures and their `step` phase. No case disagrees. The corpus freeze (corpus
+  number, evidence writer, lock) is for the judge PR.
+- Review musts of 2.5c: R2 and R13 are docstring changes (errors other than success and `constraintFail` put no
+  obligation on the database; `Statement.applyCatalog` returns the supplied catalog for a rewrite). R11 is fixed by
+  `rewritesAndRuns` (a rename resolves to a rewrite and the run succeeds with the same rows) and
+  `rejectedRewriteKeepsDatabase` (an outline mismatch fails as `.unmodeled` with the input database).
+- The restriction `alter-rename` is narrower: its text, `docs/semantic-subset.md` and the conformance example
+  (a view with a USING-merged column) changed. Nix results for this unit come with the part 2 `just test-full`.
+- Manual proof repairs in this unit: 0 new (the outcome lemmas are short). Total for the task so far: about 122.
+
+### Unit 2.6: contracts, mutants and surface checks of the renames
+
+- Narrow contracts for S6 (`StatementRewrite.lean`): `step_rewrite_of_keeps` (the run succeeds and stores the catalog with the
+  rows of the database), `step_rewrite_of_not_keeps` (it fails as `.unmodeled` with the input database) and
+  `step_rewrite_ok` (what a successful run says: the catalog of the rewrite, the rows of the database, the guard).
+  A client unfolds nothing of `step`.
+- Mutants: `conformance/rename_mutants.py` (8 mutants: parent column and parent table not followed, duplicate column
+  unchecked, dependent error in the prepare phase, taken name ignored, table keeps its old name, rewrite always
+  rejected, rewrite loses rows), all killed by `tests/conformance_rename_mutants_test.py` (run by name, 8 passed);
+  guards checked by `tests/mutant_guards_test.py`. The modules are in `build-support/tests.nix` and the tests in
+  `tests/nix_suites.json` (entries only).
+- Surface: `tests/surface/RenameExecutions.lean` (5 checks over `decide +kernel`: the new names succeed, the rows
+  and rowids are kept, the old names and a taken name fail), in `tests/surface_execution_test.py`.
+- `docs/semantic-subset.md` lists the two ALTER forms and the narrowed restriction `alter-rename`.
+- Reviews: `20261027T025920Z-40b1a98e` (2 musts, both fixed in the commit that follows it and a `refactor:` commit:
+  the recursive aggregate, the quotefix of the text of a view column, and exhaustive matches); the refactor commit
+  `20261027T033625Z-bd168538` has no findings.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Unit 2.7: renames stay out of scope for records without a profile
+
+- The first part-2 `just verdict` found four DISAGREE cases in the corpora v1 to v3: `alterlegacy-1.2:2`, `1.3:5`,
+  `4.1b:22` and `9.3:43`. Their setup turns `PRAGMA legacy_alter_table` on, which the subject cannot see in a record of
+  version 1 (no profile), and the model implements only the default (off). The same situation exists for foreign
+  keys (ADR 0014, slice 4), so the fix follows that rule: `conformance/profile_scope.legacy_alter_scope` makes a
+  rename in a record without a profile UNSUPPORTED; `conformance/predict.py` and `conformance/native_replay.py` call it
+  next to `foreign_key_scope`. Profiled records (version 4 and later) cannot change the setting (the recorder refuses
+  the pragma), so the authored rename cases are unaffected.
+- Tests: `tests/profile_scope_test.py` (rename forms found; unprofiled records with a rename are out of scope;
+  profiled records and records without a rename stay in scope).
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+- Reviews: `20261027T040327Z-cf19e736` and `20261027T041119Z-f7b3be39` have no findings; `20261027T040944Z-5b83c434`
+  (2 shoulds: the message names the next action; the test docstrings name the code under test) both fixed in
+  `f7b3be39`.
+- Nix verdict after the fix: `just verdict` passes with no DISAGREE. Of the 55 prediction files, those of corpora v1 to
+  v5 differ from the baseline only in newly supported cases (149 cases go from unsupported to predicted, none
+  changes otherwise).
+
+### Unit 2.8: surface fixtures know the rewrite statement
+
+- The second `just test-full` (pre-fix tree) failed in `surfaceChecks` and `surface` (the first one stopped earlier at the
+  documentation inventory, so these were not visible): the fixtures `ViewsSupport`, `ClaimsViewCatalog`,
+  `ClaimsCommonTables` and `ClaimsViewTriggers` match all statement forms and lacked arms for `Resolved.Statement.rewrite`
+  and `Syntax.Statement.renameTable` / `renameColumn`. The arms were added (these are exhaustive-match arms, not new
+  tests); `tests/surface_claims_test.py` and `tests/surface_views_test.py` pass.
+- `surface_sampling_test` and `surface_search_test` timed out in that run only because three Nix test runs shared the
+  machine (alone they take 55 s and 86 s; their own command limits are 180 s for the sampling test and 90 s and 240 s
+  for the search test); they pass alone.
+- The third `just test-full` found one more fixture break: `tests/surface/GlobalSignupInvariant.lean` called
+  `NormalizedField.resolveColumns_identifier_at`, which got the argument `aliased` in the rename work; the call passes
+  `_` for it.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Part 2 gates (Nix)
+
+- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8).
+- `just verdict` passes with no DISAGREE. The prediction files differ from the 55-file baseline only in newly supported
+  cases (checked before the last wording change of the out-of-scope message, which changes only the `reason` text of
+  unsupported predictions).
+- Reviews of the last commits: `20261027T041119Z-f7b3be39` and `20261027T050120Z-e548dbb3` have no findings.
+- Part 2 is complete. Part 3 (DROP COLUMN and the integrated rebuild coverage) starts next.

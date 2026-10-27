@@ -11,7 +11,7 @@ change once, so the theorems that relate them can state it. -/
 namespace Belay.Sqlite.Model.Resolved
 
 /-- The catalog after the statement succeeds on the given catalog: CREATE TABLE, CREATE
-INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
+INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, a rewrite (rename) returns the catalog that it carries, and every other statement leaves the catalog unchanged. Transaction control is not a
 catalog change here; {lit}`ResolveState.after` handles it. For example,
 {lean}`(Statement.begin.applyCatalog [] : Catalog)` is the empty catalog. -/
 def Statement.applyCatalog : Statement → Catalog → Catalog
@@ -21,6 +21,7 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .createTrigger _ name trigger, catalog => catalog.createTrigger name trigger
   | .addColumn position column _, catalog => catalog.addColumn position column
   | .drop positions _, catalog => catalog.drop positions
+  | .rewrite renamed, _ => renamed
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
   | .upsert .., catalog | .insertSelect .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog
   | .setting .., catalog => catalog
@@ -38,6 +39,8 @@ inductive Statement.Kind where
   | trigger
   /-- DROP TABLE, VIEW, INDEX or TRIGGER: a removal from the catalog. -/
   | drop
+  /-- ALTER TABLE RENAME TO or RENAME COLUMN: the catalog definitions change, the rows stay. -/
+  | rewrite
   /-- BEGIN, COMMIT or ROLLBACK: transaction control. -/
   | control
   /-- INSERT, INSERT with {lit}`ON CONFLICT` or a conflict algorithm, UPDATE or DELETE. -/
@@ -58,6 +61,7 @@ a statement has reads it, so a new statement form gets a form here first. -/
   | .createIndex .. => .index
   | .createTrigger .. => .trigger
   | .drop .. => .drop
+  | .rewrite _ => .rewrite
   | .begin | .commit | .rollback => .control
   | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. => .write
   | .query .. => .query
@@ -71,6 +75,6 @@ statement is not control. -/
 def Statement.isControl (statement : Statement) : Bool :=
   match statement.kind with
   | .control | .setting => true
-  | .definition | .view | .index | .trigger | .drop | .write | .query | .prepareError => false
+  | .definition | .view | .index | .trigger | .drop | .rewrite | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Model.Resolved

@@ -1,0 +1,49 @@
+{
+  "caller": "claude",
+  "commit": "47a210a992b1b766a14adfb4dcd782233148d157",
+  "date": "2026-10-27T01:04:53+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerBodies.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerClosure.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerPrograms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerStatements.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerTraceExamples.lean",
+    "plans/20261024-table-rebuild.status.md",
+    "reviews/20261027T005706Z-eab2759b/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T010453Z-47a210a9#1",
+      "line": 391,
+      "path": "plans/20261024-table-rebuild.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The claim that raising SELECT names retain their written paths is false for accepted expressions such as `SELECT CASE WHEN 1 THEN RAISE(ABORT, new.a) END`, whose message names are traced under a nonexistent second result column. Fix: mark message-path remapping as unfinished and qualify the completion claim until those occurrences retain their original RAISE paths."
+    }
+  ],
+  "id": "20261027T010453Z-47a210a9",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

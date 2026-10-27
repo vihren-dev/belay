@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T03:35:46+00:00",
+  "finding": "20261027T033037Z-98fdcbb9#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "RenameTarget.isColumn matches both constructors"
+}

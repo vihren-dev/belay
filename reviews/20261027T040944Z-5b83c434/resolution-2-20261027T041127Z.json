@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T04:11:27+00:00",
+  "finding": "20261027T040944Z-5b83c434#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the docstrings name the code under test"
+}

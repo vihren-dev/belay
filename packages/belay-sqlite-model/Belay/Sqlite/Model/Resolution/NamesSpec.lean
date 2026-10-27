@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.RenameSpec
 import Belay.Sqlite.Model.Resolution.DropSpec
 import Belay.Sqlite.Model.Resolution.ViewDefinitionSpec
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
@@ -129,6 +130,14 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
+  | renameTable table newName =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveRenameTable_outcome _ _ _ _ _ _ (by assumption)).step
+  | renameColumn table column newName columnToken quoted =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).step
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_step _ _ _ _ _ found

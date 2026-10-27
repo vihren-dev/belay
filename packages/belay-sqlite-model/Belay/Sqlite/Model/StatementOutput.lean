@@ -180,7 +180,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
       some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some (run.counts.changes.getD 0)⟩
     else if constraintFailure then some ⟨returning.map (·.2), [], some (run.counts.changes.getD 0)⟩ else none
   | .addColumn _ column refuses => some ⟨addColumnOutputNames column refuses, [], none⟩
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting .. =>
-    some ⟨[], [], none⟩
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .drop .. | .begin | .commit | .rollback | .prepareError _
+  | .setting .. => some ⟨[], [], none⟩
 
 end Belay.Sqlite.Model

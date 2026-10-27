@@ -278,6 +278,8 @@ import Belay.Sqlite.Model.Resolution.StatementTraced
 import Belay.Sqlite.Model.Resolution.StatementAttr
 import Belay.Sqlite.Model.Resolution.WriteTracedLaws
 import Belay.Sqlite.Model.Resolution.InsertQueries
+import Belay.Sqlite.Model.Resolution.Renames
+import Belay.Sqlite.Model.Resolution.RenameSpec
 import Belay.Sqlite.Model.Resolution.ResolveStatement
 import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
@@ -351,6 +353,26 @@ import Belay.Sqlite.Model.NormalizedFieldLookups
 import Belay.Sqlite.Model.NormalizedFieldExpandedTable
 import Belay.Sqlite.Model.NormalizedFieldLookupOutputs
 import Belay.Sqlite.Model.InValueLaws
+import Belay.Sqlite.Model.InValueEqualsLaws
+import Belay.Sqlite.Model.InValueEqualsAny
+import Belay.Sqlite.Model.InIntegerProbe
+import Belay.Sqlite.Model.CorrelatedSubquerySource
+import Belay.Sqlite.Model.CorrelatedSubqueryRun
+import Belay.Sqlite.Model.InSubqueryEvaluate
+import Belay.Sqlite.Model.InSubqueryFilterLaw
+import Belay.Sqlite.Model.InSubqueryEqualityLink
+import Belay.Sqlite.Model.InSubqueryColumnLaw
+import Belay.Sqlite.Model.InSubqueryRowidAlias
+import Belay.Sqlite.Model.SimpleSubqueryRowsOutput
+import Belay.Sqlite.Model.OneTableStatementOutput
+import Belay.Sqlite.Model.InSubqueryQueryLaw
+import Belay.Sqlite.Model.InSubqueryQueryInLaw
+import Belay.Sqlite.Model.InSubqueryQueryRowidAlias
+import Belay.Sqlite.Model.FromSourceResolution
+import Belay.Sqlite.Model.FromSubquerySelectResolution
+import Belay.Sqlite.Model.FromSubqueryStatementResolution
+import Belay.Sqlite.Model.InSubqueryStatementResolution
+import Belay.Sqlite.Model.CorrelatedExistsResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput
 import Belay.Sqlite.Model.ScalarSubqueryOutput
@@ -398,6 +420,8 @@ import Belay.Sqlite.Model.AddColumnEffect
 import Belay.Sqlite.Model.NonQueryOutput
 import Belay.Sqlite.Model.ReadOnlyFrame
 import Belay.Sqlite.Model.ShelterFrame
+import Belay.Sqlite.Model.FailedStepFrame
+import Belay.Sqlite.Model.SelectStepFrame
 import Belay.Sqlite.Model.PartialUniqueKeptRows
 import Belay.Sqlite.Model.PlainInsertEffect
 import Belay.Sqlite.Model.PlainDeleteEffect
@@ -410,6 +434,12 @@ import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
 import Belay.Sqlite.Model.TwoStateKeptRows
 import Belay.Sqlite.Model.PlainInsertRows
 import Belay.Sqlite.Model.SelectStepKeeps
+import Belay.Sqlite.Model.OutlineTableLaws
+import Belay.Sqlite.Model.OutlineDatabaseLaws
+import Belay.Sqlite.Model.OutlineKeyLaws
+import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.OutlineForeignKeyLaws
+import Belay.Sqlite.Model.OutlineSelectedParentLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

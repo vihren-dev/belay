@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.RowLocalAddColumn
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.InsertSelectLaws
+import Belay.Sqlite.Model.StatementRewrite
 
 set_option doc.verso true
 
@@ -20,7 +21,8 @@ satisfies "rows shaped" ({name}`Database.RowsShaped`), the effect of {name}`runS
 position without a table, and any other error requires nothing. The theorem has no condition on the
 connection, on the support check ({name}`StatementRun.ready`) or on other atoms, and it covers every
 form of {name}`Resolved.Statement`. Proof sketch: a case for each form; CREATE appends an object and an
-empty row list ({name}`Database.RowsShaped.append`), ADD COLUMN and DROP are
+empty row list ({name}`Database.RowsShaped.append`), RENAME keeps the length of the catalog and its
+tables ({name}`Database.RowsShaped.of_outline`), ADD COLUMN and DROP are
 {name}`Database.RowsShaped.addColumn` and {name}`Database.RowsShaped.drop`, a write without rules
 stores the rows of one table ({name}`runStatement_plain_rowsOnly`), a write with rules is a write of
 the row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds` with {name}`rowsShapedLaws`), and
@@ -61,6 +63,8 @@ theorem runStatement_rowsShaped (clock : Int) (counters : Counters) (parameters 
       show (effectDatabase _).RowsShaped
       rw [eq]
       exact shaped.addColumn found column value
+  | rewrite renamed =>
+    exact runStatement_rewrite_satisfies clock counters parameters renamed shaped fun same _ => shaped.of_outline same
   | drop positions rules =>
     cases rules with
     | none =>

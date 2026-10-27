@@ -30,7 +30,7 @@ def resolveTableReferenceTraced (catalog : Catalog) (path : List Nat) (reference
     let declared := (catalog[position]?.map (·.name)).getD reference.table
     let source : ScopeSource :=
       { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid,
-        role := role, catalogPosition := some position }
+        role := role, catalogPosition := some position, aliased := reference.alias.isSome }
     do
       Traced.record (tableOccurrence path reference.table (.source (source.reference index)))
       pure (position, source)

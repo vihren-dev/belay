@@ -81,7 +81,7 @@ def syntaxError : Database := db! r"CREATE TABLE t (a); SELEC 1"
 -- A form that the translation refuses, at the statement.
 /--
 @ +1:52...58
-error: This statement is not modeled; the model runs CREATE TABLE, CREATE VIEW, CREATE INDEX, CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys
+error: This statement is not modeled; the model runs CREATE TABLE, CREATE VIEW, CREATE INDEX, CREATE TRIGGER, ALTER TABLE ADD COLUMN, ALTER TABLE RENAME, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys
 -/
 #guard_msgs (positions := true) in
 def refused : Database := db! r"CREATE TABLE t (a); VACUUM"

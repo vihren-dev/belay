@@ -52,6 +52,18 @@ def checkedConstruction (expression : Expr) (excluded : Array Name := #[])
   unless reconstructed do throwError "database construction does not reproduce this witness successfully"
   return text
 
+/-- Reify outputs as terms. This is a plain value and no global instance, because exported
+{name}`ToExpr` instances override the display of a user's {lit}`#eval`. Bring it into scope with
+{lit}`let _ := outputExprInstance` where observation data is decoded. -/
+@[instance_reducible] def outputExprInstance : ToExpr Output where
+  toTypeExpr := mkConst ``Model.Output
+  toExpr := fun
+    | .rows rows => mkApp (mkConst ``Model.Output.rows) (toExpr rows)
+    | .done changes => mkApp (mkConst ``Model.Output.done) (toExpr changes)
+    | .error code => mkApp (mkConst ``Model.Output.error) (toExpr code)
+    | .oneOf results => mkApp (mkConst ``Model.Output.oneOf) (toExpr results)
+    | .unmodeled reason => mkApp (mkConst ``Model.Output.unmodeled) (toExpr reason)
+
 /-- Prepare the same original-query report as explicit replay, using cooperative evaluation
 for the database, script and model observations. Missing source or opaque computation makes
 this background attempt unavailable, without changing the explicit certification primitive. -/
@@ -64,15 +76,7 @@ def checkedScriptReport (database script : Expr) (excluded : Array Name := #[])
   checkTextSize original.text
   let source ← Replay.scriptTextOf script value (some original.text)
   checkSystem "SQL replay translation"
-  -- Reify observation data only here: exported ToExpr instances override users' #eval display.
-  let _ : ToExpr Output := {
-    toTypeExpr := mkConst ``Model.Output
-    toExpr := fun
-      | .rows rows => mkApp (mkConst ``Model.Output.rows) (toExpr rows)
-      | .done changes => mkApp (mkConst ``Model.Output.done) (toExpr changes)
-      | .error code => mkApp (mkConst ``Model.Output.error) (toExpr code)
-      | .oneOf results => mkApp (mkConst ``Model.Output.oneOf) (toExpr results)
-      | .unmodeled reason => mkApp (mkConst ``Model.Output.unmodeled) (toExpr reason) }
+  let _ := outputExprInstance
   let errorType := toTypeExpr String
   let resultType := toTypeExpr (List Output)
   let _ : ToExpr (Except String (List Output)) := {

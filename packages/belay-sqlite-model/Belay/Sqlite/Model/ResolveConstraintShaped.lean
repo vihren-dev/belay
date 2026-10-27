@@ -120,7 +120,7 @@ theorem applyConstraint_step {tableName : Identifier} {definition : Syntax.Colum
   obtain ⟨column, getLast, indexed, declared, positive⟩ := building.last
   cases constraint with
   | primaryKey descending algorithm => exact applyConstraint_primaryKey building descending algorithm ok
-  | check condition label => cases ok; exact ⟨building, rfl, rfl⟩
+  | check condition label text => cases ok; exact ⟨building, rfl, rfl⟩
   | unique algorithm =>
     obtain ⟨columns, strict, ordinary, primaryKey, alias, uniqueKeys⟩ := addUniqueKey_cases ok
     have shaped := building.1.shaped

@@ -5,6 +5,7 @@ import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.InsertSelectLaws
+import Belay.Sqlite.Model.StatementRewrite
 
 set_option doc.verso true
 
@@ -35,7 +36,8 @@ then the effect of {name}`runStatement` satisfies "every table has the atom"
 {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. The theorem
 covers every form of {name}`Resolved.Statement`. Proof sketch: a case for each form; CREATE, and DROP and
 DELETE without rules, use the frame facts of the atom ({name}`runStatement_create_tableAtom`,
-{name}`runStatement_drop_rowLocal`, {name}`runStatement_delete_tableAtom`), a statement without writes keeps the
+{name}`runStatement_drop_rowLocal`, {name}`runStatement_delete_tableAtom`), RENAME is
+{name}`runStatement_rewrite_tableAtom`, a statement without writes keeps the
 database, ADD COLUMN is {name}`runStatement_addColumn_rowLocal`, and a write with rules is a write of the
 row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`).
 The ADD COLUMN premise covers either value of the refusal flag. -/
@@ -70,6 +72,7 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every
       fun table value found added => addColumn target column refuses table value rfl found added
+  | rewrite renamed => exact runStatement_rewrite_tableAtom tableAtom clock counters parameters renamed every
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal clock counters parameters positions every

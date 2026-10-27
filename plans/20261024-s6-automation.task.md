@@ -164,7 +164,20 @@ Three acceptance parts: (1) required effect/frame specifications and
 conservative dependency certificates; (2) tactics, checker/code-action
 integration and the corrected guide examples except the rebuild; (3) the
 rebuild example, after the table-rebuild task supplies INSERT SELECT, RENAME
-and DROP COLUMN with their contracts. Each coherent commit gets focused checks, dev-build and review.
+and DROP COLUMN with their contracts, and a general unique-index rule for
+`sql_run`: a plain insert that succeeds gives a valid database, so its unique
+and partial unique indexes hold (reuse `Table.KeysUnique.keptRows_pairwise`).
+With it the tactics prove the partial-index invariant fixture (owner decision
+of 2026-10-27).
+
+Two guide claims are proved outside this task (owner decisions of
+2026-10-27). The `notBlockedIn ≈ notBlockedEx` claim for every database under
+its premises needs general NOT IN and correlated NOT EXISTS query laws; the NOT IN
+task (`plans/20261027-not-in-subquery-laws.task.md`, in the next pull request
+of the stack) adds them and the fixture. The migration query claim over every database of a site needs general
+ADD COLUMN, backfill and scan laws; the `NormalizedField*` cleanup task adds
+them and the fixture. Parts 2 and 3 keep the refutations and the
+concrete-database claims. Each coherent commit gets focused checks, dev-build and review.
 Each part ends with post-review just test-full and just verdict. At task end
 run just test-nix and just test-scheduled-checks under the build-boundary
 override. Every subprocess test has a finite timeout. Only Nix results are

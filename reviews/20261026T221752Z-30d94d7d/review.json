@@ -1,0 +1,105 @@
+{
+  "caller": "claude",
+  "commit": "30d94d7d26eb0b5ac36e33184d08302ff9d1a141",
+  "date": "2026-10-26T22:17:52+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/AddColumnStepRule.lean",
+    "packages/belay/Belay/Sqlite/PlainDeleteStepRule.lean",
+    "packages/belay/Belay/Sqlite/PlainInsertStepRule.lean",
+    "packages/belay/Belay/Sqlite/PlainUpdateStepRule.lean",
+    "packages/belay/Belay/Sqlite/ReadStepRule.lean",
+    "packages/belay/Belay/Sqlite/SendStepRules.lean",
+    "packages/belay/Belay/Sqlite/SqlRun.lean",
+    "packages/belay/Belay/Sqlite/SqlRunGoals.lean",
+    "packages/belay/Belay/Sqlite/SqlRunRules.lean",
+    "packages/belay/Belay/Sqlite/SqlRunShape.lean",
+    "packages/belay/Belay/Sqlite/SqlRunTriples.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/FailedStepFrame.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectStepFrame.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261024-s6-automation.status.md",
+    "tests/nix_suites.json",
+    "tests/surface/S6AutoAddCustomer.lean",
+    "tests/surface/S6AutoEffects.lean",
+    "tests/surface/S6AutoShapes.lean",
+    "tests/surface_s6_automation_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261026T221752Z-30d94d7d#1",
+      "line": 113,
+      "path": "packages/belay/Belay/Sqlite/SqlRun.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "No test covers sibling-goal preservation, and `sql_run` demonstrably drops sibling goals because it reads the goal list after helpers replace it, causing kernel rejection for unresolved metavariables. Fix: save the original sibling goals before processing and add a regression fixture that finishes both goals."
+    },
+    {
+      "id": "20261026T221752Z-30d94d7d#2",
+      "line": 18,
+      "path": "packages/belay/Belay/Sqlite/PlainInsertStepRule.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The INSERT, UPDATE, DELETE and ADD COLUMN docstrings describe actual step outputs and clock readings, but their premises quantify over arbitrary outputs satisfying the flags and arbitrary clock values in the failure case. Fix: restate these quantifiers and restrictions faithfully in all four docstrings."
+    },
+    {
+      "id": "20261026T221752Z-30d94d7d#3",
+      "line": 24,
+      "path": "tests/surface_s6_automation_test.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The new DELETE, ADD COLUMN, `query` and sent-SELECT tactic paths have no tests that exercise their rule applications. Fix: add checked fixtures that use each new path and discharge its remaining obligations."
+    },
+    {
+      "id": "20261026T221752Z-30d94d7d#4",
+      "line": 111,
+      "path": "packages/belay/Belay/Sqlite/SqlRun.lean",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The traversal limit `400` and the blocking-premise list at line 88 are policy literals inside the tactic mechanism. Fix: give each policy a named definition with a docstring and use those definitions."
+    },
+    {
+      "id": "20261026T221752Z-30d94d7d#5",
+      "line": 45,
+      "path": "packages/belay/Belay/Sqlite/SqlRun.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new helpers `runRead`, `runSend`, `processPremises` and `SqlRunGoals.substEquations` have no docstrings. Fix: document what each helper does and why it is needed."
+    },
+    {
+      "id": "20261026T221752Z-30d94d7d#6",
+      "line": 1,
+      "path": "packages/belay/Belay/Sqlite/ReadStepRule.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new `ReadStepRule`, `PlainInsertStepRule`, `PlainUpdateStepRule`, `PlainDeleteStepRule` and `AddColumnStepRule` modules have no module docstrings. Fix: add a short module docstring explaining each module’s purpose."
+    }
+  ],
+  "id": "20261026T221752Z-30d94d7d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

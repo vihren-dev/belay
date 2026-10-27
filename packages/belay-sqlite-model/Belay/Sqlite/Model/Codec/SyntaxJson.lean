@@ -13,8 +13,6 @@ deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind, Syntax.NameToken
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ForeignKeyAction
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.RaiseKind
-deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
-
 /-- A source text as JSON: the plain string when no name token is recorded, so that the records
 of texts without tokens keep the form that they had before the tokens existed, else an object
 with the text and its tokens. -/
@@ -28,6 +26,8 @@ instance : Lean.FromJson Syntax.SourceText where
   fromJson? json := match json with
     | .str text => .ok { text }
     | _ => do return { text := ← json.getObjValAs? String "text", tokens := ← json.getObjValAs? _ "tokens" }
+
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
