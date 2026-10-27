@@ -571,3 +571,12 @@ rebuild proof is separate.
   `NormalizedField.resolveColumns_identifier_at`, which got the argument `aliased` in the rename work; the call passes
   `_` for it.
 - Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Part 2 gates (Nix)
+
+- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8).
+- `just verdict` passes with no DISAGREE. The prediction files differ from the 55-file baseline only in newly supported
+  cases (checked before the last wording change of the out-of-scope message, which changes only the `reason` text of
+  unsupported predictions).
+- Reviews of the last commits: `20261027T041119Z-f7b3be39` and `20261027T050120Z-e548dbb3` have no findings.
+- Part 2 is complete. Part 3 (DROP COLUMN and the integrated rebuild coverage) starts next.
