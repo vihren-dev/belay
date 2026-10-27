@@ -50,3 +50,12 @@ def test_sql_commute_proves_the_claim_and_refuses_the_rest(runtime_root: Path, t
     check_module_chain(runtime_root, tmp_path, (
         ("S6RulesQueryPattern", 8), ("S6AutoCommute", 3), ("S6RulesNegativeReads", 8),
         ("S6RulesNegativeClock", 2), ("S6AutoCommuteNegative", 0)), timeout=CHAIN_TIMEOUT_SECONDS)
+
+
+def test_sql_auto_closes_the_goal_with_one_route_and_offers_its_steps(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql_auto` proves a UPDATE claim with the route `sql_run`, a preservation claim with the route
+    `sql_commute`, and a plain fact with `grind`. The info message holds the explicit steps of the route, and
+    a theorem with the steps alone has the same axioms. A false goal, a route that runs out of its share of the
+    work limit and a goal with a sibling goal show the failure messages and that the goals stay."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("S6RulesEffects", 3), ("S6RulesQueryPattern", 8), ("S6AutoAuto", 5)), timeout=CHAIN_TIMEOUT_SECONDS)

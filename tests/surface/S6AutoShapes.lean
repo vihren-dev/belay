@@ -23,6 +23,11 @@ example (program : Sql Nat) (post : Nat → ExecutionContext → Prop) (context 
     program.check post context := by
   sql_run
 
+/-- error: sql_run proves a check of a SQL program, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check. -/
+#guard_msgs in
+example : (2 : Nat) + 2 = 4 := by
+  sql_run
+
 /-- warning: sql_run stopped: the program is a variable or an unknown term. The goal stays open. -/
 #guard_msgs in
 /-- A part after a rule that the tactic cannot read stays as a goal, with a warning, and an explicit hypothesis

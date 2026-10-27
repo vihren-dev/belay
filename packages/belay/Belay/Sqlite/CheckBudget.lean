@@ -42,15 +42,15 @@ can need, but discards speculative diagnostics and editor information. Callers m
 instantiate and certify returned proofs before accepting them. -/
 def speculative (action : TermElabM α) : TermElabM α := do
   let saved ← Term.saveState
-  let mut completed := false
+  let completed ← IO.mkRef false
   try
     let result ← action
     modifyThe Core.State fun state =>
       { state with messages := saved.meta.core.messages, infoState := saved.meta.core.infoState }
-    completed := true
+    completed.set true
     return result
   finally
-    unless completed do saved.restore (restoreInfo := true)
+    unless ← completed.get do saved.restore (restoreInfo := true)
 
 /-- Try a candidate and discard an ordinary elaboration failure. Resource exhaustion and
 interrupts propagate after restoring state; they cannot become evidence from another branch. -/

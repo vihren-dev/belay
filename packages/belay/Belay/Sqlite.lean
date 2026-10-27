@@ -87,6 +87,8 @@ import Belay.Sqlite.AddColumnStepRule
 import Belay.Sqlite.ReadStepRule
 import Belay.Sqlite.SqlRun
 import Belay.Sqlite.SqlCommute
+import Belay.Sqlite.AutoSearch
+import Belay.Sqlite.SqlAuto
 import Belay.Sqlite.SingleStatementChecks
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand

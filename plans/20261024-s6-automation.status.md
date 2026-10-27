@@ -218,3 +218,23 @@ Merge with the table rebuild part 1 stack top (2026-10-27):
 - New fixtures in `S6AutoPaths`: a sent INSERT from a query leaves the premise `notInsertSelect` open (it is false),
   and a sent CREATE INDEX (a statement without a rule of its own) closes it by evaluation. Nix check results for
   the merged state follow at the end of part 2.
+
+Commit (`sql_auto`, 2026-10-27):
+
+- Surface: `AutoSearch` (the search: the routes `sql_commute`, `sql_run` with a finishing step per remaining goal, and
+  `grind` with the hint names that are no local hypotheses; each route runs in a copy of the tactic state without error
+  recovery, so a failed route leaves the original goal as it was and a route that only reports an error cannot admit a
+  goal; the routes share the remaining heartbeats, and a route that uses its share fails with a reason) and `SqlAuto`
+  (`sql_auto [hints]`: keeps the sibling goals, fails with one line per route when no route closes the goal, and offers
+  the explicit steps of the winning route as the "Try this" replacement of the call, one step per line at the column
+  of the call). The explicit tactics stay usable alone. Only kernel-checked proofs close a goal.
+- `sql_run` now fails on a first goal that is no check, triple or `mvcgen` goal. Before, it returned the goal
+  without a message (fixture `S6AutoShapes`).
+- Fix in the S5 budget helper `speculative` (`CheckBudget`): the state was restored also after success, because
+  a `let mut` flag set inside `try ... finally` is not visible in `finally`. It now keeps the changes after success.
+  S5 behavior can change; the S5 suites decide.
+- Fixtures: `S6AutoAuto` (run route with exact suggestion, replacement alone, grind route, false goal with each
+  route's reason, a goal that is no check, sibling goal kept, work limit, commute route, axiom audits).
+  `tests/surface_s6_auto_editor_test.py` (in the `surface` suite): real server, code action request at the call
+  range, the edit replaces exactly the call, the edited document has no error, warning or suggestion, the
+  steps elaborate alone with ordinary axioms only, and a call that no route closes offers no action.
