@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.QueryExamples
-import Belay.Sqlite.Model.NotInRowidAlias
+import Belay.Sqlite.Model.InSubqueryRowidAlias
 
 set_option doc.verso true
 
@@ -11,7 +11,7 @@ authority for these values: its results for the same statements are in the surfa
 no value is NULL, the two queries keep the same rows. A NULL probe, a NULL candidate and a collation of the
 comparison that differs from the collation of the {lit}`IN` test each give a case where they keep different rows. -/
 
-namespace Belay.Sqlite.Model.Resolved.NotInSubqueryExamples
+namespace Belay.Sqlite.Model.Resolved.InSubqueryExamples
 
 /-- The table with one column {lit}`name` and the given cells as rows, with rowids 1, 2, and so on. -/
 def oneColumn (cells : List Value) : Table where
@@ -27,12 +27,22 @@ query has one column, so the subquery sees one outer cell. -/
 def keysNotIn (collation : Collation) : Query × List Query :=
   ({ sources := [.first 0], filter := some (.inQuery (.column 0) 0 (some .numeric) collation true),
      aggregate := false, groupBy := [], columns := [.scalar (.column 0)], names := ["k"], orderBy := [], offset := 0,
-     limit := none }, [Query.columnOf 1 1 0 ["c"]])
+     limit := none }, [Query.oneTable 1 1 none [.column 1] ["c"]])
 
 /-- {lit}`SELECT k FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.c = k)`, with the collation of the comparison. -/
 def keysNotExists (collation : Collation) : Query × List Query :=
   ({ (keysNotIn .binary).1 with filter := some (.not (.exists 0)) },
-   [Query.matchingKey 1 1 0 0 (some .numeric) collation ["1"]])
+   [Query.oneTable 1 1 (some (.compare .eq (some .numeric) (.column 1) (.column 0) collation)) [.literal (.integer 1)]
+      ["1"]])
+
+/-- {lit}`SELECT k FROM t WHERE x IN (SELECT c FROM u)`. -/
+def keysIn : Query × List Query :=
+  ({ (keysNotIn .binary).1 with filter := some (.inQuery (.column 0) 0 (some .numeric) .binary false) },
+   (keysNotIn .binary).2)
+
+/-- {lit}`SELECT k FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = k)`. -/
+def keysExists : Query × List Query :=
+  ({ (keysNotIn .binary).1 with filter := some (.exists 0) }, (keysNotExists .binary).2)
 
 /-- The rows of a query with its subqueries over a database, at clock 0. -/
 def rowsOn (database : Database) (statement : Query × List Query) : Option (List (List Value)) :=
@@ -73,4 +83,10 @@ example : rowsOn (database [.text [65]] [.text [97]]) (keysNotExists .binary) = 
 example : rowsOn (database [.text [65]] [.text [97]]) (keysNotExists .nocase) ≠
     rowsOn (database [.text [65]] [.text [97]]) (keysNotIn .binary) := by decide +kernel
 
-end Belay.Sqlite.Model.Resolved.NotInSubqueryExamples
+-- IN against EXISTS needs no premise on NULL: with a NULL key and a NULL candidate both queries keep the key 2.
+example : rowsOn (database [.integer 1, .null, .integer 2] [.integer 2, .null]) keysIn = some [[.integer 2]] := by
+  decide +kernel
+example : rowsOn (database [.integer 1, .null, .integer 2] [.integer 2, .null]) keysExists = some [[.integer 2]] := by
+  decide +kernel
+
+end Belay.Sqlite.Model.Resolved.InSubqueryExamples

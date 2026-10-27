@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.NotInValueLaw
+import Belay.Sqlite.Model.InValueEqualsAny
 import Belay.Sqlite.Model.Resolution.QueryAffinity
 
 set_option doc.verso true
@@ -8,7 +8,8 @@ set_option doc.verso true
 correlated comparison {lit}`u.c = x` match the same candidates, whatever type, affinity and collation the
 candidates have. The collation never matters, because an integer is less than every TEXT and no collation
 changes an integer. The comparison affinity is not TEXT when one operand has INTEGER affinity, as a rowid alias
-column has. -/
+column has. The same holds for every comparison operator and for an integer on either side
+({lit}`compareValue_integer_collation_free`). -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -69,7 +70,7 @@ sketch: the operands swap ({name}`comparisonOperands_swap`), a NULL operand make
 sees equal operands in either order. -/
 theorem equalsValue_comm (affinity : Option Affinity) (collation : Collation) (left right : Value) :
     equalsValue affinity collation left right = equalsValue affinity collation right left := by
-  unfold equalsValue
+  unfold equalsValue compareValue
   rw [comparisonOperands_swap affinity left right]
   rcases comparisonOperands affinity left right with ⟨a, b⟩
   simp only
@@ -78,6 +79,67 @@ theorem equalsValue_comm (affinity : Option Affinity) (collation : Collation) (l
   have same : (collation.compare b a == .eq) = (collation.compare a b == .eq) := by
     rw [swap]; cases collation.compare b a <;> rfl
   simp only [Comparison.holds, same, Bool.or_comm]
+
+/-- For every collation, value and integer, the collation compares the value with the integer as BINARY does.
+Proof sketch: the order is antisymmetric ({name}`Std.OrientedCmp.eq_swap`), so this is
+{name}`compare_integer_collation_free` for the swapped operands. -/
+theorem compare_collation_free_integer (collation : Collation) (value : Value) (number : Int) :
+    collation.compare value (.integer number) = Collation.binary.compare value (.integer number) := by
+  rw [Std.OrientedCmp.eq_swap (cmp := collation.compare), Std.OrientedCmp.eq_swap (cmp := Collation.binary.compare),
+    compare_integer_collation_free]
+
+/-- For every affinity other than TEXT, every value and every integer, {name}`comparisonOperands` keeps the
+integer as its right operand. Proof sketch: {name}`comparisonOperands_swap` and
+{name}`comparisonOperands_integer_fst`. -/
+theorem comparisonOperands_integer_snd {affinity : Option Affinity} (notText : affinity ≠ some .text)
+    (value : Value) (number : Int) : (comparisonOperands affinity value (.integer number)).2 = .integer number := by
+  rw [comparisonOperands_swap affinity (.integer number) value]
+  exact comparisonOperands_integer_fst notText number value
+
+/-- For two values that a collation compares as BINARY does, every comparison operator gives the same value
+under the collation and under BINARY. Proof sketch: {name}`Comparison.apply` uses the collation only through its
+order of the two values. -/
+theorem Comparison.apply_congr_compare (operator : Comparison) (left right : Value) {first second : Collation}
+    (same : first.compare left right = second.compare left right) :
+    operator.apply left right first = operator.apply left right second := by
+  unfold Comparison.apply
+  cases operator <;> simp [same]
+
+/-- **Structural lemma for every comparison.** For every comparison operator ({lit}`=`, {lit}`<>`, {lit}`<`, {lit}`<=`,
+{lit}`>`, {lit}`>=`), every affinity other than TEXT, every integer on the left, every value on the right, and every two
+collations, {name}`compareValue` gives the same value under both collations. The same holds with the integer on the
+right ({lit}`compareValue_collation_free_integer`). So a comparison with an integer operand does not depend on the
+collation, whatever the other operand is. A NULL operand gives NULL for both. Proof sketch: the affinity keeps the integer
+({name}`comparisonOperands_integer_fst`), and the collation compares an integer as BINARY does
+({name}`compare_integer_collation_free`); the operator reads the collation only through that order
+({name}`Comparison.apply_congr_compare`). -/
+theorem compareValue_integer_collation_free (operator : Comparison) {affinity : Option Affinity}
+    (notText : affinity ≠ some .text) (first second : Collation) (number : Int) (value : Value) :
+    compareValue operator affinity first (.integer number) value =
+      compareValue operator affinity second (.integer number) value := by
+  unfold compareValue
+  rcases hp : comparisonOperands affinity (.integer number) value with ⟨a, b⟩
+  have left := comparisonOperands_integer_fst notText number value
+  rw [hp] at left
+  simp only at left
+  subst left
+  exact Comparison.apply_congr_compare _ _ _
+    ((compare_integer_collation_free first number b).trans (compare_integer_collation_free second number b).symm)
+
+/-- The same as {name}`compareValue_integer_collation_free` for an integer on the right. Proof sketch: as there, with
+{name}`comparisonOperands_integer_snd` and {name}`compare_collation_free_integer`. -/
+theorem compareValue_collation_free_integer (operator : Comparison) {affinity : Option Affinity}
+    (notText : affinity ≠ some .text) (first second : Collation) (value : Value) (number : Int) :
+    compareValue operator affinity first value (.integer number) =
+      compareValue operator affinity second value (.integer number) := by
+  unfold compareValue
+  rcases hp : comparisonOperands affinity value (.integer number) with ⟨a, b⟩
+  have right := comparisonOperands_integer_snd notText value number
+  rw [hp] at right
+  simp only at right
+  subst right
+  exact Comparison.apply_congr_compare _ _ _
+    ((compare_collation_free_integer first a number).trans (compare_collation_free_integer second a number).symm)
 
 end Belay.Sqlite.Model.Resolved
 

@@ -17,12 +17,17 @@ def inMatches (affinity : Option Affinity) (collation : Collation) (value candid
   let (a, b) := comparisonOperands affinity value candidate
   !b.isNull && collation.compare a b == .eq
 
-/-- The value of the comparison {lit}`left = right` with an affinity and a collation, as
-{name}`Expr.evaluate` computes it for {lit}`Expr.compare .eq`: the operands go through
-{name}`comparisonOperands`, and then {name}`Comparison.apply` compares them. -/
-def equalsValue (affinity : Option Affinity) (collation : Collation) (left right : Value) : Value :=
+/-- The value of the comparison {lit}`left op right` for any comparison operator with an affinity and a collation, as
+{name}`Expr.evaluate` computes it for {lit}`Expr.compare`: the operands go through {name}`comparisonOperands`, and then
+{name}`Comparison.apply` compares them. -/
+def compareValue (operator : Comparison) (affinity : Option Affinity) (collation : Collation)
+    (left right : Value) : Value :=
   let (a, b) := comparisonOperands affinity left right
-  Comparison.eq.apply a b collation
+  operator.apply a b collation
+
+/-- The value of the comparison {lit}`left = right`: {name}`compareValue` for the operator {lit}`=`. -/
+def equalsValue (affinity : Option Affinity) (collation : Collation) (left right : Value) : Value :=
+  compareValue .eq affinity collation left right
 
 /-- The value of {lit}`x = c1 OR x = c2 OR ...` over the candidates, with the affinity and the collation of
 the comparison {lit}`=`. The disjunction of no comparison is 0. -/

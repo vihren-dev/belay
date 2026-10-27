@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.ExceptSubqueryRun
-import Belay.Sqlite.Model.NotInIntegerProbe
+import Belay.Sqlite.Model.InIntegerProbe
 import Belay.Sqlite.Model.ExprEvalLaws
 
 set_option doc.verso true
@@ -28,29 +28,28 @@ theorem getD_append_of_lt {α : Type} (first second : List α) {position : Nat} 
 
 
 /-- The cells of the outer row that a subquery sees ({name}`Query.sourceAfter`): the outer row cut at the width
-{lit}`outer` of the query, or filled with NULL up to it. -/
-def Query.outerCells (query : Query) (outerRow : List Value) : List Value :=
-  outerRow.take query.outer ++ List.replicate (query.outer - outerRow.length) .null
+{lit}`outer` of the subquery, or filled with NULL up to it. -/
+def outerCells (outer : Nat) (outerRow : List Value) : List Value :=
+  outerRow.take outer ++ List.replicate (outer - outerRow.length) .null
 
 
-/-- For every query and outer row, the outer cells that a subquery sees have exactly the width {lit}`outer` of the
-query. Proof sketch: the row is cut at the width or filled with NULL up to it; arithmetic on the lengths. -/
-theorem Query.outerCells_length (query : Query) (outerRow : List Value) :
-    (query.outerCells outerRow).length = query.outer := by
-  simp only [Query.outerCells, List.length_append, List.length_take, List.length_replicate]
+/-- For every width and outer row, the outer cells that a subquery sees have exactly the width {lit}`outer`. Proof
+sketch: the row is cut at the width or filled with NULL up to it; arithmetic on the lengths. -/
+theorem outerCells_length (outer : Nat) (outerRow : List Value) : (outerCells outer outerRow).length = outer := by
+  simp only [outerCells, List.length_append, List.length_take, List.length_replicate]
   omega
 
-/-- For every query, outer row and position inside the width {lit}`outer` of the query, the outer cells that a subquery
-sees have at the position the cell of the outer row, or NULL past the end of the row. Proof sketch: inside the row
-the cut keeps the cell; past the end both sides are NULL. -/
-theorem Query.outerCells_getD (query : Query) (outerRow : List Value) {key : Nat} (inside : key < query.outer) :
-    (query.outerCells outerRow).getD key .null = outerRow.getD key .null := by
-  unfold Query.outerCells
+/-- For every width, outer row and position inside the width, the outer cells that a subquery sees have at the
+position the cell of the outer row, or NULL past the end of the row. Proof sketch: inside the row the cut keeps the
+cell; past the end both sides are NULL. -/
+theorem outerCells_getD (outer : Nat) (outerRow : List Value) {key : Nat} (inside : key < outer) :
+    (outerCells outer outerRow).getD key .null = outerRow.getD key .null := by
+  unfold outerCells
   by_cases within : key < outerRow.length
   · rw [List.getD_eq_getElem?_getD, List.getElem?_append_left (by rw [List.length_take]; omega),
       List.getElem?_take_of_lt inside, ← List.getD_eq_getElem?_getD]
   · rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega : outerRow.length ≤ key)]
-    by_cases past : outerRow.length ≤ query.outer
+    by_cases past : outerRow.length ≤ outer
     · rw [List.getElem?_append_right (by simp; omega)]
       simp only [List.getElem?_replicate]
       split <;> rfl
@@ -59,17 +58,17 @@ theorem Query.outerCells_getD (query : Query) (outerRow : List Value) {key : Nat
 /-- For every query whose only source is the table at a position as an inner join without a condition, every
 outer row, every database with that table, and every optional initial database, the source rows of the query
 for the outer row are the rows of the table in scan order, each after the outer cells
-({name}`Query.outerCells`), with no fault. Proof sketch: unfold the join of the one source; with
+({name}`outerCells`), with no fault. Proof sketch: unfold the join of the one source; with
 no condition every row of the table joins the one row of outer cells. -/
 theorem Query.sourceAfter_first (context : EvalContext) (database : Database) (initial : Option Database)
     (query : Query) (position : Nat) (table : Table) (outerRow : List Value)
     (sources : query.sources = [QuerySource.first position]) (present : database.table position = some table) :
     query.sourceAfter context outerRow database initial =
-      some { rows := (sourceRows table).map (fun cells => query.outerCells outerRow ++ cells)
-             width := (query.outerCells outerRow).length + table.shape.columns.length
+      some { rows := (sourceRows table).map (fun cells => outerCells query.outer outerRow ++ cells)
+             width := (outerCells query.outer outerRow).length + table.shape.columns.length
              fault := .none
-             outer := query.outerCells outerRow } := by
-  simp [Query.sourceAfter, Query.outerCells, sources, List.foldlM, QuerySource.join, QuerySource.first,
+             outer := outerCells query.outer outerRow } := by
+  simp [Query.sourceAfter, outerCells, sources, List.foldlM, QuerySource.join, QuerySource.first,
     QuerySource.joinTable, joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure, present]
 
 
