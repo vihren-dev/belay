@@ -37,7 +37,7 @@ theorem Succeeds.iff_createIndex {script : Script} {name tableName : Identifier}
     (predicate : Database → Prop) :
     Succeeds script predicate ↔ ∀ db, predicate db →
       CreateIndexConditions runContext db.raw name unique tableName terms filter := by
-  rw [Succeeds.script_iff]
+  rw [Succeeds.script_iff script predicate (by simp [head, Syntax.Statement.isInsertSelect])]
   simp only [Script.createIndex_allOk_iff head]
   constructor
   · intro success db holds

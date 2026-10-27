@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Declarations
 import Belay.Sqlite.Model.Operators
+import Belay.Sqlite.Model.Resolution.SyntaxTokens
 
 set_option doc.verso true
 
@@ -19,20 +20,6 @@ def initialSchemaName : Identifier := name! "before"
 case. For example, {lean}`Identifier.isInitialSchema (name! "BEFORE")` is {lean}`true`. -/
 def _root_.Belay.Sqlite.Model.Identifier.isInitialSchema (name : Identifier) : Bool :=
   name.sameName initialSchemaName
-
-/-- How an identifier was written: unquoted, or in double quotes, brackets or backticks.
-SQLite reads an unquoted {lit}`TRUE` or {lit}`FALSE` as a keyword, and a double-quoted
-name as a string when no column has it; brackets and backticks only quote. -/
-inductive QuoteKind where
-  /-- An unquoted identifier, such as {lit}`a`. -/
-  | none
-  /-- An identifier in double quotes, such as {lit}`"a"`. -/
-  | double
-  /-- An identifier in brackets, such as {lit}`[a]`. -/
-  | bracket
-  /-- An identifier in backticks, such as {lit}`` `a` ``. -/
-  | backtick
-  deriving Repr, DecidableEq
 
 /-- What {lit}`RAISE` does in a trigger (ADR 0018, D5): {lit}`IGNORE` ends the row, and the
 others fail the statement with that conflict algorithm. -/
@@ -137,7 +124,7 @@ inductive ResultColumn where
   /-- {lit}`source.*`: every column of the source with this name, as written. -/
   | sourceStar (source : Identifier)
   /-- An expression, its alias, and its source text. -/
-  | expression (value : Expr) (alias : Option Identifier) (text : String)
+  | expression (value : Expr) (alias : Option Identifier) (text : SourceText)
   deriving Repr, BEq
 
 /-- A table in {lit}`FROM`, or a table-valued function such as {lit}`json_each(json)`: its

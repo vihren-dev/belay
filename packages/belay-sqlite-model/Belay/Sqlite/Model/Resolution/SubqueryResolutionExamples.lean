@@ -46,7 +46,7 @@ def queryOf (statement : Syntax.Statement) : Option (Resolved.Query × List Reso
   match resolvedOne statement with
   | some (.query query subqueries) => some (query, subqueries)
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _)
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.prepareError _)
   | none => none
 
 /-- Whether the statement is a model restriction. -/
@@ -57,7 +57,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query ..)
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.query ..)
   | none => none
 
 -- EXISTS (SELECT 1 FROM u WHERE u.x = t.v): t's cells are 0 and 1, u's start at 2; x without a type has BLOB affinity.
@@ -134,5 +134,24 @@ def joinOnExists : Join := { operator := [], source := table "u", condition := s
 -- A query without FROM with a subquery and a call that can fail.
 #guard restrictedOne (.select [written (.call "json" [.subquery 0])] none [] none [] [] none none
   [fromU [written (name "s")] none])
+
+-- GROUP BY and ORDER BY of a subquery cannot name a column of the query around it ({name}`Scope.ownSources`): v is a
+-- column of t only, so it is "no such column" there, while the same name in the WHERE of the subquery is the outer cell.
+#guard errorOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with orderBy := [{ expression := name "v", descending := false }] }]) ==
+  some (.expression (.noSuchColumn (Identifier.ofString "v")))
+#guard errorOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with groupBy := [name "v"] }]) ==
+  some (.expression (.noSuchColumn (Identifier.ofString "v")))
+#guard (queryOf (fromT [written (.subquery 0)] none
+    [fromU [written (name "x")] (some (.compare .eq (name "v") (.numeric "1")))])).isSome
+-- A name of the subquery's own table in ORDER BY still resolves.
+#guard (queryOf (fromT [written (.subquery 0)] none
+    [{ fromU [written (name "x")] none with orderBy := [{ expression := name "s", descending := false }] }])).isSome
+
+-- The rows NEW and OLD of a trigger stay visible to GROUP BY and ORDER BY, and a source of a query around is dropped.
+#guard (let source : ScopeSource := { name := Identifier.ofString "a", columns := [] }
+    (Scope.ownSources [{ source with depth := 1 }, { source with trigger := true, depth := 1 }, source]).map
+      (fun entry => (entry.depth, entry.trigger))) == [(1, true), (0, false)]
 
 end Belay.Sqlite.Model.Resolution.SubqueryResolutionExamples

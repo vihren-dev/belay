@@ -26,7 +26,7 @@ def Syntax.Statement.asQuery? : Syntax.Statement → Option (Syntax.Subquery × 
     some ({ columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct, compound },
       subqueries)
   | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .pragma ..
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .pragma ..
   | .createTrigger .. | .dropTrigger .. => none
 
 /-- Whether the query or one of its subqueries, which hold every derived table, expression subquery, common

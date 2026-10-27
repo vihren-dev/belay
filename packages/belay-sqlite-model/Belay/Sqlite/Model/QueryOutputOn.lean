@@ -9,16 +9,6 @@ model describes gives {lit}`Resolved.Query.outputOn`, and one that it does not d
 
 namespace Belay.Sqlite.Model
 
-/-- For every state, position, error and database, a statement that fails with the error halts with
-that error ({name}`haltError`), also in an open transaction and for a rollback failure. Proof
-sketch: unfold the failure of the state and take the cases of its snapshot. -/
-theorem haltError_failed (state : SqlState) (position : Nat) (reason : ExecutionError) (database : Database) :
-    haltError (.halt (state.failed position reason database)) = some reason := by
-  unfold SqlState.failed SqlState.finish
-  split
-  · cases h : state.snapshot <;> simp [haltError]
-  · cases h : state.snapshot <;> simp [haltError]
-
 /-- The output of a query that the model describes, at a clock value with the counters that it
 reads and the values bound to its parameters, over the database and the subqueries of its
 statement: the error of a window value that is not an integer

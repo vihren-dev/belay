@@ -48,12 +48,12 @@ def ResolveState.withCatalog (state : ResolveState) (result : StatementResolutio
   result.map fun (statement, catalog) => (statement, { state with catalog := catalog })
 
 /-- Whether a write reads a counter that the model does not describe in it
-({name}`RestrictionKind.connectionCounterRead`): {lit}`last_insert_rowid()` in an INSERT or an
-upsert, or {lit}`total_changes()` in a write that runs a trigger program or the action of a
-foreign key. -/
+({name}`RestrictionKind.connectionCounterRead`): {lit}`last_insert_rowid()` in an INSERT, an INSERT from
+a query (it gives another value for each row that the query streams) or an upsert, or
+{lit}`total_changes()` in a write that runs a trigger program or the action of a foreign key. -/
 def Resolved.Statement.readsCounterInWrite (statement : Resolved.Statement) (runsOtherRows : Bool) : Bool :=
   let reads := statement.counterReads
-  (reads.contains .lastInsertRowid && statement matches .insert .. | .upsert ..) ||
+  (reads.contains .lastInsertRowid && statement matches .insert .. | .insertSelect .. | .upsert ..) ||
     (reads.contains .totalChanges && runsOtherRows)
 
 /-- The state after a write ({name}`ResolveState.withCatalog`): with

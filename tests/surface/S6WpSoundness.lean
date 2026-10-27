@@ -6,7 +6,7 @@ set_option doc.verso true
 
 namespace S6
 open Belay.Sqlite Std.Do
-open Belay.Sqlite.Model (runScriptStep runScriptStep_others RunStep)
+open Belay.Sqlite.Model (runScriptStep RunStep)
 
 /-- For every program and context, the total-success transformer with an unrestricted
 postcondition is exactly S4's success predicate, including actual raw and concrete alternative
@@ -54,7 +54,6 @@ theorem check_actual {α : Type} (reject : Bool) (program : Sql α) :
     | ended reason => simp [step] at holds
     | continued output connection others =>
       rw [step] at holds
-      obtain rfl := runScriptStep_others step
       obtain ⟨value, returned, postHolds⟩ := later output post (state.next output connection)
         (holds { output, next := connection } (by simp [RunStep.executions])).2.1
       refine ⟨value, ?_, ?_⟩

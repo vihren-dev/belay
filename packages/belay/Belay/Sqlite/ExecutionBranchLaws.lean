@@ -46,15 +46,14 @@ theorem Sql.branch_stopped_iff {α : Type} {statement values} {rest : Output →
     | continued other _ _ _ => cases step.symm.trans other
   · rintro rfl; exact .stopped step
 
-/-- For a continuing step, the chosen execution of a branch is the step's own: each statement that the
-model describes has one execution. Proof sketch: the executions of the step are its one execution
-({name}`runScriptStep_executions`). -/
-theorem Sql.Branch.found_eq {clock index connection statement values actual next others found}
-    (step : runScriptStep runContext clock index connection statement values = .continued actual next others)
-    (member : found ∈ (RunStep.continued actual next others).executions) :
+/-- For a continuing step with no further execution ({lit}`others = []`, as for every statement that is no
+INSERT from a query), the chosen execution of a branch is the step's own. Proof sketch: the only
+execution of the step is its own ({name}`RunStep.executions`). -/
+theorem Sql.Branch.found_eq {clock index connection statement values actual next found}
+    (_step : runScriptStep runContext clock index connection statement values = .continued actual next [])
+    (member : found ∈ (RunStep.continued actual next []).executions) :
     found = { output := actual, next } := by
-  rw [runScriptStep_executions step, List.mem_singleton] at member
-  exact member
+  simpa [RunStep.executions] using member
 
 /-- For a continuing step, a proposed branch is exactly a chosen execution of the statement
 ({name}`RunStep.executions`), an allowed selected output of that execution, and a branch of the
@@ -79,17 +78,19 @@ theorem Sql.branch_continued_executions_iff {α : Type} {statement values} {rest
 
 /-- For a continuing step, a proposed branch is exactly an allowed selected output followed
 by a branch of its continuation from the actual next connection and index. The selected
-output prefixes that branch's trace. Every statement that the model describes has one execution,
-so the chosen execution is the step's own. Proof sketch: {name}`Sql.branch_continued_executions_iff`
-with the one execution of the step ({name}`runScriptStep_executions`). -/
+output prefixes that branch's trace. A step with no further execution ({lit}`others = []`, as for every
+statement that is no INSERT from a query; the proof {lit}`single` is found by {lit}`rfl` when the step's type shows it) has the step's own execution as its only one. Proof sketch:
+{name}`Sql.branch_continued_executions_iff` with the one execution of the step. -/
 theorem Sql.branch_continued_iff {α : Type} {statement values} {rest : Output → Sql α}
     {clock index connection actual next others} (step :
       runScriptStep runContext clock index connection statement values = .continued actual next others)
-    (result : SqlRun α) : (.exec statement values rest : Sql α).Branch clock index connection result ↔
+    (result : SqlRun α) (single : others = [] := by rfl) :
+    (.exec statement values rest : Sql α).Branch clock index connection result ↔
       ∃ selected later, OutputChoice actual selected ∧ (rest selected).Branch clock (index + 1) next later ∧
         result = { later with outputs := selected :: later.outputs } := by
-  rw [Sql.branch_continued_executions_iff step, runScriptStep_executions step]
-  simp
+  subst single
+  rw [Sql.branch_continued_executions_iff step]
+  simp [RunStep.executions]
 
 /-- Every permitted branch preserves validity of the current database and any open
 transaction snapshot, assuming both are valid initially under the pinned profile.

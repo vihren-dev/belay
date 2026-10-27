@@ -84,7 +84,7 @@ theorem runScriptFrom_states (context : ResolveContext) (clock : Option Clock) :
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
         rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk (fun _ => fits.head) with
-          ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+          ⟨reason, ended⟩ | ⟨next, _, continued, afterStep⟩
         · simp [runScriptFrom, ended, Output.endsRun] at running
         · simp only [List.take_succ_cons, runScriptFrom, continued, List.all_cons] at running ⊢
           simp only [List.map_cons, bindValues_cons_cons, sqlStatesFrom] at found
@@ -139,7 +139,7 @@ theorem runScriptFrom_halt_database (context : ResolveContext) (clock : Option C
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
         rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk (fun _ => fits.head) with
-          ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+          ⟨reason, ended⟩ | ⟨next, _, continued, afterStep⟩
         · simp only [List.map_cons, bindValues_cons_cons, sqlStatesFrom] at running
           split at running <;> simp [runScriptFrom, ended, Output.endsRun] at running
         · simp only [List.map_cons, bindValues_cons_cons] at halted running ⊢

@@ -103,13 +103,18 @@ theorem obligations : certificate.Obligations runContext lookupStatement initial
     · decide +kernel
     · decide +kernel
 
+/-- No statement of the migration is written as INSERT from a query, so each has one execution. Proof sketch:
+kernel evaluation of the syntax of the four statements. -/
+theorem expansion_single : ∀ entry ∈ expansion.statements, entry.1.isInsertSelect = false := by
+  decide +kernel
+
 /-- For every bound value, the lookup before the migration and after it give the same values and outputs, on
 the actual run and on every branch: the migration preserves the lookup at the original context. Proof sketch:
 {name}`ReadCertificate.preservesAt_send` with the obligations. -/
 theorem lookup_preserved (name : Value) :
     Migration.PreservesAt (send expansion) (fun _ => True) (send (lookup name)) initial := by
   have := ReadCertificate.preservesAt_send expansion certificate_valid lookupStatement [name] (fun _ => True)
-    initial (fun _ => obligations)
+    initial expansion_single (fun _ => obligations)
   unfold send
   rw [lookup_statements]
   exact this
@@ -126,7 +131,7 @@ statements. Proof sketch: {name}`ReadCertificate.commutesOn_send` with the oblig
 script reaches; the clock is constant, and the admitted contexts stay admitted after the lookup. -/
 theorem lookup_commutes (name : Value) :
     Migration.CommutesOn (send expansion) admitted (send (lookup name)) := by
-  have := ReadCertificate.commutesOn_send expansion certificate_valid lookupStatement [name] admitted
+  have := ReadCertificate.commutesOn_send expansion certificate_valid lookupStatement [name] admitted expansion_single
     (fun state same assignment member one other => by
       rw [same.2] at member
       cases member

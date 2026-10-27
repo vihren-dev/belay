@@ -109,7 +109,9 @@ value of its window is not an integer, which SQLite reads before the first row. 
 checks foreign keys (ADR 0018, D4) has the rows that its keys' run wrote
 ({name}`StatementRun.keyRows`) and the counts of its run: its {lit}`RETURNING` rows and change count
 when it succeeds, and its {lit}`RETURNING` names, no rows and the rows that a FAIL failure kept when
-it fails a constraint. A setting pragma ({lit}`PRAGMA setting = value`) has no output columns. -/
+it fails a constraint. An INSERT from a query, which keeps the same outputs, also has them when it
+fails with {lit}`integer overflow` or a function error while it reads its source: its {lit}`RETURNING` names,
+no rows and the changes of its run. A setting pragma ({lit}`PRAGMA setting = value`) has no output columns. -/
 def statementOutput (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
     (run : StatementRun) (transition : SqlTransition) : Option StatementOutput :=
   let counters := before.counters.view statement.counterReads
@@ -161,6 +163,14 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
     if successful then
       (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure || mismatch then some ⟨query.names, [], none⟩
+    else none
+  | .insertSelect _ _ _ _ returning _ subqueries _ =>
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
+    let written := run.keyRows.getD []
+    if successful then
+      some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some (run.counts.changes.getD 0)⟩
+    else if constraintFailure || overflow || functionFailure then
+      some ⟨returning.map (·.2), [], some (run.counts.changes.getD 0)⟩
     else none
   | .insert _ _ returning subqueries (some _) | .upsert _ _ _ returning _ subqueries (some _)
   | .update _ _ _ returning subqueries (some _) | .delete _ _ returning subqueries (some _) =>

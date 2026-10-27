@@ -135,4 +135,34 @@ theorem ReadCertificate.output_eq {certificate : ReadCertificate} (valid : certi
     certificate.width extra resolvedOriginal resolvedOther presentOriginal presentOther
     (valid.statement_calm names) scans wide valid.filterBelow valid.columnsBelow
 
+/-- For every certificate, context, statement and two connections that satisfy the obligations of the
+certificate: the statement resolves on the original connection to no INSERT from a query without rules
+({name}`Resolved.Statement.fromQuery`), so a step of it that continues has no further execution
+({name}`runScriptStep_others`). A step may still end the run, for a missing clock value or an unknown
+counter. Proof sketch: every resolution of the statement is the query statement of the certificate, which
+is no INSERT. -/
+theorem ReadCertificate.Obligations.single_original {certificate : ReadCertificate} {context : ResolveContext}
+    {statement : Syntax.Statement} {original other : Connection}
+    (obligations : certificate.Obligations context statement original other) :
+    ∀ resolved after, resolveStatement context original.resolveState statement = .ok (resolved, after) →
+      resolved.fromQuery = false := by
+  obtain ⟨names, state, found⟩ := obligations.resolvesOriginal
+  intro resolved after again
+  rw [found] at again
+  obtain ⟨rfl, -⟩ := Prod.mk.inj (Except.ok.inj again)
+  rfl
+
+/-- The same for the other connection ({name}`ReadCertificate.Obligations.single_original`). Proof sketch: as
+for the original connection, with the second resolution of the obligations. -/
+theorem ReadCertificate.Obligations.single_other {certificate : ReadCertificate} {context : ResolveContext}
+    {statement : Syntax.Statement} {original other : Connection}
+    (obligations : certificate.Obligations context statement original other) :
+    ∀ resolved after, resolveStatement context other.resolveState statement = .ok (resolved, after) →
+      resolved.fromQuery = false := by
+  obtain ⟨names, state, found⟩ := obligations.resolvesOther
+  intro resolved after again
+  rw [found] at again
+  obtain ⟨rfl, -⟩ := Prod.mk.inj (Except.ok.inj again)
+  rfl
+
 end Belay.Sqlite

@@ -50,7 +50,9 @@ theorem Sql.check_send_plainInsert {ctx : ExecutionContext} {statement : Syntax.
         (ctx.connection.state.statementRun value values (.insert target cells [] [] none)).counts →
       next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
-  refine Sql.check_send_of_step modeled (fun _ _ _ step => runScriptStep_insert_ne_oneOf found step) ?_ valid
+  refine Sql.check_send_of_step (fun _ _ resolved => by
+      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
+      rfl) modeled (fun _ _ _ step => runScriptStep_insert_ne_oneOf found step) ?_ valid
   intro output next step' hvalid
   have ends := (runScriptStep_continued step').2
   cases noError : output.isError

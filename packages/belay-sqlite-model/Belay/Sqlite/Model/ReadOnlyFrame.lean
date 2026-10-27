@@ -43,9 +43,11 @@ theorem runScriptStep_readOnly_keeps {context : ResolveContext}
     (readOnly : (∃ query subqueries, resolved = .query query subqueries) ∨ ∃ error, resolved = .prepareError error)
     (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
     others = [] ∧ next = connection := by
-  obtain ⟨nothing, resolved', after', value, same, -, -, -, -, -, nextEq⟩ := runScriptStep_continued_spec step
+  obtain ⟨resolved', after', value, same, -, -, -, -, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
+  have single : resolved.fromQuery = false := by
+    rcases readOnly with ⟨query, subqueries, rfl⟩ | ⟨error, rfl⟩ <;> rfl
   have ordinary : resolved.isControl = false := by
     rcases readOnly with ⟨query, subqueries, rfl⟩ | ⟨error, rfl⟩ <;> rfl
   have afterEq := resolveStatement_after context _ _ _ _ found
@@ -60,6 +62,6 @@ theorem runScriptStep_readOnly_keeps {context : ResolveContext}
   obtain ⟨database, same, equal⟩ := afterStep_frame connection after index (connection.state.statementRun value parameters resolved)
     (fun database => database = connection.state.database) rfl foreignKeys recursiveTriggers okFrame errorFrame
   rw [equal, noCounts, same, Counters.apply_default]
-  exact ⟨nothing, rfl⟩
+  exact ⟨runScriptStep_others step found single, rfl⟩
 
 end Belay.Sqlite.Model

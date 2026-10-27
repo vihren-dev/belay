@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeySchemaWrites
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -14,8 +15,9 @@ does not inspect stored rows. Proof sketch: specialize the statement theorem. -/
 theorem parentSchemasCompatibleKeeps (mapping : ForeignKeyMapping) :
     StatementKeeps (Database.ParentSchemasCompatible mapping)
       (fun statement _ => statement.KeepsParentSchema) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_parentSchemasCompatible mapping clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_parentSchemasCompatible mapping clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every mapping, starting position, resolved script and state, if both the current
 database and any saved snapshot have compatible parent schemas, and every reached statement

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T11:49:40+00:00",
+  "finding": "20261026T113647Z-9b5f7fa8#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The fixture marks each statement as checked or not, and a checked statement that is no SELECT fails."
+}

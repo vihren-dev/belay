@@ -37,17 +37,18 @@ theorem Sql.Frame.sendStatements_sheltered (position : Nat) :
   | [], state, _ => Sql.Frame.pure _ _ _
   | (statement, values) :: rest, state, sheltered => by
     refine Sql.Frame.exec fun actual next others step found member => ?_
-    simp only [runScriptStep_executions step, List.mem_singleton] at member
-    subst member
     have shape : ∀ resolved after,
         resolveStatement runContext state.connection.resolveState statement = .ok (resolved, after) →
         resolved.ShelteredFrom position := sheltered (statement, values) (by simp)
     have resolves : ∃ resolved after,
         resolveStatement runContext state.connection.resolveState statement = .ok (resolved, after) := by
-      obtain ⟨resolved, after, value, same, -⟩ := runScriptStep_continued_spec step |>.2
+      obtain ⟨resolved, after, value, same, -⟩ := runScriptStep_continued_spec step
       exact ⟨resolved, after, same⟩
     obtain ⟨resolved, after, ok⟩ := resolves
-    obtain ⟨-, kept⟩ := Connection.shelter_step ok (shape _ _ ok) step
+    obtain ⟨noOthers, kept⟩ := Connection.shelter_step ok (shape _ _ ok) step
+    subst noOthers
+    simp only [RunStep.executions, List.mem_singleton] at member
+    subst member
     refine ⟨kept, fun selected _ => ?_⟩
     refine Sql.Frame.map (Sql.Frame.sendStatements_sheltered position rest _ fun entry member => ?_)
     have same := Connection.shelter_resolveState kept

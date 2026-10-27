@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeySelectedStatement
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -15,8 +16,9 @@ Proof sketch: specialize the statement theorem. -/
 theorem parentSchemasCompatibleSelectedKeeps :
     StatementKeeps (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeySchemaCondition database) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_parentSchemasCompatibleSelected clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_parentSchemasCompatibleSelected clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if the current database and any saved
 snapshot have compatible parent schemas under their selected mappings, and every reached
@@ -65,8 +67,9 @@ theorem foreignKeyAtomsSelected_statementKeeps (profile : Profile) :
     StatementKeeps (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
       database.RowReferencesHold database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeyAtomsCondition profile database) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_foreignKeyAtomsSelected _ clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_foreignKeyAtomsSelected _ clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if both atoms hold under the selected
 mappings on the current database and any saved snapshot, and every reached statement meets its

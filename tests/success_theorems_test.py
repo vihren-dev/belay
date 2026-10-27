@@ -19,10 +19,11 @@ theorem actual_run_succeeds {σ α : Type} [Runnable σ α] {p : σ} {predicate 
     (success : Succeeds p predicate) {db : Database} (holds : predicate db)
     {env : Env} (complete : env.Complete) : (db.run p env).outputs.allOk = true :=
   success.allOk holds complete
-theorem scripts_need_no_extra_branches (script : Script) (predicate : Database → Prop) :
+theorem scripts_need_no_extra_branches (script : Script) (predicate : Database → Prop)
+    (single : ∀ entry ∈ script.statements, entry.1.isInsertSelect = false) :
     Succeeds script predicate ↔
       ∀ db, predicate db → ∀ env : Env, env.Complete → (db.run script env).outputs.allOk = true :=
-  Succeeds.script_iff script predicate
+  Succeeds.script_iff script predicate single
 theorem default_query_success (script : Script) (query : script.isQuery = true) (db : Database) :
     (db.run script).outputs.allOk = true ↔
       ¬ Fails script db query ∧ (script.outputOn db).any Output.endsRun = false :=

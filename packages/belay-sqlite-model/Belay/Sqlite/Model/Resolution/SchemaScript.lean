@@ -42,7 +42,7 @@ structure ResolvedScript where
 TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. => true
-  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
+  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update ..
   | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
@@ -54,7 +54,7 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
-  | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting .. => none
+  | .rollback | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .query .. | .setting .. => none
 
 /-- Whether two triggers of a schema may both fire for one write, so that their order matters:
 the same folded table name, the same time and the same kind of event. -/
@@ -76,7 +76,7 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
     | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
-    | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ =>
+    | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 
 /-- The zero-based index and error of the first prepare error in a list of

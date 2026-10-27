@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 
@@ -115,7 +116,7 @@ def resolveQueryBodyTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
     throw (aliasInExpression.under [2, (aliasJoinItem? scope visibleAliases query.joins).get h, 2])
   let sources ← resolvePendingSourcesTraced dqs scope pending
   let collations := resultCollations scope query.columns
-  let terms ← resolveAllTraced (resolveGroupTermTraced dqs scope shapes aliases outputs collations) query.groupBy
+  let terms ← resolveAllTraced (resolveGroupTermTraced dqs scope.ownSources shapes aliases outputs collations) query.groupBy
   if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
     throw (.restriction [0] .bareColumn)
   let having ← match query.having with
@@ -125,7 +126,7 @@ def resolveQueryBodyTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
       else
         let resolved ← Traced.condition [9] (resolveOperandTraced dqs scope shapes false term)
         if resolved.grouped (terms.map Prod.fst) then pure (some resolved) else throw (.restriction [9] .bareColumn)
-  let order ← resolveAllTraced (resolveOrderTermTraced dqs scope shapes aliases visibleAliases outputs collations
+  let order ← resolveAllTraced (resolveOrderTermTraced dqs scope.ownSources shapes aliases visibleAliases outputs collations
     (terms.map Prod.fst) aggregate query.distinct) query.orderBy
   let feedsCall := fun (expression : Resolved.Expr) =>
     expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)

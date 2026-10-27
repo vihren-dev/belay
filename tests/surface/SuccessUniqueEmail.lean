@@ -40,6 +40,9 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
   have absent : (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).resolveName
       (name! "email") = .missing := by
     simp [tableScope, Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, missing]
+  have ownAbsent : (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).ownSources.resolveName
+      (name! "email") = .missing := by
+    simp [tableScope, Scope.ownSources, Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, missing]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have countName : normalizeIdentifier "count" = "count" := rfl
   have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl rfl found
@@ -54,7 +57,7 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     simp [noDuplicateEmails, resolveStatement_select, resolveSelect, resolveSelectTraced, resolveSelectDetailsTraced, prepareQuerySourcesTraced, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, traced_arms, aliasJoinItem?, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, notView,
       CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, subqueryScopesTraced, scopeOrder, compoundOf, subqueryScope, subqueryScopeTraced, Scope.columns,
-      noMain, sources, Scope.enclose, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, compoundColumnsIssue,
+      noMain, sources, ownAbsent, Scope.enclose, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, compoundColumnsIssue,
       prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,
       Except.map, Functor.map, Pure.pure, Except.pure, starIssue, SourceIssue.under,
       resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolvePendingSources_table, resultAliases, resultCollations, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, absent, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]

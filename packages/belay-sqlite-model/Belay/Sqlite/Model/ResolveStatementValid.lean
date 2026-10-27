@@ -97,6 +97,9 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+  | insertSelect table columns body conflicts algorithm returning =>
+    simp only [statement_arms] at ok
+    exact written _ ok fun _ _ found => (resolveInsertQuery_same _ _ _ _ _ _ _ _ _ _ found).1 ▸ current
   | update table assignments filter returning subqueries =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _

@@ -38,7 +38,7 @@ inductive Role where
 /-- The names of the premises of the rules. A goal with another name is a variable of the rule, such as the
 position of a table. A premise that is closed sets it. -/
 def premiseNames : List Name :=
-  [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect]
+  [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect, `notInsertSelect]
 
 /-- The role of a premise, by the name that the rule application gives it. The premises of a failed step
 and of a successful step are outcomes. All other premises are side goals. -/
@@ -54,7 +54,7 @@ def roleOf (kind : Name) (premise : Name) : Role :=
   else .side
 
 /-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a
-rule of its own is sent with the general rule {name}`Sql.check_send_of_step`, whose premises stay open. -/
+rule of its own is sent with the general rule {name}`Sql.check_send_of_step_notInsertSelect`, whose premises stay open. -/
 def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
   if kind == ``Model.Syntax.Statement.insert then
     `(tactic| refine' Sql.check_send_plainInsert ?valid ?found ?present ?modeled ?success ?failure)
@@ -67,6 +67,6 @@ def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
   else if kind == ``Model.Syntax.Statement.select then
     `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached)
   else
-    `(tactic| refine' Sql.check_send_of_step ?modeled ?notChoice ?reached ?valid)
+    `(tactic| refine' Sql.check_send_of_step_notInsertSelect ?notInsertSelect ?modeled ?notChoice ?reached ?valid)
 
 end Belay.Sqlite.Run

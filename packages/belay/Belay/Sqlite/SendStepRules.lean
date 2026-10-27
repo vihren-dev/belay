@@ -21,12 +21,14 @@ def Model.Connection.afterWrite (connection : Connection) (database : Model.Data
       database, counters := connection.state.counters.apply counts } }
 
 /-- For every context, statement, values and post: a program that sends the one statement checks the post
-when the step of the statement continues and the post holds after the step. The statement can be any
-statement whose output is never a choice. In plain words, this rule turns the check of a send into a claim
-about the connection that the step reaches. Proof sketch: {name}`check_send_single_of_step` for the
-step, with the choice excluded by the premise. -/
+when the step of the statement continues and the post holds after the step. The statement must resolve to
+no INSERT from a query without rules (the premise {lit}`single`), and its output is never a choice. In plain
+words, this rule turns the check of a send into a claim about the connection that the step reaches. Proof
+sketch: {name}`check_send_single_of_step` for the step, with the choice excluded by the premise. -/
 theorem Sql.check_send_of_step {ctx : ExecutionContext} {statement : Syntax.Statement} {values : List Value}
     {post : List Output → ExecutionContext → Prop}
+    (single : ∀ resolved after, resolveStatement runContext ctx.connection.resolveState statement =
+      .ok (resolved, after) → resolved.fromQuery = false)
     (modeled : ∃ output next others,
       runScriptStep runContext ctx.clock ctx.index ctx.connection statement values = .continued output next others)
     (notChoice : ∀ output next others,
@@ -38,10 +40,30 @@ theorem Sql.check_send_of_step {ctx : ExecutionContext} {statement : Syntax.Stat
     (valid : ctx.connection.state.Holds (Database.Valid Profile.pinned)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, others, step⟩ := modeled
-  obtain rfl := runScriptStep_others step
-  refine (check_send_single_of_step step (notChoice _ _ _ step)).2 (reached _ _ step ?_)
+  obtain rfl := runScriptStep_others_of_single step single
+  refine (check_send_single_of_step step single (notChoice _ _ _ step)).2 (reached _ _ step ?_)
   exact runScriptStep_valid (profile := Profile.pinned) runContext ctx.clock ctx.index statement values rfl rfl valid
     { output, next } (by rw [step]; simp [RunStep.executions])
+
+/-- For every context, statement that is no INSERT from a query ({name}`Syntax.Statement.isInsertSelect`),
+values and post: the claim of {name}`Sql.check_send_of_step` with the syntactic premise in place of the
+resolved one. In plain words, a statement that is not written as INSERT from a query has one execution.
+Proof sketch: {name}`resolveStatement_single` gives the premise of {name}`Sql.check_send_of_step`. -/
+theorem Sql.check_send_of_step_notInsertSelect {ctx : ExecutionContext} {statement : Syntax.Statement}
+    {values : List Value} {post : List Output → ExecutionContext → Prop}
+    (notInsertSelect : statement.isInsertSelect = false)
+    (modeled : ∃ output next others,
+      runScriptStep runContext ctx.clock ctx.index ctx.connection statement values = .continued output next others)
+    (notChoice : ∀ output next others,
+      runScriptStep runContext ctx.clock ctx.index ctx.connection statement values = .continued output next others →
+        ∀ alternatives, output ≠ .oneOf alternatives)
+    (reached : ∀ output next,
+      runScriptStep runContext ctx.clock ctx.index ctx.connection statement values = .continued output next [] →
+        next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next))
+    (valid : ctx.connection.state.Holds (Database.Valid Profile.pinned)) :
+    (send ⟨[(statement, values)]⟩).check post ctx :=
+  Sql.check_send_of_step (fun _ _ found => resolveStatement_single _ _ _ _ _ notInsertSelect found)
+    modeled notChoice reached valid
 
 /-- For every admitted database and environment: the connection of the fresh start satisfies the validity
 condition that the step rules ask of the connection of their context. In plain words, a run that starts from

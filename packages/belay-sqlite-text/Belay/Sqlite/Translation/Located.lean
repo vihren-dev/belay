@@ -20,6 +20,10 @@ structure Span where
   stop : Nat
   /-- The ranges of the parts, in path order. -/
   parts : Array Span := #[]
+  /-- Whether the node is one name token of the SQL text: an identifier, a quoted name or a string
+  where the grammar expects a name. The name tokens of the text of a result column
+  ({name}`Belay.Sqlite.Model.Syntax.NameToken`) are these nodes. -/
+  isName : Bool := false
   deriving Inhabited, BEq, Repr
 
 /-- The range that a model path selects ({name}`Belay.Sqlite.Model.Restriction.path`): each step

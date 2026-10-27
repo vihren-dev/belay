@@ -32,7 +32,7 @@ def resolveResultColumnTraced (dqs : Bool) (scope : Scope) (shapes : SubquerySha
   | .expression value alias text => do
     let named := fun (output : Resolved.Output) (defined : Option String) (affinity : Option Affinity) => do
       if let some declared := alias then Traced.record (resultAliasOccurrence column declared)
-      pure [(output, (alias.map (·.text)).getD (defined.getD text), affinity)]
+      pure [(output, (alias.map (·.text)).getD (defined.getD text.text), affinity)]
     let outerAggregate := fun (operand : Resolved.Expr) =>
       if operand.readsUnder shapes shapes.outer then throw ((ValueIssue.restriction [] .outerAggregate).under [0, column, 0])
       else pure ()

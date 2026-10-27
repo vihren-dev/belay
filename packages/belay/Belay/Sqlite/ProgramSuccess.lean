@@ -29,7 +29,8 @@ theorem Sql.SucceedsFrom.allOk {α : Type} (program : Sql α) :
     cases step : runScriptStep runContext clock index connection statement values with
     | ended reason => simp [Sql.SucceedsFrom, step] at success
     | continued output next others =>
-      rw [Sql.succeedsFrom_continued step] at success
+      simp only [Sql.SucceedsFrom, step] at success
+      replace success := success { output, next } (by simp [RunStep.executions])
       unfold Sql.ExecutionSucceeds at success
       have continues := (runScriptStep_continued step).2
       have tail := later output clock (index + 1) next success.2.1

@@ -62,6 +62,8 @@ deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
 deriving instance Lean.ToExpr for CounterKind
 deriving instance Lean.ToExpr for Syntax.QuoteKind
+deriving instance Lean.ToExpr for Syntax.NameToken
+deriving instance Lean.ToExpr for Syntax.SourceText
 deriving instance Lean.ToExpr for Syntax.RaiseKind
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
@@ -76,6 +78,7 @@ deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.Compound
 deriving instance Lean.ToExpr for Syntax.CommonTable
 deriving instance Lean.ToExpr for Syntax.Subquery
+deriving instance Lean.ToExpr for Syntax.SelectBody
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
 deriving instance Lean.ToExpr for Syntax.TableOptions
@@ -129,6 +132,7 @@ deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.ConflictPolicy
 deriving instance Lean.ToExpr for Resolved.Cell
+deriving instance Lean.ToExpr for Resolved.SourceCell
 deriving instance Lean.ToExpr for Resolved.TriggerEvent
 deriving instance Lean.ToExpr for Resolved.Step
 deriving instance Lean.ToExpr for Resolved.Program

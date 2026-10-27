@@ -46,16 +46,18 @@ def Sql.SucceedsFrom {α : Type} (clock : Option Clock) (index : Nat) (connectio
       ∀ found ∈ (RunStep.continued output next others).executions,
         Sql.ExecutionSucceeds (fun seen => (rest seen).SucceedsFrom clock (index + 1) found.next) found.output
 
-/-- For a continuing statement, success is the condition on its one execution, the model's own, with
-the output and connection of the step. Every statement that the model describes has one execution.
-Proof sketch: the executions of the step are that one execution
-({name}`runScriptStep_executions`). -/
+/-- For a continuing statement with no further execution ({lit}`others = []`, as for every statement
+that is no INSERT from a query), success is the condition on its one execution, the model's own,
+with the output and connection of the step. Proof sketch: the executions of the step are that one
+execution ({name}`RunStep.executions`). -/
 theorem Sql.succeedsFrom_continued {α : Type} {clock : Option Clock} {index : Nat} {connection : Connection}
     {statement values} {rest : Output → Sql α} {output next others}
-    (step : runScriptStep runContext clock index connection statement values = .continued output next others) :
+    (step : runScriptStep runContext clock index connection statement values = .continued output next others)
+    (single : others = []) :
     (Sql.exec statement values rest).SucceedsFrom clock index connection ↔
       Sql.ExecutionSucceeds (fun seen => (rest seen).SucceedsFrom clock (index + 1) next) output := by
-  simp only [Sql.SucceedsFrom, step, runScriptStep_executions step, List.mem_singleton, forall_eq]
+  subst single
+  simp only [Sql.SucceedsFrom, step, RunStep.executions, List.mem_singleton, forall_eq]
 
 /-- For every database satisfying the arbitrary predicate, and every complete environment,
 the script or program succeeds on every branch ({name}`Sql.SucceedsFrom`). A predicate that

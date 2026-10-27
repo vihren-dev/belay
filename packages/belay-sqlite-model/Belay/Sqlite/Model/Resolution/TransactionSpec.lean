@@ -11,7 +11,7 @@ namespace Belay.Sqlite.Model
 def Syntax.Statement.transactionControl : Syntax.Statement → Bool
   | .begin | .commit | .rollback => true
   | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .createTrigger ..
-  | .dropTrigger .. | .insert .. | .update .. | .delete .. | .select .. | .pragma _ => false
+  | .dropTrigger .. | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ => false
 
 /-- For every statement that is not BEGIN, COMMIT or ROLLBACK and that resolves, the
 saved catalog of the next state is the saved catalog of the state. Proof sketch:
@@ -27,7 +27,7 @@ theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveS
     intro result ok
     rcases ResolveState.withWrite_cases ok with ⟨_, _, rfl⟩ | ⟨_, _, _, rfl, _, _⟩ <;> rfl
   cases statement <;> simp [Syntax.Statement.transactionControl] at plain
-  case dropTable | insert | update | delete => exact written _ ok
+  case dropTable | insert | insertSelect | update | delete => exact written _ ok
   case pragma pragma =>
     rcases resolveStatementPragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> rfl

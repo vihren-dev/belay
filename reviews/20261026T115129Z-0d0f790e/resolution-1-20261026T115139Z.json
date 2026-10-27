@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T11:51:39+00:00",
+  "finding": "20261026T115129Z-0d0f790e#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The fixture lists its statements with a checked flag and fails on a checked statement that is no SELECT, so a new constructor cannot bypass a listed statement; enumerating all statement constructors in a fixture adds upkeep without coverage."
+}

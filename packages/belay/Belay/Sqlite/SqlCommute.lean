@@ -43,14 +43,18 @@ def premiseAdvice (premise : Name) : String :=
     "no hint gives the obligations of the certificate: the resolution of the read before and after the migration, and the cells that the migration appends to each scan."
   else if premise == `constant then
     "the clock must give one date at every statement index. A clock that changes is a conflict that this rule does not cover."
+  else if premise == `single then
+    "the migration must be a script of statements that are none INSERT from a query. Pass a hint that proves it for each statement."
   else if premise == `admittedKept then
     "the predicate of the claim must hold again after the read has run."
   else s!"the premise {premise} is not closed by a hint."
 
-/-- Try each hint for one premise of a rule: the hint itself, the soundness of an analysis result, and these two
-under the variables and hypotheses that the premise introduces. -/
-def closePremise (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM Bool := goal.withContext do
+/-- Try to close one premise of a rule: by evaluation for the premise {lit}`single` (the migration has no INSERT
+from a query), then each hint for the premise: the hint itself, the soundness of an analysis result, and these
+two under the variables and hypotheses that the premise introduces. -/
+def closePremise (tag : Name) (hints : Array (TSyntax `term)) (goal : MVarId) : TacticM Bool := goal.withContext do
   let mut attempts : Array (TSyntax `tactic) := #[]
+  if tag == `single then attempts := attempts.push (← `(tactic| decide))
   for hint in hints do
     attempts := attempts ++ #[← `(tactic| exact $hint), ← `(tactic| exact (ReadAnalysis.analyze_sound $hint).1),
       ← `(tactic| (intros; exact $hint))]
@@ -94,7 +98,7 @@ def applyCommuteRule (hints : Array (TSyntax `term)) (goal : MVarId) :
     if ← mvar.isAssigned then continue
     let type ← instantiateMVars (← mvar.getType)
     if ← isProp type then
-      if ← closePremise hints mvar then continue
+      if ← closePremise name hints mvar then continue
       open_ := open_.push (name, mvar)
     else if name == `certificate then variables := variables.push (name, mvar)
     else throwError "sql_commute: the variable {name} of the rule is not determined by the goal."

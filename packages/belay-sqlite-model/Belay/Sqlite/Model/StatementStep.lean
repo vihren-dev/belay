@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SqlState
 import Belay.Sqlite.Model.RowDelete
 import Belay.Sqlite.Model.UpsertRun
+import Belay.Sqlite.Model.InsertSelectRun
 import Belay.Sqlite.Model.StatementRun
 import Belay.Sqlite.Model.PlainCounts
 import Belay.Sqlite.Model.JsonReady
@@ -74,6 +75,8 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
           | .ok _ => none
           | .error (reason, _, _) => some reason))
         (rules.map fun rules => insertKeys rules clock target policy clauses values database subqueries.isEmpty algorithm)
+  | .insertSelect target cells query clauses returning algorithm subqueries rules =>
+    insertSelectRun clock counters parameters target cells query clauses returning algorithm subqueries rules database
   | .update target assignments filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>

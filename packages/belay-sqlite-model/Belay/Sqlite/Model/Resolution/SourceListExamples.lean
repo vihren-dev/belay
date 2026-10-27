@@ -29,7 +29,7 @@ def each (alias : Identifier) (argument : Expr) : TableReference :=
 def queryOf : Option Resolved.Statement → Option Resolved.Query
   | some (.query query _) => some query
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.delete ..)
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.insertSelect ..) | some (.delete ..)
   | some (.prepareError _) | none => none
 
 /-- The result rows of a {lit}`SELECT` with these result columns and sources over

@@ -22,7 +22,7 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .addColumn position column _, catalog => catalog.addColumn position column
   | .drop positions _, catalog => catalog.drop positions
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
-  | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog
+  | .upsert .., catalog | .insertSelect .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog
   | .setting .., catalog => catalog
 
 /-- The form of a resolved statement, for the rules that only classify statements (ADR
@@ -59,7 +59,7 @@ a statement has reads it, so a new statement form gets a form here first. -/
   | .createTrigger .. => .trigger
   | .drop .. => .drop
   | .begin | .commit | .rollback => .control
-  | .insert .. | .upsert .. | .update .. | .delete .. => .write
+  | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. => .write
   | .query .. => .query
   | .prepareError _ => .prepareError
   | .setting .. => .setting

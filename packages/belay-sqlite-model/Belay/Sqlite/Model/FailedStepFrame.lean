@@ -50,7 +50,7 @@ theorem runScriptStep_failed_frame {context : ResolveContext}
         reason ≠ .constraintFail ∧ reason ≠ .constraintRollback) :
     ∃ value, next = { connection with state := { connection.state with
         counters := connection.state.counters.apply (connection.state.statementRun value parameters resolved).counts } } := by
-  obtain ⟨-, resolved', after', value, same, -, -, -, ofStep, -, nextEq⟩ := runScriptStep_continued_spec step
+  obtain ⟨resolved', after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
   have afterEq := resolveStatement_after context _ _ _ _ found

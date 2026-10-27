@@ -65,7 +65,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
-  | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..)
+  | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..)
   | some (.update ..) | some (.delete ..) | some (.query ..) | none => none
 
 /-- The result names of a resolved query statement. -/
@@ -73,7 +73,7 @@ def namesOf (statement : Syntax.Statement) : Option (List String) :=
   match resolvedOne statement with
   | some (.query query _) => some query.names
   | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
-  | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..)
+  | some (.setting ..) | some .begin | some .commit | some .rollback | some (.insert ..) | some (.upsert ..) | some (.insertSelect ..)
   | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The rows of a query statement over {name}`filled`, from {name}`tables`. -/
@@ -85,7 +85,7 @@ def rowsOf (statement : Syntax.Statement) : Option (List (List Value)) :=
     | some (.query ..), .failure .. | some (.query ..), .pending .. => none
     | some (.createTable ..), _ | some (.createView ..), _ | some (.createIndex ..), _ | some (.createTrigger ..), _ | some (.addColumn ..), _
     | some (.drop ..), _ | some (.setting ..), _ | some .begin, _ | some .commit, _ | some .rollback, _
-    | some (.insert ..), _ | some (.upsert ..), _ | some (.update ..), _ | some (.delete ..), _
+    | some (.insert ..), _ | some (.upsert ..), _ | some (.insertSelect ..), _ | some (.update ..), _ | some (.delete ..), _
     | some (.prepareError _), _ | none, _ => none
   | .restricted _ => none
 

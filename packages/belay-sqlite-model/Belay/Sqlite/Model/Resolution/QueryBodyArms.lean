@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.Queries
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 
@@ -41,7 +42,7 @@ through the monad with {lit}`traced_drop`, and split on the alias test of each o
       throw (aliasInExpression.under [2, item, 2])
     let sources ← resolvePendingSources dqs scope pending
     let collations := resultCollations scope query.columns
-    let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy
+    let terms ← resolveAll (resolveGroupTerm dqs scope.ownSources shapes aliases outputs collations) query.groupBy
     if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
       throw (.restriction [0] .bareColumn)
     let having ← match query.having with
@@ -51,7 +52,7 @@ through the monad with {lit}`traced_drop`, and split on the alias test of each o
         else
           let resolved ← Belay.Sqlite.Model.condition [9] (resolveOperand dqs scope shapes false term)
           if resolved.grouped (terms.map Prod.fst) then pure (some resolved) else throw (.restriction [9] .bareColumn)
-    let order ← resolveAll (resolveOrderTerm dqs scope shapes aliases visibleAliases outputs collations
+    let order ← resolveAll (resolveOrderTerm dqs scope.ownSources shapes aliases visibleAliases outputs collations
       (terms.map Prod.fst) aggregate query.distinct) query.orderBy
     let feedsCall := fun (expression : Resolved.Expr) =>
       expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)

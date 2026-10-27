@@ -5,6 +5,7 @@ import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
+import Belay.Sqlite.Model.Resolution.ScopeOwn
 
 set_option doc.verso true
 
@@ -17,8 +18,8 @@ namespace Belay.Sqlite.Model
 
 /-- For every query {lit}`SELECT c FROM … [WHERE w] GROUP BY k HAVING count(*) > 1` without join, ordering and window,
 whose result column {lit}`c` has no alias, calls no aggregate and resolves to a column that the grouping key
-covers ({name}`Resolved.Expr.grouped`) and that feeds no aggregate value to a fallible call, whose pending sources
-resolve, whose {lit}`WHERE` condition resolves as {name}`FilterResolves` says (it names no alias) and whose grouping
+covers ({name}`Resolved.Expr.grouped`) and that feeds no aggregate value to a fallible call, whose scope has only own
+sources ({name}`Scope.ownSources`), whose pending sources resolve, whose {lit}`WHERE` condition resolves as {name}`FilterResolves` says (it names no alias) and whose grouping
 term resolves ({name}`GroupTermResolvesIn`) with the aggregate call {lit}`count(*)`, the body resolves to the
 duplicate-key query of its sources, condition, result column, key and collation ({name}`Resolved.Query.duplicateKeys`),
 with the affinity of the result column. With the literal {lit}`1` as the column and no {lit}`WHERE`, this is the query
@@ -39,6 +40,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
       { current, later, aggregates := [.callStar name] })
     (groupResolves : GroupTermResolvesIn dqs scope { current, later, aggregates := [.callStar name] }
       (.scalar column, columnName, affinity) (value.collationIn scope) term key collation)
+    (own : scope.ownSources = scope)
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
         (Syntax.Subquery.mk [.expression value none text] source [] filter [term] [] none none none
@@ -73,12 +75,12 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
       fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false := by
     simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
   rcases filterResolves with ⟨rfl, rfl⟩ | ⟨filterTerm, expression, filterAffinity, rfl, rfl, filterNames, filterOk⟩
-  · simp only [columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
+  · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
       aggregates, terms, names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
     simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, Resolved.Expr.grouped,
       Resolved.Query.duplicateKeys]
     exact ⟨columnFeeds, havingFeeds⟩
-  · simp only [columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
+  · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
       aggregates, terms, names, having, filterOk, Bind.bind, Except.bind, Pure.pure, Except.pure]
     simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, filterNames,
       Resolved.Expr.grouped, Resolved.Query.duplicateKeys]
@@ -143,9 +145,12 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
       | .aggregate _ => none).any (fun expression =>
         expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false := by
     simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]
+  have ownTable : (tableScope state.catalog reference position table).ownSources =
+      tableScope state.catalog reference position table := by
+    simp [Scope.ownSources, tableScope, Scope.singleAt]
   have subBody := resolveQueryBody_duplicateKeys context.profile.dqsDml (tableScope state.catalog reference position table)
     (some 0) [] [] _ (some reference) value text filter term name count column columnName affinity key collation _ whereCondition
-    notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves
+    notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves ownTable
     (resolvePendingSources_table _ _ position)
   have mainResolves : ∀ shape : SubqueryShape, shape.parent = none →
       FilterResolves context.profile.dqsDml [] [] (some (.not (.exists 0))) (some (.not (.exists 0))) { later := [shape] } :=

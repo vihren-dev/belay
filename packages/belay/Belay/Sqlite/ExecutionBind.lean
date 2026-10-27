@@ -60,9 +60,10 @@ theorem Sql.branch_bind_iff {α β : Type} (program : Sql α) (next : α → Sql
         have same := (Sql.branch_stopped_iff step result).mp branch
         exact ⟨_, .stopped step, same⟩
       | continued actual state others =>
-        obtain ⟨selected, after, choice, tail, rfl⟩ := (Sql.branch_continued_iff step result).mp branch
-        obtain ⟨first, before, continuation⟩ := (hypothesis selected clock (index + 1) state after).mp tail
-        refine ⟨{ first with outputs := selected :: first.outputs }, .continued_own step choice before, ?_⟩
+        obtain ⟨found, member, selected, after, choice, tail, rfl⟩ :=
+          (Sql.branch_continued_executions_iff step result).mp branch
+        obtain ⟨first, before, continuation⟩ := (hypothesis selected clock (index + 1) found.next after).mp tail
+        refine ⟨{ first with outputs := selected :: first.outputs }, .continued step member choice before, ?_⟩
         cases returned : first.value with
         | none =>
           simp only [returned] at continuation ⊢

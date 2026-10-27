@@ -113,6 +113,19 @@ otherwise, and drops the saved catalog in both cases. Proof sketch: both sides a
     traced_drop]
   rfl
 
+/-- INSERT from a query is a write whose resolution is {name}`resolveInsertQueryTraced`. Proof sketch:
+unfold the entry point and the projection of the traced write with {lit}`traced_drop`; then both sides are
+equal by definition. -/
+@[statement_arms] theorem resolveStatement_insertSelect (context : ResolveContext) (state : ResolveState)
+    (table : Identifier) (columns : Option (List Identifier)) (body : Syntax.SelectBody)
+    (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
+    (returning : List Syntax.ResultColumn) :
+    resolveStatement context state (.insertSelect table columns body conflicts algorithm returning) =
+      state.withWrite context
+        (resolveInsertQueryTraced context state.catalog table columns body conflicts algorithm returning).drop := by
+  simp only [resolveStatement, resolveStatementTraced, resolveStatementRun, ResolveState.withWriteTraced,
+    traced_drop]
+
 /-- UPDATE is a write: its CTEs and views are copied first, then the assignments, filter and
 {lit}`RETURNING` resolve. Proof sketch: unfold the entry point and the projection of the traced write with {lit}`traced_drop`; then both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_update (context : ResolveContext) (state : ResolveState)

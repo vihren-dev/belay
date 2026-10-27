@@ -77,7 +77,8 @@ def ReadAnalysis.analyze (width : Nat) : Resolved.Statement → ReadAnalysis.Res
     | [] | _ :: _ :: _ => .unknown .notSimpleTableRead
   | .query _ (_ :: _) => .unknown .hasSubqueries
   | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
-  | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _ | .setting .. =>
+  | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .upsert .. | .delete .. | .prepareError _
+  | .setting .. =>
     .unknown .notQuery
 
 /-- For every width and resolved statement: if the analysis certifies the statement with a certificate, then

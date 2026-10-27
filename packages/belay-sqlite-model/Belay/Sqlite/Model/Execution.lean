@@ -198,7 +198,7 @@ def step (clock : Int) (counters : Counters) (parameters : List Value) (statemen
   | .setting .. => .ok database
   | .prepareError error => .error (.prepare error, database)
   | .query query subqueries => queryEffect database (query.runOn clock counters parameters database subqueries)
-  | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
+  | .begin | .commit | .rollback | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 
 end Belay.Sqlite.Model

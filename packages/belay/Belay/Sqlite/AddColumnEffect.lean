@@ -39,6 +39,9 @@ theorem Sql.ifOk_send_addColumn {db : Database} {env : Env} {statement : Syntax.
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
   obtain ⟨output, next, others, step⟩ := modeled
   refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+    (fun _ _ resolved => by
+      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
+      rfl)
     (runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step)).2 ?_
   intro allOk
   have noError : output.isError = false := by

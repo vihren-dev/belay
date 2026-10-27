@@ -27,7 +27,7 @@ def Resolved.Statement.ForeignKeySchemaCondition (database : Database) : Resolve
   | .addColumn target column _ => database.catalog.AddColumnKeepsSelection target column ∧
       database.catalog.AddColumnLocatesNewKeys target column
   | .drop positions _ => database.catalog.DropKeepsSelection positions
-  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete ..
+  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete ..
   | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every clock, counters, parameters, statement and database with compatible parent schemas
@@ -65,7 +65,7 @@ theorem runStatement_parentSchemasCompatibleSelected (clock : Int) (counters : C
       holds condition.1 condition.2
   | drop positions rules =>
     exact runStatement_drop_parentSchemasCompatibleSelected clock counters parameters positions rules holds condition
-  | begin | commit | rollback | insert | update | upsert | delete | prepareError | query | setting => exact retained trivial
+  | begin | commit | rollback | insert | update | upsert | insertSelect | delete | prepareError | query | setting => exact retained trivial
 
 /-- Sufficient conditions for a resolved statement to keep both atoms under the selected mapping:
 * CREATE TABLE requires a located parent for every new declaration
@@ -88,7 +88,7 @@ def Resolved.Statement.ForeignKeyAtomsCondition (profile : Profile) (database : 
   | .drop positions (some rules) => database.ForeignKeyReady profile ∧
       rules.ForeignKeyConditions profile database.catalog ∧
       database.catalog.DropKeepsSelection positions ∧ database.catalog.DropKeepsParents positions
-  | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
+  | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.insertSelect ..) | statement@(.delete ..)
   | statement@.begin | statement@.commit | statement@.rollback | statement@(.prepareError _)
   | statement@(.query ..) | statement@(.setting _ _) => statement.ForeignKeyRowsCondition profile database
 
@@ -137,7 +137,7 @@ theorem runStatement_foreignKeyAtomsSelected (profile : Profile) (clock : Int) (
       obtain ⟨ready, conditions, selection, parents⟩ := condition
       exact runStatement_drop_enforced_foreignKeyAtoms rules clock counters parameters positions ready holds conditions
         selection parents
-  | begin | commit | rollback | insert | update | upsert | delete | prepareError | query | setting =>
+  | begin | commit | rollback | insert | update | upsert | insertSelect | delete | prepareError | query | setting =>
     exact written condition trivial
 
 end Belay.Sqlite.Model

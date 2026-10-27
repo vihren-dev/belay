@@ -62,7 +62,7 @@ def derivedNames (scope : Scope) (results : List Syntax.ResultColumn) (names : L
   let written : List (Option String) := results.flatMap fun
     | .star => scope.visible.map fun _ => none
     | .sourceStar source => ((scope.starColumns? source).map (·.map fun _ => none)).getD []
-    | .expression value alias text => [some ((alias.map (·.text)).getD (value.writtenName.getD text))]
+    | .expression value alias text => [some ((alias.map (·.text)).getD (value.writtenName.getD text.text))]
   let plain := (written.zip names).zipIdx.map fun ((given, name), index) =>
     let named := given.getD name
     if normalizeIdentifier named == "true" || normalizeIdentifier named == "false" then s!"column{index + 1}" else named

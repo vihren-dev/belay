@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.KeysUniqueRunStep
 
 set_option doc.verso true
@@ -43,9 +44,10 @@ with any other reason requires nothing. Proof sketch: {name}`runStatement_keysUn
 {name}`Resolved.Statement.keysCondition_of_runCondition`. -/
 theorem keysUnique_statementKeeps :
     StatementKeeps Database.KeysUnique fun statement database => statement.RunCondition database :=
-  fun clock counters parameters statement _ unique condition =>
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ unique condition =>
     runStatement_keysUnique clock counters parameters statement unique
-      (Resolved.Statement.keysCondition_of_runCondition condition)
+      (Resolved.Statement.keysCondition_of_runCondition condition))
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The run theorem of {name}`runSqlFrom`. For every position, script and state: if the state
 satisfies {name}`SqlState.KeysUnique` (its database, and its snapshot when a transaction is

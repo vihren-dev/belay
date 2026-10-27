@@ -22,11 +22,13 @@ def test_execution_branches_and_wp(runtime_root: Path, tmp_path: Path) -> None:
     Success policies distinguish modeled errors from stops; fresh triples have exact
     ordinary-triple and universal S4 bridges without changing arbitrary-context triples.
     Strong equivalence retains failed alternative traces and composes with explicit domains;
-    weaker observations do not compose. Helper triples check explicit transactions by both routes."""
+    weaker observations do not compose. Helper triples check explicit transactions by both routes. INSERT from a query has one
+    execution for each order of its source, and a claim holds only if it holds for all of them."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     for module, count in (("ExecutionBranches", 14), ("ExecutionProofs", 18), ("ExecutionSuccess", 22),
-                          ("ExecutionEquivalence", 15), ("ExecutionComposition", 18), ("ExecutionHelpers", 14)):
+                          ("ExecutionEquivalence", 15), ("ExecutionComposition", 18), ("ExecutionHelpers", 14),
+                          ("InsertSelectExecutions", 5)):
         configuration["name"] = module
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"

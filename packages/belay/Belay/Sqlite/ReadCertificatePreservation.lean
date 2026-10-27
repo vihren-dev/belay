@@ -40,6 +40,7 @@ theorem ReadCertificate.preservesAt {μ : Type} (migration : Sql μ) {certificat
   intro domain
   obtain ⟨actual, branches⟩ := sendStatements_single_observations statement statement values values state.clock
     state.clock state.index (state.index + count) state.connection reached
+    (obligations domain).single_original (obligations domain).single_other
     (ReadCertificate.output_eq valid (obligations domain) state.clock state.index (state.index + count) values)
   exact Migration.translatesAt_of_observations migration _ _ state count reached domain.2 (uniform domain)
     actual branches
@@ -48,12 +49,14 @@ theorem ReadCertificate.preservesAt {μ : Type} (migration : Sql μ) {certificat
 whenever the migration succeeds at the context, the obligations of the certificate hold between the
 context's connection and the connection of the model's run of the script, then the read is preserved by
 the migration at the context. In plain words, the reached connection is the connection of the model's run,
-so the caller needs no premise about branches. Proof sketch: every branch of a sent script reaches the
+so the caller needs no premise about branches, only that no statement of the script is written as INSERT
+from a query ({name}`ScriptConditionsWith.of_not_insertSelect`). Proof sketch: every branch of a sent script reaches the
 connection and the output count of the model's run ({name}`sendStatements_branch_shape`), so
 {name}`ReadCertificate.preservesAt` applies. -/
 theorem ReadCertificate.preservesAt_send (script : Script) {certificate : ReadCertificate}
     (valid : certificate.Valid) (statement : Syntax.Statement) (values : List Value)
     (admitted : ExecutionContext → Prop) (state : ExecutionContext)
+    (single : ∀ entry ∈ script.statements, entry.1.isInsertSelect = false)
     (obligations : Migration.Domain (send script) admitted state →
       certificate.Obligations runContext statement state.connection
         (runScriptFrom runContext state.clock state.index state.connection script.statements).connection) :
@@ -61,6 +64,7 @@ theorem ReadCertificate.preservesAt_send (script : Script) {certificate : ReadCe
   ReadCertificate.preservesAt (send script) valid statement values admitted state
     (runScriptFrom runContext state.clock state.index state.connection script.statements).outputs.length
     (runScriptFrom runContext state.clock state.index state.connection script.statements).connection
-    (fun _ branch reached => sendStatements_branch_shape _ _ _ _ branch reached) obligations
+    (fun _ branch reached => sendStatements_branch_shape _ _ _ _ branch
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ single) reached) obligations
 
 end Belay.Sqlite

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T22:54:16+00:00",
+  "finding": "20261026T225245Z-1e62c949#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docstring now says a continuing step has no further execution and that a step may still end the run"
+}

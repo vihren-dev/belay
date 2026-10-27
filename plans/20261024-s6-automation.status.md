@@ -202,3 +202,19 @@ Commit 3 (`sql_commute`):
   (siblings kept, `PreservesOn` removed from the supported claims, fixture `second_goal_stays` in `S6AutoCommute`;
   the negative fixtures are `example`s, not named theorems);
   the findings are resolved.
+
+Merge with the table rebuild part 1 stack top (2026-10-27):
+
+- Merge commit of the branch and `tasks/table-rebuild-part1` (change qzqstszv, PR #278), no rebase. Registries are the
+  union of both sides (`lakefile.toml` of the model gets `FailedStepFrame` and `SelectStepFrame` on the new list).
+- Repairs for the changed laws: `FailedStepFrame` reads the new shape of `runScriptStep_continued_spec`.
+  `Sql.check_send_of_step` takes a premise `single` (the statement resolves to no INSERT from a query without rules)
+  and uses `runScriptStep_others_of_single` and the new `check_send_single_of_step`; the four write rules close it
+  from their `found` premise. New `Sql.check_send_of_step_notInsertSelect` has the syntactic premise
+  `statement.isInsertSelect = false` (by `resolveStatement_single`); `sql_run` uses it for a statement without a rule
+  of its own and closes the premise `notInsertSelect` by `rfl`, so a sent INSERT from a query leaves that premise open.
+  `sql_commute` closes the new premise `single` of the certificate rules by `decide` and explains it when it stays open.
+  `ReadStepRule` needed no change.
+- New fixtures in `S6AutoPaths`: a sent INSERT from a query leaves the premise `notInsertSelect` open (it is false),
+  and a sent CREATE INDEX (a statement without a rule of its own) closes it by evaluation. Local fixture runs of all
+  `sql_run` and `sql_commute` chains pass after the merge; Nix results follow at the end of part 2.

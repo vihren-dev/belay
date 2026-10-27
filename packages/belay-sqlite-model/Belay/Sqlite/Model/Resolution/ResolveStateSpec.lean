@@ -26,7 +26,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .setting setting on => state.set on setting
   | statement@(.createTable ..) | statement@(.createView ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
   | statement@(.addColumn ..) | statement@(.drop ..)
-  | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
+  | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.insertSelect ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query ..) =>
     { state with catalog := statement.applyCatalog state.catalog }
 
@@ -40,8 +40,8 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback | setting => cases ordinary
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
-  | query => rfl
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete
+  | prepareError | query => rfl
 
 /-- For every successful resolution of CREATE TABLE, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
@@ -165,6 +165,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     exact written _ ok fun _ _ found =>
       let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
         (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
+      ⟨same.trans unchanged.symm, control⟩
+  | insertSelect table columns body conflicts algorithm returning =>
+    simp only [statement_arms] at ok
+    exact written _ ok fun _ _ found =>
+      let ⟨same, unchanged, control⟩ := resolveInsertQuery_same _ _ _ _ _ _ _ _ _ _ found
       ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
     simp only [statement_arms] at ok

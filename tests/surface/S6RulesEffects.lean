@@ -79,6 +79,9 @@ theorem bump_succeeds_with_new_quantity :
   obtain ⟨next, step⟩ : ∃ next, runScriptStep runContext env.clock 0 (sample.raw.connection env.counters)
       bumpStatement [.integer 1] = .continued (.done 1) next [] := ⟨_, rfl⟩
   refine (check_send_single_of_step (state := ExecutionContext.initial sample env) step
+    (fun _ _ resolved => by
+      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
+      rfl)
     (by intro alternatives same; cases same)).2 ⟨rfl, ?_⟩
   obtain ⟨value, -, stored⟩ := plainUpdate_database found sample_items step rfl
   show tableValues 0 next = _

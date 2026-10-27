@@ -35,7 +35,9 @@ theorem addCustomer_adds (name email : String) :
       (ExecutionContext.initial db env).connection selectStatement [] with
   | ended reason => rw [step] at modeled; cases modeled
   | continued output connection others =>
-    obtain rfl := runScriptStep_others step
+    obtain ⟨columns, source, joins, filter, groupBy, orderBy, limit, offset, subqueries, having, distinct, compound, isSelect⟩ :=
+      selectStatement_is_select
+    obtain rfl := runScriptStep_select_others isSelect step
     intro found member selected choice
     obtain rfl := Sql.Branch.found_eq step member
     cases found : singleValue (queryResult selected) with
@@ -46,8 +48,6 @@ theorem addCustomer_adds (name email : String) :
     | some next =>
       simp only []
       have noError := not_error_of_single choice found
-      obtain ⟨columns, source, joins, filter, groupBy, orderBy, limit, offset, subqueries, having, distinct, compound, isSelect⟩ :=
-        selectStatement_is_select
       have kept : connection = db.raw.connection env.counters := by
         rw [isSelect] at step
         exact runScriptStep_select_connection step noError
@@ -68,7 +68,11 @@ theorem addCustomer_adds (name email : String) :
       refine (Sql.check_bind _ _ _ _).2 ?_
       rw [insertCustomerAt_script]
       refine (check_send_single_of_step (state := (ExecutionContext.initial db env).next selected
-        (db.raw.connection env.counters)) step2 (runScriptStep_insert_ne_oneOf resolves step2)).2 ?_
+        (db.raw.connection env.counters)) step2
+        (fun _ _ resolved => by
+          obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans resolves))).1
+          rfl)
+        (runScriptStep_insert_ne_oneOf resolves step2)).2 ?_
       refine (Sql.check_pure _ _ _).2 ?_
       intro allOk
       have noError2 : output2.isError = false := by

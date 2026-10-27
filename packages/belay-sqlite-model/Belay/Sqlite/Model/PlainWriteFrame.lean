@@ -20,7 +20,7 @@ def Resolved.Statement.plainWriteTarget : Resolved.Statement → Option Nat
   | .insert target _ _ _ none | .update target _ _ _ _ none | .delete target _ _ _ none => some target
   | .insert _ _ _ _ (some _) | .update _ _ _ _ _ (some _) | .delete _ _ _ _ (some _) => none
   | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin
-  | .commit | .rollback | .upsert .. | .prepareError _ | .query .. | .setting .. => none
+  | .commit | .rollback | .insertSelect .. | .upsert .. | .prepareError _ | .query .. | .setting .. => none
 
 /-- For every database, target, keys, table, supplied rows and result table: a failed write of the
 result gives an error that keeps the input database and has the reason
@@ -134,7 +134,7 @@ theorem afterStep_frame (connection : Connection) (after : ResolveState) (index 
         SqlState.failed, SqlState.finish, notFail, notRollback, snapshot, foreignKeys, recursiveTriggers]
 
 /-- For every connection, statement that resolves to a plain write at a target, and step that continues: the
-step has no other execution than the model's own; the next connection keeps the snapshot and the settings of
+step has no other execution than the model's own (a plain write is no INSERT from a query); the next connection keeps the snapshot and the settings of
 the connection; and its database is either the database of the connection, which a failed write leaves
 unchanged, or that database with the rows at the target replaced. In plain words, the step cannot change a
 table other than the target, the catalog, the open transaction or a setting, whatever the clock, the counters
@@ -152,9 +152,11 @@ theorem runScriptStep_plainWrite_frame {context : ResolveContext}
       next.foreignKeys = connection.foreignKeys ∧ next.recursiveTriggers = connection.recursiveTriggers ∧
       (next.state.database = connection.state.database ∨
         ∃ rows, next.state.database = connection.state.database.setRows target rows) := by
-  obtain ⟨nothing, resolved', after', value, same, -, -, -, -, -, nextEq⟩ := runScriptStep_continued_spec step
+  obtain ⟨resolved', after', value, same, -, -, -, -, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
+  have single : resolved.fromQuery = false := by
+    cases resolved <;> simp_all [Resolved.Statement.plainWriteTarget, Resolved.Statement.fromQuery]
   have ordinary : resolved.isControl = false := by
     cases resolved <;> simp_all [Resolved.Statement.plainWriteTarget, Resolved.Statement.isControl]
   have afterEq := resolveStatement_after context _ _ _ _ found
@@ -169,6 +171,6 @@ theorem runScriptStep_plainWrite_frame {context : ResolveContext}
       ∃ rows, database = connection.state.database.setRows target rows) (Or.inl rfl) foreignKeys recursiveTriggers
     (fun database ok => Or.inr (okFrame database ok)) errorFrame
   rw [same]
-  exact ⟨nothing, rfl, rfl, rfl, permitted⟩
+  exact ⟨runScriptStep_others step found single, rfl, rfl, rfl, permitted⟩
 
 end Belay.Sqlite.Model

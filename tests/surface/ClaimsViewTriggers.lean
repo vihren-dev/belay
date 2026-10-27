@@ -67,7 +67,7 @@ def writeBody (script : Script) : Option Syntax.BodyStatement := do
   | .update table assignments filter _ subqueries => some (.update table assignments filter subqueries)
   | .delete table filter _ subqueries => some (.delete table filter subqueries)
   | .select .. | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .pragma ..
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .pragma ..
   | .createTrigger .. | .dropTrigger .. => none
 
 /-- Read a resolved assignment or DELETE filter using the actual target-plus-trigger

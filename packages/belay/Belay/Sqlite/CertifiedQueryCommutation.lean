@@ -11,7 +11,8 @@ module proves for a certified read. First, a certified read keeps the connection
 execution and ends at the connection where it started, also when the read fails. Second, the read counts
 no change. The module does not prove that the migration reaches one connection with one output count; the
 caller gives that fact as a premise ({lit}`uniform`), and the premise holds for a sent script
-({lit}`sendStatements_branch_shape`). The clock must give one date at every index, because a read that
+({lit}`sendStatements_branch_shape`) when no statement of the script is written as INSERT from a query: such a
+statement can have more than one execution, so a sent script that has one can reach different connections. The clock must give one date at every index, because a read that
 moves the statement index must not change the migration.
 -/
 
@@ -137,14 +138,14 @@ theorem ReadCertificate.commutesOn {μ : Type} (migration : Sql μ) {certificate
 read of the statement commutes fully with the migration ({name}`Migration.CommutesOn`). The premises are those of
 {name}`ReadCertificate.commutesOn`, except that the migration's reached connection is the connection of the
 model's run of the script from index 0, so the caller needs no premise about branches and no statement of
-the starting index. Plain words: for every context where the predicate holds and the script succeeds, the
+the starting index, only that no statement of the script is written as INSERT from a query. Plain words: for every context where the predicate holds and the script succeeds, the
 obligations of the certificate hold between the context's connection and the connection that the script
 reaches. Proof sketch: every branch of a sent script reaches the connection and the output count of the
 model's run ({name}`sendStatements_branch_shape`); a clock with one date at every index makes that
 run independent of the start index ({name}`Sql.runFrom_index`); so {name}`ReadCertificate.commutesOn` applies. -/
 theorem ReadCertificate.commutesOn_send (script : Script) {certificate : ReadCertificate}
     (valid : certificate.Valid) (statement : Syntax.Statement) (values : List Value)
-    (admitted : ExecutionContext → Prop)
+    (admitted : ExecutionContext → Prop) (single : ∀ entry ∈ script.statements, entry.1.isInsertSelect = false)
     (constant : ∀ state, admitted state → ∀ assignment ∈ state.clock, ∀ one other, assignment one = assignment other)
     (obligations : ∀ state, Migration.Domain (send script) admitted state →
       certificate.Obligations runContext statement state.connection
@@ -161,11 +162,14 @@ theorem ReadCertificate.commutesOn_send (script : Script) {certificate : ReadCer
     simpa [send, Sql.runFrom_send, SqlRun.ofScript] using this
   refine ReadCertificate.commutesOn (send script) valid statement values admitted ?_ ?_ constant admittedKept
   · intro state domain one other oneBranch otherBranch
-    obtain ⟨oneConnection, oneLength⟩ := sendStatements_branch_shape _ _ _ _ _ oneBranch
-    obtain ⟨otherConnection, otherLength⟩ := sendStatements_branch_shape _ _ _ _ _ otherBranch
+    obtain ⟨oneConnection, oneLength⟩ := sendStatements_branch_shape _ _ _ _ _
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ single) oneBranch
+    obtain ⟨otherConnection, otherLength⟩ := sendStatements_branch_shape _ _ _ _ _
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ single) otherBranch
     exact ⟨oneConnection.trans otherConnection.symm, oneLength.trans otherLength.symm⟩
   · intro state domain ran branch
-    rw [(sendStatements_branch_shape _ _ _ _ _ branch).1, independent state domain]
+    rw [(sendStatements_branch_shape _ _ _ _ _
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ single) branch).1, independent state domain]
     exact obligations state domain
 
 end Belay.Sqlite

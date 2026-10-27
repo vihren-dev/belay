@@ -36,6 +36,7 @@ an algorithm of its keys is REPLACE; an UPDATE changes the assigned columns
 def foreignKeyWrite (catalog : Catalog) : Resolved.Statement → Option (Nat × ForeignKeyWrite × Bool × Bool)
   | .insert table rows _ _ _ => catalog.insertWrite table rows.length none
   | .upsert table rows _ _ algorithm _ _ => catalog.insertWrite table rows.length algorithm
+  | .insertSelect table _ _ _ _ algorithm _ _ => catalog.insertWrite table 2 algorithm
   | .update table assignments _ _ _ _ => (catalog.tableAt table).map fun shape =>
     let changed := shape.changedColumns (assignments.map (·.1))
     let name := ((catalog[table]?).map (·.name)).getD default
@@ -51,6 +52,8 @@ def Resolved.Statement.withRules (rules : Resolved.WriteRules) : Resolved.Statem
   | .insert table rows returning subqueries _ => .insert table rows returning subqueries (some rules)
   | .upsert table rows clauses returning algorithm subqueries _ =>
     .upsert table rows clauses returning algorithm subqueries (some rules)
+  | .insertSelect table cells inner clauses returning algorithm subqueries _ =>
+    .insertSelect table cells inner clauses returning algorithm subqueries (some rules)
   | .update table assignments filter returning subqueries _ =>
     .update table assignments filter returning subqueries (some rules)
   | .delete table filter returning subqueries _ => .delete table filter returning subqueries (some rules)
@@ -62,7 +65,7 @@ def Resolved.Statement.withRules (rules : Resolved.WriteRules) : Resolved.Statem
 
 /-- Whether the statement is an INSERT with a {lit}`DO UPDATE` clause. -/
 def Resolved.Statement.updatesOnConflict : Resolved.Statement → Bool
-  | .upsert _ _ clauses .. => clauses.any fun clause => (clause.action matches .update ..)
+  | .upsert _ _ clauses .. | .insertSelect _ _ _ clauses .. => clauses.any fun clause => (clause.action matches .update ..)
   | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn ..
   | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting .. => false
 

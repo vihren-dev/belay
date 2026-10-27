@@ -20,11 +20,9 @@ inductive RestrictionKind where
   | unmodeledDefault
   /-- A string literal or a double-quoted non-column name as a key term of CREATE INDEX: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
   | indexStringTerm
-  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock
-  only when it writes a row (ADR 0014, slice 1). -/
+  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock only when it writes a row (ADR 0014, slice 1). -/
   | indexDateFunction
-  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row is written, which the
-  model's key check does not describe (ADR 0014, slice 1). -/
+  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row is written, which the model's key check does not describe (ADR 0014, slice 1). -/
   | indexJsonFunction
   /-- A {lit}`COLLATE` in an expression with a name that names no collation: SQLite looks the name up only where it
   uses the collation, and its query planner decides some of those uses, so the model cannot tell whether the statement
@@ -78,7 +76,7 @@ inductive RestrictionKind where
   /-- A rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`) that is not a column is not modeled in an expression
   (ADR 0012 slice 3a; extended 2026-10-14), where SQLite reads the rowid and the model would report
   {lit}`no such column`. As the column of a {lit}`SET` assignment it assigns the rowid alias; for a table without one
-  it is this restriction, since a resolved write cannot assign the physical rowid (2026-10-21). -/
+  it is this restriction, since a resolved write cannot assign the physical rowid (2026-10-21); so does a rowid name in an INSERT column list. -/
   | rowidName
   /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as {lit}`INNER OUTER JOIN`, is not
   modeled: the model has no such prepare error (ADR 0012, amendment 2; ADR 0013, amendment 2). -/
@@ -185,7 +183,7 @@ inductive RestrictionKind where
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch: SQLite reports the
   first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder
-  /-- {lit}`last_insert_rowid()` in an INSERT or an upsert, and {lit}`total_changes()` in a write that runs trigger
+  /-- {lit}`last_insert_rowid()` in an INSERT, an INSERT from a query or an upsert, and {lit}`total_changes()` in a write that runs trigger
   programs or foreign-key actions: these writes change the counter while they run (ADR 0024, D2). -/
   | connectionCounterRead
   /-- A call of {lit}`changes()`, {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` or

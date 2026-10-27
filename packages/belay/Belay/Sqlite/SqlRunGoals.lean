@@ -16,7 +16,7 @@ open Lean Meta Elab Tactic Term
 abbrev Hints := Array (TSyntax `term)
 
 /-- The premises that hold by {lit}`rfl` once the program is known: the shape of a script. -/
-def premisesByRfl : List Name := [`isStatement, `isSelect]
+def premisesByRfl : List Name := [`isStatement, `isSelect, `notInsertSelect]
 
 /-- Try to close a premise about the context. The attempts are, in order, the hints, the hypotheses and
 the facts that follow from a fresh start. A premise that no attempt closes stays open. -/

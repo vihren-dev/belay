@@ -57,7 +57,7 @@ def prepareError : Database := db! r"CREATE TABLE t (a); INSERT INTO t (zz) VALU
 -- after it shows no error.
 /--
 @ +1:65...70
-error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns
+error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, as the SET column of a table without an INTEGER PRIMARY KEY, or in an INSERT column list; name the table's columns
 -/
 #guard_msgs (positions := true) in
 def restricted : Database := db! r"CREATE TABLE t (a); SELECT a, rowid FROM t; INSERT INTO t (zz) VALUES (1)"

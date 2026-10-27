@@ -45,7 +45,7 @@ def quotedName : Script := sql! shop r#"SELECT '#', [Nmae] FROM invoices"#
 -- A model restriction: the model's reason, at the node of its path.
 /--
 @ +1:54...59
-error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns
+error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, as the SET column of a table without an INTEGER PRIMARY KEY, or in an INSERT column list; name the table's columns
 -/
 #guard_msgs (positions := true) in
 def restricted : Script := sql! shop r"SELECT amount, rowid FROM invoices"
@@ -68,7 +68,7 @@ def qualified : Script := sql! shop r"SELECT invoices.nmae FROM invoices; SELECT
 error: no such column: nmae
 ---
 @ +1:70...75
-error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns
+error: the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, as the SET column of a table without an INTEGER PRIMARY KEY, or in an INSERT column list; name the table's columns
 -/
 #guard_msgs (positions := true) in
 def several : Script := sql! shop r"SELECT nmae FROM invoices; SELECT rowid FROM invoices; SELECT zz FROM u"

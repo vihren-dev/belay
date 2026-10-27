@@ -113,7 +113,7 @@ theorem advanceWith_holds (position : Nat) (statement : Resolved.Statement) {sta
     split
     · exact holds.1
     · exact ⟨holds.2 _ ‹_›, fun _ same => nomatch same⟩
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | upsert | update | delete
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | upsert | insertSelect | update | delete
   | prepareError | query | setting => exact SqlState.publish_holds holds position kept
 
 /-- For every property, counts and transition that satisfies {name}`SqlTransition.Holds`, the

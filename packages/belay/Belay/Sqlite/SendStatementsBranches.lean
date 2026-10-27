@@ -44,46 +44,53 @@ theorem Sql.branch_map_iff {α β : Type} (function : α → β) (program : Sql 
         rw [(Sql.branch_stopped_iff (rest := rest) step first).mp branch]
         rfl
     | continued actual next others =>
-      rw [Sql.branch_continued_iff (rest := fun output => (rest output).map function) step]
+      rw [Sql.branch_continued_executions_iff (rest := fun output => (rest output).map function) step]
       constructor
-      · rintro ⟨selected, tail, choice, branch, rfl⟩
+      · rintro ⟨found, member, selected, tail, choice, branch, rfl⟩
         obtain ⟨first, firstBranch, rfl⟩ := (later selected _ _ _ tail).mp branch
         exact ⟨{ first with outputs := selected :: first.outputs },
-          (Sql.branch_continued_iff (rest := rest) step _).mpr ⟨selected, first, choice, firstBranch, rfl⟩, rfl⟩
+          (Sql.branch_continued_executions_iff (rest := rest) step _).mpr
+            ⟨found, member, selected, first, choice, firstBranch, rfl⟩, rfl⟩
       · rintro ⟨first, branch, rfl⟩
-        obtain ⟨selected, tail, choice, tailBranch, rfl⟩ := (Sql.branch_continued_iff (rest := rest) step first).mp branch
-        exact ⟨selected, { tail with value := tail.value.map function }, choice,
+        obtain ⟨found, member, selected, tail, choice, tailBranch, rfl⟩ :=
+          (Sql.branch_continued_executions_iff (rest := rest) step first).mp branch
+        exact ⟨found, member, selected, { tail with value := tail.value.map function }, choice,
           (later selected _ _ _ _).mpr ⟨tail, tailBranch, rfl⟩, rfl⟩
 
-/-- For every list of statements with inputs, and every branch of the sent program, the branch reaches the
-connection of the model's script run and has as many outputs as that run. This holds for every
-raw and every concrete choice of a {lit}`oneOf` output, because a step's next connection does not
-depend on the chosen output. Proof sketch: induction on the statements. A stopping step gives the
-same one-output result in both. After a continuing step, {name}`Sql.branch_map_iff` reduces the
-branch to a branch of the remaining statements. -/
+/-- For every list of statements with inputs, none of which resolves to an INSERT from a query without
+rules ({name}`ScriptConditionsWith` for {lit}`fromQuery = false`), and every branch of the sent program, the
+branch reaches the connection of the model's script run and has as many outputs as that run. This holds
+for every raw and every concrete choice of a {lit}`oneOf` output, because a step's next connection does not
+depend on the chosen output. With an INSERT from a query, another execution of the statement can reach another
+connection. Proof sketch: induction on the statements. A stopping step gives the
+same one-output result in both. After a continuing step, which has one execution
+({name}`ScriptConditionsWith.single_step`), {name}`Sql.branch_map_iff` reduces the branch to a branch of the
+remaining statements. -/
 theorem sendStatements_branch_shape (statements : List (Syntax.Statement × List Value)) :
     ∀ clock index connection (result : SqlRun (List Output)),
+      ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
       (sendStatements statements).Branch clock index connection result →
         result.connection = (runScriptFrom runContext clock index connection statements).connection ∧
         result.outputs.length = (runScriptFrom runContext clock index connection statements).outputs.length := by
   induction statements with
   | nil =>
-    intro clock index connection result branch
+    intro clock index connection result _ branch
     obtain rfl := (Sql.branch_pure_iff _ _ _ _ _).mp branch
     exact ⟨rfl, rfl⟩
   | cons head rest later =>
     rcases head with ⟨statement, values⟩
-    intro clock index connection result branch
+    intro clock index connection result single branch
     cases step : runScriptStep runContext clock index connection statement values with
     | ended reason =>
       obtain rfl := (Sql.branch_stopped_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _).mp
         branch
       simp [runScriptFrom, step]
     | continued output next others =>
+      obtain ⟨noOthers, restSingle⟩ := ScriptConditionsWith.single_step single step
       obtain ⟨selected, tail, _, tailBranch, rfl⟩ :=
-        (Sql.branch_continued_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _).mp branch
+        (Sql.branch_continued_iff (rest := fun output => (sendStatements rest).map (output :: ·)) step _ noOthers).mp branch
       obtain ⟨first, firstBranch, rfl⟩ := (Sql.branch_map_iff _ _ _ _ _ _).mp tailBranch
-      obtain ⟨connectionEq, lengthEq⟩ := later _ _ _ first firstBranch
+      obtain ⟨connectionEq, lengthEq⟩ := later _ _ _ first restSingle firstBranch
       simp [runScriptFrom, step, connectionEq, lengthEq]
 
 end Belay.Sqlite

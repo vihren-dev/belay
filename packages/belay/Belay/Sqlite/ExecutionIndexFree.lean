@@ -35,12 +35,14 @@ theorem Sql.branch_index_iff {α : Type} (program : Sql α) (clock : Option Cloc
     | ended reason =>
       rw [Sql.branch_stopped_iff step, Sql.branch_stopped_iff (same.symm.trans step)]
     | continued output next others =>
-      rw [Sql.branch_continued_iff step, Sql.branch_continued_iff (same.symm.trans step)]
+      rw [Sql.branch_continued_executions_iff step, Sql.branch_continued_executions_iff (same.symm.trans step)]
       constructor
-      · rintro ⟨selected, tail, choice, branch, rfl⟩
-        exact ⟨selected, tail, choice, (later selected (first + 1) (second + 1) next tail).1 branch, rfl⟩
-      · rintro ⟨selected, tail, choice, branch, rfl⟩
-        exact ⟨selected, tail, choice, (later selected (first + 1) (second + 1) next tail).2 branch, rfl⟩
+      · rintro ⟨found, member, selected, tail, choice, branch, rfl⟩
+        exact ⟨found, member, selected, tail, choice,
+          (later selected (first + 1) (second + 1) found.next tail).1 branch, rfl⟩
+      · rintro ⟨found, member, selected, tail, choice, branch, rfl⟩
+        exact ⟨found, member, selected, tail, choice,
+          (later selected (first + 1) (second + 1) found.next tail).2 branch, rfl⟩
 
 /-- For every program, every clock that gives one date at every index (or no clock), every pair of start
 indices and every connection: the actual run from the first index is the actual run from the second

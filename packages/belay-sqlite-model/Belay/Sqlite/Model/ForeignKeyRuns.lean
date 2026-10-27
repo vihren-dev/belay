@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeyStatement
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -12,7 +13,8 @@ reached statement's input facts. -/
 theorem rowReferences_statementKeeps (profile : Profile) :
     StatementKeeps (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeyRowsCondition profile database) :=
-  fun clock counters parameters statement _ holds met => runStatement_rowReferences clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met => runStatement_rowReferences clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if the current database and
 any saved snapshot have selected row references, and each reached statement meets its FK
@@ -71,13 +73,15 @@ Proof sketch: compatibility identifies the supplied and selected comparisons; ap
 individual row and schema laws, then transport the row fact back through compatibility. -/
 theorem foreignKeyAtoms_statementKeeps (profile : Profile) (mapping : ForeignKeyMapping) :
     StatementKeeps (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping)
-      (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) := by
+      (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :=
+  StatementKeeps.ofOwnRun (by
   intro clock counters parameters statement database holds condition result kept
   have schema := runStatement_parentSchemasCompatible mapping clock counters parameters statement holds.1
     condition.1 result kept
   have rows := runStatement_rowReferences clock counters parameters statement
     (holds.1.rowReferences_iff_selected.mp holds.2) condition.2 result kept
-  exact ⟨schema, schema.rowReferences_iff_selected.mpr rows⟩
+  exact ⟨schema, schema.rowReferences_iff_selected.mpr rows⟩)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For any supplied mapping, clock, counters, parameters and input satisfying both FK
 atoms, a statement that keeps the catalog and meets the row condition preserves both atoms in success and partial
@@ -89,7 +93,8 @@ theorem runStatement_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMa
     (condition : statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :
     (runStatement clock counters parameters statement database).effect.Satisfies
       (fun result => result.ParentSchemasCompatible mapping ∧ result.RowReferencesHold mapping) :=
-  foreignKeyAtoms_statementKeeps profile mapping clock counters parameters statement database holds condition
+  foreignKeyAtoms_statementKeeps profile mapping clock counters parameters statement database holds condition _
+    (StatementRun.effect_mem_effects _)
 
 /-- For any supplied mapping and resolved script, if both FK atoms hold on the current
 database and saved snapshot, and each reached statement keeps the catalog and meets its row

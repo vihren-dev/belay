@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.ForeignKeySchemaFrame
 import Belay.Sqlite.Model.AdmittedRowsOnly
 import Belay.Sqlite.Model.RowLocalWrites
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -34,7 +35,7 @@ or transaction control. These forms retain the catalog, including while their tr
 actions write rows. CREATE, ADD COLUMN and DROP require their own schema conditions and do
 not meet this sufficient condition. -/
 def Resolved.Statement.KeepsParentSchema : Resolved.Statement → Prop
-  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete ..
+  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete ..
   | .prepareError _ | .query .. | .setting _ _ => True
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. => False
 
@@ -90,6 +91,16 @@ theorem runStatement_parentSchemasCompatible (mapping : ForeignKeyMapping) (cloc
       split
       · exact Effect.satisfies_of_database holds rfl
       · exact rowsKeys_parentSchemasCompatible mapping rules clock target _ holds _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries holds
+        fun literals => Effect.satisfies_of_effectDatabase (holds.catalog_eq
+          ((runStatement_plain_rowsOnly clock counters parameters _ database target
+            (.inr (.inr (.inl ⟨literals, clauses, returning, algorithm, subqueries, rfl⟩)))).catalog))
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules holds
+        fun _ _ _ plain conflict => rowsKeys_parentSchemasCompatible mapping rules clock target _ holds plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none =>

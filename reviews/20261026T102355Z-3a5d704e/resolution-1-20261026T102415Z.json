@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:24:15+00:00",
+  "finding": "20261026T102355Z-3a5d704e#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "VALUES-insert guard for the rowid-name restriction added to InsertQueryExamples"
+}

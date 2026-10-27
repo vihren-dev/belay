@@ -27,7 +27,11 @@ theorem runStatement_rowidsInRange (clock : Int) (counters : Counters) (paramete
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowidsInRange :=
   runStatement_tableAtom Table.rowidsInRangeAtom rowidsInRangeLaws clock counters parameters statement inRange
-    (fun target _ _ table _ _ found _ => Table.RowidsInRange.appendColumns (inRange target table found) _) fun writes => by
+    (fun target _ _ table _ _ found _ => Table.RowidsInRange.appendColumns (inRange target table found) _) (fun selects => by
+      rcases selects with ⟨target, cells, query, clauses, returning, algorithm, subqueries, rfl⟩
+      exact runStatement_insertSelect_none_satisfies_ready clock counters parameters target cells query clauses returning algorithm subqueries inRange ready fun literals readyUpsert =>
+        runStatement_upsert_rowidsInRange clock counters parameters target literals clauses returning algorithm subqueries inRange readyUpsert)
+    fun writes => by
       rcases writes with ⟨target, rows, returning, subqueries, rfl⟩ | ⟨target, assignments, filter, returning, subqueries, rfl⟩ |
         ⟨target, rows, clauses, returning, algorithm, subqueries, rfl⟩
       · exact runStatement_insert_rowidsInRange clock counters parameters target rows returning subqueries inRange ready
@@ -49,7 +53,11 @@ theorem runStatement_rowsWide (clock : Int) (counters : Counters) (parameters : 
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsWide :=
   runStatement_tableAtom Table.rowsWideAtom rowsWideLaws clock counters parameters statement wide
-    (fun target _ _ table _ _ found _ => Table.RowsWide.appendColumns (wide target table found) _) fun writes => by
+    (fun target _ _ table _ _ found _ => Table.RowsWide.appendColumns (wide target table found) _) (fun selects => by
+      rcases selects with ⟨target, cells, query, clauses, returning, algorithm, subqueries, rfl⟩
+      exact runStatement_insertSelect_none_satisfies_ready clock counters parameters target cells query clauses returning algorithm subqueries wide ready fun literals readyUpsert =>
+        runStatement_upsert_rowsWide clock counters parameters target literals clauses returning algorithm subqueries wide readyUpsert)
+    fun writes => by
       rcases writes with ⟨target, rows, returning, subqueries, rfl⟩ | ⟨target, assignments, filter, returning, subqueries, rfl⟩ |
         ⟨target, rows, clauses, returning, algorithm, subqueries, rfl⟩
       · exact runStatement_insert_rowsWide clock counters parameters target rows returning subqueries wide ready

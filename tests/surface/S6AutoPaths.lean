@@ -109,4 +109,32 @@ theorem second_goal_stays (env : Env) :
 #print axioms sent_select_keeps_connection
 #print axioms second_goal_stays
 
+/-- The INSERT from a query, a statement that the general send rule does not cover. -/
+def copyItems : Script := sql r"INSERT INTO items SELECT id, qty FROM items"
+
+/-- The creation of an index, a statement without a rule of its own. -/
+def indexItems : Script := sql r"CREATE INDEX items_qty ON items(qty)"
+
+/-- warning: declaration uses `sorry` -/
+#guard_msgs in
+-- A sent INSERT from a query is sent with the general rule, and the premise that the statement is no INSERT
+-- from a query stays open, because it is false. The example ends in sorry on purpose and only looks at the goals.
+example (post : List Output → ExecutionContext → Prop) (context : ExecutionContext) :
+    (send copyItems).check post context := by
+  sql_run
+  case notInsertSelect =>
+    fail_if_success rfl
+    sorry
+  all_goals sorry
+
+/-- warning: declaration uses `sorry` -/
+#guard_msgs in
+-- A sent statement without a rule of its own is sent with the general rule, and the premise that the statement
+-- is no INSERT from a query is closed by evaluation: no goal with that tag is left.
+example (post : List Output → ExecutionContext → Prop) (context : ExecutionContext) :
+    (send indexItems).check post context := by
+  sql_run
+  fail_if_success case notInsertSelect => skip
+  all_goals sorry
+
 end S6RulesEffects

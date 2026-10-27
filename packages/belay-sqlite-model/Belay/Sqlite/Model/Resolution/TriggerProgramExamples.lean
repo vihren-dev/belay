@@ -43,9 +43,9 @@ def last (script : List Syntax.Statement) : Option Resolved.Statement := (statem
 /-- The programs of the last statement of the script after the two tables. -/
 def programs (script : List Syntax.Statement) : List Resolved.Program :=
   match last script with
-  | some (.insert _ _ _ _ (some rules)) | some (.upsert _ _ _ _ _ _ (some rules)) | some (.update _ _ _ _ _ (some rules))
+  | some (.insert _ _ _ _ (some rules)) | some (.upsert _ _ _ _ _ _ (some rules)) | some (.insertSelect _ _ _ _ _ _ _ (some rules)) | some (.update _ _ _ _ _ (some rules))
   | some (.delete _ _ _ _ (some rules)) | some (.drop _ (some rules)) => rules.programs
-  | some (.insert _ _ _ _ none) | some (.upsert _ _ _ _ _ _ none) | some (.update _ _ _ _ _ none)
+  | some (.insertSelect _ _ _ _ _ _ _ none) | some (.insert _ _ _ _ none) | some (.upsert _ _ _ _ _ _ none) | some (.update _ _ _ _ _ none)
   | some (.delete _ _ _ _ none) | some (.drop _ none) | some (.createTable ..) | some (.createView ..) | some (.createIndex ..)
   | some (.createTrigger ..) | some (.addColumn ..) | some .begin | some .commit | some .rollback
   | some (.prepareError _) | some (.query ..) | some (.setting ..) | none => []
