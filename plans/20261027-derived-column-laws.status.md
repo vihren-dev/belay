@@ -204,7 +204,6 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
   part 3 into the derived-column laws`. The only textual conflict was the model `lakefile.toml` glob list
   (union of both sides, with the 13 removed `NormalizedField*` modules dropped). The barrels merged without
   conflict. Part 3's new resolved statement constructor `.dropColumn` needed no change in the new modules.
-  The model, belay and verifier-conformance packages build on the merged tree.
 
 ## End-of-task Nix checks (on the merged tree, change `merge: table rebuild part 3 ...`)
 
