@@ -1,4 +1,4 @@
-import Belay.Sqlite.CheckClaim
+import Belay.Sqlite.CheckDomain
 import Belay.Sqlite.CheckBudget
 import Belay.Sqlite.SampleScriptHints
 import Belay.Sqlite.SampleShrink
@@ -56,8 +56,9 @@ constraint rejection. Reduction need not construct or decode the later candidate
 def targetedData (base : Database) (constants : List Value) (index : Nat) : Option Database.Raw :=
   ((Sampling.targeted base constants)[index]?).map (·.raw)
 
-/-- Visit explicit witnesses, then empty, targeted and seeded candidates in order, stopping
-at the first accepted result. Each generated proposal is reduced separately under the caller's
+/-- Visit explicit witnesses, then for each configured value the empty database, the databases that the
+claim's equality premises name ({name}`domainDatabases`), and the targeted and seeded candidates, in order,
+stopping at the first accepted result. Each generated proposal is reduced separately under the caller's
 budget. Rejected candidates restore speculative state; exhaustion and cancellation propagate.
 The callback can demand a certificate plus replay, or impose another acceptance condition.
 Finite search failure supplies no evidence for a universal proposition. -/
@@ -68,6 +69,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     if tried >= config.candidates then return none
     tried := tried + 1
     if let some result ← attempt (accept witness) then return some result
+  let domain := (← attempt (domainDatabases proposition)).getD #[]
   for value in config.values do
     if tried >= config.candidates then return none
     let initial : Witness :=
@@ -75,6 +77,10 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     let some witness ← attempt (fillValueInputs proposition initial value) | continue
     tried := tried + 1
     if let some result ← attempt (accept witness) then return some result
+    for database in domain do
+      if tried >= config.candidates then return none
+      tried := tried + 1
+      if let some result ← attempt (accept { witness with database }) then return some result
     if tried >= config.candidates then return none
     let sites := (← attempt (querySites proposition witness.choose witness.database)).getD {}
     let scripts ← sites.sites.filterMapM fun site => do

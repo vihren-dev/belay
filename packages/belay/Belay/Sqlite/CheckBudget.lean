@@ -1,4 +1,5 @@
 import Lean.Elab.Term
+import Lean.Util.Heartbeats
 
 set_option doc.verso true
 
@@ -42,21 +43,50 @@ can need, but discards speculative diagnostics and editor information. Callers m
 instantiate and certify returned proofs before accepting them. -/
 def speculative (action : TermElabM α) : TermElabM α := do
   let saved ← Term.saveState
-  let mut completed := false
+  let completed ← IO.mkRef false
   try
     let result ← action
     modifyThe Core.State fun state =>
       { state with messages := saved.meta.core.messages, infoState := saved.meta.core.infoState }
-    completed := true
+    completed.set true
     return result
   finally
-    unless completed do saved.restore (restoreInfo := true)
+    unless ← completed.get do saved.restore (restoreInfo := true)
 
 /-- Try a candidate and discard an ordinary elaboration failure. Resource exhaustion and
 interrupts propagate after restoring state; they cannot become evidence from another branch. -/
 def attempt (action : TermElabM α) : TermElabM (Option α) := do
   try some <$> speculative action
   catch _ => pure none
+
+/-- The heartbeat units left in the current budget, in the unit of {lit}`withinBudget`. When the budget is
+unlimited, the units are Lean's default work limit, so a share of the budget stays finite. -/
+def remainingUnits : CoreM Nat := do
+  if (← getMaxHeartbeats) == 0 then return maxHeartbeats.defValue
+  return (← getRemainingHeartbeats) / 1000
+
+/-- A fraction of the budget that is left. Each mechanism of the checker that spends a part of the budget names
+its fraction, so that the parts are visible in one place. -/
+structure Share where
+  /-- The numerator of the fraction. -/
+  numerator : Nat
+  /-- The denominator of the fraction. It is at least one. -/
+  denominator : Nat
+
+/-- The part of a number of units that a share takes, rounded down. -/
+def Share.units (share : Share) (units : Nat) : Nat := units * share.numerator / share.denominator
+
+/-- The shrinking of a witness may use half of the budget that is left. A refutation that is certified and
+replayed before the shrinking stays when the shrinking uses its half. -/
+def shrinkShare : Share := ⟨1, 2⟩
+
+/-- The search for a proof by {lit}`sql_auto` may use a third of the budget that is left, so that a false
+claim keeps most of the budget for its counterexample. -/
+def searchShare : Share := ⟨1, 3⟩
+
+/-- The explanation of a refutation may use nine tenths of the budget that is left. The rest stays for the end
+of the operation, so an explanation that runs out of its share does not lose the refutation. -/
+def explanationShare : Share := ⟨9, 10⟩
 
 /-- Run a checking attempt with a fresh heartbeat origin and a finite Lean heartbeat budget.
 Zero disables work, rather than using Lean's unlimited zero convention. Check again after

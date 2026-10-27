@@ -400,6 +400,8 @@ import Belay.Sqlite.Model.AddColumnEffect
 import Belay.Sqlite.Model.NonQueryOutput
 import Belay.Sqlite.Model.ReadOnlyFrame
 import Belay.Sqlite.Model.ShelterFrame
+import Belay.Sqlite.Model.FailedStepFrame
+import Belay.Sqlite.Model.SelectStepFrame
 import Belay.Sqlite.Model.PartialUniqueKeptRows
 import Belay.Sqlite.Model.PlainInsertEffect
 import Belay.Sqlite.Model.PlainDeleteEffect

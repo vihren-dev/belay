@@ -12,6 +12,12 @@ def Domain {μ : Type} (migration : Sql μ) (pre : ExecutionContext → Prop)
     (state : ExecutionContext) : Prop :=
   pre state ∧ migration.SucceedsFrom state.clock state.index state.connection
 
+/-- The domain of a migration is decidable when its predicate is and the migration is a finite program: the
+decision runs the model, so a closed claim about the domain is certified by evaluation. -/
+instance Domain.decidable {μ : Type} (migration : Sql μ) (pre : ExecutionContext → Prop)
+    [DecidablePred pre] (state : ExecutionContext) : Decidable (Domain migration pre state) :=
+  inferInstanceAs (Decidable (pre state ∧ migration.SucceedsFrom state.clock state.index state.connection))
+
 /-- Run the migration, then the application, returning the application's value.
 An unmodeled migration stop still returns none through the ordinary interpreter. -/
 def after {μ α : Type} (migration : Sql μ) (application : Sql α) : Sql α :=

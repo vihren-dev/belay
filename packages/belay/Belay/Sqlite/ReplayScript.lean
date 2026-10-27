@@ -102,6 +102,9 @@ structure Report where
   outputs : List Output := []
   /-- SQLite shell text: construction, bindings and original statements. -/
   sqlite : String
+  /-- What the replay does not cover, for a claim about a program that runs Lean code. None when the
+  replay runs every statement of the claim. -/
+  note : Option String := none
 
 /-- Prepare the database-only replay for an arbitrary Lean predicate. It does not invent a
 query for that predicate. The witness's logical refutation is checked separately. -/

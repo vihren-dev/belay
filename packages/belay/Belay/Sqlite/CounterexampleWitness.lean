@@ -1,6 +1,8 @@
 import Belay.Sqlite.CounterexampleCertificate
+import Belay.Sqlite.CounterexampleActual
 import Belay.Sqlite.DbBang
 import Belay.Sqlite.Success
+import Belay.Sqlite.ExecutionContext
 
 set_option doc.verso true
 
@@ -26,13 +28,17 @@ structure Witness where
   /-- Explicit inputs by quantified binder name, for example the value of {lit}`:amount`. -/
   named : Array (Name × Expr) := #[]
 
-/-- Choose a supplied named input, database or environment for a quantified binder.
+/-- Choose a supplied named input, database, environment or context for a quantified binder.
+A context is the initial context of the witness's database and environment: a claim for every
+context is refuted by one context, and the initial one needs no other input.
 An unassigned binder is an error, rather than an assumed value. Named inputs take priority,
 so a claim with several databases can supply a different term for each binder. -/
 def Witness.choose (witness : Witness) (name : Name) (type : Expr) : MetaM Expr := do
   if let some (_, value) := witness.named.find? (·.1 == name) then return value
   if ← isDefEq type (mkConst ``Database) then return witness.database
   if ← isDefEq type (mkConst ``Env) then return witness.environment
+  if ← isDefEq type (mkConst ``ExecutionContext) then
+    return mkApp2 (mkConst ``ExecutionContext.initial) witness.database witness.environment
   throwError "no SQL witness input for {name} : {type}; supply it by name"
 
 /-- Apply a claimed universal fact to concrete inputs and checked preconditions until a
@@ -50,6 +56,8 @@ private def contradictAt (choose : Name → Expr → MetaM Expr) (excluded : Arr
       try
         return mkApp (← decideCertified (mkNot proposition) excluded excludedLocals) claimed
       catch _ => pure ()
+      if let some refutation ← (try refuteByActualRun? claimed excluded excludedLocals catch _ => pure none) then
+        return refutation
     match ← whnf proposition with
     | .forallE name domain _ _ =>
       let input ← if ← isProp domain then decideCertified domain excluded excludedLocals else choose name domain
