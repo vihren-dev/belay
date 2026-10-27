@@ -541,3 +541,21 @@ an earlier statement changed without an origin after `ROLLBACK`. This is conserv
 rolled-back change touched loses its jump, and a name that no statement changed keeps it. The restoration of the exact
 origins of a rolled-back transaction is not implemented (a `db!` text with `ROLLBACK` has no origins either).
 The renames test adds a transaction that swaps two names and rolls back.
+
+### Part 3, commit 4: the names of the query of INSERT ... SELECT (2026-10-27)
+
+- No source change was needed: `resolveInsertQueryTraced` puts the target column list at path 1 and the query below
+  path 2, and the query of the body has the field order of a `SELECT` statement, so `nameSites` maps its names to the
+  text. The commit adds the missing server fixtures (suite `surfaceChecks`).
+- Test: `tests/surface_editor_insert_names_test.py`: the target column list has the same hover as the list of
+  `INSERT ... VALUES` (equal text for three columns); the names of the query show table, alias, declared type, affinity and
+  collation; a comparison in `WHERE` shows its column; the columns of a `WITH` definition of the statement are derived
+  columns; `variable` token. Corrections at the exact name for a typo in the query, in the target column list, in a
+  subquery, in the target table and in the source table; none for a distant name; the DQS warning for an unknown
+  double-quoted name of the query with the quoted fix, none for a quoted existing column; an ambiguous name only has
+  the error. Seven statements fail in one document, one error each.
+- Documented gaps (the trace's, as in part 2b): `*` expansions of the query (`INSERT INTO t SELECT * FROM s`), names
+  after the first failing name of a statement, names in the body of a stored view, function and collation names.
+  The target column list of an `INSERT ... SELECT` that the resolver rejects before it reaches the list (a view target,
+  a rowid name) gets no column information.
+- Generalization analysis: no new statement.

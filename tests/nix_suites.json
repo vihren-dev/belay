@@ -194,7 +194,8 @@
     "tests/surface_inference_test.py",
     "tests/surface_editor_insert_tables_test.py",
     "tests/surface_editor_insert_order_test.py",
-    "tests/surface_editor_renames_test.py"
+    "tests/surface_editor_renames_test.py",
+    "tests/surface_editor_insert_names_test.py"
   ],
   "surfaceS6": [
     "tests/surface_s6_check_programs_test.py",
