@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; part 3 (2026-10-27) covers the statements of the table-rebuild task.
+Created 2026-10-24. Status: DONE (2026-10-27). Part 1, part 2a, part 2b and part 3 are accepted; part 3 covers the statements of the table-rebuild task.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -573,3 +573,25 @@ The renames test adds a transaction that swaps two names and rolls back.
 - Documented gap: the column name of `DROP COLUMN` and of `RENAME COLUMN` is in an `ALTER` statement, whose names the
   trace does not cover (part 2b), so it has no column hover or correction.
 - Generalization analysis: no new statement.
+
+### Part 3, Nix results and acceptance (2026-10-27)
+
+Tree: the commit `review: record the reviews of editor part 3` (code and tests are those of commit 5). `just dev-build` passed
+right before `just test-full`. All commands ran through `heavy.sh` with `max-jobs = 2` and `cores = 2`.
+
+- `just test-full`: passed, 1401 tests, 0 failures, errors or skips,
+  `/nix/store/1n9dyhd5dfq2rvgn1nx9njsk22iawdjw-sqlite-verifier-test-reports`. The new editor tests are in the suite
+  `surfaceChecks` (22 tests, 383 s, limit 1200 s), `/nix/store/95vsh40yq5q4dm71dkhgz9ik6pv9k8z8-sqlite-verifier-test-surfaceChecks-1`;
+  `surface` 377 tests, 709 s, `/nix/store/jp4cm5mv5cm81j1av4mfm2k5kcpla5j1-sqlite-verifier-test-surface-1`;
+  `surfaceS6` 59 tests, 594 s, `/nix/store/r23r7vbpb6dcj7ilqj1rvq4n1pc3sj22-sqlite-verifier-test-surfaceS6-1`.
+- `just verdict`: passed, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. This is the same store
+  path as the verdict of the base, and `report.json` is equal case by case (56 corpora), so no prediction changed.
+- `just test-nix`: 71 passed.
+- `just test-scheduled-checks`: `/nix/store/isndl4aymg4i442a7xhl76a75nmcd1pg-sqlite-verifier-scheduled-check-reports`.
+- Reviews (Codex): `20261027T150936Z-37458be3` (one should, fixed), `20261027T151405Z-812b2d96` (one should, fixed),
+  `20261027T151904Z-f6a020a2` (one must, fixed by the ROLLBACK refactor), `20261027T152054Z-c1dc66f0` (none),
+  `20261027T152348Z-92c6c552` (one should, fixed), `20261027T152602Z-8ffc1abb` (none).
+
+Part 3 is accepted and the editor task is DONE. Open points: an `INSERT ... SELECT` could get evidence from the alternative
+executions of a write (`runScriptStep`), which the task does not ask for; a `ROLLBACK` in a `sql!` script drops the origin
+of every name that an earlier statement changed (conservative).

@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; part 3 (2026-10-27) covers the statements of the table-rebuild task.
+Created 2026-10-24. Status: DONE (2026-10-27). Part 1, part 2a, part 2b and part 3 are accepted; part 3 covers the statements of the table-rebuild task.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
