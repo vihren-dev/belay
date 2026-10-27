@@ -27,6 +27,7 @@ stopped at a gap (2026-10-27)".
 - 2026-10-27: slice 1 committed: the step, frame and failure laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas `foreign_keys` and `foreign_key_check`, and rename, with the table found by name (`TableByName`). Review `20261027T142434Z-f0c30a5b`: 3 musts (restatements of three drop and failure laws), fixed in the refactor commit after it. Part 1 is checked by `just dev-build` on the full tree; the Nix gates run at the end of Part 1.
 - 2026-10-27: slice 2 committed: read certificates and frames by table name (the single-position form is replaced and all callers moved), and translation over several end states (`Migration.translatesAt_of_observations`).
 - 2026-10-27: slice 3 committed: the success law of INSERT from a query without rules (`runScriptStep_insertSelect_success`), the productions of a plain scan, and the upsert of appended rows. The case with rules (foreign keys on, or triggers) is an open point.
+- 2026-10-27: slice 4 committed: the fixtures `SchemaStepLaws`, `ControlStepExamples`, `CertificateAfterDrop`, `InsertSelectExamples` and `SchemaScriptReplays` with `tests/surface_schema_script_test.py` (16 s locally; in the suite `surfaceS6`, 611 s of 1200 s in the last full run of the split). The suite split (`tasks/surface-suite-split-3`) is merged below this commit.
 
 ## Generalization analysis (per statement)
 
@@ -90,3 +91,12 @@ Implementation of the step laws (2026-10-27). All new modules are in
   nothing about the counts of the run. `Query.productions_scan` gives the productions of any simple
   query of one table scan, for every quiet context; `productions_scan_single` gives the certain
   case when the table has one access order.
+- Fixtures (\`tests/surface/SchemaStepLaws.lean\` and the modules after it). Kernel examples of each new law
+  on concrete databases: failure laws of CREATE TABLE and DROP TABLE; the frame law of DROP TABLE with
+  foreign keys off (the child is found by name at position 0 with its three rows); DROP TABLE with foreign
+  keys on, whose cascade empties the child, so the frame law needs its premise; BEGIN, COMMIT and the
+  pragmas on both sides of a transaction; a read certificate that survives the drop of an earlier table;
+  the success law of INSERT from a query and four failing cases, one for each of NOT NULL, a duplicate
+  key, CHECK and a STRICT type, each with the constraint error 19 from the model and with the field of
+  \`InsertFits\` that fails. The native check runs four scripts on pinned SQLite 3.51.0 and compares rows and
+  refusals with the model.
