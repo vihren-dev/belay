@@ -19,7 +19,13 @@ The frontend maps these statements, and refuses every other statement as
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition, `ALTER TABLE … RENAME TO name` and
-  `ALTER TABLE … RENAME [COLUMN] a TO b` (ADR 0019, D4);
+  `ALTER TABLE … RENAME [COLUMN] a TO b` and `ALTER TABLE … DROP [COLUMN] a` (ADR 0019, D4). A drop
+  removes the column and its cells, keeps the other cells, the rowids and the table order, and fails with the
+  error of SQLite when a key, an index, a CHECK constraint, a generated column, a foreign key, a view or a
+  trigger still depends on the column (restriction `alter-drop` for the cases outside the model). The table
+  rebuild of the guide runs step by step: `CREATE TABLE`, `INSERT … SELECT`, `DROP TABLE` and a rename of the new
+  table to the name of the dropped one, which gives the foreign keys of the children their parent again; with
+  enforcement on, the `DROP TABLE` cascades, and with enforcement off the children keep their rows;
 - `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
@@ -628,6 +634,7 @@ should shrink.
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |
 | `initial-database` | A table qualified with `before` outside a two-state query that is given the initial database, such as a table in the body of a trigger, and a function or pragma source with that schema name, are not modeled; the model never reads the current table instead. `CREATE VIEW` with such a table in its body is refused with the same restriction, because SQLite refuses it. A function call such as `json_each('[1]')` in the body of a view of the initial database is also refused when the current catalog has a view of the same name, because the model would read the wrong catalog, and a call of `pragma_table_info` or `pragma_foreign_key_list` in such a view body is refused, because SQLite refuses a view over a pragma function in an attached database. A three-part column name needs such a source, so without one it is the ordinary missing-column error, except that a rowid name in it is the restriction `rowid-name` | ADR 0017, S6 |
 | `alter-rename` | `ALTER TABLE t RENAME TO u` and `ALTER TABLE t RENAME COLUMN a TO b` are checked in SQLite's order (table, new name, system table, view, old column) and then rewrite the catalog as SQLite does: foreign keys, CHECK labels, views and triggers follow the new name, and a view or trigger that does not resolve is the error of SQLite. The statement is refused when a view or trigger of the schema has a name that the model cannot rewrite exactly (a column that a join merged, ON CONFLICT clauses in a trigger, a trigger statement or a view that fails only when it runs, such as an INSERT with too few values or a recursive WITH term with an aggregate), when a column rename finds a CHECK text with a double quote that no name covers, or when the new name is outside the model; drop and create the object again, or rename the table before you create the object | ADR 0019, D4 |
+| `alter-drop` | `ALTER TABLE t DROP COLUMN a` is checked in SQLite's order (table, system table, view, column, primary key, UNIQUE column, last column, then the schema tests before and after the edit) and removes the column and its cells. It is not modeled when the table is the parent of a foreign key, when a trigger names the column in `UPDATE OF`, when several kinds of definition (a table-level key, a CHECK constraint, a generated column, a foreign key) still name the column, when the text of such a definition spells the column with a quote, a table name or another letter case than the declaration, or when the catalog after the drop is outside the model; rebuild the table with `CREATE TABLE`, `INSERT SELECT`, `DROP TABLE` and `ALTER TABLE RENAME` | ADR 0019, D4 |
 
 #### Undecided
 

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveAddColumnCatalog
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.Resolution.NamesSpec
 
@@ -82,6 +83,10 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).valid current)
+  | dropColumn table column columnToken =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ ((resolveDropColumn_outcome _ _ _ _ _ _ _ (by assumption)).valid current)
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found

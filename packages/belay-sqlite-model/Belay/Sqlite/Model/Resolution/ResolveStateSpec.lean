@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ApplyCatalogSpec
+import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Model.Resolution.DropSpec
 import Belay.Sqlite.Model.Resolution.TriggerDefinitionSpec
@@ -27,7 +28,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .rollback => { state with catalog := state.saved.getD state.catalog, saved := none }
   | .setting setting on => state.set on setting
   | statement@(.createTable ..) | statement@(.createView ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
-  | statement@(.addColumn ..) | statement@(.rewrite _) | statement@(.drop ..)
+  | statement@(.addColumn ..) | statement@(.rewrite _) | statement@(.dropColumn ..) | statement@(.drop ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.insertSelect ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query ..) =>
     { state with catalog := statement.applyCatalog state.catalog }
@@ -42,7 +43,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback | setting => cases ordinary
-  | createTable | createView | createIndex | createTrigger | addColumn | rewrite | drop | insert | update | upsert | insertSelect | delete
+  | createTable | createView | createIndex | createTrigger | addColumn | rewrite | dropColumn | drop | insert | update | upsert | insertSelect | delete
   | prepareError | query => rfl
 
 /-- For every context, state and statement that resolves, the next state is
@@ -106,6 +107,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := (resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).applyCatalog
+    exact ordinary _ control equal
+  | dropColumn table column columnToken =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := (resolveDropColumn_outcome _ _ _ _ _ _ _ (by assumption)).applyCatalog
     exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [statement_arms] at ok

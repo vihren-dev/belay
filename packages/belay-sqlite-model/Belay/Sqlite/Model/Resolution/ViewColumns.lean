@@ -80,14 +80,14 @@ def PrepareError.viewModified? : PrepareError → Option Identifier
   | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
   | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
   | .noSuchTrigger _ | .triggerExists _ | .viewNotIndexed | .viewAddColumn | .viewTrigger .. | .renameTargetTaken _
-  | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _ | .dependentObject ..
+  | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _ | .dependentObject .. | .dropColumn _
   | .expression _ => none
 
 /-- Whether a resolved statement is the refusal of a write to a view
 ({name}`PrepareError.viewModified?`). -/
 def Resolved.Statement.isViewModify : Resolved.Statement → Bool
   | .prepareError error => error.viewModified?.isSome
-  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .dropColumn ..
   | .drop .. | .begin | .commit | .rollback | .setting .. | .query .. | .insert .. | .update ..
   | .upsert .. | .insertSelect .. | .delete .. => false
 

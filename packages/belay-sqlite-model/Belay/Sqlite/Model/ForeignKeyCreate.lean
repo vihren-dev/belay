@@ -19,7 +19,7 @@ def Resolved.Statement.CreatesObject (statement : Resolved.Statement) (object : 
   | .createIndex _ name index => object = {name, entry := .index index}
   | .createTrigger _ name trigger => object = {name, entry := .trigger trigger}
   | .createView _ name view => object = {name, entry := .view view}
-  | .addColumn .. | .rewrite _ | .drop .. | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete ..
+  | .addColumn .. | .rewrite _ | .dropColumn .. | .drop .. | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete ..
   | .query .. | .begin | .commit | .rollback | .prepareError .. | .setting .. => False
 
 /-- For every CREATE statement with the specified object, clock, counters, parameters and
@@ -56,7 +56,7 @@ theorem runStatement_create_frame (clock : Int) (counters : Counters) (parameter
         · intro after kept; rcases kept with kept | kept <;> cases kept
         · exact Effect.satisfies_of_effectDatabase ⟨fits.2, rfl⟩
     · intro after kept; rcases kept with kept | kept <;> cases kept
-  | addColumn | rewrite | drop | insert | upsert | insertSelect | update | delete | query | begin | commit
+  | addColumn | rewrite | dropColumn | drop | insert | upsert | insertSelect | update | delete | query | begin | commit
   | rollback | prepareError | setting => exact False.elim creates
 
 /-- For any mapping selected as a function of the catalog, a CREATE statement preserves

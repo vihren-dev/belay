@@ -343,6 +343,25 @@ RECURSIVE keyword, MATERIALIZED hints, INSTEAD OF triggers, TEMP views, the tabl
 view, errors that SQLite finds only when a statement runs a view, uncertain LIMIT membership and fallible source
 bodies. Task-end Nix checks passed on the integration `431cdd16`.
 
+2026-10-27, slice 5 (D4, the table rebuild) in three parts, ready for the end-of-task checks. Part 1: INSERT from a
+query runs with the explicit possible executions and states of the possible write executions task. Part 2: RENAME TO
+and RENAME COLUMN rewrite the names in the catalog, the views, the triggers, the indexes, the CHECK texts and the
+foreign keys of the tables, with the prepare errors of SQLite in its order. Part 3: DROP COLUMN removes the column and
+its cells, keeps the rowids and the order, and refuses a primary key, a UNIQUE column, the last column, a column that
+a key, a CHECK, a generated expression, a foreign key, an index, a view or a trigger still names, with the native
+error text. A failed ALTER keeps the database, and ALTER takes part in snapshots and in rollback. The guide's
+rebuild runs step by step: the unsafe DROP-based rebuild cascades into the children when enforcement is on, the
+corrected rebuild keeps the rows and `PRAGMA foreign_key_check` reports the violations of the new table, a new
+connection starts with enforcement off, and `PRAGMA foreign_keys` has no effect inside a transaction. A rename may now
+make a foreign key that had no parent find one; the proofs of the foreign-key atoms state the equality of the selected
+parents for that step. Preservation proofs cover every new statement and run path, including rollback.
+The Nix-selected tests pass (`/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`) and the
+frozen verdict has no DISAGREE (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`): after part 3,
+186 cases change from MODEL_UNSUPPORTED to AGREE. Remaining restrictions: `legacy_alter_table = ON`, a schema
+name in ALTER TABLE, a DROP COLUMN of any column of a table that a foreign key references, `UPDATE OF` triggers that
+name the dropped column, and a drop whose dependent definitions are of several kinds or have a spelling that the
+catalog does not record. The authored corpus of these cases is not frozen here; the judge PR owns that.
+
 ## Owner decisions
 
 Decided on 2026-10-22:

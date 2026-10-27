@@ -31,11 +31,11 @@ def RenameFailure.resolution (catalog : Catalog) : RenameFailure → StatementRe
 ({name}`PrepareError.raisedByRename`) becomes the error of the object; any other prepare error is a
 restriction, because the model then has no complete trace of the names of the definition; a restriction
 stays. -/
-def RenameFailure.inObject (kind : DependentKind) (name : Identifier) (afterRename : Bool) :
+def RenameFailure.inObject (kind : DependentKind) (name : Identifier) (phase : DependentPhase) :
     RenameFailure → RenameFailure
   | .restricted reason => .restricted reason
   | .prepare error =>
-    if error.raisedByRename then .prepare (.dependentObject kind name afterRename error) else .restricted .alterRename
+    if error.raisedByRename then .prepare (.dependentObject kind name phase error) else .restricted .alterRename
 
 /-- The failure that an issue of the resolution of a query is. -/
 def SourceIssue.failure : SourceIssue → RenameFailure
@@ -49,18 +49,18 @@ def viewResolution (context : ResolveContext) (catalog : Catalog) (view : Catalo
   resolveSelectDetailsTraced context catalog view.query view.subqueries
 
 /-- Whether the view resolves over the catalog; the failure is the error of the view. -/
-def checkView (context : ResolveContext) (catalog : Catalog) (name : Identifier) (afterRename : Bool)
+def checkView (context : ResolveContext) (catalog : Catalog) (name : Identifier) (phase : DependentPhase)
     (view : CatalogView) : Except RenameFailure Unit :=
   match (viewResolution context catalog view).drop with
   | .ok _ => .ok ()
-  | .error issue => .error (issue.failure.inObject .view name afterRename)
+  | .error issue => .error (issue.failure.inObject .view name phase)
 
 /-- Whether the trigger at the position resolves over the catalog; the failure is the error of the trigger. -/
 def checkTrigger (context : ResolveContext) (catalog : Catalog) (position : Nat) (name : Identifier)
-    (afterRename : Bool) (trigger : CatalogTrigger) : Except RenameFailure Unit :=
+    (phase : DependentPhase) (trigger : CatalogTrigger) : Except RenameFailure Unit :=
   match (resolveProgramTraced context catalog position trigger).drop with
   | .error restriction => .error (.restricted restriction.kind)
-  | .ok (.error error) => .error ((RenameFailure.prepare error).inObject .trigger name afterRename)
+  | .ok (.error error) => .error ((RenameFailure.prepare error).inObject .trigger name phase)
   | .ok (.ok _) => .ok ()
 
 /-- The view after the rename. The edits come from the resolution of the view over the catalog before the
@@ -69,7 +69,7 @@ def renameView (context : ResolveContext) (catalog : Catalog) (request : RenameR
     (view : CatalogView) : Except RenameFailure CatalogView := do
   let resolution := viewResolution context catalog view
   match resolution.drop with
-  | .error issue => throw (issue.failure.inObject .view name false)
+  | .error issue => throw (issue.failure.inObject .view name .current)
   | .ok _ => pure ()
   let edits ← (request.edits false resolution.trace).mapError .restricted
   match view.renameAll edits with
@@ -103,7 +103,7 @@ def renameTrigger (context : ResolveContext) (catalog : Catalog) (request : Rena
   let resolution := resolveProgramTraced context catalog position trigger
   match resolution.drop with
   | .error restriction => throw (.restricted restriction.kind)
-  | .ok (.error error) => throw ((RenameFailure.prepare error).inObject .trigger name false)
+  | .ok (.error error) => throw ((RenameFailure.prepare error).inObject .trigger name .current)
   | .ok (.ok _) => pure ()
   if trigger.body.any BodyStatement.hasConflictClauses then throw (.restricted .alterRename)
   let renamedTable := match request.target with

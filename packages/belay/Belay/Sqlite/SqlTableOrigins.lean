@@ -60,7 +60,7 @@ def databaseLiteral? (database : Expr) : Option Expr :=
 /-- Whether the statement is {lit}`ROLLBACK`, which may undo any creation of a table. -/
 def isRollback : Syntax.Statement → Bool
   | .rollback => true
-  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .begin | .commit | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 
@@ -72,7 +72,7 @@ def stepCreatedSlots (bytes : ByteArray) (slots : List TableSlot) (item : Locate
   | .createTable name .. =>
     slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
   | .dropTable name _ => slots.filter (·.name.folded != name.folded)
-  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
+  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
   | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
   | .dropTrigger .. => slots
 

@@ -5,6 +5,8 @@ import Belay.Sqlite.Model.Resolution.IndexTerms
 import Belay.Sqlite.Model.Resolution.GeneratedColumns
 import Belay.Sqlite.Model.Resolution.TableOptions
 import Belay.Sqlite.Model.Resolution.ParentKeys
+import Belay.Sqlite.Model.Resolution.SpelledNames
+import Belay.Sqlite.Model.Resolution.StatisticsTables
 set_option doc.verso true
 
 /-! Name resolution of CREATE TABLE and CREATE INDEX ({lit}`AddColumn.lean` resolves ALTER
@@ -119,13 +121,6 @@ def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     addTableConstraints tableName { table with foreignKeys := table.foreignKeys ++ [key] } rest
   | .deferral deferred :: rest => addTableConstraints tableName (table.deferLast deferred) rest
 
-/-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
-def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
-    (constraints : List Syntax.TableConstraint) : Bool :=
-  let plain := fun (names : List Identifier) => columns == names.map fun column =>
-    { name := column, declaredType := none, constraints := [] }
-  constraints.isEmpty && (statisticsColumns name.folded).any plain
-
 /-- Resolve CREATE TABLE, of a catalog description or in a script. Path 1 is the column list
 and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
 ({name}`CatalogTable.asWithoutRowid`) without a primary key is SQLite's
@@ -166,7 +161,8 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
         if columns.any (rowidName ·.name) then restrict [1] .rowidColumnName
         else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
           restrict [1] .unmodeledDefault
-        else .ok (.createTable catalog.length name table, catalog.createTable name table)
+        else .ok (.createTable catalog.length name (table.withSpelling columns constraints),
+          catalog.createTable name (table.withSpelling columns constraints))
 
 /-- Resolve CREATE INDEX, of a catalog description or in a script, in SQLite's order: the
 table, its reserved name, the index name, the name in use, the key terms
@@ -195,6 +191,7 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog)
       | .ok keys => match indexFilter dqs scope filter with
         | .error issue => issueResolution catalog [4] issue
         | .ok resolvedFilter =>
-          let created := { table := position, keys, unique, filter := resolvedFilter }
+          let created := { table := position, keys, unique, filter := resolvedFilter,
+                              exactNames := indexSpelledAsDeclared table.columns terms filter }
           .ok (.createIndex catalog.length name created, catalog.createIndex name created)
 end Belay.Sqlite.Model

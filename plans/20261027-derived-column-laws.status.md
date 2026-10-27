@@ -200,3 +200,8 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
   results in the status file) are fixed by this wording.
 - 2026-10-27: review `20261027T111227Z-7a296e38` of the first `refactor:` commit: the example of when the
   premise `agree` holds was too weak (BLOB affinity); the example is deleted.
+- 2026-10-27: merged `tasks/table-rebuild-part3` (PR #282, `b7ec539c`) as the change `merge: table rebuild
+  part 3 into the derived-column laws`. The only textual conflict was the model `lakefile.toml` glob list
+  (union of both sides, with the 13 removed `NormalizedField*` modules dropped). The barrels merged without
+  conflict. Part 3's new resolved statement constructor `.dropColumn` needed no change in the new modules.
+  The model, belay and verifier-conformance packages build on the merged tree.

@@ -118,6 +118,11 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+  | dropColumn position index stored =>
+    simp only [literalStep, runStatement, step] at success
+    split at success
+    · cases success; exact ⟨rfl, rfl⟩
+    · cases success
   | rewrite renamed =>
     simp only [literalStep, runStatement, step] at success
     split at success

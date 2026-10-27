@@ -47,7 +47,7 @@ def run (table : String) (columns : Option (List String)) (source : Syntax.Selec
 def prepared : Except NodeRestriction (Resolved.Statement × ResolveState) → Option PrepareError
   | .ok (.prepareError error, _) => some error
   | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
-  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _)
+  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _)
   | .ok (.upsert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _)
   | .error _ => none
 
@@ -111,7 +111,7 @@ def refused : Except NodeRestriction (Resolved.Statement × ResolveState) → Op
 def cellsOf : Except NodeRestriction (Resolved.Statement × ResolveState) → Option (List Resolved.SourceCell)
   | .ok (.insertSelect _ cells .., _) => some cells
   | .ok (.prepareError _, _) | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
-  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
+  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
   | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.upsert .., _) | .ok (.update .., _) | .ok (.delete .., _)
   | .ok (.query .., _) | .ok (.setting .., _) | .error _ => none
 

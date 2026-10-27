@@ -33,8 +33,17 @@ theorem CatalogTable.draft_of_built {limit : Nat} {name : Identifier} {strict : 
     simp only [List.length_map] at this
     omega
 
+/-- For every limits, definitions, table constraints and table: the spelling of the names
+({name}`CatalogTable.withSpelling`) does not change whether the table is supported. Proof sketch: the
+spelling sets only fields that {name}`CatalogTable.supported` does not read, so both sides are one term. -/
+theorem CatalogTable.supported_withSpelling (limits : Limits) (definitions : List Syntax.ColumnDefinition)
+    (constraints : List Syntax.TableConstraint) (table : CatalogTable) :
+    (table.withSpelling definitions constraints).supported limits = table.supported limits := rfl
+
 /-- For every valid catalog and every table that CREATE TABLE builds: if the name is not used, is not
-reserved, and the table is supported, the catalog with the table appended is valid. The stages before
+reserved, and the table is supported, the catalog with the table appended is valid. The appended table is the
+table with the spelling of its definitions and constraints ({name}`CatalogTable.withSpelling`), which does not
+change whether it is supported. The stages before
 the table are facts about the table {lit}`first`, which the options of the table give, and the CHECK
 constraints and generated columns that follow. Proof sketch: {name}`Catalog.Valid.append`, with the
 table supported by {name}`CatalogTable.supported_of_finished`. -/
@@ -53,11 +62,11 @@ theorem Catalog.Valid.createTable {context : ResolveContext} {catalog : Catalog}
       first definitions constraints = .ok second)
     (generated : resolveGeneratedColumns context.profile.dqsDdl (Scope.single name second.columns false) second
       definitions = .ok third) :
-    (catalog.createTable name third).Valid context.profile.limits := by
+    (catalog.createTable name (third.withSpelling definitions constraints)).Valid context.profile.limits := by
   have ordinary : reservedName name = false := by simpa [execution] using notReserved
-  refine Valid.append valid { name, entry := .table third } (fun _ => fresh) ?_
+  refine Valid.append valid { name, entry := .table (third.withSpelling definitions constraints) } (fun _ => fresh) ?_
   simp only [CatalogObject.supported, ordinary, Bool.not_false, Bool.true_or, Bool.and_true]
-  exact CatalogTable.supported_of_finished shaped aliasKind named within notGenerated ordinaryNames checked generated
+  exact (CatalogTable.supported_withSpelling _ _ _ _).trans <| CatalogTable.supported_of_finished shaped aliasKind named within notGenerated ordinaryNames checked generated
 
 /-- For every context in execution mode, valid catalog, name, definitions and table constraints: if
 * the name is not found in the catalog and is not reserved;
@@ -67,7 +76,7 @@ theorem Catalog.Valid.createTable {context : ResolveContext} {catalog : Catalog}
   {lit}`second` resolve to {lit}`third`;
 * no definition has the name of the rowid;
 
-then the catalog with {lit}`third` appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
+then the catalog with {lit}`third` and its spelling ({name}`CatalogTable.withSpelling`) appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
 table is a draft ({name}`CatalogTable.draft_of_built`), its WITHOUT ROWID form is shaped
 ({name}`CatalogTable.asWithoutRowid_shaped`), and {name}`Catalog.Valid.createTable` ends the proof. -/
 theorem Catalog.Valid.createTable_withoutRowid {context : ResolveContext} {catalog : Catalog} {name : Identifier}
@@ -85,7 +94,7 @@ theorem Catalog.Valid.createTable_withoutRowid {context : ResolveContext} {catal
     (generated : resolveGeneratedColumns context.profile.dqsDdl (Scope.single name second.columns false) second
       definitions = .ok third)
     (ordinaryNames : ¬(definitions.any fun definition => rowidName definition.name) = true) :
-    (catalog.createTable name third).Valid context.profile.limits := by
+    (catalog.createTable name (third.withSpelling definitions constraints)).Valid context.profile.limits := by
   obtain ⟨draft, named, within⟩ := CatalogTable.draft_of_built built
   have layouts := table.asWithoutRowid_layouts
   refine Valid.createTable valid execution fresh notReserved (CatalogTable.asWithoutRowid_shaped draft)
@@ -102,7 +111,7 @@ theorem Catalog.Valid.createTable_withoutRowid {context : ResolveContext} {catal
   {lit}`second` resolve to {lit}`third`;
 * no definition has the name of the rowid;
 
-then the catalog with {lit}`third` appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
+then the catalog with {lit}`third` and its spelling ({name}`CatalogTable.withSpelling`) appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
 table is a draft ({name}`CatalogTable.draft_of_built`), its form with strict keys is shaped
 ({name}`CatalogTable.withStrictKeys_shaped`), and {name}`Catalog.Valid.createTable` ends the proof. -/
 theorem Catalog.Valid.createTable_ordinary {context : ResolveContext} {catalog : Catalog} {name : Identifier}
@@ -120,7 +129,7 @@ theorem Catalog.Valid.createTable_ordinary {context : ResolveContext} {catalog :
     (generated : resolveGeneratedColumns context.profile.dqsDdl (Scope.single name second.columns false) second
       definitions = .ok third)
     (ordinaryNames : ¬(definitions.any fun definition => rowidName definition.name) = true) :
-    (catalog.createTable name third).Valid context.profile.limits := by
+    (catalog.createTable name (third.withSpelling definitions constraints)).Valid context.profile.limits := by
   obtain ⟨draft, named, within⟩ := CatalogTable.draft_of_built built
   have layouts := table.withStrictKeys_layouts
   obtain ⟨shaped, ordinary, alias⟩ := CatalogTable.withStrictKeys_shaped draft

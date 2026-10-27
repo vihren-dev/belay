@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
 import Belay.Sqlite.Model.OutlineTableLaws
 import Belay.Sqlite.Model.RowEngineFacts
+import Belay.Sqlite.Model.DropColumnFactLaws
 
 set_option doc.verso true
 
@@ -51,7 +52,8 @@ statements need of an atom that reads one row at a time. Three facts:
 * a table that passes the checks of a write ({name}`LiteralData.constraints`) has it, for every
   keys;
 * a table with the same rows as a table that has it, and a shape that differs only in names
-  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table).
+  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table);
+* a table that has it and can lose a column cleanly still has it without the column (DROP COLUMN stores such a table).
 
 {lit}`Table.notNullAtom`, {lit}`Table.typesFitAtom` and {lit}`Table.checksHoldAtom` are the
 instances. -/
@@ -67,6 +69,9 @@ structure RowLocalAtom (atom : Table → Prop) : Prop where
   ({lit}`CatalogTable.blankNames`) as a table that has the property has it. -/
   renamed : ∀ table other, atom table → other.rows = table.rows →
     table.shape.blankNames = other.shape.blankNames → atom other
+  /-- A table that can lose a column ({lit}`CatalogTable.DropsCleanly`) and has the property still has it after
+  the drop ({lit}`Table.dropColumn`): a DROP COLUMN stores such a table. -/
+  dropped : ∀ table index, atom table → table.shape.DropsCleanly index → atom (table.dropColumn index)
 
 /-- A {name}`RowLocalAtom` gives the facts of {name}`TableFacts` for the fact that ignores the catalog
 and the position: the row engine keeps it. Proof sketch: the sublist and constraints facts of the
@@ -83,6 +88,7 @@ theorem Table.notNullAtom : RowLocalAtom Table.NotNull where
   sublist _ _ notNull same sub := notNull.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).1
   renamed _ _ holds rows same := holds.of_blankNames rows same
+  dropped _ _ holds inside := holds.dropColumn _
 
 /-- "Types fit" is a {name}`RowLocalAtom`. Proof sketch: as {name}`Table.notNullAtom`, with
 {name}`Table.TypesFit.frame`. -/
@@ -91,6 +97,7 @@ theorem Table.typesFitAtom : RowLocalAtom Table.TypesFit where
   sublist _ _ fits same sub := fits.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).2.1
   renamed _ _ fits rows same := fits.of_blankNames rows same
+  dropped _ _ fits _ := fits.dropColumn _
 
 /-- "Checks hold" is a {name}`RowLocalAtom`. Proof sketch: as {name}`Table.notNullAtom`, with
 {name}`Table.ChecksHold.frame`. -/
@@ -99,5 +106,6 @@ theorem Table.checksHoldAtom : RowLocalAtom Table.ChecksHold where
   sublist _ _ holds same sub := holds.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).2.2.1
   renamed _ _ holds rows same := holds.of_blankNames rows same
+  dropped _ _ holds clean := holds.dropColumn clean
 
 end Belay.Sqlite.Model

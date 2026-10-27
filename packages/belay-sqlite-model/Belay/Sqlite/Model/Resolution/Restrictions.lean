@@ -183,17 +183,16 @@ inductive RestrictionKind where
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch: SQLite reports the
   first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder
-  /-- {lit}`last_insert_rowid()` in an INSERT, an INSERT from a query or an upsert, and {lit}`total_changes()` in a write that runs trigger
-  programs or foreign-key actions: these writes change the counter while they run (ADR 0024, D2). -/
+  /-- {lit}`last_insert_rowid()` in an INSERT, an INSERT from a query or an upsert, and {lit}`total_changes()` in a write that runs trigger programs or foreign-key actions: these writes change the counter while they run (ADR 0024, D2). -/
   | connectionCounterRead
-  /-- A call of {lit}`changes()`, {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` or
-  {lit}`randomblob(n)` in a generated column, an index expression or the filter of a partial index, in an expression
-  with another error: the error that SQLite reports depends on the order of its walk (ADR 0024, D5). -/
+  /-- A call of {lit}`changes()`, {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` or {lit}`randomblob(n)` in a generated column, an index expression or the filter of a partial index, in an expression with another error: the error that SQLite reports depends on the order of its walk (ADR 0024, D5). -/
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
   /-- ALTER TABLE RENAME that passes the checks of SQLite's prepare, in a catalog with a view, trigger or table whose names the model cannot rewrite exactly, or with a new name outside the model (ADR 0019, D4). -/
   | alterRename
+  /-- ALTER TABLE DROP COLUMN (ADR 0019, D4); until its resolution lands, every such statement. -/
+  | alterDrop
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

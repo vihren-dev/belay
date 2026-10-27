@@ -20,7 +20,7 @@ def Resolved.Statement.fireRequest (keys : Bool) : Resolved.Statement → Option
   | .update table assignments _ _ _ _ => some { table, event := .update (some (assignments.map (·.1))) }
   | .delete table _ _ _ _ => some { table, event := .delete }
   | .drop (table :: _) _ => if keys then some { table, event := .delete, fire := false } else none
-  | .drop [] _ | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .begin | .commit
+  | .drop [] _ | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .dropColumn .. | .begin | .commit
   | .rollback | .prepareError _ | .query .. | .setting .. => none
 
 /-- Whether the catalog has a trigger on the table at the position. -/

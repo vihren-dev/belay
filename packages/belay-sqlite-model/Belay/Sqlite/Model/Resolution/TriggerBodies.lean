@@ -42,7 +42,7 @@ def bodyStep : StatementResolution → Except NodeRestriction (Except PrepareErr
   | .ok (.delete table filter _ subqueries _, _) => writeStep (.delete table filter subqueries)
   | .ok (.query query subqueries, _) => queryStep (.query query subqueries)
   | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
-  | .ok (.insertSelect .., _) | .ok (.drop .., _) | .ok (.rewrite _, _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
+  | .ok (.insertSelect .., _) | .ok (.drop .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
     .error (triggerRestriction .triggerForm)
 
 /-- The step of a resolved body statement with the trace of the resolution:

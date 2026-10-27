@@ -2,7 +2,7 @@ import Belay.Sqlite.Translation.Expressions
 
 set_option doc.verso true
 
-/-! ALTER TABLE RENAME TO and ALTER TABLE RENAME COLUMN. Each production maps to one constructor without
+/-! ALTER TABLE RENAME TO, RENAME COLUMN and DROP COLUMN. Each production maps to one constructor without
 reading the schema; a schema name before the table is refused with its range. The old column name is kept
 as written ({lit}`columnToken`) because SQLite prints it with its quotes in the error of a missing column,
 and the new name keeps whether it was written with a quote, because that decides how SQLite writes the new
@@ -38,5 +38,15 @@ def renameColumn (tree : SqlTree) (command : ParseNode) : TranslateM (Located Sy
   let quoted ← writtenWithQuote tree parts[7]!
   return composite (.renameColumn table.value column.value newName.value columnToken quoted) command.start
     command.stop #[table.span, column.span, newName.span]
+
+/-- {lit}`ALTER TABLE t DROP [COLUMN] a` for an unqualified table name. The column is kept as written
+({lit}`columnToken`) for the same reason as in {name}`renameColumn`. -/
+def dropColumn (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
+  let parts ← require tree command ["ALTER", "TABLE", "fullname", "DROP", "kwcolumn_opt", "nm"]
+  let table ← alterTableName tree parts[2]!
+  let column ← identifierName tree parts[5]!
+  let columnToken := tree.text (← token tree parts[5]!)
+  return composite (.dropColumn table.value column.value columnToken) command.start command.stop
+    #[table.span, column.span]
 
 end Belay.Sqlite.Translation
