@@ -472,6 +472,16 @@ import Belay.Sqlite.Model.OutlineKeyLaws
 import Belay.Sqlite.Model.StatementRewrite
 import Belay.Sqlite.Model.OutlineForeignKeyLaws
 import Belay.Sqlite.Model.OutlineSelectedParentLaws
+import Belay.Sqlite.Model.TableByName
+import Belay.Sqlite.Model.OrdinaryStepEffects
+import Belay.Sqlite.Model.CreateTableStepLaws
+import Belay.Sqlite.Model.DropTableResolution
+import Belay.Sqlite.Model.DropTableStepLaws
+import Belay.Sqlite.Model.ControlStepLaws
+import Belay.Sqlite.Model.PragmaStepLaws
+import Belay.Sqlite.Model.ControlStepFrames
+import Belay.Sqlite.Model.RewriteStepLaws
+import Belay.Sqlite.Model.SchemaFailureLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
