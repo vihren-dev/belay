@@ -76,8 +76,10 @@ where
       let mut open_ := []
       for new in ← getGoals do open_ := open_ ++ (← runGoal hints false (fuel - 1) new)
       return open_
-    let some kind ← statementKind? statement
-      | stuck first goal "the statement is not a constructor that Lean can read."
+    let some kind ← (do match ← statementKind? statement with
+        | some kind => pure (some kind)
+        | none => kindFromHints hints goal)
+      | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of an insert, update, delete or ADD COLUMN."
     setGoals [goal]
     evalTactic (← sendRule kind)
     processPremises hints fuel kind (← getGoals)

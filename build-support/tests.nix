@@ -188,7 +188,8 @@ let
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
   # The surface suites share their inputs. One suite took 1130 s of its 1200 s limit, so the
   # checker, proof-search and sampling tests are in `surfaceChecks`; each suite takes about half.
-  # Two support modules of the checker tests are test files of the `surface` suite.
+  # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
+  # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
                (root + /tests/two_state_support.py)
@@ -199,6 +200,7 @@ let
                (root + /tests/surface_automatic_editor_test.py)
                (root + /tests/shared_table_shape_test.py)
                (root + /tests/surface_replay_test.py) (root + /tests/surface_execution_test.py)
+               (root + /tests/surface_assertion_examples_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;

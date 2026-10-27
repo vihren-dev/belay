@@ -37,6 +37,32 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
     catch _ => pure ()
   return false
 
+/-- The kinds of statement that have a rule of their own, in the order in which {lit}`kindFromHints` tries
+them. -/
+def hintedKinds : List Name :=
+  [``Model.Syntax.Statement.insert, ``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete,
+    ``Model.Syntax.Statement.addColumn]
+
+/-- Choose the rule of a sent statement that Lean cannot read, for example a statement that is a field of a
+structure. The kind is the first of {name}`hintedKinds` whose rule has all its blocking premises closed by the
+hints and the hypotheses. The attempt leaves the goal unchanged: the choice only picks the rule, and the real
+application checks every premise again. -/
+def kindFromHints (hints : Hints) (goal : MVarId) : TacticM (Option Name) := do
+  for kind in hintedKinds do
+    let saved ← Tactic.saveState
+    let mut closed := true
+    try
+      setGoals [goal]
+      evalTactic (← sendRule kind)
+      for new in ← getGoals do
+        let tag := (← new.getTag).eraseMacroScopes
+        if blockingPremises.contains tag then
+          closed := closed && (← closeSide hints tag new)
+    catch _ => closed := false
+    saved.restore
+    if closed then return some kind
+  return none
+
 /-- Introduce the variables and hypotheses of an outcome premise under the given names, and replace the
 variable {lit}`next` by the connection that the equation {lit}`nextIs` gives. -/
 def enterOutcome (names : List Name) (replacesNext : Bool) (goal : MVarId) : TacticM MVarId := do

@@ -194,6 +194,7 @@
     "tests/surface_foreign_key_atoms_test.py"
   ],
   "surfaceChecks": [
+    "tests/surface_derived_column_test.py",
     "tests/surface_sql_check_test.py",
     "tests/surface_sql_check_roots_test.py",
     "tests/surface_counterexample_test.py",

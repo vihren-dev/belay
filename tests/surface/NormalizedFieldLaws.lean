@@ -1,12 +1,14 @@
-import Belay
+import LowercaseFilters
 
-/-! Installed consumers of the normalized-field row and query laws, including
-arbitrary values and a nonempty table. -/
+/-! Installed consumers of the general derived-column row, scan, effect and query laws, with
+{lit}`lower` of one column as the derived expression, including arbitrary values and a nonempty table.
+The lowercase filters come from {lit}`LowercaseFilters`; the row, scan and effect laws are the general
+laws of the model. -/
 
 set_option doc.verso true
 
 namespace NormalizedFieldFixture
-open Belay.Sqlite.Model Belay.Sqlite.Model.Resolved Belay.Sqlite.Model.NormalizedField
+open Belay.Sqlite.Model Belay.Sqlite.Model.Resolved LowercaseFixture
 
 /-- A nonempty table whose email cell can have any storage class. The declared
 BLOB affinity retains that supplied value, and the first column aliases rowid. -/
@@ -21,18 +23,27 @@ def input (value : Value) : Table :=
 /-- The plain TEXT field used by the actual appended-cell UPDATE. -/
 def lowered : CatalogColumn := { name := name! "email_lower", declaredType := some "TEXT" }
 
+/-- The derived expression of the backfill: the lowercase of the email column. -/
+def lowerEmail : Expr := .scalar .lower (.cons (.column 1) .nil)
+
+/-- The field {name}`lowered` has TEXT affinity, so the stored value of the lowercase of a value is that
+lowercase. Proof sketch: the affinity of the declaration is TEXT and {name}`store_lower` applies. -/
+theorem store_lowered (value : Value) : Value.store lowered.affinity (mapText lowerByte value) = mapText lowerByte value :=
+  store_lower value
+
 /-- The real assignment evaluator appends the correct lowercase value for every
 input Value on this nonempty table. Proof sketch: discharge the structural
 premises of the universal row-map theorem from the concrete two-column schema. -/
 theorem backfill_for_every_value (value : Value) :
     (LiteralData.updated (EvalContext.plain 0) ((input value).appendColumns [(lowered, .null)])
-      [(2, .scalar .lower (.cons (.column 1) .nil))] none).rows =
+      [(2, lowerEmail)] none).rows =
       [{ rowid := 1, values := [.integer 1, value, mapText lowerByte value] }] := by
-  have rows := updated_lower_append (EvalContext.plain 0) (input value) lowered 1
-    (by simp [Table.RowsWide, input])
+  have rows := updated_derived_append (EvalContext.plain 0) (EvalContext.plain_rowFree 0) (input value) lowered
+    lowerEmail (by simp [Table.RowsWide, input])
     (by simp [Table.RowsAliased, Row.Aliased, input])
-    (by simp [input]) (by simp [input]) rfl rfl
-  simpa [input, Row.appendValues] using rows
+    (by simp [lowerEmail, Expr.readsBelow, Expr.any, Arguments.any, Expr.isColumnFrom, input])
+    (by simp [input]) rfl
+  simpa [input, Row.appendValues, lowerEmail, eval_lower, Expr.eval_column, store_lowered] using rows
 
 /-- Every parameter Value, including NULL and nontext values, has the same lookup
 result after the corresponding lowercase cell is appended. Proof sketch: apply
@@ -44,7 +55,7 @@ theorem lookup_for_every_parameter (value parameter : Value) :
       (Query.simple [] (some (originalFilter 1 1)) [.scalar (.column 0)] ["id"]).results
         { EvalContext.plain 0 with parameters := [parameter] } [[.integer 1, value]] := by
   simpa using results_translate
-    { EvalContext.plain 0 with parameters := [parameter] }
+    { EvalContext.plain 0 with parameters := [parameter] } (fun _ _ _ => rfl)
     [[.integer 1, value]] [] [] 2 1 0 1 (by simp) (by decide)
 
 /-- Concrete lookups include all five Value constructors: NULL matches nothing,
@@ -78,17 +89,19 @@ alias and key-position premises from the concrete nonempty schema. -/
 theorem scan_transport (withoutRowid : Bool) :
     sourceRows (LiteralData.updated (EvalContext.plain 0)
       ((scanInput withoutRowid).appendColumns [(lowered, .null)])
-      [(2, .scalar .lower (.cons (.column 1) .nil))] none) =
+      [(2, lowerEmail)] none) =
       (sourceRows (scanInput withoutRowid)).map fun row =>
         row ++ [mapText lowerByte (row.getD 1 .null)] := by
-  apply sourceRows_updated_lower (EvalContext.plain 0) (scanInput withoutRowid) lowered 1
-  · simp [Table.RowsWide, scanInput]
-  · cases withoutRowid <;> simp [Table.RowsAliased, Row.Aliased, scanInput]
-  · simp [scanInput]
-  · cases withoutRowid <;> simp [scanInput]
-  · simp [scanInput]
-  · rfl
-  · rfl
+  have scan := sourceRows_updated_derived (EvalContext.plain 0) (EvalContext.plain_rowFree 0)
+    (scanInput withoutRowid) lowered lowerEmail
+    (by simp [Table.RowsWide, scanInput])
+    (by cases withoutRowid <;> simp [Table.RowsAliased, Row.Aliased, scanInput])
+    (by simp [lowerEmail, Expr.readsBelow, Expr.any, Arguments.any, Expr.isColumnFrom, scanInput])
+    (by cases withoutRowid <;> simp [scanInput])
+    (by simp [scanInput]) rfl
+  have width : (scanInput withoutRowid).shape.columns.length = 2 := by simp [scanInput]
+  rw [width] at scan
+  simpa [lowerEmail, eval_lower, Expr.eval_column, store_lowered] using scan
 
 /-- The two policies actually produce different ID sequences: rowids ascending
 versus email keys descending under NOCASE. Proof sketch: kernel evaluation of
@@ -109,7 +122,7 @@ def extended (value : Value) : Belay.Sqlite.Model.Database :=
 
 /-- The resolved plain backfill, without a foreign-key or trigger program. -/
 def backfill : Statement :=
-  .update 0 [(2, .scalar .lower (.cons (.column 1) .nil))] none [] [] none
+  .update 0 [(2, lowerEmail)] none [] [] none
 
 /-- The actual statement effect succeeds on a nonempty table and stores the
 lowercase cell. Proof sketch: kernel evaluation of the real UPDATE effect. -/
@@ -127,21 +140,22 @@ theorem stored_table_for_every_value (value : Value) (after : Belay.Sqlite.Model
     after.table 0 = some
       { shape := { (input value).shape with columns := (input value).shape.columns ++ [lowered] }
         rows := [{ rowid := 1, values := [.integer 1, value, mapText lowerByte value] }] } := by
-  have stored := table_after_lower_update 0 {} [] (input value) lowered 1
+  have stored := table_after_derived_update 0 {} [] (input value) lowered lowerEmail
     (Database.table_addColumn lowered .null (by rfl : (initial value).table 0 = some (input value)))
-    (by simp [extended, initial, Database.addColumn])
+    (by simp [initial, Database.addColumn])
     (by simp [Table.RowsWide, input])
     (by simp [Table.RowsAliased, Row.Aliased, input])
-    (by simp [input]) (by simp [input]) rfl rfl success
-  simpa [input, Row.appendValues] using stored
+    (by simp [lowerEmail, Expr.readsBelow, Expr.any, Arguments.any, Expr.isColumnFrom, input])
+    (by simp [input]) rfl success
+  simpa [input, Row.appendValues, lowerEmail, eval_lower, Expr.eval_column, store_lowered] using stored
 
 #print axioms store_lower
 #print axioms comparisonOperands_lower
 #print axioms eval_lower
-#print axioms generatedCells_plain
-#print axioms movedRowid_append
-#print axioms assign_lower_append
-#print axioms updated_lower_append
+#print axioms LiteralData.generatedCells_plain
+#print axioms LiteralData.movedRowid_append
+#print axioms assign_derived_append
+#print axioms updated_derived_append
 #print axioms storedFilter_append
 #print axioms originalFilter_append
 #print axioms results_translate
@@ -149,13 +163,13 @@ theorem stored_table_for_every_value (value : Value) (after : Belay.Sqlite.Model
 #print axioms backfill_for_every_value
 #print axioms lookup_for_every_parameter
 #print axioms five_value_kinds
-#print axioms sourceRows_updated_lower
+#print axioms sourceRows_updated_derived
 #print axioms scan_transport
 #print axioms different_scan_orders
 #print axioms runStatement_update_ok
 #print axioms table_after_update_ok
-#print axioms table_after_lower_update
-#print axioms sourceRows_after_lower_update
+#print axioms table_after_derived_update
+#print axioms sourceRows_after_derived_update
 #print axioms backfill_effect_nonempty
 #print axioms stored_table_for_every_value
 

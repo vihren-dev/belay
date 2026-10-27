@@ -75,8 +75,10 @@ def firstStatement? (script : Expr) : MetaM (Option (Expr × Expr × Expr)) := d
 def isLast (rest : Expr) : MetaM Bool := do
   return (← whnfD rest).isAppOf ``List.nil
 
-/-- The name of the constructor of {name}`Model.Syntax.Statement` that builds a statement, when it reduces. -/
+/-- The name of the constructor of {name}`Model.Syntax.Statement` that builds a statement, when it reduces to
+one. A statement that is a variable or a field of a structure has no kind. -/
 def statementKind? (statement : Expr) : MetaM (Option Name) := do
-  return (← whnfD statement).getAppFn.constName?
+  let head := (← whnfD statement).getAppFn.constName?
+  return head.filter (← getEnv).isConstructor
 
 end Belay.Sqlite.Run

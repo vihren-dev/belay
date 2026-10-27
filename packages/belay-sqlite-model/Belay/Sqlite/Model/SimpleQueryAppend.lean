@@ -22,33 +22,49 @@ def Output.readsBelow (width : Nat) : Output → Bool
   | .scalar expression => expression.readsBelow width
   | .aggregate _ => false
 
+/-- For every context that does not depend on the outer row, row with at least {lit}`width` cells, cells to
+append and optional filter that reads only columns below the width: the filter keeps the row with the cells
+appended exactly when it keeps the row. A missing filter keeps every row. Proof sketch: the filter keeps its
+value under appended cells ({name}`Expr.eval_append`). -/
+theorem Query.filterKeeps_append (context : EvalContext) (rowFree : context.RowFree) (row extra : List Value)
+    (width : Nat) (wide : width ≤ row.length) (filter : Option Expr)
+    (below : ∀ condition ∈ filter, condition.readsBelow width = true) :
+    (filter.all fun condition => truthy (condition.eval context (row ++ extra))) =
+      (filter.all fun condition => truthy (condition.eval context row)) := by
+  cases filter with
+  | none => rfl
+  | some condition =>
+    simp only [Option.all_some]
+    rw [Expr.eval_append context rowFree row extra wide (below condition rfl)]
+
 /-- For every context whose subqueries do not depend on the outer row, rows with at least {lit}`width` cells,
-function that gives the cells to append to a row, simple query whose filter and result columns read only
-columns below the width, and any two lists of result names: the results of the query over the rows with
-their cells appended are the results of the query over the rows. In plain words, appended cells change
-neither which rows the filter keeps nor the values of the result columns. The names of the result
-columns play no part. Proof sketch: a simple query keeps the rows whose filter is true and maps each kept
-row to its columns ({name}`Query.Simple.results_eq`); each expression keeps its value under appended cells
-({name}`Expr.eval_append`), so the filtered rows and their cells agree. -/
-theorem Query.simple_results_append (context : EvalContext) (rowFree : context.RowFree)
-    (rows : List (List Value)) (extra : List Value → List Value) (sources : List QuerySource)
-    (filter : Option Expr) (columns : List Output) (names other : List String) (width : Nat)
-    (wide : ∀ row ∈ rows, width ≤ row.length)
-    (filterBelow : ∀ condition ∈ filter, condition.readsBelow width = true)
-    (columnsBelow : ∀ column ∈ columns, column.readsBelow width = true) :
-    (Query.simple sources filter columns other).results context (rows.map fun row => row ++ extra row) =
-      (Query.simple sources filter columns names).results context rows := by
+function that gives the cells to append to a row, two simple queries that return the same result columns, all
+below the width, and any sources and names: if for each row the filter of the second query on the row with
+its appended cells keeps the row exactly when the filter of the first query keeps the row, then the second
+query over the rows with their cells appended has the results of the first query over the rows. In plain
+words, the two filters may be different expressions, and the second may read the appended cells; the
+statement requires only that they keep the same rows. A missing filter keeps every row. The names of the
+result columns play no part. Proof sketch: a simple query keeps the rows whose filter is true and maps each kept
+row to its columns ({name}`Query.Simple.results_eq`); the kept rows agree by the premise, and each result
+column keeps its value under appended cells ({name}`Expr.eval_append`). -/
+theorem Query.simple_results_agree (context : EvalContext) (rowFree : context.RowFree)
+    (rows : List (List Value)) (extra : List Value → List Value) (beforeSources afterSources : List QuerySource)
+    (beforeFilter afterFilter : Option Expr) (columns : List Output) (beforeNames afterNames : List String)
+    (width : Nat) (wide : ∀ row ∈ rows, width ≤ row.length)
+    (columnsBelow : ∀ column ∈ columns, column.readsBelow width = true)
+    (agree : ∀ row ∈ rows,
+      (afterFilter.all fun condition => truthy (condition.eval context (row ++ extra row))) =
+        (beforeFilter.all fun condition => truthy (condition.eval context row))) :
+    (Query.simple afterSources afterFilter columns afterNames).results context
+        (rows.map fun row => row ++ extra row) =
+      (Query.simple beforeSources beforeFilter columns beforeNames).results context rows := by
   rw [(Query.simple_isSimple ..).results_eq, (Query.simple_isSimple ..).results_eq]
   simp only [filtered, Query.simple]
   rw [List.filter_map, List.map_map]
-  have kept : rows.filter ((fun row => filter.all fun condition => truthy (condition.eval context row)) ∘
-      fun row => row ++ extra row) = rows.filter fun row => filter.all fun condition => truthy (condition.eval context row) := by
-    refine List.filter_congr fun row member => ?_
-    cases filter with
-    | none => rfl
-    | some condition =>
-      simp only [Function.comp_apply, Option.all_some]
-      rw [Expr.eval_append context rowFree row (extra row) (wide row member) (filterBelow condition rfl)]
+  have kept : rows.filter ((fun row => afterFilter.all fun condition => truthy (condition.eval context row)) ∘
+      fun row => row ++ extra row) =
+      rows.filter fun row => beforeFilter.all fun condition => truthy (condition.eval context row) :=
+    List.filter_congr fun row member => agree row member
   rw [kept]
   refine List.map_congr_left fun row member => ?_
   have member := (List.mem_filter.mp member).1
@@ -58,5 +74,24 @@ theorem Query.simple_results_append (context : EvalContext) (rowFree : context.R
   | scalar expression =>
     exact Expr.eval_append context rowFree row (extra row) (wide row member) (columnsBelow _ inColumns)
   | aggregate _ => exact absurd (columnsBelow _ inColumns) (by simp [Output.readsBelow])
+
+/-- For every context whose subqueries do not depend on the outer row, rows with at least {lit}`width` cells,
+function that gives the cells to append to a row, simple query whose filter and result columns read only
+columns below the width, and any two lists of result names: the results of the query over the rows with
+their cells appended are the results of the query over the rows. In plain words, appended cells change
+neither which rows the filter keeps nor the values of the result columns. The names of the result
+columns play no part. Proof sketch: the case of {name}`Query.simple_results_agree` with the same filter on both
+sides, whose rows agree because the filter reads below the width ({name}`Query.filterKeeps_append`). -/
+theorem Query.simple_results_append (context : EvalContext) (rowFree : context.RowFree)
+    (rows : List (List Value)) (extra : List Value → List Value) (sources : List QuerySource)
+    (filter : Option Expr) (columns : List Output) (names other : List String) (width : Nat)
+    (wide : ∀ row ∈ rows, width ≤ row.length)
+    (filterBelow : ∀ condition ∈ filter, condition.readsBelow width = true)
+    (columnsBelow : ∀ column ∈ columns, column.readsBelow width = true) :
+    (Query.simple sources filter columns other).results context (rows.map fun row => row ++ extra row) =
+      (Query.simple sources filter columns names).results context rows := by
+  exact Query.simple_results_agree context rowFree rows extra sources sources filter filter columns names other
+    width wide columnsBelow fun row member =>
+      Query.filterKeeps_append context rowFree row (extra row) width (wide row member) filter filterBelow
 
 end Belay.Sqlite.Model.Resolved
