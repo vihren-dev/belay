@@ -40,7 +40,7 @@ theorem findTable_createTrigger (catalog : Catalog) (name triggerName : Identifi
 
 /-- A found identifier as the only result column of a table read from the catalog resolves to its
 column position. Its output name and affinity are whatever the resolver gives. Proof sketch: unfold
-the result-column resolver for an expression that is a name, then apply the single-source name law. -/
+the result-column resolver for an expression that is a name, then apply the single-source name law. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolveColumns_identifier_at (dqs : Bool) (shapes : SubqueryShapes) (position : Option Nat)
     (tableName : Identifier) (columns : List CatalogColumn) (rowid aliased : Bool) {id : Identifier}
     (quote : Syntax.QuoteKind) {idPosition : Nat} (found : columnPosition columns id = some idPosition)
@@ -73,7 +73,7 @@ theorem resolve_lower_parameter {dqs : Bool} (scope : Scope) (number : Nat) :
 /-- In the scope of one table read from the catalog, the written filter {lit}`lower(source) = lower(?n)` resolves to
 {name}`originalFilter` of the source column position and the parameter number, for a source
 name that the table has. Proof sketch: the comparison law resolves both operands; function
-results carry neither affinity nor collation, so the default BINARY collation applies. -/
+results carry neither affinity nor collation, so the default BINARY collation applies. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolve_original_filter_at {dqs : Bool} {position : Option Nat} {tableName source : Identifier} {columns : List CatalogColumn}
     {rowid aliased : Bool} {sourcePosition : Nat}
     (found : columnPosition columns source = some sourcePosition) (number : Nat) :
@@ -100,7 +100,7 @@ theorem resolve_original_filter {dqs : Bool} {tableName source : Identifier} {co
 /-- In the scope of one table read from the catalog, the written filter {lit}`stored = lower(?n)` resolves to
 {name}`storedFilter` of the stored column position and the parameter number, when that column
 has TEXT affinity and BINARY collation. Proof sketch: the comparison law resolves the column
-with its TEXT affinity and the call without one, and TEXT affinity is the comparison affinity. -/
+with its TEXT affinity and the call without one, and TEXT affinity is the comparison affinity. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolve_stored_filter_at {dqs : Bool} {position : Option Nat} {tableName stored : Identifier} {columns : List CatalogColumn}
     {rowid aliased : Bool} {storedPosition : Nat}
     (found : columnPosition columns stored = some storedPosition)

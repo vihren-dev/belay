@@ -18,13 +18,13 @@ theorem Scope.columns_single (source : Identifier) (columns : List CatalogColumn
   simp [Scope.columns, Scope.single]
 
 /-- The columns of the scope of one source read from the catalog are the columns of the source. Proof
-sketch: the definitions compute. -/
+sketch: the definitions compute. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem Scope.columns_singleAt (position : Option Nat) (source : Identifier) (columns : List CatalogColumn)
     (hasRowid aliased : Bool) : (Scope.singleAt position source columns hasRowid aliased).columns = columns := by
   simp [Scope.columns, Scope.singleAt]
 
 /-- In the scope of one source read from the catalog, an unqualified name that names the column at
-position {lit}`index` resolves to that column alone. Proof sketch: as {lit}`resolveName_one_source`. -/
+position {lit}`index` resolves to that column alone. Proof sketch: as {lit}`resolveName_one_source`. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolveName_one_source_at {position : Option Nat} {name : Identifier} {source : Identifier}
     {columns : List CatalogColumn} {hasRowid aliased : Bool} {index : Nat} (found : columnPosition columns name = some index) :
     (Scope.singleAt position source columns hasRowid aliased).resolveName name = .found index [index] := by
@@ -53,7 +53,7 @@ theorem resolveOperand_identifier_single {name : Identifier} {quote : Syntax.Quo
 /-- In the scope of one source read from the catalog, an unqualified name that names the column at
 position {lit}`index` resolves to that column, with the affinity of the column. The law covers a name that the
 scope finds and says nothing about a name that it does not find. Proof sketch: as
-{name}`resolveOperand_identifier_single`, with {name}`resolveName_one_source_at`. -/
+{name}`resolveOperand_identifier_single`, with {name}`resolveName_one_source_at`. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolveOperand_identifier_singleAt {position : Option Nat} {name : Identifier} {quote : Syntax.QuoteKind}
     {source : Identifier} {columns : List CatalogColumn} {hasRowid aliased : Bool} {index : Nat}
     (found : columnPosition columns name = some index) :

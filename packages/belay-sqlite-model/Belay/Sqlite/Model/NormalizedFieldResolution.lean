@@ -98,7 +98,7 @@ theorem findTable_addColumn {catalog : Catalog} {tableName : Identifier}
 /-- In the scope of one table read from the catalog, lowercase of a found column resolves to that
 column's lowercase expression with no comparison affinity. The column's own affinity and collation do
 not change a function result's metadata. Proof sketch: resolve its one argument with the column lookup
-law, then reduce the known call. -/
+law, then reduce the known call. The result is the same whether the source has an alias or not ({lit}`aliased`), because the flag only tells a name trace whether the table was written with an alias. -/
 theorem resolve_lower_column_at {dqs : Bool} {position : Option Nat} {tableName name : Identifier}
     {columns : List CatalogColumn} {rowid aliased : Bool} {source : Nat}
     (found : columnPosition columns name = some source) :
