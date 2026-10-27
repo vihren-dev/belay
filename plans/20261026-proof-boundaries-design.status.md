@@ -149,3 +149,9 @@ The dependency-report suite passed in Nix: 27 tests, result
 This validates the retained report tooling, not the historical proof prototypes.
 Focused report/layer/build-ownership diagnostics also passed; local diagnostics
 are not additional semantic acceptance evidence.
+
+The documentation checks passed. One-time inspection confirmed all 84 live
+preservation targets, all 45 query targets, the five inventories' 231 local
+links and file-size limits. Independent Claude review of `b22163ec` returned
+no must or should findings. Rebase reconciliation is complete; the current
+specifications describe implementation obligations, not a delivered refactor.
