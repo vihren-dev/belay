@@ -364,3 +364,15 @@ rebuild proof is separate.
   `tests/syntax_mapping_test.py`, `conformance/restriction_examples.py` (example of `alter-rename`),
   `tests/surface/DbBangErrors.lean` (the message that lists the modeled statements).
 - Checks: Nix results are recorded at the end of part 2. Manual proof repairs in this unit: 0 (new cases only).
+
+### Part 2, unit 2.2: the text of a CHECK constraint keeps its name tokens
+
+- `Syntax.ColumnConstraint.check` and `TableConstraint.check` take the trimmed source text of the condition with
+  the places of its name tokens (`text : SourceText`, empty for a constraint with a `CONSTRAINT name`). The
+  translator records them for every unnamed CHECK (`Translation/Constraints.lean`, `NameTokens.lean`).
+- `CheckConstraint.source : Option CheckText` keeps that text and the tokens that the resolver bound to the
+  table (`LabelTarget.table`, a qualifier) or to a column position (`LabelTarget.column`). The binding is read
+  from the occurrences of `resolveOperandTraced` by the node paths of the tokens (`checkText` in
+  `Resolution/TableChecks.lean`); there is no second lookup of a spelling. The label that execution reports is
+  unchanged, so the rename of unit 2.5 rewrites `source` and the dequoted label together.
+- Tests: `Resolution/CheckTextExamples.lean` (`#guard` checks), `tests/syntax_constraints_test.py`.

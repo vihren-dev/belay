@@ -64,8 +64,8 @@ the CHECK constraint resolves to the check ({name}`resolveCheck`), its condition
 width. A refused constraint requires nothing. Proof sketch: the condition is the resolved operand
 ({name}`resolveOperand_below`). -/
 theorem resolveCheck_below {width : Nat} {scope : Scope} (bounded : scope.Bounded width) {dqs : Bool}
-    {condition : Syntax.Expr} {label : String} {check : CheckConstraint}
-    (ok : resolveCheck dqs scope condition label = .ok check) :
+    {condition : Syntax.Expr} {label : String} {text : Syntax.SourceText} {check : CheckConstraint}
+    (ok : resolveCheck dqs scope condition label text = .ok check) :
     check.condition.any (Expr.isColumnFrom width) = false := by
   simp only [resolveCheck, exceptBind_eq_ok, condition_eq_ok] at ok
   obtain ⟨_, _, resolved, ⟨operand, ho, rfl⟩, ok⟩ := ok
@@ -85,7 +85,7 @@ theorem columnChecks_below {width : Nat} {scope : Scope} (bounded : scope.Bounde
   intro check member
   obtain ⟨⟨constraint, item⟩, _, hf⟩ := filterMapM_ok_mem _ ok check member
   cases constraint with
-  | check condition label =>
+  | check condition label text =>
     simp only [exceptFmap_eq_ok, exceptMapError_eq_ok, Option.some.injEq] at hf
     obtain ⟨found, hc, rfl⟩ := hf
     exact resolveCheck_below bounded hc
@@ -118,7 +118,7 @@ theorem resolveTableChecks_below {width : Nat} {scope : Scope} (bounded : scope.
     · simp [unchecked column fromRest] at inChecks
   · obtain ⟨⟨constraint, item⟩, _, hf⟩ := filterMapM_ok_mem _ ht check inTable
     cases constraint with
-    | check condition label =>
+    | check condition label text =>
       simp only [exceptFmap_eq_ok, exceptMapError_eq_ok, Option.some.injEq] at hf
       obtain ⟨found, hk, rfl⟩ := hf
       exact resolveCheck_below bounded hk
