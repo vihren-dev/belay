@@ -51,6 +51,25 @@ reason: the model has no earlier law for the statements.
 - 2026-10-27: review `20261027T160128Z-e44aecc8` of slice 1 (1 must: a catch-all case split in `Output.ofStep_ne_unmodeled`; 1 should: the wording of the size note), both fixed in `330639d6`.
 - 2026-10-27: `tasks/surface-editor-part3` is merged into the branch (change `qsttolov`, no conflicts).
 - 2026-10-27: Part 2 slice 2 committed: the rules of `sql_run` for CREATE TABLE, DROP TABLE without rules, a rename, a pragma setting, BEGIN and COMMIT (`SchemaStepRules`, `ControlStepRules`, premise names `atEnd` and `outline`, `statementKind?` reads the constructor of a pragma). The tactic closes the resolution of CREATE TABLE only with all definitions unfolded, so `closeSide` tries each hint also under `with_unfolding_all`; a variable of a rule that takes the tag of a premise name (`after`) is no premise any more. The fixtures `RebuildGuide` (schema, the rebuilds and the read of the guide) and `SchemaRuleExamples` (one program with all six kinds) are checked by `tests/surface_rebuild_test.py`, in the suite `surfaceS6`.
+- 2026-10-27: Part 2 slice 3 committed: claim 3. `sql_refute` refutes `requireNameWrongEnforced preserves allSessions` (`RebuildRefutation`), and the fixture `RebuildReplays` runs the right rebuild on three databases and the wrong one on a connection with foreign keys on, for a check against pinned SQLite 3.51.0 (`tests/surface_rebuild_test.py`).
+
+## Changes that the guide needs
+
+The private guide (`model-user-guide.md`, the table rebuild section) is not edited here. These are the changes that the
+fixtures show.
+
+- (a) The guide says that the pinned profile enforces foreign keys, and gives a counterexample for the wrong rebuild
+  on a fresh connection. A fresh connection has foreign keys off, in the model and in pinned SQLite, so the wrong
+  rebuild keeps the sessions there. The counterexample needs `PRAGMA foreign_keys = ON` before the rebuild, as an
+  application that uses foreign keys has it: `requireNameWrongEnforced` in `tests/surface/RebuildGuide.lean`, refuted
+  by `sql_refute` in `RebuildRefutation.lean`, and replayed on pinned SQLite in `RebuildReplays.lean` (`wrong-enforced`).
+- (b) The claims "preserves" and "succeeds" about the right rebuild hold for the databases that have the tables of
+  the guide's schema, not for every database. A database without the column `customers.email` makes the copy fail,
+  and a database without `customers` makes it fail too. The fixtures state the claims over every database whose
+  catalog is the guide's schema (a site).
+- (c) `requireName` does not stop when `PRAGMA foreign_key_check` reports rows: the pragma returns them as rows, and
+  the commit goes on. The replay `dangling` (a session of customer 99) and the replay `without-name` show it on
+  pinned SQLite and in the model. A migration that must stop has to check the rows itself.
 
 ## Generalization analysis (per statement)
 
