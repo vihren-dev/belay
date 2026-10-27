@@ -44,6 +44,12 @@ READER = (
     "CREATE TABLE t(a INTEGER, b INTEGER, c INTEGER GENERATED ALWAYS AS (b + 1) VIRTUAL); INSERT INTO t(a,b) VALUES(1,2);"
 )
 """A generated column that reads another column."""
+GENERATED_ONLY = "CREATE TABLE t(a INTEGER, b INTEGER AS (5)); INSERT INTO t(a) VALUES(1);"
+"""A table whose only other column is generated."""
+TWO_CHECKS = (
+    "CREATE TABLE t(a INTEGER CHECK (a > 0), b INTEGER, CHECK (A > 0)); INSERT INTO t VALUES(1,2);"
+)
+"""A CHECK constraint of the column, which goes with it, and a CHECK of the table that reads it under another letter case."""
 CHILD = (
     "CREATE TABLE p(id INTEGER PRIMARY KEY, extra TEXT); INSERT INTO p VALUES(1,'x'),(2,'y'); "
     "CREATE TABLE c(id INTEGER PRIMARY KEY, pid INTEGER, note TEXT, FOREIGN KEY (pid) REFERENCES p(id)); "

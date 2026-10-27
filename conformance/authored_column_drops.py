@@ -11,7 +11,7 @@ from conformance.authored_queries import QueryCase
 from conformance.authored_resolution import profile
 from conformance.case_format import Json
 from conformance.column_drop_setups import (
-    CHILD, INDEXED, KEYED, READER, ROWIDS, ROWS, TABLE_KEYS, TABLE_RULES, TRIGGERED, VIEWED)
+    CHILD, GENERATED_ONLY, INDEXED, KEYED, READER, TWO_CHECKS, ROWIDS, ROWS, TABLE_KEYS, TABLE_RULES, TRIGGERED, VIEWED)
 from conformance.native_record import record_sql
 
 REMOVES = "R-44709-33024"
@@ -72,6 +72,10 @@ def definitions() -> list[QueryCase]:
              "prepare-error"),
         case("table-check-unrelated", TABLE_RULES, "ALTER TABLE t DROP COLUMN b; INSERT INTO t VALUES(1,3,0);",
              (REMOVES,), "check", "error"),
+        case("only-generated-left", GENERATED_ONLY, "ALTER TABLE t DROP COLUMN a; SELECT * FROM t;", (CONDITIONS,), "generated",
+             "prepare-error"),
+        case("check-of-column-and-table", TWO_CHECKS, "ALTER TABLE t DROP COLUMN a; SELECT * FROM t;", (CONDITIONS,), "check",
+             "prepare-error"),
         case("table-unique", TABLE_KEYS, "ALTER TABLE t DROP COLUMN b; SELECT * FROM t;", (CONDITIONS,), "key",
              "prepare-error"),
         case("generated-reads-column", READER, "ALTER TABLE t DROP COLUMN b; SELECT * FROM t;", (CONDITIONS,), "generated",

@@ -23,6 +23,8 @@ inductive TableDependency where
   | generated
   /-- A foreign key of another column or of the table. -/
   | foreign
+  /-- No column that stays is a non-generated column. -/
+  | onlyGenerated
   deriving Repr, DecidableEq
 
 /-- Whether a generated expression of a column other than the one at {lit}`index` reads that column. -/
@@ -35,13 +37,19 @@ def CatalogTable.foreignNames (index : Nat) (table : CatalogTable) : Bool :=
   (table.columns.eraseIdx index).any (fun column => column.foreignKeys.any (·.columns.contains index)) ||
     table.foreignKeys.any (·.columns.contains index)
 
-/-- The kinds of definition of the table that name the column at {lit}`index`, each once, and none of those
-that go with the column. -/
+/-- Whether every column that stays when the column at {lit}`index` leaves is a generated column. -/
+def CatalogTable.leavesOnlyGenerated (index : Nat) (table : CatalogTable) : Bool :=
+  (table.columns.eraseIdx index).all (·.generated.isSome)
+
+/-- The kinds of failure of the table after the drop of the column at {lit}`index`, each once: the kinds of
+definition that name the column, none of those that go with the column, and a table that would keep only generated
+columns. -/
 def CatalogTable.dependencies (index : Nat) (table : CatalogTable) : List TableDependency :=
   (if table.uniqueKeys.any (·.contains index) then [.keys] else []) ++
     (if (table.checksAfterDrop index).any (·.condition.readsColumn index) then [.checks] else []) ++
     (if table.generatedReads index then [.generated] else []) ++
-    (if table.foreignNames index then [.foreign] else [])
+    (if table.foreignNames index then [.foreign] else []) ++
+    (if table.leavesOnlyGenerated index then [.onlyGenerated] else [])
 
 /-- The written spelling of the first name in the text of a CHECK constraint that is the column at
 {lit}`index`: none when the text has no such name, writes it with a quote, or qualifies a name with the table, because
@@ -60,7 +68,7 @@ does not know the spelling of that definition. {lit}`declared` is the column as 
 def CatalogTable.dependencyFailure (index : Nat) (declared name : Identifier) (table : CatalogTable) :
     TableDependency → RenameFailure
   | .checks =>
-    match (table.allChecks.find? (·.condition.readsColumn index)).bind (·.source) with
+    match ((table.checksAfterDrop index).find? (·.condition.readsColumn index)).bind (·.source) with
     | some text => match text.writtenColumn? index with
       | some written => .prepare (.dependentObject .table name .afterDropColumn (.expression (.noSuchColumn written)))
       | none => .restricted .alterDrop
@@ -73,6 +81,7 @@ def CatalogTable.dependencyFailure (index : Nat) (declared name : Identifier) (t
     if table.exactNames && !table.quotedRename then
       .prepare (.dependentObject .table name .afterDropColumn (.expression (.unknownForeignKeyColumn declared)))
     else .restricted .alterDrop
+  | .onlyGenerated => .prepare (.dependentObject .table name .afterDropColumn (.expression .onlyGeneratedColumns))
 
 /-- The failure of the table itself after the drop: none when nothing names the column, the error of the kind when
 one kind of definition does, and a restriction when several kinds do, because SQLite then reports the first that

@@ -31,6 +31,20 @@ def objects : Catalog := catalogOf (schema [
   .createTable (name! "g") [column (name! "a") (some "INTEGER"), column (name! "b") (some "INTEGER"),
     gen (name! "c") (.arithmetic .add (ref (name! "b")) (.numeric "1"))] []])
 
+/-- The text {lit}`A > 0` with the token of the column {lit}`a`, spelled with a capital. -/
+def positiveUpperA : SourceText := { text := "A > 0", tokens := [{ paths := [[1]], start := 0, stop := 1, quote := .none }] }
+
+/-- The catalog with the table {lit}`gg(a, b AS (5))`, whose only other column is generated. -/
+def onlyGenerated : Catalog := catalogOf (schema [
+  .createTable (name! "gg") [column (name! "a"), gen (name! "b") (.numeric "5")] []])
+
+/-- The catalog with the table {lit}`w(a CHECK (a > 0), b, CHECK (A > 0))`: the CHECK constraint of the column goes with
+it, and the one of the table stays and names the column. -/
+def withTwoChecks : Catalog := catalogOf (schema [
+  .createTable (name! "w")
+    [{ column (name! "a") with constraints := [.check (.compare .gt (ident "a") (.numeric "0")) "a > 0"] }, column (name! "b")]
+    [.check (.compare .gt (ident "A") (.numeric "0")) "A > 0" positiveUpperA]])
+
 /-- The catalog with a table {lit}`f` that has a foreign key from {lit}`b` to {lit}`t(a)`. -/
 def withChild : Catalog := catalogOf (schema [
   .createTable (name! "t") [column (name! "a"), column (name! "b")] [.primaryKey [name! "a"]],
@@ -125,6 +139,14 @@ def rowsAfter (database : Database) (statement : Syntax.Statement) : Option (Lis
   some (.dependentObject .table (name! "h") .afterDropColumn (.expression (.noSuchColumn (name! "b"))))
 #guard errorIn objects (drop "g" "b") ==
   some (.dependentObject .table (name! "g") .afterDropColumn (.expression (.noSuchColumn (name! "b"))))
+
+-- A table whose remaining columns are all generated; and a CHECK constraint of the table that reads the column
+-- under another letter case while the column keeps a CHECK of its own, which goes with the column: the error names
+-- the spelling of the constraint that stays.
+#guard errorIn onlyGenerated (drop "gg" "a") ==
+  some (.dependentObject .table (name! "gg") .afterDropColumn (.expression .onlyGeneratedColumns))
+#guard errorIn withTwoChecks (.dropColumn (name! "w") (name! "a") "a") ==
+  some (.dependentObject .table (name! "w") .afterDropColumn (.expression (.noSuchColumn (name! "A"))))
 
 -- A table that is the parent of a foreign key is outside the model, and so is a foreign key that names the column
 -- as a child column when the error is not known. The error of the child column is known.
