@@ -74,7 +74,7 @@ example : (match Model.resolveStatement runContext commonTableTrigger.raw.connec
     commonTableTriggerInsert.statements[0].1 with
   | .ok (.insert .., _) => true
   | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
-  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
+  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
   | .ok (.rollback, _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.upsert .., _) | .ok (.delete .., _)
   | .ok (.prepareError .., _) | .ok (.query .., _) | .ok (.setting .., _) => false) = true := by decide +kernel
 
