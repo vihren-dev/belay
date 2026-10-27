@@ -4,8 +4,7 @@ Created 2026-10-27. Status: OPEN.
 Status: [progress](20261027-not-in-subquery-laws.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S4 and S6;
 [S6 automation](20261024-s6-automation.task.md), the outcome "The guide
-examples have checked scripts" and its status section on part 2, open point
-"notBlocked" with the owner decision of 2026-10-27;
+examples have checked scripts";
 [S4 task](20261024-surface-s4.task.md), the query laws.
 
 ## Purpose and boundary
@@ -20,11 +19,12 @@ def notBlockedEx := sql r"SELECT id FROM customers c
   WHERE NOT EXISTS (SELECT 1 FROM blocked b WHERE b.customer_id = c.id)"
 ```
 
-S6 automation part 2 refutes the equivalence in general with three
-counterexamples confirmed by native SQLite (a NULL `blocked.customer_id`, a NULL
-`customers.id`, and a collation difference between `IN` and `=`). It checks one
-database that satisfies the premises. It cannot prove the equivalence for every
-database, because the model has no row laws that relate `x NOT IN (SELECT c
+S6 automation part 2 (not yet on this base; it is a prerequisite of the
+implementation) adds a `notBlocked` fixture. The fixture refutes the
+equivalence in general with three counterexamples confirmed by native SQLite (a
+NULL `blocked.customer_id`, a NULL `customers.id`, and a collation difference
+between `IN` and `=`), and checks one database that satisfies the premises. It
+cannot prove the equivalence for every database, because the model has no row laws that relate `x NOT IN (SELECT c
 FROM u)` to a correlated `NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)` over a
 filtered scan. The owner decided on 2026-10-27 that a separate task adds these
 laws as general laws. The guide claim is then proved as a fixture in
@@ -65,9 +65,12 @@ and no judge file.
 - **Sufficient structural premises.** A lemma derives the value-law premises
   from facts a user can check about a database: the outer key column is a rowid
   alias (an `INTEGER PRIMARY KEY` of a table that is not `WITHOUT ROWID`, so
-  never NULL and always an integer), and every subquery-column value is not
-  NULL and is an integer. The other premise forms (same affinity and collation)
-  stay usable without this lemma.
+  never NULL and always an integer), and no subquery-column value is NULL. The
+  lemma shows that, with an integer probe, the `IN` comparison and the
+  correlated `=` agree for every non-NULL candidate, whatever its type,
+  affinity or collation. If the model or native SQLite shows a candidate where
+  they differ, stop and report it. The other premise forms (same affinity and
+  collation) stay usable without this lemma.
 - **The surface has the lemma.** A belay lemma states the equivalence of the
   two statement forms as `Sql.EquivAt` (or the relation that the guide claim
   uses) over every database that meets the structural premises. It sits next to
@@ -76,8 +79,11 @@ and no judge file.
 - **The guide claim is proved.** In `tests/surface`, next to the S6 fixture of
   `notBlockedIn` and `notBlockedEx`, a theorem proves the guide's claim for
   every admitted database under the premises: `customers.id` is a rowid alias,
-  and no `blocked.customer_id` is NULL (the guide's `where` condition, or `NOT
-  NULL` in the schema). The proof uses the general laws, through `sql_auto` or
+  and no row of `blocked` has a NULL `customer_id` (the guide's `where`
+  condition, a premise on the rows). `Database.Admitted` does not make rows
+  meet `NOT NULL`. The form with `NOT NULL` in the schema therefore also
+  assumes `Database.NotNull` (or `Database.Valid`) and derives the row premise
+  from it. The proof uses the general laws, through `sql_auto` or
   an explicit rule. The three counterexamples stay. The status file records
   the guide change: the guide's statement needs the rowid-alias premise and
   must mention the NULL `customers.id` and collation counterexamples.
