@@ -41,14 +41,15 @@ def KnownDatabase.ofTerm (environment : Lean.Environment) (term : Lean.Expr) : K
   | none => { owner := term.consumeMData.constName? }
 
 /-- The hover text and the origin of the table at a place of a statement: nothing when the
-context's catalog has no table of that name. The origin is dropped when an earlier statement of
-the script created or dropped a table of the name ({name}`replacedTable?`),
+context's catalog has no table of that name. The origin is the one of the table of the database at the
+start that the name stands for after the earlier statements of the script ({name}`originSource`): it
+moves with a rename and is dropped when an earlier statement created or dropped a table of the name,
 because the table is then not the one that the database had at the start. -/
-def slotInformation (known : KnownDatabase) (replaced : List (List UInt8)) (context : StatementContext)
+def slotInformation (known : KnownDatabase) (sources : OriginSources) (context : StatementContext)
     (slot : TableSlot) : Option (String × Option DeclarationLocation) := do
   let (position, table) ← context.state.catalog.findTable slot.name
   let rows := context.rows?.map fun rows => (rows.getD position []).length
-  let location := if replaced.contains slot.name.folded then none else known.origin? slot.name
+  let location := (originSource sources slot.name).bind known.origin?
   pure (tableDescription known.owner slot.name table rows, location)
 
 /-- The information of the names below the table level of one statement: the resolver runs on the
@@ -69,14 +70,14 @@ def emitSqlEditorInfo (source : SqlEditorSource) (items : List (Located Syntax.S
     (known : KnownDatabase) (contexts : List StatementContext) : TermElabM Unit := do
   let file ← getFileMap
   let bytes := source.text.toUTF8
-  let mut replaced : List (List UInt8) := []
+  let mut sources : OriginSources := []
   for (item, context) in items.zip contexts do
     for slot in tableSlotsOf bytes item do
       let name := toString slot.name
-      if let some (description, location?) := slotInformation known replaced context slot then
+      if let some (description, location?) := slotInformation known sources context slot then
         if let some identifier := source.identifier? file slot.start slot.stop (Name.mkSimple name) then
           addSqlTableInfo identifier name description location?
     emitStatementNames source file bytes item context
-    replaced := replaced ++ ((replacedTable? item.value).map (·.folded)).toList
+    sources := stepOriginSources sources item.value
 
 end Belay.Sqlite

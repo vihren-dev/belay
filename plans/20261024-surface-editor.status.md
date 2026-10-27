@@ -504,9 +504,8 @@ them after that task.
   `takesRowsByLimit` take both forms, so `sql`, `sql!` and a `#sql` script with parameters give the risk warning for
   the insert by the existing `orderRiskWarnings`. The risk message says that the inserted rows may depend on the order.
 - A run (`db!`, `#sql` without parameters) gives an `INSERT ... SELECT` no evidence, because the output of an insert
-  is `done` and the task keeps the evidence for statement outputs. `orderRunWarnings` adds the risk warning of such a
-  statement to the evidence of the run, and leaves it out when the output of the statement has several permitted
-  results (an insert with `RETURNING`), so no statement warns twice. Generalization analysis: one clause test for
+  is `done` (or `rows` with `RETURNING`, never `oneOf`) and the task keeps the evidence for statement outputs.
+  `orderRunWarnings` adds the risk warning of such a statement to the evidence of the run, so no statement warns twice. Generalization analysis: one clause test for
   both statement forms; `insertsQueryRows` names the one form that needs the risk warning in a run and is the only
   place to extend if another form gets it.
 - Open point (not specified, not done): the model also reports alternative executions of a write
@@ -517,3 +516,19 @@ them after that task.
   compound; none for `ORDER BY`, no `LIMIT`, no source, `VALUES`), `sql!`, `sql`, `#sql` and `#sql` with a parameter
   warn once at the statement with the insert message; the option turns it off; the evidence warning of a `SELECT` in
   `db!` stays.
+
+### Part 3, commit 3: navigation after ALTER TABLE ... RENAME TO (2026-10-27)
+
+- `stepCreatedSlots` (`SqlTableOrigins`, the `db!` record) moves the place of `a` to the name `b` on
+  `ALTER TABLE a RENAME TO b`, so the final table keeps the `CREATE TABLE` that created it, also after several
+  renames. `DROP COLUMN` keeps the places (no change needed; the arm is listed).
+- `sql!` and `#sql` start from a database with origins by table name. `replacedTable?` (a list of names that lose
+  their origin) is replaced by `OriginSources` (`originSource`, `stepOriginSources`): for each name the table of the
+  database at the start whose origin applies, or none. A creation or drop leaves the name without an origin, a rename
+  gives `b` the source of `a` and leaves `a` without one. The old code is deleted. Generalization analysis: the
+  sources are a function of the statement list, so every statement form and every chain of renames and recreations
+  follows one rule; the `db!` places and the `sql!` sources are two views of that one rule with different data
+  (places in the text of the script and tables of the database at the start), so they stay two functions.
+- Test: `tests/surface_editor_renames_test.py` (real server, definition requests, suite `surfaceChecks`): rename and
+  second rename of a database table, a table of the database text renamed once and twice, `DROP COLUMN`, and the
+  negatives (rename then drop the new name and create it again, an old name created again).

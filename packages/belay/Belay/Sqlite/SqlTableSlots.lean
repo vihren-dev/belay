@@ -62,14 +62,6 @@ def subquerySlots (bytes : ByteArray) (span : Span) (path : List Nat) (subquerie
 def definitionNames (subqueries : List Syntax.Subquery) : List (List UInt8) :=
   subqueries.filterMap fun subquery => subquery.commonTable.map (·.name.folded)
 
-/-- The table that the statement creates or drops, so that a name of an earlier statement of a
-script no longer names the table that the database had at the start. -/
-def replacedTable? : Syntax.Statement → Option Identifier
-  | .createTable name .. | .dropTable name _ => some name
-  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
-  | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
-  | .createTrigger .. | .dropTrigger .. => none
-
 /-- The places of a statement, from its syntax and its ranges, without the places whose name a
 {lit}`WITH` definition of the statement names. A statement of another form, and the body of a
 trigger, have none. -/

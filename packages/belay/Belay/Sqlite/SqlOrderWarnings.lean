@@ -113,14 +113,12 @@ def orderEvidenceWarnings (items : List (Located Syntax.Statement)) (outputs : L
 
 /-- The warnings of a context that runs its statements: the evidence of the statements with several
 permitted results ({name}`orderEvidenceWarnings`), and the risk of each {lit}`INSERT ... SELECT` that
-takes rows by {lit}`LIMIT` without {lit}`ORDER BY`, because its output holds no alternatives
-({name}`insertsQueryRows`). A statement whose output has several permitted results gets only the
-evidence, so no statement warns twice. -/
+takes rows by {lit}`LIMIT` without {lit}`ORDER BY`. The output of an insert is {lit}`done` or, with
+{lit}`RETURNING`, the returned rows, never several permitted results, so the insert has no evidence and no
+statement warns twice ({name}`insertsQueryRows`). -/
 def orderRunWarnings (items : List (Located Syntax.Statement)) (outputs : List Output) : List Diagnostic :=
   orderEvidenceWarnings items outputs ++
-    (items.zipIdx.filter fun (item, index) =>
-      insertsQueryRows item.value && limitsWithoutOrder item.value &&
-        ((outputs[index]?).bind permittedResults?).isNone).map (orderRiskDiagnostic ·.1)
+    (items.filter fun item => insertsQueryRows item.value && limitsWithoutOrder item.value).map orderRiskDiagnostic
 
 /-- Log the warnings at their ranges of the literal's text, unless the option
 {lit}`sql.orderWarnings` is false. -/
