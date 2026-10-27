@@ -357,10 +357,10 @@ make a foreign key that had no parent find one; the proofs of the foreign-key at
 parents for that step. Preservation proofs cover every new statement and run path, including rollback.
 The Nix-selected tests pass (`/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`) and the
 frozen verdict has no DISAGREE (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`): after part 3,
-186 cases change from MODEL_UNSUPPORTED to AGREE. Remaining restrictions: `legacy_alter_table = ON`, a schema name
-in ALTER TABLE, a DROP COLUMN of a parent column of a foreign key, `UPDATE OF` triggers that name the dropped column, and
-a drop whose dependent definitions are of several kinds or have a spelling that the catalog does not record. The authored corpus of these cases is not frozen
-here; the judge PR owns that.
+186 cases change from MODEL_UNSUPPORTED to AGREE. Remaining restrictions: `legacy_alter_table = ON`, a schema
+name in ALTER TABLE, a DROP COLUMN of any column of a table that a foreign key references, `UPDATE OF` triggers that
+name the dropped column, and a drop whose dependent definitions are of several kinds or have a spelling that the
+catalog does not record. The authored corpus of these cases is not frozen here; the judge PR owns that.
 
 ## Owner decisions
 

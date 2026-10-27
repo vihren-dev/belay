@@ -828,7 +828,7 @@ For each new public statement: the general form chosen, and what stays specific.
 
 ## Part 3 gates (Nix)
 
-- `just dev-build` (2545 jobs), then `just test-full` on the same tree (after the fixture arms): 407 passed,
+- `just dev-build` (2545 jobs), then `just test-full` on the same tree (after the fixture arms): 1390 tests pass across the suites (407 of them in the surface suite),
   `/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`.
 - `just verdict`: no DISAGREE and no HARNESS_ERROR, `/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`
   (AGREE 5504, MODEL_UNSUPPORTED 2096). Change from the part 2 verdict
