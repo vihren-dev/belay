@@ -608,4 +608,4 @@ with `tests/surface_rebuild_affinity_test.py` (suite `surface`). Item 4, the gui
 the acceptance status file records the checks. The final gates ran on `f8d95f63`, which holds all of these:
 `just test-full` gave `/nix/store/gh1cynzf1bf1qzk81d5zhpwjmfk4j5ys-sqlite-verifier-test-reports` (1408 tests, 0 failures);
 `just verdict` gave `/nix/store/8s12dkzpgc4zcqm3f9qm5vcmir9yqf3j-sqlite-verifier-verdict`, the same output as the verdict of part 2.
-The `NormalizedField*` cleanup stays a separate task (owner decision 2026-10-26).
+The `NormalizedField*` cleanup of the owner decision of 2026-10-26 is done in the derived-column task (`plans/20261027-derived-column-laws.task.md`, PR #285).

@@ -1,6 +1,8 @@
 # ADR 0017: The user surface, from SQL text to proved claims
 
-Date: 2026-10-20. Status: ACCEPTED on 2026-10-20 (owner decisions below).
+Date: 2026-10-20. Status: ACCEPTED on 2026-10-20 (owner decisions below). Implementation complete on
+2026-10-27: see the acceptance record [`plans/20261024-adr17-guide-acceptance.status.md`](../plans/20261024-adr17-guide-acceptance.status.md).
+The last pull requests of the implementation wait for the owner's merge.
 Implementation: slice by slice, each with its own task file; ADR 0016 takes effect with
 the first slice.
 Audience: designers and reviewers.
