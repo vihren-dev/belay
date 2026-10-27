@@ -1,16 +1,16 @@
-import Belay
+import LowercaseQueries
 
-/-! Installed consumers of the whole lowercase-field expansion laws. The concrete customers
-expansion of the counter example is an instance of the general four-statement script, its
-database has a site, and the public query laws give an observation equality at its initial
-context. -/
+/-! Installed consumers of the general derived-column migration laws, with the lowercase of one column as
+the derived expression. The concrete customers expansion of the counter example is an instance of the general
+four-statement script, its database has a site, and the public query laws give an observation equality at its
+initial context. -/
 
 set_option doc.verso true
 set_option maxRecDepth 8192
 set_option exponentiation.threshold 2048
 
 namespace NormalizedFieldExpansionFixture
-open Belay.Sqlite
+open Belay.Sqlite LowercaseFixture
 open Belay.Sqlite.Model hiding Database
 
 /-- One customer; the same database as in the counter example. -/
@@ -62,13 +62,13 @@ def updateTrigger : Identifier × CatalogTrigger :=
       body := maintenanceBody })
 
 /-- The counter example's expansion is the general four-statement expansion of the table
-{lit}`customers` with the field {lit}`email_lower` over {lit}`email`, with the two
+{lit}`customers` with the field {lit}`email_lower` over {lit}`lower(email)`, with the two
 CREATE TRIGGER statements of {name}`insertTrigger` and {name}`updateTrigger` and no bound values.
 Proof sketch: the parsed statements and the general script's statements are the same terms, so
 the equality holds by reflexivity. -/
 theorem counter_expansion_is_general :
     expansion =
-      NormalizedFieldExpansion.expansion (name! "customers") (name! "email_lower") (name! "email")
+      LowercaseFixture.expansion (name! "customers") (name! "email_lower") (name! "email")
         insertTrigger updateTrigger [] [] [] [] := by
   rfl
 
@@ -80,7 +80,7 @@ def sampleTable : Table :=
 position 0, the id is column 0, the email is column 2, no column is named {lit}`email_lower`, and
 no trigger exists. Proof sketch: each field is a closed fact about the parsed database, checked
 by kernel evaluation. -/
-theorem sample_has_site : Nonempty (NormalizedFieldExpansion.Site sample.raw
+theorem sample_has_site : Nonempty (LowercaseSite sample.raw
     (name! "customers") (name! "id") (name! "email") (name! "email_lower")) :=
   ⟨{ position := 0, table := sampleTable, id := 0, source := 2
      found := by decide +kernel
@@ -101,14 +101,14 @@ with the site of the sample and its success at the initial context
 ({name}`original_domain`). -/
 theorem sample_lookup_translates (value : Value) :
     Migration.TranslatesAt (send expansion) (fun _ => True)
-      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+      (send (originalLookupScript (name! "customers") none (name! "id")
         (name! "email") "id" 1 value))
-      (send (NormalizedFieldExpansion.storedLookupScript (name! "customers") none (name! "id")
+      (send (storedLookupScript (name! "customers") none (name! "id")
         (name! "email_lower") "id" 1 value))
       initial := by
   obtain ⟨site⟩ := sample_has_site
   rw [counter_expansion_is_general]
-  exact NormalizedFieldExpansion.queryTranslates (name! "customers") none (name! "id") (name! "email")
+  exact LowercaseFixture.queryTranslates (name! "customers") none (name! "id") (name! "email")
     (name! "email_lower") "id" 1 value insertTrigger updateTrigger [] [] [] []
     sample ⟨site⟩ environment
     complete_environment
@@ -118,14 +118,14 @@ lowercase of the email gives the same result before and after the expansion. Pro
 {name}`sample_lookup_translates`, with the public preservation law. -/
 theorem sample_lookup_preserved (value : Value) :
     Migration.TranslatesAt (send expansion) (fun _ => True)
-      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+      (send (originalLookupScript (name! "customers") none (name! "id")
         (name! "email") "id" 1 value))
-      (send (NormalizedFieldExpansion.originalLookupScript (name! "customers") none (name! "id")
+      (send (originalLookupScript (name! "customers") none (name! "id")
         (name! "email") "id" 1 value))
       initial := by
   obtain ⟨site⟩ := sample_has_site
   rw [counter_expansion_is_general]
-  exact NormalizedFieldExpansion.queryPreserves (name! "customers") none (name! "id") (name! "email")
+  exact LowercaseFixture.queryPreserves (name! "customers") none (name! "id") (name! "email")
     (name! "email_lower") "id" 1 value insertTrigger updateTrigger [] [] [] []
     sample ⟨site⟩ environment
     complete_environment
@@ -134,9 +134,9 @@ theorem sample_lookup_preserved (value : Value) :
 #print axioms sample_has_site
 #print axioms sample_lookup_translates
 #print axioms sample_lookup_preserved
-#print axioms NormalizedFieldExpansion.translatesAt_of_outputs
-#print axioms NormalizedFieldExpansion.queryTranslates
-#print axioms NormalizedFieldExpansion.queryPreserves
-#print axioms Model.NormalizedField.expansion_state
+#print axioms DerivedColumnMigration.translatesAt_of_outputs
+#print axioms LowercaseFixture.queryTranslates
+#print axioms LowercaseFixture.queryPreserves
+#print axioms Model.derivedColumn_state
 
 end NormalizedFieldExpansionFixture

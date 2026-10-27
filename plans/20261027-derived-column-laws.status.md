@@ -82,6 +82,100 @@ Consumers in `tests/surface`: `NormalizedFieldLaws.lean` (23 axiom reports),
 `tests/surface_application_test.py`, `tests/surface_assertion_examples_test.py`
 (all in the `surface` suite of `tests/nix_suites.json`).
 
+## What each old module became (2026-10-27)
+
+All 13 model and 3 belay `NormalizedField*` modules are deleted. No alias remains. `grep NormalizedField
+packages/` finds nothing.
+
+- Rows (`NormalizedFieldRows`): `assign_derived_append`, `updated_derived_append` (M/DerivedColumnRows) take any
+  derived expression. `generatedCells_plain` is in M/AdmittedCellLaws, `movedRowid_append` in
+  M/AdmittedUpdateRows. The lowercase facts `store_lower`, `comparisonOperands_lower`, `eval_lower` are in
+  `tests/surface/LowercaseFilters.lean`.
+- Queries (`NormalizedFieldQueries`): the general agreement lemma is `Query.simple_results_agree` and
+  `Query.simple_results_append` in M/SimpleQueryAppend. `originalFilter`, `storedFilter`, `results_translate`,
+  `results_preserve` are in `LowercaseFilters`.
+- Scan (`NormalizedFieldScan`): `stableSort_map`, `Table.scanRows_map`, `sourceRows_map` in M/ScanRowMap;
+  `sourceRows_updated_derived` in M/DerivedColumnBackfill.
+- Effects: `runStatement_update_ok`, `table_after_update_ok` stayed in M/PlainUpdateEffect (their only
+  consumer was there); `table_after_derived_update`, `sourceRows_after_derived_update` in
+  M/DerivedColumnBackfill.
+- Resolution: `columnPosition_append(_new)` in M/ColumnPositionAppend, `addColumn_resolution_cases`,
+  `addColumn_plain_step` in M/AddColumnPlainStep, `backfill_resolution` and its parts in
+  M/BackfillUpdateResolution and M/BackfillStatementResolution (any assigned expression that mentions a
+  column), `resolveStatement_select_column` and `resolveColumns_identifier_at` in M/SelectColumnResolution,
+  `findPosition_append_rejected`, `Catalog.findTable_createTrigger` in M/CatalogTriggerSearch,
+  `createTrigger_step` in M/CreateTriggerStep, `Statement.simpleTable_calm` in M/SimpleTableCalm,
+  `runScriptStep_next_of_database` in M/ScriptStepDatabase, `Expr.reindex_id` in M/Resolution/SyntaxReindexLaws.
+  Lowercase resolution (`resolve_lower_*`, the two lookups) is in `tests/surface/LowercaseLookups.lean`;
+  `textDefinition` is in `LowercaseFilters`.
+- Script and outputs: `derivedColumnScript`, `derivedColumn_state` (M/DerivedColumnScript),
+  `Database.addDerivedColumn` and its table laws (M/DerivedColumnTable), `derivedColumn_lookup_outputs`,
+  `derivedColumn_preserved_outputs` (M/DerivedColumnOutputs), `runScriptStep_simpleTable_output(_agree,
+  _append)` (M/CertifiedQueryOutputs).
+- Belay: `DerivedColumnMigration` (`migration`, `Site`, `reached`), `DerivedColumnReads`
+  (`Site.LookupMove`, `Site.ReadPreserved` and their output theorems), `DerivedColumnQueries`
+  (`translatesAt_of_outputs`, `queryTranslates`, `queryPreserves`, over any domain predicate).
+  `SendSuccessIfOk.ifOk_send_expansion` became `ifOk_send_derivedColumn`.
+- Fixtures: the guide's expansion script, plan, lookup simulation and theorem are now the `Lowercase*`
+  modules in `tests/surface` (`LowercaseFilters`, `LowercaseLookups`, `LowercaseExpansion`, `LowercaseQueries`,
+  `LowercasePlan`, `LowercaseSimulation`), each proved from the general laws, with no axiom report.
+
+## Generalization analysis (owner rule: generalize every new statement)
+
+General form chosen, and what stays specific:
+
+- Row, scan, backfill and effect laws (M/DerivedColumnRows, DerivedColumnBackfill, DerivedColumnBackfillStep,
+  DerivedColumnTable, DerivedColumnScript, DerivedColumnOutputs): any table, any derived expression that
+  reads only old columns and is context-free, any assigned column definition. Premises are those of the
+  proofs (wide and aliased rows, key positions inside the columns, plain columns). Nothing stays specific.
+- Resolution laws (M/BackfillUpdateResolution, M/SelectColumnResolution, ...): any written expression
+  that mentions the new column's source columns only through `assignedExpression`; any column name. A
+  resolution of the written expression itself is a premise, because it depends on the expression.
+- `DerivedColumnMigration.Site`: any table name, definition and written expression. `LookupMove` and
+  `ReadPreserved`: any pair of simple-table reads whose filters agree on every row; they do not mention
+  `lower` or comparisons. The filter agreement is a premise, since it holds only for particular
+  expressions.
+- `queryTranslates`, `queryPreserves`: any domain predicate and any site selector. Stay specific: only simple
+  one-table reads (no joins, no subqueries); the general model has no closed form for the output of
+  other queries.
+- `Lowercase*` fixtures: `TextFieldSite` is general in table, id, stored column; `LowercaseSite` and
+  the lookups stay specific to `lower` of one column, because they are the guide's example.
+  `S6ColumnLookups`: `columnPreserved` holds for any declared type and collation of the read column.
+- `S6RulesQuerySites.lookup_preserved_at_every_site`: every valid database with the site, every bound
+  value, every complete environment where the migration succeeds. Left specific: the table and column
+  names (`items`, `name`) because the guide's statements name them. `lookup_commutes` of
+  `S6RulesQueryPattern` is NOT generalized: commutation needs the admissibility closure of the migrated
+  database and the obligations over the migrated connection, which is more work than preservation, and the
+  task makes it optional.
+- `ConcatFilters`, `ConcatExpansion`: the same shape for `a || b`; `ConcatSite` is general in table and
+  columns, with general trigger and bound-value lists. The facts specific to concatenation
+  (`store_pipes`, `pipesFilter` laws) are proved here.
+- `DerivedColumnExamples`: concrete databases, on purpose; they show the site is satisfiable and that the
+  affinity premise fails (`a + b` stored in TEXT, probe 5.0).
+
+## Axiom reports
+
+Allowed axioms: `propext`, `Classical.choice`, `Quot.sound`. Counts: `NormalizedFieldLaws` 23 (kept),
+`NormalizedFieldExpansionLaws` 8 (kept), `ExpansionCountClaims` 3 (kept), `MigrationExpansionCounter` 7
+(unchanged), Application fixtures unchanged. New: `S6RulesQuerySites` 6, `DerivedColumnExamples` 9. The six
+`Lowercase*` and the two `Concat*`/`S6ColumnLookups` library modules have 0 reports (library modules; the
+checks are in their consumers). The old `NormalizedFieldExpansionLaws` reports on `expansion` theorems now
+name `DerivedColumnMigration.translatesAt_of_outputs`, `LowercaseFixture.queryTranslates/queryPreserves`
+and `Model.derivedColumn_state`; their number is unchanged.
+
+## Kernel examples and native checks
+
+`tests/surface_derived_column_test.py`: the universal site claim chain, and the examples chain with native
+SQLite 3.51.0 replays. Examples: concat `a || b` into TEXT (lookup translates), and `a + b` into TEXT with the
+probe 5.0 (before `[[1]]`, after `[]`, in the model and in native SQLite).
+
+## Guide change to record (private guide, not edited here)
+
+The guide's expansion script, plan, lookup simulation and expansion theorem are no longer library modules.
+Their references move from `Belay.Sqlite.NormalizedField*` to `tests/surface/Lowercase*.lean`; the guide text
+that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migration query claim may cite
+`tests/surface/S6RulesQuerySites.lean` (`lookup_preserved_at_every_site`).
+
 ## Progress
 
 - 2026-10-27: task specified on top of the NOT IN task (PR #281). Table rebuild part 3 touches none

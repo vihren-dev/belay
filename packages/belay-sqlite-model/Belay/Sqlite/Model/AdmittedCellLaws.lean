@@ -159,5 +159,15 @@ theorem newCells_aliased {table : Table} {values : List Value} {rowid : Int}
   simp only [hAlias]
   exact List.getElem?_set_self below
 
+/-- For every column list with no generated column and every cell list,
+generated-cell evaluation preserves the cell list exactly. Proof sketch:
+the existing invariant law has no possible generated-cell update. -/
+theorem generatedCells_plain (columns : List CatalogColumn) (values : List Value)
+    (plain : ∀ column ∈ columns, column.generated = none) :
+    generatedCells columns values = values := by
+  apply generatedCells_invariant (fun cells => cells = values) rfl
+  intro cells position column value found generated _
+  simp [plain column (List.mem_of_getElem? found)] at generated
+
 end LiteralData
 end Belay.Sqlite.Model

@@ -1,10 +1,10 @@
-import Belay.Sqlite.NormalizedFieldExpansion
+import Belay.Sqlite.DerivedColumnMigration
 
 set_option doc.verso true
 
 /-! Fresh-run claims about sent scripts that succeed (ADR 0017, S6). When a script succeeds from the start
 of a fresh run, every raw or concrete branch of the sent program reaches the connection of the model run, so
-a claim about the final database needs only the database of that run. The lowercase-field expansion has an
+a claim about the final database needs only the database of that run. A migration that adds a derived column has an
 exact reached database. -/
 
 namespace Belay.Sqlite
@@ -40,37 +40,38 @@ theorem Sql.ifOk_send_of_success (db : Database) (env : Env) (statements : List 
 
 end Belay.Sqlite
 
-namespace Belay.Sqlite.NormalizedFieldExpansion
-open Belay.Sqlite.Model Belay.Sqlite.Model.NormalizedField
+namespace Belay.Sqlite.DerivedColumnMigration
+open Belay.Sqlite.Model
 
-/-- For every database with a {name}`Site`, environment, expansion that succeeds from the start of a fresh
+/-- For every database with a {name}`Site`, environment, migration that succeeds from the start of a fresh
 run, and post: the post holds whenever the trace has no error, if it holds in every final context that
-sees the database {name}`expandedDatabase` and a valid one. The failures of ADD, UPDATE and the trigger names
-are excluded by the success premise. Proof sketch: {name}`Sql.ifOk_send_of_success`, with the connection of
-the run read from {name}`expansion_state`. -/
-theorem ifOk_send_expansion (tableName idName sourceName storedName : Identifier)
-    (first second : Identifier × CatalogTrigger) (firstValues secondValues thirdValues fourthValues : List Value)
-    (db : Database) (env : Env) (site : Site db.raw tableName idName sourceName storedName)
-    (success : (send (expansion tableName storedName sourceName first second firstValues secondValues thirdValues
-      fourthValues)).SucceedsFrom env.clock 0 (db.raw.connection env.counters))
+sees the database {name}`Site.reached` and a valid one. The failures of ADD COLUMN, the backfill and the
+trigger names are excluded by the success premise. Proof sketch: {name}`Sql.ifOk_send_of_success`, with the
+connection of the run read from {name}`Model.derivedColumn_state`. -/
+theorem ifOk_send_derivedColumn (tableName : Identifier) (definition : Syntax.ColumnDefinition)
+    (value : Syntax.Expr) (addValues updateValues : List Value)
+    (triggers : List ((Identifier × CatalogTrigger) × List Value))
+    (db : Database) (env : Env) (site : Site db.raw tableName definition value)
+    (success : (send (migration tableName definition value addValues updateValues triggers)).SucceedsFrom
+      env.clock 0 (db.raw.connection env.counters))
     {post : List Output → ExecutionContext → Prop}
     (reached : ∀ (outputs : List Output) (final : ExecutionContext),
-      final.connection.state.database =
-        expandedDatabase db.raw site.position site.source site.table storedName first second →
+      final.connection.state.database = site.reached (triggers.map (·.1)) →
       final.connection.state.database.Valid Profile.pinned → post outputs final) :
-    (send (expansion tableName storedName sourceName first second firstValues secondValues thirdValues
-      fourthValues)).ifOk post (ExecutionContext.initial db env) := by
+    (send (migration tableName definition value addValues updateValues triggers)).ifOk post
+      (ExecutionContext.initial db env) := by
   have wide : site.table.RowsWide := db.valid.admitted.rowsWide site.position site.table site.present
   have aliased : site.table.RowsAliased := db.valid.admitted.rowsAliased site.position site.table site.present
   have ok := Sql.allOk_of_succeedsFrom_send _ _ _ _ success
-  obtain ⟨counters, hconn, -⟩ := expansion_state (context := runContext) (clock := env.clock) (index := 0)
-    (connection := db.raw.connection env.counters) (tableName := tableName) (name := storedName)
-    (sourceName := sourceName) site.table first second firstValues secondValues thirdValues fourthValues
-    site.found site.present site.fresh site.sourceFound wide aliased site.plain rfl rfl site.noneFiring ok
+  obtain ⟨counters, hconn, -⟩ := derivedColumn_state (context := runContext) (clock := env.clock) (index := 0)
+    (connection := db.raw.connection env.counters) (tableName := tableName) (definition := definition)
+    (value := value) site.table addValues updateValues triggers site.found site.present site.constraintFree
+    site.admitted site.fresh site.operand site.below site.contextFree wide aliased site.plain rfl rfl
+    site.noneFiring ok
   refine Sql.ifOk_send_of_success db env _
-    (expansion_noInsertSelect _ _ _ _ _ _ _ _ _) success fun outputs final sameConnection valid => ?_
+    (migration_noInsertSelect _ _ _ _ _ _) success fun outputs final sameConnection valid => ?_
   refine reached outputs final ?_ valid
   rw [sameConnection]
   exact congrArg (fun connection : Connection => connection.state.database) hconn
 
-end Belay.Sqlite.NormalizedFieldExpansion
+end Belay.Sqlite.DerivedColumnMigration

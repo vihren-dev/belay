@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.PlainDeleteEffect
-import Belay.Sqlite.Model.NormalizedFieldEffects
+import Belay.Sqlite.Model.DatabaseLaws
+import Belay.Sqlite.Model.StatementStep
 
 set_option doc.verso true
 
@@ -12,6 +13,48 @@ UPDATE then needs only these rows, not the engine.
 -/
 
 namespace Belay.Sqlite.Model
+open Resolved
+
+/-- For every present table, assignment list, filter, returning list and
+subquery list, a successful UPDATE without a foreign-key or trigger plan
+stores exactly the rows computed by {name}`LiteralData.updated`. This states
+the effect only; it does not assert that the statement passes its support
+check or succeeds on every database. Proof sketch: success excludes the
+alias-mismatch and constraint-failure branches, leaving the stored row list. -/
+theorem runStatement_update_ok (clock : Int) (counters : Counters) (parameters : List Value)
+    {database after : Database} {target : Nat} {table : Table}
+    (assignments : List (Nat × Expr)) (filter : Option Expr)
+    (returning : List (Expr × String)) (subqueries : List Query)
+    (present : database.table target = some table)
+    (success : (runStatement clock counters parameters
+      (.update target assignments filter returning subqueries none) database).effect = .ok after) :
+    after = database.setRows target
+      (LiteralData.updated (statementContext clock counters parameters database subqueries)
+        table assignments filter).rows := by
+  simp only [runStatement, present, Option.map_none, StatementRun.withKeys] at success
+  split at success
+  · cases success
+  · unfold checkedWrite at success
+    split at success
+    · cases success; rfl
+    · cases success
+
+/-- Under the successful plain UPDATE assumptions of {name}`runStatement_update_ok`,
+if the target has a storage slot, its resulting table is exactly the computed
+updated table, including its unchanged schema. Proof sketch: the exact effect
+stores those rows, and {name}`Database.table_setRows` identifies the table. -/
+theorem table_after_update_ok (clock : Int) (counters : Counters) (parameters : List Value)
+    {database after : Database} {target : Nat} {table : Table}
+    (assignments : List (Nat × Expr)) (filter : Option Expr)
+    (returning : List (Expr × String)) (subqueries : List Query)
+    (present : database.table target = some table) (aligned : target < database.rows.length)
+    (success : (runStatement clock counters parameters
+      (.update target assignments filter returning subqueries none) database).effect = .ok after) :
+    after.table target = some
+      (LiteralData.updated (statementContext clock counters parameters database subqueries)
+        table assignments filter) := by
+  rw [runStatement_update_ok clock counters parameters assignments filter returning subqueries present success]
+  exact Database.table_setRows _ present aligned
 
 /-- For every connection, plain update and error-free step that continues: the next connection has the
 database in which the table at the target holds the rows that {name}`LiteralData.updated` computes. The

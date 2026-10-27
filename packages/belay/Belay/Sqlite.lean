@@ -56,7 +56,9 @@ import Belay.Sqlite.MigrationPatternFrames
 import Belay.Sqlite.SendStatementsBranches
 import Belay.Sqlite.SingleStatementObservations
 import Belay.Sqlite.MigrationPatternAfter
-import Belay.Sqlite.NormalizedFieldExpansion
+import Belay.Sqlite.DerivedColumnMigration
+import Belay.Sqlite.DerivedColumnReads
+import Belay.Sqlite.DerivedColumnQueries
 import Belay.Sqlite.MigrationApplicationViews
 import Belay.Sqlite.MigrationApplicationLaws
 import Belay.Sqlite.MigrationPatternSyntax
@@ -152,8 +154,6 @@ import Belay.Sqlite.ScopedSimulationReverse
 import Belay.Sqlite.ApplicationClaims
 import Belay.Sqlite.ApplicationSyntax
 import Belay.Sqlite.ApplicationExplanation
-import Belay.Sqlite.NormalizedFieldPlan
-import Belay.Sqlite.NormalizedFieldLookupSimulation
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with
