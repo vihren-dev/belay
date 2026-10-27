@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T00:11:16+00:00",
+  "finding": "20261027T000707Z-29bda22c#5",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Status says #guard checks"
+}

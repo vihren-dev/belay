@@ -360,10 +360,7 @@ rebuild proof is separate.
   `ResolveStatementSingle`, `TransactionSpec`) use them. Exhaustive-match arms in the editor modules of
   `packages/belay` (`SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings`, `SqlTableOrigins`) and
   `SampleScriptHints` are the minimal ones; `SqlTableSlots` gives the two statements the slot of their table.
-- Tests: `RenameExamples.lean` (kernel `#guard` checks of the error order and the restriction),
+- Tests: `RenameExamples.lean` (`#guard` checks of the error order and the restriction),
   `tests/syntax_mapping_test.py`, `conformance/restriction_examples.py` (example of `alter-rename`),
   `tests/surface/DbBangErrors.lean` (the message that lists the modeled statements).
-- Checks: model, `just dev-build`, translator and conformance-runner builds pass; the focused tests
-  (`syntax_mapping`, `conformance_restriction_examples`, `restriction_registry`, `docs`, `resolution_cleanup`,
-  `syntax_*` of schemas, drops, names, views and triggers) pass. Manual proof repairs in this unit: 0 (new
-  cases only).
+- Checks: Nix results are recorded at the end of part 2. Manual proof repairs in this unit: 0 (new cases only).

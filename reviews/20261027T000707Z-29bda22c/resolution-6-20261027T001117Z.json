@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T00:11:17+00:00",
+  "finding": "20261027T000707Z-29bda22c#6",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Removed local results from the status file"
+}

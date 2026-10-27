@@ -12,11 +12,13 @@ namespace Belay.Sqlite.Model.Resolution.RenameExamples
 open Belay.Sqlite.Model Syntax Belay.Sqlite.Model.Resolution.Examples
 
 /-- The schema of the examples: the table {lit}`t(a, b)`, the index {lit}`ti` on {lit}`a`, the table
-{lit}`u(x)` and the view {lit}`v` of {lit}`SELECT a FROM t`. -/
+{lit}`u(x)`, the table {lit}`k(p, q)` with a primary key and a UNIQUE constraint, and the view {lit}`v` of {lit}`SELECT a FROM t`. -/
 def objects : Catalog := catalogOf (schema [
   .createTable (name! "t") [column (name! "a"), column (name! "b")] [],
   .createIndex (name! "ti") false (name! "t") [key (name! "a")] none,
   .createTable (name! "u") [column (name! "x")] [],
+  .createTable (name! "k") [column (name! "p"), column (name! "q")]
+    [.primaryKey [name! "p"], .unique [name! "q"]],
   .createView (name! "v") false none
     { columns := [.expression (.identifier (name! "a") .none) none "a"], source := some { table := name! "t", alias := none },
       joins := [], filter := none, groupBy := [], orderBy := [], limit := none, offset := none, parent := none }])
@@ -36,6 +38,21 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.renameTable (name! "t") (name! "v")) == some (.renameTargetTaken (name! "v"))
 #guard errorOf (.renameTable (name! "t") (name! "sqlite_x")) == some (.expression (.reservedName (name! "sqlite_x")))
 #guard errorOf (.renameTable (name! "v") (name! "w")) == some (.viewNotAltered (name! "v"))
+-- The schema table has every name of it; the indexes of the constraints are in the name space of tables.
+#guard errorOf (.renameTable (name! "t") (name! "Sqlite_Schema")) == some (.renameTargetTaken (name! "Sqlite_Schema"))
+#guard errorOf (.renameTable (name! "t") (name! "sqlite_autoindex_k_1")) ==
+  some (.renameTargetTaken (name! "sqlite_autoindex_k_1"))
+#guard errorOf (.renameTable (name! "t") (name! "SQLITE_AUTOINDEX_K_2")) ==
+  some (.renameTargetTaken (name! "SQLITE_AUTOINDEX_K_2"))
+#guard errorOf (.renameTable (name! "t") (name! "sqlite_autoindex_k_3")) ==
+  some (.expression (.reservedName (name! "sqlite_autoindex_k_3")))
+#guard errorOf (.renameTable (name! "sqlite_schema") (name! "w")) ==
+  some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
+#guard errorOf (.renameTable (name! "sqlite_temp_schema") (name! "w")) ==
+  some (.expression (.tableMayNotBeAltered (name! "sqlite_temp_master")))
+#guard errorOf (.renameTable (name! "sqlite_schema") (name! "t")) == some (.renameTargetTaken (name! "t"))
+#guard errorOf (.renameColumn (name! "sqlite_schema") (name! "a") (name! "c") "a" false) ==
+  some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
 -- A name taken is found before a reserved name or a view.
 #guard errorOf (.renameTable (name! "v") (name! "u")) == some (.renameTargetTaken (name! "u"))
 -- A rename that passes every check is the restriction.

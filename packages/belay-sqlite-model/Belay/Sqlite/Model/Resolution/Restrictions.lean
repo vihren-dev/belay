@@ -192,8 +192,7 @@ inductive RestrictionKind where
   | nondeterministicErrorOrder
   /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
   | initialDatabase
-  /-- ALTER TABLE RENAME TO and RENAME COLUMN that SQLite prepares: the model checks the table and the
-  names in SQLite's order, but does not rewrite the schema yet (ADR 0019, D4). -/
+  /-- ALTER TABLE RENAME that passes the checks of SQLite's prepare: the schema rewrite is not modeled (ADR 0019, D4). -/
   | alterRename
   deriving Repr, DecidableEq
 
