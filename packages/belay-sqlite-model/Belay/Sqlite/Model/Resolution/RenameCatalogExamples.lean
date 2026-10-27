@@ -8,8 +8,8 @@ set_option doc.verso true
 builds. One catalog holds every kind of object that a rename reads: a table with a CHECK and a primary key, a
 table with a foreign key to it, an index, a view, a table, and a trigger on the first table. The examples check
 the objects after a table rename and a column rename, the errors of SQLite for a definition that does not resolve
-before or after the rename, and that the new catalog keeps the outline and the selected parents
-({lit}`Catalog.keepsOutline`), which the run of the rewrite tests. -/
+before or after the rename, and that the new catalog keeps the outline ({lit}`Catalog.sameOutline`), which the run of the rewrite tests, and the
+selected parents, which the foreign-key conditions of the rewrite state. -/
 
 namespace Belay.Sqlite.Model.Resolution.RenameCatalogExamples
 

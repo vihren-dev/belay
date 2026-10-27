@@ -18,10 +18,11 @@ compatible with the selected mapping:
   {name}`Catalog.AddColumnLocatesNewKeys`).
 * DROP, with or without rules, requires that every kept declaration keeps its selected parent,
   moved ({name}`Catalog.DropKeepsSelection`).
-* DROP COLUMN requires nothing, as a rename does: the run stores the new catalog only when it keeps
+* DROP COLUMN requires nothing: the run stores the new catalog only when it keeps
   the outline and the selected parents of the catalog after the drop, and no foreign key names the column.
-* A rewrite of the catalog by a rename requires that every foreign key keeps its selected parent
-  ({name}`Catalog.selectedParents`): the run stores the new catalog only when it keeps the outline.
+* A rewrite of the catalog by a rename requires that the renamed catalog selects the same parents as the old one
+  ({name}`Catalog.selectedParents`). The run stores the new catalog only when it keeps the outline, which does not
+  imply this.
 * Every other form keeps the catalog and requires nothing, whatever the rows and enforcement. -/
 def Resolved.Statement.ForeignKeySchemaCondition (database : Database) : Resolved.Statement → Prop
   | .createTable _ name shape => database.catalog.CreateKeepsSelection {name, entry := .table shape} ∧
