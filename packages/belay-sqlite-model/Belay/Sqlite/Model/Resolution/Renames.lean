@@ -36,13 +36,20 @@ def Catalog.nameTaken (catalog : Catalog) (name : Identifier) : Bool :=
   (catalog.find name).isSome || name.sameName (name! "sqlite_master") || name.sameName (name! "sqlite_schema") ||
     catalog.constraintIndexTaken name
 
+/-- Whether the name is taken in the database of the schema table that {name}`schemaTableName?` reports.
+The model has no temp objects, so the temp database holds only its schema table, which SQLite finds under the
+names of both schema tables; the main database holds the objects of the catalog. -/
+def schemaNameTaken (catalog : Catalog) (reported newName : Identifier) : Bool :=
+  if reported.sameName (name! "sqlite_temp_master") then (schemaTableName? newName).isSome
+  else catalog.nameTaken newName
+
 /-- Resolve ALTER TABLE RENAME TO. Path 0 is the table and path 1 the new name. The checks are, in this order:
 the table or view exists, where a schema table is found under every name of it; no table, view or index
 has the new name; the table is no system table; the new name is not reserved; the target is no view. -/
 def resolveRenameTable (catalog : Catalog) (tableName newName : Identifier) : StatementResolution :=
   match schemaTableName? tableName with
   | some reported =>
-    if catalog.nameTaken newName then prepareError catalog (.renameTargetTaken newName)
+    if schemaNameTaken catalog reported newName then prepareError catalog (.renameTargetTaken newName)
     else prepareError catalog (.expression (.tableMayNotBeAltered reported))
   | none => match catalog.alterTarget tableName with
     | none => prepareError catalog (.noSuchTable tableName)

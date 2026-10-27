@@ -50,6 +50,12 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
 #guard errorOf (.renameTable (name! "sqlite_temp_schema") (name! "w")) ==
   some (.expression (.tableMayNotBeAltered (name! "sqlite_temp_master")))
+#guard errorOf (.renameTable (name! "sqlite_temp_schema") (name! "t")) ==
+  some (.expression (.tableMayNotBeAltered (name! "sqlite_temp_master")))
+#guard errorOf (.renameTable (name! "sqlite_temp_schema") (name! "SQLITE_SCHEMA")) ==
+  some (.renameTargetTaken (name! "SQLITE_SCHEMA"))
+#guard errorOf (.renameTable (name! "sqlite_schema") (name! "sqlite_temp_master")) ==
+  some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
 #guard errorOf (.renameTable (name! "sqlite_schema") (name! "t")) == some (.renameTargetTaken (name! "t"))
 #guard errorOf (.renameColumn (name! "sqlite_schema") (name! "a") (name! "c") "a" false) ==
   some (.expression (.tableMayNotBeAltered (name! "sqlite_master")))
