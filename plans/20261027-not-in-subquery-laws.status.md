@@ -45,14 +45,15 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
 - 2026-10-27: guide theorem commit: `tests/surface/S6NotBlockedLaw.lean` (site `NotBlockedSite`, `notBlocked_equivalent`,
   `notBlocked_equivalent_of_notNull`, `premisesHold_equivalent`, `premisesHold_rows`) and the driver
   `tests/surface_s6_not_blocked_test.py` (module chain with 4 axiom reports for the new module, native rows of the
-  database that meets the premises; the helper `check_module_chain` takes `output_of`). Local run: 3 passed in 33 s
-  (local result, not evidence).
+  database that meets the premises; the helper `check_module_chain` takes `output_of`). The tests are
+  `tests/surface_s6_not_blocked_test.py` (the Nix `surface` suite runs them).
 
 ## Guide change to record
 
 The guide's statement `notBlockedIn ≈ notBlockedEx` needs these changes (the private guide is not edited here):
 - the premise that `customers.id` is a rowid alias (`INTEGER PRIMARY KEY` of a table that is not `WITHOUT ROWID`), because
-  a NULL `customers.id` makes `NOT IN` drop the row and `NOT EXISTS` keep it, and a text key with different collations
+  a NULL `customers.id` with a nonempty `blocked` table makes `NOT IN` drop the row and `NOT EXISTS` keep it (an empty
+  `blocked` table keeps it in both queries), and a text key with different collations
   of the two columns makes `IN` and `=` disagree;
 - the premise that no `blocked.customer_id` is NULL as a premise on rows (`NOT NULL` in the schema gives it for a valid
   database, `notBlocked_equivalent_of_notNull`); a NULL blocked id makes `NOT IN` drop every row;
