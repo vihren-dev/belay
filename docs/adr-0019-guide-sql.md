@@ -360,7 +360,16 @@ frozen verdict has no DISAGREE (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sql
 186 cases change from MODEL_UNSUPPORTED to AGREE. Remaining restrictions: `legacy_alter_table = ON`, a schema
 name in ALTER TABLE, a DROP COLUMN of any column of a table that a foreign key references, `UPDATE OF` triggers that
 name the dropped column, and a drop whose dependent definitions are of several kinds or have a spelling that the
-catalog does not record. The authored corpus of these cases is not frozen here; the judge PR owns that.
+catalog does not record.
+
+2026-10-27, judge change of slice 5: corpus-v55 holds the authored native cases of the table rebuild as version 7
+records that run on after an error (162 cases): 60 of INSERT from a query, 51 of renames, 40 of DROP COLUMN and 11 of
+the rebuild. The claim lists the 149 cases that agree. The other 13 are the documented restrictions above and the
+INSERT cases whose source the model does not describe. Two INSERT cases whose source SQLite reads by its index are not
+in the corpus: the model agrees with them only through its second execution, but the judge compares one prediction,
+the model's own execution, and its verdict would be DISAGREE. The frozen verdict has no DISAGREE and no
+HARNESS_ERROR (`/nix/store/0i6ls6sj7hz6adxw6d7sx864n2gqdcxv-sqlite-verifier-verdict`, AGREE 5653, MODEL_UNSUPPORTED 2109),
+and the Nix-selected tests pass (`/nix/store/ckx81jfqla5na9kiqad8fw4djsrd51ij-sqlite-verifier-test-reports`).
 
 ## Owner decisions
 
