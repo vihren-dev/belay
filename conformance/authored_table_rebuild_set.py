@@ -16,6 +16,9 @@ from conformance.case_format import Json
 class CaseModule(Protocol):
     """What the corpus needs of a case module: its cases and the native records of a chosen list of them."""
 
+    __file__: str
+    """The path of the module source, whose bytes go into the digest of the corpus manifest."""
+
     def definitions(self) -> list[QueryCase]:
         """All cases of the module."""
 
