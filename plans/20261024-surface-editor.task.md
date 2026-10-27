@@ -229,17 +229,20 @@ the existing error and no hover, because no column is the one the resolver chose
 
 The table-rebuild task (done, PR #282) added `INSERT ... SELECT` (the
 constructor `Syntax.Statement.insertSelect`), `ALTER TABLE ... DROP COLUMN`
-and the rebuild script of the guide. It gave these statements only the arms
-that the editor files need to compile. Part 3 gives them the editor behavior
-of parts 2a and 2b, with the same rules:
+and the rebuild script of the guide. Some editor behavior exists already:
+`tableSlotsOf` gives the target and the `FROM` and join sources of the query of
+an `INSERT ... SELECT`, and `resolveInsertQueryTraced` gives the names of the
+query to `emitStatementNames`. These have no server fixtures. Part 3 adds the
+missing behavior and the fixtures for all of it, with the rules of parts 2a and
+2b:
 
-- **Table places of the query.** The table slots of an `INSERT ... SELECT`
-  include the target, the `FROM` and join sources of its query, and the
-  sources of the subqueries of its query (`SqlTableSlots`). Each place gets the
-  table hover, the navigation and the semantic token of part 2a.
-- **Names of the query.** The names of the query of an `INSERT ... SELECT`
-  get the column information, the corrections and the DQS warning of part 2b,
-  where the name trace covers them. The target column list gets the same
+- **Table places of the subqueries.** The table slots of an
+  `INSERT ... SELECT` also include the sources of the subqueries of its query
+  (`SqlTableSlots`). Each place gets the table hover, the navigation and the
+  semantic token of part 2a.
+- **Names of the query.** Server fixtures check that the names of the query of
+  an `INSERT ... SELECT` get the column information, the corrections and the
+  DQS warning of part 2b, and that the target column list gets the same
   information as the column list of `INSERT ... VALUES`. A position that the
   trace does not cover is a documented gap in the status file, as in part 2b.
 - **Order warning.** The query of an `INSERT ... SELECT` with `LIMIT` or
