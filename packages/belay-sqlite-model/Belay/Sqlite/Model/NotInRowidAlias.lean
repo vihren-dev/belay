@@ -25,17 +25,25 @@ theorem sourceRows_alias_cell (table : Table) (position : Nat) (alias : table.sh
   have cell := aliased found inRows position alias
   exact ⟨found.rowid, by simp [List.getD_eq_getElem?_getD, cell]⟩
 
-/-- **Filter law under structural premises.** For one row of the outer table whose key column is its rowid alias
-({lit}`alias`, {lit}`aliased`, {lit}`member`), and the one comparison affinity of the {lit}`IN` test and the comparison
-{lit}`=`, which is not TEXT ({lit}`notText`; it holds when the key column has INTEGER affinity,
-{name}`Belay.Sqlite.Model.comparisonAffinity_integer_ne_text`, and the two tests take the same affinity because
-{name}`Belay.Sqlite.Model.comparisonAffinity_comm` does not depend on the order of the operands), the value and fault of {lit}`x NOT IN (SELECT c FROM u)` are those of
-{lit}`NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)`, for any two collations, if no cell of the column {lit}`c` is NULL in
-any row of {lit}`u` ({lit}`known`). The probe is never NULL and the two tests match the same candidates, so these two premises of
-{name}`Expr.evaluate_notIn_eq_notExists` need no assumption. When {lit}`known` fails and no row matches, {lit}`NOT IN` is NULL and
-{lit}`NOT EXISTS` is 1. Proof sketch: the alias cell is an integer ({name}`sourceRows_alias_cell`), which is not NULL;
-for an integer probe the collation does not matter ({name}`inMatches_integer_collation_free`); apply
-{name}`Expr.evaluate_notIn_eq_notExists`. -/
+/-- **Filter law under structural premises.** For one row {lit}`outerRow` of an outer table, a database with the subquery
+table {lit}`u` at a position ({lit}`present`), a key position inside the width {lit}`outer` of the outer cells
+({lit}`keyInside`), and a context that serves subquery 0 with {name}`Query.columnOf` ({lit}`servedIn`) and a context
+that serves subquery 0 with {name}`Query.matchingKey` ({lit}`servedExists`) for that row, the value and fault of
+{lit}`x NOT IN (SELECT c FROM u)` are those of {lit}`NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)`, under these premises:
+* the key column is the rowid alias of the outer table ({lit}`alias`), every row of the outer table has its alias cell
+  equal to its rowid ({lit}`aliased`: {name}`Table.RowsAliased`), and the outer row is a source row of the outer table
+  ({lit}`member`); the key cell is then an integer;
+* the one comparison affinity of the {lit}`IN` test and the comparison {lit}`=` is not TEXT ({lit}`notText`; it holds
+  when the key column has INTEGER affinity, {name}`Belay.Sqlite.Model.comparisonAffinity_integer_ne_text`, and the two
+  tests take the same affinity because {name}`Belay.Sqlite.Model.comparisonAffinity_comm` does not depend on the order of
+  the operands);
+* no cell of the column {lit}`c` is NULL in any row of {lit}`u` ({lit}`known`).
+
+The two collations are free. The probe is never NULL and the two tests match the same candidates, so these two premises
+of {name}`Expr.evaluate_notIn_eq_notExists` need no assumption. When {lit}`known` fails and no row matches,
+{lit}`NOT IN` is NULL and {lit}`NOT EXISTS` is 1. Proof sketch: the alias cell is an integer
+({name}`sourceRows_alias_cell`), which is not NULL; for an integer probe the collation does not matter
+({name}`inMatches_integer_collation_free`); apply {name}`Expr.evaluate_notIn_eq_notExists`. -/
 theorem Expr.evaluate_notIn_eq_notExists_of_rowidAlias (inContext existsContext innerIn innerExists : EvalContext)
     (database : Database) (initial : Option Database) (position outer column key : Nat)
     (affinity : Option Affinity) (inCollation equalsCollation : Collation)

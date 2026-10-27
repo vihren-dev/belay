@@ -28,8 +28,9 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
 ## Deviations and decisions of the implementation
 
 - The value law `inValue_negated_eq_not_equalsAny` is stronger than the task text: it needs no NULL premise, only that
-  the `IN` test and the `=` comparison match the same candidates for a non-NULL probe. With a NULL probe or a NULL
-  candidate without a match both sides are NULL. The NULL premises appear in the filter-level corollary
+  the `IN` test and the `=` comparison match the same candidates for a non-NULL probe. With no candidate both sides
+  are 1, also for a NULL probe. With at least one candidate and a NULL probe, or a NULL candidate without a match, both
+  sides are NULL. The NULL premises appear in the filter-level corollary
   `inValue_negated_eq_not_exists` (`NOT IN` against `NOT EXISTS`), where the difference is NULL against 1.
 - The operand `x` of the filter and query laws is a column of the outer row (`.column key`), not an arbitrary
   expression. A column read has no fault, so "`x` evaluates without fault" holds without a premise. Other operand
