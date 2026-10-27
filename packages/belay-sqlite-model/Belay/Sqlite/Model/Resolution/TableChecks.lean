@@ -24,11 +24,16 @@ def checkIssue (resolved : Resolved.Expr) : Option ValueIssue :=
 condition: a column that it found in the table, or a qualifier that it resolved to a source; none for another
 name, such as a double-quoted string. -/
 def NameOccurrence.labelTarget? (occurrence : NameOccurrence) : Option LabelTarget :=
-  match occurrence.role, occurrence.result with
-  | .columnReference, .found [binding] => some (.column binding.column.index)
-  | .qualifier, .source _ => some .table
-  | .columnReference, _ | .columnTarget, _ | .tableReference, _ | .aliasDeclaration, _ | .resultAlias, _
-  | .comparisonSite, _ | .qualifier, _ => none
+  match occurrence.role with
+  | .columnReference => match occurrence.result with
+    | .found [binding] => some (.column binding.column.index)
+    | .found _ | .ambiguous _ | .missing .. | .source _ | .schema _ | .resultColumn _ | .declares | .compared ..
+    | .unreached _ => none
+  | .qualifier => match occurrence.result with
+    | .source _ => some .table
+    | .found _ | .ambiguous _ | .missing .. | .schema _ | .resultColumn _ | .declares | .compared ..
+    | .unreached _ => none
+  | .columnTarget | .tableReference | .aliasDeclaration | .resultAlias | .comparisonSite => none
 
 /-- The name tokens of the text of a CHECK constraint that the resolver bound to the table or to a column,
 by the node paths of the tokens and the occurrences of the condition ({name}`resolveOperandTraced`): no

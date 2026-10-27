@@ -59,9 +59,9 @@ theorem filterMapM_ok_mem {ε α β : Type} (f : α → Except ε (Option β)) :
 
 open Resolved
 
-/-- For every scope that ends below a width, double-quote setting, condition, label and check: if
-the CHECK constraint resolves to the check ({name}`resolveCheck`), its condition reads below the
-width. A refused constraint requires nothing. Proof sketch: the condition is the resolved operand
+/-- For every scope that ends below a width, double-quote setting, condition, label, source text and
+check: if the CHECK constraint resolves to the check ({name}`resolveCheck`), its condition reads below
+the width. A refused constraint requires nothing. Proof sketch: the condition is the resolved operand
 ({name}`resolveOperand_below`). -/
 theorem resolveCheck_below {width : Nat} {scope : Scope} (bounded : scope.Bounded width) {dqs : Bool}
     {condition : Syntax.Expr} {label : String} {text : Syntax.SourceText} {check : CheckConstraint}

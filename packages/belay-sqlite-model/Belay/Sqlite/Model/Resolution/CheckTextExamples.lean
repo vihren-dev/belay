@@ -26,7 +26,7 @@ def condition : Expr :=
 def checksOf (constraint : TableConstraint) : Option (List CheckConstraint) :=
   match (catalogOf (schema [.createTable (name! "t") [column (name! "a"), column (name! "b")] [constraint]])).head? with
   | some { entry := .table table, .. } => some table.checks
-  | _ => none
+  | some { entry := .view _, .. } | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => none
 
 -- The qualifier stands for the table, the other names for their columns.
 #guard (checksOf (.check condition "t.b > 0 and \"a\" < 5" source)).map (·.map (·.source)) ==
