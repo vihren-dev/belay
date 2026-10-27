@@ -1,11 +1,18 @@
 # Preservation proof simplification experiments
 
-Date: 2026-10-26. Status: CHECKED IN NIX; production refactoring has not started.
+Date: 2026-10-26. Status: CHECKED IN NIX AT THE RECORDED REVISION.
 Audience: designers and reviewers.
 Base: integration commit `6413afe3ff50` in the isolated workspace
 `/home/codex/work/sqlite-verifier-proof-simplification`.
 Specification: [ADR 0025](../../docs/adr-0025-compositional-preservation-proofs.md).
 Acceptance record: [design status](../../plans/20261026-proof-simplification-design.status.md).
+
+Rebase note, 2026-10-27: current specifications target `daa15385`. These
+unchanged prototypes predate RENAME, INSERT SELECT and all-execution preservation.
+Their names, formulas and source-span inventory are historical. Replay this
+experiment at accepted design revision `0cadcde9`; do not run it against the
+rebased checkout and treat its result as current acceptance. The live target
+inventory is [here](../../docs/spec-preservation-api-targets.md).
 
 ## What the experiments establish
 
@@ -18,8 +25,8 @@ Acceptance record: [design status](../../plans/20261026-proof-simplification-des
 | `ContextSurface`, `ContextSurfaceFormulas` | One surface induction derives both old generic formulas | Production callers still need migration |
 | `ContextLaws` | Conjunction, stopped suffixes and the extra state counter check retain their meanings | Broad execution tests remain implementation gates |
 
-The eight Lean files compile in a Nix derivation against the current checkout's
-pinned model and toolchain. The check audits 30 named proof closures and accepts
+At the accepted revision, eight Lean files compiled against its pinned model
+and toolchain. The check audits 30 named proof closures and accepts
 only `propext`, `Classical.choice`, and `Quot.sound`. Other helper proofs are
 covered when they occur in those closures. Compiler warnings and missing axiom
 reports fail the check. Each file has a 90-second compilation deadline.
@@ -50,7 +57,7 @@ Detailed findings:
 
 ## Reproduce
 
-From this workspace, with the repository's Nix configuration:
+From a checkout of `0cadcde9`, with the repository's Nix configuration:
 
 ```sh
 timeout --foreground 600 nix-build experiments/proof-simplification/default.nix \

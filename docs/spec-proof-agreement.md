@@ -5,6 +5,10 @@ Audience: implementers and reviewers.
 Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
 Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).
 Targets: [source helpers, expression proofs, definitions and callers](spec-proof-agreement-targets.md).
+Source-checked against production revision `daa15385` on 2026-10-27. The fourteen
+source helpers and four expression targets keep their previous contracts.
+The linked prototypes were checked on an earlier baseline; this revision has
+not been used to recompile them. Implementation acceptance uses current formulas.
 
 ## Required source behavior
 
@@ -77,7 +81,10 @@ the shared proofs that use them. The experimental source core imports
 
 Actual expression consumers include `Expr.eval_append`,
 `Connection.queryContext_selectOne`, `Connection.queryContext_selectOne_rows`
-and `Query.simple_results_congr`. Preserve their guarantees while migrating
+and `Query.simple_results_congr`. Latest main also adds
+`Query.simple_results_append` in `SimpleQueryAppend`, used by
+`runScriptStep_simpleTable_output_append` in `CertifiedQueryOutputs` and the
+surface read-certificate proofs. Preserve their guarantees while migrating
 their use of congruence. Source consumers in `TwoStateStatementLaws` feed later
 statement/output laws. Import moves must compile those consumers too.
 
@@ -85,7 +92,7 @@ statement/output laws. Import moves must compile those consumers too.
 
 - Recover every removed source helper formula and all five nominated context/
   query endpoints as temporary kernel-checked migration witnesses with original
-  assumptions. Universal proofs cover subquery depth and correlated traversal;
+  assumptions from `daa15385`. Universal proofs cover subquery depth and correlated traversal;
   this does not require a separate example at each depth or helper stage.
 - Keep examples for absent versus present tables, unequal shape, a fixed
   pragma independent of both databases, and a database-dependent pragma.
@@ -101,8 +108,9 @@ statement/output laws. Import moves must compile those consumers too.
   axioms of generic proofs and independent instances without duplicate projection
   audits; inspect simp/instance/export uses before deleting names.
 - Report the combined cost of the common proof, masks, adapters, caller changes
-  and formula tests. The prototype establishes shared reasoning and stronger
-  contracts; it does not establish net source or compilation-time savings.
+  and formula tests. Historical prototypes establish shared reasoning and
+  stronger contracts at their recorded baseline; they do not establish current
+  compilation, net source savings or compilation-time savings.
 
 Use existing proof-test and Nix infrastructure with explicit timeouts. Execution,
 conformance inputs and judge claims remain unchanged. No additional traversal

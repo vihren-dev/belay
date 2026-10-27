@@ -5,9 +5,10 @@ Audience: the implementation team.
 Specification: [ADR 0025 D1 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-api.status.md).
 Targets: [endpoint, predicate and caller inventory](../docs/spec-preservation-api-targets.md).
-Present problem: the owner requested removal of the per-atom endpoint matrix;
-the [inventory](../experiments/proof-simplification/inventory.json) identifies
-84 concrete specializations over existing general proofs.
+Present problem: the owner requested removal of the per-atom endpoint matrix.
+The target inventory identifies 84 specializations at `daa15385`, reviewed
+2026-10-27. The [experiment inventory](../experiments/proof-simplification/inventory.json)
+is historical: its 18 surface names now have the prefix `runScriptAllFrom_`.
 
 ## Required behavior
 
@@ -15,14 +16,16 @@ Library clients can derive every inventoried claim with its existing hypotheses
 using generic preservation laws and per-invariant evidence. The 84 inventoried
 specializations are removed from production source and all callers are updated.
 Their six pure-wrapper modules disappear from imports, Lake roots and exports.
-The inventory records the frozen baseline; reconcile names against the current
-integration revision before editing. Report any semantic drift explicitly.
+The target tables govern current names and formulas. The surface claims now
+cover every complete execution, including alternative INSERT-query executions;
+preserve that stronger guarantee. Report later semantic drift explicitly.
 
 Per-atom condition aliases and key-specific effect/state/outcome predicates
 whose definitions duplicate generic applications are removed where replaced.
 No aliases preserve replaced public names. Keep distinct semantic conditions,
-per-atom preservation evidence, the generic `runScriptFrom_admittedWith`, and
-the used `runScriptFrom_valid`/`runScriptStep_valid` bundled helpers.
+per-atom preservation evidence, the generic `runScriptAllFrom_admittedWith`, and
+the used `runScriptAllFrom_valid`/`runScriptStep_valid` bundled helpers. The last
+helper covers every execution of a step, not only its canonical next connection.
 
 Model examples, surface callers and checked documentation use the resulting
 API. The conditions remain visible and usable with raw resolved statements.
@@ -34,16 +37,20 @@ was sufficient before. General conjunction composition remains available.
 - The old formula suite is restated through generic applications, covering all
   removed endpoints. Anonymous examples or test-local declarations may carry
   the formulas as temporary migration witnesses. Compare their assumptions and
-  conclusions with the frozen inventory source.
+  conclusions with production revision `daa15385`. The historical experiment
+  remains replayable at its old revision; it does not validate the stronger
+  current all-execution formulas.
 - Compile the affected model examples and formula suites in Nix. Audit the
   generic proofs and independently proved invariant evidence under the existing
   standard-axiom policy. Retain native necessity examples and transaction/failure
   examples; deleting names must
   not delete their semantic coverage.
-- Verify both conditional raw runs and resolver-derived surface runs, including
+- Verify both conditional raw runs and resolver-derived all-execution surface runs, including
   support-independent NOT NULL/type/CHECK claims, admitted dependencies and
   fixed/selected FK mapping claims. The experiment's 11 representative formulas
-  establish feasibility; they do not replace complete migration coverage.
+  establish historical feasibility; they do not replace complete current
+  migration coverage. Preserve canonical-run claims via their membership in
+  complete executions without weakening the surface claims to that one run.
 - The model, text package, surface and conformance package build. Public docs
   and API-reference checks pass with no stale declaration references. Existing
   surface `Database.Valid` program guarantees continue to compile.
@@ -85,7 +92,9 @@ or test runner is needed.
 ## Tricky points and boundaries
 
 `RunHolds`, `RunHoldsReady`, `ScriptRunHolds` and `ScriptRunDerived` already
-supply the lifting. `ProgramRun` and `ProgramLaws` use the bundled valid helpers.
+supply the lifting. `ScriptConditions` owns the all-branch condition predicate;
+`InsertSelectKeeps` lifts own-run evidence to every `StatementRun.effects` member.
+`ProgramRun` and `ProgramLaws` use the bundled valid helpers.
 Some surface claims need admission and execution-mode/matching-limit premises
 to derive conditions. These facts must not be replaced with unexplained lambdas
 repeated at many callers: retain a reusable resolver bridge where it is needed.

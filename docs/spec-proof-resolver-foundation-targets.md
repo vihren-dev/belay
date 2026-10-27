@@ -7,11 +7,10 @@ Decisions: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).
 Evidence: [resolver/import findings](../experiments/proof-boundaries/resolver-import-findings.md)
 and [deferred row-engine findings](../experiments/proof-boundaries/row-engine-findings.md).
 
-This inventory was checked against production revision `3fe5caef`.
-Model declaration names below have prefix `Belay.Sqlite.Model`. Surface names
-have prefix `Belay.Sqlite`. Fixed replacements and relocations are distinguished
-from placement choices, reused facts and consumers that need only recompilation.
-Check branch drift at assignment; this list is not a permanent inventory gate.
+Source review: `daa15385`; compiled experiments/measurements: historical `3fe5caef`.
+Model names have prefix `Belay.Sqlite.Model`; surface names, `Belay.Sqlite`.
+Fixed changes are distinguished from placement choices, reused facts and compile checks.
+Check branch drift at assignment; this is not a permanent inventory gate.
 
 ## Replace three resolver dispatches
 
@@ -23,26 +22,27 @@ Check branch drift at assignment; this list is not a permanent inventory gate.
 
 One syntax dispatch replaces these proofs; delete their names after caller
 migration. The exact old formulas remain temporary acceptance obligations.
-The experimental `ResolverCertificate`, `CatalogCertificate`,
-`certificate_withCatalog`, `certificate_withWrite` and `resolve_certificate`
-in [the certificate](../experiments/proof-boundaries/ResolverCertificate.lean)
+The historical [certificate](../experiments/proof-boundaries/ResolverCertificate.lean)
 and [dispatch](../experiments/proof-boundaries/ResolverDispatch.lean) demonstrate
-the boundary. Their names, record layout and destination files are choices.
-BEGIN, COMMIT, ROLLBACK, settings, prepare errors and write rules retain their
-actual state behavior; the certificate fields keep separate premises.
+`ResolverCertificate`, `CatalogCertificate`, `certificate_withCatalog`,
+`certificate_withWrite` and `resolve_certificate`; their names/layout are choices.
+Required coverage includes `Syntax.Statement.renameTable`, `renameColumn` and
+`insertSelect`; retain resolved `rewrite`/`insertSelect`, transactions, settings,
+prepare errors and write rules. The old prototype has not validated these additions.
+Reuse the projection `resolveStatementRun` → `resolveStatementTraced` →
+`resolveStatement` in [Resolution/ResolveStatement.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveStatement.lean)
+and `resolveStatementTraced_fst`/`statement_arms` in [Resolution/StatementArms.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/StatementArms.lean); preserve name traces and registrations.
 
 ## Separate prerequisites from their consumers
 
-These are exact ownership targets, not additional formula replacements.
-Move a prerequisite or split its present owner as needed to put it below the
-shared dispatch. Keeping a suitable existing owner after deleting its old
-dispatch is also valid; no new global foundation package is required.
+These are ownership targets, not formula replacements. Move a prerequisite or
+split its owner to put it below the dispatch; an existing suitable owner can stay.
 
 | Declaration | Current owner | Required boundary |
 | --- | --- | --- |
 | `ResolveState.Valid` | [ResolveStatementValid.lean][statement-valid] | Current and optional saved catalog validity must be available without importing the script validity proof. |
 | `ResolveState.after`, `ResolveState.after_of_isControl` | [Resolution/ResolveStateSpec.lean][state-spec] | Exact transaction/settings/catalog transition and its ordinary-statement reduction sit below certificate consumers. |
-| `Resolved.Statement.SchemaLink` | [ResolveStatementForms.lean][forms] | ADD COLUMN strict-default fit, DROP closure, and the vacuous other cases remain usable independently of the new dispatch. |
+| `Resolved.Statement.SchemaLink` | [ResolveStatementForms.lean][forms] | ADD COLUMN strict-default fit, DROP closure, and vacuous other cases (including `rewrite`/`insertSelect`) stay independently usable. |
 
 In particular, `ResolveStatementValid.lean` also owns `resolve_valid`. A new
 certificate that imports that file cannot be imported back by its script proof.
@@ -60,27 +60,31 @@ are reusable transport facts. They are not replaced dispatches.
 | [ResolveStatementValid.lean][statement-valid] | `resolve_valid` | Use the conditional validity field in the script induction; preserve execution mode, profile limits and saved-state reasoning. |
 | [Resolution/ResolveFoldSpec.lean][fold] | `resolveFrom_after` | Use the unconditional state field in the fold proof. Recompile the derived `resolve_after` claim. |
 | [ScriptRunLaws.lean][script-laws] | `Connection.resolveState_after_next` | Replace the state-equation call; retain arbitrary resolution context. Update the old-name references in `runScriptFrom_agrees` documentation and recompile it. |
-| [ScriptRunConstraints.lean][script-constraints] | `runScriptFrom_admittedWith` | Replace the schema-link call with its field at the existing limits. Coordinate this consumer with ADR 0025's script refactor. |
-| [SuccessfulScriptEffects.lean][effects] | `runScriptStep_effect` | Replace the state-equation call while keeping the non-control and actual successful-output premises. |
+| [ScriptRunConstraints.lean][script-constraints] | `runScriptAllFrom_admittedWith` | Replace the schema-link call; retain the guarantee for every complete execution, not just `runScriptFrom`. Coordinate with ADR 0025. |
+| [SuccessfulScriptEffects.lean][effects] | `runScriptStep_effect` | Keep non-control/success premises and `.continued output next others`, with separate actual result and `others : List StatementExecution`. |
+| [FailedStepFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/FailedStepFrame.lean) | `runScriptStep_failed_frame` | Replace its state-equation call; retain the explicit failed-effect/frame premises. |
+| [PlainWriteFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/PlainWriteFrame.lean); [ReadOnlyFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/ReadOnlyFrame.lean) | `runScriptStep_plainWrite_frame`; `runScriptStep_readOnly_keeps` | Replace state-equation calls; retain each form premise that establishes `others = []` and its connection frame. |
 | [AdmittedRunsConditionExamples.lean][condition-examples] | Anonymous DROP TABLE schema-link example | Migrate the direct `resolveStatement_schemaLink` use; retain its focused catalog-link coverage. |
 | [ScriptRunApplied.lean][script-applied] | `Connection.resolveState_valid`, `resolveStatement_appliedValid` | Recompile/migrate imports after prerequisite moves; preserve the database/snapshot bridge and equality of profile limits. These are not nominated deletions. |
 
-This table distinguishes direct body migrations from immediate downstream
-checks. Update source imports and checked documentation, then compile the full
-affected consumers; it does not claim to enumerate every transitive user.
+Update imports/documentation and compile transitive users. The new surface
+`ReadCertificate`, `ReadAnalysis`, `ReadCertificatePreservation` and
+`CertifiedQueryCommutation` are downstream read/migration APIs, not resolver
+certificate replacements. Preserve their calmness, width, resolution, frame and
+branch-shape premises; generalized equality alone does not relax those contracts.
 
 ## Reuse leaf resolver facts
 
-These are the existing evidence families used by the experiment, not a mandate
-to edit every listed declaration. Keep their independent, sometimes weaker,
-premises. Relocate a leaf only if the chosen module boundary requires it.
+These current reusable families include new rename/INSERT SELECT evidence;
+they are not all edit targets. Retain their independent, sometimes weaker premises.
 
 | Existing owner | Reused declarations |
 | --- | --- |
-| [Resolution/ResolveStateSpec.lean][state-spec] | `resolveCreateTable_applyCatalog`, `resolveCreateIndex_applyCatalog`, `resolveAddColumn_applyCatalog` |
+| [Resolution/ApplyCatalogSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ApplyCatalogSpec.lean) | `resolveCreateTable_applyCatalog`, `resolveCreateIndex_applyCatalog`, `resolveAddColumn_applyCatalog` (moved from `ResolveStateSpec`) |
+| [Resolution/RenameSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameSpec.lean) | `RenameOutcome`, `resolveRenameTable_outcome`, `resolveRenameColumn_outcome`, `RenameOutcome.applyCatalog`, `RenameOutcome.valid`; reuse these existing certificates. |
 | [Resolution/DropSpec.lean][drop-spec] | `resolveDropTable_applyCatalog`, `resolveDropIndex_applyCatalog`, `resolveDropView_applyCatalog` |
 | [Resolution/TriggerDefinitionSpec.lean][trigger-spec]; [Resolution/ViewDefinitionSpec.lean][view-spec] | `resolveCreateTrigger_applyCatalog`, `resolveDropTrigger_applyCatalog`; `resolveCreateView_applyCatalog` |
-| [Resolution/WriteCatalogSpec.lean][write-spec]; [Resolution/SelectResolution.lean][select-resolution] | `resolveInsert_same`, `resolveUpdate_same`, `resolveDelete_same`, `resolveCommonTableWrite_same`; `resolveSelect_same` |
+| [Resolution/WriteCatalogSpec.lean][write-spec]; [Resolution/SelectResolution.lean][select-resolution] | `resolveInsert_same`, `resolveUpdate_same`, `resolveDelete_same`, `resolveCommonTableWrite_same`; new `resolveInsertQuery_form`/`resolveInsertQuery_same` use success of `resolveInsertQueryTraced(...).drop`; `resolveSelect_same` retains its existing role. |
 | [ResolveStatementForms.lean][forms] | `resolveCreateTable_schemaLink`, `resolveCreateIndex_schemaLink`, `resolveCreateTrigger_schemaLink`, `resolveInsert_schemaLink`, `resolveUpdate_schemaLink`, `resolveDelete_schemaLink`, `resolveSelect_schemaLink`, `resolveCommonTableWrite_schemaLink` |
 | [ResolveStatementLink.lean][statement-link] | `resolveCreateView_schemaLink`, `resolveAddColumn_schemaLink`, `resolveDropTable_schemaLink`, `resolveDropIndex_schemaLink`, `resolveDropTrigger_schemaLink`, `resolveDropView_schemaLink` |
 | [ResolveCreateTableCatalog.lean][create-table]; [ResolveCreateIndexCatalog.lean][create-index]; [ResolveCreateTriggerCatalog.lean][create-trigger]; [ResolveCreateViewCatalog.lean][create-view]; [ResolveAddColumnCatalog.lean][add-column] | Respectively `resolveCreateTable_valid`, `resolveCreateIndex_valid`, `resolveCreateTrigger_valid`, `resolveCreateView_valid`, `resolveAddColumn_valid` |
@@ -89,10 +93,10 @@ premises. Relocate a leaf only if the chosen module boundary requires it.
 
 ## Relocate four primitives without changing their formulas
 
-The declarations are fixed targets. The lower owners suggested here are
-placement choices, subject to compilation, file-size limits and cycle checks.
-The [primitive experiment](../experiments/proof-boundaries/ImportsPrimitives.lean)
-uses combined lower imports; it does not prove each proposed owner is minimal.
+These four declarations and owners are unchanged. Lower owners remain choices,
+subject to compilation, file-size and cycle checks. The historical
+[primitive experiment](../experiments/proof-boundaries/ImportsPrimitives.lean)
+uses combined lower imports; it establishes no minimum import set.
 
 | Existing declaration and owner | Proposed lower domain/root | Retained condition and consumer scope |
 | --- | --- | --- |
@@ -102,18 +106,19 @@ uses combined lower imports; it does not prove each proposed owner is minimal.
 | `Database.table_of_findTable` in [TableSourceLaws.lean][table-source] | Database/catalog lookup laws with `DatabaseFacts` and `Resolution.CatalogSpec` | Successful named catalog lookup gives the database table and its stored rows; no admission premise. Recompile `CreateIndexSuccessLaws` and surface query consumers. |
 
 The last row's surface consumers are `AggregateQuery`, `ColumnQuery`,
-`CountQuery`, `DuplicateKeyQuery`, `ExistsQuery`, `NotExistsQuery`,
+`CountQuery`, `FilteredDuplicateKeyQuery`, `FilteredDuplicateKeyEmpty`, `ExistsQuery`, `NotExistsQuery`,
 `SelectOneFrom`, `SelectOneMayFail` and `UniqueLookupQuery`, under
 [packages/belay/Belay/Sqlite](../packages/belay/Belay/Sqlite).
-Coordinate their proof migrations with the query specification. Relocation
-alone need not change a theorem's qualified name; do not leave duplicate aliases.
+The filtered modules' exact direct callers are `Holds.iff_selectOne_noDuplicateKeysWhere`,
+`Empty.iff_selectOne_noDuplicateKeysWhere` and `Fails.not_selectOne_noDuplicateKeysWhere`.
+Coordinate with query migration; relocation need not rename a theorem. Keep no aliases.
 Preserve public aggregation in [Belay.Sqlite.Model](../packages/belay-sqlite-model/Belay/Sqlite/Model.lean).
 
 ## Narrow three surface imports
 
-These module edits are fixed. The listed model roots are the compiled proposed
-sets from [imports.py](../experiments/proof-boundaries/imports.py), not optimality
-claims. Keep the rest of each module's body and other imports.
+These unchanged module bodies remain fixed targets. Proposed roots were compiled
+at `3fe5caef` by [imports.py](../experiments/proof-boundaries/imports.py); revalidate
+against current dependencies. Keep the rest of each body and its other imports.
 
 | Surface module | Replace the `Belay.Sqlite.Model` umbrella with model roots | Preserve |
 | --- | --- | --- |
@@ -122,13 +127,12 @@ claims. Keep the rest of each module's body and other imports.
 | [ValueDisplay.lean][display] | `Declarations`, `OutputRepr` | `ToString Value`, `unexpandIntegerValue` and its `app_unexpander` registration; retain the Lean delaborator import. |
 
 Rebuild downstream clients that may have relied on transitive umbrella names.
-Project import closures measured 580→75, 580→142 and 580→148 respectively;
-these are source-import measurements, not timing or permanent CI thresholds.
+Historical `3fe5caef` closures were 580→75, 580→142 and 580→148 respectively;
+they are not measurements of `daa15385`, timing claims or permanent CI thresholds.
 
 ## Explicitly deferred row-engine targets
 
-The following inventory explains what this decision leaves specialized. It is
-not an implementation backlog and does not freeze unrelated ADR 0025 work.
+These unchanged contracts stay specialized; unrelated ADR 0025 work can continue.
 
 | Current owner | Deferred shared-interface replacement targets |
 | --- | --- |
@@ -139,23 +143,19 @@ not an implementation backlog and does not freeze unrelated ADR 0025 work.
 | [RowEngineWrites.lean][row-writes]; [ForeignKeyCounterRows.lean][fk-rows] | `runRows_holds`; `runRows_foreignKeyKeeps` fuel inductions were not generalized by either prototype. |
 | [ForeignKeyCounterDelete.lean][fk-delete] | `deleteRow_counterBound` retains its combined check/removal phase; no per-micro-operation invariant is introduced. |
 
-The ten trigger proof bodies and their compact row-operation consumers stay.
-FAIL retains the full FK bound; rollback requires the database facts only;
-raw errors and undescribed stops impose no state condition. Generated-work
-permission and BEFORE UPDATE frame conditions remain independent obligations.
-Do not add `RowKeeps`, `StepAllowed` or the narrow experimental wrappers to
-production. The [five Row experiments](../experiments/proof-boundaries/row-engine-findings.md)
-remain historical evidence, with no requirement to port their tests.
+Keep the ten trigger proofs and consumers. FAIL retains the FK bound; rollback
+requires database facts only; raw errors/undescribed stops impose no state fact.
+Work permission and BEFORE UPDATE frames remain independent. Add no `RowKeeps`,
+`StepAllowed` or narrow wrappers to production; the [Row experiments](../experiments/proof-boundaries/row-engine-findings.md)
+are historical evidence, with no obligation to port their tests.
 
 ## Acceptance and test lifetime
 
-Use the linked specification's formula, trust, consumer-build and ownership
-checks. This inventory creates no checker, manifest, task file or CI snapshot.
-Old/new formula witnesses, copied primitive proofs and baseline/narrow modules
-are temporary acceptance work. Keep unique premise/transaction/trust coverage
-until migrated clients or focused regressions supply it; after final Nix
-acceptance, retire redundant active witnesses and registrations as ADR 0026
-requires. Record acceptance and retirement in the existing status file.
+Use the specification's formula/trust/build/ownership checks. This inventory
+creates no checker or CI snapshot. Formula witnesses, copied primitive proofs
+and baseline/narrow modules are temporary: retain unique contract coverage until
+clients or focused regressions supply it, then retire redundant witnesses after
+final Nix acceptance. Record acceptance and retirement in the existing status file.
 
 [state-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveStateSpec.lean
 [statement-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementFacts.lean

@@ -4,9 +4,9 @@ Date: 2026-10-27. Status: PROPOSED; implementation has not started.
 Audience: designers and reviewers.
 Contract: [query and observation specification](spec-proof-observations.md),
 implementing [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
-Inventory baseline: `3fe5caef`; the linked production files are unchanged from
-that revision. Reconcile branch drift before implementation. Counts below refer
-to authored declarations, not generated declarations or measured net savings.
+Source-reviewed baseline: main `daa15385`. The historical compiled experiments
+use `3fe5caef`; this inventory makes no current-main compile claim. Reconcile
+later drift. Counts refer to authored declarations, not measured net savings.
 
 Model names below have namespace `Belay.Sqlite.Model`; surface names have
 namespace `Belay.Sqlite`. A prefix plus each explicitly listed suffix names
@@ -14,9 +14,8 @@ one declaration. These finite lists are not wildcard deletion instructions.
 
 ## Replace 21 model observation endpoints
 
-Each family gets meaningful semantic output facts from which arbitrary output
-predicates follow by rewriting. Remove these endpoints after caller migration;
-their original formulas and assumptions remain migration obligations.
+Replace these with semantic output facts usable under arbitrary predicates.
+Their current formulas and assumptions remain migration obligations.
 
 | Owning source | Exact name prefix | Exact suffixes to replace |
 | --- | --- | --- |
@@ -28,11 +27,13 @@ their original formulas and assumptions remain migration obligations.
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `resolvedStepOutput_notExists_duplicateKeys_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `resolvedStepOutput_simplePragma_` | `hasRows`, `hasNoRows`, `not_isError` |
 
-## Replace 21 surface observation endpoints
+The three `DuplicateKeyOutput` names now quantify over a filter, result column
+and column name. They describe groups of `Resolved.keptRows`, not all source rows.
 
-These expose the same family results through written SQL. Replace the three
-named observations in each row, preserving the resolver-only transport in the
-last column as an independently usable fact with its original weaker premises.
+## Replace 24 surface observation endpoints
+
+Preserve each resolver-only transport with its weaker premises. The filtered
+duplicate-key form adds three surface targets to the historical 42-name inventory.
 
 | Owning source | Exact declarations to replace | Resolver transport to retain |
 | --- | --- | --- |
@@ -42,6 +43,8 @@ last column as an independently usable fact with its original weaker premises.
 | [ExistsQuery](../packages/belay/Belay/Sqlite/ExistsQuery.lean) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
 | [NotExistsQuery](../packages/belay/Belay/Sqlite/NotExistsQuery.lean) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
 | [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
+| [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
+| [FilteredDuplicateKeyEmpty](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyEmpty.lean) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
 | [TableInfoQuery](../packages/belay/Belay/Sqlite/TableInfoQuery.lean) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
 
 Retain and migrate the meaningful consequences
@@ -50,13 +53,16 @@ Retain and migrate the meaningful consequences
 `Holds.selectOne_count_unique_lookup` in
 [UniqueLookupQuery](../packages/belay/Belay/Sqlite/UniqueLookupQuery.lean).
 They add mathematical content beyond transporting an output observer.
+Also retain `Holds.iff_selectOne_noDuplicateKeysWhere_pairwise` in
+`FilteredDuplicateKeyQuery`. Preserve result-column resolution/groupedness,
+aggregate-feed restrictions, `GroupTermResolvesIn`, filter/column/key calmness,
+and NULL grouping. False/NULL filters exclude rows; fallible filters are outside
+the calm contract. The filtered resolver transport itself needs no calmness.
 
 ## Preserve semantic helpers and move shared ownership where needed
 
-The mixed owner files above are not wholesale deletion targets. Source/context,
-calmness and expression-shape facts outside the 42-name list remain available
-where the new semantics or other clients use them. The following are concrete
-shared ownership targets; this list does not rename their public API in advance.
+Mixed owners are not wholesale deletion targets. Keep used semantic helpers
+outside the 45-name list; the shared ownership targets below do not prescribe names.
 
 | Current owner | Exact definitions and facts to reuse below their consumers |
 | --- | --- |
@@ -68,14 +74,15 @@ shared ownership targets; this list does not rename their public API in advance.
 | [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`, `Connection.queryContext_tableSubquery_zero` |
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `Connection.queryContext_duplicateKeys_zero` |
 | [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `Resolved.Query.source_pragma_fixed` |
+| [SimpleSubqueryRowsOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean) | `resolvedStepOutput_simple_rows_of_faultless`; reuse this current exact-output fact |
+| [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_append`; retain their read/append semantics |
 
 The existing generic projections `resolvedStepOutput_query_isError` in
 `QueryStatementOutput` and `resolvedStepOutput_simple_not_isError_of_faultless`
 in `SimpleQuerySteps` identify important independent guarantees: the former
 needs no bound-window premise; the latter needs no clean-source premise.
-They are outside the 42-endpoint deletion set. Any consolidation of their
-proofs must retain those strengths. General row/error projections and semantic
-simp laws are not automatically obsolete merely because exact output is exposed.
+They are outside the 45-endpoint deletion set. Preserve these strengths when
+reusing clean-source exact-output facts; generic projections are not automatically obsolete.
 
 Preserve support gating, mismatch/overflow/function-error precedence, unmodeled
 results and every `Output.ofResults` alternative. Aggregate empty input can
@@ -83,9 +90,8 @@ produce one row. Preserve resolver scope, parameter, table and calmness premises
 
 ## Replace four relation representations and nine structural wrappers
 
-The four `Prop` structures become equality of profiles containing the actual
-observation and the predicate of possible observations. Their meanings stay
-distinct; each old `actual`/`branches` pair has an exact migration witness.
+The four `Prop` structures become profile equality: actual observation plus the
+predicate of possible observations. Preserve each `actual`/`branches` meaning.
 
 | Owning source | Exact relation targets | Observer retained |
 | --- | --- | --- |
@@ -107,6 +113,10 @@ Remove these nine fixed-context wrappers; ordinary equality supplies their laws:
 Migrate `Sql.Equiv.refl`, `Sql.Equiv.symm`, `Sql.Equiv.trans` and `sqlSetoid` in
 `ExecutionEquivalenceLaws` to the new representation; they are not part of the
 nine fixed-context removals. Preserve the existing `≈` notation and its meaning.
+Current [ExecutionBranches](../packages/belay/Belay/Sqlite/ExecutionBranches.lean)
+selects a `RunStep.executions` member before `OutputChoice`: preserve each
+member's next connection. `Sql.hasOneBranch` also requires `others.isEmpty`;
+absence of `.oneOf` alone no longer establishes a singleton execution.
 
 ## Share transport and singleton reasoning; retain semantic boundaries
 
@@ -127,14 +137,24 @@ Migrate `Sql.View.identity_observation_iff`, `Sql.View.identity_full_eq_iff` and
 `Sql.View.identity_equiv_iff` in
 [ExecutionViewIdentity](../packages/belay/Belay/Sqlite/ExecutionViewIdentity.lean).
 
-The observers themselves are in
-[ExecutionViewProjection](../packages/belay/Belay/Sqlite/ExecutionViewProjection.lean).
-Full-view comparison retains connection and raw next index; weak comparison
-does not determine these. Actual agreement is separate from possible-image
-agreement. [ScopedAgreement](../packages/belay/Belay/Sqlite/ScopedAgreement.lean)
-owns `RunsAgree` and `Sql.ScopedAt`; these and
-`Sql.ScopedAt.of_one_branch` in `ExecutionDeterministic` remain distinct
-relation-based simulation, not equality of observation profiles.
+Observers in [ExecutionViewProjection](../packages/belay/Belay/Sqlite/ExecutionViewProjection.lean)
+keep full connection/raw index distinct from weak observations and actual runs
+distinct from possible images. [ScopedAgreement](../packages/belay/Belay/Sqlite/ScopedAgreement.lean)
+owns `RunsAgree` and `Sql.ScopedAt`; retain their relation-based meaning and
+`Sql.ScopedAt.of_one_branch` independently of profile equality.
+
+## Retain NOT IN and correlated EXISTS equivalences
+
+[NotInQuery](../packages/belay/Belay/Sqlite/NotInQuery.lean) adds meaningful consumers:
+`Sql.EquivAt.notIn_notExists_of_rowidAlias`, `Sql.EquivAt.in_exists_of_rowidAlias`
+and the singleton bridge `Sql.EquivAt.of_select_steps`. Retain `IsSelectStatement`
+and `IsSelectStatement.step_of_rows`: SELECT rows imply no further execution.
+Both equivalences require table presence, key bounds, outer rowid alias and
+`RowsAliased`, non-TEXT affinity, matching resolution and output columns; their
+collations are independent. Only NOT IN requires non-NULL inner cells. Reuse
+`resolvedStepOutput_notIn_eq_notExists_of_rowidAlias` and
+`resolvedStepOutput_in_eq_exists_of_rowidAlias` in
+[InSubqueryQueryRowidAlias](../packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryRowidAlias.lean).
 
 ## Migrate actual clients and existing tests
 
@@ -147,6 +167,9 @@ relation-based simulation, not equality of observation profiles.
 | [MigrationPatternFrames](../packages/belay/Belay/Sqlite/MigrationPatternFrames.lean) | `TranslatesAt.commutes_of_frames`, `TranslatesOn.commutes_of_frames`; retain connection/step frames |
 | [surface_claims_test.py](../tests/surface_claims_test.py) | Existing `ClaimsCount`, `ClaimsExists`, `ClaimsIn`, `ClaimsDuplicateKeys`, `ClaimsTableInfo`, `ClaimsSum`, `ClaimsUniqueLookup` fixtures use the new query facts |
 | [surface_execution_test.py](../tests/surface_execution_test.py), [surface_migration_patterns_test.py](../tests/surface_migration_patterns_test.py) | Existing `ExecutionEquivalence`, `ExecutionComposition`, `ExecutionViewComparisons`, `ExecutionViewChoices` protect branches, state, raw steps and actual choices |
+| [surface_assertion_examples_test.py](../tests/surface_assertion_examples_test.py) | `FilteredDuplicateKeyExamples`, `GlobalSignupInvariant`: filtered/NULL/collated groups and the generic application |
+| [surface_s6_not_blocked_test.py](../tests/surface_s6_not_blocked_test.py) | `S6NotBlocked`, `S6NotBlockedLaw`: equivalence premises and NULL/collation counterexamples |
+| [InsertSelectExecutions](../tests/surface/InsertSelectExecutions.lean) | Existing execution driver: alternative next databases and failures despite actual success |
 
 Other direct query clients to migrate are
 [ExpansionCountQueries](../tests/surface/ExpansionCountQueries.lean),
@@ -154,9 +177,8 @@ Other direct query clients to migrate are
 [CustomerInsertQueries](../tests/surface/CustomerInsertQueries.lean),
 [SuccessBalanceSuccess](../tests/surface/SuccessBalanceSuccess.lean) and
 [SuccessUniqueEmail](../tests/surface/SuccessUniqueEmail.lean).
-This is a source-verified client list, not a closed deletion oracle: check
-implicit uses, exports, simp registrations, docs and complete affected builds.
-Bind and migration claims retain their continuation/domain/frame assumptions.
+Also check implicit uses, exports, simp registrations, docs and complete builds.
+Bind/migration claims retain continuation/domain/frame assumptions.
 
 ## Prototype names and test retirement
 
@@ -164,10 +186,11 @@ Bind and migration claims retain their continuation/domain/frame assumptions.
 [QueryCount](../experiments/proof-boundaries/QueryCount.lean),
 [QueryAggregate](../experiments/proof-boundaries/QueryAggregate.lean) and
 [ObservationAlgebra](../experiments/proof-boundaries/ObservationAlgebra.lean)
-demonstrate the shared facts. Their `ProofBoundaries` names are experimental,
-not prescribed public API names. Five query families still need migration.
+demonstrate historical shared facts. Their `ProofBoundaries` names are not fixed
+API names. Five query families, including filtered duplicates, remain migration
+work; current branch-state alternatives need current acceptance coverage.
 
-Reuse one temporary 42-formula matrix and four relation witnesses through the
+Reuse one temporary 45-formula matrix and four relation witnesses through the
 last planned change to their shared contracts. Record final Nix acceptance,
 then remove redundant temporary sources and registrations. Preserve unique
 premise-strength, semantic and independent-proof axiom coverage through existing

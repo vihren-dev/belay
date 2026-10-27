@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Contract: [ADR 0025 D2–D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [API removals and callers](spec-preservation-api-targets.md).
 
-Names were checked against production revision `3fe5caef`. All declarations
+Names were checked against production revision `daa15385`. All declarations
 below belong to `Belay.Sqlite.Model`. Current owners identify the source to
 change. Future placement is constrained by imports; these lists do not require
 one new module per group. Retained evidence can move without changing its claim.
@@ -15,8 +15,8 @@ one new module per group. Retained evidence can move without changing its claim.
 | Current file | Definitions, fields or facts | Intended boundary |
 | --- | --- | --- |
 | [RowLocalFrame][frame] | `Database.EachTable`; `Effect.Satisfies`; `Effect.satisfies_of_effectDatabase`; `Effect.satisfies_of_database` | General table quantification and success/carried-FAIL preservation must be available without importing `RowLocalAtoms` or key instances. |
-| [AdmittedAtomFrames][atom-frames] | `TableAtom` and fields `empty`, `sublist`; `Database.EachTable.appendEmpty` | Put the weakest table contract below `RowLocalAtom`; retain atom-specific frame lemmas/instances above it. |
-| [RowLocalAtoms][atoms] | `RowLocalAtom.empty`, `.sublist`, `.constraints`; `RowLocalAtom.facts` | Share the first two facts with `TableAtom`, and keep the independent constraint implication. Use inheritance or a small projection; no second frame implementation. |
+| [AdmittedAtomFrames][atom-frames] | `TableAtom` and fields `empty`, `sublist`, `renamed`; `Database.EachTable.appendEmpty` | Put the shared table contract below `RowLocalAtom`; retain atom-specific frame lemmas/instances above it. |
+| [RowLocalAtoms][atoms] | `RowLocalAtom.empty`, `.sublist`, `.renamed`, `.constraints`; `RowLocalAtom.facts` | Share empty/sublist/rename facts with `TableAtom`, and keep the independent constraint implication. Use inheritance or a small projection; no second frame implementation. |
 | [RowEngineFacts][engine-facts] | `Database.Every`, `Database.Every.setRows` | Expose the catalog/position-dependent update primitive below both table-local and key instances; keep its out-of-range row-list behavior. |
 | [AdmittedPlainWrites][plain] | `checkedWrite_satisfies`, `insertOutcome_satisfies` | Make the general checked-write/insert facts usable by `RowLocalWrites` without the current reverse import. |
 | [RunHoldsStep][step] | `SqlState.Holds`, `Outcome.Holds`, `SqlTransition.Holds` | General state/outcome predicates remain below per-atom run evidence; move only as needed to break specialization imports. |
@@ -36,8 +36,9 @@ imports would create cycles; generalization must first change ownership.
 | [RowLocalWrites][writes]: `insertOutcome_rowLocal` | `insertOutcome_satisfies` and `RowLocalAtom.constraints` | Same shape and original write assumptions. |
 | [RowLocalFrame][frame]: `Database.EachTable.append` | `Database.EachTable.appendEmpty` with the shared table contract | Original empty-table assumptions. |
 
-The first four are the experiment-checked replacement formulas in
+The first four have historical replacement proofs in
 [DispatchPrimitives](../experiments/proof-simplification/DispatchPrimitives.lean).
+Recheck them against the current contracts; this is not a current build result.
 The append row is a consolidation candidate from the shared empty-table field;
 verify its original formula during implementation. Delete replaced proof bodies
 and unnecessary specializations after callers migrate. These counts do not add
@@ -48,7 +49,7 @@ to the 84 endpoint deletion count as measured savings.
 | Current file | Target declaration | Intended change |
 | --- | --- | --- |
 | [AdmittedTableAtomStatement][dispatch] | `runStatement_tableAtom` | Own the single complete constructor dispatch for these table-atom families. |
-| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD COLUMN and write evidence. |
+| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD COLUMN, INSERT-query and write evidence. |
 | [AdmittedDistinctStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedDistinctStatement.lean) | `runStatement_rowidsDistinct` | Derive from that dispatch using distinct-rowid evidence. |
 
 Retain the independent leaf evidence used by those applications:
@@ -68,6 +69,15 @@ Retain the independent leaf evidence used by those applications:
 - [RowLocalAddColumnTheorems](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean):
   the generic ADD COLUMN fact and distinct atom extension facts listed in the
   companion inventory. Placement changes may be needed to remove wrapper imports.
+- [StatementRewrite](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRewrite.lean):
+  `runStatement_rewrite_satisfies`, `runStatement_rewrite_rowLocal`,
+  `runStatement_rewrite_tableAtom` supply rename evidence with unchanged rows
+  and equal `blankNames` shapes. The shared table projection includes `renamed`.
+- [InsertSelectLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectLaws.lean):
+  `runStatement_insertSelect_none_satisfies`; [InsertSelectOutcomeLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectOutcomeLaws.lean):
+  `runStatement_insertSelect_some_satisfies` supply the dispatch's `selects`
+  premise and rule-bearing case. Preserve source failures, upsert behavior
+  and carried constraint FAIL.
 
 Leaf wrappers with no remaining purpose can disappear after caller migration;
 the required initial targets are the complete dispatches and four checked
@@ -78,12 +88,14 @@ dispatches are outside this table-atom consolidation.
 
 | Current file | Exact target declarations | Intended change |
 | --- | --- | --- |
-| [RunHolds][raw] | `StatementKeeps`, `RunConditionsWith` | Conditions inspect actual clock, visible counters, parameters, resolved statement and database. |
+| [RunHolds][raw] | `StatementKeeps`, `RunConditionsWith` | Conditions inspect actual clock, visible counters, parameters, resolved statement and database; preservation still covers every member of `StatementRun.effects`. |
 | [RunHolds][raw] | `advance_holds`, `runSqlFrom_holds`, `runSql_holds`; `RunConditionsWith.of_unconditioned` | One raw induction and its entry/condition laws use the richer condition. |
 | [RunHoldsReady][ready] | `StatementKeepsReady`, `StatementKeeps.toReady`, `advance_holds_ready`, `runSqlFrom_holds_ready`, `runSql_holds_ready` | Replace the parallel contract/traversal with explicit readiness in the common condition; remove old production names after migration. |
 | [RunHoldsReady][ready] | `StatementKeepsReady.and`, `RunConditionsWith.always`, `SqlState.Holds.mono` | Supply conjunction and unconditional-condition facts for the unified API; preserve generic state monotonicity. |
-| [ScriptRunHolds][surface] | `ScriptConditionsWith`, `runScriptStep_holds`, `runScriptFrom_holds` | One continuing-step proof and surface induction with reached-input conditions. |
-| [ScriptRunDerived][derived] | `runScriptStep_holds_ready`, `runScriptFrom_holds_derived` | Derive resolver/invariant obligations through the same proof, without another script induction or compatibility traversal. |
+| [ScriptConditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptConditions.lean) | `ScriptConditionsWith` | Conditions follow every reached execution's next connection, including branch-specific counters and database. |
+| [ScriptRunHolds][surface] | `runScriptStep_holds`, `runScriptAllFrom_holds`, `runScriptFrom_holds` | One continuing-step proof and all-execution surface induction; derive the canonical-run result by membership. |
+| [ScriptRunDerived][derived] | `runScriptStep_holds_ready`, `runScriptAllFrom_holds_derived`, `runScriptFrom_holds_derived` | Derive resolver/invariant obligations through the same proof, without another script induction or compatibility traversal. |
+| [InsertSelectKeeps](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectKeeps.lean) | `StatementKeeps.ofOwnRun`, `StatementKeepsReady.ofOwnRun` | Adapt the own-run-to-all-effects proof to the unified contract; retain INSERT-query-to-upsert condition compatibility for the actual evaluator inputs. |
 
 Keep these transport facts, adapting only their applications/imports:
 [RunHoldsStep][step] `SqlState.finish_holds`, `SqlState.failed_holds`,
@@ -96,6 +108,12 @@ Their executable behavior is unchanged. Ordinary runs use `initial := none`;
 state readiness includes counter knowledge beyond raw evaluator readiness.
 Surface runs use `statementClock`. Conditions follow reached states, with the
 halt/ended and discarded-error behavior specified in ADR 0025 D4.
+`runScriptFrom_mem_runScriptAllFrom` in [ScriptRunAll](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunAll.lean)
+already supplies canonical-run membership. Migrate `ScriptRunSingleton`'s
+condition clients too. Do not infer an input-dependent upsert condition merely
+from the INSERT-query condition: preserve an explicit compatibility premise,
+including the readiness implication when needed. `ExecutionCounters`'s
+counter-knowledge relations remain distinct evidence, not deletion targets.
 
 ## Migrate invariant certificates and resolver bridges
 
@@ -115,7 +133,7 @@ interface. The listed propositions keep their meanings and distinct premises.
 | [AtomsConditionsOfLink](../packages/belay-sqlite-model/Belay/Sqlite/Model/AtomsConditionsOfLink.lean) | `Resolved.Statement.runCondition_of_link`, `.notNullCondition_of_admitted`, `.typesFitCondition_of_link`, `.checksHoldCondition_of_admitted`, `.atomsCondition_of_link` |
 
 The resolver bridge formulas stay available; adjust their use in
-`runScriptFrom_admittedWith` instead of repeating resolution reasoning at clients.
+`runScriptAllFrom_admittedWith` instead of repeating resolution reasoning at clients.
 Some certificates currently accept readiness that their body does not use;
 do not add it as a necessary premise for an independently unconditional claim.
 No FK schema/row atom, mapping selection or work condition is collapsed merely
@@ -127,10 +145,13 @@ Use the companion's caller/test list and the [foundations task](../plans/2026102
 and [condition task](../plans/20261026-preservation-context.task.md) for acceptance.
 `admitted_atoms_statement_theorems_test.py` checks independent atom claims;
 retain meaningful premise coverage when dispatch bodies change. The complete
-old-formula adapters, four primitive probes and import/count comparisons remain
+current-formula adapters, four primitive probes and import/count comparisons remain
 temporary acceptance work. Keep one copy through the final contract change,
-record Nix acceptance, then remove redundancy. These inventories are review
-guides, not permanent CI manifests or promised net source/build savings.
+record Nix acceptance against `daa15385`'s claims, then remove redundancy.
+Historical prototypes predate rename and alternative INSERT-query execution;
+their previous successful builds do not validate the changed contracts.
+These inventories are review guides, not permanent CI manifests or promised
+net source/build savings.
 
 [frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalFrame.lean
 [atom-frames]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedAtomFrames.lean

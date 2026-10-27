@@ -25,3 +25,10 @@ Implement the new production interface, migrate evidence and callers, and
 complete the task's acceptance checks. Delete old condition predicates and
 parallel traversals. Experiment-only old-formula conversions must not become
 production compatibility paths. Coordinate final names with API removal.
+
+Reconciled on 2026-10-27 with main `daa15385`: statement evidence covers all
+effects and surface lifting covers every complete execution. Canonical-run
+claims follow by membership. `ScriptConditions` now owns the branch-aware
+conditions; INSERT SELECT adapters must transport richer input-dependent
+conditions to the selected upsert. Historical own-run prototypes do not
+constitute acceptance of this updated contract.

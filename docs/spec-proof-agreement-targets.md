@@ -3,9 +3,12 @@
 Date: 2026-10-27. Status: PROPOSED; implementation has not started.
 Audience: designers and reviewers.
 Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
-Frozen production baseline: `3fe5caef`. Reconcile this inventory with the
+Production baseline reviewed: `daa15385`. Reconcile this inventory with the
 implementation branch before editing. Prototype names do not prescribe the
 production API. This is the target list, not a prescribed implementation order.
+The fourteen source helpers and four expression targets are unchanged from
+`3fe5caef`; the earlier prototype build is historical evidence, not validation
+of its imports on latest main.
 
 ## One traversal for both database origins
 
@@ -100,6 +103,9 @@ not an extra deletion inventory.
 | [TwoStateNotExistsExcept.lean][except] | `Resolved.Query.simple_results_congr` uses rowwise congruence. |
 | [KeysUniqueAddColumn.lean][keys] | `LiteralData.termValue_append`; `LiteralData.keyEqual_append` use `Resolved.Expr.eval_append`. |
 | [RowLocalAddColumnTheorems.lean][rowlocal] | `Table.ChecksHold.appendColumn` uses `Resolved.Expr.eval_append`. |
+| [SimpleQueryAppend.lean][simpleappend] | `Resolved.Query.simple_results_append` uses `Resolved.Expr.eval_append` for filters and result columns. |
+| [CertifiedQueryOutputs.lean][certified] | `runScriptStep_simpleTable_output_append` consumes the simple-query append law; preserve this new current client. |
+| [ReadCertificatePreservation.lean][readcertificate] | `Belay.Sqlite.ReadCertificate.preservesAt` and `.preservesAt_send` retain their read-certificate guarantees downstream. |
 
 Retain `Resolved.Expr.Rowwise`, `Resolved.Expr.Rowwise.fault_none` and
 `Resolved.Expr.Rowwise.calm` in [RowwiseExpr.lean][rowwise], including their
@@ -127,7 +133,7 @@ definitions. Their presence is not a reason to keep a duplicated induction.
   purge-frame examples. Keep those applications, including the Rowwise evidence
   in [PurgeFrameQueries.lean][purgefixture] and the NULL/trigger distinctions.
 - During migration, kernel-check all removed helper formulas and nominated
-  endpoint formulas with their original assumptions. Retire redundant old/new
+  endpoint formulas with their `daa15385` assumptions. Retire redundant old/new
   equivalence matrices after Nix acceptance of the final contract-changing slice.
   Keep the accepted revision for replay, not a second maintained proof API.
 - Keep focused current checks for absence/shape, pragma dependence, faults,
@@ -153,6 +159,9 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [except]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateNotExistsExcept.lean
 [keys]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueAddColumn.lean
 [rowlocal]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean
+[simpleappend]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQueryAppend.lean
+[certified]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean
+[readcertificate]: ../packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean
 [twotest]: ../tests/surface_two_state_test.py
 [claimtest]: ../tests/surface_claims_test.py
 [asserttest]: ../tests/surface_assertion_examples_test.py

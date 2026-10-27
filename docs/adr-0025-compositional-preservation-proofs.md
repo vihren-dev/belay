@@ -1,6 +1,6 @@
 # ADR 0025: A compositional preservation proof API
 
-Date: 2026-10-26. Status: PROPOSED; experiment-checked and ready for implementation review.
+Date: 2026-10-26. Status: PROPOSED; historical prototypes checked; current targets source-reviewed.
 Audience: designers and reviewers.
 Owner request: simplify the theorem and proof API, including changing the
 per-atom product contracts, after experiments in a separate workspace.
@@ -23,9 +23,9 @@ condition can mention only the statement and database. `StatementKeepsReady`
 and a second run traversal compensate for that restriction. Surface execution
 then repeats the step analysis and run traversal for derived conditions.
 
-These are current maintenance problems identified in the owner's review, not
-requirements for a speculative framework. Experiments use integration commit
-`6413afe3ff50`; concurrent name-trace work is outside that frozen baseline.
+These are current maintenance problems identified in the owner's review.
+Reconciled 2026-10-27 with `main` at `daa15385`. Experiments used `6413afe3ff50`;
+they do not certify the added RENAME and INSERT SELECT execution contracts.
 
 ## D1. Guarantees are derivable through generic laws
 
@@ -34,17 +34,17 @@ and preservation evidence with its actual conditions. A caller combines that
 evidence with a generic execution law. A separate public theorem for every
 invariant and entry point is no longer required.
 
-The initial deletion scope is the 84 wrappers in the experiment inventory:
-54 run specializations and 30 statement specializations. Their declaration and
-docstring spans total 937 lines. Six pure-wrapper modules total 664 full-file
-lines; those lines overlap the declaration count. These are gross removal
-opportunities, not measured net source or compilation savings.
+The current deletion scope is the 84 wrappers in the linked live inventory:
+36 raw-run, 18 all-execution surface-run and 30 statement specializations.
+The frozen experiment inventory has the 18 earlier `runScriptFrom_` names;
+current targets use `runScriptAllFrom_`. Its 937 declaration/docstring lines and
+664 overlapping pure-module lines are historical gross counts, not net savings.
 
 Use existing `Effect.Satisfies`, `SqlState.Holds`, `Outcome.Holds`, generic run
 laws and preservation evidence. Remove specialized aliases when their only
 purpose is to restate a generic application. Small bundled helpers with concrete
-callers can remain: `runScriptFrom_valid` and `runScriptStep_valid` serve the
-surface program API. `runScriptFrom_admittedWith` is generic and remains useful.
+callers can remain: `runScriptAllFrom_valid` and `runScriptStep_valid` serve the
+surface program API. `runScriptAllFrom_admittedWith` is generic and remains useful.
 The inventory is the required initial removal set, not a mandate to delete
 semantically distinct statements that happen to have similar names.
 
@@ -56,13 +56,14 @@ records and experiment inputs needed to replay the evidence.
 
 The lowest proof layer contains the existing effect/state predicates and
 database update facts needed by multiple invariant families. Table-level
-preservation uses the weakest existing contract, `TableAtom` (empty tables and
-sublists). Row-local constraint facts supply that contract plus their constraint
+preservation uses `TableAtom` (empty tables, sublists and renaming).
+Row-local constraint facts supply that contract plus their constraint
 implication. They do not own a second implementation of the same frame facts.
 
 One general table-atom statement theorem owns the complete dispatch for the
-families it covers. Row-local atoms and distinct rowids supply their ADD COLUMN,
-plain-write and row-engine facts. Their existing formulas remain derivable
+families it covers, including `rewrite` and `insertSelect`. Row-local atoms and
+distinct rowids supply ADD COLUMN, plain-write, INSERT SELECT and engine facts.
+Their existing own-run statement formulas remain derivable
 without readiness or extra admitted-database premises.
 
 General `setRows`, checked-write and insert-outcome lemmas sit below their
@@ -84,20 +85,20 @@ database left at `none`. Two-state observation APIs remain outside this scope.
 Ordinary conditions ignore the additional arguments. Readiness
 is an explicit condition for invariants that need it.
 
-There is one preservation induction for resolved scripts. Its conditions follow
-the reached execution states and require nothing of a suffix after a halt.
-An unconditional invariant still has a run guarantee without a support premise.
-A readiness-dependent invariant can recover its current guarantee from
-`supportedSqlFrom` and the other original conditions.
+Statement evidence covers every member of `StatementRun.effects`.
+`InsertSelectKeeps` lifts own-run evidence through INSERT SELECT/upsert condition
+compatibility; the richer condition must transport actual inputs there too.
+One resolved-script induction follows the canonical `runSqlFrom` execution and
+requires nothing of a suffix after a halt. Unconditional guarantees acquire no
+support premise; readiness-dependent ones retain `supportedSqlFrom` as needed.
 
-There is one preservation induction for surface scripts, with a shared proof of
-the continuing step. It admits explicit reached-step conditions and conditions
-derived from resolution and the current invariant. Execution mode and matching
-limits remain premises where the resolver needs them. The surface uses the
-clock selected by `statementClock`; it does not substitute the raw runner's
-clock assignment. The state readiness check includes counter knowledge in
-addition to raw `runStatement` readiness. That implication is used in its
-proved direction only.
+One surface induction covers every `runScriptAllFrom` result, with a shared
+continuing-step proof for every `RunStep.executions` member. Conditions follow
+each branch's database, snapshot and counters. Canonical `runScriptFrom` claims
+follow by membership; explicit and resolver-derived conditions share that proof.
+Execution mode and matching limits remain explicit. Use the selected
+`statementClock` and visible counters. State readiness adds counter knowledge
+to raw statement readiness; use that implication only in its proved direction.
 
 These changes affect proof interfaces. They do not change executable stepping,
 the support gate, evaluation, errors, observations or the modeled SQL subset.
@@ -106,8 +107,9 @@ the support gate, evaluation, errors, observations or the modeled SQL subset.
 
 Test lifetime amended 2026-10-26 with owner approval.
 
-The replacement must derive each removed endpoint's old mathematical claim
-with the same entry assumptions. Exhaustive old-formula checks are temporary
+The replacement must derive each removed endpoint's current `daa15385` claim
+with the same entry assumptions and all-execution quantifiers. Historical
+own-run prototypes alone do not establish that. Exhaustive checks are temporary
 migration evidence. Keep one copy through the last planned slice that changes
 their shared contracts, and record Nix acceptance against the final migrated
 implementation. Then delete redundant temporary test sources and registrations
@@ -165,8 +167,8 @@ recursion are separate opportunities. This ADR does not authorize those changes.
 
 ## Implementation specifications
 
-Target inventories added 2026-10-27 at the owner's request, checked against
-production revision `3fe5caef`:
+Target inventories added and reconciled 2026-10-27 at the owner's request,
+checked against production revision `daa15385`:
 
 - [Endpoint, predicate and caller inventory](spec-preservation-api-targets.md):
   84 endpoint removals, duplicated aliases, retained claims and test retirement.

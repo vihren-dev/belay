@@ -20,7 +20,8 @@ On 2026-10-27 the owner requested detailed targets. The task now links the
 source-checked endpoint, predicate and caller inventory. Implementation remains
 unassigned; this refinement changes no production code or acceptance policy.
 
-Implement all outcomes and acceptance checks in the task. Reconcile the frozen
-inventory with the selected integration revision, including concurrent
-name-trace work. No production code, caller or public endpoint has changed yet.
+Reconciled on 2026-10-27 with main `daa15385`: the live inventory has 84 targets,
+including 18 `runScriptAllFrom_` names. The earlier JSON records the historical
+names only. Implement current all-execution formulas and acceptance checks;
+this branch has made no production refactor.
 Coordinate generic interface edits with the execution-condition task.

@@ -1,6 +1,6 @@
 # ADR 0026: Shared semantic facts for query and execution proofs
 
-Date: 2026-10-26. Status: PROPOSED; experiment-checked.
+Date: 2026-10-26. Status: PROPOSED; historical prototypes checked; current targets source-reviewed.
 Audience: designers and reviewers.
 Owner request: test the causes of proof duplication, then specify the refactor
 supported by the results.
@@ -30,12 +30,12 @@ that characterization. Keep resolution facts separate when their assumptions
 are weaker than execution facts. Use ordinary equality and simplification for
 predicate transport; no new observer framework is required.
 
-Replace the 42 model/surface observation endpoints in the seven-family
-experiment inventory. Their original formulas remain derivable under their
-original assumptions. This is an initial replacement scope, not a claim that
-42 independent mathematical facts disappear. Keep useful pairwise duplicate-key
-and unique-lookup results. Count, aggregate and one surface count application
-have been prototyped; migration of the other five families remains required.
+Replace 45 endpoints in the current seven-family inventory: 21 model and 24
+surface endpoints. The three added filtered duplicate-key observations share
+the generalized grouping family; retain its filter, grouped-column and resolution
+premises. Keep filtered/unfiltered pairwise and unique-lookup results. Historical
+prototypes check count, aggregate and one surface count application; the other
+five families and new filtered cases remain implementation obligations.
 
 The complete output retains possible results, unmodeled cases, error codes and
 error precedence. A no-error result cannot acquire a clean-source or
@@ -67,7 +67,8 @@ Catalog/write transport facts combine the existing leaf resolver facts. Current
 and saved transaction catalogs retain their distinct behavior. The applied
 catalog validity consumer retains its formula for control statements too;
 control statements leave the applied catalog unchanged. No stronger common
-premise may be imposed merely to bundle the facts.
+premise may be imposed merely to bundle the facts. Include RENAME and INSERT
+SELECT, reuse `RenameOutcome` and traced-resolver equations, and preserve traces.
 
 ## D4. Use equality of observation profiles
 
@@ -78,9 +79,13 @@ transport law and one singleton law serve the existing relations.
 The observer distinguishes full execution, value/trace observation, full views
 and weak views. Keep complete connection state and raw step counts wherever
 the original relation observes them. Actual output is retained separately from
-possible outputs. Strengthening weak observation requires its existing frame
+possible outputs. Branches first select an execution and its next connection,
+then an output choice; singleton proofs must exclude further executions too.
+Strengthening weak observation requires its existing frame
 premises. Sequential composition retains its existing continuation obligations.
 Full-state simulation and interface-scoped simulation remain distinct.
+Preserve the new NOT IN/EXISTS equivalences as consumers, with their distinct
+NULL, rowid-alias, affinity and resolution premises.
 
 ## D5. Generalize expression congruence, retain separate fault guarantees
 
@@ -106,10 +111,10 @@ Move the four demonstrated primitive facts to suitable foundational owners.
 Place definitions used by shared proofs below the specialized laws they replace.
 Remove the model umbrella imports from the three demonstrated surface modules:
 `Values`, `Script` and `ValueDisplay`. Their complete unchanged bodies compile
-with narrower imports in the experiment. Public aggregation remains available.
+with narrower imports at the experiment baseline. Public aggregation remains available.
 
-Project import closures decrease from 580 modules to 75, 142 and 148 in those
-three probes. These counts establish narrower dependencies, not faster builds.
+Historical import closures decreased from 580 to 75, 142 and 148 in those
+probes. Recheck current imports; those counts establish no current timing gain.
 Any further import changes require source-use checks and compilation, including
 instances, syntax, simp registrations, exports and checked documentation.
 
@@ -128,6 +133,8 @@ interface, witnesses and remaining specializations together.
 ## Compatibility, evidence and scope
 
 Test lifetime amended 2026-10-26 with owner approval.
+Source scope reconciled 2026-10-27 with `main` at `daa15385`; accepted prototypes
+remain evidence for `3fe5caef`, not a compile result for the rebased branch.
 
 These decisions change proof interfaces, not SQL execution or supported SQL.
 The project has no users: migrate callers and delete replaced declarations and
@@ -176,7 +183,7 @@ after migration; the experiment makes no net-saving or speed claim.
   [dispatch, relocation, import and deferred targets](spec-proof-resolver-foundation-targets.md).
 
 The grouped target inventories were added 2026-10-27 at the owner's request
-and checked against production revision `3fe5caef`. They separate required
+and rechecked against production revision `daa15385`. They separate required
 changes, placement choices, reused evidence and retained or deferred work.
 Reconcile branch drift at assignment and update links when owner files disappear.
 They do not introduce permanent inventory checks or alter test retirement.

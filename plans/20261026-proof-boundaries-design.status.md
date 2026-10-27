@@ -112,3 +112,40 @@ under-200-line limit for each inventory and both ADRs. Source review corrected
 the description of reverse import paths: adding opposite imports would create
 cycles; the existing graph is acyclic. Independent Claude review of `186f9595`
 returned no must or should findings. The refinement is complete.
+
+## Amendment: rebase and source reconciliation, 2026-10-27
+
+At the owner's request, fetched origin and rebased `plans/proof-boundaries`
+onto remote main `daa15385` (PR #281). The branch had two shared prerequisites:
+the ADR 0025 design and dependency-report implementation. Replayed private copies
+of those prerequisites on main, then rebased this branch's own commits. The
+original `plans/proof-simplification` and `tasks/theorem-dependencies` bookmarks
+and their workspaces remain unchanged. Resolved the one Nix suite-name conflict
+with both `surfaceChecks` and `theoremDependencies` present. No conflicts remain.
+
+The current specifications and five inventories were reviewed against that
+main revision. They now require all-effect/all-execution preservation, each
+branch's reached state and counters, RENAME and INSERT SELECT dispatch/evidence,
+and the current names of surface run guarantees. The preservation removal count
+stays 84; 18 surface names changed to `runScriptAllFrom_`. The query count grows
+from 42 to 45 through filtered duplicate-key observations. Retained NOT IN/IN
+equivalences, traced resolver equations, existing rename certificates, new
+frame consumers and read-certificate boundaries are explicit. Source/expression
+targets and the four primitive/three import edits remain the same.
+
+Experiment READMEs now give explicit historical replay revisions. Their Nix
+results above remain valid for those sources only; no current-main prototype
+compile or full production acceptance is inferred from the rebase. Current
+all-execution and extended query/resolver formulas remain implementation gates.
+Production package files equal main. No new tests, tasks or permanent checks
+were introduced; task-file edits for this decision are batched in one commit.
+
+Validation for this amendment uses the documentation checks, one-time target
+and link inspections, the dependency-report Nix suite and focused report/build
+integration diagnostics. Independent review follows the specification commit.
+
+The dependency-report suite passed in Nix: 27 tests, result
+`/nix/store/7lxsb52rlnlkmzjjm7x3gngl8hp0kimx-sqlite-verifier-test-theoremDependencies-1`.
+This validates the retained report tooling, not the historical proof prototypes.
+Focused report/layer/build-ownership diagnostics also passed; local diagnostics
+are not additional semantic acceptance evidence.

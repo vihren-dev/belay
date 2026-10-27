@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Contract: [ADR 0025 D1/D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [proof and proposition changes](spec-preservation-proof-targets.md).
 
-Names were checked against production revision `3fe5caef`. Unless qualified
+Names were checked against production revision `daa15385`. Unless qualified
 otherwise, declarations are in `Belay.Sqlite.Model`. Linked files are current
 owners, not mandatory future module boundaries. The tables are a bounded work
 inventory; they do not authorize deleting other declarations with similar names.
@@ -14,9 +14,12 @@ inventory; they do not authorize deleting other declarations with similar names.
 
 Each row enumerates a Cartesian product: append each listed suffix to each
 listed prefix. For example, `runSqlFrom_` with `notNull` means
-`runSqlFrom_notNull`. The [expanded 84-name inventory](../experiments/proof-simplification/inventory.json)
-also records the original declaration spans and literal consumers. The names
-still exist at this production revision; the old spans are historical.
+`runSqlFrom_notNull`. These tables are the current removal inventory. The
+[historical 84-name inventory](../experiments/proof-simplification/inventory.json)
+records the original names, spans and consumers. Latest main replaced its 18
+surface endpoints with all-execution claims; their current names appear below.
+The 36 raw-run and 30 statement names are unchanged. Historical sizes are not
+measurements of this revision.
 
 | Current file | Prefixes | Suffixes | Count |
 | --- | --- | --- | --- |
@@ -25,17 +28,19 @@ still exist at this production revision; the old spans are historical.
 | [KeysUniqueRuns][key-runs] | `runSqlFrom_`, `runSql_` | `keysUnique` | 2 |
 | [AdmittedSqlRunsCatalog][sql-catalog] | `runSqlFrom_`, `runSql_` | `catalogSupported`, `rowsShaped`, `rowidsDistinct`, `rowidsInRange` | 8 |
 | [AdmittedSqlRunsRows][sql-rows] | `runSqlFrom_`, `runSql_` | `rowsWide`, `rowsStored`, `rowsAliased`, `admitted` | 8 |
-| [ScriptRunAdmittedCatalog][script-catalog] | `runScriptFrom_` | `catalogSupported`, `rowsShaped`, `rowidsDistinct`, `rowidsInRange` | 4 |
-| [ScriptRunAdmittedRows][script-rows] | `runScriptFrom_` | `rowsWide`, `rowsStored`, `rowsAliased`, `admitted` | 4 |
-| [ScriptRunConstraints][script-constraints] | `runScriptFrom_` | `keysUnique`, `notNull`, `typesFit`, `checksHold`, `constraintAtoms` | 5 |
-| [ForeignKeyRuns][fk-runs] | `runSqlFrom_`, `runSql_`, `runScriptFrom_` | `rowReferences`, `foreignKeyAtoms` | 6 |
-| [ForeignKeySchemaRuns][fk-schema] | `runSqlFrom_`, `runSql_`, `runScriptFrom_` | `parentSchemasCompatible` | 3 |
-| [ForeignKeySelectedRuns][fk-selected] | `runSqlFrom_`, `runSql_`, `runScriptFrom_` | `parentSchemasCompatibleSelected`, `foreignKeyAtomsSelected` | 6 |
+| [ScriptRunAdmittedCatalog][script-catalog] | `runScriptAllFrom_` | `catalogSupported`, `rowsShaped`, `rowidsDistinct`, `rowidsInRange` | 4 |
+| [ScriptRunAdmittedRows][script-rows] | `runScriptAllFrom_` | `rowsWide`, `rowsStored`, `rowsAliased`, `admitted` | 4 |
+| [ScriptRunConstraints][script-constraints] | `runScriptAllFrom_` | `keysUnique`, `notNull`, `typesFit`, `checksHold`, `constraintAtoms` | 5 |
+| [ForeignKeyRuns][fk-runs] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `rowReferences`, `foreignKeyAtoms` | 6 |
+| [ForeignKeySchemaRuns][fk-schema] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `parentSchemasCompatible` | 3 |
+| [ForeignKeySelectedRuns][fk-selected] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `parentSchemasCompatibleSelected`, `foreignKeyAtomsSelected` | 6 |
 
 Replace these with generic raw/surface run laws applied to retained invariant
-evidence. Preserve each old formula's assumptions, including selected versus
-explicit FK mappings, support, execution mode and matching limits. Names are
-removed after callers migrate; no compatibility aliases remain.
+evidence. Preserve each current formula and its assumptions, including every
+complete surface execution, selected versus explicit FK mappings, support,
+execution mode and matching limits. Canonical-run claims follow by membership
+in the complete executions. Remove names after callers migrate; no
+compatibility aliases remain.
 
 ## Remove the 30 per-operation atom specializations
 
@@ -86,8 +91,8 @@ The following are retained boundaries, even where their file also loses wrappers
 | [ValidAtomsTogether][together] | Preserve `Database.ConstraintAtoms`, `Database.Valid.constraintAtoms`, `Resolved.Statement.AtomsCondition`, `.atomsCondition_of_unconditioned`; move/generalize conjunction evidence where needed. |
 | [RowLocalAddColumnTheorems][add-column] | Preserve `Table.NotNull.appendColumn`, `Table.TypesFit.appendColumn`, `Table.ChecksHold.appendColumn`, `Table.allChecks_appendColumn` and `runStatement_addColumn_rowLocal`. |
 | [RowLocalAddColumn](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumn.lean) | Preserve `Database.RowsWideAt`, `Database.StrictDefaultFitsAt`, `Database.ChecksReadBelowAt`; these encode distinct necessary premises. |
-| [ScriptRunConstraints][script-constraints] | Retain `Database.AdmittedWith` and generic `runScriptFrom_admittedWith`; migrate their proof interface. |
-| [ScriptRunValid][valid] | Retain `Database.valid_iff`, `Database.valid_empty`, `runScriptFrom_valid`, `runScriptStep_valid`. |
+| [ScriptRunConstraints][script-constraints] | Retain `Database.AdmittedWith` and generic `runScriptAllFrom_admittedWith`; migrate their proof interface. |
+| [ScriptRunValid][valid] | Retain `Database.valid_iff`, `Database.valid_empty`, `runScriptAllFrom_valid`, `runScriptStep_valid`; preserve the latter's guarantee for every `RunStep.executions` member. |
 | [ForeignKeyRuns][fk-runs] | Retain `Database.ParentSchemasCompatible.rowReferences_iff_selected` and `runStatement_foreignKeyAtoms`; migrate the preservation certificates listed in the companion. |
 | [KeysUniqueLookup](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueLookup.lean) | Retain `Table.KeysUnique.lookup` and `Database.KeysUnique.lookup`; uniqueness lookup is not a run wrapper. |
 
@@ -95,7 +100,7 @@ The following are retained boundaries, even where their file also loses wrappers
 
 | Existing file or registration | Intended change |
 | --- | --- |
-| [ScriptRunValid][valid] | Rewrite `runScriptFrom_valid` and `runScriptStep_valid` through retained generic evidence. |
+| [ScriptRunValid][valid] | Rewrite `runScriptAllFrom_valid` and `runScriptStep_valid` through retained generic evidence. |
 | [KeysUniqueRunExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueRunExamples.lean) | Migrate `cascadeScript_keysUnique` and anonymous condition examples to generic predicates/run laws. |
 | [ValidAtomsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsExamples.lean) | Migrate `strictCascadeScript_constraintAtoms`, `setNullScript_notNull` and their condition proofs. |
 | [AdmittedRunsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedRunsExamples.lean), [AdmittedRunsConditionExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedRunsConditionExamples.lean) | Migrate `mixedRun_rowsAliased` and anonymous run formulas; retain necessity counterexamples and `mixedRun_valid`. |
@@ -108,9 +113,11 @@ The following are retained boundaries, even where their file also loses wrappers
 
 These are named starting clients, not a claim that literal search finds every
 reference. Check generated test names, checked doc references, exports and
-imports during implementation. Keep one temporary complete old-formula witness
-set through the last affected contract change. Then record Nix acceptance and
-remove redundant active witnesses/registrations under ADR 0025 D4. Do not add
+imports during implementation. Keep one temporary complete formula witness
+set against `daa15385`, including its stronger surface contracts, through the
+last affected contract change. Historical experiments do not establish those
+new claims. Then record Nix acceptance and remove redundant active witnesses
+and registrations under ADR 0025 D4. Do not add
 a permanent test or CI inventory that freezes this table.
 
 [valid-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsRuns.lean

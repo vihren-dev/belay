@@ -4,6 +4,12 @@ Date: 2026-10-26. Audience: designers and reviewers.
 Task: [experiment and design scope](../../plans/20261026-proof-boundaries-design.task.md).
 Decision: [ADR 0026](../../docs/adr-0026-semantic-proof-boundaries.md).
 
+Rebase note, 2026-10-27: current specifications target `daa15385`. The accepted
+prototype results below still describe production `3fe5caef`. They do not cover
+the new filtered query endpoints, alternative execution connections or resolver
+constructors. Replay the unchanged experiment at accepted design revision
+`6aa672be`; current-main compilation is not claimed by this source review.
+
 ## Result
 
 The prototypes identify useful common semantic facts, and one abstraction to
@@ -28,7 +34,7 @@ shows that similar control flow alone does not justify a common interface.
 
 ## Reproduce
 
-Run from the repository root in its approved development shell:
+Run from a checkout of `6aa672be`, in its approved development shell:
 
 ```sh
 timeout --foreground 600 nix-build experiments/proof-boundaries/default.nix \
@@ -71,8 +77,8 @@ independent review records are recorded in the task's
 
 ## Detailed evidence and limits
 
-- [Query and execution observations](query-observation-findings.md): 42 query
-  endpoints are the migration scope, not 42 proven redundancies. Five query
+- [Query and execution observations](query-observation-findings.md): the historical
+  scope has 42 endpoints, not 42 proven redundancies. Five query
   families remain unprototyped. The output retains possible results and errors.
 - [Source and expression agreement](source-expression-findings.md): fourteen
   mirrored source stages and four equality inductions share their reasoning.

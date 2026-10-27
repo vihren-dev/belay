@@ -5,19 +5,21 @@ Audience: implementers and reviewers.
 Decision: [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
 Evidence: [query and observation findings](../experiments/proof-boundaries/query-observation-findings.md).
 Targets: [exact declarations, owners and caller migrations](spec-proof-query-observation-targets.md).
+Source reviewed on 2026-10-27 against main `daa15385`. Compiled prototype evidence
+is historical, against `3fe5caef`; this revision makes no current-main compile claim.
 
 ## Required query behavior
 
 The public proof API characterizes execution once for each of the seven
-families: aggregate, scalar column, count, exists, not exists, duplicate key and
-table info. A caller can rewrite the characterization to prove an arbitrary
-predicate of the output. The characterization describes the meaningful source,
+families: aggregate, scalar column, count, exists, not exists, duplicate key
+(filtered and unfiltered forms), and table info. A caller can rewrite it to prove
+an arbitrary predicate of the output. The characterization describes the meaningful source,
 run and result cases; an equality to an opaque invocation of the executor does
 not meet this requirement.
 
-All 42 model/surface row, empty and error endpoints listed in the findings are
-replaced. Each old formula is derivable with the same assumptions. The
-implementation removes the old public declarations and updates actual callers,
+All 45 endpoints in the current target inventory are replaced: 21 model and
+24 surface row, empty and error claims. Each current formula remains derivable
+with the same assumptions. Remove the old declarations and update actual callers,
 exports, tests and documentation. Temporary migration witnesses can be anonymous
 Lean examples; they do not become a permanent matrix of public names or tests.
 
@@ -25,6 +27,14 @@ Resolver-only output transport remains independently usable. The stronger
 duplicate-key pairwise/repeated and count unique-lookup claims remain available
 as mathematical results expressed through the new semantic facts. Useful
 generic output and simplification lemmas also remain.
+
+The duplicate-key model now accepts a WHERE condition and grouped scalar result
+column. Preserve `Resolved.keptRows`, grouping collation and NULL grouping.
+False or NULL filters exclude a row; a fallible filter is not treated as false.
+Retain result-column resolution, groupedness, aggregate-feed restrictions and
+`GroupTermResolvesIn`, plus independent filter, result-column and key calmness.
+The filtered resolver-only transport remains usable without these calmness
+premises. Keep its filtered pairwise consequence alongside the unfiltered claims.
 
 The semantic equation preserves the support gate, datatype mismatch, integer
 overflow and certain function-error ordering. It preserves unmodeled behavior,
@@ -44,6 +54,12 @@ of permitted observed results. The existing full, weak, full-view and weak-view
 relations use equality of the appropriate profiles. Exact characterizations
 recover the original four meanings at every execution context.
 
+Branches select a complete member of `RunStep.executions`, then an allowed
+observation of that member's output. Each continuation uses that member's next
+connection. Preserve alternate databases and errors, not just `.oneOf` row
+choices sharing the actual connection. `Sql.hasOneBranch` requires no further
+execution as well as no result choice; observation-profile equality uses all branches.
+
 Relation reflexivity, symmetry and transitivity use ordinary equality rather
 than the three existing parallel relation-law implementations. One branch transport argument
 serves weakening and the existing frame-based strengthening. One singleton
@@ -62,12 +78,22 @@ representations; they are acceptance witnesses, not a permanent second API.
 Use direct rewriting for trivial output-predicate transport. A general theorem
 registry, typeclass hierarchy or new observer DSL is outside this scope.
 
+The new `NotInQuery` equivalences are meaningful consumers, not observation
+wrappers to delete. Preserve both NOT IN/NOT EXISTS and IN/EXISTS claims with
+their key bounds, table presence, rowid-alias and `RowsAliased`, non-TEXT affinity,
+statement resolution and result-column premises. Only the negative form needs
+the inner non-NULL premise; both allow independent collations. The SELECT-step
+bridge retains its SELECT syntax and no-further-execution facts. Mere output
+equality does not establish those facts for an arbitrary write.
+
 ## Boundaries that matter
 
 `QueryStatementOutput` combines the foundational equation with its old
 projections. `SimpleQuerySteps` owns bound-context facts; `CountSubqueryOutput`
 owns count values and context facts. Shared definitions and semantic facts must
 be importable below projection consumers, without cycles or copied definitions.
+Reuse current exact-output facts in `SimpleSubqueryRowsOutput` and
+`CertifiedQueryOutputs`; their clean/calm premises do not replace weaker guarantees.
 
 Execution definitions are in `ExecutionEquivalence`, `ExecutionObservations`
 and `ExecutionViewEquivalence`. Actual frame/composition consumers include
@@ -75,17 +101,18 @@ and `ExecutionViewEquivalence`. Actual frame/composition consumers include
 implementation must inspect their formulas, not infer replaceability from names.
 All paths here are module basenames under the model or surface package.
 
-Count, aggregate and one surface count endpoint have compiled prototypes. The
-other five query families remain migration work. The observation prototype
-establishes all four exact relation adapters and representative transport and
-singleton applications; it does not migrate the complete bind/migration API.
+Count, aggregate and one surface count endpoint have historical compiled prototypes.
+The other five families, including generalized filtered duplicates, remain migration
+work. Historical observation adapters cover all four relation meanings, but predate
+alternative execution states. Current acceptance must compile their replacements
+against the updated branch relation and migrate the complete affected client API.
 No whole-migration line reduction or performance improvement is established yet.
 
 ## Acceptance checks
 
-- Kernel-check every removed query endpoint's exact old formula using the new
-  API and original hypotheses as migration evidence. Include all seven families
-  at both layers.
+- Kernel-check every removed query endpoint's current pre-refactor formula using the new
+  API and current hypotheses as migration evidence. Include all seven families
+  at both layers and both duplicate-key surface forms.
 - Exercise an arbitrary predicate through a migrated real consumer; a separate
   test of equality substitution is unnecessary. Retain error precedence,
   unbound-window, may-fault source, aggregate-empty-input and possible-result
@@ -93,7 +120,8 @@ No whole-migration line reduction or performance improvement is established yet.
 - Kernel-check the old four relation formulas against the new profiles. Retain
   examples where weak equality holds but full equality fails because of state,
   and projected views where raw step counts differ. Check actual and possible
-  observations separately.
+  observations separately, including alternative next connections and an execution
+  that fails when the actual execution succeeds.
 - Compile the existing frame, deterministic, bind, migration and public-example
   consumers after migration. Retain their original mathematical premises.
 - Audit generic proofs and independently proved instances for the existing
@@ -110,7 +138,7 @@ remain unchanged. No new production CI framework is required.
 
 ## Test lifetime
 
-The complete 42-formula matrix and four old/new relation adapters are temporary
+The complete 45-formula matrix and four old/new relation adapters are temporary
 acceptance witnesses under ADR 0026. Retire redundant witnesses after final
 Nix acceptance and caller migration; keep their recorded revision for replay.
 Import/source measurements and old-dependency inspections are one-time checks.
@@ -119,6 +147,9 @@ Permanent coverage protects distinct current contracts and semantic boundaries.
 Reuse the existing claims, frame, bind and migration fixtures, including
 `ExecutionEquivalence`, `ExecutionViewComparisons` and `ExecutionViewChoices`.
 They already distinguish state, raw steps, actual results and possible results.
+Reuse `FilteredDuplicateKeyExamples`/`GlobalSignupInvariant`, `S6NotBlocked`/
+`S6NotBlockedLaw`, and `InsertSelectExecutions` for filtered groups, NULL/collation
+premises, alternative databases and execution failures. Keep their existing drivers.
 Add only uncovered premise checks, especially no-error without a clean source
 and output reasoning without a bound-window premise. A witness that uniquely
 protects such a requirement stays until a consumer or focused regression covers

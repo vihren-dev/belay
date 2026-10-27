@@ -25,3 +25,8 @@ Implement the task's production consolidation and acceptance checks. The
 experiment does not perform the module relocation or migrate callers. General
 `Database.Every.setRows` can stay in its existing cycle-safe location; only
 move definitions when the required dependency boundary needs it.
+
+Reconciled on 2026-10-27 with main `daa15385`: include the `renamed` field and
+`rewrite`/`insertSelect` cases, retaining the independent `selects` premise.
+Historical dispatch experiments predate those cases. Current formula and
+all-execution adapter acceptance remain implementation obligations.
