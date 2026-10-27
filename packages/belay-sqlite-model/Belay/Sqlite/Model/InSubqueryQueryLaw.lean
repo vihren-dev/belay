@@ -6,7 +6,7 @@ set_option doc.verso true
 /-! The query laws of {lit}`x IN (SELECT c FROM u)` and {lit}`x NOT IN (SELECT c FROM u)` against the correlated
 {lit}`EXISTS` and {lit}`NOT EXISTS (SELECT 1 FROM u WHERE u.c = x)` (task 20261027): two statements of the form
 {lit}`SELECT p1, p2, … FROM t WHERE condition` with one subquery, whose condition is the first or the second form, give
-the same output when the premises of the filter law hold for every row of the outer table. The result columns are
+the same output (rows in normal form) when the premises of the filter law hold for every row of the outer table. The result columns are
 columns of the outer table, so they do not depend on the subquery. -/
 
 namespace Belay.Sqlite.Model
@@ -48,8 +48,9 @@ index, under these premises:
 * for every row of {lit}`t` and every row of {lit}`u`, the {lit}`IN` test and the comparison {lit}`=` match the cell
   equally ({name}`Belay.Sqlite.Model.Resolved.inMatches`; {lit}`agree`).
 
-The two outputs are rows of the same cells in the same order: the rows of {lit}`t` in scan order that the condition
-keeps. When {lit}`probe` fails for a row and {lit}`u` has a row, {lit}`NOT IN` is NULL, so the first statement drops the
+Both outputs are the rows of {lit}`t` that the condition keeps, with the cells at the result positions, in normal form
+({name}`Belay.Sqlite.Model.Resolved.normalForm`, the order that the model gives a query without {lit}`ORDER BY`); the
+two normal forms are equal because the two conditions keep the same rows. When {lit}`probe` fails for a row and {lit}`u` has a row, {lit}`NOT IN` is NULL, so the first statement drops the
 row, and {lit}`NOT EXISTS` is true, so the second keeps it, because {lit}`=` with a NULL operand is never true. When
 {lit}`known` fails and no row matches, the first statement drops the row and the second keeps it. When {lit}`agree`
 fails, the statements can differ too. Proof sketch: {name}`resolvedStepOutput_oneTable_congr` reduces the claim to the

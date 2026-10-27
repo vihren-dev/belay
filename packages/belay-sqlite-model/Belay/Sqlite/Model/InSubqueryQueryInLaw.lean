@@ -15,7 +15,7 @@ step of {lit}`SELECT p1, … FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = x)
 index, under one premise: for every row of {lit}`t` with a key cell that is not NULL and every row of {lit}`u`, the
 {lit}`IN` test and the comparison {lit}`=` match the cell equally ({name}`Belay.Sqlite.Model.Resolved.inMatches`;
 {lit}`agree`). A NULL key cell or a NULL cell of {lit}`c` needs no premise: neither makes {lit}`IN` or {lit}`=` true. The
-outputs are the rows of {lit}`t` in scan order that the condition keeps. When {lit}`agree` fails, the statements can
+outputs are the rows of {lit}`t` that the condition keeps, in normal form ({name}`Belay.Sqlite.Model.Resolved.normalForm`). When {lit}`agree` fails, the statements can
 differ. Proof sketch: as for {name}`resolvedStepOutput_notIn_eq_notExists`, with the filter law of {lit}`IN`
 ({name}`Resolved.Expr.evaluate_in_truthy_eq_exists_of_columns`). -/
 theorem resolvedStepOutput_in_eq_exists (clock : Option Clock)

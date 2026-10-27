@@ -96,8 +96,9 @@ theorem comparisonOperands_integer_snd {affinity : Option Affinity} (notText : a
   rw [comparisonOperands_swap affinity (.integer number) value]
   exact comparisonOperands_integer_fst notText number value
 
-/-- For two values that a collation compares as BINARY does, every comparison operator gives the same value
-under the collation and under BINARY. Proof sketch: {name}`Comparison.apply` uses the collation only through its
+/-- For two collations {lit}`first` and {lit}`second` that order two given values the same way, every comparison
+operator gives the same value for these values under {lit}`first` and under {lit}`second`. With {lit}`second` = BINARY
+it says that a collation that compares the values as BINARY does gives the BINARY result. Proof sketch: {name}`Comparison.apply` uses the collation only through its
 order of the two values. -/
 theorem Comparison.apply_congr_compare (operator : Comparison) (left right : Value) {first second : Collation}
     (same : first.compare left right = second.compare left right) :

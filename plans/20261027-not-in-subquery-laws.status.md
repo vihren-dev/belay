@@ -23,6 +23,9 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
   `20261027T071151Z-17ae5c36` (1 must, 1 should, both fixed in the refactor commit `b5fb0684`) and
   `20261027T071359Z-b5fb0684` (no findings). These commits had narrow forms of the laws (a `NOT IN` value law, a filter
   law for a column probe, a subquery that selects one column of a table with no `WHERE`).
+- 2026-10-27: review `20261027T073958Z-c085e7c9` of the generalization commit: 2 musts (R2: the query-law docstrings
+  said scan order but the output is in normal form; the docstring of `Comparison.apply_congr_compare` was narrower than
+  the formula), both fixed in the next `refactor:` commit.
 - 2026-10-27: generalization commit (owner rule "Generalize every new statement"): the narrow forms were replaced in
   place and the modules were renamed. See "Generalization record" below. The modules are `InValueEqualsLaws`
   (`compareValue`, `equalsValue`, `inMatches`, `equalsAny`), `InValueEqualsAny` (value laws), `InIntegerProbe`
@@ -44,6 +47,13 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
 - No candidate was found where the model's `IN` comparison and the correlated `=` differ for an integer probe and a
   non-NULL candidate (`inMatches_integer_collation_free`: any two collations, one non-TEXT affinity;
   `compareValue_integer_collation_free`: any comparison operator, integer on either side).
+
+- The output of a statement without `ORDER BY` is in the normal form of the model (`Resolved.normalForm`), because
+  SQLite does not promise an order. The query laws therefore say "same rows in normal form", which is the model's
+  form of "same rows in the same order" for these statements.
+- Merge note (coordinator message): the table-rebuild agent adds `Resolved.Statement.dropColumn`,
+  `Syntax.Statement.dropColumn` and a `dropped` field of `RowLocalAtom` and `TableAtom`. The modules of this task
+  match on no statement type exhaustively and build no instance of these structures, so the later merge needs no change.
 
 ## Generalization record
 

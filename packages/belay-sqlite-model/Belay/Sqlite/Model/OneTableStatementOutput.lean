@@ -6,8 +6,9 @@ set_option doc.verso true
 
 /-! The output of a statement of one table with subqueries (task 20261027): {lit}`SELECT p1, p2, … FROM t WHERE
 condition` with one subquery, as {name}`Belay.Sqlite.Model.Resolved.Query.oneTable` with the width 0. The output is
-the rows of {lit}`t` in scan order that the condition keeps, with the result expressions. Two such statements with
-conditions that keep the same rows give the same output. -/
+the rows of {lit}`t` that the condition keeps, with the result expressions, in normal form: the model sorts the rows
+({name}`Belay.Sqlite.Model.Resolved.normalForm`) because SQLite does not promise an order for a query without
+{lit}`ORDER BY`. Two such statements with conditions that keep the same rows give the same output. -/
 
 namespace Belay.Sqlite.Model
 
@@ -32,7 +33,8 @@ theorem Resolved.Query.oneTable_calm (position : Nat) (condition : Option Resolv
 /-- For every connection, values, table at a position of the database, condition, result expressions and subquery, when
 the expressions of the statement are calm and have no fault over the empty row and over each row of the table in the
 context of the statement, the output of the step of {name}`Resolved.Query.oneTable` with the subquery, with any clock and
-index, is the rows that the condition keeps, in scan order, with the values of the result expressions, in normal form.
+index, is the rows of the table that the condition keeps, with the values of the result expressions, sorted into normal form
+({name}`Resolved.normalForm`).
 The condition and the result expressions are evaluated in the context of the statement. Proof sketch:
 {name}`resolvedStepOutput_simple_rows_of_faultless` with the source rows of the table
 ({name}`Resolved.Query.source_first`) and the one result of {name}`Resolved.Query.Simple.results_eq`. -/

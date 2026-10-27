@@ -1,0 +1,73 @@
+{
+  "caller": "claude",
+  "commit": "c085e7c9279bd3a60fab86b4462a68d545ab12af",
+  "date": "2026-10-27T07:39:58+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CorrelatedSubqueryRun.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CorrelatedSubquerySource.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InIntegerProbe.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryColumnLaw.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryEqualityLink.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryEvaluate.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryFilterLaw.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryInLaw.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryLaw.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryRowidAlias.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryRowidAlias.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InValueEqualsAny.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InValueEqualsLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NotInFilterLaw.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NotInRowidAlias.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NotInSubqueryRun.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/OneTableStatementOutput.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261027-not-in-subquery-laws.status.md",
+    "reviews/20261027T071359Z-b5fb0684/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T073958Z-c085e7c9#1",
+      "line": 51,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryLaw.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring promises scan-order output, but `resolvedStepOutput_oneTable_rows` applies `normalForm`, which sorts the projected rows. Fix: describe normalized output here and in the corresponding `InSubqueryQueryInLaw.lean` docstring."
+    },
+    {
+      "id": "20261027T073958Z-c085e7c9#2",
+      "line": 99,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/InIntegerProbe.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring restricts `Comparison.apply_congr_compare` to comparison against BINARY, but its formula quantifies over any two collations that agree on the operands. Fix: restate the assumption and conclusion for arbitrary `first` and `second` collations."
+    }
+  ],
+  "id": "20261027T073958Z-c085e7c9",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
