@@ -51,6 +51,10 @@ def definitions() -> list[QueryCase]:
              "table", "foreign-key"),
         case("table-parent-violation", KEYS, "ALTER TABLE p RENAME TO q; INSERT INTO c VALUES(12,7,'x'); "
              "SELECT count(*) FROM c;", (PARENT,), "table", "foreign-key", "error"),
+        case("table-parent-enforcement-off", KEYS, "ALTER TABLE p RENAME TO q; "
+             "SELECT id,\"table\",\"from\",\"to\" FROM pragma_foreign_key_list('c') ORDER BY id;", (PARENT,), "table", "foreign-key-off"),
+        case("table-main-schema", TABLES, "ALTER TABLE main.t RENAME TO w; SELECT a FROM w ORDER BY a;", (RENAME_TO,),
+             "table", "schema"),
         case("table-rollback", TABLES, "BEGIN; ALTER TABLE t RENAME TO w; ROLLBACK; SELECT a FROM t ORDER BY a;",
              (RENAME_TO,), "table", "transaction"),
         case("table-commit-twice", TABLES, "BEGIN; ALTER TABLE t RENAME TO w; ALTER TABLE w RENAME TO z; COMMIT; "
@@ -73,6 +77,11 @@ def definitions() -> list[QueryCase]:
              "SELECT typeof(c),d='p' FROM t WHERE a=7;", (COLUMN,), "column", "affinity", "collation"),
         case("column-rowid-alias", TABLES, "ALTER TABLE t RENAME COLUMN a TO id; SELECT id FROM t WHERE id=5 ORDER BY id;",
              (COLUMN,), "column", "rowid"),
+        case("column-without-keyword", TABLES, "ALTER TABLE t RENAME b TO d; SELECT a,d FROM t ORDER BY a;", (COLUMN,),
+             "column", "syntax"),
+        case("column-expression-index", TABLES + " CREATE INDEX te ON t(b || 'x', c * 2);",
+             "ALTER TABLE t RENAME COLUMN b TO d; INSERT INTO t VALUES(8,'z',0); SELECT a,d FROM t WHERE d || 'x' = 'zx' "
+             "ORDER BY a;", (COLUMN,), "column", "index", "expression"),
         case("column-view", DEPENDENTS, "ALTER TABLE t RENAME COLUMN b TO d; SELECT a,label,text FROM v ORDER BY a;",
              (COLUMN,), "column", "view"),
         case("column-trigger", DEPENDENTS, "ALTER TABLE t RENAME COLUMN b TO d; INSERT INTO t VALUES(3,'r'); "

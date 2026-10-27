@@ -505,10 +505,10 @@ rebuild proof is separate.
   while the statement runs (`sqlite3_step`), checked natively; `PrepareError.reportedWhileRunning` is true for
   `dependentObject` only and `VerifierConformance.errorPhase` gives `step` for it. The other rename errors (no such
   table or column, target taken) are prepare errors.
-- Conformance: `conformance/authored_renames.py` (47 cases, version 7 records; setups in `rename_setups.py`) and
+- Conformance: `conformance/authored_renames.py` (50 cases, version 7 records; setups in `rename_setups.py`) and
   `tests/conformance_renames_test.py`: the judge's verdict of every case through the predict command (views and
-  triggers included) is AGREE except 3 restricted cases (a recursive aggregate in a view, a CHECK with a loose quote
-  in a column rename, and a self-join with USING in a view), and the kernel proves the cases without views. The
+  triggers included) is AGREE except 4 cases that stay unmodeled (a recursive aggregate in a view, a CHECK with a loose quote
+  in a column rename, a self-join with USING in a view, and a schema-qualified table name that the translation refuses), and the kernel proves the cases without views. The
   cases include the dependent-object failures and their `step` phase. No case disagrees. The corpus freeze (corpus
   number, evidence writer, lock) is for the judge PR.
 - Review musts of 2.5c: R2 and R13 are docstring changes (errors other than success and `constraintFail` put no

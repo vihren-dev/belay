@@ -46,16 +46,21 @@ theorem rows_are_kept :
 /-- A read of the old name of the table does not succeed after the rename. -/
 def oldTableName : Sql (List Output) := send (sql r"ALTER TABLE t RENAME TO w; SELECT a FROM t")
 
+/-- The old name of the table is gone: the read after the rename is a prepare error, so the script does not succeed. -/
 theorem old_table_name_fails : ¬ oldTableName.SucceedsFrom none 0 start.connection := by decide +kernel
 
 /-- A read of the old name of the column does not succeed after the rename of the column. -/
 def oldColumnName : Sql (List Output) := send (sql r"ALTER TABLE t RENAME COLUMN b TO d; SELECT b FROM t")
 
+/-- The old name of the column is gone: the read after the rename is a prepare error, so the script does not
+succeed. -/
 theorem old_column_name_fails : ¬ oldColumnName.SucceedsFrom none 0 start.connection := by decide +kernel
 
-/-- A rename to the name of another table fails and the script stops: SQLite refuses the statement. -/
+/-- A rename to the name of another table: SQLite refuses the statement. -/
 def takenName : Sql (List Output) := send (sql r"CREATE TABLE u(x); ALTER TABLE t RENAME TO u")
 
+/-- The rename to a taken name changes nothing and ends the script with the prepare error of SQLite, so the script
+does not succeed. -/
 theorem taken_name_fails : ¬ takenName.SucceedsFrom none 0 start.connection := by decide +kernel
 
 #print axioms renames_then_new_names_succeed

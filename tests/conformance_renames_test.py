@@ -20,6 +20,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
 ROOT = Path(__file__).resolve().parents[1]
 """The repository root, from which the test reads conformance/requirements-3.51.0.json."""
 UNMODELED = {
+    "rename-table-main-schema": "the translation refuses a schema-qualified table name in ALTER TABLE (form fullname)",
     "rename-column-view-recursive-aggregate": "SQLite accepts a recursive term with an aggregate in a stored view",
     "rename-column-check-loose-quote": "SQLite rewrites a double-quoted string of a CHECK text to single quotes",
     "rename-column-view-error": "a self-join with USING is outside the model, so the error is a restriction",
