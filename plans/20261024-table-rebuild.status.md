@@ -556,3 +556,14 @@ rebuild proof is separate.
 - Nix verdict after the fix: `just verdict` passes with no DISAGREE. Of the 55 prediction files, those of corpora v1 to
   v5 differ from the baseline only in newly supported cases (149 cases go from unsupported to predicted, none
   changes otherwise).
+
+### Unit 2.8: surface fixtures know the rewrite statement
+
+- The second `just test-full` (pre-fix tree) failed in `surfaceChecks` and `surface` (the first one stopped earlier at the
+  documentation inventory, so these were not visible): the fixtures `ViewsSupport`, `ClaimsViewCatalog`,
+  `ClaimsCommonTables` and `ClaimsViewTriggers` match all statement forms and lacked arms for `Resolved.Statement.rewrite`
+  and `Syntax.Statement.renameTable` / `renameColumn`. The arms were added (these are exhaustive-match arms, not new
+  tests); `tests/surface_claims_test.py` and `tests/surface_views_test.py` pass.
+- `surface_sampling_test` and `surface_search_test` timed out in that run only because three Nix test runs shared the
+  machine (they take 55 s and 86 s alone, under the 180 s limit); they pass alone.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
