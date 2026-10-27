@@ -317,3 +317,17 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   at the limit of the planned work, and the table rebuild task owns the neighbouring model files. The fixture
   `S6RulesQueryPattern.lean` keeps the claim for one concrete database and every bound value. Decision needed:
   schedule the row laws after the rebuild task, or accept the concrete claim.
+
+## Part 2 gates (2026-10-27, tip 1c733441)
+
+- `just test-full`: `/nix/store/5s9yrc6x1lvyxzyinsxckazz0pa7x09k-sqlite-verifier-test-reports`. The suites report no
+  failure: surface 404 tests in 1002.7 s, surfaceChecks 41 tests in 554.3 s, model 233, harness 287, packages 3. The
+  first run ended with exit code 124 at the build limit of 1500 s without a test failure; the second run used the
+  suites that the first run had built.
+- `just verdict`: `/nix/store/nnyd4czbvnbpbbiqc2j5sr13n860fcwp-sqlite-verifier-verdict`, with the predictions
+  `/nix/store/xj6wjkjxl19yg1c1900rd253m738cs6d-sqlite-verifier-predictions`. The predictions differ from the old
+  baseline in `corpus-v3.jsonl`, `corpus-v4.jsonl` and `corpus-v5.jsonl` (reason texts of unsupported cases, for
+  example "Only VALUES rows are modeled as an INSERT source" became "recursive common table expressions are not
+  modeled"). They equal the predictions of the merged table rebuild part 1
+  (`/nix/store/m3vcsy6z4m74kr1lp74swki6vbmiis9c-sqlite-verifier-predictions`), so the change comes from that merge
+  and not from part 2, which changes no model file.
