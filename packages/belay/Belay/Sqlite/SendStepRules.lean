@@ -20,11 +20,19 @@ def Model.Connection.afterWrite (connection : Connection) (database : Model.Data
   { connection with state := { connection.state with
       database, counters := connection.state.counters.apply counts } }
 
-/-- For every context, statement, values and post: a program that sends the one statement checks the post
-when the step of the statement continues and the post holds after the step. The statement must resolve to
-no INSERT from a query without rules (the premise {lit}`single`), and its output is never a choice. In plain
-words, this rule turns the check of a send into a claim about the connection that the step reaches. Proof
-sketch: {name}`check_send_single_of_step` for the step, with the choice excluded by the premise. -/
+/-- For every context, statement, values and post: a program that sends the one statement checks the post when
+all of these hold.
+- The statement resolves, at the connection of the context, to no INSERT from a query without rules (premise
+  {lit}`single`).
+- The step of the statement continues at the context (premise {lit}`modeled`).
+- No continuing step of the statement has a choice as output (premise {lit}`notChoice`).
+- The connection of the context holds a valid database (premise {lit}`valid`).
+- For every output and next connection of a step that continues with no further execution, when the next
+  connection holds a valid database, the post holds for the one output at the context after the step (premise
+  {lit}`reached`).
+In plain words, this rule turns the check of a send into a claim about the connection that the step reaches; the
+claim is only about steps from a valid start and to a valid end. Proof sketch:
+{name}`check_send_single_of_step` for the step, with the choice excluded by the premise. -/
 theorem Sql.check_send_of_step {ctx : ExecutionContext} {statement : Syntax.Statement} {values : List Value}
     {post : List Output → ExecutionContext → Prop}
     (single : ∀ resolved after, resolveStatement runContext ctx.connection.resolveState statement =
@@ -46,9 +54,11 @@ theorem Sql.check_send_of_step {ctx : ExecutionContext} {statement : Syntax.Stat
     { output, next } (by rw [step]; simp [RunStep.executions])
 
 /-- For every context, statement that is no INSERT from a query ({name}`Syntax.Statement.isInsertSelect`),
-values and post: the claim of {name}`Sql.check_send_of_step` with the syntactic premise in place of the
-resolved one. In plain words, a statement that is not written as INSERT from a query has one execution.
-Proof sketch: {name}`resolveStatement_single` gives the premise of {name}`Sql.check_send_of_step`. -/
+values and post: the check of the send of the statement holds when the premises {lit}`modeled`,
+{lit}`notChoice`, {lit}`valid` and {lit}`reached` of {name}`Sql.check_send_of_step` hold. They have the same
+quantifiers and the same validity conditions as there. In plain words, a statement that is not written as INSERT
+from a query has one execution, so the premise about the resolved statement is not needed. Proof sketch:
+{name}`resolveStatement_single` gives the premise {lit}`single` of {name}`Sql.check_send_of_step`. -/
 theorem Sql.check_send_of_step_notInsertSelect {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {post : List Output → ExecutionContext → Prop}
     (notInsertSelect : statement.isInsertSelect = false)

@@ -216,5 +216,5 @@ Merge with the table rebuild part 1 stack top (2026-10-27):
   `sql_commute` closes the new premise `single` of the certificate rules by `decide` and explains it when it stays open.
   `ReadStepRule` needed no change.
 - New fixtures in `S6AutoPaths`: a sent INSERT from a query leaves the premise `notInsertSelect` open (it is false),
-  and a sent CREATE INDEX (a statement without a rule of its own) closes it by evaluation. Local fixture runs of all
-  `sql_run` and `sql_commute` chains pass after the merge; Nix results follow at the end of part 2.
+  and a sent CREATE INDEX (a statement without a rule of its own) closes it by evaluation. Nix check results for
+  the merged state follow at the end of part 2.
