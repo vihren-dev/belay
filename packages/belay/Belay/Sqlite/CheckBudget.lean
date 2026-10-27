@@ -65,6 +65,29 @@ def remainingUnits : CoreM Nat := do
   if (← getMaxHeartbeats) == 0 then return maxHeartbeats.defValue
   return (← getRemainingHeartbeats) / 1000
 
+/-- A fraction of the budget that is left. Each mechanism of the checker that spends a part of the budget names
+its fraction, so that the parts are visible in one place. -/
+structure Share where
+  /-- The numerator of the fraction. -/
+  numerator : Nat
+  /-- The denominator of the fraction. It is at least one. -/
+  denominator : Nat
+
+/-- The part of a number of units that a share takes, rounded down. -/
+def Share.units (share : Share) (units : Nat) : Nat := units * share.numerator / share.denominator
+
+/-- The shrinking of a witness may use half of the budget that is left. A refutation that is certified and
+replayed before the shrinking stays when the shrinking uses its half. -/
+def shrinkShare : Share := ⟨1, 2⟩
+
+/-- The search for a proof by {lit}`sql_auto` may use a third of the budget that is left, so that a false
+claim keeps most of the budget for its counterexample. -/
+def searchShare : Share := ⟨1, 3⟩
+
+/-- The explanation of a refutation may use nine tenths of the budget that is left. The rest stays for the end
+of the operation, so an explanation that runs out of its share does not lose the refutation. -/
+def explanationShare : Share := ⟨9, 10⟩
+
 /-- Run a checking attempt with a fresh heartbeat origin and a finite Lean heartbeat budget.
 Zero disables work, rather than using Lean's unlimited zero convention. Check again after
 the action so a compiled computation cannot return an accepted result after exhausting its

@@ -23,7 +23,8 @@ CHAIN_TIMEOUT_SECONDS = 400
 PROVED = {"triple-proved", "equiv-proved"}
 """The cases for which the checker finds a proof."""
 
-FALSE = {"triple-false", "lean-continuation-false", "equiv-false", "equiv-at-false", "migration-star-false"}
+FALSE = {"triple-false", "lean-continuation-false", "equiv-false", "equiv-at-false", "equiv-shrink-exhausted",
+         "migration-star-false"}
 """The cases for which the checker finds a counterexample that SQLite replays."""
 
 UNKNOWN = {"budget-unknown", "undecidable-unknown", "migration-lookup-unknown"}
@@ -108,18 +109,28 @@ def test_lean_continuation_is_described_as_the_model_run_of_the_whole_program(bl
 def test_false_equivalences_show_the_native_difference(blocks: dict[str, str], tmp_path: Path) -> None:
     """The refutation of an equivalence names the database and says that the runs differ, and native SQLite
     leaves different rows for the two programs: the quantity 6 for the first and 7 for the second. The
-    outputs of the two runs are equal, so the text says that the connection that they leave differs."""
+    outputs of the two runs are equal, so the text says that the value or the connection differs, and does not
+    claim that the value is the same."""
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     for name in ("equiv-false", "equiv-at-false"):
         block = blocks[name]
         assert "Database: sample" in block, block
-        assert ("Failing observation: The actual runs of the two programs differ at this context in the "
-                "connection that they leave: they return the same value and the same outputs.") in block, block
+        assert ("Failing observation: The actual runs of the two programs differ at this context, in the "
+                "returned value or in the connection that they leave. The outputs of the two runs are equal.") in block, block
         first, second = replays(block)
         inspect = "\nSELECT id, qty FROM items;\n"
         assert final_rows(sqlite, tmp_path, f"{name}-first", first, inspect) == [[1, 6]], block
         assert final_rows(sqlite, tmp_path, f"{name}-second", second, inspect) == [[1, 7]], block
+
+
+def test_refutation_survives_the_exhaustion_of_the_shrinking(blocks: dict[str, str]) -> None:
+    """With a budget that the shrinking of the witness cannot finish in its share, the checker still reports
+    the certified refutation with its database and failing observation, and not unknown: the exhaustion of the
+    shrinking, which the checker runs after the explanation, does not discard an accepted refutation."""
+    block = blocks["equiv-shrink-exhausted"]
+    assert "Database: sample" in block and "Failing observation:" in block, block
+    assert len(replays(block)) == 2, block
 
 
 def test_migration_claim_about_a_read_of_all_columns_is_refuted(blocks: dict[str, str], tmp_path: Path) -> None:

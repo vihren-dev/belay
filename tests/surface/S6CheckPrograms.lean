@@ -46,6 +46,12 @@ labelled_sql "equiv-at-false" in
 #sql_check ∀ db : Database, db = sample → ∀ env : Env, env.Complete →
   Sql.EquivAt (send bump) (send bumpTwice) (ExecutionContext.initial db env)
 
+-- Shrinking needs about 280000 units and gets half of what is left, so it runs out. The refutation that was
+-- certified and explained before the shrinking stays as the result.
+set_option sql.checkBudget 200000 in
+labelled_sql "equiv-shrink-exhausted" in
+#sql_check Sql.Equiv (send bump) (send bumpTwice) with (db := sample)
+
 set_option sql.checkBudget 1000 in
 labelled_sql "budget-unknown" in
 #sql_check leavesRows [[.integer 1, .integer 7]]

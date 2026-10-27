@@ -258,20 +258,27 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   (`CounterexampleActual`). A relation that agrees on the actual run and differs only on a branch stays unknown.
 - Failing observation. `CheckObservation` explains a certified refutation: the check fails on the actual run, or the
   actual run satisfies the check and another branch fails, or the post has no decision procedure; for a relation
-  the outputs of both runs, and the words "in the connection that they leave" when value and outputs are equal.
+  the outputs of both runs. The wording depends on the relation: for `Sql.EquivAt` equal outputs mean a different
+  value or connection; for `Sql.ObservationEquivAt` a different value; for the view variants the text says that the
+  views project the runs to different observations and shows the runs before the projection.
   The text says where the run starts when the claim fixes a database other than the witness database. It is
-  shown as `Failing observation:` and it is best effort within the budget that is left.
+  shown as `Failing observation:` and it is best effort within `explanationShare` (nine tenths) of the budget
+  that is left.
 - Proofs. The default proof attempt is `defaultProof`: the closing tactics of `tryProof` (now also
   `Sql.Equiv.refl` and `Sql.EquivAt.refl`), then the search of `sql_auto` with the hints `rfl` and `⟨_, _, _, rfl⟩` on
-  a claim that opens to the check of a program, at most a third of the budget. The printed script holds the opening
+  a claim that opens to the check of a program, at most `searchShare` (a third) of the budget. The printed script holds the opening
   and the explicit steps; the checker elaborates it again without a search before it reports `proved`.
-- Budget. Shrinking uses at most half of the budget that is left, and the observation may use what is left before
-  that. Before this change a refutation that was certified and replayed was lost when shrinking used the rest of
-  the budget (the claim came out `unknown`). Exhaustion inside the explanation or the shrink now keeps the refutation.
+- Budget. The shares are named in `CheckBudget` (`shrinkShare` one half, `searchShare` one third,
+  `explanationShare` nine tenths of the budget that is left). Before this change a refutation that was certified and
+  replayed was lost when shrinking used the rest of the budget (the claim came out `unknown`). Exhaustion of the
+  shrinking now keeps the refutation; the fixture block `equiv-shrink-exhausted` (budget 200000) covers this. The
+  explanation leaves one tenth of the budget for the rest of the operation, so an exhausted explanation does not
+  end it; a check with a budget that is almost used before the explanation can still end as unknown, because the
+  checker ends when the whole budget is gone.
   The cost of a candidate that does not refute is high for universal equivalences (about 60 to 80 thousand units
   per database), so the fixtures name the database (`with (db := sample)`) or raise `sql.checkBudget`.
 - Fixtures: `S6CheckPrograms` (triple proved, triple false with the failing run, continuation in Lean code,
-  equivalence proved by reflexivity, two false equivalences, an unknown for a too small budget, an unknown for a
+  equivalence proved by reflexivity, two false equivalences, a false equivalence whose shrinking runs out of budget, an unknown for a too small budget, an unknown for a
   post without a decision procedure, the migration claim for a read of all columns refuted, and an unknown for the
   universal lookup claim that has no default proof) and `S6NotBlocked` (`NOT IN` against `NOT EXISTS`: the three
   counterexamples, each refuted with a replay, and one database that meets the premises where the outputs agree).
@@ -290,3 +297,7 @@ Commit (S5 checker covers claims about programs, 2026-10-27):
   to refute a triple, but not always to explain the refutation of an equivalence.
 - The code action of `sql_auto` is titled "Replace sql_auto with its steps" and its text is built as a string with
   the layout of the call (a `Try this` edit with syntax objects indented the steps of a multi-line script wrongly).
+- The editor test `tests/surface_s6_check_editor_test.py` requests and applies the proof and regression code actions
+  of the automatic check on triples (source ranges, namespace, options), elaborates the offered text alone with the
+  axiom audit, replays the failing script in native SQLite, shows that a too small budget gives no report, and shows
+  that an edit of an earlier command cancels a running check of an equivalence.

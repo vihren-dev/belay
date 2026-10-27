@@ -26,12 +26,12 @@ def openingTactic : TermElabM (TSyntax `tactic) :=
   `(tactic| ((first | refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_ | skip); intros; try subst_vars))
 
 /-- Search for a proof of a claim that opens to the check of a program, with the routes of {lit}`sql_auto`,
-using at most a third of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
+using at most {name}`searchShare` of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
 proves the claim again without a search. None when the claim has no such proof. -/
 def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
   let opening ← openingTactic
   let hints ← defaultSearchHints
-  let share := (← remainingUnits) / 3
+  let share := searchShare.units (← remainingUnits)
   let found ← withinBudget share <| attempt do
     let goal ← mkFreshExprMVar proposition
     let [opened] ← runStrict goal.mvarId! opening | throwError "the claim has no single goal after the opening"

@@ -327,6 +327,27 @@ The command adds no theorem. For example:
 example : ¬ (∀ db : Database, Empty (sql "SELECT 1") db) := by sql_refute
 ```
 
+### Claims about programs
+
+The command also checks claims about programs: `Sql.check`, `FreshEnsures`,
+`Sql.Equiv`, `Sql.EquivAt`, their observation and view variants, and
+`Migration.PreservesAt` and `Migration.CommutesOn`. The proof attempt includes the
+search of `sql_auto`. A false claim adds these lines to the report:
+
+- `Failing observation:` tells which run fails the check, or how the runs of two
+  programs differ.
+- `Initial database of the run:` names the database of a claim that fixes its
+  context with a defined name.
+- `Note:` says that the program runs Lean code after the scripts that the replay
+  sends. The failing result is then the result of the model for the whole program,
+  and not the result of one statement in SQLite.
+
+The replay sends the scripts that the programs send first. A relation that holds
+for the actual runs and fails only on another branch is not refuted: the result is
+unknown. The explanation, the replay and the shrinking of a witness each use a part
+of `sql.checkBudget`. A false claim about an equivalence can need a budget of
+about 250000 units to show its explanation and its regression example.
+
 Use `with (schema := db! "CREATE TABLE custom(x);")` to guide inference, or
 repeat `(db := candidate)` after `with` for an ordered candidate sequence.
 `(env := environment)` supplies the environment; `(input name := value)` supplies

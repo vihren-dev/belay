@@ -30,7 +30,7 @@ reporting a counterexample. An unreplayable candidate is skipped so later candid
 still supply a report within the same budget. Optional shrinking retains only recertified
 witnesses with valid replays; absent, rejected or unchanged shrinks retain the original
 certificate and replay. The budget
-covers the complete operation; the shrinking of a witness uses at most half of what is left, so a
+covers the complete operation; the shrinking of a witness uses at most {name}`shrinkShare` of what is left, so a
 witness that is certified and replayed is reported even when shrinking uses its share. A separately configurable recursion limit uses {name}`defaultRecursionLimit`,
 which permits small GROUP observations under cooperative reduction. Both limits are finite;
 zero disables checking. The caller's recursion option is restored afterwards. Exhaustion
@@ -52,9 +52,9 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         let observation ← observeFailure proposition witness excluded excludedLocals
         let original : Outcome := { result := .refuted witness proof, replays := reports, observation }
         if shrinkAttempts == 0 then return original
-        -- Shrinking may use half of the budget that is left. A certified, replayed witness is kept when
+        -- Shrinking may use its share of the budget that is left. A certified, replayed witness is kept when
         -- shrinking uses its share without a smaller witness.
-        let smaller : Option (Option Outcome) ← withinBudget ((← remainingUnits) / 2) <| attempt do
+        let smaller : Option (Option Outcome) ← withinBudget (shrinkShare.units (← remainingUnits)) <| attempt do
           let proposals ← shrinkProposals witness excluded excludedLocals
           if proposals.isEmpty then return original
           -- The convenience checker tries one shared shrink round. The public
