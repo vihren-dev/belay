@@ -574,9 +574,15 @@ rebuild proof is separate.
 
 ### Part 2 gates (Nix)
 
-- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8).
-- `just verdict` passes with no DISAGREE. The prediction files differ from the 55-file baseline only in newly supported
-  cases (checked before the last wording change of the out-of-scope message, which changes only the `reason` text of
-  unsupported predictions).
+- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8):
+  `/nix/store/wxpcysk9684lwnsz5ynmwcx9wj6vns5x-sqlite-verifier-test-reports`.
+- `just verdict` passes with no DISAGREE: `/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`
+  (AGREE 5318, MODEL_UNSUPPORTED 2282).
+- Change of the verdict from part 1 (#278, `/nix/store/3lqr3pxr2xk5gbfdmbzwfr8rg1al1dpm-sqlite-verifier-verdict`) to
+  part 2: 106 cases go from MODEL_UNSUPPORTED to AGREE, and nothing else changes (the coordinator's comparison of the two
+  verdicts). The 149 cases that I counted earlier were the prediction files compared with the baseline taken before
+  the task started, so they include the gains of part 1 and were counted before the `legacy_alter_table` scope fix of
+  unit 2.7; the 106 is the figure for part 2.
 - Reviews of the last commits: `20261027T041119Z-f7b3be39` and `20261027T050120Z-e548dbb3` have no findings.
-- Part 2 is complete. Part 3 (DROP COLUMN and the integrated rebuild coverage) starts next.
+- Part 2 is complete (PR #279, bookmark `tasks/table-rebuild-part2` at fa4ec661). Part 3 (DROP COLUMN and the
+  integrated rebuild coverage) starts next.
