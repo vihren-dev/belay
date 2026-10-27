@@ -18,7 +18,10 @@ catalog that has the outline of the old one ({name}`Catalog.sameOutline`). -/
 def renameKeepsOutline : Bool :=
   match resolveStatement runContext (reachedAfter 5).resolveState requireName.statements[5].1 with
   | .ok (.rewrite renamed, _) => (reachedAfter 5).resolveState.catalog.sameOutline renamed
-  | _ => false
+  | .ok (.query .., _) | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
+  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
+  | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _) | .ok (.upsert .., _)
+  | .ok (.insertSelect .., _) | .ok (.delete .., _) | .ok (.prepareError _, _) | .ok (.setting .., _) | .error _ => false
 
 /-- The rename resolves to a new catalog that has the outline of the old one. Proof sketch: kernel evaluation of
 {name}`renameKeepsOutline`. -/
@@ -30,7 +33,7 @@ theorem rename_resolves : ∃ renamed after,
   split at ok
   · rename_i renamed after resolved
     exact ⟨renamed, after, resolved, ok⟩
-  · simp at ok
+  all_goals simp at ok
 
 /-- Statement 5, the rename of the new customers: the step continues without an error in every execution, and the
 facts hold after it. Proof sketch: {name}`runScriptStep_rewrite_ok`, where the new catalog has the outline of the
