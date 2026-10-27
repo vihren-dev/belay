@@ -1,0 +1,55 @@
+{
+  "caller": "claude",
+  "commit": "e4138f50d4f4acb575cb51a1bcd0591ee2bcf4d1",
+  "date": "2026-10-27T01:37:34+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldLookups.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldUpdateResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ColumnTypeNames.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceSourceExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/NameTraceTypes.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Scope.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ScopeBindings.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TableReference.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSourceResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SingleSourceNameLaws.lean",
+    "plans/20261024-table-rebuild.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261027T013734Z-e4138f50#1",
+      "line": 23,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SingleSourceNameLaws.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The changed theorems here and in `ColumnTypeNames.lean`, `NormalizedFieldResolution.lean`, and `NormalizedFieldSelectResolution.lean` quantify over `aliased` without updating their plain-words statements. Fix: update each affected theorem’s docstring to state that its conclusion holds whether the source has an alias or not."
+    }
+  ],
+  "id": "20261027T013734Z-e4138f50",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -426,3 +426,29 @@ rebuild proof is separate.
 - Tests: `NameTraceSourceExamples.lean` checks the flag for a table with and without an alias.
 - Manual proof repairs in this unit: 7 (the single-source laws and the normalized-field lookup laws gained an
   `aliased` argument; one call site passes `aliased := false`). Total for the task so far: about 110.
+
+### Unit 2.5b: the catalog after a rename
+
+- `Resolution/RenameEdits.lean`: `RenameRequest.decide` reads the trace of a view or trigger and gives, for each
+  occurrence, keep, an edit, or a restriction. A table rename edits a table reference or a qualifier that names the
+  base table itself, never a qualifier that names an alias. A column rename edits a name whose one binding is the
+  column; a name that a join merged is the restriction `alter-rename`. Names inside another stored view are not exact
+  and keep their spelling. The rows `NEW` and `OLD` of a trigger have `role := .triggerRow`, so a trigger on the
+  renamed table is told from a trigger on another table.
+- `Resolution/RenameChecks.lean`: `CheckText.rename`, `CheckConstraint.rename` and `dequoteLabel` (SQLite's
+  `sqlite3Dequote`): the text of an unnamed CHECK constraint is rewritten token by token and its label is the
+  dequoted new text. `Resolution/RenameTables.lean`: the changes in a table (name of the column, foreign key parent
+  and referenced names, CHECK texts). `Resolution/RenameDependents.lean`: `renameView`, `renameTrigger`
+  (header: trigger table, `UPDATE OF` names), `checkView`, `checkTrigger`, `RenameFailure`.
+  `Resolution/RenameCatalog.lean`: `renameCatalog` in the two passes of SQLite 3.51.0: pass 1 rewrites every
+  object and fails with `error in view v: ...` (native: a runtime error of the statement, a prepare error of the
+  model with no effect); pass 2 resolves every object of the new catalog (`error in view v after rename: ...`,
+  `error in table t after rename: duplicate column name: b`); last the catalog must be supported under the limits.
+- `PrepareError.dependentObject kind name afterRename error` with `DependentKind` (messages, JSON, names).
+- Native facts (SQLite 3.51.0): a rename fails when any view or trigger of the catalog does not resolve, also one that
+  does not read the renamed table; a rename of a column to the name of another gives
+  `error in table t after rename: duplicate column name: b` (the name of the later column); a column may be renamed
+  to `rowid`.
+- Tests: `RenameEditExamples.lean` (view and trigger edits), `RenameChecksExamples.lean` (labels, tokens, dequote).
+  The catalog functions are tested through the statement in unit 2.5c.
+- Manual proof repairs in this unit: 0.

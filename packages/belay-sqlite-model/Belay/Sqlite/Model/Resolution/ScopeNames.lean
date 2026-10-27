@@ -132,7 +132,7 @@ structure TriggerRow where
 the event has it, then {lit}`OLD`'s, each with a rowid, so that {lit}`new.rowid` is the
 restriction of a rowid name. -/
 def TriggerRow.scope (row : TriggerRow) (offset : Nat) : Scope :=
-  let new : ScopeSource := { name := name! "new", columns := row.columns, offset, trigger := true }
+  let new : ScopeSource := { name := name! "new", columns := row.columns, offset, trigger := true, role := .triggerRow }
   let old : ScopeSource :=
     { new with name := name! "old", offset := offset + if row.new then row.columns.length else 0 }
   (if row.new then [new] else []) ++ (if row.old then [old] else [])

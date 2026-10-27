@@ -7,6 +7,16 @@ checks a statement, names a catalog object, or reports an expression error ({lit
 
 namespace Belay.Sqlite.Model
 
+/-- The kind of the object that a rename finds in error ({lit}`PrepareError.dependentObject`). -/
+inductive DependentKind where
+  /-- A table. -/
+  | table
+  /-- A view. -/
+  | view
+  /-- A trigger. -/
+  | trigger
+  deriving Repr, DecidableEq
+
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
 scope. Each constructor names the SQLite message format it corresponds to. This
 is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
@@ -79,6 +89,11 @@ inductive PrepareError where
   ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
   The name is the name as written. -/
   | viewTrigger (before : Bool) (name : Identifier)
+  /-- {lit}`error in view %s: %s`, {lit}`error in view %s after rename: %s` and the same for a table or a trigger:
+  a rename finds that an object no longer resolves, before the rewrite or with the rewritten text
+  ({lit}`afterRename`). SQLite reports it while the statement runs, and the statement changes nothing, as a
+  prepare error does. The error is the one that the definition of the object gives. -/
+  | dependentObject (kind : DependentKind) (name : Identifier) (afterRename : Bool) (error : PrepareError)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

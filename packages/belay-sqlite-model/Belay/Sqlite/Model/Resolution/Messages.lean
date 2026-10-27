@@ -117,6 +117,12 @@ def PrepareError.message : PrepareError → String
   | .renameNoSuchColumn token => s!"no such column: \"{token}\""
   | .viewTrigger before name =>
     s!"cannot create {if before then "BEFORE" else "AFTER"} trigger on view: {name}"
+  | .dependentObject kind name afterRename error =>
+    let word := match kind with
+      | .table => "table"
+      | .view => "view"
+      | .trigger => "trigger"
+    s!"error in {word} {name}{if afterRename then " after rename" else ""}: {error.message}"
   | .expression error => error.message
 
 end Belay.Sqlite.Model

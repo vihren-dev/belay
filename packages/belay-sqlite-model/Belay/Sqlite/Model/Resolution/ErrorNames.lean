@@ -51,7 +51,7 @@ def PrepareError.name? : PrepareError → Option Identifier
   | .noSuchIndex name | .tableMayNotBeDropped name
   | .noSuchReferencedTable name | .foreignKeyMismatch name _ | .noSuchTrigger name
   | .triggerExists name | .viewModify name | .viewTrigger _ name | .renameTargetTaken name
-  | .viewNotAltered name | .viewColumnsNotRenamed name => some name
+  | .viewNotAltered name | .viewColumnsNotRenamed name | .dependentObject _ name _ _ => some name
   | .expression error => error.name?
 
 end Belay.Sqlite.Model
