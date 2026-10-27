@@ -64,7 +64,7 @@ replay metadata, which replay consumers validate against the actual database. It
 declaration that holds the term, where each table of the final catalog is created
 ({name}`registerTableOrigins`), outside the value, and gives the table names editor information with the
 rows that the run reached ({name}`executedContexts`) and warns about a statement with several permitted
-results ({name}`orderEvidenceWarnings`). When the text has an error, the names still get their
+results or an {lit}`INSERT ... SELECT` that depends on an order ({name}`orderRunWarnings`). When the text has an error, the names still get their
 information up to the statement that failed, so that an unknown name gets its corrections. -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
@@ -86,7 +86,7 @@ def elabDbBang : TermElab := fun term _ => do
   | .ok database =>
     registerTableOrigins (.literal literal text) statements connection.state.database.catalog database
     emitSqlEditorInfo (.literal literal text) statements {} contexts
-    logOrderWarnings literal text (orderEvidenceWarnings statements outputs)
+    logOrderWarnings literal text (orderRunWarnings statements outputs)
     return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite

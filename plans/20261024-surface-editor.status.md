@@ -488,7 +488,7 @@ them after that task.
 
 - `subquerySlots` (`SqlTableSlots`) takes the path of the node that holds the subqueries, not a field number. The
   query of an `INSERT ... SELECT` holds them as child 8 of its source (the field order of `Syntax.Statement.select`),
-  so the path is `[2, 8]`; the four earlier callers pass `[8]`, `[6]`, `[4]` and `[3]`. Generalization analysis: a
+  so the path is `[2, 8]`; the five earlier callers pass `[8]` (select), `[6]` (insert), `[4]` (update and create view) and `[3]` (delete). Generalization analysis: a
   node path covers every statement form and every future query holder with one function; nothing is left specific.
 - Test: `tests/surface_editor_insert_tables_test.py` (real server, suite `surfaceChecks`, which has the most headroom):
   hovers with the rows known before the first write and none after it, the `property` token, navigation to
@@ -496,3 +496,24 @@ them after that task.
   cases (a `WITH` definition that names the table in the query and in a subquery, plain `sql`, an escaped
   literal). The helpers `range_of` and `definitions` moved from the origins test to
   `tests/surface_editor_support.py`.
+
+### Part 3, commit 2: the order warning of INSERT ... SELECT (2026-10-27)
+
+- `SqlOrderWarnings`: the clauses test is one function, `clausesLimitWithoutOrder`, for the fields that a `SELECT`
+  statement and the query of an `INSERT ... SELECT` (`Syntax.SelectBody`) share. `limitsWithoutOrder` and
+  `takesRowsByLimit` take both forms, so `sql`, `sql!` and a `#sql` script with parameters give the risk warning for
+  the insert by the existing `orderRiskWarnings`. The risk message says that the inserted rows may depend on the order.
+- A run (`db!`, `#sql` without parameters) gives an `INSERT ... SELECT` no evidence, because the output of an insert
+  is `done` and the task keeps the evidence for statement outputs. `orderRunWarnings` adds the risk warning of such a
+  statement to the evidence of the run, and leaves it out when the output of the statement has several permitted
+  results (an insert with `RETURNING`), so no statement warns twice. Generalization analysis: one clause test for
+  both statement forms; `insertsQueryRows` names the one form that needs the risk warning in a run and is the only
+  place to extend if another form gets it.
+- Open point (not specified, not done): the model also reports alternative executions of a write
+  (`runScriptStep`, third result), which could supply evidence for the insert. The task keeps the syntactic warning.
+- `tests/surface/InsertSelectExecutions.lean` states its unordered `LIMIT` insert on purpose and now turns the
+  warning off for that definition.
+- Test: `tests/surface_editor_insert_order_test.py` (real server, suite `surfaceChecks`): `db!` (`LIMIT`, `OFFSET`,
+  compound; none for `ORDER BY`, no `LIMIT`, no source, `VALUES`), `sql!`, `sql`, `#sql` and `#sql` with a parameter
+  warn once at the statement with the insert message; the option turns it off; the evidence warning of a `SELECT` in
+  `db!` stays.
