@@ -390,4 +390,5 @@ tactics, (a) the rebuild example, (c) the end-of-task Nix checks. The work start
   `signup_keeps` and `signup_keeps_global` remain. `S6AutoShapes.lean` has the error for an unreadable statement
   with no fitting hint and a proof where the hypotheses select the DELETE rule. Test:
   `test_sql_run_proves_the_partial_index_invariant_of_a_signup`.
+- Review `20261027T112208Z-2be4bcfe` of this commit: no findings.
 - Nix results: see the part 3 gates.
