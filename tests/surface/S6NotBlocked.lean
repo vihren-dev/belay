@@ -12,7 +12,8 @@ equivalence on each of them with a replay in SQLite:
   {lit}`IN` takes the collation of its left operand and {lit}`=` of its left operand, which is the other column.
 
 A fourth database meets the sufficient premises: the customers table has a rowid alias, which is never NULL and
-always an integer, and no blocked id is NULL. The two queries give the same outputs there. -/
+always an integer, and no blocked id is NULL. The two queries give the same outputs there. The module
+{lit}`S6NotBlockedLaw` proves that they are equivalent on every database with these premises. -/
 
 set_option doc.verso true
 set_option maxRecDepth 8192

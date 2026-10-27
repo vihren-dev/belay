@@ -42,6 +42,23 @@ Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
 - 2026-10-27: Belay lemma commit: `packages/belay/Belay/Sqlite/NotInQuery.lean` (`Sql.EquivAt.of_select_steps`,
   `IsSelectStatement`, `Sql.EquivAt.notIn_notExists_of_rowidAlias`, `Sql.EquivAt.in_exists_of_rowidAlias`).
 
+- 2026-10-27: guide theorem commit: `tests/surface/S6NotBlockedLaw.lean` (site `NotBlockedSite`, `notBlocked_equivalent`,
+  `notBlocked_equivalent_of_notNull`, `premisesHold_equivalent`, `premisesHold_rows`) and the driver
+  `tests/surface_s6_not_blocked_test.py` (module chain with 4 axiom reports for the new module, native rows of the
+  database that meets the premises; the helper `check_module_chain` takes `output_of`). Local run: 3 passed in 33 s
+  (local result, not evidence).
+
+## Guide change to record
+
+The guide's statement `notBlockedIn ≈ notBlockedEx` needs these changes (the private guide is not edited here):
+- the premise that `customers.id` is a rowid alias (`INTEGER PRIMARY KEY` of a table that is not `WITHOUT ROWID`), because
+  a NULL `customers.id` makes `NOT IN` drop the row and `NOT EXISTS` keep it, and a text key with different collations
+  of the two columns makes `IN` and `=` disagree;
+- the premise that no `blocked.customer_id` is NULL as a premise on rows (`NOT NULL` in the schema gives it for a valid
+  database, `notBlocked_equivalent_of_notNull`); a NULL blocked id makes `NOT IN` drop every row;
+- the guide must mention the counterexamples of the NULL `customers.id` and of the collation difference, with the NULL
+  blocked id (the three databases of `S6NotBlocked`, each refuted by the checker and confirmed by native SQLite).
+
 ## Deviations and decisions of the implementation
 
 - The value law is stronger than the task text: it needs no NULL premise, only that the `IN` test and the `=`
@@ -120,3 +137,8 @@ For each new public statement: the general form chosen, and what stays specific 
   one-table queries, because the structural premise is a fact about such a column; the general filter and query laws
   serve other probes. The statement resolution is a hypothesis in the form of the model's resolution laws, so a user
   proves it for a given catalog by computation or with the resolution laws.
+- `NotBlockedSite`, `notBlocked_equivalent`, `notBlocked_equivalent_of_notNull` (`tests/surface/S6NotBlockedLaw.lean`):
+  specific to the two guide scripts, as the owner rule says (guide examples only in `tests/surface`). The proofs use
+  only the general law `Sql.EquivAt.notIn_notExists_of_rowidAlias`. The site records the resolution of both statements as
+  fields (as `CustomerInsertSite` does), so the theorem needs no law for qualified names in an enclosed scope. The
+  `IN` form of the claim has no guide example, so the fixture proves only `NOT IN`; the `IN` form is the general lemma.
