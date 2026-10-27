@@ -194,7 +194,8 @@ let
   # split took 817 s (377 tests), 398 s (15) and 591 s (59). The sums of the per-test times of the
   # earlier report predicted 692 s, 676 s and 608 s; the tests of `surfaceChecks` had been slowed by
   # parallel load then. Keep each suite below about 840 s, 70% of its limit.
-  # Two support modules of the checker tests are test files of the `surface` suite.
+  # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
+  # with the fixture-chain helper that the S6 tests import.
   surfaceSuite = name: suite name {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
                (root + /tests/two_state_support.py)
@@ -205,6 +206,7 @@ let
                (root + /tests/surface_automatic_editor_test.py)
                (root + /tests/shared_table_shape_test.py)
                (root + /tests/surface_replay_test.py) (root + /tests/surface_execution_test.py)
+               (root + /tests/surface_assertion_examples_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
