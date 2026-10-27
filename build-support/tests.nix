@@ -187,7 +187,13 @@ let
     lockedCorpora;
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
   # The surface suites share their inputs. One suite took 1130 s of its 1200 s limit, so the
-  # checker, proof-search and sampling tests are in `surfaceChecks`; each suite takes about half.
+  # checker, proof-search and sampling tests were moved to `surfaceChecks`. The two then took 1039 s
+  # and 939 s, and one run ended at the limit under shared load, so the tests are in three suites:
+  # `surfaceChecks` (the check command, proof search, sampling), `surfaceS6` (the S6 tests, the
+  # automatic checks and the SQL-file checks) and `surface` (the rest). The first full run after the
+  # split took 817 s (377 tests), 398 s (15) and 591 s (59). The sums of the per-test times of the
+  # earlier report predicted 692 s, 676 s and 608 s; the tests of `surfaceChecks` had been slowed by
+  # parallel load then. Keep each suite below about 840 s, 70% of its limit.
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
@@ -281,6 +287,7 @@ in {
   };
   surface = surfaceSuite "surface";
   surfaceChecks = surfaceSuite "surfaceChecks";
+  surfaceS6 = surfaceSuite "surfaceS6";
   packages = suite "packages" {
     inputs = [ ];
     runtime = packageRoot;
