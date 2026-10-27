@@ -447,3 +447,9 @@ Guide changes to record (the private guide is not edited here): (1) "The pinned 
 for the model and for native SQLite: a fresh connection has them off; the unsafe-rebuild example needs `PRAGMA
 foreign_keys = ON` first. (2) `requireName preserves allSessions` holds for the databases of the guide's schema, not for
 every database. (3) `requireName` does not abort when `PRAGMA foreign_key_check` reports rows; it only returns them.
+
+### Owner decision on the rebuild example (2026-10-27)
+
+- Option A: a separate task adds the general laws and the rebuild fixture
+  (`plans/20261027-schema-script-laws.task.md`). This task is complete when that task's fixture and
+  task-end checks pass. Part 3a (the unique-key rule and the signup invariant) is PR #283.
