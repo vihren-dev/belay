@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.StatementStep
 import Belay.Sqlite.Model.WriteFailure
 import Belay.Sqlite.Model.UpdateFailure
+import Belay.Sqlite.Model.InsertSelectRun
 
 set_option doc.verso true
 
@@ -31,7 +32,7 @@ fire, also one whose WHEN is always false. So for a resolved statement, none mea
 can fire no trigger and checks no foreign key. A statement built by hand with none counts as
 plain whatever triggers the catalog has. -/
 def Resolved.Statement.writeRules : Resolved.Statement → Option Resolved.WriteRules
-  | .insert _ _ _ _ rules | .upsert _ _ _ _ _ _ rules | .update _ _ _ _ _ rules | .delete _ _ _ _ rules
+  | .insert _ _ _ _ rules | .upsert _ _ _ _ _ _ rules | .insertSelect _ _ _ _ _ _ _ rules | .update _ _ _ _ _ rules | .delete _ _ _ _ rules
   | .drop _ rules => rules
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting .. => none
@@ -43,6 +44,7 @@ value with the counters and the values bound to its parameters ({name}`runStatem
 * a plain INSERT: {name}`LiteralData.insertFailure`;
 * an INSERT with clauses or algorithms: {name}`LiteralData.upsertRowFailure` of the row at which
   it stops;
+* an INSERT from a query: the same, for the last row that the first production of the query hands over;
 * an UPDATE: {name}`Catalog.updateReport`;
 * {lit}`CREATE UNIQUE INDEX`: the index;
 * a write that can fire a trigger or that checks a foreign key
@@ -71,6 +73,21 @@ def failingConstraints (clock : Int) (counters : Counters) (parameters : List Va
       | some step =>
         { candidates := ofTable target (LiteralData.upsertRowFailure context keys policy clauses step.before step.values) }
       | none => { candidates := [] }
+  | .insertSelect target cells query clauses returning algorithm subqueries none => match database.table target with
+    | none => { candidates := [] }
+    | some table =>
+      let context := Resolved.statementContext clock counters parameters database subqueries
+      let keys := database.keys target table
+      let policy := database.catalog.writePolicy target table.shape algorithm
+      let streaming := !Resolved.Statement.collectsSource target query subqueries returning none
+      match query.productions context database streaming with
+      | some (production :: _) =>
+        match (LiteralData.upsertSteps context keys policy clauses table
+            (insertSelectRows context table.shape.columns cells production.rows)).getLast? with
+        | some step =>
+          { candidates := ofTable target (LiteralData.upsertRowFailure context keys policy clauses step.before step.values) }
+        | none => { candidates := [] }
+      | _ => { candidates := [] }
   | .update target assignments filter _ subqueries none => match database.table target with
     | none => { candidates := [] }
     | some table =>
@@ -79,7 +96,7 @@ def failingConstraints (clock : Int) (counters : Counters) (parameters : List Va
         (LiteralData.selectedPositions context filter table) table
         (LiteralData.updated context table assignments filter)
   | .createIndex _ name index => { candidates := [.uniqueIndex name index] }
-  | .insert _ _ _ _ (some _) | .upsert _ _ _ _ _ _ (some _) | .update _ _ _ _ _ (some _) | .delete .. | .drop ..
+  | .insert _ _ _ _ (some _) | .upsert _ _ _ _ _ _ (some _) | .insertSelect _ _ _ _ _ _ _ (some _) | .update _ _ _ _ _ (some _) | .delete .. | .drop ..
   | .createTable .. | .createView .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query ..
   | .setting .. => { candidates := [] }
 

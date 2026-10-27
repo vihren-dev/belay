@@ -51,7 +51,7 @@ def rowsInContext (statement : Syntax.Statement) (clock : Int) (counters : Count
   | some (.createTable _ _ _) | some (.createView _ _ _) | some (.createIndex _ _ _) | some (.createTrigger _ _ _)
   | some (.addColumn _ _ _) | some (.drop _ _) | some .begin | some .commit | some .rollback
   | some (.insert _ _ _ _ _) | some (.update _ _ _ _ _ _)
-  | some (.upsert _ _ _ _ _ _ _) | some (.delete _ _ _ _ _)
+  | some (.upsert _ _ _ _ _ _ _) | some (.insertSelect _ _ _ _ _ _ _ _) | some (.delete _ _ _ _ _)
   | some (.prepareError _) | some (.setting _ _) => none
 
 /-- CTE copies share the parameter slots, supplied clock and connection counters of their use. -/

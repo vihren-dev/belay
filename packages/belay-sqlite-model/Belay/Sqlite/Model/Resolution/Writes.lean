@@ -42,6 +42,20 @@ def insertPositionsFrom (tableName : Identifier) (columns : List CatalogColumn) 
         pure (position :: positions)
     | none => throw (.tableHasNoColumn tableName name)
 
+/-- Whether the column list of an INSERT is stopped by a rowid name: the first name that is no
+usable column (an unknown name, or a generated column) is {lit}`rowid`, {lit}`_rowid_` or {lit}`oid`
+and the table has a rowid. SQLite stores the value in the rowid, which the model does not describe for
+a column list ({name}`RestrictionKind.rowidName`); the first name decides, so that an error of an earlier
+name stays an error. -/
+def insertRowidTarget (table : CatalogTable) : Option (List Identifier) → Bool
+  | none => false
+  | some written =>
+    match written.find? fun name => match columnPosition table.columns name with
+      | none => true
+      | some position => (table.columns[position]?.bind (·.generated)).isSome with
+    | some name => !table.withoutRowid && (columnPosition table.columns name).isNone && rowidName name
+    | none => false
+
 /-- The positions that an INSERT without a column list fills: every column that is not
 generated, in table order (ADR 0014, slice 5). -/
 def writablePositions (columns : List CatalogColumn) : List Nat :=
@@ -79,6 +93,7 @@ def resolveInsertTraced (context : ResolveContext) (catalog : Catalog) (tableNam
   Traced.withTarget catalog tableName false (Traced.lift (resolveViewModify catalog tableName))
     (Traced.lift (prepareError catalog (.noSuchTable tableName))) fun position table =>
   let scope := Scope.singleAt (some position) tableName table.columns !table.withoutRowid
+  if insertRowidTarget table names then Traced.lift (restrict [1] .rowidName) else
   Traced.stage catalog [1] ((insertPositionsTraced tableName table.columns scope names).mapError ValueIssue.prepare)
     fun positions =>
   let around := (trigger.map (·.scope 0)).getD []

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Translation.Queries
+import Belay.Sqlite.Translation.NameTokens
 
 set_option doc.verso true
 
@@ -63,7 +64,8 @@ def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) 
 def alias (tree : SqlTree) (node : ParseNode) : TranslateM (Located (Option Identifier)) := do
   let parts := tree.children node
   if tree.symbols node == ["AS", "nm"] then return (← identifierName tree parts[1]!).present
-  if h : 0 < parts.size then return leaf (some (Identifier.ofString (dequote (tree.text parts[0])))) node.start node.stop
+  if h : 0 < parts.size then
+    return { value := some (Identifier.ofString (dequote (tree.text parts[0]))), span := nameSpanOf node }
   return missing node.start node.stop
 
 /-- {lit}`*`, {lit}`source.*`, or an expression with its optional alias and its text, which SQLite
@@ -78,8 +80,12 @@ def resultColumn (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts 
   | ["scanpt", "expr", "scanpt", "as"] =>
     let named ← alias tree parts[3]!
     let value := parts[1]!
+    let firstSubquery ← subqueryCount
     let mapped ← mappers.expression tree value
-    return composite (.expression mapped.value named.value (tree.text value)) value.start (max value.stop parts[3]!.stop)
+    let tokens ← if (← get).nameTokens then expressionNameTokens tree value.start value.stop mapped.span firstSubquery
+      else pure []
+    return composite (.expression mapped.value named.value { text := tree.text value, tokens }) value.start
+      (max value.stop parts[3]!.stop)
       #[mapped.span, named.span, spanOf value]
   | _ => unsupported node "Only `*` and expressions are modeled as result columns; write the column names"
 

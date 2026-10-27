@@ -71,4 +71,43 @@ structure Subquery where
   commonTable : Option CommonTable := none
   deriving Repr, BEq
 
+/-- The {lit}`SELECT` that feeds an {lit}`INSERT` (ADR 0017, S6; ADR 0019, D4): the clauses,
+the subqueries and the compound of {lit}`Syntax.Statement.select`, in the same order, so that
+a path inside the source is the path inside a {lit}`SELECT` statement below the source's step of the
+INSERT. The subqueries are those of the whole INSERT, including its ordinary {lit}`WITH`
+definitions, in the order of their text. For example, {lit}`INSERT INTO t SELECT 1` has a body with one result
+column, no {lit}`FROM` and no other clause. -/
+structure SelectBody where
+  /-- The result columns. -/
+  columns : List ResultColumn
+  /-- The first table of {lit}`FROM`, or none without {lit}`FROM`. -/
+  source : Option TableReference
+  /-- The joins after the first table, in order. -/
+  joins : List Join
+  /-- The {lit}`WHERE` condition. -/
+  filter : Option Expr
+  /-- The {lit}`GROUP BY` terms. -/
+  groupBy : List Expr
+  /-- The {lit}`ORDER BY` terms. -/
+  orderBy : List OrderTerm
+  /-- The {lit}`LIMIT` expression. -/
+  limit : Option Expr
+  /-- The {lit}`OFFSET` expression. -/
+  offset : Option Expr
+  /-- The subqueries of the statement, in the order of their text ({name}`Subquery`). -/
+  subqueries : List Subquery := []
+  /-- The {lit}`HAVING` condition. -/
+  having : Option Expr := none
+  /-- Whether the query is {lit}`SELECT DISTINCT`. -/
+  distinct : Bool := false
+  /-- The terms of a compound query, named among the subqueries. -/
+  compound : Option Compound := none
+  deriving Repr, BEq
+
+/-- The query of the body as a subquery of the statement, around which there is no query. -/
+def SelectBody.query (body : SelectBody) : Subquery :=
+  { columns := body.columns, source := body.source, joins := body.joins, filter := body.filter,
+    groupBy := body.groupBy, orderBy := body.orderBy, limit := body.limit, offset := body.offset,
+    parent := none, having := body.having, distinct := body.distinct, compound := body.compound }
+
 end Belay.Sqlite.Model.Syntax

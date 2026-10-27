@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.ForeignKeyPlainFrame
 import Belay.Sqlite.Model.ForeignKeyWriteConditions
 import Belay.Sqlite.Model.ForeignKeyDdlSelected
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -22,7 +23,7 @@ namespace Belay.Sqlite.Model
 Rule-based UPSERT DO UPDATE still has its current undescribed result; this condition does not
 promise successful execution of that branch. -/
 def Resolved.Statement.ForeignKeyRowsCondition (profile : Profile) (database : Database) : Resolved.Statement → Prop
-  | .insert target _ _ _ rules | .upsert target _ _ _ _ _ rules | .delete target _ _ _ rules =>
+  | .insert target _ _ _ rules | .upsert target _ _ _ _ _ rules | .insertSelect target _ _ _ _ _ _ rules | .delete target _ _ _ rules =>
       match rules with
       | none => database.catalog.ForeignKeyOutside target
       | some rules => database.ForeignKeyReady profile ∧ rules.ForeignKeyConditions profile database.catalog
@@ -102,6 +103,20 @@ theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters :
       · exact Effect.satisfies_of_database (property := fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) holds rfl
       · exact rowsKeys_rowReferences value clock target _ ready holds facts.enforced facts.comparisons
           facts.programs facts.actions facts.before (by trivial) _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm
+        subqueries holds fun literals => by
+          apply Effect.satisfies_of_effectDatabase
+          exact holds.rowsOnlyAt condition
+            (runStatement_plain_rowsOnly clock counters parameters _ database target
+              (.inr (.inr (.inl ⟨literals, clauses, returning, algorithm, subqueries, rfl⟩))))
+    | some value =>
+      obtain ⟨ready, facts⟩ := condition
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm
+        subqueries value holds fun _ _ _ plain conflict => rowsKeys_rowReferences value clock target _ ready holds
+          facts.enforced facts.comparisons facts.programs facts.actions facts.before (by trivial) plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none =>

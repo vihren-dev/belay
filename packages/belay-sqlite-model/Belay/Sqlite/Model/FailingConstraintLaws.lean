@@ -8,6 +8,11 @@ fails with a constraint error. -/
 
 namespace Belay.Sqlite.Model
 
+/-- The error of a failure of a query is no constraint error ({name}`ExecutionError.isConstraint`), so
+a statement that ends with it names no constraint. Proof sketch: a case for each failure. -/
+theorem SourceFailure.toError_not_constraint (failure : SourceFailure) : failure.toError.isConstraint = false := by
+  cases failure <;> rfl
+
 /-- For every clock value, counters, list of values, statement, database, error and database
 {lit}`reached`, if
 
@@ -73,6 +78,43 @@ theorem failingConstraints_ne_nil {clock : Int} {counters : Counters} {parameter
         apply candidates_getD_ne_nil
         exact LiteralData.upsertRowFailure_isSome stepError
           (by intro mismatch; subst mismatch; simp [ExecutionError.isConstraint] at constraint)
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases plain
+    simp only [runStatement, insertSelectRun] at failed ⊢
+    cases found : database.table target with
+    | none => simp [found] at failed; cases failed.1; simp [ExecutionError.isConstraint] at constraint
+    | some table =>
+      simp only [found] at failed ⊢
+      cases productions : query.productions (Resolved.statementContext clock counters parameters database subqueries) database
+          (!Resolved.Statement.collectsSource target query subqueries returning none) with
+      | none => simp [productions] at failed; cases failed.1; simp [ExecutionError.isConstraint] at constraint
+      | some list =>
+        cases list with
+        | nil => simp [productions] at failed; cases failed.1; simp [ExecutionError.isConstraint] at constraint
+        | cons first others =>
+          simp only [productions, insertSelectOutcome, StatementRun.withKeys, Option.map_none] at failed ⊢
+          generalize Resolved.statementContext clock counters parameters database subqueries = context at *
+          cases summary : LiteralData.upsertSummary table (LiteralData.upsertSteps context (database.keys target table)
+              (database.catalog.writePolicy target table.shape algorithm) clauses table
+              (insertSelectRows context table.shape.columns cells first.rows)) with
+          | error pair =>
+            obtain ⟨failedReason, failedReached, written⟩ := pair
+            simp only [summary] at failed
+            injection failed with failed; injection failed with failed; subst failed
+            obtain ⟨step, last, stepError⟩ := LiteralData.upsertSteps_error summary
+            simp only [last]
+            apply candidates_getD_ne_nil
+            exact LiteralData.upsertRowFailure_isSome stepError
+              (by intro mismatch; subst mismatch; simp [ExecutionError.isConstraint] at constraint)
+          | ok pair =>
+            obtain ⟨result, written⟩ := pair
+            simp only [summary] at failed
+            cases source : first.failure with
+            | none => simp [source] at failed
+            | some sourceFailure =>
+              simp only [source, Option.map_some] at failed
+              injection failed with failed; injection failed with failed; subst failed
+              simp [SourceFailure.toError_not_constraint] at constraint
   | update target assignments filter returning subqueries rules =>
     cases plain
     simp only [runStatement] at failed ⊢

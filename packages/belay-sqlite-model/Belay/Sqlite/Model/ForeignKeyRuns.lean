@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeyStatement
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -12,7 +13,8 @@ reached statement's input facts. -/
 theorem rowReferences_statementKeeps (profile : Profile) :
     StatementKeeps (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeyRowsCondition profile database) :=
-  fun clock counters parameters statement _ holds met => runStatement_rowReferences clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met => runStatement_rowReferences clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if the current database and
 any saved snapshot have selected row references, and each reached statement meets its FK
@@ -36,17 +38,19 @@ theorem runSql_rowReferences (profile : Profile) (script : List (Resolved.Statem
   runSql_holds (rowReferences_statementKeeps profile) script holds conditions
 
 /-- For any surface script, resolution context, clock and connection, selected row
-references hold in the final database and snapshot if they hold in both initial stores and
-each reached resolved statement meets its FK conditions. Failed resolution and halted
-suffixes impose no extra condition. Proof: apply the existing surface-run invariant law. -/
-theorem runScriptFrom_rowReferences (profile : Profile) (context : ResolveContext) (clock : Option Clock)
+references hold in the final database and snapshot of every complete execution of the script
+({name}`runScriptAllFrom`) if they hold in both initial stores and each reached resolved statement
+meets its FK conditions. Failed resolution and halted
+suffixes impose no extra condition. Proof sketch: apply the surface-run invariant law for every
+complete execution. -/
+theorem runScriptAllFrom_rowReferences (profile : Profile) (context : ResolveContext) (clock : Option Clock)
     (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeyRowsCondition profile database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runScriptFrom_holds (rowReferences_statementKeeps profile) context clock index script holds conditions
+  runScriptAllFrom_holds (rowReferences_statementKeeps profile) context clock index script holds conditions
 
 /-- For any supplied mapping compatible with a database's parent schemas, row truth
 under that mapping is equivalent to row truth under the catalog-selected mapping. Empty
@@ -69,13 +73,15 @@ Proof sketch: compatibility identifies the supplied and selected comparisons; ap
 individual row and schema laws, then transport the row fact back through compatibility. -/
 theorem foreignKeyAtoms_statementKeeps (profile : Profile) (mapping : ForeignKeyMapping) :
     StatementKeeps (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping)
-      (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) := by
+      (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :=
+  StatementKeeps.ofOwnRun (by
   intro clock counters parameters statement database holds condition result kept
   have schema := runStatement_parentSchemasCompatible mapping clock counters parameters statement holds.1
     condition.1 result kept
   have rows := runStatement_rowReferences clock counters parameters statement
     (holds.1.rowReferences_iff_selected.mp holds.2) condition.2 result kept
-  exact ⟨schema, schema.rowReferences_iff_selected.mpr rows⟩
+  exact ⟨schema, schema.rowReferences_iff_selected.mpr rows⟩)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For any supplied mapping, clock, counters, parameters and input satisfying both FK
 atoms, a statement that keeps the catalog and meets the row condition preserves both atoms in success and partial
@@ -87,7 +93,8 @@ theorem runStatement_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMa
     (condition : statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :
     (runStatement clock counters parameters statement database).effect.Satisfies
       (fun result => result.ParentSchemasCompatible mapping ∧ result.RowReferencesHold mapping) :=
-  foreignKeyAtoms_statementKeeps profile mapping clock counters parameters statement database holds condition
+  foreignKeyAtoms_statementKeeps profile mapping clock counters parameters statement database holds condition _
+    (StatementRun.effect_mem_effects _)
 
 /-- For any supplied mapping and resolved script, if both FK atoms hold on the current
 database and saved snapshot, and each reached statement keeps the catalog and meets its row
@@ -113,17 +120,17 @@ theorem runSql_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping)
   runSql_holds (foreignKeyAtoms_statementKeeps profile mapping) script holds conditions
 
 /-- For any supplied mapping and surface script, both FK atoms hold in the final current
-database and snapshot when they hold in both initial stores and each reached resolved
+database and snapshot of every complete execution of the script ({name}`runScriptAllFrom`) when they hold in both initial stores and each reached resolved
 statement keeps the catalog and meets its row condition. Failed resolution and unreached
 suffixes add no premise.
 Proof sketch: apply the existing surface-run invariant law to the conjunction. -/
-theorem runScriptFrom_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping) (context : ResolveContext)
+theorem runScriptAllFrom_foreignKeyAtoms (profile : Profile) (mapping : ForeignKeyMapping) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping) :=
-  runScriptFrom_holds (foreignKeyAtoms_statementKeeps profile mapping) context clock index script holds conditions
+  runScriptAllFrom_holds (foreignKeyAtoms_statementKeeps profile mapping) context clock index script holds conditions
 
 end Belay.Sqlite.Model

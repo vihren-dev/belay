@@ -45,7 +45,7 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
     hashes: dict[str, str] = {}
     for name, (target, before, after) in MUTANTS.items():
         for filename in (*(f"packages/belay-sqlite-model/Belay/Sqlite/Model/{name}.lean"
-                           for name in ("Execution", "LiteralData", "StatementRun", "StatementStep", "SqlAdvance", "SqlExecution",
+                           for name in ("Execution", "LiteralData", "StatementRun", "InsertSelectRun", "StatementStep", "SqlAdvance", "SqlExecution",
                                         "StatementOutput", "PossibleOutput")),
                          *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
                            for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):

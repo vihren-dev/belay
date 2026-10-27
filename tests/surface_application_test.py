@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_assertion_examples_test import check_module_chain
+from tests.surface_assertion_examples_test import check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 from tests.surface_support import FIXTURES, surface_command
 
@@ -53,11 +53,6 @@ def test_weak_query_translation_needs_frame_facts_to_become_a_simulation(runtime
     admitted context (fixture ApplicationConstantClock). Every theorem uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
         ("ApplicationRestrictedDomain", 4), ("ApplicationWeakBridges", 2), ("ApplicationConstantClock", 4)))
-
-
-def lines_after(stdout: str, tag: str) -> list[object]:
-    """Decode the JSON that a fixture logged after the tag, one value for each line."""
-    return [json.loads(line.removeprefix(tag)) for line in stdout.splitlines() if line.startswith(tag)]
 
 
 @pytest.mark.requires_native("sqlite3")

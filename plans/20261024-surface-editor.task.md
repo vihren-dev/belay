@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
@@ -151,7 +151,7 @@ Only Nix results are acceptance evidence in status files and PRs.
 The resolver records no fact about a name token: a resolved statement holds
 catalog positions and rewritten queries, a prepare error holds only a name, and
 `Span.leaves` is not a role trace. Part 2b therefore needs a model-side name
-trace, planned as a separate model task, not an editor edit. For each name
+trace, which the model name-trace task added (PR #270), not an editor edit. For each name
 occurrence of a statement, the trace gives:
 
 - the syntax path of the occurrence in the statement as written, for a name
@@ -200,6 +200,30 @@ Part 2a gives:
   with parameters) gives only the syntactic warning;
 - the shared entry point, semantic tokens for resolved tables and the
   source-position fixtures.
+
+## Part 2b coverage (checked against the trace, 2026-10-26)
+
+Part 2b covers the names that the trace covers: the names of the statements that
+`sql!`, `db!` and `#sql` resolve, in queries, `WITH` definitions used by the
+statement, `UPDATE`, `INSERT` and `DELETE`. The trace lists these positions as
+documented gaps, so part 2b gives no column information, correction or DQS
+warning for them:
+
+- the bodies of `CREATE TABLE`, `CREATE VIEW`, `CREATE TRIGGER`, `CREATE INDEX`
+  and `ALTER`, and stored trigger programs;
+- `WITH` definitions that the statement does not use, `*` expansions and
+  `RETURNING *` columns, function names and collation names;
+- names inside the body of a stored view (not an exact path, so never edited and
+  never described);
+- names after the first name that makes the statement fail: the resolver stops at
+  the first error, so a statement with name errors shows one correction at a time.
+  A double-quoted name that the resolver reads as a text literal is no error, so
+  every such occurrence of a statement gets its warning and its correction.
+
+A comparison has no operator part in the translated syntax. The comparison
+information is therefore the hover of the whole comparison expression, and the
+name hovers of the operands stay more specific. A name that is ambiguous gets
+the existing error and no hover, because no column is the one the resolver chose.
 
 ## Current APIs and ownership constraints
 

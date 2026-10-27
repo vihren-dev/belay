@@ -23,6 +23,13 @@ The frontend maps these statements, and refuses every other statement as
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
+- `INSERT INTO table [(columns)] SELECT …` and `REPLACE INTO table … SELECT …`, with the
+  clauses and `RETURNING` of `INSERT … VALUES` (ADR 0019, D4). The rows come from the query of
+  the form that the model describes. SQLite may read a table by its scan or by one of its indexes,
+  so such a statement has one possible execution for each order, and the first is the model's own
+  run. The statement is not described when the model cannot state the order of the rows of the
+  query or its failure, when a trigger or a foreign key to check applies and the query has more
+  than one order, or when SQLite may copy the rows under rowids that the model does not assign;
 - `UPDATE table SET column = value, … [WHERE expression]`;
 - `DELETE FROM table [WHERE expression]`, which removes each row for which the
   expression is true (slice 3c);
@@ -642,7 +649,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table, or as the SET column of a table without an `INTEGER PRIMARY KEY`; in VALUES it resolves as any other name, and as the SET column of a table with an `INTEGER PRIMARY KEY` it assigns that column | ADR 0012 slice 3a; extended 2026-10-14 and 2026-10-21 |
+| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table, as the SET column of a table without an `INTEGER PRIMARY KEY`, or in the column list of an `INSERT` into a table with a rowid; in VALUES it resolves as any other name, and as the SET column of a table with an `INTEGER PRIMARY KEY` it assigns that column | ADR 0012 slice 3a; extended 2026-10-14, 2026-10-21 and 2026-10-26 |
 
 ## Execution
 

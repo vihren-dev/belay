@@ -47,6 +47,12 @@ def Cell.expression? : Cell → Option Expr
   | .value _ => none
   | .expression term => some term
 
+/-- The expression of a cell of INSERT from a query, if it has one: a cell that does not read the
+query ({name}`SourceCell.cell`) with an expression. -/
+def SourceCell.expression? : SourceCell → Option Expr
+  | .source _ => none
+  | .cell fixed => fixed.expression?
+
 /-- Every expression of a step of a trigger program that evaluation reads (ADR 0018, D5): the
 expression cells of an INSERT and its clauses, the values and filters of writes, the expressions
 of a query, those of each step's subqueries, and the filter and conditions of a raising SELECT. -/
@@ -77,6 +83,9 @@ def Statement.clockExpressions : Statement → List Expr
   | .upsert _ rows clauses returning _ subqueries rules =>
     rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1) ++
       subqueries.flatMap Query.expressions ++ WriteRules.expressions rules
+  | .insertSelect _ cells inner clauses returning _ subqueries rules =>
+    cells.filterMap SourceCell.expression? ++ inner.expressions ++ clauses.flatMap ConflictClause.expressions ++
+      returning.map (·.1) ++ subqueries.flatMap Query.expressions ++ WriteRules.expressions rules
   | .update _ assignments filter returning subqueries rules =>
     assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions ++
       WriteRules.expressions rules

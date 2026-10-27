@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T12:44:09+00:00",
+  "finding": "20261026T124403Z-8f8c102a#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "the catch-all throws, so a statement that is no CREATE VIEW fails the check; a new constructor cannot make it pass silently, and listing every constructor would add nothing"
+}

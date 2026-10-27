@@ -105,12 +105,11 @@ def test_term_limit_is_sqlites_compound_limit(parse_sql: Callable[..., Translati
     ("SELECT 1 UNION SELECT 2 ORDER BY (SELECT 1);", "SELECT 1"),
     ("SELECT 1 UNION VALUES (2);", "VALUES (2)"),
     ("CREATE TRIGGER r AFTER INSERT ON t BEGIN SELECT 1 UNION SELECT 2; END;", "SELECT 1 UNION SELECT 2"),
-    ("INSERT INTO t SELECT 1 UNION SELECT 2;", "SELECT 1 UNION SELECT 2"),
 ])
 def test_compound_forms_outside_the_slice_are_unsupported(
         parse_sql: Callable[..., Translation], sql: str, refused: str) -> None:
-    """A subquery in the compound's ORDER BY or LIMIT, a VALUES term, a compound statement in a
-    trigger body and a compound INSERT source are UNSUPPORTED at their range."""
+    """A subquery in the compound's ORDER BY or LIMIT, a VALUES term and a compound statement in a
+    trigger body are UNSUPPORTED at their range."""
     with pytest.raises(SqlError) as raised:
         parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED"

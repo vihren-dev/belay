@@ -15,7 +15,7 @@ namespace Belay.Sqlite.Model
 def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.RowsWideAt target
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
-  | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
+  | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The condition of a statement on the database for the atom "types fit":
 * ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`), and the
@@ -25,7 +25,7 @@ def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Stateme
 def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target column _ => database.RowsWideAt target ∧ database.StrictDefaultFitsAt target column
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
-  | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
+  | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The condition of a statement on the database for the atom "checks hold":
 * ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`), and each
@@ -35,7 +35,7 @@ def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statem
 def Resolved.Statement.ChecksHoldCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.RowsWideAt target ∧ database.ChecksReadBelowAt target
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
-  | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
+  | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The statement theorem of "not null". For every clock value, counters, parameter list, resolved statement
 and database: if the database satisfies {name}`Database.NotNull` and the statement meets its

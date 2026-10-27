@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeySelectedStatement
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -15,8 +16,9 @@ Proof sketch: specialize the statement theorem. -/
 theorem parentSchemasCompatibleSelectedKeeps :
     StatementKeeps (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeySchemaCondition database) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_parentSchemasCompatibleSelected clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_parentSchemasCompatibleSelected clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if the current database and any saved
 snapshot have compatible parent schemas under their selected mappings, and every reached
@@ -45,18 +47,18 @@ theorem runSql_parentSchemasCompatibleSelected (script : List (Resolved.Statemen
 
 /-- For every resolution context, clock, index, connection and surface script: if the database and
 the saved snapshot of the connection have compatible parent schemas under their selected mappings,
-and every reached resolved statement meets its schema condition, the final connection has them in
-both. Failed resolution and halted suffixes add no condition. Proof sketch: apply
-{name}`runScriptFrom_holds` with the statement theorem. -/
-theorem runScriptFrom_parentSchemasCompatibleSelected (context : ResolveContext) (clock : Option Clock)
+and every reached resolved statement meets its schema condition, then in every complete
+execution of the script ({name}`runScriptAllFrom`) the final connection has them in both. Failed resolution and halted suffixes add no condition. Proof sketch: apply
+{name}`runScriptAllFrom_holds` with the statement theorem. -/
+theorem runScriptAllFrom_parentSchemasCompatibleSelected (context : ResolveContext) (clock : Option Clock)
     (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeySchemaCondition database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping) :=
-  runScriptFrom_holds parentSchemasCompatibleSelectedKeeps context clock index script holds conditions
+  runScriptAllFrom_holds parentSchemasCompatibleSelectedKeeps context clock index script holds conditions
 
 /-- For every profile, both atoms under the mapping that the catalog selects are kept by every
 statement that meets {name}`Resolved.Statement.ForeignKeyAtomsCondition`, including the schema
@@ -65,8 +67,9 @@ theorem foreignKeyAtomsSelected_statementKeeps (profile : Profile) :
     StatementKeeps (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
       database.RowReferencesHold database.catalog.foreignKeyMapping)
       (fun statement database => statement.ForeignKeyAtomsCondition profile database) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_foreignKeyAtomsSelected _ clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_foreignKeyAtomsSelected _ clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every resolved script, starting position and state, if both atoms hold under the selected
 mappings on the current database and any saved snapshot, and every reached statement meets its
@@ -100,19 +103,19 @@ theorem runSql_foreignKeyAtomsSelected (profile : Profile) (script : List (Resol
 
 /-- For every resolution context, clock, index, connection and surface script: if both atoms hold
 under the selected mappings on the database and the saved snapshot of the connection, and every
-reached resolved statement meets its atoms condition, both hold in the final connection's database
-and snapshot. Failed resolution and halted suffixes add no condition. Proof sketch: apply
-{name}`runScriptFrom_holds` with the statement theorem. -/
-theorem runScriptFrom_foreignKeyAtomsSelected (profile : Profile) (context : ResolveContext)
+reached resolved statement meets its atoms condition, then in every complete execution of the
+script ({name}`runScriptAllFrom`) both hold in the final connection's database and snapshot. Failed resolution and halted suffixes add no condition. Proof sketch: apply
+{name}`runScriptAllFrom_holds` with the statement theorem. -/
+theorem runScriptAllFrom_foreignKeyAtomsSelected (profile : Profile) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (fun database =>
       database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping))
     (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeyAtomsCondition profile database)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runScriptFrom_holds (foreignKeyAtomsSelected_statementKeeps profile) context clock index script holds conditions
+  runScriptAllFrom_holds (foreignKeyAtomsSelected_statementKeeps profile) context clock index script holds conditions
 
 end Belay.Sqlite.Model

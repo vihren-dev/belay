@@ -1,4 +1,5 @@
-import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.ScriptRunSingleton
+import Belay.Sqlite.Model.InsertSelectAlternatives
 import Belay.Sqlite.Model.Resolution.ResolveState
 
 set_option doc.verso true
@@ -10,10 +11,10 @@ check, or {name}`Belay.Sqlite.Model.Output.ofStep` of the statement's run and tr
 
 namespace Belay.Sqlite.Model
 
-/-- The output of a step of a run: the output of a statement that ran, or
-{name}`Output.unmodeled` with the reason why the run ended at the statement. -/
+/-- The output of a step of a run: the output of the model's own execution of a statement that ran,
+or {name}`Output.unmodeled` with the reason why the run ended at the statement. -/
 def RunStep.output : RunStep → Output
-  | .continued output _ => output
+  | .continued output _ _ => output
   | .ended reason => .unmodeled reason
 
 /-- The output of a resolved statement at a zero-based index on the connection with the values
@@ -34,21 +35,25 @@ def resolvedStepOutput (clock : Option Clock) (index : Nat) (connection : Connec
       if !run.ready then .unmodeled unmodeledHere
       else Output.ofStep value parameters resolved connection.state run (advanceRun index resolved connection.state run) initial
 
-/-- For every statement that ran, its step ({name}`ranScriptStep`) has the output of
-{name}`Output.ofStep`. Proof sketch: an output other than {name}`Output.unmodeled` continues with
-it, and {name}`Output.unmodeled` ends the run with the same output. -/
-theorem ranScriptStep_output (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
-    (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) :
-    (ranScriptStep parameters connection resolved after value run transition).output =
+/-- For every statement that ran with a run whose alternative executions all have an output, its step
+({name}`ranScriptStep`) has the output of {name}`Output.ofStep`. Proof sketch: an output other than
+{name}`Output.unmodeled` continues with it, and {name}`Output.unmodeled` ends the run with the same
+output; no further execution ends the run, because each has an output. -/
+theorem ranScriptStep_output (index : Nat) (parameters : List Value) (connection : Connection) (resolved : Resolved.Statement)
+    (after : ResolveState) (value : Int) (run : StatementRun) (transition : SqlTransition) (listed : ∃ further, StatementExecution.ofAlternatives index parameters connection resolved after value run = .ok further) :
+    (ranScriptStep index parameters connection resolved after value run transition).output =
       Output.ofStep value parameters resolved connection.state run transition := by
   unfold ranScriptStep
-  split <;> simp_all [RunStep.output]
+  obtain ⟨further, ok⟩ := listed
+  simp only [ok, Except.map]
+  split <;> simp_all [RunStep.output, RunStep.withOthers]
 
 /-- For every context, clock, index, connection, statement and values, the output of the step
 ({name}`runScriptStep`) is {name}`Output.unmodeled` with the reason of the restriction when
 resolution refuses the statement, and otherwise {name}`resolvedStepOutput` of the resolved
 statement. Proof sketch: unfold the step and follow its cases; the cases that end the run give
-{name}`Output.unmodeled`, and the others {name}`ranScriptStep_output`. -/
+{name}`Output.unmodeled`, and the others {name}`ranScriptStep_output`, where a run that passes the support
+check has an execution for each alternative ({name}`StatementExecution.ofAlternatives_ok_of_ready`). -/
 theorem runScriptStep_output (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (statement : Syntax.Statement) (parameters : List Value) :
     (runScriptStep context clock index connection statement parameters).output =
@@ -72,7 +77,9 @@ theorem runScriptStep_output (context : ResolveContext) (clock : Option Clock) (
         simp only []
         split
         · simp [RunStep.output]
-        · rw [ranScriptStep_output]
+        · rename_i ready
+          rw [ranScriptStep_output _ _ _ _ _ _ _ _
+            (StatementExecution.ofAlternatives_ok_of_ready _ _ _ _ _ _ (by simpa using ready))]
 
 /-- For every context, clock, index, connection, statement, values and later statements, the first
 output of the run of a script that starts with that statement is the output of its step. Proof

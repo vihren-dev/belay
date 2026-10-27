@@ -6,7 +6,7 @@ set_option doc.verso true
 
 namespace S6
 open Belay.Sqlite Std.Do
-open Belay.Sqlite.Model (runScriptStep)
+open Belay.Sqlite.Model (runScriptStep RunStep)
 
 /-- For every program and context, the total-success transformer with an unrestricted
 postcondition is exactly S4's success predicate, including actual raw and concrete alternative
@@ -21,7 +21,10 @@ theorem check_top {α : Type} (program : Sql α) : ∀ state : Context,
     simp only [check, Sql.SucceedsFrom]
     cases step : runScriptStep runContext state.clock state.index state.connection statement values with
     | ended reason => simp
-    | continued output connection =>
+    | continued output connection others =>
+      refine forall_congr' fun found => forall_congr' fun _ => ?_
+      obtain ⟨output, next⟩ := found
+      unfold Sql.ExecutionSucceeds
       cases output <;> simp [later, Context.next]
 
 /-- The context after the actual interpreter's run, retaining its clock and adding the
@@ -49,9 +52,10 @@ theorem check_actual {α : Type} (reject : Bool) (program : Sql α) :
     simp only [check] at holds
     cases step : runScriptStep runContext state.clock state.index state.connection statement values with
     | ended reason => simp [step] at holds
-    | continued output connection =>
+    | continued output connection others =>
       rw [step] at holds
-      obtain ⟨value, returned, postHolds⟩ := later output post (state.next output connection) holds.2.1
+      obtain ⟨value, returned, postHolds⟩ := later output post (state.next output connection)
+        (holds { output, next := connection } (by simp [RunStep.executions])).2.1
       refine ⟨value, ?_, ?_⟩
       · simpa [Sql.runFrom, step, Context.next] using returned
       · simpa [Sql.runFrom, step, Context.finish, Context.next, List.append_assoc, Nat.add_assoc, Nat.add_comm]

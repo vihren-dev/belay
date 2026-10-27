@@ -31,7 +31,7 @@ def failureAction (statement : Resolved.Statement) : ExecutionError → String
     "; correct the statement, or the statements before it that give the data that it reads"
   | .constraintViolation | .constraintFail | .constraintRollback => match statement with
     | .createIndex .. => "; remove the rows whose values of the index are equal, or change the index"
-    | .insert .. | .upsert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createView .. | .createTrigger ..
+    | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .drop .. | .createTable .. | .createView .. | .createTrigger ..
     | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting .. =>
       match statement.writeRules with
       | some _ => ""
@@ -91,6 +91,18 @@ def endedDiagnostic (connection : Connection) (item : Located Syntax.Statement) 
   | .error restriction => restrictionDiagnostic item restriction
   | .ok _ => let (start, stop) := statementRange item; { start, stop, message := reason }
 
+/-- The message of a statement that has more than one possible execution in the model. A {lit}`db!` text
+builds one database, so the statement must have one execution. -/
+def ambiguousMessage : String :=
+  "the model gives this statement more than one possible result, and db! builds one database; " ++
+    "change the statement so that its result is the same in every case, or remove it"
+
+/-- The error of a statement with further executions ({name}`RunStep.continued`): the message
+{name}`ambiguousMessage` at the statement. A statement with one execution gives none. -/
+def ambiguousDiagnostics (item : Located Syntax.Statement) : List StatementExecution → List Diagnostic
+  | [] => []
+  | _ :: _ => let (start, stop) := statementRange item; [{ start, stop, message := ambiguousMessage }]
+
 /-- The message of a text that leaves a transaction open at its end. -/
 def openTransactionMessage : String :=
   "the text of db! leaves a transaction open at its end; end the transaction with COMMIT, " ++
@@ -108,8 +120,9 @@ def endDiagnostics (size : Nat) (connection : Connection) : List Diagnostic :=
 /-- Run the statements of a text in order from a zero-based index on the connection, each with
 {name}`runScriptStep`, no values, no clock and the surface's context, and give the errors and the connection at the
 end. Each statement that fails gives its error ({name}`outputDiagnostics`), and the run goes on.
-A statement that ends the run gives {name}`endedDiagnostic`, and the statements after it give
-no error. A run that reaches the end of the text with an open transaction gives
+A statement with more than one possible execution gives {name}`ambiguousDiagnostics`, and the run
+goes on from the model's own execution. A statement that ends the run gives {name}`endedDiagnostic`,
+and the statements after it give no error. A run that reaches the end of the text with an open transaction gives
 {name}`endDiagnostics`; a run that ends early does not, because the statements that do not run
 can end the transaction. -/
 def runDiagnosticsFrom (bytes : ByteArray) (index : Nat) (connection : Connection) :
@@ -117,9 +130,9 @@ def runDiagnosticsFrom (bytes : ByteArray) (index : Nat) (connection : Connectio
   | [] => (endDiagnostics bytes.size connection, connection)
   | item :: rest => match runScriptStep runContext none index connection item.value [] with
     | .ended reason => ([endedDiagnostic connection item reason], connection)
-    | .continued output next =>
+    | .continued output next others =>
       let later := runDiagnosticsFrom bytes (index + 1) next rest
-      (outputDiagnostics bytes index connection item output ++ later.1, later.2)
+      (outputDiagnostics bytes index connection item output ++ ambiguousDiagnostics item others ++ later.1, later.2)
 
 /-- For every text, index, connection and list of statements: the connection at the end of
 {name}`runDiagnosticsFrom` is the connection at the end of {name}`runScriptFrom` over the same
@@ -135,7 +148,7 @@ theorem runDiagnosticsFrom_connection (bytes : ByteArray) :
     simp only [runDiagnosticsFrom, runScriptFrom, List.map]
     cases runScriptStep runContext none index connection item.value [] with
     | ended reason => rfl
-    | continued output next => exact runDiagnosticsFrom_connection bytes (index + 1) next rest
+    | continued output next others => exact runDiagnosticsFrom_connection bytes (index + 1) next rest
 
 /-- The errors of the statements of a {lit}`db!` text, run on the empty database
 ({name}`runDiagnosticsFrom` from index 0), and the connection at the end. -/

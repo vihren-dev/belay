@@ -4,6 +4,7 @@ import Belay.Sqlite.Model.AdmittedSchemaStatements
 import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -26,6 +27,8 @@ database: if
   ({name}`AddedCell`), then the table with the column and the value appended has the atom;
 * the row fact holds: if the statement is an INSERT, UPDATE or upsert without rules, the effect of
   {name}`runStatement` satisfies "every table has the atom";
+* the select fact holds: if the statement is an INSERT from a query without rules, the effect of
+  {name}`runStatement` satisfies "every table has the atom";
 
 then the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
@@ -42,6 +45,9 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
     (every : database.EachTable atom)
     (addColumn : ∀ target column refuses table value, statement = .addColumn target column refuses →
       database.table target = some table → AddedCell table column value → atom (table.appendColumns [(column, value)]))
+    (selects : (∃ target cells query clauses returning algorithm subqueries,
+        statement = .insertSelect target cells query clauses returning algorithm subqueries none) →
+      (runStatement clock counters parameters statement database).effect.Satisfies fun after => after.EachTable atom)
     (writes : ((∃ target rows returning subqueries, statement = .insert target rows returning subqueries none) ∨
       (∃ target assignments filter returning subqueries,
         statement = .update target assignments filter returning subqueries none) ∨
@@ -102,6 +108,12 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
       split
       · exact Effect.satisfies_of_database every rfl
       · exact rowsKeys_satisfies laws rules clock target _ every _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none => exact selects ⟨target, cells, query, clauses, returning, algorithm, subqueries, rfl⟩
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm
+        subqueries rules every fun _ _ _ plain conflict => rowsKeys_satisfies laws rules clock target _ every plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none => exact runStatement_delete_tableAtom tableAtom clock counters parameters target filter returning subqueries every

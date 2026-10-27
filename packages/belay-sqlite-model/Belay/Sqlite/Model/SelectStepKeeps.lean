@@ -31,25 +31,24 @@ theorem resolveSelect_shape (context : ResolveContext) (catalog after : Catalog)
     | (cases ok; exact Or.inr ⟨_, rfl⟩)
     | (cases ok)
 
-/-- For every connection and every statement that resolves from a SELECT: if the step of the
-statement continues and its output is not an error, the next connection is the connection of the
-step. The database, the transaction, the settings and the counters are unchanged. Proof sketch: the
-resolved statement is a query or a prepare error ({name}`resolveSelect_shape`); its effect keeps the
-database ({name}`runStatement_keeps_database`) and its counts leave the counters
-({name}`Counters.apply_default`); {name}`runScriptStep_effect` gives the next connection. -/
-theorem runScriptStep_select_connection {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection next : Connection} {columns source joins filter groupBy orderBy limit offset subqueries having
-      distinct compound parameters output}
-    (step : runScriptStep context clock index connection
-      (.select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
-      parameters = .continued output next)
-    (noError : output.isError = false) : next = connection := by
-  obtain ⟨resolved, after, value, found, -⟩ := runScriptStep_ran step
-  have selected : ∃ catalog, resolveSelect context connection.resolveState.catalog
+/-- For every resolution of a SELECT statement: the resolved statement is a query or a prepare
+error, so it is no INSERT from a query. Proof sketch: the resolution of the statement is that of its
+query ({name}`resolveSelect`), whose result has one of the two shapes ({name}`resolveSelect_shape`). -/
+theorem resolveStatement_select_shape {context : ResolveContext} {state : ResolveState}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    {resolved : Resolved.Statement} {after : ResolveState}
+    (found : resolveStatement context state
+      (.select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound) =
+      .ok (resolved, after)) :
+    ∃ catalog, resolveSelect context state.catalog
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
+        compound } subqueries = .ok (resolved, catalog) ∧
+      ((∃ query subqueries, resolved = .query query subqueries) ∨ ∃ error, resolved = .prepareError error) := by
+  have selected : ∃ catalog, resolveSelect context state.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
         compound } subqueries = .ok (resolved, catalog) := by
     simp only [statement_arms, ResolveState.withCatalog] at found
-    cases resolution : resolveSelect context connection.resolveState.catalog
+    cases resolution : resolveSelect context state.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
         compound } subqueries with
     | error failure => rw [resolution] at found; simp [Except.map] at found
@@ -60,10 +59,25 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
       obtain ⟨rfl, -⟩ := found
       exact ⟨catalog, rfl⟩
   obtain ⟨catalog, ok⟩ := selected
+  exact ⟨catalog, ok, resolveSelect_shape _ _ _ _ _ _ ok⟩
+
+/-- For every connection and every statement that resolves from a SELECT: if the step of the
+statement continues and its output is not an error, the next connection is the connection of the
+step. The database, the transaction, the settings and the counters are unchanged. Proof sketch: the
+resolved statement is a query or a prepare error ({name}`resolveSelect_shape`); its effect keeps the
+database ({name}`runStatement_keeps_database`) and its counts leave the counters
+({name}`Counters.apply_default`); {name}`runScriptStep_effect` gives the next connection. -/
+theorem runScriptStep_select_connection {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection next : Connection} {columns source joins filter groupBy orderBy limit offset subqueries having
+      distinct compound parameters output} {others : List StatementExecution}
+    (step : runScriptStep context clock index connection
+      (.select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+      parameters = .continued output next others)
+    (noError : output.isError = false) : next = connection := by
+  obtain ⟨resolved, after, value, found, -⟩ := runScriptStep_ran step
+  obtain ⟨catalog, ok, shape⟩ := resolveStatement_select_shape found
   have ordinary := (resolveSelect_same _ _ _ _ _ _ ok).2.2
   obtain ⟨value, database, -, effect, nextEq⟩ := runScriptStep_effect found ordinary step noError
-  have shape : (∃ query subqueries, resolved = .query query subqueries) ∨
-      ∃ error, resolved = .prepareError error := resolveSelect_shape _ _ _ _ _ _ ok
   have keeps := runStatement_keeps_database value (connection.state.counters.view resolved.counterReads)
     parameters connection.state.database resolved (by
       rcases shape with ⟨query, subqueries, same⟩ | ⟨error, same⟩
@@ -77,6 +91,22 @@ theorem runScriptStep_select_connection {context : ResolveContext} {clock : Opti
   have sameDatabase : database = connection.state.database := keeps
   rw [nextEq, noCounts, sameDatabase, Counters.apply_default]
 
+/-- For every SELECT statement and every step of it that continues: the step has no further execution.
+Plain words: a SELECT has one next state. Proof sketch: a SELECT resolves to a query or to a prepare error,
+and neither is an INSERT from a query ({name}`runScriptStep_others`). -/
+theorem runScriptStep_select_others {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    (isSelect : statement =
+      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+    {output : Output} {next : Connection} {others : List StatementExecution}
+    (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
+    others = [] := by
+  subst isSelect
+  obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_ran step
+  obtain ⟨-, -, shape⟩ := resolveStatement_select_shape found
+  exact runScriptStep_others step found (by rcases shape with ⟨_, _, rfl⟩ | ⟨_, rfl⟩ <;> rfl)
+
 /-- For every SELECT statement and every step of it that gives rows: the step continues with those
 rows and keeps the connection. Plain words: a SELECT that gives rows changes nothing. Proof sketch: the
 step does not end the run because its output is rows, and a SELECT step that does not give an error
@@ -88,14 +118,15 @@ theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clo
       .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
     {rows : List (List Value)}
     (output : (runScriptStep context clock index connection statement parameters).output = .rows rows) :
-    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection := by
+    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection [] := by
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => rw [step] at output; simp [RunStep.output] at output
-  | continued out next =>
+  | continued out next others =>
+    obtain rfl := runScriptStep_select_others isSelect step
+    subst isSelect
     rw [step] at output
     simp only [RunStep.output] at output
     subst output
-    subst isSelect
     rw [runScriptStep_select_connection step rfl]
 
 end Belay.Sqlite.Model

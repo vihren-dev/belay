@@ -52,6 +52,16 @@ def NodeRestriction.at (restriction : NodeRestriction) (statement : Nat) : Restr
 
 namespace Resolved
 
+/-- Where one column of INSERT from a query takes its value (ADR 0019, D4): from the result column of
+the query at the position, which the column's affinity then stores, or from a cell that resolution
+fixed, as for an omitted column of INSERT with {lit}`VALUES`. -/
+inductive SourceCell where
+  /-- The result column of the query at the position. -/
+  | source (column : Nat)
+  /-- A cell that does not read the query: an omitted column's default or the clock. -/
+  | cell (cell : Cell)
+  deriving Repr, DecidableEq
+
 /-- One statement after name resolution. For example, an INSERT into the table at
 catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value Value.null]] []`.
 A write names its table by catalog position; execution reads the table's columns, keys
@@ -107,6 +117,15 @@ inductive Statement where
   whose target key has a conflicting row, or else by the algorithms of the constraints
   that it fails. The subqueries and {lit}`rules` are as for INSERT. -/
   | upsert (table : Nat) (rows : List (List Cell)) (clauses : List ConflictClause)
+      (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
+      (subqueries : List Query := []) (rules : Option WriteRules := none)
+  /-- INSERT from a query (ADR 0019, D4): each row of the query's source production fills the
+  columns by {name}`SourceCell` in table order, and then is written as {name}`Statement.upsert` writes
+  its rows, with the same {lit}`ON CONFLICT` clauses, algorithm, {lit}`RETURNING` columns and rules. The
+  query and its subqueries are those of a query statement. The source rows come from the database
+  at the start of the statement, in the orders that SQLite may read them
+  ({lit}`InsertSelectSource.lean`). -/
+  | insertSelect (table : Nat) (cells : List SourceCell) (query : Query) (clauses : List ConflictClause)
       (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
       (subqueries : List Query := []) (rules : Option WriteRules := none)
   /-- Remove every row where the optional filter condition is true (every row without a

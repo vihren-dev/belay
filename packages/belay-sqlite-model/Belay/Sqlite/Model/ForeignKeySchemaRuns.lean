@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.ForeignKeySchemaWrites
 import Belay.Sqlite.Model.ScriptRunHolds
 
@@ -14,8 +15,9 @@ does not inspect stored rows. Proof sketch: specialize the statement theorem. -/
 theorem parentSchemasCompatibleKeeps (mapping : ForeignKeyMapping) :
     StatementKeeps (Database.ParentSchemasCompatible mapping)
       (fun statement _ => statement.KeepsParentSchema) :=
-  fun clock counters parameters statement _ holds met =>
-    runStatement_parentSchemasCompatible mapping clock counters parameters statement holds met
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
+    runStatement_parentSchemasCompatible mapping clock counters parameters statement holds met)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For every mapping, starting position, resolved script and state, if both the current
 database and any saved snapshot have compatible parent schemas, and every reached statement
@@ -43,17 +45,18 @@ theorem runSql_parentSchemasCompatible (mapping : ForeignKeyMapping)
 
 /-- For every mapping, resolution context, clock, index, connection and surface script, if
 the connection's database and saved snapshot have compatible parent schemas, and each reached
-resolved statement keeps the catalog, then the final connection's database and snapshot have
-compatible parent schemas. Failed resolution and halted suffixes impose no extra condition.
-Proof sketch: apply {name}`runScriptFrom_holds` with the same schema statement theorem. -/
-theorem runScriptFrom_parentSchemasCompatible (mapping : ForeignKeyMapping) (context : ResolveContext)
+resolved statement keeps the catalog, then in every complete execution of the script
+({name}`runScriptAllFrom`) the final connection's database and snapshot have compatible parent
+schemas. Failed resolution and halted suffixes impose no extra condition.
+Proof sketch: apply {name}`runScriptAllFrom_holds` with the same schema statement theorem. -/
+theorem runScriptAllFrom_parentSchemasCompatible (mapping : ForeignKeyMapping) (context : ResolveContext)
     (clock : Option Clock) (index : Nat) {connection : Connection}
     (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds (Database.ParentSchemasCompatible mapping))
     (conditions : ScriptConditionsWith (fun statement _ => statement.KeepsParentSchema)
       context clock index connection script) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (Database.ParentSchemasCompatible mapping) :=
-  runScriptFrom_holds (parentSchemasCompatibleKeeps mapping) context clock index script holds conditions
+  runScriptAllFrom_holds (parentSchemasCompatibleKeeps mapping) context clock index script holds conditions
 
 end Belay.Sqlite.Model

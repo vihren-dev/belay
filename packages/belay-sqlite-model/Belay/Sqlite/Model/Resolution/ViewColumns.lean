@@ -88,7 +88,7 @@ def Resolved.Statement.isViewModify : Resolved.Statement → Bool
   | .prepareError error => error.viewModified?.isSome
   | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
   | .drop .. | .begin | .commit | .rollback | .setting .. | .query .. | .insert .. | .update ..
-  | .upsert .. | .delete .. => false
+  | .upsert .. | .insertSelect .. | .delete .. => false
 
 /-- Complete the resolution of a write to a view ({name}`resolveViewModify`): SQLite reads the
 columns of the view first, so a view that it cannot read gives that error instead; any other

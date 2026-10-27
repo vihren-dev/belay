@@ -16,7 +16,7 @@ namespace Belay.Sqlite.Model
 {lit}`RETURNING` clause of a write; none for another statement. -/
 def Resolved.Statement.resultNames : Resolved.Statement → List String
   | .query resolved _ => resolved.names
-  | .insert _ _ returning .. | .update _ _ _ returning .. | .upsert _ _ _ returning .. | .delete _ _ returning .. =>
+  | .insert _ _ returning .. | .update _ _ _ returning .. | .upsert _ _ _ returning .. | .insertSelect _ _ _ _ returning .. | .delete _ _ returning .. =>
     returning.map (·.2)
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
   | .prepareError _ | .setting .. => []

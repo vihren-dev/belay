@@ -36,7 +36,7 @@ theorem Sql.runFrom_bind {α β : Type} (program : Sql α) (next : α → Sql β
     simp only [Sql.bind, Sql.runFrom]
     cases step : runScriptStep runContext clock index connection statement values with
     | ended reason => rfl
-    | continued output state =>
+    | continued output state others =>
       simp only [later, SqlRun.andThen]
       cases result : (Sql.runFrom clock (index + 1) state (rest output)).value <;>
         simp [Nat.add_assoc, Nat.add_comm]

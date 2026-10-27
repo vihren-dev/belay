@@ -1,4 +1,5 @@
-import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.ScriptRunSingleton
+import Belay.Sqlite.Model.InsertSelectAlternatives
 
 set_option doc.verso true
 
@@ -66,29 +67,15 @@ the one of the run's output. Proof sketch: both functions take the same steps; t
 ({name}`Output.ofStep_error`). -/
 theorem runScriptStep_error_failure {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {statement : Syntax.Statement} {parameters : List Value} {code : Nat}
-    (step : runScriptStep context clock index connection statement parameters = .continued (.error code) next) :
+    {others : List StatementExecution}
+    (step : runScriptStep context clock index connection statement parameters = .continued (.error code) next others) :
     ∃ resolved failure, runScriptStepFailure context clock index connection statement parameters =
       some (resolved, failure) ∧ failure.primaryCode = code := by
-  unfold runScriptStep runScriptStepWith ranScriptStep at step
+  obtain ⟨resolved, after, value, resolution, valued, unknown, ready, ofStep, _, _, _⟩ := runScriptStep_continued_spec step
+  obtain ⟨failure, halted, primary⟩ := Output.ofStep_error ofStep
+  refine ⟨resolved, failure, ?_, primary⟩
   unfold runScriptStepFailure
-  cases resolution : resolveStatement context connection.resolveState statement with
-  | error restriction => simp [resolution] at step
-  | ok pair =>
-    obtain ⟨resolved, after⟩ := pair
-    simp only [resolution] at step ⊢
-    cases valued : statementClock clock index resolved with
-    | none => simp [valued] at step
-    | some value =>
-      cases unknown : connection.state.counters.firstUnknown resolved.counterReads with
-      | some kind => simp [valued, unknown] at step
-      | none =>
-        by_cases ready : (connection.state.statementRun value parameters resolved).ready
-        · simp only [valued, unknown, ready, Bool.not_true, Bool.false_eq_true, ite_false] at step ⊢
-          generalize ofStep : Output.ofStep _ parameters resolved connection.state _ _ = output at step
-          cases output <;> simp at step
-          obtain ⟨failure, halted, primary⟩ := Output.ofStep_error (step.1 ▸ ofStep)
-          exact ⟨resolved, failure, by simp [halted], primary⟩
-        · simp [valued, unknown, ready] at step
+  simp [resolution, valued, unknown, ready, halted]
 
 /-- For every clock, list of values, statement, state, run, transition and error: if the transition
 stops with the error ({name}`haltError`) and the error is not {name}`ExecutionError.unmodeled`,
@@ -108,15 +95,17 @@ statement and error: if {name}`runScriptStepFailure` with the clock and the valu
 resolved statement and the error, and the error is not {name}`ExecutionError.unmodeled`, then
 {name}`runScriptStep` with the clock and the values continues with the output
 {name}`Output.error` of the error's {name}`ExecutionError.primaryCode`, with some next
-connection. This is the converse of {name}`runScriptStep_error_failure`: the two functions take
-the same steps. -/
+connection and some list of further executions. This is the converse of {name}`runScriptStep_error_failure`: the two functions take
+the same steps. Proof sketch: unfold both functions and follow their common cases (resolution, clock,
+counters, readiness); in the ready case the halted error of the own run gives the error output ({name}`Output.ofStep_halted`), and the further
+executions are the executions of the alternatives of the run, whatever they are, which the claim leaves open. -/
 theorem runScriptStepFailure_continued {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {resolved : Resolved.Statement}
     {failure : ExecutionError}
     (found : runScriptStepFailure context clock index connection statement parameters = some (resolved, failure))
     (modeled : failure ≠ .unmodeled) :
-    ∃ next, runScriptStep context clock index connection statement parameters =
-      .continued (.error failure.primaryCode) next := by
+    ∃ next others, runScriptStep context clock index connection statement parameters =
+      .continued (.error failure.primaryCode) next others := by
   unfold runScriptStepFailure at found
   unfold runScriptStep runScriptStepWith ranScriptStep
   cases resolution : resolveStatement context connection.resolveState statement with
@@ -134,8 +123,11 @@ theorem runScriptStepFailure_continued {context : ResolveContext} {clock : Optio
         · simp only [valued, unknown, ready, Bool.not_true, Bool.false_eq_true, ite_false] at found ⊢
           obtain ⟨error, halted, same⟩ := Option.map_eq_some_iff.mp found
           cases same
+          obtain ⟨further, listed⟩ := StatementExecution.ofAlternatives_ok_of_ready index parameters connection _ after value
+            (by simpa using ready)
+          simp only [listed, Except.map]
           rw [Output.ofStep_halted halted modeled]
-          exact ⟨_, rfl⟩
+          exact ⟨_, _, rfl⟩
         · simp [valued, unknown, ready] at found
 
 end Belay.Sqlite.Model

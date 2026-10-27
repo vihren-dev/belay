@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T09:36:02+00:00",
+  "finding": "20261026T093536Z-95f4dc96#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The coverage text limits the one-correction rule to names that make the statement fail and states that every double-quoted fallback occurrence gets its warning and correction."
+}

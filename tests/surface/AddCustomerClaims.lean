@@ -34,8 +34,12 @@ theorem addCustomer_adds (name email : String) :
   cases step : runScriptStep runContext (ExecutionContext.initial db env).clock (ExecutionContext.initial db env).index
       (ExecutionContext.initial db env).connection selectStatement [] with
   | ended reason => rw [step] at modeled; cases modeled
-  | continued output connection =>
-    intro selected choice
+  | continued output connection others =>
+    obtain ⟨columns, source, joins, filter, groupBy, orderBy, limit, offset, subqueries, having, distinct, compound, isSelect⟩ :=
+      selectStatement_is_select
+    obtain rfl := runScriptStep_select_others isSelect step
+    intro found member selected choice
+    obtain rfl := Sql.Branch.found_eq step member
     cases found : singleValue (queryResult selected) with
     | none =>
       refine (Sql.check_pure _ _ _).2 ?_
@@ -44,20 +48,18 @@ theorem addCustomer_adds (name email : String) :
     | some next =>
       simp only []
       have noError := not_error_of_single choice found
-      obtain ⟨columns, source, joins, filter, groupBy, orderBy, limit, offset, subqueries, having, distinct, compound, isSelect⟩ :=
-        selectStatement_is_select
       have kept : connection = db.raw.connection env.counters := by
         rw [isSelect] at step
         exact runScriptStep_select_connection step noError
       subst kept
       have stepEq : runScriptStep runContext env.clock 0 (db.raw.connection env.counters) selectStatement [] =
-          .continued output (db.raw.connection env.counters) := step
+          .continued output (db.raw.connection env.counters) [] := step
       have mem : next ∈ selectedValues (runScriptStep runContext env.clock 0 (db.raw.connection env.counters)
           selectStatement []).output := by
         rw [stepEq]
         exact mem_selectedValues choice found
       have continues := List.all_eq_true.1 (site.insertModeled env) next mem
-      obtain ⟨output2, connection2, step2⟩ := RunStep.continues_iff.1 continues
+      obtain ⟨output2, connection2, others2, step2⟩ := RunStep.continues_iff.1 continues
       have resolves : resolveStatement runContext (db.raw.connection env.counters).resolveState insertStatement =
           .ok (.insert site.position [[.expression (.parameter 1), .expression (.parameter 2),
             .expression (.parameter 3)]] [] [] none, site.after) := by
@@ -66,7 +68,11 @@ theorem addCustomer_adds (name email : String) :
       refine (Sql.check_bind _ _ _ _).2 ?_
       rw [insertCustomerAt_script]
       refine (check_send_single_of_step (state := (ExecutionContext.initial db env).next selected
-        (db.raw.connection env.counters)) step2 (runScriptStep_insert_ne_oneOf resolves step2)).2 ?_
+        (db.raw.connection env.counters)) step2
+        (fun _ _ resolved => by
+          obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans resolves))).1
+          rfl)
+        (runScriptStep_insert_ne_oneOf resolves step2)).2 ?_
       refine (Sql.check_pure _ _ _).2 ?_
       intro allOk
       have noError2 : output2.isError = false := by
@@ -77,8 +83,12 @@ theorem addCustomer_adds (name email : String) :
         Database.table_of_findTable db.raw _ site.position site.table site.found
       obtain ⟨value, -, effect⟩ := plainInsert_database resolves present step2 noError2
       rw [show (db.raw.connection env.counters).state.database = db.raw from rfl] at effect
-      have valid := runScriptStep_valid (profile := Profile.pinned) runContext env.clock 1 insertStatement _ rfl rfl
-        ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩ step2
+      have start : (db.raw.connection env.counters).state.Holds (Database.Valid Profile.pinned) :=
+        ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩
+      have valid : connection2.state.Holds (Database.Valid Profile.pinned) :=
+        runScriptStep_valid (profile := Profile.pinned) runContext env.clock 1 insertStatement
+        [next, .text name.toUTF8.toList, .text email.toUTF8.toList] rfl rfl start
+        { output := output2, next := connection2 } (by rw [step2]; simp [RunStep.executions])
       refine (Holds.reached_iff_holds_of_valid _ _ _ valid.1).2 ?_
       refine (a_customer_named_iff ⟨connection2.state.database, valid.1⟩ name site.position site.table site.nameCell
         (by show (connection2.state.database).catalog.findTable _ = _; rw [effect]; exact site.found)

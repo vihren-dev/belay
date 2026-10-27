@@ -101,7 +101,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .replaceDefault => "REPLACE of a NOT NULL column with a default is not modeled; write the value instead of NULL"
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
-  | .rowidName => "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns"
+  | .rowidName => "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, as the SET column of a table without an INTEGER PRIMARY KEY, or in an INSERT column list; name the table's columns"
   | .joinOperator => "this join operator is refused by SQLite and not modeled; write JOIN, LEFT JOIN or a comma"
   | .laterTableInOn => "an ON condition that names a table joined after it is not modeled; move the condition to WHERE or to the later join"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"

@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.RowLocalAddColumn
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -117,6 +118,16 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
       split
       · exact Effect.satisfies_of_database valid rfl
       · exact rowsKeys_satisfies (catalogSupportedLaws limits) rules clock target _ valid _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries valid
+        fun literals => Effect.satisfies_of_effectDatabase
+          (((runStatement_plain_rowsOnly clock counters parameters _ database target
+            (.inr (.inr (.inl ⟨literals, clauses, returning, algorithm, subqueries, rfl⟩)))).catalog).symm ▸ valid)
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules valid
+        fun _ _ _ plain conflict => rowsKeys_satisfies (catalogSupportedLaws limits) rules clock target _ valid plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none =>

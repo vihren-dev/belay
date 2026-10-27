@@ -16,7 +16,7 @@ initial database, because the resolver gives sources of the initial origin only 
 def Resolved.Statement.readsInitial : Resolved.Statement → Bool
   | .query main inner => main.readsInitial || inner.any Resolved.Query.readsInitial
   | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop ..
-  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _
+  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _
   | .setting .. => false
 
 /-- For every query and subqueries, if the statement {lit}`query subqueries` reads no initial database, then

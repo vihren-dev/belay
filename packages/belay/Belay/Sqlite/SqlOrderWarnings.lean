@@ -35,7 +35,7 @@ open Lean Elab Term Belay.Sqlite.Model Translation
 def takesRowsByLimit : Syntax.Statement → Bool
   | .select (limit := limit) (offset := offset) .. => limit.isSome || offset.isSome
   | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .pragma _
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- Whether the statement is a query that takes rows with {lit}`LIMIT` or {lit}`OFFSET`, has no
@@ -45,7 +45,7 @@ def limitsWithoutOrder : Syntax.Statement → Bool
   | statement@(.select (source := source) (orderBy := orderBy) (compound := compound) ..) =>
     takesRowsByLimit statement && orderBy.isEmpty && (source.isSome || compound.isSome)
   | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .pragma _
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- The text of the risk warning. It does not say that the results differ. -/

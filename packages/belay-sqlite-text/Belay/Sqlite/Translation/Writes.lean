@@ -29,7 +29,15 @@ def transaction (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syn
   let statement : Syntax.Statement := match keyword with | "BEGIN" => .begin | "ROLLBACK" => .rollback | _ => .commit
   return leaf statement command.start command.stop
 
-/-- The VALUES rows of an INSERT source in text order; a SELECT source is refused. -/
+/-- Whether the {lit}`select` node of an INSERT is a {lit}`VALUES` list, alone, and not a query: the form
+that {lit}`valueRows` reads. -/
+def isValuesSource (tree : SqlTree) (node : ParseNode) : Bool :=
+  tree.symbols node == ["selectnowith"] &&
+    tree.symbols (tree.children node)[0]! == ["oneselect"] &&
+    [["values"], ["mvalues"]].contains (tree.symbols (tree.children (tree.children node)[0]!)[0]!)
+
+/-- The VALUES rows of an INSERT source in text order; a trigger body refuses a query source here, and the
+INSERT statement of a query is {lit}`insertQuery`. -/
 def valueRows (tree : SqlTree) (node : ParseNode) : TranslateM (Located (List (List Syntax.Expr))) := do
   let selectNode := (← require tree node ["selectnowith"])[0]!
   let one := (← require tree selectNode ["oneselect"])[0]!
@@ -68,10 +76,38 @@ def columnList (tree : SqlTree) (columns : ParseNode) : TranslateM (Located (Opt
 def subqueryList (items : Array (Located Syntax.Subquery)) (command : ParseNode) : Located (List Syntax.Subquery) :=
   sequence items command.start command.stop
 
+/-- {lit}`INSERT [OR algorithm] INTO table [(columns)] SELECT ... [ON CONFLICT ...] [RETURNING columns]`, and
+{lit}`REPLACE INTO`, with an optional ordinary WITH prefix (ADR 0017, S6; ADR 0019, D4). The query
+is read as a {lit}`SELECT` statement is, with the definitions of the WITH prefix and its nested queries
+in the subqueries of the source. Which text SQLite's grammar accepts is the parser's decision. -/
+def insertQuery (tree : SqlTree) (command : ParseNode) (parts : Array ParseNode) :
+    TranslateM (Located Syntax.Statement) := do
+  let algorithm ← insertAlgorithm tree parts[1]!
+  let (conflicts, returned) ← noSubqueries inWriteClause (conflictClauses tree parts[6]!)
+  let table := (← require tree parts[3]! ["nm"])[0]!
+  let columns ← columnList tree parts[4]!
+  let (clauses, items) ← statementSubqueries do
+    withDefinitions queryMappers tree parts[0]!
+    queryClauses tree parts[5]!
+  let tableName ← identifierName tree table
+  let results ← returning tree command returned
+  let subqueries := subqueryList items parts[5]!
+  let source : Located Syntax.SelectBody := composite
+    { columns := clauses.columns.value, source := clauses.source.value, joins := clauses.joins.value,
+      filter := clauses.filter.value, groupBy := clauses.groupBy.value, orderBy := clauses.orderBy.value,
+      limit := clauses.limit.value, offset := clauses.offset.value, subqueries := subqueries.value,
+      having := clauses.having.value, distinct := clauses.distinct.value, compound := clauses.compound.value }
+    parts[5]!.start parts[5]!.stop (clauses.selectSpans subqueries)
+  return composite (.insertSelect tableName.value columns.value source.value conflicts.value algorithm.value
+      results.value) command.start command.stop
+    #[tableName.span, columns.span, source.span, conflicts.span, algorithm.span, results.span]
+
 /-- {lit}`INSERT [OR algorithm] INTO table [(columns)] VALUES rows [ON CONFLICT ...] [RETURNING columns]`,
-and {lit}`REPLACE INTO`, with an optional ordinary WITH prefix. -/
+and {lit}`REPLACE INTO`, with an optional ordinary WITH prefix; the INSERT of a query is
+{lit}`insertQuery`. -/
 def insert (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"]
+  if !isValuesSource tree parts[5]! then return ← insertQuery tree command parts
   let algorithm ← insertAlgorithm tree parts[1]!
   let (conflicts, returned) ← noSubqueries inWriteClause (conflictClauses tree parts[6]!)
   let table := (← require tree parts[3]! ["nm"])[0]!

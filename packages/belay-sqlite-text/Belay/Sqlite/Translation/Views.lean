@@ -1,9 +1,12 @@
 import Belay.Sqlite.Translation.Mappers
+import Belay.Sqlite.Translation.NameTokens
 
 set_option doc.verso true
 
 /-! CREATE VIEW uses the existing query translator and indexed subquery list.
-The model retains this syntax until a statement uses the view. -/
+The model retains this syntax until a statement uses the view. SQLite names an unaliased
+column of a view by its text and a rename rewrites that text, so the body records the name tokens
+of its result columns ({lit}`recordingNameTokens`). -/
 
 namespace Belay.Sqlite.Translation
 
@@ -19,7 +22,7 @@ def createView (tree : SqlTree) (command : ParseNode) : TranslateM (Located Synt
   let name ← identifierName tree parts[4]!
   let columns ← queryColumnNames tree parts[6]!
   let body := parts[8]!
-  let (clauses, items) ← statementSubqueries (queryClauses tree body)
+  let (clauses, items) ← recordingNameTokens (statementSubqueries (queryClauses tree body))
   let query := clauses.subquery (missing body.start body.stop) body.start body.stop
   let subqueries := sequence items body.start body.stop
   return composite (.createView name.value (!parts[3]!.children.isEmpty) columns.value query.value subqueries.value)

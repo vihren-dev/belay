@@ -70,7 +70,7 @@ info: [{ start := 26, stop := 30, message := "no such column: nmae" },
 info: [{ start := 26, stop := 27, message := "no such column: b" },
  { start := 46,
    stop := 51,
-   message := "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns" }]
+   message := "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, as the SET column of a table without an INTEGER PRIMARY KEY, or in an INSERT column list; name the table's columns" }]
 -/
 #guard_msgs in
 #eval diagnosticsOf "CREATE TABLE t(a); SELECT b FROM t; SELECT a, rowid FROM t; SELECT c FROM t"

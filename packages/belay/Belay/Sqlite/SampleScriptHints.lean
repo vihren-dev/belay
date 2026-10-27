@@ -43,6 +43,13 @@ def statementHints : Syntax.Statement → SchemaHints
   | .insert table columns rows conflicts _ returning subqueries =>
     let hints := writeHints table (columns.getD []) rows.flatten returning subqueries
     { hints with expressions := hints.expressions.append (conflictHints conflicts) }
+  | .insertSelect table columns body conflicts _ returning =>
+    let written := writeHints table (columns.getD []) [] returning []
+    let query := body.subqueries.foldl (fun hints query => hints.append (subqueryHints query))
+      (queryHints body.columns body.source body.joins body.filter body.groupBy body.orderBy body.limit body.offset
+        body.having)
+    let hints := written.append query
+    { hints with expressions := hints.expressions.append (conflictHints conflicts) }
   | .update table assignments filter returning subqueries =>
     writeHints table (assignments.map (·.1)) (assignments.map (·.2) ++ filter.toList) returning subqueries
   | .delete table filter returning subqueries => writeHints table [] filter.toList returning subqueries

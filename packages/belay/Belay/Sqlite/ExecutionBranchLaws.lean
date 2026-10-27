@@ -17,7 +17,8 @@ theorem Sql.Branch.actual {α : Type} (program : Sql α) :
     simp only [Sql.runFrom]
     cases step : runScriptStep runContext clock index connection statement values with
     | ended reason => exact .stopped step
-    | continued output next => exact .continued step (.actual output) (later output clock (index + 1) next)
+    | continued output next others =>
+      exact Sql.Branch.continued_own step (.actual output) (later output clock (index + 1) next)
 
 /-- For every pure program and proposed result, the branch relation holds exactly when
 that result returns the pure value, leaves the full connection unchanged, and has no outputs.
@@ -42,32 +43,59 @@ theorem Sql.branch_stopped_iff {α : Type} {statement values} {rest : Output →
   · intro branch
     cases branch with
     | stopped other => cases step.symm.trans other; rfl
-    | continued other _ _ => cases step.symm.trans other
+    | continued other _ _ _ => cases step.symm.trans other
   · rintro rfl; exact .stopped step
 
-/-- For a continuing step, a proposed branch is exactly an allowed selected output followed
-by a branch of its continuation from the actual next connection and index. The selected
-output prefixes that branch's trace. Proof sketch: invert the branch constructors. -/
-theorem Sql.branch_continued_iff {α : Type} {statement values} {rest : Output → Sql α}
-    {clock index connection actual next} (step :
-      runScriptStep runContext clock index connection statement values = .continued actual next)
+/-- For a continuing step with no further execution ({lit}`others = []`, as for every statement that is no
+INSERT from a query), the chosen execution of a branch is the step's own. Proof sketch: the only
+execution of the step is its own ({name}`RunStep.executions`). -/
+theorem Sql.Branch.found_eq {clock index connection statement values actual next found}
+    (_step : runScriptStep runContext clock index connection statement values = .continued actual next [])
+    (member : found ∈ (RunStep.continued actual next []).executions) :
+    found = { output := actual, next } := by
+  simpa [RunStep.executions] using member
+
+/-- For a continuing step, a proposed branch is exactly a chosen execution of the statement
+({name}`RunStep.executions`), an allowed selected output of that execution, and a branch of the
+continuation from the next connection of that execution and the next index. The selected output
+prefixes that branch's trace. Proof sketch: invert the branch constructors. -/
+theorem Sql.branch_continued_executions_iff {α : Type} {statement values} {rest : Output → Sql α}
+    {clock index connection actual next others} (step :
+      runScriptStep runContext clock index connection statement values = .continued actual next others)
     (result : SqlRun α) : (.exec statement values rest : Sql α).Branch clock index connection result ↔
-      ∃ selected later, OutputChoice actual selected ∧ (rest selected).Branch clock (index + 1) next later ∧
+      ∃ found ∈ (RunStep.continued actual next others).executions, ∃ selected later,
+        OutputChoice found.output selected ∧ (rest selected).Branch clock (index + 1) found.next later ∧
         result = { later with outputs := selected :: later.outputs } := by
   constructor
   · intro branch
     cases branch with
     | stopped other => cases step.symm.trans other
-    | continued other choice later =>
+    | continued other member choice later =>
       cases step.symm.trans other
-      exact ⟨_, _, choice, later, rfl⟩
-  · rintro ⟨selected, later, choice, branch, rfl⟩
-    exact .continued step choice branch
+      exact ⟨_, member, _, _, choice, later, rfl⟩
+  · rintro ⟨found, member, selected, later, choice, branch, rfl⟩
+    exact .continued step member choice branch
+
+/-- For a continuing step, a proposed branch is exactly an allowed selected output followed
+by a branch of its continuation from the actual next connection and index. The selected
+output prefixes that branch's trace. A step with no further execution ({lit}`others = []`, as for every
+statement that is no INSERT from a query; the proof {lit}`single` is found by {lit}`rfl` when the step's type shows it) has the step's own execution as its only one. Proof sketch:
+{name}`Sql.branch_continued_executions_iff` with the one execution of the step. -/
+theorem Sql.branch_continued_iff {α : Type} {statement values} {rest : Output → Sql α}
+    {clock index connection actual next others} (step :
+      runScriptStep runContext clock index connection statement values = .continued actual next others)
+    (result : SqlRun α) (single : others = [] := by rfl) :
+    (.exec statement values rest : Sql α).Branch clock index connection result ↔
+      ∃ selected later, OutputChoice actual selected ∧ (rest selected).Branch clock (index + 1) next later ∧
+        result = { later with outputs := selected :: later.outputs } := by
+  subst single
+  rw [Sql.branch_continued_executions_iff step]
+  simp [RunStep.executions]
 
 /-- Every permitted branch preserves validity of the current database and any open
 transaction snapshot, assuming both are valid initially under the pinned profile.
 Proof sketch: induction on the branch uses the existing single-step validity theorem;
-all choices share that step's actual next connection. -/
+every execution of the step keeps validity ({name}`runScriptStep_valid`). -/
 theorem Sql.Branch.valid {α : Type} {program : Sql α} {clock index connection result}
     (branch : program.Branch clock index connection result)
     (valid : connection.state.Holds (Database.Valid Profile.pinned)) :
@@ -75,7 +103,7 @@ theorem Sql.Branch.valid {α : Type} {program : Sql α} {clock index connection 
   induction branch with
   | pure => exact valid
   | stopped => exact valid
-  | continued step _ _ later =>
-    exact later (runScriptStep_valid runContext _ _ _ _ rfl rfl valid step)
+  | continued step member _ _ ih =>
+    exact ih (runScriptStep_valid runContext _ _ _ _ rfl rfl valid _ (by rw [step]; exact member))
 
 end Belay.Sqlite

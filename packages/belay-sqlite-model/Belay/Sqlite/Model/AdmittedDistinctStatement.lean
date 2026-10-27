@@ -7,6 +7,7 @@ import Belay.Sqlite.Model.AdmittedSchemaStatements
 import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -91,6 +92,15 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
       split
       · exact Effect.satisfies_of_database distinct rfl
       · exact rowsKeys_satisfies rowidsDistinctFacts.laws rules clock target _ distinct _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries distinct
+        fun literals => runStatement_upsert_rowidsDistinct clock counters parameters target literals clauses returning algorithm subqueries
+          distinct
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules distinct
+        fun _ _ _ plain conflict => rowsKeys_satisfies rowidsDistinctFacts.laws rules clock target _ distinct plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none =>

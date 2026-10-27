@@ -25,11 +25,13 @@ theorem Sql.SucceedsFrom.allOk {α : Type} (program : Sql α) :
   | pure value => intro clock index connection _; rfl
   | exec statement values rest later =>
     intro clock index connection success
-    simp only [Sql.SucceedsFrom, Sql.runFrom] at success ⊢
+    simp only [Sql.runFrom]
     cases step : runScriptStep runContext clock index connection statement values with
-    | ended reason => simp [step] at success
-    | continued output next =>
-      rw [step] at success
+    | ended reason => simp [Sql.SucceedsFrom, step] at success
+    | continued output next others =>
+      simp only [Sql.SucceedsFrom, step] at success
+      replace success := success { output, next } (by simp [RunStep.executions])
+      unfold Sql.ExecutionSucceeds at success
       have continues := (runScriptStep_continued step).2
       have tail := later output clock (index + 1) next success.2.1
       simpa [List.allOk, success.1, continues] using tail
@@ -59,7 +61,7 @@ theorem Sql.succeedsFrom_map {α β : Type} (function : α → β) (program : Sq
     simp only [Sql.map, Sql.SucceedsFrom]
     split
     · rfl
-    · rename_i output next step
+    · rename_i output next others step
       simp only [later]
 
 end Belay.Sqlite

@@ -61,7 +61,7 @@ def databaseLiteral? (database : Expr) : Option Expr :=
 def isRollback : Syntax.Statement → Bool
   | .rollback => true
   | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
-  | .dropIndex .. | .begin | .commit | .insert .. | .update .. | .delete .. | .select .. | .pragma _
+  | .dropIndex .. | .begin | .commit | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- The places after one more statement of a script: a {lit}`CREATE TABLE` replaces the place of
@@ -73,7 +73,7 @@ def stepCreatedSlots (bytes : ByteArray) (slots : List TableSlot) (item : Locate
     slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
   | .dropTable name _ => slots.filter (·.name.folded != name.folded)
   | .createView .. | .createIndex .. | .addColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
-  | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
+  | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ | .createTrigger ..
   | .dropTrigger .. => slots
 
 /-- The places of the {lit}`CREATE TABLE` statements that make the tables a script leaves, in the

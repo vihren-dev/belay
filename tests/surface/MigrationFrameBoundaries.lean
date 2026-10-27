@@ -11,7 +11,7 @@ open Belay.Sqlite Belay.Sqlite.Model ExecutionViewComparisonExamples
 /-- A deterministic continued step with a constant returned value has one branch.
 Proof sketch: invert the step, fix its selected output, and invert the pure tail. -/
 private theorem constant_branch {α : Type} {statement values clock index connection output next}
-    (step : runScriptStep runContext clock index connection statement values = .continued output next)
+    (step : runScriptStep runContext clock index connection statement values = .continued output next [])
     (only : ∀ selected, OutputChoice output selected → selected = output) (value : α) (result : SqlRun α) :
     (Sql.exec statement values (fun _ => .pure value)).Branch clock index connection result ↔
       result = { outputs := [output], connection := next, value := some value } := by
@@ -24,7 +24,7 @@ private theorem constant_branch {α : Type} {statement values clock index connec
     subst tail
     rfl
   · rintro rfl
-    exact .continued (rest := fun _ => .pure value) step (.actual output) (.pure value _ _ _)
+    exact Sql.Branch.continued_own (rest := fun _ => .pure value) step (.actual output) (.pure value _ _ _)
 
 /-- This migration stores its statement-indexed clock value while returning no SQL output. -/
 def clockWrite : Sql Unit :=

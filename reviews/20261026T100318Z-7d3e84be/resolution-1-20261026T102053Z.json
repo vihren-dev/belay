@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T10:20:53+00:00",
+  "finding": "20261026T100318Z-7d3e84be#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "insertRowidTarget returns the rowid-name restriction for INSERT column lists of both INSERT forms; examples added"
+}

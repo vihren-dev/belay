@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.SelectResolution
 import Belay.Sqlite.Model.Resolution.WriteResolution
+import Belay.Sqlite.Model.Resolution.InsertQueries
 import Belay.Sqlite.Model.Resolution.CommonTableWrites
 import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.Updates
@@ -27,7 +28,8 @@ A pragma resolves with {name}`resolveStatementPragma`: {lit}`PRAGMA foreign_keys
 state's setting outside a transaction and nothing inside one, as SQLite does, and
 {lit}`PRAGMA recursive_triggers = value` changes it also inside one. SELECT and supported
 writes expand ordinary WITH definitions before their expressions resolve. A statement that is not
-SELECT, INSERT, UPDATE or DELETE has no trace. -/
+SELECT, INSERT, UPDATE or DELETE has no trace. INSERT from a query resolves with
+{name}`resolveInsertQueryTraced`. -/
 def resolveStatementRun (context : ResolveContext) (state : ResolveState) :
     Syntax.Statement → Traced NodeRestriction (Resolved.Statement × ResolveState)
   | .begin => pure (.begin, { state with saved := state.saved.getD state.catalog })
@@ -53,6 +55,9 @@ def resolveStatementRun (context : ResolveContext) (state : ResolveState) :
     state.withWriteTraced context (resolveCommonTableWriteTraced context state.catalog 6 table (fun _ => [])
       subqueries (fun index => resolveInsertTraced context state.catalog table columns
         (rows.map (List.map (Syntax.Expr.reindex index))) conflicts algorithm returning))
+  | .insertSelect table columns body conflicts algorithm returning =>
+    state.withWriteTraced context
+      (resolveInsertQueryTraced context state.catalog table columns body conflicts algorithm returning)
   | .update table assignments filter returning subqueries =>
     state.withWriteTraced context (resolveCommonTableWriteTraced context state.catalog 4 table (writtenScope table)
       subqueries (fun index => resolveUpdateTraced context state.catalog table

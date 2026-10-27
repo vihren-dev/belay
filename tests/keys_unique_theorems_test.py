@@ -2,7 +2,7 @@
 rest only on the standard axioms.
 
 The statement theorem `runStatement_keysUnique`, the run theorems `runSqlFrom_keysUnique`,
-`runSql_keysUnique` and `runScriptFrom_keysUnique`, and the lookup lemma
+`runSql_keysUnique` and `runScriptAllFrom_keysUnique`, and the lookup lemma
 `Database.KeysUnique.lookup` are in the root import of the model. The check file restates each
 formula, so a change that weakens a formula fails here, and it refuses `sorryAx`,
 `ofReduceBool` and `_native` in the `#print axioms` output (`compile_checks`).
@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 THEOREMS = ["runStatement_keysUnique", "runSqlFrom_keysUnique", "runSql_keysUnique",
-            "runScriptFrom_keysUnique", "Database.KeysUnique.lookup"]
+            "runScriptAllFrom_keysUnique", "Database.KeysUnique.lookup"]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 """The axioms of Lean's logic that a proof of the model may use; any other axiom, such as
@@ -42,9 +42,9 @@ example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (i
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile Database.KeysUnique)) :
-    (runScriptFrom context clock index connection script).connection.state.Holds
-      (Database.AdmittedWith profile Database.KeysUnique) :=
-  runScriptFrom_keysUnique context clock index script execution same holds
+    ∀ run ∈ runScriptAllFrom context clock index connection script,
+      run.connection.state.Holds (Database.AdmittedWith profile Database.KeysUnique) :=
+  runScriptAllFrom_keysUnique context clock index script execution same holds
 example {database : Database} (unique : database.KeysUnique) {position : Nat} {table : Table}
     (found : database.table position = some table) {key : UniqueKey}
     (member : key ∈ database.catalog.uniqueKeys position table.shape) (probe : Row) :

@@ -1,13 +1,14 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
+Created 2026-10-24. Status: DONE (2026-10-26): the owner merged the judge change (PR #262) and part 2 (PR #261) on 2026-10-26. Part 1 (split API and accepted mapped-NULL/action
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
 Part 2 is implemented and passed `just test-full` and `just verdict` (section "Part-2 acceptance"
 at the end): the ADD COLUMN execution correction, the ADD COLUMN preservation laws, the run
 contracts of the schema statements, the matrix in ADR 0022 and the action and DDL necessity
-fixtures. Separate corpus-v54 evidence (the judge change) and the whole-task checks remain open.
+fixtures. The corpus-v54 evidence (the judge change, PR #262) and the whole-task checks are complete
+(section "Done (2026-10-26)" at the end).
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -1342,3 +1343,9 @@ Nix gates on the tree of `b1952587` (the status-only follow-up changes no source
 - `just test-scheduled-checks`: exit 0, `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
 
 The task stays OPEN until the owner approves the judge change (the lock) and it is merged.
+
+## Done (2026-10-26)
+
+The owner approved and merged the judge change with corpus-v54 (PR #262) and part 2 (PR #261)
+on 2026-10-26; `integrity/judge.lock.json` on main has the `corpus-v54` entry. The task-end
+checks are in the section above. The task is DONE.

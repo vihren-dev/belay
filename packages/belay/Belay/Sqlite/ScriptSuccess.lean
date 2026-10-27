@@ -18,34 +18,69 @@ theorem Script.run_outputs (script : Script) (db : Database) (env : Env) :
   rw [Sql.run_outputs, send, Sql.runFrom_send]
   rfl
 
-/-- For every list of statements, clock, index and connection, sending the statements
+/-- For every list of statements, clock, index and connection, if sending the statements succeeds on
+every branch, the model's own run of the statements has no error or ending output. The converse holds
+for statements that have one execution each ({lit}`Sql.succeedsFrom_sendStatements`). Proof sketch:
+induction on the statements; the model's own execution is one of the executions of the first statement, so
+it succeeds, and mapping the accumulated outputs leaves success unchanged. -/
+theorem Sql.allOk_of_succeedsFrom_send (statements : List (Syntax.Statement × List Value)) :
+    ∀ (clock : Option Clock) (index : Nat) (connection : Connection),
+      (sendStatements statements).SucceedsFrom clock index connection →
+        (runScriptFrom runContext clock index connection statements).outputs.allOk = true := by
+  induction statements with
+  | nil => intro clock index connection _; simp [runScriptFrom, List.allOk]
+  | cons head tail later =>
+    rcases head with ⟨statement, values⟩
+    intro clock index connection success
+    cases step : runScriptStep runContext clock index connection statement values with
+    | ended reason => simp [sendStatements, Sql.SucceedsFrom, step] at success
+    | continued output next others =>
+      have quiet := (runScriptStep_continued step).2
+      simp only [sendStatements, Sql.SucceedsFrom, step] at success
+      have own := success { output, next } (by simp [RunStep.executions])
+      unfold Sql.ExecutionSucceeds at own
+      have rest := later clock (index + 1) next
+        ((Sql.succeedsFrom_map _ _ _ _ _).mp own.2.1)
+      simp only [runScriptFrom, step]
+      cases output <;> simp_all [List.allOk, Output.isError, Output.endsRun]
+
+/-- For every list of statements with one execution each ({name}`ScriptConditionsWith` for statements that
+are no INSERT from a query without rules), clock, index and connection, sending the statements
 succeeds on every branch exactly when their model run has no error or ending output.
 Scripts do not choose later statements from earlier results. Proof sketch: induction on
 the statements; mapping the accumulated outputs leaves success unchanged, so all alternative
-continuations require the same remaining script. -/
+continuations require the same remaining script. The direction from success to the model run holds without
+the condition ({name}`Sql.allOk_of_succeedsFrom_send`). -/
 theorem Sql.succeedsFrom_sendStatements (statements : List (Syntax.Statement × List Value)) :
     ∀ (clock : Option Clock) (index : Nat) (connection : Connection),
-      (sendStatements statements).SucceedsFrom clock index connection ↔
-        (runScriptFrom runContext clock index connection statements).outputs.allOk = true := by
+      ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
+      ((sendStatements statements).SucceedsFrom clock index connection ↔
+        (runScriptFrom runContext clock index connection statements).outputs.allOk = true) := by
   induction statements with
-  | nil => intro clock index connection; simp [sendStatements, Sql.SucceedsFrom, runScriptFrom, List.allOk]
+  | nil => intro clock index connection _; simp [sendStatements, Sql.SucceedsFrom, runScriptFrom, List.allOk]
   | cons head tail later =>
     rcases head with ⟨statement, values⟩
-    intro clock index connection
-    simp only [sendStatements, Sql.SucceedsFrom, runScriptFrom]
+    intro clock index connection single
+    simp only [sendStatements, runScriptFrom]
     cases step : runScriptStep runContext clock index connection statement values with
-    | ended reason => simp [List.allOk, Output.isError, Output.endsRun]
-    | continued output next =>
+    | ended reason => simp [Sql.SucceedsFrom, step, List.allOk, Output.isError, Output.endsRun]
+    | continued output next others =>
       have quiet := (runScriptStep_continued step).2
-      simp only [Sql.succeedsFrom_map, later]
+      obtain ⟨noOthers, restSingle⟩ := ScriptConditionsWith.single_step single step
+      rw [Sql.succeedsFrom_continued step noOthers]
+      unfold Sql.ExecutionSucceeds
+      simp only [Sql.succeedsFrom_map, later clock (index + 1) next restSingle]
       cases output <;> simp_all [List.allOk, Output.isError, Output.endsRun]
 
-/-- For every script and database predicate, the script succeeds exactly when its public
+/-- For every script and database predicate, when no statement of the script is written as INSERT from a query,
+the script succeeds exactly when its public
 run has no error or ending output for every database satisfying the predicate and every
 complete environment. Both sides hold vacuously when no database satisfies the predicate.
-Proof sketch: {name}`Sql.succeedsFrom_sendStatements` removes the unused result branches;
+Proof sketch: {name}`Sql.succeedsFrom_sendStatements` removes the unused result branches, with the condition of
+one execution from {name}`ScriptConditionsWith.of_not_insertSelect`;
 {name}`Sql.runFrom_send` and {name}`Sql.run_outputs` identify the public outputs. -/
-theorem Succeeds.script_iff (script : Script) (predicate : Database → Prop) :
+theorem Succeeds.script_iff (script : Script) (predicate : Database → Prop)
+    (single : ∀ entry ∈ script.statements, entry.1.isInsertSelect = false) :
     Succeeds script predicate ↔
       ∀ db, predicate db → ∀ env : Env, env.Complete → (db.run script env).outputs.allOk = true := by
   simp only [Succeeds, Database.run, Sql.run_outputs]
@@ -53,7 +88,9 @@ theorem Succeeds.script_iff (script : Script) (predicate : Database → Prop) :
     (sendStatements script.statements).SucceedsFrom env.clock 0 (db.raw.connection env.counters)) ↔
     (∀ db, predicate db → ∀ env : Env, env.Complete →
       ((sendStatements script.statements).runFrom env.clock 0 (db.raw.connection env.counters)).outputs.allOk = true)
-  simp only [Sql.succeedsFrom_sendStatements, Sql.runFrom_send, SqlRun.ofScript]
+  simp only [Sql.succeedsFrom_sendStatements _ _ _ _
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ single),
+    Sql.runFrom_send, SqlRun.ofScript]
 
 /-- For every script, database and environment, if all default-run outputs succeed, the
 outputs also succeed in that environment. Proof sketch: no successful output ends at a
@@ -76,13 +113,15 @@ theorem Script.allOk_env {script : Script} {db : Database}
   rw [Script.run_env script db env noClock known]
   exact success
 
-/-- For every script and predicate, if every database satisfying the predicate has a
+/-- For every script and predicate, when no statement of the script is written as INSERT from a query, if every
+database satisfying the predicate has a
 successful default run, the script succeeds. This sufficient condition need not hold for a
 script that reads the clock. Proof sketch: {name}`Script.allOk_env` gives every complete
 environment, and {name}`Succeeds.script_iff` gives success. -/
 theorem Succeeds.of_default {script : Script} {predicate : Database → Prop}
+    (single : ∀ entry ∈ script.statements, entry.1.isInsertSelect = false)
     (success : ∀ db, predicate db → (db.run script).outputs.allOk = true) : Succeeds script predicate :=
-  (Succeeds.script_iff script predicate).mpr fun db holds env _ => Script.allOk_env (success db holds) env
+  (Succeeds.script_iff script predicate single).mpr fun db holds env _ => Script.allOk_env (success db holds) env
 
 /-- For every database and two scripts, under the hypotheses of {name}`Script.run_append`,
 their concatenation's public run has no error or ending output exactly when both the first

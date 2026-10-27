@@ -33,7 +33,7 @@ def Sql.runFrom {α : Type} (clock : Option Clock) (index : Nat) (connection : C
   | .exec statement values rest =>
     match runScriptStep runContext clock index connection statement values with
     | .ended reason => { outputs := [.unmodeled reason], connection, value := none }
-    | .continued output next =>
+    | .continued output next _ =>
       let later := (rest output).runFrom clock (index + 1) next
       { later with outputs := output :: later.outputs }
 
@@ -54,11 +54,13 @@ theorem Sql.runFrom_valid {α : Type} (clock : Option Clock) (program : Sql α) 
   | exec statement values rest hypothesis =>
     intro index connection holds
     unfold Sql.runFrom
-    have step := fun output next => runScriptStep_valid (profile := Profile.pinned) runContext clock index statement values
-      rfl rfl holds (output := output) (next := next)
+    have step := fun output next others (found : runScriptStep runContext clock index connection statement values =
+        .continued output next others) =>
+      runScriptStep_valid (profile := Profile.pinned) runContext clock index statement values rfl rfl holds
+        { output, next } (by rw [found]; simp [RunStep.executions])
     cases found : runScriptStep runContext clock index connection statement values with
     | ended reason => exact holds
-    | continued output next => exact hypothesis output (index + 1) (step output next found)
+    | continued output next others => exact hypothesis output (index + 1) (step output next others found)
 
 /-- For every program, database and environment: the database of the connection at the end of the run of
 {lit}`Sql.run` is valid under the pinned profile. This proof supplies the final bundled database.

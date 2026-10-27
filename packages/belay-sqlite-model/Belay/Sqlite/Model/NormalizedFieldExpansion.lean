@@ -72,11 +72,11 @@ theorem expansion_state {context : ResolveContext} {clock : Option Clock} {index
           counters } } ∧
       (runScriptFrom context clock index connection
         (expansionScript tableName name sourceName first second firstValues secondValues thirdValues fourthValues)).outputs.length = 4 := by
-  obtain ⟨o1, c1, s1, e1, success⟩ := successful_script_cons success
+  obtain ⟨o1, c1, _, s1, e1, success⟩ := successful_script_cons success
   obtain ⟨k1, h1⟩ := add_step (table := table) found present s1 e1
   have d1 : c1.state.database =
       connection.state.database.addColumn position (textColumn name table.shape.strict) .null := by rw [h1]
-  obtain ⟨o2, c2, s2, e2, success⟩ := successful_script_cons success
+  obtain ⟨o2, c2, _, s2, e2, success⟩ := successful_script_cons success
   have extended : c1.state.database.catalog.findTable tableName = some (position,
       { table.shape with columns := table.shape.columns ++ [textColumn name table.shape.strict] }) := by
     rw [d1]; exact findTable_addColumn (textColumn name table.shape.strict) found
@@ -88,9 +88,9 @@ theorem expansion_state {context : ResolveContext} {clock : Option Clock} {index
     rw [d1]; exact noneFiring
   obtain ⟨k2, h2⟩ := backfill_step (position := position) (source := source) table extended extendedPresent fresh
     sourceFound wide aliased plain (by rw [h1]; exact foreign) (by rw [h1]; exact recursive) noTrigger s2 e2
-  obtain ⟨o3, c3, s3, e3, success⟩ := successful_script_cons success
+  obtain ⟨o3, c3, _, s3, e3, success⟩ := successful_script_cons success
   obtain ⟨k3, h3⟩ := trigger_step first.1 first.2 s3 e3
-  obtain ⟨o4, c4, s4, e4, success⟩ := successful_script_cons success
+  obtain ⟨o4, c4, _, s4, e4, success⟩ := successful_script_cons success
   obtain ⟨k4, h4⟩ := trigger_step second.1 second.2 s4 e4
   have run : runScriptFrom context clock index connection
       (expansionScript tableName name sourceName first second firstValues secondValues thirdValues fourthValues) =

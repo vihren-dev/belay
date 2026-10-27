@@ -103,14 +103,15 @@ theorem Plan.Source.after_expansion {plan : Plan} {clock : Option Clock} {index 
   have ok : List.allOk (runScriptFrom runContext clock index connection
       (Model.NormalizedField.expansionScript plan.tableName plan.storedName plan.sourceName plan.first plan.second
         plan.firstValues plan.secondValues plan.thirdValues plan.fourthValues)).outputs = true :=
-    (Sql.succeedsFrom_sendStatements _ _ _ _).mp success
+    Sql.allOk_of_succeedsFrom_send _ _ _ _ success
   obtain ⟨counters, hconn, -⟩ := expansion_state (context := runContext) (clock := clock) (index := index)
     (connection := connection) (tableName := plan.tableName) (name := plan.storedName)
     (sourceName := plan.sourceName) source.site.table plan.first plan.second plan.firstValues plan.secondValues
     plan.thirdValues plan.fourthValues source.site.found source.site.present source.site.fresh
     source.site.sourceFound source.wide source.aliased source.site.plain source.foreignKeys
     source.recursiveTriggers source.site.noneFiring ok
-  obtain ⟨same, -⟩ := sendStatements_branch_shape _ _ _ _ run branch
+  obtain ⟨same, -⟩ := sendStatements_branch_shape _ _ _ _ run
+    (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ (expansion_noInsertSelect _ _ _ _ _ _ _ _ _)) branch
   have same' : run.connection = (runScriptFrom runContext clock index connection
       (Model.NormalizedField.expansionScript plan.tableName plan.storedName plan.sourceName plan.first plan.second
         plan.firstValues plan.secondValues plan.thirdValues plan.fourthValues)).connection := same

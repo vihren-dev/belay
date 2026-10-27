@@ -1,8 +1,9 @@
 # Table rebuild: query inserts and ALTER rewrites
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review and the
-completed query-source/view representation. No concurrent alternative catalog.
-Status: [progress](20261024-table-rebuild.status.md).
+Created 2026-10-24. Checked on 2026-10-26 against the code at `4fc773a5` and
+native SQLite 3.51.0; the check changed no requirement. Status: OPEN. The
+prerequisites have landed (section "Starting point"). No concurrent alternative
+catalog. Status: [progress](20261024-table-rebuild.status.md).
 Specs: [ADR 0019](../docs/adr-0019-guide-sql.md), D4 and slice 5;
 ADR 0017 S6's rebuild; ADR 0022's validity and separate foreign-key atoms.
 
@@ -20,9 +21,49 @@ materialization. This affects which error happens first and whether earlier
 writes survive FAIL. Do not always evaluate all rows first, and do not replace
 the accepted streaming/materialization work with a model restriction.
 
+On 2026-10-25 the owner selected possible write executions for plan-dependent
+behavior. Secondary-index choices can change rowids, partial writes and error
+precedence; even a total ORDER BY does not fix expression-evaluation barriers.
+Represent the permitted production traces and their resulting states explicitly.
+Do not claim that the model's fixed scan is the pinned planner's chosen plan,
+implement that planner, or narrow this task to plan-independent inserts.
+
 Only SQLite's default `legacy_alter_table = OFF` behavior is in scope. Existing
 restrictions on unrelated SQL remain explicit; this task does not add writable
 attached databases, virtual tables or INSTEAD OF triggers.
+
+## Starting point (checked 2026-10-26)
+
+- **Landed prerequisites.** Derived tables, ordinary CTEs and stored views
+  (`CatalogEntry.view`, `CatalogView`), the two foreign-key atoms with their
+  statement and run laws, the ADD COLUMN default correction, and the model name
+  trace (`resolveStatementTraced`; DONE 2026-10-26) are in the code.
+- **Missing forms.** `Syntax.Statement.insert` takes VALUES rows only, and
+  `addColumn` is the only ALTER form. The frontend refuses a SELECT source,
+  RENAME and DROP COLUMN.
+- **What a catalog stores.** A table holds resolved forms by position: CHECK
+  conditions, generated expressions, index keys and filters, and the child
+  columns of its foreign keys. A foreign key names its parent table and parent
+  columns as written. A view and a trigger are syntax (`CatalogView`,
+  `CatalogTrigger`) that resolves against the catalog at each use. A rename
+  therefore rewrites a table or index by name only. It rewrites views, triggers
+  and foreign-key parents by binding. A DROP COLUMN also shifts the column
+  positions in the resolved forms.
+- **Stored source text is rewritten and observable.** In 3.51.0 the output name
+  of an unaliased expression column of a view is the text of the expression, and
+  the label of an unnamed CHECK constraint is its text. A rename rewrites the
+  name tokens of this text. After `RENAME COLUMN a TO "Z z"` the view column
+  `a+1` is named `"Z z"+1`, and a nested `(select a from t t2 where t2.a > 0)`
+  becomes `(select "Z z" from t t2 where t2."Z z" > 0)`. After
+  `RENAME TO "u v"`, `t.a+1` is named `"u v".a+1`, and a failing
+  `CHECK(t.b > 0)` reports `u v`, because SQLite dequotes a label that starts
+  with a quote. The model syntax keeps this text as a string
+  (`ResultColumn.expression`, the CHECK label) and does not keep the place of its
+  name tokens. The implementer chooses how the model learns these places.
+- **Name trace.** It covers the queries and expressions of one statement. Its
+  gap list (status of the name trace) matters here: the trigger programs and
+  the CREATE and ALTER bodies are untraced, and a name inside a stored view has
+  the use site as its path (`exact = false`).
 
 ## Required outcomes
 
@@ -39,13 +80,33 @@ attached databases, virtual tables or INSTEAD OF triggers.
   ambiguities follow the pinned parser; the surface must not reinterpret text
   to make it parse differently. Existing RETURNING/upsert restrictions remain.
 - **Read and write timing is observable.** Source evaluation and row insertion
-  follow the pinned engine's streaming/materialization behavior, including
+  retain the pinned engine's streaming/materialization distinctions, including
   destination reads through views/CTEs/nested queries and row triggers. Sorting,
   grouping, DISTINCT, compounds and LIMIT/OFFSET retain their own evaluation
   and error behavior. A source-expression failure is not silently moved before
   an earlier insertion conflict, or after it when native evaluates it first.
   Existing plan-sensitive-query restrictions remain exact; they cannot justify
   refusing an otherwise supported streaming case.
+- **Plan-dependent executions preserve complete effects.** Define the admitted
+  source-production traces, including row order, evaluation barriers, source
+  errors and interaction with preceding insertions. Each resulting alternative
+  carries its own output/error, database, connection counters and other changed
+  execution state. A later statement runs from that alternative's state. Do not
+  merge states cell by cell or choose each later output independently. A source
+  row permutation alone cannot describe a sorter that evaluates a later error
+  before the first write. Mandated materialization, explicit ordering and
+  conflict semantics constrain the alternatives; they are not arbitrary runs.
+  State the abstraction's admitted choices without claiming that the pinned
+  planner realizes every choice. Include every supported native outcome.
+- **Execution and proof clients share the alternatives.** Extend the existing
+  statement/run and public branch interfaces to carry possible write states;
+  the current query-output-only `Output.oneOf` is insufficient. Prove that the
+  actual/canonical run is admitted and that run composition retains each
+  branch's reached context. Validity, FK laws, Succeeds, ordinary/fresh triples
+  and equivalence/migration laws quantify all admitted branches. Deterministic
+  statements remain the singleton case. No theorem about one chosen traversal
+  can stand in for a universal write claim. Share this execution meaning with
+  conformance rather than adding a second evaluator in the harness.
 - **Effects and failures are exact.** Preserve ABORT/FAIL/ROLLBACK/IGNORE/REPLACE,
   supported ON CONFLICT clauses, FK actions, trigger order and raises, partial
   writes, RETURNING output, change counters and last-insert state. Query rows
@@ -67,7 +128,10 @@ attached databases, virtual tables or INSTEAD OF triggers.
   aliases and unrelated objects keep their meaning. Detect ambiguities created
   by a rename where SQLite rejects them. Preserve native declared/output names,
   quoting-dependent expression text and later resolution behavior. A successful
-  rename preserves cell values, rowids, affinity and collation.
+  rename preserves cell values, rowids, affinity and collation. The binding of
+  each name is the one that `resolveStatementTraced` records; the rename adds no
+  second lookup rule. It closes the trace gaps that it needs, and does not read
+  a name of a stored view or trigger by spelling.
 - **Dropping a column rewrites storage and rejects live dependencies.**
   `ALTER TABLE t DROP COLUMN a` removes the allowed column and its stored cells,
   preserving the remaining cells' positions/values, rowids and table order as
@@ -116,6 +180,33 @@ sorting and compounds; all supported conflict paths, RETURNING, FK actions and
 triggers; failures at prepare, source evaluation and insertion; and a later
 statement that observes partial effects. Cover LIMIT certainty explicitly.
 
+Retain the paired native index probes: source `(id,x)=(1,20),(2,10)` scanned
+without and with an index on x produces different destination rowid/value
+associations, and different retained writes when destination UNIQUE value 10
+already exists under OR FAIL. Also retain the ORDER BY k probe with source
+`(id,x,k)=(1,2,1),(2,1,2),(3,-9223372036854775808,3)` and destination UNIQUE 1:
+without an index on k, overflow precedes any insertion; with the index, 2 is
+inserted before UNIQUE fails. Both observed executions must be admitted, with
+their own later-query observations and counters. These witnesses do not prove
+that the represented alternatives are complete; kernel laws must establish
+the production/run composition contract for all admitted branches.
+
+Cover matching INSERT triggers with WHEN 0, UPDATE-only triggers, RETURNING,
+destination reads in dead expression branches and unused CTEs. These distinguish
+compiled-read/materialization rules from textual occurrence or runtime reachability.
+Preserve the eligible `INSERT INTO dest SELECT * FROM src` transfer case's source
+rowids, including gaps; an explicit destination column list can instead allocate
+new rowids. Keep this source-row identity through the shared insertion boundary.
+
+Conformance checks membership in permitted complete executions, including later
+state observations. It must reject a mixture of outputs from incompatible
+branches. Add kernel fixtures where one admitted write branch violates a claimed
+postcondition, and positive all-branch examples. Target mutants that collapse
+the alternatives to a canonical scan, evaluate all source expressions eagerly,
+or pair one branch's output with another branch's state. Preserve existing
+deterministic claims and classify every prediction change. Any needed evidence
+format, claim or judge change follows the separate reviewed judge-PR workflow.
+
 The ALTER matrix includes table/column names colliding or differing by case,
 quoted identifiers and literal text, schema-qualified references where already
 supported, aliases/shadowing, keys and expression/partial indexes, generated
@@ -130,13 +221,28 @@ proofs for forbidden axioms; no native computation certifies a theorem. Use
 finite timeouts and existing test infrastructure. Target relevant mutants only
 with `-k`, including eager-source evaluation and incomplete schema rewrites.
 
-Capture frozen predictions before changes. Preserve all existing mustAgree
-claims; classify every changed prediction against native behavior. New authored
+Capture frozen predictions before changes: the base `4fc773a5` has 55 files, one
+for each corpus input. After each model change compare all of them. A prediction
+may change only for a case that the new forms make supported. Preserve all
+existing mustAgree claims; classify every changed prediction against native
+behavior (the verdict forbids DISAGREE in the claimed corpora). New authored
 corpus/claim/lock changes belong to a separate judge PR that needs owner
 approval before merge. The implementation PR leaves the lock unchanged.
 
 Three acceptance parts: query-source inserts; table/column renames; DROP COLUMN
-and integrated rebuild/proof coverage. Each coherent commit gets focused checks,
+and integrated rebuild/proof coverage. Part plan (owner decisions of 2026-10-26):
+part 1 is done in two stages. Stage (a), which every option needs, is the syntax,
+text translation, codecs and the SQLite-ordered preparation of INSERT SELECT.
+Stage (b) is the exact source production and the insertion fold; it waits for the
+possible-executions interface task, and the coordinator says when to merge it.
+Part 2 starts with a syntax change that records the place and quoting of the name
+tokens of stored source text (view result-column text, CHECK raw text) and the
+quoting of the new name of an ALTER, because the renames must rewrite them token
+by token; the translator records them in the syntax. The change is split by what
+exists: the text of result columns (`Syntax.SourceText`, `Syntax.NameToken`) first,
+as it needs no new statement form; the CHECK raw text and the quoting of the new
+name come with the rename forms and the catalog storage that read them (see the
+status file). Each coherent commit gets focused checks,
 dev-build, relevant dev-verdict and independent review. Each part ends with
 post-review `just test-full` and `just verdict`. Task end runs `just test-nix`
 and `just test-scheduled-checks`. Only Nix results are acceptance evidence.
@@ -150,13 +256,29 @@ The model's Resolution/WriteResolution, Resolution/InsertCells, RowEngineInsert,
 RowEngineKeySteps, RowEngineTriggers, ForeignKeyPhases, StatementStep and query
 evaluator own the current behavior. Translation/Writes.valueRows currently
 refuses SELECT sources. The slice-4 view/CTE catalog and resolution contracts
-must be integrated before implementation. Do not maintain a second representation.
+are in the code (`Resolution/QuerySourceExpansion`, `CatalogView`); extend them.
+Do not maintain a second representation.
 
 Pinned sqlite3Insert and readsTable in parser/upstream/sqlite3.c distinguish
 streaming and temporary-table paths. sqlite3AlterRenameTable,
 sqlite3AlterRenameColumn and sqlite3AlterDropColumn define rewrite/validation
 behavior. Their token-aware references matter because expression spelling can
 be an output name. A textual global replacement is not an adequate model.
+
+The read-only `adr17_table_rebuild_readiness.md` and
+`table-rebuild-probes/source_timing.{py,json}` under the workspace research notes
+retain the pinned source locations and 28 bounded native probes. The note's
+section "Readiness conclusion and owner decision" is superseded by the decision
+of 2026-10-25; its line numbers fit the pinned `parser/upstream/sqlite3.c`
+(SHA256 `dc58f0b5`). Existing
+QueryFunctions/Subqueries collect complete rows and lose source stop positions;
+PossibleOutput changes query observations but does not supply write states.
+The accepted extension must expose these missing execution contracts, including
+their public proof and conformance consumers. Owner decision of 2026-10-26: the
+alternatives interface (the possible executions of a write, with its public
+proof and conformance consumers) is the separate task
+`plans/20261026-possible-write-executions.task.md`, implemented in its own
+workspace; this task consumes it.
 
 Separate source-production/error contracts from existing row insertion and
 catalog rewrite/validation contracts where they have different responsibilities.

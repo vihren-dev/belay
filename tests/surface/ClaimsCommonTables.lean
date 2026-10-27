@@ -75,7 +75,7 @@ example : (match Model.resolveStatement runContext commonTableTrigger.raw.connec
   | .ok (.insert .., _) => true
   | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
   | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
-  | .ok (.rollback, _) | .ok (.update .., _) | .ok (.upsert .., _) | .ok (.delete .., _)
+  | .ok (.rollback, _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.upsert .., _) | .ok (.delete .., _)
   | .ok (.prepareError .., _) | .ok (.query .., _) | .ok (.setting .., _) => false) = true := by decide +kernel
 
 /-- Execution retains keyReady's existing restriction on nested writes with subqueries;
@@ -83,4 +83,4 @@ successful preparation does not turn this stop into a SQLite error or a successf
 example : (match Model.runScriptStep runContext none 0 commonTableTrigger.raw.connection
     commonTableTriggerInsert.statements[0].1 [] with
   | .ended _ => true
-  | .continued _ _ => false) = true := by decide +kernel
+  | .continued _ _ _ => false) = true := by decide +kernel

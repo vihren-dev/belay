@@ -27,7 +27,7 @@ theorem Resolved.Statement.runCondition_of_link {profile : Profile} {database : 
   | createIndex target name index => exact Catalog.createIndex_supported applied
   | addColumn target column _ => exact database.addColumnCondition_of_admitted admitted target
   | drop positions rules => exact Catalog.DropClosed.dropCondition link
-  | createTable | createView | createTrigger | begin | commit | rollback | insert | update | upsert
+  | createTable | createView | createTrigger | begin | commit | rollback | insert | update | upsert | insertSelect
   | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement: the statement meets its condition for "not null"
@@ -39,7 +39,7 @@ theorem Resolved.Statement.notNullCondition_of_admitted {profile : Profile} {dat
   cases statement with
   | addColumn target column _ => exact database.rowsWideAt_of_admitted admitted target
   | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
-  | update | upsert | delete | prepareError | query | setting => trivial
+  | update | upsert | insertSelect | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement that meets {name}`Resolved.Statement.SchemaLink` on the
 catalog of the database: the statement meets its condition for "types fit"
@@ -53,7 +53,7 @@ theorem Resolved.Statement.typesFitCondition_of_link {profile : Profile} {databa
   | addColumn target column _ =>
     exact ⟨database.rowsWideAt_of_admitted admitted target, Database.strictDefaultFitsAt_of_fits link⟩
   | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
-  | update | upsert | delete | prepareError | query | setting => trivial
+  | update | upsert | insertSelect | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement: the statement meets its condition for "checks hold"
 ({name}`Resolved.Statement.ChecksHoldCondition`) on the database. Proof sketch: for ADD COLUMN the rows are
@@ -67,7 +67,7 @@ theorem Resolved.Statement.checksHoldCondition_of_admitted {profile : Profile} {
     exact ⟨database.rowsWideAt_of_admitted admitted target,
       Database.checksReadBelowAt_of_valid admitted.catalogSupported target⟩
   | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
-  | update | upsert | delete | prepareError | query | setting => trivial
+  | update | upsert | insertSelect | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement that meets the hypotheses of
 {name}`Resolved.Statement.runCondition_of_link`: the statement meets the conditions of the four atoms together

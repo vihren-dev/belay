@@ -29,8 +29,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      some ⟨names, returnedRows context returning (Resolved.rowsAt context [] rows),\n"
         "        some (run.counts.changes.getD 0)⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
-        "      pure [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
-        "      pure [(resolved, (alias.map (·.text)).getD text)]"),
+        "      pure [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text.text))]",
+        "      pure [(resolved, (alias.map (·.text)).getD text.text)]"),
     "constant_not_evaluated": (CELLS,
         "  else pure (.value (operand.1.eval (.plain 0) []))",
         "  else pure (.value (match operand.1 with\n"

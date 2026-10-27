@@ -97,7 +97,28 @@ def profile_parser(runtime_root: Path, version: str = "3.51.0") -> TextParser:
 def parse_sql(runtime_root: Path) -> Callable[..., Translation]:
     """Translate SQL with the runtime's translation program, with the grammar of the requested
     SQLite release (`packages/belay-sqlite-text`)."""
-    def translate_with_selected_grammar(sql: str, version: str = "3.51.0") -> Translation:
-        """Translate with the grammar of the release's supported profile."""
-        return profile_parser(runtime_root, version).translate(sql.encode(), "fixture.sql")
+    def translate_with_selected_grammar(sql: str, version: str = "3.51.0", name_tokens: bool = False) -> Translation:
+        """Translate with the grammar of the release's supported profile. The name tokens of the
+        text of result columns (`Syntax.SourceText`) are removed from the answer unless `name_tokens`
+        is true, so that the tests of other syntax need not repeat them; `tests/syntax_name_tokens_test.py`
+        checks them."""
+        from conformance.sql_text import Translation as TranslationAnswer
+        translation = profile_parser(runtime_root, version).translate(sql.encode(), "fixture.sql")
+        if name_tokens:
+            return translation
+        stripped = without_name_tokens(translation.answer)
+        assert isinstance(stripped, dict)
+        return TranslationAnswer(stripped)
     return translate_with_selected_grammar
+
+
+def without_name_tokens(value: object) -> object:
+    """The JSON with each source text object, a text with its name tokens, replaced by the plain text,
+    which is the form of a text without tokens."""
+    if isinstance(value, list):
+        return [without_name_tokens(item) for item in value]
+    if isinstance(value, dict):
+        if set(value) == {"text", "tokens"} and isinstance(value["text"], str):
+            return value["text"]
+        return {key: without_name_tokens(item) for key, item in value.items()}
+    return value

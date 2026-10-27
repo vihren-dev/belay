@@ -310,6 +310,14 @@ largest, and a DROP of a table that leaves its index. ADR 0017 S4 removed the re
 on 2026-10-24: `Run.ofValid` takes the preservation proof and keeps the exact model result. No proof failed. The predictions, the claims and the judge lock do not
 change.
 
+Amended 2026-10-26 (task `plans/20261026-possible-write-executions.task.md`): a statement can have
+several admitted executions (ADR 0019, D4), so the run theorems of scripts quantify over the complete
+executions of the script. The theorems that this ADR names as `runScriptFrom_X` (for example
+`runScriptFrom_valid`) are now `runScriptAllFrom_X`: for every run in `runScriptAllFrom`, the end
+connection satisfies the invariant. `runScriptStep_valid` states it for every execution of one
+statement. Every statement of the model has one execution, so the run of the surface is the one such
+run, and no assumption of a theorem changed.
+
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
 store passed the checks, after the whole write or after each row, and a proof follows those
 steps, also for the rows that a FAIL failure keeps. DELETE removes rows, and each constraint

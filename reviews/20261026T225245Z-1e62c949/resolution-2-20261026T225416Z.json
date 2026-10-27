@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26T22:54:16+00:00",
+  "finding": "20261026T225245Z-1e62c949#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "module doc now qualifies the claim: only scripts with no INSERT from a query"
+}

@@ -6,7 +6,10 @@ set_option doc.verso true
 /-! Replay the original SQL with SQLite shell bindings. Construction and parameter setup
 can change connection counters, so this replay path requires statements to read neither a
 clock nor counters. Other environments remain usable by certification and can yield unknown
-replay. Every model step comes from the existing script runner. -/
+replay. Every model step comes from the existing script runner. The witness that the replay reports
+identifies the model execution that it follows: a statement with more than one possible execution
+({name}`Belay.Sqlite.Model.RunStep.executions`) has no replay, because the report would have to
+choose one execution for SQLite to confirm. -/
 
 namespace Belay.Sqlite.Replay
 
@@ -65,7 +68,8 @@ def mentionsBindingTable (text : String) : Bool :=
 
 /-- Read environment dependencies and observations through the model's ordinary step.
 The shell replay supports no clock/counter reads, including reads in subqueries and triggers.
-An unmodeled step returns an unavailable result, never a native SQL failure. -/
+An unmodeled step returns an unavailable result, never a native SQL failure. A statement with more
+than one possible execution is unavailable too, because the shell's run is one execution. -/
 def observations (database : Database) (script : Script) : Except String (List Output) := do
   let mut connection := database.raw.connection
   let mut outputs := []
@@ -74,11 +78,14 @@ def observations (database : Database) (script : Script) : Except String (List O
       (fun resolved after clock run transition =>
         if resolved.readsClock || !resolved.counterReads.isEmpty then
           .error "replay of clock or connection-counter reads is unavailable"
-        else .ok (ranScriptStep values connection resolved after clock run transition))
+        else .ok (ranScriptStep index values connection resolved after clock run transition))
       runContext none index connection statement values
     match ← step with
     | .ended reason => throw reason
-    | .continued output next => outputs := outputs ++ [output]; connection := next
+    | .continued output next others =>
+      unless others.isEmpty do
+        throw s!"statement {index + 1} has more than one possible execution in the model, and the replay follows only one; write a statement that has one execution, or use the checked witness without replay"
+      outputs := outputs ++ [output]; connection := next
   return outputs
 
 /-- A replay whose construction and source match the checked values. Observations describe

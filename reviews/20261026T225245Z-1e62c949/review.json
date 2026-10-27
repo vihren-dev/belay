@@ -1,0 +1,64 @@
+{
+  "caller": "claude",
+  "commit": "1e62c949b4f50e84e44aa54583afa6fc3f5d8cc6",
+  "date": "2026-10-26T22:52:45+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/AddColumnEffect.lean",
+    "packages/belay/Belay/Sqlite/CertifiedQueryCommutation.lean",
+    "packages/belay/Belay/Sqlite/PlainUpdateEffect.lean",
+    "packages/belay/Belay/Sqlite/PlainWriteFrames.lean",
+    "packages/belay/Belay/Sqlite/ReadAnalysis.lean",
+    "packages/belay/Belay/Sqlite/ReadCertificate.lean",
+    "packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/PlainWriteFrame.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ReadOnlyFrame.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261024-table-rebuild.status.md",
+    "tests/surface/S6RulesEffects.lean",
+    "tests/surface/S6RulesQueryPattern.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261026T225245Z-1e62c949#1",
+      "line": 140,
+      "path": "packages/belay/Belay/Sqlite/ReadCertificate.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring claims that a step has one execution, but the theorem proves only `fromQuery = false`, and a missing clock or unknown counter can leave it with no execution. Fix: state that a continuing step has one execution and retain that qualification for `single_other`."
+    },
+    {
+      "id": "20261026T225245Z-1e62c949#2",
+      "line": 13,
+      "path": "packages/belay/Belay/Sqlite/CertifiedQueryCommutation.lean",
+      "rule": "R13",
+      "severity": "must",
+      "text": "The module documentation still claims uniform branches for every sent script, although INSERT-from-query scripts can reach different connections and the merged theorem now requires a single-execution premise. Fix: qualify this claim with the premise required by `sendStatements_branch_shape` and the syntactic restriction used by `commutesOn_send`."
+    }
+  ],
+  "id": "20261026T225245Z-1e62c949",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

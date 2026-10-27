@@ -27,6 +27,17 @@ def expansion (tableName name sourceName : Identifier) (first second : Identifie
   ⟨Model.NormalizedField.expansionScript tableName name sourceName first second firstValues secondValues
     thirdValues fourthValues⟩
 
+/-- For every expansion, none of its statements is written as INSERT from a query. Plain words: each
+statement of an expansion has one execution. Proof sketch: the statements are an ADD COLUMN, an UPDATE and two
+CREATE TRIGGER statements. -/
+theorem expansion_noInsertSelect (tableName name sourceName : Identifier) (first second : Identifier × CatalogTrigger)
+    (firstValues secondValues thirdValues fourthValues : List Value) :
+    ∀ entry ∈ (expansion tableName name sourceName first second firstValues secondValues thirdValues
+      fourthValues).statements, entry.1.isInsertSelect = false := by
+  intro entry member
+  simp only [expansion, Model.NormalizedField.expansionScript, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl <;> rfl
+
 /-- The lookup {lit}`SELECT id FROM t WHERE lower(source) = lower(?1)` as a query script with the value
 bound to its parameter. -/
 def originalLookupScript (tableName : Identifier) (alias : Option Identifier) (idName sourceName : Identifier)
@@ -73,7 +84,9 @@ structure Site (database : Database.Raw) (tableName idName sourceName storedName
 
 /-- For a database with a {name}`Site`, an expansion that succeeds, and two statements whose steps have
 equal outputs on the original connection and on any connection with the expanded database, the first
-statement translates into the second after the expansion. The equal-outputs premise must hold for every
+statement translates into the second after the expansion, when neither statement is written as INSERT from a query ({lit}`originalSingle` and
+{lit}`replacementSingle`: such a statement has one execution, and so has each statement of the
+expansion). The equal-outputs premise must hold for every
 clock index after the expansion and gets the table's row facts. The result covers the actual run and
 every raw or concrete branch. Proof sketch: success of the sent script gives the model run;
 {name}`expansion_state` gives its reached connection; every branch reaches the same connection
@@ -83,6 +96,7 @@ theorem translatesAt_of_outputs (tableName idName sourceName storedName : Identi
     (first second : Identifier × CatalogTrigger) (firstValues secondValues thirdValues fourthValues : List Value)
     (db : Database) (env : Env) (site : Site db.raw tableName idName sourceName storedName)
     (original replacement : Syntax.Statement) (value : Value)
+    (originalSingle : original.isInsertSelect = false) (replacementSingle : replacement.isInsertSelect = false)
     (outputs : site.table.RowsWide → site.table.RowsAliased → site.position < db.raw.rows.length →
       ∀ (expanded : Connection) (after : Nat),
         expanded.state.database =
@@ -105,7 +119,7 @@ theorem translatesAt_of_outputs (tableName idName sourceName storedName : Identi
   have ok : List.allOk (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters)
       (Model.NormalizedField.expansionScript tableName storedName sourceName first second firstValues
         secondValues thirdValues fourthValues)).outputs = true :=
-    (Sql.succeedsFrom_sendStatements _ _ _ _).mp reachedSuccess
+    Sql.allOk_of_succeedsFrom_send _ _ _ _ reachedSuccess
   obtain ⟨run, hrun⟩ : ∃ run, run = runScriptFrom runContext env.clock 0 (db.raw.connection env.counters)
       (Model.NormalizedField.expansionScript tableName storedName sourceName first second firstValues
         secondValues thirdValues fourthValues) := ⟨_, rfl⟩
@@ -119,13 +133,16 @@ theorem translatesAt_of_outputs (tableName idName sourceName storedName : Identi
       branch.connection = run.connection ∧ branch.outputs.length = run.outputs.length := by
     intro branch reached
     rw [hrun]
-    exact sendStatements_branch_shape _ _ _ _ branch reached
+    exact sendStatements_branch_shape _ _ _ _ branch
+      (ScriptConditionsWith.of_not_insertSelect runContext _ _ _ _ (expansion_noInsertSelect _ _ _ _ _ _ _ _ _)) reached
   have database : run.connection.state.database =
       expandedDatabase db.raw site.position site.source site.table storedName first second := by
     rw [hconn]
     rfl
   obtain ⟨actual, branches⟩ := sendStatements_single_observations original replacement [value] [value] env.clock
     env.clock 0 (0 + run.outputs.length) (db.raw.connection env.counters) run.connection
+    (fun _ after found => resolveStatement_single _ _ after original _ originalSingle found)
+    (fun _ after found => resolveStatement_single _ _ after replacement _ replacementSingle found)
     (outputs wide aliased aligned run.connection (0 + run.outputs.length) database)
   exact Migration.translatesAt_of_observations _ _ _ (ExecutionContext.initial db env) run.outputs.length
     run.connection success uniform actual branches
@@ -150,7 +167,7 @@ theorem queryTranslates (tableName : Identifier) (alias : Option Identifier)
       (fun db => Nonempty (Site db.raw tableName idName sourceName storedName)) := by
   intro db ⟨site⟩ env _
   exact translatesAt_of_outputs tableName idName sourceName storedName first second firstValues secondValues
-    thirdValues fourthValues db env site _ _ value fun wide aliased aligned expanded after reached =>
+    thirdValues fourthValues db env site _ _ value rfl rfl fun wide aliased aligned expanded after reached =>
     translate_step_outputs runContext env.clock 0 after (db.raw.connection env.counters) expanded
       (tableReference tableName alias) idName sourceName storedName text number value site.table site.position
       site.source site.id first second rfl rfl rfl site.found site.present aligned site.fresh site.idFound
@@ -171,7 +188,7 @@ theorem queryPreserves (tableName : Identifier) (alias : Option Identifier)
       (fun db => Nonempty (Site db.raw tableName idName sourceName storedName)) := by
   intro db ⟨site⟩ env _
   exact translatesAt_of_outputs tableName idName sourceName storedName first second firstValues secondValues
-    thirdValues fourthValues db env site _ _ value fun wide aliased aligned expanded after reached =>
+    thirdValues fourthValues db env site _ _ value rfl rfl fun wide aliased aligned expanded after reached =>
     preserve_step_outputs runContext env.clock 0 after (db.raw.connection env.counters) expanded
       (tableReference tableName alias) idName sourceName storedName text number value site.table site.position
       site.source site.id first second rfl rfl rfl site.found site.present aligned site.idFound

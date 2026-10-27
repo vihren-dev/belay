@@ -15,15 +15,16 @@ namespace Belay.Sqlite.Model
 /-- For the given property of databases and condition of statements: the statement theorem with the
 support check holds. For every clock value, counters, parameter list, resolved statement and database, if
 the database has the property, the statement meets its condition on the database, and the run passes
-the support check ({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies the
-property ({name}`Effect.Satisfies`): a success and a failure by a constraint (which keeps the database
+the support check ({name}`StatementRun.ready`), every admitted execution of the statement
+({name}`StatementRun.effects` of {name}`runStatement`) has an effect that satisfies the property
+({name}`Effect.Satisfies`): a success and a failure by a constraint (which keeps the database
 that the failure leaves) have the property, and every other failure requires nothing. A theorem of {name}`StatementKeeps` is one of this form that does
 not use the support check ({lit}`StatementKeeps.toReady`). -/
 def StatementKeepsReady (property : Database → Prop) (condition : Resolved.Statement → Database → Prop) : Prop :=
   ∀ (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database),
     property database → condition statement database →
       (runStatement clock counters parameters statement database).ready = true →
-      (runStatement clock counters parameters statement database).effect.Satisfies property
+      ∀ effect ∈ (runStatement clock counters parameters statement database).effects, effect.Satisfies property
 
 variable {property : Database → Prop} {condition : Resolved.Statement → Database → Prop}
 
@@ -44,7 +45,7 @@ theorem advance_holds_ready (keeps : StatementKeepsReady property condition) (po
     (ready : (SqlState.statementRun state (state.clock position) parameters statement).ready = true) :
     (advance position statement parameters state).Holds property :=
   SqlTransition.counted_holds _ (advanceWith_holds position statement holds
-    (keeps _ _ parameters statement _ holds.1 met (Bool.and_eq_true_iff.mp ready).1))
+    (keeps _ _ parameters statement _ holds.1 met (Bool.and_eq_true_iff.mp ready).1 _ (StatementRun.effect_mem_effects _)))
 
 /-- The run theorem of {name}`runSqlFrom` for a statement theorem with the support check. For every
 position, script and state: if the statement theorem holds ({name}`StatementKeepsReady`), the state
@@ -90,9 +91,9 @@ theorem StatementKeepsReady.and {other : Database → Prop} {otherCondition : Re
     (first : StatementKeepsReady property condition) (second : StatementKeepsReady other otherCondition) :
     StatementKeepsReady (fun database => property database ∧ other database)
       (fun statement database => condition statement database ∧ otherCondition statement database) :=
-  fun clock counters parameters statement database holds met ready database' kept =>
-    ⟨first clock counters parameters statement database holds.1 met.1 ready database' kept,
-      second clock counters parameters statement database holds.2 met.2 ready database' kept⟩
+  fun clock counters parameters statement database holds met ready effect member database' kept =>
+    ⟨first clock counters parameters statement database holds.1 met.1 ready effect member database' kept,
+      second clock counters parameters statement database holds.2 met.2 ready effect member database' kept⟩
 
 /-- For every two properties with the first stronger than the second: a state that satisfies
 {name}`SqlState.Holds` for the first satisfies it for the second. Proof sketch: apply the implication to

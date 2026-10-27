@@ -154,4 +154,8 @@ structure Query where
   compound : Option Compound := none
   deriving Repr, DecidableEq
 
+/-- Whether a query reads the table at the catalog position directly, as one of its sources. -/
+def Query.readsTable (position : Nat) (query : Query) : Bool :=
+  query.sources.any (·.source == .table position)
+
 end Belay.Sqlite.Model.Resolved

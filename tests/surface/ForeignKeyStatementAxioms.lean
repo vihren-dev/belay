@@ -9,10 +9,10 @@ import Belay.Sqlite.Model.ForeignKeyRuns
 #print axioms Belay.Sqlite.Model.rowReferences_statementKeeps
 #print axioms Belay.Sqlite.Model.runSqlFrom_rowReferences
 #print axioms Belay.Sqlite.Model.runSql_rowReferences
-#print axioms Belay.Sqlite.Model.runScriptFrom_rowReferences
+#print axioms Belay.Sqlite.Model.runScriptAllFrom_rowReferences
 #print axioms Belay.Sqlite.Model.Database.ParentSchemasCompatible.rowReferences_iff_selected
 #print axioms Belay.Sqlite.Model.foreignKeyAtoms_statementKeeps
 #print axioms Belay.Sqlite.Model.runStatement_foreignKeyAtoms
 #print axioms Belay.Sqlite.Model.runSqlFrom_foreignKeyAtoms
 #print axioms Belay.Sqlite.Model.runSql_foreignKeyAtoms
-#print axioms Belay.Sqlite.Model.runScriptFrom_foreignKeyAtoms
+#print axioms Belay.Sqlite.Model.runScriptAllFrom_foreignKeyAtoms

@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.InsertSelectKeeps
 import Belay.Sqlite.Model.AdmittedCatalogStatement
 import Belay.Sqlite.Model.AdmittedDistinctStatement
 import Belay.Sqlite.Model.AdmittedRangeWideStatements
@@ -41,38 +42,44 @@ limits: the property is {name}`Database.CatalogSupported`, and the condition is
 {name}`Resolved.Statement.AppliedValid`. Proof sketch: {name}`runStatement_catalogSupported`. -/
 theorem catalogSupported_statementKeeps (limits : Limits) :
     StatementKeepsReady (Database.CatalogSupported limits) (Resolved.Statement.AppliedValid limits) :=
-  fun clock counters parameters statement _ valid applied _ =>
-    runStatement_catalogSupported limits clock counters parameters statement valid applied
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ valid applied _ =>
+    runStatement_catalogSupported limits clock counters parameters statement valid applied)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rows shaped" in the form of {name}`StatementKeepsReady`, with no condition.
 Proof sketch: {name}`runStatement_rowsShaped`. -/
 theorem rowsShaped_statementKeeps : StatementKeepsReady Database.RowsShaped fun _ _ => True :=
-  fun clock counters parameters statement _ shaped _ _ => runStatement_rowsShaped clock counters parameters statement shaped
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ shaped _ _ => runStatement_rowsShaped clock counters parameters statement shaped)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rowids distinct" in the form of {name}`StatementKeepsReady`, with no condition.
 Proof sketch: {name}`runStatement_rowidsDistinct`. -/
 theorem rowidsDistinct_statementKeeps : StatementKeepsReady Database.RowidsDistinct fun _ _ => True :=
-  fun clock counters parameters statement _ distinct _ _ =>
-    runStatement_rowidsDistinct clock counters parameters statement distinct
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ distinct _ _ =>
+    runStatement_rowidsDistinct clock counters parameters statement distinct)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rowids in range" in the form of {name}`StatementKeepsReady`, with no condition.
 Proof sketch: {name}`runStatement_rowidsInRange`. -/
 theorem rowidsInRange_statementKeeps : StatementKeepsReady Database.RowidsInRange fun _ _ => True :=
-  fun clock counters parameters statement _ inRange _ ready =>
-    runStatement_rowidsInRange clock counters parameters statement inRange ready
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ inRange _ ready =>
+    runStatement_rowidsInRange clock counters parameters statement inRange ready)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rows wide" in the form of {name}`StatementKeepsReady`, with no condition.
 Proof sketch: {name}`runStatement_rowsWide`. -/
 theorem rowsWide_statementKeeps : StatementKeepsReady Database.RowsWide fun _ _ => True :=
-  fun clock counters parameters statement _ wide _ ready => runStatement_rowsWide clock counters parameters statement wide ready
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ wide _ ready => runStatement_rowsWide clock counters parameters statement wide ready)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rows stored" in the form of {name}`StatementKeepsReady`, with no condition. The
 property is "rows stored" and "rows wide", the atom that its theorem lists. Proof sketch:
 {name}`runStatement_rowsStored` and {name}`runStatement_rowsWide`. -/
 theorem rowsStored_statementKeeps : StatementKeepsReady Database.RowsStoredWide fun _ _ => True :=
-  fun clock counters parameters statement _ holds _ ready database kept =>
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ holds _ ready database kept =>
     ⟨runStatement_rowsStored clock counters parameters statement holds.1 holds.2 ready database kept,
-      runStatement_rowsWide clock counters parameters statement holds.2 ready database kept⟩
+      runStatement_rowsWide clock counters parameters statement holds.2 ready database kept⟩)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "rows aliased" in the form of {name}`StatementKeepsReady`. For every limits: the
 property is "rows aliased" and "the catalog is valid under the limits", the atom that its theorem lists,
@@ -80,9 +87,10 @@ and the condition is {name}`Resolved.Statement.AppliedValid`. Proof sketch: {nam
 and {name}`runStatement_catalogSupported`. -/
 theorem rowsAliased_statementKeeps (limits : Limits) :
     StatementKeepsReady (Database.RowsAliasedSupported limits) (Resolved.Statement.AppliedValid limits) :=
-  fun clock counters parameters statement _ holds applied ready database kept =>
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ holds applied ready database kept =>
     ⟨runStatement_rowsAliased limits clock counters parameters statement holds.1 holds.2 ready database kept,
-      runStatement_catalogSupported limits clock counters parameters statement holds.2 applied database kept⟩
+      runStatement_catalogSupported limits clock counters parameters statement holds.2 applied database kept⟩)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of all seven atoms together, in the form of {name}`StatementKeepsReady`. For every
 profile: the property is {name}`Database.Admitted` under the profile, and the condition is
@@ -90,7 +98,7 @@ profile: the property is {name}`Database.Admitted` under the profile, and the co
 theorems for the fields of the structure. -/
 theorem admitted_statementKeeps (profile : Profile) :
     StatementKeepsReady (Database.Admitted profile) (Resolved.Statement.AppliedValid profile.limits) :=
-  fun clock counters parameters statement _ admitted applied ready database kept =>
+  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ admitted applied ready database kept =>
     ⟨runStatement_catalogSupported profile.limits clock counters parameters statement admitted.catalogSupported
         applied database kept,
       runStatement_rowsShaped clock counters parameters statement admitted.rowsShaped database kept,
@@ -100,6 +108,7 @@ theorem admitted_statementKeeps (profile : Profile) :
       runStatement_rowsStored clock counters parameters statement admitted.rowsStored admitted.rowsWide ready
         database kept,
       runStatement_rowsAliased profile.limits clock counters parameters statement admitted.rowsAliased
-        admitted.catalogSupported ready database kept⟩
+        admitted.catalogSupported ready database kept⟩)
+    (fun _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model

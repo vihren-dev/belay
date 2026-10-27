@@ -2,6 +2,7 @@ import Belay.Sqlite.Model.AdmittedRowsOnly
 import Belay.Sqlite.Model.RowLocalAddColumn
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
+import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
 
@@ -110,6 +111,16 @@ theorem runStatement_rowsShaped (clock : Int) (counters : Counters) (parameters 
       split
       · exact Effect.satisfies_of_database shaped rfl
       · exact rowsKeys_satisfies rowsShapedLaws rules clock target _ shaped _ _
+  | insertSelect target cells query clauses returning algorithm subqueries rules =>
+    cases rules with
+    | none =>
+      exact runStatement_insertSelect_none_satisfies clock counters parameters target cells query clauses returning algorithm subqueries shaped
+        fun literals => Effect.satisfies_of_effectDatabase
+          ((runStatement_plain_rowsOnly clock counters parameters _ database target
+            (.inr (.inr (.inl ⟨literals, clauses, returning, algorithm, subqueries, rfl⟩)))).shaped shaped)
+    | some rules =>
+      exact runStatement_insertSelect_some_satisfies clock counters parameters target cells query clauses returning algorithm subqueries rules shaped
+        fun _ _ _ plain conflict => rowsKeys_satisfies rowsShapedLaws rules clock target _ shaped plain conflict
   | delete target filter returning subqueries rules =>
     cases rules with
     | none =>

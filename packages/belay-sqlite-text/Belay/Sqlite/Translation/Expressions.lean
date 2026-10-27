@@ -48,7 +48,7 @@ def token (tree : SqlTree) (node : ParseNode) : TranslateM ParseNode := do
 /-- An {lit}`nm` production or a name token as written, with its quotes removed. -/
 def plainName (tree : SqlTree) (node : ParseNode) : TranslateM (Located String) := do
   let item ← if node.children.isEmpty then pure node else token tree node
-  return leaf (dequote (tree.text item)) node.start node.stop
+  return { value := dequote (tree.text item), span := nameSpanOf node }
 
 /-- The name of an {lit}`nm` production or a name token as an {name}`Identifier`. -/
 def identifierName (tree : SqlTree) (node : ParseNode) : TranslateM (Located Identifier) :=
@@ -89,13 +89,15 @@ def quoteKind (text : String) : Syntax.QuoteKind :=
   | some '"' => .double
   | some '[' => .bracket
   | some '`' => .backtick
+  | some '\'' => .single
   | _ => .none
 
 /-- An identifier token, with how it was quoted. -/
 def identifier (tree : SqlTree) (node : ParseNode) : Located Syntax.Expr :=
   let text := tree.text node
-  composite (.identifier (Identifier.ofString (dequote text)) (quoteKind text)) node.start node.stop
-    #[spanOf node, spanOf node]
+  let named := composite (.identifier (Identifier.ofString (dequote text)) (quoteKind text)) node.start node.stop
+    #[nameSpanOf node, nameSpanOf node]
+  { named with span := { named.span with isName := true } }
 
 /-- The tokens of SQLite's {lit}`expr ::= ID|INDEXED|JOIN_KW` production: those three and the
 keywords of {lit}`%fallback ID` in the pinned {lit}`parse.y` of 3.51.0. The parse tree keeps a
