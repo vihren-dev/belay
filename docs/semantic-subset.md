@@ -22,7 +22,10 @@ The frontend maps these statements, and refuses every other statement as
   `ALTER TABLE … RENAME [COLUMN] a TO b` and `ALTER TABLE … DROP [COLUMN] a` (ADR 0019, D4). A drop
   removes the column and its cells, keeps the other cells, the rowids and the table order, and fails with the
   error of SQLite when a key, an index, a CHECK constraint, a generated column, a foreign key, a view or a
-  trigger still depends on the column (restriction `alter-drop` for the cases outside the model);
+  trigger still depends on the column (restriction `alter-drop` for the cases outside the model). The table
+  rebuild of the guide runs step by step: `CREATE TABLE`, `INSERT … SELECT`, `DROP TABLE` and a rename of the new
+  table to the name of the dropped one, which gives the foreign keys of the children their parent again; with
+  enforcement on, the `DROP TABLE` cascades, and with enforcement off the children keep their rows;
 - `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;

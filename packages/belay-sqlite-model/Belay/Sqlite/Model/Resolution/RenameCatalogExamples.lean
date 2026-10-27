@@ -72,6 +72,7 @@ def tableIn (catalog : Option Catalog) (position : Nat) : Option CatalogTable :=
   some ["a > 0"]
 -- The new catalog keeps the outline and the parents that the foreign keys select.
 #guard (renamedBy base tableToW "t" "t").any base.keepsOutline
+#guard (renamedBy base tableToW "t" "t").any base.sameOutline
 
 -- A column rename: the column, the label of its CHECK, the referenced column, the view and the trigger.
 #guard ((tableIn (renamedBy base columnToZ "t" "a") 0).map fun table => table.columns.map (·.name)) ==

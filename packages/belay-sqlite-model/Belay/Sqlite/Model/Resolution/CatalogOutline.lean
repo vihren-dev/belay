@@ -98,8 +98,21 @@ def Catalog.selectedParents (catalog : Catalog) : List (List ParentLink) :=
     | .index _ | .view _ | .trigger _ => []
 
 /-- Whether the new catalog is the old catalog after a change of names: it has the same outline
-({name}`Catalog.outline`) and its foreign keys select the same parents
-({name}`Catalog.selectedParents`). The run of a rename stores the new catalog only then. -/
+({name}`Catalog.outline`). The run of a rename stores the new catalog only then. A rename can make a foreign
+key find a parent that it did not find before (the key named the new name of the table, and no table had it),
+so the foreign keys of the new catalog need not select the same parents; the statement theorems about foreign keys
+name that as a condition of the rename ({lit}`Resolved.Statement.ForeignKeyRowsCondition`). -/
+def Catalog.sameOutline (old new : Catalog) : Bool := new.outline == old.outline
+
+/-- For every catalogs that pass {name}`Catalog.sameOutline`: the outlines are equal. Proof sketch: the test is an
+equality test. -/
+theorem Catalog.sameOutline_eq {old new : Catalog} (same : old.sameOutline new = true) :
+    new.outline = old.outline := by
+  simpa [Catalog.sameOutline] using same
+
+/-- Whether the new catalog is the old catalog after a change that keeps the outline and the parent
+that each foreign key selects ({name}`Catalog.outline`, {name}`Catalog.selectedParents`). The run of DROP COLUMN
+stores the catalog of its statement only then. -/
 def Catalog.keepsOutline (old new : Catalog) : Bool :=
   new.outline == old.outline && new.selectedParents == old.selectedParents
 

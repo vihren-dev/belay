@@ -25,7 +25,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
                                          ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4),
                                          ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 19), ("ForeignKeyDdlDropRuns.lean", 27),
                                          ("ForeignKeyDdlNecessity.lean", 6), ("ForeignKeyActionRuns.lean", 8),
-                                         ("ForeignKeyDdlViews.lean", 8)])
+                                         ("ForeignKeyDdlViews.lean", 8), ("RebuildRuns.lean", 7)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
     """ForeignKeyFacts, mapping transport and pragma laws compile through Belay's exported API.
 

@@ -60,7 +60,7 @@ theorem runStatement_keysUnique (clock : Int) (counters : Counters) (parameters 
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored unique fun runs =>
       unique.dropColumn runs
   | rewrite renamed =>
-    exact runStatement_rewrite_satisfies clock counters parameters renamed unique fun same _ => unique.of_outline same
+    exact runStatement_rewrite_satisfies clock counters parameters renamed unique fun same => unique.of_outline same
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_keysUnique clock counters parameters positions unique condition

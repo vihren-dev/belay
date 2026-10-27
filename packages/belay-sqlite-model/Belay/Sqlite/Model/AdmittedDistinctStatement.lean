@@ -54,7 +54,7 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored distinct fun runs =>
       distinct.dropColumn runs
   | rewrite renamed =>
-    exact runStatement_rewrite_satisfies clock counters parameters renamed distinct fun same _ => distinct.of_outline same
+    exact runStatement_rewrite_satisfies clock counters parameters renamed distinct fun same => distinct.of_outline same
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal (atom := Table.RowidsDistinct) clock counters parameters positions distinct

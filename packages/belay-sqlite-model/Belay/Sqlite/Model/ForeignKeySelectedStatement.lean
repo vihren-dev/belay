@@ -20,8 +20,8 @@ compatible with the selected mapping:
   moved ({name}`Catalog.DropKeepsSelection`).
 * DROP COLUMN requires nothing, as a rename does: the run stores the new catalog only when it keeps
   the outline and the selected parents of the catalog after the drop, and no foreign key names the column.
-* A rewrite of the catalog by a rename requires nothing: the run stores the new catalog only when
-  it keeps the outline and the selected parents.
+* A rewrite of the catalog by a rename requires that every foreign key keeps its selected parent
+  ({name}`Catalog.selectedParents`): the run stores the new catalog only when it keeps the outline.
 * Every other form keeps the catalog and requires nothing, whatever the rows and enforcement. -/
 def Resolved.Statement.ForeignKeySchemaCondition (database : Database) : Resolved.Statement → Prop
   | .createTable _ name shape => database.catalog.CreateKeepsSelection {name, entry := .table shape} ∧
@@ -33,7 +33,8 @@ def Resolved.Statement.ForeignKeySchemaCondition (database : Database) : Resolve
       database.catalog.AddColumnLocatesNewKeys target column
   | .drop positions _ => database.catalog.DropKeepsSelection positions
   | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete ..
-  | .prepareError _ | .query .. | .setting _ _ | .rewrite _ | .dropColumn .. => True
+  | .prepareError _ | .query .. | .setting _ _ | .dropColumn .. => True
+  | .rewrite renamed => renamed.selectedParents = database.catalog.selectedParents
 
 /-- For every clock, counters, parameters, statement and database with compatible parent schemas
 under the selected mapping: if the statement meets {name}`Resolved.Statement.ForeignKeySchemaCondition`,
@@ -74,8 +75,8 @@ theorem runStatement_parentSchemasCompatibleSelected (clock : Int) (counters : C
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored holds fun runs =>
       holds.dropColumn runs
   | rewrite renamed =>
-    exact runStatement_rewrite_satisfies clock counters parameters renamed holds fun same parents =>
-      holds.of_outline same parents
+    exact runStatement_rewrite_satisfies clock counters parameters renamed holds fun same =>
+      holds.of_outline same condition
   | begin | commit | rollback | insert | update | upsert | insertSelect | delete | prepareError | query | setting => exact retained trivial
 
 /-- Sufficient conditions for a resolved statement to keep both atoms under the selected mapping:
@@ -87,7 +88,8 @@ theorem runStatement_parentSchemasCompatibleSelected (clock : Int) (counters : C
 * DROP requires that every kept declaration keeps its selected parent, moved, and its located
   parents ({name}`Catalog.DropKeepsSelection`, {name}`Catalog.DropKeepsParents`). DROP with rules
   also requires admission, unique keys and the FK rule conditions of its implicit DELETE.
-* A rewrite of the catalog by a rename, or a DROP COLUMN, requires nothing.
+* A rewrite of the catalog by a rename requires that every foreign key keeps its selected parent
+  ({name}`Catalog.selectedParents`). A DROP COLUMN requires nothing.
 * Every other form requires {name}`Resolved.Statement.ForeignKeyRowsCondition`.
 For a removed referenced parent, which only the row atom survives, use the individual laws. -/
 def Resolved.Statement.ForeignKeyAtomsCondition (profile : Profile) (database : Database) :
@@ -153,8 +155,8 @@ theorem runStatement_foreignKeyAtomsSelected (profile : Profile) (clock : Int) (
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored holds fun runs =>
       ⟨holds.1.dropColumn runs, holds.2.dropColumn runs⟩
   | rewrite renamed =>
-    exact runStatement_rewrite_satisfies clock counters parameters renamed holds fun same parents =>
-      ⟨holds.1.of_outline same parents, holds.2.of_outline same parents⟩
+    exact runStatement_rewrite_satisfies clock counters parameters renamed holds fun same =>
+      ⟨holds.1.of_outline same condition, holds.2.of_outline same condition⟩
   | begin | commit | rollback | insert | update | upsert | insertSelect | delete | prepareError | query | setting =>
     exact written condition trivial
 

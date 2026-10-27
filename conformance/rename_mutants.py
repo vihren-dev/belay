@@ -26,11 +26,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      | some renamed => pure { name := match request.target with\n          | .table _ => request.new",
         "      | some renamed => pure { name := match request.target with\n          | .table _ => object.name"),
     "rewrite_always_rejected": (SQLITE + "Execution.lean",
-        "    if database.catalog.keepsOutline renamed then .ok { database with catalog := renamed }",
+        "    if database.catalog.sameOutline renamed then .ok { database with catalog := renamed }",
         "    if false then .ok { database with catalog := renamed }"),
     "rewrite_loses_rows": (SQLITE + "Execution.lean",
-        "    if database.catalog.keepsOutline renamed then .ok { database with catalog := renamed }",
-        "    if database.catalog.keepsOutline renamed then .ok { catalog := renamed, rows := database.rows.map fun _ => [] }"),
+        "    if database.catalog.sameOutline renamed then .ok { database with catalog := renamed }",
+        "    if database.catalog.sameOutline renamed then .ok { catalog := renamed, rows := database.rows.map fun _ => [] }"),
 }
 """One exact change per mutant; each measurement builds only its changed classifier closure."""
 

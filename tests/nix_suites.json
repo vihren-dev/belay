@@ -32,6 +32,7 @@
     "tests/conformance_insert_queries_test.py",
     "tests/conformance_renames_test.py",
     "tests/conformance_column_drops_test.py",
+    "tests/conformance_rebuilds_test.py",
     "tests/foreign_key_atoms_native_test.py",
     "tests/add_column_references_test.py",
     "tests/add_column_not_null_default_test.py"
@@ -127,7 +128,8 @@
     "tests/conformance_query_source_mutants_test.py",
     "tests/conformance_insert_query_mutants_test.py",
     "tests/conformance_rename_mutants_test.py",
-    "tests/conformance_column_drop_mutants_test.py"
+    "tests/conformance_column_drop_mutants_test.py",
+    "tests/conformance_rebuild_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"

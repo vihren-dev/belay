@@ -702,6 +702,12 @@ For each new public statement: the general form chosen, and what stays specific.
    `Resolved.Statement` needs an arm (about 25 theorems; see the open point below).
 4. The golden text in `tests/surface/DbBangErrors.lean` changed: the "not modeled" message lists ALTER TABLE DROP
    COLUMN.
+5. (Unit 3.8) The run of a rename (`Resolved.Statement.rewrite`) stores the new catalog when it has the same
+   outline (`Catalog.sameOutline`), no longer when the foreign keys also select the same parents (`Catalog.keepsOutline`
+   stays for DROP COLUMN). `runStatement_rewrite_satisfies` takes one premise less (`fun same => ...`). The conditions
+   `ForeignKeyRowsCondition` and `ForeignKeySchemaCondition` (and so `ForeignKeyAtomsCondition`) of a rewrite are now
+   `renamed.selectedParents = database.catalog.selectedParents` instead of `True`. S6 part 3 and the NOT IN task must
+   use the new shape at merge; a proof that calls `runStatement_rewrite_satisfies` with two lambda arguments needs one.
 
 #### Open point for a later cleanup task: the cost of a new `Resolved.Statement` constructor
 
@@ -759,8 +765,8 @@ For each new public statement: the general form chosen, and what stays specific.
   `column-drop-parent-unrelated`, which stays a restriction (a parent column that no key names). The kernel proves the
   table-only cases. `column-drop-index-reads-column` and its siblings check the `step` phase of the dependent-object
   errors. The prepare errors (primary key, UNIQUE, last column, view, missing table or column) have phase `prepare`.
-  No case disagrees. Savepoints are not modeled, so no savepoint case is included. `just dev-verdict corpus-v1
-  corpus-v4 corpus-v5` (the corpora with `ALTER TABLE ... DROP COLUMN`): no DISAGREE, no HARNESS_ERROR.
+  No case disagrees. Savepoints are not modeled, so no savepoint case is included. The Nix verdict of the part
+  gates (below, when written) covers the corpora with `ALTER TABLE ... DROP COLUMN`.
 - Mutants: `conformance/column_drop_mutants.py` (9 mutants: primary key, UNIQUE and last column checks removed, index
   that reads the column allowed, CHECK and generated dependencies ignored, rows lost, cell kept, run always
   rejected), run by name with `tests/conformance_column_drop_mutants_test.py`; all 9 killed. A mutant that needs a view
@@ -775,3 +781,33 @@ For each new public statement: the general form chosen, and what stays specific.
   `finishDropColumn_outcome` stays specific to the drop: it reads the definition of `finishDropColumn`.
 - Manual proof repairs in this unit: 0 beyond mechanical arms (about 10 one-line replacements of the old stub lemma
   and updated message constructors). Total for the task so far: about 165, none of them a non-mechanical arm.
+
+### Unit 3.8: the rebuild runs, and a rename may make a dangling foreign key find a parent
+
+- Finding: the guide's rebuild (create the new table, copy, drop the old table, rename the new one to the old name)
+  was out of scope. After the DROP TABLE, the foreign keys of the children name a table that does not exist; the rename of
+  the new table to that name makes them find a parent. The run of a rewrite stored the catalog only when every foreign
+  key selected the same parent, so this rename failed as `.unmodeled`, and the predictions of the corrected rebuild were
+  `MODEL_UNSUPPORTED`. The step does not need that test: it replaces the catalog and keeps the rows. Only the proofs of the
+  foreign-key atoms need the same selected parents, as they need `Catalog.CreateKeepsSelection` for a CREATE TABLE.
+- Change: the guard of the rewrite is `Catalog.sameOutline` (new); the foreign-key conditions of a rewrite are the
+  equality of the selected parents (shared-law change 5 above). The row-local, table, key and Valid statement theorems
+  lose an unused argument. The rename resolver is unchanged.
+- Consequence for S6: the rebuild's rename satisfies the weaker guard but not the new condition, so the foreign-key atoms
+  after the rebuild come from the database (what `PRAGMA foreign_key_check` reports), not from a frame law. This is the
+  same situation as for a CREATE TABLE that locates a dangling key; the universal claim is for S6.
+- Cases (`conformance/authored_rebuilds.py`, 11 cases; `tests/conformance_rebuilds_test.py`): the unsafe rebuild with
+  enforcement on (cascade through the implicit DELETE of DROP TABLE), the corrected rebuild with enforcement off and
+  `foreign_key_check` (clean, and with a violation after a parent row is left out), the default connection with
+  enforcement off, `PRAGMA foreign_keys` inside a transaction (no effect, both directions), a rename of the old table first
+  (the foreign keys of the children follow it), a view that blocks the rename, a rollback of the whole rebuild and the
+  rebuild of the child. The recorder fixes the enforcement state at the start of a case through the measured profile
+  (a pragma outside a transaction would change the profile), so the cases say it with the feature `fk-on`. Every case agrees
+  with native SQLite except `rebuild-drop-column-instead`, which stays a restriction (a drop of a column of a parent
+  table). The kernel proves the table-only cases.
+- Mutant: `conformance/rebuild_mutants.py` (`rename_keeps_selected_parents`: the old guard), killed by
+  `tests/conformance_rebuild_mutants_test.py`. The rename mutants of part 2 changed their text to `sameOutline`.
+- Generalization analysis: `Catalog.sameOutline` and `Catalog.sameOutline_eq` are general in the catalogs.
+  `runStatement_rewrite_satisfies` is more general than before (it needs only the outline). The condition for the rewrite
+  states the equality for any renamed catalog; the dangling-to-located case is the instance that it excludes.
+- Manual proof repairs in this unit: 6, all one-line changes of a lambda or a condition. Total for the task so far: about 171.

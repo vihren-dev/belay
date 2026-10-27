@@ -68,7 +68,7 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
       exact next
   | dropColumn position index stored =>
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored valid fun _ => next
-  | rewrite renamed => exact runStatement_rewrite_satisfies clock counters parameters renamed valid fun _ _ => next
+  | rewrite renamed => exact runStatement_rewrite_satisfies clock counters parameters renamed valid fun _ => next
   | drop positions rules =>
     cases rules with
     | none =>

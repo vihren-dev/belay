@@ -69,7 +69,7 @@ theorem runStatement_rowsShaped (clock : Int) (counters : Counters) (parameters 
     exact runStatement_dropColumn_satisfies clock counters parameters position index stored shaped fun runs =>
       shaped.dropColumn runs
   | rewrite renamed =>
-    exact runStatement_rewrite_satisfies clock counters parameters renamed shaped fun same _ => shaped.of_outline same
+    exact runStatement_rewrite_satisfies clock counters parameters renamed shaped fun same => shaped.of_outline same
   | drop positions rules =>
     cases rules with
     | none =>
