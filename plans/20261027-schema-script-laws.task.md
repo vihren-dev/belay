@@ -41,7 +41,12 @@ claim and no judge file. With its fixture, S6 automation part 3 is complete.
   - a success law: the database after success, given as a function of the
     database before it (catalog and rows);
   - a frame law: a table that the statement does not name keeps its rows,
-    with the table found by name in the database after the step.
+    with the table found by name in the database after the step, under an
+    explicit premise that excludes indirect effects on it. DROP TABLE runs an
+    implicit DELETE, so with foreign-key enforcement on it can change a child
+    table through a cascade (`RebuildRuns.unsafe_rebuild_cascades`); the
+    premise is, for example, enforcement off, or no foreign key of the
+    observed table that names the dropped table.
   Where a law exists at another level (`runStatement`, `step_rewrite_ok`,
   `runScriptStep_failed_frame`, `StatementKeeps.ofOwnRun`, the drop position
   laws), the new law builds on it instead of repeating it.
@@ -62,9 +67,11 @@ claim and no judge file. With its fixture, S6 automation part 3 is complete.
 - **A success law for INSERT SELECT.** For any target table and any source
   query whose productions are certain and fault-free, no execution fails and
   the result is the upsert of the produced rows, when the produced rows meet
-  the target's constraints. The constraints are: NOT NULL, distinct and absent
-  unique keys, valid rowids, CHECK constraints, no trigger, and no foreign-key
-  failure under the connection's enforcement state. It needs a law that the
+  the target's constraints. The constraints are: values that fit the column
+  types after affinity conversion (`typesFit`, which a STRICT table checks),
+  NOT NULL, distinct and absent unique keys, valid rowids, CHECK constraints,
+  no trigger, and no foreign-key failure under the connection's enforcement
+  state. It needs a law that the
   productions of a plain scan are the rows of the table, without a fault
   (`Query.productions`), and an induction over the rows for the upsert
   (`upsertRow_ok`, `upsertSummary_keysUnique`).
@@ -87,7 +94,9 @@ claim and no judge file. With its fixture, S6 automation part 3 is complete.
 
 - Kernel examples for each new step, frame and success law on concrete
   databases, including a failing case for each premise of the INSERT SELECT
-  success law (a NULL into NOT NULL, a duplicate key, a CHECK failure).
+  success law (a NULL into NOT NULL, a duplicate key, a CHECK failure, a
+  value that does not fit a STRICT column type), and a DROP TABLE with
+  enforcement on whose cascade changes the observed table.
 - A frame example where DROP TABLE of an earlier table moves the observed
   table, and the certificate still applies.
 - Native SQLite checks the concrete results that those examples state, and

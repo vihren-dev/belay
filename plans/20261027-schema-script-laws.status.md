@@ -16,3 +16,8 @@ stopped at a gap (2026-10-27)".
 
 - 2026-10-27: task specified on top of S6 automation part 3a (PR #283). The
   implementation starts on a base that contains the derived-column task.
+- 2026-10-27: spec review `20261027T130038Z-837cf158` (2 musts: the frame law must exclude a
+  cascade of DROP TABLE; the INSERT SELECT success law must require fitting column types). Coordinator
+  error: commit d37be705, described as the fix, holds only that review record, because the edit script
+  failed before it wrote the file; its review `20261027T130113Z-d37be705` has no findings, and the two
+  resolutions were recorded as fixed before the fix existed. The fix is the next commit.
