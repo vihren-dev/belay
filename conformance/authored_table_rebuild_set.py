@@ -6,11 +6,24 @@ order of the task, so that one corpus holds the native evidence of the table reb
 version 7 record: the migration runs on after an error and the record holds the counters of the writer.
 """
 
+from typing import Protocol
+
 from conformance import authored_column_drops, authored_insert_queries, authored_rebuilds, authored_renames
 from conformance.authored_queries import QueryCase
 from conformance.case_format import Json
 
-MODULES = (authored_insert_queries, authored_renames, authored_column_drops, authored_rebuilds)
+
+class CaseModule(Protocol):
+    """What the corpus needs of a case module: its cases and the native records of a chosen list of them."""
+
+    def definitions(self) -> list[QueryCase]:
+        """All cases of the module."""
+
+    def records(self, cases: list[QueryCase] | None = None) -> list[dict[str, Json]]:
+        """The native records of the given cases, or of all cases."""
+
+
+MODULES: tuple[CaseModule, ...] = (authored_insert_queries, authored_renames, authored_column_drops, authored_rebuilds)
 """The case modules of the task, in the order of its parts."""
 
 NOT_FROZEN = frozenset({"insert-query-index-order", "insert-query-index-order-keeps-other-rows"})
@@ -24,9 +37,9 @@ PART = "table-rebuild"
 """The part of every record of the joined corpus; a corpus shard has one part."""
 
 
-def module_cases(module: object) -> list[QueryCase]:
+def module_cases(module: CaseModule) -> list[QueryCase]:
     """The cases of one module that the corpus holds: all except those of `NOT_FROZEN`."""
-    return [case for case in module.definitions() if case.name not in NOT_FROZEN]  # type: ignore[attr-defined]
+    return [case for case in module.definitions() if case.name not in NOT_FROZEN]
 
 
 def definitions() -> list[QueryCase]:
@@ -37,7 +50,8 @@ def definitions() -> list[QueryCase]:
         raise ValueError("duplicate table-rebuild case names; rename one case")
     every_name = {case.name for module in MODULES for case in module.definitions()}
     if not NOT_FROZEN <= every_name:
-        raise ValueError(f"NOT_FROZEN names no case: {sorted(NOT_FROZEN - every_name)}")
+        raise ValueError(f"NOT_FROZEN names no case: {sorted(NOT_FROZEN - every_name)}; remove or correct "
+                         "these names in conformance.authored_table_rebuild_set.NOT_FROZEN")
     return cases
 
 
