@@ -41,7 +41,7 @@ def test_insert_select_column_information(runtime_root: Path, tmp_path: Path) ->
     """Our column information (`SqlNameInfo`, from the name trace of `resolveInsertQueryTraced`) reaches the
     real server for `INSERT ... SELECT`: the target column list has the same hover as the list of
     `INSERT ... VALUES`, the names of the query show their table, alias, declared type, affinity and
-    collation, the comparison of the `WHERE` clause shows its affinity, and the columns of a `WITH`
+    collation, the comparison of the `WHERE` clause shows the affinity that SQLite applies, and the columns of a `WITH`
     definition of the statement are derived columns."""
     server = LeanServer(runtime_root, tmp_path)
     try:
@@ -56,6 +56,11 @@ def test_insert_select_column_information(runtime_root: Path, tmp_path: Path) ->
         assert label.startswith("Column `label` of table `orders` (alias `o`).") and "Collation: NOCASE." in label, label
         qty = name_hover(server, uri, SOURCE, "qty = 1", 0, "qty")
         assert "Column `qty` of table `orders` (alias `o`)." in qty and "Declared type: INTEGER." in qty, qty
+        start = position(SOURCE, "qty = 1")
+        compared = server.request("textDocument/hover", {"textDocument": {"uri": uri},
+                                                          "position": {**start, "character": start["character"] + 4}})
+        assert isinstance(compared, dict) and "applies INTEGER affinity" in compared["contents"]["value"], compared
+        assert compared["range"] == {"start": start, "end": {**start, "character": start["character"] + 7}}, compared
         derived = name_hover(server, uri, SOURCE, "qty FROM orders WHERE qty = 2", 0, "qty")
         assert derived.startswith("Column `qty` of WITH definition `orders`.") and "Derived column" in derived, derived
         tokens = semantic_tokens(server, uri)

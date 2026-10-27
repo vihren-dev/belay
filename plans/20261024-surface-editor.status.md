@@ -549,7 +549,7 @@ The renames test adds a transaction that swaps two names and rolls back.
   text. The commit adds the missing server fixtures (suite `surfaceChecks`).
 - Test: `tests/surface_editor_insert_names_test.py`: the target column list has the same hover as the list of
   `INSERT ... VALUES` (equal text for three columns); the names of the query show table, alias, declared type, affinity and
-  collation; a comparison in `WHERE` shows its column; the columns of a `WITH` definition of the statement are derived
+  collation; the comparison in `WHERE` shows its affinity (hover of the whole comparison); the columns of a `WITH` definition of the statement are derived
   columns; `variable` token. Corrections at the exact name for a typo in the query, in the target column list, in a
   subquery, in the target table and in the source table; none for a distant name; the DQS warning for an unknown
   double-quoted name of the query with the quoted fix, none for a quoted existing column; an ambiguous name only has
@@ -558,4 +558,18 @@ The renames test adds a transaction that swaps two names and rolls back.
   after the first failing name of a statement, names in the body of a stored view, function and collation names.
   The target column list of an `INSERT ... SELECT` that the resolver rejects before it reaches the list (a view target,
   a rowid name) gets no column information.
+- Generalization analysis: no new statement.
+
+### Part 3, commit 5: the rebuild script of the guide and DROP COLUMN (2026-10-27)
+
+- Test only: `tests/surface_editor_rebuild_test.py` (real server, suite `surfaceChecks`) runs the guide's rebuild
+  (`CREATE TABLE p_new`, `INSERT INTO p_new SELECT ... FROM p`, `DROP TABLE p`, `ALTER TABLE p_new RENAME TO p`) as a
+  `sql!` script over the parent/child database, as the text of a `db!`, and as a `sql!` over that `db!`. In `sql!` the
+  copy source and the dropped table navigate to the database's `CREATE TABLE p`, the created `p_new` has no target and
+  the final `p` has none and lists only the kept columns. In `db!` the copy shows 0 and 2 rows, and a later `sql!` navigates
+  `p` to the `CREATE TABLE p_new` that made it. `DROP COLUMN` keeps the origin and the later hover lists the kept columns.
+- The fixture of `DROP COLUMN` uses a table that is not the parent of a foreign key: the model restricts that case
+  (the error says so), which is not an editor gap.
+- Documented gap: the column name of `DROP COLUMN` and of `RENAME COLUMN` is in an `ALTER` statement, whose names the
+  trace does not cover (part 2b), so it has no column hover or correction.
 - Generalization analysis: no new statement.
