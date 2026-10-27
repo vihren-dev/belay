@@ -8,6 +8,7 @@ import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.InsertSelectLaws
+import Belay.Sqlite.Model.StatementRewrite
 
 set_option doc.verso true
 
@@ -23,7 +24,7 @@ satisfies it ({name}`Effect.Satisfies`): the database of a success and that of a
 {name}`ExecutionError.constraintFail` have distinct rowids in every table, and any other error requires
 nothing. The theorem has no condition on the connection, on the support check ({name}`StatementRun.ready`)
 or on other atoms, and it covers every form of {name}`Resolved.Statement`. Proof sketch: a case for each
-form; CREATE and DROP keep tables whole or empty ({name}`runStatement_create_tableAtom`), ADD COLUMN
+form; RENAME keeps the rows ({name}`Database.RowidsDistinct.of_outline`), CREATE and DROP keep tables whole or empty ({name}`runStatement_create_tableAtom`), ADD COLUMN
 keeps the rowids ({name}`Table.RowidsDistinct.appendColumns`), a write without rules is the theorem of
 its form ({name}`runStatement_insert_rowidsDistinct` and its siblings), a write with rules is
 a write of the row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`), and a statement
@@ -47,6 +48,8 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal (atom := Table.RowidsDistinct) clock counters parameters target column refuses
       distinct fun table _ found _ => Table.RowidsDistinct.appendColumns (distinct target table found) _
+  | rewrite renamed =>
+    exact runStatement_rewrite_satisfies clock counters parameters renamed distinct fun same _ => distinct.of_outline same
   | drop positions rules =>
     cases rules with
     | none => exact runStatement_drop_rowLocal (atom := Table.RowidsDistinct) clock counters parameters positions distinct

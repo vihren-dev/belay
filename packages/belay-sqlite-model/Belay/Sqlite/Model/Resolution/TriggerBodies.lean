@@ -42,38 +42,50 @@ def bodyStep : StatementResolution → Except NodeRestriction (Except PrepareErr
   | .ok (.delete table filter _ subqueries _, _) => writeStep (.delete table filter subqueries)
   | .ok (.query query subqueries, _) => queryStep (.query query subqueries)
   | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
-  | .ok (.insertSelect .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
+  | .ok (.insertSelect .., _) | .ok (.drop .., _) | .ok (.rewrite _, _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting .., _) =>
     .error (triggerRestriction .triggerForm)
+
+/-- The step of a resolved body statement with the trace of the resolution:
+{name}`bodyStep` of the outcome, and the names that were decided. -/
+def bodyStepTraced (resolution : TracedResolution) : Traced NodeRestriction (Except PrepareError Resolved.Step) :=
+  ⟨bodyStep resolution.drop, resolution.trace⟩
 
 /-- Resolve a SELECT of a trigger's body as {lit}`resolveSelect` does, with the trigger's rows as
 the outer cells of its query, before the cells of its own sources, as a subquery has them.
 Nested WITH and stored views use the same indexed expansion. View bodies retain
-trigger names while hiding ordinary caller names. -/
-def resolveBodySelect (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
-    (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) : StatementResolution :=
+trigger names while hiding ordinary caller names. The trace holds the names that were decided,
+at the paths of the SELECT as written, also when the resolution fails. -/
+def resolveBodySelectTraced (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
+    (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) : TracedResolution :=
   let dqs := context.profile.dqsDml
-  let resolved : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
-    let expanded ← prepareQuerySources catalog 8 query subqueries
+  let resolved : Traced SourceIssue (Resolved.Query × List Resolved.Query) := do
+    let expanded ← prepareQuerySourcesTraced catalog 8 query subqueries
     let query := expanded.query
     let subqueries := expanded.copies.queries.toList
     let columnNames := expanded.copies.columnNames
     let viewRoots := expanded.copies.viewRoots
-    let result : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
-      let (pending, inner) ← resolveSources catalog query.source query.joins row.width
+    let result : Traced SourceIssue (Resolved.Query × List Resolved.Query) := do
+      let (pending, inner) ← resolveSourcesTraced catalog query.source query.joins row.width
         (fun index => sourceExpansion catalog 8 subqueries none index columnNames)
       let scope := Scope.enclose (row.scope 0) inner
       let main : QueryScope := { scope, pending, outer := row.width, outerAliases := [],
                                  aliases := (resultAliases scope query.columns).filterMap id }
-      let (resolvedSubqueries, shapes) ← resolveSubqueries dqs catalog 8 main subqueries columnNames viewRoots
-      let main ← (main.refresh catalog shapes query).mapError .value
-      let (resolvedQuery, _) ← (resolveQueryBody dqs main.scope { later := shapes, outer := row.width } [] main.pending query).mapError .value
+      let (resolvedSubqueries, shapes) ← resolveSubqueriesTraced dqs catalog 8 main subqueries columnNames viewRoots
+      let main ← (main.refreshTraced catalog shapes query).mapError .value
+      let (resolvedQuery, _) ← (resolveQueryBodyTraced dqs main.scope { later := shapes, outer := row.width } []
+        main.pending query).mapError .value
       if let some issue := expanded.copies.recursionIssue 8 resolvedSubqueries then throw (.value issue)
       pure (resolvedQuery, resolvedSubqueries)
-    result.mapError (expanded.copies.originalIssue 8)
-  match resolved with
-  | .ok (resolvedQuery, resolvedSubqueries) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
-  | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
-  | .error (.value issue) => issueResolution catalog [] issue
+    (result.settle.mapError (expanded.copies.originalIssue 8)).mapOccurrences (expanded.copies.originalOccurrence 8)
+  ⟨match resolved.drop with
+    | .ok (resolvedQuery, resolvedSubqueries) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
+    | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
+    | .error (.value issue) => issueResolution catalog [] issue, resolved.trace⟩
+
+/-- Resolve a SELECT of a trigger's body: {name}`resolveBodySelectTraced` without its trace. -/
+def resolveBodySelect (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
+    (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) : StatementResolution :=
+  (resolveBodySelectTraced context catalog row query subqueries).drop
 
 /-- Whether a query of a raising SELECT is one that the model evaluates: no source, no
 aggregate, no grouping, order, window, {lit}`HAVING` or {lit}`DISTINCT`, no subquery and no call
@@ -82,85 +94,5 @@ def raiseQueryPlain (query : Resolved.Query) (subqueries : List Resolved.Query) 
   query.sources.isEmpty && !query.aggregate && query.groupBy.isEmpty && query.orderBy.isEmpty && query.limit.isNone &&
     query.offset == 0 && query.having.isNone && query.distinct.isNone && subqueries.isEmpty &&
     !query.expressions.any (·.any Resolved.Expr.isFallibleCall)
-
-/-- Resolve a SELECT whose one result column raises ({name}`raisingColumn`): the SELECT with the
-column whose {lit}`RAISE` results are NULL and a column for each message, which resolves the
-messages for their errors; then its filter and the arms of the column. A SELECT of another shape
-or a query that the model does not evaluate ({name}`raiseQueryPlain`) is the restriction of a
-{lit}`RAISE` form. -/
-def resolveRaiseSelect (context : ResolveContext) (catalog : Catalog) (row : TriggerRow)
-    (query : Syntax.Subquery) (column : Syntax.Expr) (kinds : List (Option Syntax.RaiseKind))
-    (messages : List Syntax.Expr) : Except NodeRestriction (Except PrepareError Resolved.Step) :=
-  let extra := messages.map fun message => Syntax.ResultColumn.expression message none ""
-  match bodyStep (resolveBodySelect context catalog row
-      { query with columns := .expression column none "" :: extra } []) with
-  | .error restriction => .error restriction
-  | .ok (.error error) => .ok (.error error)
-  | .ok (.ok (.query resolved subqueries)) =>
-    if !raiseQueryPlain resolved subqueries then .error (triggerRestriction .raiseForm)
-    else match resolved.columns.head? with
-      | some (.scalar (.scalar .iif arguments)) =>
-        let (arms, otherwise) := raiseArms arguments.toList kinds
-        .ok (.ok (.raise resolved.filter arms otherwise))
-      | some (.scalar _) | some (.aggregate _) | none => .ok (.ok (.raise resolved.filter [] kinds.head?.join))
-  | .ok (.ok (.insert ..)) | .ok (.ok (.update ..)) | .ok (.ok (.delete ..)) | .ok (.ok (.raise ..)) =>
-    .error (triggerRestriction .triggerForm)
-
-/-- The step of a write in a body whose target is a view. SQLite reads the view's query with the
-rows of the trigger in sight, so a column that the model cannot find, such as {lit}`new.a`, may be
-a column that SQLite finds: that is the restriction {name}`RestrictionKind.viewBodyCheck`. Any other
-failed read is the error of the read, and a readable view is the error
-{name}`PrepareError.viewModify`. The parse error of rows of different widths comes first. -/
-def viewBodyWrite (context : ResolveContext) (catalog : Catalog) (view : Identifier) (rowsDiffer : Bool) :
-    Except NodeRestriction (Except PrepareError Resolved.Step) :=
-  if rowsDiffer then .ok (.error (.expression .valuesDiffer))
-  else match viewColumns context catalog view with
-    | .ok _ => .ok (.error (.viewModify (viewCatalogName catalog view)))
-    | .error (.value (.prepare error)) => match error.viewReadClass with
-      | .column => .error (triggerRestriction .viewBodyCheck)
-      | .found | .later | .width _ => .ok (.error (.expression error))
-    | .error (.noSuchTable name) => .ok (.error (.noSuchTable name))
-    | .error (.value (.restriction path kind)) => .error { path, kind }
-
-/-- Resolve one statement of a trigger's body over the catalog, with
-the trigger's rows: an INSERT around no table, with {lit}`ON CONFLICT DO UPDATE` the restriction
-of a trigger form; an UPDATE and a DELETE around the written table; a SELECT whose one result
-column raises as {name}`resolveRaiseSelect`, when it has no other clause than {lit}`WHERE`, and
-the restriction of a {lit}`RAISE` form when it has one; and another SELECT as
-{name}`resolveBodySelect`. Nested WITH definitions and stored views in expression subqueries use the
-same expansion as ordinary statements, retaining trigger-cell positions. -/
-def resolveBodyStatement (context : ResolveContext) (catalog : Catalog) (row : TriggerRow) :
-    Syntax.BodyStatement → Except NodeRestriction (Except PrepareError Resolved.Step)
-  | .insert table columns rows conflicts algorithm subqueries =>
-    if conflicts.any (·.action matches .update ..) then .error (triggerRestriction .triggerForm)
-    else if (catalog.findView table).isSome then
-      viewBodyWrite context catalog table (rows.any fun row => row.length != (rows.head?.map List.length).getD 0)
-    else bodyStep (resolveCommonTableWrite context catalog 6 table (fun _ => row.scope 0) subqueries
-      fun index resolved shapes => resolveInsert context catalog table columns
-        (rows.map (List.map (Syntax.Expr.reindex index))) conflicts algorithm [] resolved shapes (some row))
-  | .update table assignments filter subqueries =>
-    if (catalog.findView table).isSome then viewBodyWrite context catalog table false else
-    bodyStep (resolveCommonTableWrite context catalog 4 table
-      (fun shape => writtenScope table shape ++ row.scope shape.columns.length) subqueries
-      fun index resolved shapes => resolveUpdate context catalog table
-        (assignments.map fun (name, value) => (name, value.reindex index))
-        (filter.map (Syntax.Expr.reindex index)) [] resolved shapes (some row))
-  | .delete table filter subqueries =>
-    if (catalog.findView table).isSome then viewBodyWrite context catalog table false else
-    bodyStep (resolveCommonTableWrite context catalog 3 table
-      (fun shape => writtenScope table shape ++ row.scope shape.columns.length) subqueries
-      fun index resolved shapes => resolveDelete context catalog table
-        (filter.map (Syntax.Expr.reindex index)) [] resolved shapes (some row))
-  | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct =>
-    let query : Syntax.Subquery := { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none,
-                                     having, distinct }
-    match columns with
-    | [.expression value _ _] => match raisingColumn value with
-      | some (column, kinds, messages) =>
-        if source.isSome || !joins.isEmpty || !groupBy.isEmpty || !orderBy.isEmpty || limit.isSome || offset.isSome ||
-            !subqueries.isEmpty || having.isSome || distinct then .error (triggerRestriction .raiseForm)
-        else resolveRaiseSelect context catalog row query column kinds messages
-      | none => bodyStep (resolveBodySelect context catalog row query subqueries)
-    | [] | [.star] | [.sourceStar _] | _ :: _ :: _ => bodyStep (resolveBodySelect context catalog row query subqueries)
 
 end Belay.Sqlite.Model

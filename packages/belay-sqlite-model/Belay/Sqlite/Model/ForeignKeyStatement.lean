@@ -2,6 +2,8 @@ import Belay.Sqlite.Model.ForeignKeyPlainFrame
 import Belay.Sqlite.Model.ForeignKeyWriteConditions
 import Belay.Sqlite.Model.ForeignKeyDdlSelected
 import Belay.Sqlite.Model.InsertSelectLaws
+import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.OutlineSelectedParentLaws
 
 set_option doc.verso true
 
@@ -15,6 +17,8 @@ namespace Belay.Sqlite.Model
 * CREATE, also CREATE VIEW, requires that every old declaration keeps its selected parent
   ({name}`Catalog.CreateKeepsSelection`). New declarations have no rows to check. A view has no
   rows and no declarations.
+* A rewrite of the catalog by a rename requires nothing: the run stores the new catalog only when
+  it keeps the outline and the selected parents, and the rows then find their parents again.
 * ADD COLUMN requires {name}`Database.AddColumnRowsCondition`.
 * DROP without rules requires that every kept declaration keeps its selected parent, moved, and its
   located parents ({name}`Catalog.DropKeepsSelection`, {name}`Catalog.DropKeepsParents`).
@@ -32,7 +36,7 @@ def Resolved.Statement.ForeignKeyRowsCondition (profile : Profile) (database : D
       | none => database.catalog.ForeignKeyOutside target
       | some rules => database.ForeignKeyReady profile ∧ rules.ForeignKeyConditions profile database.catalog ∧
           ForeignKeyAssignmentConditions database.catalog target assignments
-  | .begin | .commit | .rollback | .query .. | .prepareError _ | .setting .. => True
+  | .begin | .commit | .rollback | .query .. | .prepareError _ | .setting .. | .rewrite _ => True
   | .createTable _ name shape => database.catalog.CreateKeepsSelection {name, entry := .table shape}
   | .createIndex _ name index => database.catalog.CreateKeepsSelection {name, entry := .index index}
   | .createTrigger _ name trigger => database.catalog.CreateKeepsSelection {name, entry := .trigger trigger}
@@ -72,6 +76,9 @@ theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters :
       obtain ⟨ready, conditions, frames⟩ := condition
       exact runStatement_drop_enforced_rowReferences rules clock counters parameters positions ready holds conditions
         (frames.1 clock) frames.2
+  | rewrite renamed =>
+    exact runStatement_rewrite_satisfies clock counters parameters renamed holds fun same parents =>
+      holds.of_outline same parents
   | begin | commit | rollback | prepareError | query | setting =>
     apply Effect.satisfies_of_database (property := fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) holds
     apply runStatement_keeps_database

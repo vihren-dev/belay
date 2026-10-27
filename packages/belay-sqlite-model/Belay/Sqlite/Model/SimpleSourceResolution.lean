@@ -16,7 +16,7 @@ of the reference, or else the name that the catalog gives the table, the columns
 has a rowid, and the catalog position that it was read from. -/
 def tableScope (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable) : Scope :=
   Scope.singleAt (some position) (reference.alias.getD ((catalog[position]?.map (·.name)).getD reference.table))
-    table.columns (!table.withoutRowid)
+    table.columns (!table.withoutRowid) reference.alias.isSome
 
 /-- A {lit}`FROM` clause that names one table, with no table-function arguments and no joins, resolves
 when the catalog has the table: it gives one inner source on the catalog position of the table, and one

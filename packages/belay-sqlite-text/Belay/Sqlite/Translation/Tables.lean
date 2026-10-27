@@ -25,7 +25,7 @@ def tableConstraint (tree : SqlTree) (node : ParseNode) (current : Option String
     TranslateM (Located Syntax.TableConstraint) := do
   let parts := tree.children node
   match tree.symbols node with
-  | ["CHECK", "LP", "expr", "RP", "onconf"] => check tree node parts current .check
+  | ["CHECK", "LP", "expr", "RP", "onconf"] => check tree node parts current (.check · · ·)
   | ["FOREIGN", "KEY", "LP", "eidlist", "RP", "REFERENCES", "nm", "eidlist_opt", "refargs", "defer_subclause_opt"] =>
     foreignKey tree node parts
   | ["PRIMARY", "KEY", "LP", "sortlist", "autoinc", "RP", "onconf"] =>

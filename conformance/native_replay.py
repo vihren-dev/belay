@@ -4,7 +4,7 @@ from conformance.record_parser import NO_PARSER_REASON, record_parser
 from conformance.replay_scope import HIDDEN_ROWID_REASON, OBSERVED_VIEW_REASON, HiddenRowid, ObservedView
 
 from conformance.case_format import CASE_VERSION, UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
-from conformance.profile_scope import foreign_key_scope, modeled_profile
+from conformance.profile_scope import foreign_key_scope, legacy_alter_scope, modeled_profile
 from conformance.record_counters import counters_input
 from conformance.record_versions import CONTINUING, PROFILED, WITH_OUTPUTS
 from conformance.native_connection import SOURCE_ID
@@ -105,6 +105,7 @@ def model_case(record: dict[str, Json], translator: Translator) -> dict[str, Jso
     schema = schema_text.statements()
     script = migration_text.statements()
     foreign_key_scope(record, [*schema, *script])
+    legacy_alter_scope(record, [*schema, *script])
     trace = record["trace"]
     continues = record["nativeVersion"] in CONTINUING
     # A recorder that runs on gives one event for each statement; one that stops gives one for

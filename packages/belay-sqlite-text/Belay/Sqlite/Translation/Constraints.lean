@@ -60,14 +60,23 @@ def constraintAlgorithm (tree : SqlTree) (node : ParseNode) : TranslateM (Locate
   return (resolveType tree (← require tree node ["ON", "CONFLICT", "resolvetype"])[2]!).present
 
 /-- {lit}`CHECK (expr)` with its label: the name in effect, else the text between the
-parentheses, trimmed and dequoted. {lit}`make` is the constructor of a column or a table CHECK. -/
+parentheses, trimmed and dequoted. {lit}`make` is the constructor of a column or a table CHECK; it
+also gets the trimmed text with the places of its name tokens ({name}`expressionNameTokens`), which
+a rename rewrites, unless a constraint name gives the label. -/
 def check (tree : SqlTree) (node : ParseNode) (parts : Array ParseNode) (current : Option String)
-    (make : Syntax.Expr → String → α) : TranslateM (Located α) := do
+    (make : Syntax.Expr → String → Syntax.SourceText → α) : TranslateM (Located α) := do
   let condition := parts[2]!
-  let text := trimSpace (tree.slice parts[1]!.stop parts[3]!.start)
+  let raw := tree.slice parts[1]!.stop parts[3]!.start
+  let text := trimSpace raw
   let label := current.getD (dequote text)
+  let first ← subqueryCount
   let mapped ← queryExpression tree condition
-  return composite (make mapped.value label) node.start node.stop #[mapped.span, spanOf condition]
+  let begins := parts[1]!.stop + (raw.toList.takeWhile sqliteSpace).length
+  let tokens ← if current.isNone then
+      expressionNameTokens tree begins (begins + text.utf8ByteSize) mapped.span first
+    else pure []
+  let source : Syntax.SourceText := if current.isNone then { text, tokens } else {}
+  return composite (make mapped.value label source) node.start node.stop #[mapped.span, spanOf condition]
 
 /-- An {lit}`eidlist` of plain names, without collation or sort order. -/
 def plainNames (tree : SqlTree) (node : ParseNode) : TranslateM (Located (List Identifier)) := do

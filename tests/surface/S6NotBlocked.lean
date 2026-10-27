@@ -73,14 +73,17 @@ is no proof that the premises suffice for every database. Proof sketch: kernel e
 theorem premises_give_equal_outputs : outputsOn notBlockedIn premisesHold = outputsOn notBlockedExists premisesHold := by
   decide +kernel
 
+set_option sql.checkBudget 400000 in
 labelled_sql "null-blocked" in
 #sql_check ∀ env : Env, env.Complete →
   Sql.EquivAt (send notBlockedIn) (send notBlockedExists) (ExecutionContext.initial nullBlocked env)
 
+set_option sql.checkBudget 400000 in
 labelled_sql "null-customer" in
 #sql_check ∀ env : Env, env.Complete →
   Sql.EquivAt (send notBlockedIn) (send notBlockedExists) (ExecutionContext.initial nullCustomer env)
 
+set_option sql.checkBudget 400000 in
 labelled_sql "collations" in
 #sql_check ∀ env : Env, env.Complete →
   Sql.EquivAt (send notBlockedIn) (send notBlockedExists) (ExecutionContext.initial collations env)

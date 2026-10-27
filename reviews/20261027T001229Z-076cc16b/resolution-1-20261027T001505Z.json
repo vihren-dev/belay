@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T00:15:05+00:00",
+  "finding": "20261027T001229Z-076cc16b#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "schemaNameTaken checks the temp database separately (probed natively); guards added"
+}

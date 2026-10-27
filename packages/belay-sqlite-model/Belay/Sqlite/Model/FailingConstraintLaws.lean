@@ -130,7 +130,7 @@ theorem failingConstraints_ne_nil {clock : Int} {counters : Counters} {parameter
         · simp at failed
         · exact Catalog.updateReport_ne_nil (by assumption)
   | createIndex _ name index => simp
-  | delete | drop | createTable | createView | createTrigger | addColumn | begin | commit | rollback | prepareError | query
+  | delete | drop | createTable | createView | createTrigger | addColumn | rewrite | begin | commit | rollback | prepareError | query
   | setting =>
     all_goals first
       | (cases plain; done)

@@ -6,6 +6,7 @@ import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.Drops
+import Belay.Sqlite.Model.Resolution.Renames
 import Belay.Sqlite.Model.Resolution.ViewDefinitions
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.TriggerDefinitions
@@ -44,6 +45,9 @@ def resolveStatementRun (context : ResolveContext) (state : ResolveState) :
     Traced.lift (state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter))
   | .addColumn table column =>
     Traced.lift (state.withCatalog (resolveAddColumn context state.catalog state.foreignKeys table column))
+  | .renameTable table newName => Traced.lift (state.withCatalog (resolveRenameTable context state.catalog table newName))
+  | .renameColumn table column newName columnToken quoted =>
+    Traced.lift (state.withCatalog (resolveRenameColumn context state.catalog table column newName columnToken quoted))
   | .dropTable name ifExists => Traced.lift (state.withWrite context (resolveDropTable state.catalog name ifExists))
   | .dropView name ifExists => Traced.lift (state.withCatalog (resolveDropView state.catalog name ifExists))
   | .dropIndex name ifExists => Traced.lift (state.withCatalog (resolveDropIndex state.catalog name ifExists))

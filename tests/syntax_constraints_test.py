@@ -43,6 +43,21 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Translation]) ->
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]
 
 
+def test_check_text_keeps_the_places_of_its_name_tokens(parse_sql: Callable[..., Translation]) -> None:
+    """An unnamed CHECK keeps its trimmed text with the offsets, quotes and node paths of its name tokens,
+    which a rename rewrites; a CHECK with a constraint name keeps no text, because its label does not change."""
+    sql = 'CREATE TABLE t(a, b CHECK(  b > 0 ), CHECK(t.b > 0 and "a" < 5), CONSTRAINT n CHECK(a > 2));'
+    [statement] = [item.value for item in parse_sql(sql, name_tokens=True).statements()]
+    assert isinstance(statement, dict)
+    column_check = statement["createTable"]["columns"][1]["constraints"][0]["check"]
+    qualified, named = [item["check"] for item in statement["createTable"]["constraints"]]
+    assert column_check["text"] == {"text": "b > 0", "tokens": [
+        {"paths": [[1], [1, 0], [1, 1]], "quote": "none", "start": 0, "stop": 1, "subquery": None}]}
+    assert [(token["start"], token["stop"], token["quote"], token["paths"][0]) for token in qualified["text"]["tokens"]] == [
+        (0, 1, "none", [0, 1, 0]), (2, 3, "none", [0, 1, 1]), (12, 15, "double", [1, 1])]
+    assert named["label"] == "n" and named["text"] == ""
+
+
 def test_deferral_clauses_are_constraints_of_their_own(parse_sql: Callable[..., Translation]) -> None:
     """A deferral clause maps to `deferral`, after the constraint that it follows, deferred only
     for `DEFERRABLE INITIALLY DEFERRED` (ADR 0018, D4): in a column definition, as SQLite's

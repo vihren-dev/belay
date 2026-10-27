@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T03:48:30+00:00",
+  "finding": "20261027T034651Z-3286d124#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "each theorem has its own docstring"
+}

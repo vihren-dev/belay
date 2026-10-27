@@ -46,7 +46,7 @@ theorem resolveStatement_select_column (context : ResolveContext) (state : Resol
         [.scalar (.column idPosition)] names) [], state) := by
   obtain ⟨name, affinity, columns⟩ := resolveColumns_identifier_at context.profile.dqsDml { later := [] } (some position)
     (reference.alias.getD ((state.catalog[position]?.map (·.name)).getD reference.table)) table.columns
-    (!table.withoutRowid) .none idFound none text
+    (!table.withoutRowid) reference.alias.isSome .none idFound none text
   have simple : (Syntax.Subquery.mk [.expression (.identifier idName .none) none text] (some reference) [] filter [] []
       none none none none false none none).Simple := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   refine ⟨[name], ?_⟩

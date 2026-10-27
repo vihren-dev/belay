@@ -72,6 +72,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .connectionCounterRead => "connection-counter-read"
   | .nondeterministicErrorOrder => "nondeterministic-error-order"
   | .initialDatabase => "initial-database"
+  | .alterRename => "alter-rename"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -137,12 +138,13 @@ def RestrictionKind.message : RestrictionKind → String
   | .connectionCounterRead => "last_insert_rowid() in INSERT, and total_changes() in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs; read the value in a separate statement"
   | .nondeterministicErrorOrder => "a call of changes(), total_changes(), last_insert_rowid(), random() or randomblob() in a generated column, an index expression or the filter of a partial index is not modeled when the expression has another error, because which error SQLite reports depends on the order of its walk; write the call alone, or remove the other error"
   | .initialDatabase => "a table qualified with before is modeled only in a two-state query that is given the initial database, and not with function arguments; remove the schema name or observe the query in a postcondition; a view of the initial database that calls a table function named like a view of the current database, or calls pragma_table_info or pragma_foreign_key_list, is not modeled either, so rename the current view or read the table directly"
+  | .alterRename => "ALTER TABLE RENAME is not modeled when a view or trigger of the schema has a name that the model cannot rewrite as SQLite does (a column that a join merged, an INSERT with ON CONFLICT clauses in a trigger, a trigger statement that fails only when it runs), when a CHECK text has a double quote that no name covers, or when the new name is outside the model; drop and create the object again, or rename the table before you create the object"
   | .foreignKeyMismatchOrder => "PRAGMA foreign_key_check without a table name is not modeled when two or more tables have a foreign key mismatch, because SQLite checks the tables in an internal order; name the table, for example PRAGMA foreign_key_check(t)"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
   [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .viewBodyCheck, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
-    .sourceColumnName, .recursiveCommonTable, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder, .initialDatabase]
+    .sourceColumnName, .recursiveCommonTable, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder, .initialDatabase, .alterRename]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

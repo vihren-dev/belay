@@ -25,7 +25,7 @@ def columnConstraint (tree : SqlTree) (node : ParseNode) (current : Option Strin
     TranslateM (Located Syntax.ColumnConstraint) := do
   let parts := tree.children node
   match tree.symbols node with
-  | ["CHECK", "LP", "expr", "RP"] => check tree node parts current .check
+  | ["CHECK", "LP", "expr", "RP"] => check tree node parts current (.check · · ·)
   | ["REFERENCES", "nm", "eidlist_opt", "refargs"] => references tree node parts
   | ["AS", "generated"] => generated tree node parts[1]!
   | ["NOT", "NULL", "onconf"] =>

@@ -1,7 +1,9 @@
+import Belay.Sqlite.Model.Resolution.ApplyCatalogSpec
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Model.Resolution.DropSpec
 import Belay.Sqlite.Model.Resolution.TriggerDefinitionSpec
 import Belay.Sqlite.Model.Resolution.ViewDefinitionSpec
+import Belay.Sqlite.Model.Resolution.RenameSpec
 
 set_option doc.verso true
 
@@ -25,7 +27,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .rollback => { state with catalog := state.saved.getD state.catalog, saved := none }
   | .setting setting on => state.set on setting
   | statement@(.createTable ..) | statement@(.createView ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
-  | statement@(.addColumn ..) | statement@(.drop ..)
+  | statement@(.addColumn ..) | statement@(.rewrite _) | statement@(.drop ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.insertSelect ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query ..) =>
     { state with catalog := statement.applyCatalog state.catalog }
@@ -40,50 +42,8 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback | setting => cases ordinary
-  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | insertSelect | delete
+  | createTable | createView | createIndex | createTrigger | addColumn | rewrite | drop | insert | update | upsert | insertSelect | delete
   | prepareError | query => rfl
-
-/-- For every successful resolution of CREATE TABLE, the catalog after it is
-{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: every branch returns the input catalog with a prepare
-error, or the CREATE TABLE at the end of the catalog with {name}`Catalog.createTable`. -/
-theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog)
-    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (options : Syntax.TableOptions) (statement : Resolved.Statement)
-    (ok : resolveCreateTable context catalog name columns constraints options = .ok (statement, after)) :
-    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
-  unfold resolveCreateTable at ok
-  simp only [issueResolution, prepareError, restrict] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
-
-/-- For every successful resolution of CREATE INDEX, the catalog after it is
-{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
--/
-theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog)
-    (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
-    (filter : Option Syntax.Expr)
-    (statement : Resolved.Statement)
-    (ok : resolveCreateIndex context catalog name unique tableName terms filter = .ok (statement, after)) :
-    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
-  unfold resolveCreateIndex at ok
-  simp only [issueResolution, prepareError, restrict] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
-
-/-- For every successful resolution of ADD COLUMN, the catalog after it is
-{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`.
-It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
-theorem resolveAddColumn_applyCatalog (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
-    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :
-    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
-  unfold resolveAddColumn at ok
-  simp only [prepareError, restrict] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 
 /-- For every context, state and statement that resolves, the next state is
 {name}`ResolveState.after` of the resolved statement. Proof sketch: transaction control
@@ -136,6 +96,16 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | renameTable table newName =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := (resolveRenameTable_outcome _ _ _ _ _ _ (by assumption)).applyCatalog
+    exact ordinary _ control equal
+  | renameColumn table column newName columnToken quoted =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := (resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).applyCatalog
     exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [statement_arms] at ok

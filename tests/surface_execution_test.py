@@ -28,7 +28,7 @@ def test_execution_branches_and_wp(runtime_root: Path, tmp_path: Path) -> None:
     configuration = json.loads(setup.read_text())
     for module, count in (("ExecutionBranches", 14), ("ExecutionProofs", 18), ("ExecutionSuccess", 22),
                           ("ExecutionEquivalence", 15), ("ExecutionComposition", 18), ("ExecutionHelpers", 14),
-                          ("InsertSelectExecutions", 5)):
+                          ("InsertSelectExecutions", 5), ("RenameExecutions", 5)):
         configuration["name"] = module
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"

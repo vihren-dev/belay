@@ -278,6 +278,8 @@ import Belay.Sqlite.Model.Resolution.StatementTraced
 import Belay.Sqlite.Model.Resolution.StatementAttr
 import Belay.Sqlite.Model.Resolution.WriteTracedLaws
 import Belay.Sqlite.Model.Resolution.InsertQueries
+import Belay.Sqlite.Model.Resolution.Renames
+import Belay.Sqlite.Model.Resolution.RenameSpec
 import Belay.Sqlite.Model.Resolution.ResolveStatement
 import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
@@ -412,6 +414,12 @@ import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
 import Belay.Sqlite.Model.TwoStateKeptRows
 import Belay.Sqlite.Model.PlainInsertRows
 import Belay.Sqlite.Model.SelectStepKeeps
+import Belay.Sqlite.Model.OutlineTableLaws
+import Belay.Sqlite.Model.OutlineDatabaseLaws
+import Belay.Sqlite.Model.OutlineKeyLaws
+import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.OutlineForeignKeyLaws
+import Belay.Sqlite.Model.OutlineSelectedParentLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

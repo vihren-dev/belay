@@ -33,7 +33,7 @@ evaluate a subquery for rows that the model does not reach, except the terms of 
 ({name}`Resolved.Query.nestedSubqueries`), whose run describes their failures; a position without a table passes and fails during execution
 instead. ADD COLUMN must have modeled default readback, a model restriction, because SQLite
 accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
-constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. A write
+constraint (ADR 0014, slice 4), and so do CREATE INDEX, RENAME and the other statement forms. A write
 that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`insertKeys`,
 {name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
 plain write and the keys both pass it ({name}`StatementRun.withKeys`). A write with trigger
@@ -109,7 +109,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
   | .drop positions rules =>
     StatementRun.withKeys (step clock counters parameters statement database) true {}
       (rules.map fun rules => dropKeys rules clock positions database)
-  | .createView .. | .createIndex .. | .createTrigger .. => { effect := step clock counters parameters statement database, ready := true }
+  | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ => { effect := step clock counters parameters statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ | .setting .. =>
     { effect := step clock counters parameters statement database, ready := true }
 

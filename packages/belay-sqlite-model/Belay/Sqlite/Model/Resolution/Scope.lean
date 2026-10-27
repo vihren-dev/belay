@@ -86,6 +86,9 @@ structure ScopeSource where
   role : SourceKind := .baseTable
   /-- The catalog position of a table or view; none for any other source. -/
   catalogPosition : Option Nat := none
+  /-- Whether the table was written with an alias, which hides the name of the table from a qualifier;
+  false for every other source. A rename of a table keeps the qualifier of an aliased source. -/
+  aliased : Bool := false
   deriving Repr, DecidableEq
 
 /-- The sources in scope, in {lit}`FROM` order, each at its offset in the joined row;
@@ -120,8 +123,8 @@ def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : 
 /-- The scope of one table that was read from the catalog at {lit}`position`, as
 {name}`Scope.single` gives it; the position is a fact for a name trace and changes no resolution. -/
 def Scope.singleAt (position : Option Nat) (name : Identifier) (columns : List CatalogColumn)
-    (hasRowid : Bool := true) : Scope :=
-  [{ name, columns, hasRowid, catalogPosition := position }]
+    (hasRowid : Bool := true) (aliased : Bool := false) : Scope :=
+  [{ name, columns, hasRowid, catalogPosition := position, aliased }]
 
 /-- Whether the position of the concatenated row is a cell of a trigger's row
 ({name}`ScopeSource.trigger`). -/

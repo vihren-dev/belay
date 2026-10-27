@@ -111,8 +111,18 @@ def PrepareError.message : PrepareError → String
   | .viewModify name => s!"cannot modify {name} because it is a view"
   | .viewNotIndexed => "views may not be indexed"
   | .viewAddColumn => "Cannot add a column to a view"
+  | .renameTargetTaken name => s!"there is already another table or index with this name: {name}"
+  | .viewNotAltered name => s!"view {name} may not be altered"
+  | .viewColumnsNotRenamed name => s!"cannot rename columns of view \"{name}\""
+  | .renameNoSuchColumn token => s!"no such column: \"{token}\""
   | .viewTrigger before name =>
     s!"cannot create {if before then "BEFORE" else "AFTER"} trigger on view: {name}"
+  | .dependentObject kind name afterRename error =>
+    let word := match kind with
+      | .table => "table"
+      | .view => "view"
+      | .trigger => "trigger"
+    s!"error in {word} {name}{if afterRename then " after rename" else ""}: {error.message}"
   | .expression error => error.message
 
 end Belay.Sqlite.Model

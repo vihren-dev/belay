@@ -20,7 +20,7 @@ from belay.sqlite.located import Located
 from conformance import native_bindings
 from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, cell_wire, row_wire
 from conformance.predict_render import output_record, view_record
-from conformance.profile_scope import foreign_key_scope, modeled_profile
+from conformance.profile_scope import foreign_key_scope, legacy_alter_scope, modeled_profile
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 from conformance.record_counters import counters_input
 from conformance.record_versions import CONTINUING
@@ -85,6 +85,7 @@ def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Js
     schema = parser.translate(given["initialSchemaSql"].encode(), "corpus-schema.sql").statements()
     script = parser.translate(given["migrationSql"].encode(), "corpus-migration.sql").statements()
     foreign_key_scope(given, [*schema, *script])
+    legacy_alter_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given),
             "setupClock": julian_setup_clock(given),

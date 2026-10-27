@@ -44,8 +44,10 @@ inductive ColumnConstraint where
   | collate (name : Identifier)
   /-- {lit}`CHECK (condition)` with the label that SQLite reports when it fails: the name of
   the {lit}`CONSTRAINT name` in effect, else the source text between the parentheses
-  without outer white space, dequoted when it starts with a quote (ADR 0014, slice 4). -/
-  | check (condition : Expr) (label : String)
+  without outer white space, dequoted when it starts with a quote (ADR 0014, slice 4). The
+  {lit}`text` is that source text with the places of its name tokens, which a rename rewrites; it is
+  empty when a {lit}`CONSTRAINT name` gives the label. -/
+  | check (condition : Expr) (label : String) (text : SourceText := {})
   /-- {lit}`REFERENCES table [(columns)]` with its {lit}`ON DELETE` and {lit}`ON UPDATE`
   actions; the other clauses do not show in {lit}`PRAGMA foreign_key_list` (ADR 0014,
   slice 4). -/
@@ -79,7 +81,7 @@ inductive TableConstraint where
   | unique (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`CHECK (condition)` with its label, as for {name}`ColumnConstraint.check`. SQLite
   ignores an {lit}`ON CONFLICT` clause of a table CHECK (ADR 0014, slice 4). -/
-  | check (condition : Expr) (label : String)
+  | check (condition : Expr) (label : String) (text : SourceText := {})
   /-- {lit}`FOREIGN KEY (columns) REFERENCES table [(referenced)]` with its actions, as for
   {name}`ColumnConstraint.references`; {lit}`referenced` is empty without a column list. -/
   | foreignKey (columns : List Identifier) (table : Identifier) (referenced : List Identifier)

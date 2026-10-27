@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
+import Belay.Sqlite.Model.OutlineTableLaws
 import Belay.Sqlite.Model.RowEngineFacts
 
 set_option doc.verso true
@@ -48,7 +49,9 @@ statements need of an atom that reads one row at a time. Three facts:
 * a table with the same catalog entry as a table that has it, and a sublist of its rows, has it
   (a DELETE stores such a table);
 * a table that passes the checks of a write ({name}`LiteralData.constraints`) has it, for every
-  keys.
+  keys;
+* a table with the same rows as a table that has it, and a shape that differs only in names
+  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table).
 
 {lit}`Table.notNullAtom`, {lit}`Table.typesFitAtom` and {lit}`Table.checksHoldAtom` are the
 instances. -/
@@ -60,6 +63,10 @@ structure RowLocalAtom (atom : Table → Prop) : Prop where
   sublist : ∀ table other, atom table → other.shape = table.shape → other.rows.Sublist table.rows → atom other
   /-- A table that passes the checks of a write for some keys has the property. -/
   constraints : ∀ keys table, LiteralData.constraints keys table = true → atom table
+  /-- A table with the same rows and a shape with the same names blanked
+  ({lit}`CatalogTable.blankNames`) as a table that has the property has it. -/
+  renamed : ∀ table other, atom table → other.rows = table.rows →
+    table.shape.blankNames = other.shape.blankNames → atom other
 
 /-- A {name}`RowLocalAtom` gives the facts of {name}`TableFacts` for the fact that ignores the catalog
 and the position: the row engine keeps it. Proof sketch: the sublist and constraints facts of the
@@ -75,6 +82,7 @@ theorem Table.notNullAtom : RowLocalAtom Table.NotNull where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ notNull same sub := notNull.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).1
+  renamed _ _ holds rows same := holds.of_blankNames rows same
 
 /-- "Types fit" is a {name}`RowLocalAtom`. Proof sketch: as {name}`Table.notNullAtom`, with
 {name}`Table.TypesFit.frame`. -/
@@ -82,6 +90,7 @@ theorem Table.typesFitAtom : RowLocalAtom Table.TypesFit where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ fits same sub := fits.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).2.1
+  renamed _ _ fits rows same := fits.of_blankNames rows same
 
 /-- "Checks hold" is a {name}`RowLocalAtom`. Proof sketch: as {name}`Table.notNullAtom`, with
 {name}`Table.ChecksHold.frame`. -/
@@ -89,5 +98,6 @@ theorem Table.checksHoldAtom : RowLocalAtom Table.ChecksHold where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ holds same sub := holds.frame (fun _ member => sub.subset member) (by rw [same])
   constraints keys table passed := ((Table.constraints_iff keys table).mp passed).2.2.1
+  renamed _ _ holds rows same := holds.of_blankNames rows same
 
 end Belay.Sqlite.Model

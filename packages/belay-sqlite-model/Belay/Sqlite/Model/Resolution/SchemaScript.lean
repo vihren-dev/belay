@@ -42,7 +42,7 @@ structure ResolvedScript where
 TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. => true
-  | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update ..
+  | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update ..
   | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
@@ -53,8 +53,8 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 /-- The prepare error of a resolved statement, if it is one. -/
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
-  | .rollback | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .query .. | .setting .. => none
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .drop .. | .begin
+  | .commit | .rollback | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .query .. | .setting .. => none
 
 /-- Whether two triggers of a schema may both fire for one write, so that their order matters:
 the same folded table name, the same time and the same kind of event. -/
@@ -75,7 +75,7 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       let trigger : CatalogTrigger := { table, time, event, condition, body }
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
-    | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
+    | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .dropTrigger .. | .begin
     | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 

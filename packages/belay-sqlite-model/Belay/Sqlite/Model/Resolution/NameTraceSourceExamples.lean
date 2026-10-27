@@ -47,6 +47,19 @@ private def aliasedTable : Bool :=
 
 #guard aliasedTable
 
+/-- Whether the first occurrence of a {lit}`FROM` list is a source whose reference tells whether the table
+is aliased. A rename of a table keeps the qualifier of an aliased source. -/
+private def sourceIsAliased (source : Syntax.TableReference) (expected : Bool) : Bool :=
+  (match (traced source).trace with
+    | occurrence :: _ => (match occurrence.result with
+      | .source reference => reference.aliased == expected
+      | .found _ | .ambiguous _ | .missing .. | .schema _ | .resultColumn _ | .declares | .compared ..
+      | .unreached _ => false)
+    | [] => false)
+
+#guard sourceIsAliased { table := name! "t", alias := some (name! "x") } true
+#guard sourceIsAliased { table := name! "t", alias := none } false
+
 /-- A table that the catalog lacks fails with SQLite's {lit}`no such table`, and its occurrence lists the
 five tables of the catalog as candidates. -/
 private def missingTable : Bool :=

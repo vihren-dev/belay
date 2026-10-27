@@ -64,7 +64,7 @@ def ExecutionError.message (clock : Int) (counters : Counters) (parameters : Lis
   | .transactionAlreadyActive => "cannot start a transaction within a transaction"
   | .noActiveTransaction => match statement with
     | .rollback => "cannot rollback - no transaction is active"
-    | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+    | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .drop .. | .begin | .commit
     | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. | .prepareError _ | .query .. | .setting .. =>
       "cannot commit - no transaction is active"
   | .constraintViolation | .constraintFail | .constraintRollback => constraintMessage clock counters parameters statement database

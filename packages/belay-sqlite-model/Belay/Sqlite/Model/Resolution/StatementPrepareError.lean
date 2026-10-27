@@ -7,6 +7,16 @@ checks a statement, names a catalog object, or reports an expression error ({lit
 
 namespace Belay.Sqlite.Model
 
+/-- The kind of the object that a rename finds in error ({lit}`PrepareError.dependentObject`). -/
+inductive DependentKind where
+  /-- A table. -/
+  | table
+  /-- A view. -/
+  | view
+  /-- A trigger. -/
+  | trigger
+  deriving Repr, DecidableEq
+
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
 scope. Each constructor names the SQLite message format it corresponds to. This
 is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
@@ -62,12 +72,44 @@ inductive PrepareError where
   | viewNotIndexed
   /-- {lit}`Cannot add a column to a view` ({lit}`sqlite3AlterBeginAddColumn`). -/
   | viewAddColumn
+  /-- {lit}`there is already another table or index with this name: %s` ({lit}`sqlite3AlterRenameTable`):
+  a table, view or index has the new name, also the renamed table itself under another letter case.
+  The name is the new name as written. -/
+  | renameTargetTaken (name : Identifier)
+  /-- {lit}`view %s may not be altered` ({lit}`sqlite3AlterRenameTable`). The name keeps the
+  catalog's declared spelling. -/
+  | viewNotAltered (name : Identifier)
+  /-- {lit}`cannot rename columns of view "%s"` ({lit}`isRealTable` of
+  {lit}`sqlite3AlterRenameColumn`). The name keeps the catalog's declared spelling. -/
+  | viewColumnsNotRenamed (name : Identifier)
+  /-- {lit}`no such column: "%T"` ({lit}`sqlite3AlterRenameColumn`): the table has no column of the
+  old name. The text is the token of the statement with its quotes, as SQLite prints it. -/
+  | renameNoSuchColumn (token : String)
   /-- {lit}`cannot create BEFORE trigger on view: %S` or {lit}`cannot create AFTER trigger on view: %S`
   ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
   The name is the name as written. -/
   | viewTrigger (before : Bool) (name : Identifier)
+  /-- {lit}`error in view %s: %s`, {lit}`error in view %s after rename: %s` and the same for a table or a trigger:
+  a rename finds that an object no longer resolves, before the rewrite or with the rewritten text
+  ({lit}`afterRename`). SQLite reports it while the statement runs, and the statement changes nothing, as a
+  prepare error does. The error is the one that the definition of the object gives. -/
+  | dependentObject (kind : DependentKind) (name : Identifier) (afterRename : Bool) (error : PrepareError)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq
+
+/-- Whether SQLite reports the error while the statement runs ({lit}`sqlite3_step`) and not in
+{lit}`sqlite3_prepare_v2`: only the error that a rename finds in a dependent object
+({name}`PrepareError.dependentObject`), because SQLite rewrites the stored definitions with an SQL function
+of the statement. The statement changes nothing in both cases. For example,
+{lean}`(PrepareError.noSuchTable (Identifier.ofString "t")).reportedWhileRunning` is false. -/
+def PrepareError.reportedWhileRunning : PrepareError → Bool
+  | .dependentObject .. => true
+  | .viewVariables | .tableExists _ | .viewExists _ | .indexNameUsed _ | .tableNameUsed _
+  | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
+  | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
+  | .noSuchTrigger _ | .triggerExists _ | .viewModify _ | .viewNotIndexed | .viewAddColumn | .viewTrigger ..
+  | .renameTargetTaken _ | .viewNotAltered _ | .viewColumnsNotRenamed _ | .renameNoSuchColumn _
+  | .expression _ => false
 
 end Belay.Sqlite.Model

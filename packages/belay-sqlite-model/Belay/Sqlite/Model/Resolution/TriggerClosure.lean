@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Resolution.TriggerBodies
+import Belay.Sqlite.Model.Resolution.TriggerPrograms
 import Belay.Sqlite.Model.Resolution.ForeignKeyPlan
 import Belay.Sqlite.Model.Resolution.ConflictPolicy
 
@@ -29,13 +29,6 @@ structure FireRequest where
   /-- Whether the write is a statement of a trigger's body. -/
   body : Bool := false
   deriving Repr, DecidableEq
-
-/-- The resolved event of a trigger of a table with the columns ({name}`Resolved.TriggerEvent`). -/
-def triggerEvent (columns : List CatalogColumn) : Syntax.TriggerEvent → Resolved.TriggerEvent
-  | .insert => .insert
-  | .delete => .delete
-  | .update [] => .update none
-  | .update names => .update (some (names.filterMap (columnPosition columns)))
 
 /-- The triggers of the catalog that fire for the request, in catalog order. -/
 def Catalog.triggersFiring (catalog : Catalog) (request : FireRequest) : List (Nat × CatalogTrigger) :=
@@ -101,35 +94,6 @@ def FireRequest.replaceRequests (catalog : Catalog) (keys recursive : Bool) (req
 def FireRequest.followUps (catalog : Catalog) (keys recursive : Bool) (request : FireRequest) : List FireRequest :=
   (if keys then request.keyRequests catalog catalog.foreignKeyLinks else []) ++
     request.replaceRequests catalog keys recursive
-
-/-- Resolve the program of the trigger at the position over the catalog, for a write: its
-condition over the trigger's rows, which may not name a subquery, call a function that can fail or call a connection counter ({name}`RestrictionKind.triggerForm`), and its body statements in order
-({name}`resolveBodyStatement`); the first prepare error stops. -/
-def resolveProgram (context : ResolveContext) (catalog : Catalog) (position : Nat) (trigger : CatalogTrigger) :
-    Except NodeRestriction (Except PrepareError Resolved.Program) := do
-  let some (table, shape) := catalog.findTable trigger.table | pure (.error (.noSuchTable trigger.table))
-  let row : TriggerRow := { columns := shape.columns, new := !(trigger.event matches .delete),
-                            old := !(trigger.event matches .insert) }
-  let condition : Except PrepareError (Option Resolved.Expr) ← match trigger.condition with
-    | none => pure (.ok none)
-    | some term => match condition [] (resolveOperand context.profile.dqsDml (row.scope 0) {} true term) with
-      | .error (.prepare error) =>
-        if error == .raiseOutsideTrigger then throw (triggerRestriction .raiseForm) else pure (.error (.expression error))
-      | .error (.restriction path kind) => throw { path, kind }
-      | .ok resolved =>
-        if resolved.any Resolved.Expr.isFallibleCall || resolved.any Resolved.Expr.namesSubquery ||
-            resolved.any Resolved.Expr.isCounter then
-          throw (triggerRestriction .triggerForm)
-        else pure (.ok (some resolved))
-  match condition with
-  | .error error => pure (.error error)
-  | .ok condition =>
-    let body ← trigger.body.foldlM (fun (steps : Except PrepareError (List Resolved.Step)) statement => match steps with
-      | .error error => pure (.error error)
-      | .ok steps => (·.map (steps ++ [·])) <$> resolveBodyStatement context catalog row statement) (.ok [])
-    pure (body.map fun body => { trigger := position, table, time := trigger.time,
-                                  event := triggerEvent shape.columns trigger.event, width := shape.columns.length,
-                                  condition, body })
 
 /-- The programs of the closure of the requests, from the programs so far, with fuel for the
 requests: each request resolves the triggers that it fires and have no program yet, adds the

@@ -82,7 +82,8 @@ theorem Catalog.findView_some {catalog : Catalog} {name : Identifier} {position 
 /-- How one statement may change the catalog. The catalog is the same; or one object
 is appended whose name {name}`Catalog.find` does not find; or a trigger is appended, whose
 name is in a namespace of its own; or the object at a position is replaced by one with the
-same name and kind; or the objects at some positions are removed ({name}`Catalog.drop`). -/
+same name and kind; or the objects at some positions are removed ({name}`Catalog.drop`); or a rename
+replaces the catalog by one whose names are unique. -/
 inductive CatalogStep (catalog : Catalog) : Catalog → Prop where
   /-- The catalog does not change. -/
   | same : CatalogStep catalog catalog
@@ -98,17 +99,20 @@ inductive CatalogStep (catalog : Catalog) : Catalog → Prop where
       CatalogStep catalog (catalog.set position { name := object.name, entry := entry })
   /-- The objects at the positions are removed, as DROP does. -/
   | remove (positions : List Nat) : CatalogStep catalog (catalog.drop positions)
+  /-- A rename replaces the catalog by one that has unique folded names. -/
+  | rewrite (renamed : Catalog) (unique : renamed.NamesUnique) : CatalogStep catalog renamed
 
 /-- For all catalogs related by {name}`CatalogStep`, unique folded names before give
 unique folded names after. Proof sketch: an unchanged catalog keeps its names; an
 appended object has a folded name outside the list, by
 {name}`Catalog.find_eq_none_iff`; a replaced object keeps its name, so the list of
 folded names is the same; a removal keeps a sublist of the names
-({name}`Catalog.NamesUnique.drop`). -/
+({name}`Catalog.NamesUnique.drop`); a rewrite carries the fact. -/
 theorem CatalogStep.namesUnique (step : CatalogStep catalog after) (unique : catalog.NamesUnique) :
     after.NamesUnique := by
   cases step with
   | same => exact unique
+  | rewrite _ renamed => exact renamed
   | remove positions => exact unique.drop positions
   | append object unused =>
     have absent := (Catalog.find_eq_none_iff _ _).mp unused

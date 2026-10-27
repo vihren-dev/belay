@@ -30,6 +30,7 @@
     "tests/add_column_defaults_test.py",
     "tests/conformance_query_sources_test.py",
     "tests/conformance_insert_queries_test.py",
+    "tests/conformance_renames_test.py",
     "tests/foreign_key_atoms_native_test.py",
     "tests/add_column_references_test.py",
     "tests/add_column_not_null_default_test.py"
@@ -123,7 +124,8 @@
     "tests/conformance_query_mutants_test.py",
     "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py",
-    "tests/conformance_insert_query_mutants_test.py"
+    "tests/conformance_insert_query_mutants_test.py",
+    "tests/conformance_rename_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"
