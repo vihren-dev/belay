@@ -43,6 +43,7 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
   if symbols == ["ALTER", "TABLE", "fullname", "RENAME", "TO", "nm"] then return ← renameTable tree command
   if symbols == ["ALTER", "TABLE", "fullname", "RENAME", "kwcolumn_opt", "nm", "TO", "nm"] then
     return ← renameColumn tree command
+  if symbols == ["ALTER", "TABLE", "fullname", "DROP", "kwcolumn_opt", "nm"] then return ← dropColumn tree command
   if symbols.take 2 == ["ALTER", "TABLE"] then return ← addColumn tree command
   if symbols == ["createkw", "trigger_decl", "BEGIN", "trigger_cmd_list", "END"] then return ← createTrigger tree command
   if [["DROP", "TABLE"], ["DROP", "VIEW"], ["DROP", "INDEX"], ["DROP", "TRIGGER"]].contains (symbols.take 2) then
@@ -60,7 +61,7 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
       command.start command.stop (clauses.selectSpans subqueries)
   if symbols.take 1 == ["PRAGMA"] then return ← pragma tree command
   unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE VIEW, CREATE INDEX, " ++
-    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, ALTER TABLE RENAME, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
+    "CREATE TRIGGER, ALTER TABLE ADD COLUMN, ALTER TABLE RENAME, ALTER TABLE DROP COLUMN, DROP TABLE, DROP VIEW, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
     "ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys")
 
 /-- One command as a statement with its parameter tokens: the tokens are numbered first

@@ -194,6 +194,9 @@ inductive RestrictionKind where
   | initialDatabase
   /-- ALTER TABLE RENAME that passes the checks of SQLite's prepare, in a catalog with a view, trigger or table whose names the model cannot rewrite exactly, or with a new name outside the model (ADR 0019, D4). -/
   | alterRename
+  /-- ALTER TABLE DROP COLUMN that passes the checks of SQLite's prepare, in a catalog whose dependent objects
+  the model cannot check or rewrite exactly (ADR 0019, D4). -/
+  | alterDrop
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

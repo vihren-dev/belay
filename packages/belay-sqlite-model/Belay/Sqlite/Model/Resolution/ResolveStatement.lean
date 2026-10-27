@@ -48,6 +48,8 @@ def resolveStatementRun (context : ResolveContext) (state : ResolveState) :
   | .renameTable table newName => Traced.lift (state.withCatalog (resolveRenameTable context state.catalog table newName))
   | .renameColumn table column newName columnToken quoted =>
     Traced.lift (state.withCatalog (resolveRenameColumn context state.catalog table column newName columnToken quoted))
+  | .dropColumn table column columnToken =>
+    Traced.lift (state.withCatalog (resolveDropColumn context state.catalog table column columnToken))
   | .dropTable name ifExists => Traced.lift (state.withWrite context (resolveDropTable state.catalog name ifExists))
   | .dropView name ifExists => Traced.lift (state.withCatalog (resolveDropView state.catalog name ifExists))
   | .dropIndex name ifExists => Traced.lift (state.withCatalog (resolveDropIndex state.catalog name ifExists))

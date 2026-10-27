@@ -34,7 +34,7 @@ open Lean Elab Term Belay.Sqlite.Model Translation
 /-- Whether the statement is a query that takes rows with {lit}`LIMIT` or {lit}`OFFSET`. -/
 def takesRowsByLimit : Syntax.Statement → Bool
   | .select (limit := limit) (offset := offset) .. => limit.isSome || offset.isSome
-  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 
@@ -44,7 +44,7 @@ def takesRowsByLimit : Syntax.Statement → Bool
 def limitsWithoutOrder : Syntax.Statement → Bool
   | statement@(.select (source := source) (orderBy := orderBy) (compound := compound) ..) =>
     takesRowsByLimit statement && orderBy.isEmpty && (source.isSome || compound.isSome)
-  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .pragma _
   | .createTrigger .. | .dropTrigger .. => false
 

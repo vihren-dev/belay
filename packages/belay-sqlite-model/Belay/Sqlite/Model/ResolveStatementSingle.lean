@@ -89,7 +89,7 @@ theorem ResolveState.withWrite_single {context : ResolveContext} {state next : R
 resolved statement can be an INSERT from a query without rules. -/
 def Syntax.Statement.isInsertSelect : Syntax.Statement → Bool
   | .insertSelect .. => true
-  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .select ..
   | .pragma _ => false
 
@@ -126,6 +126,7 @@ theorem resolveStatement_single (context : ResolveContext) (state next : Resolve
   case renameColumn =>
     exact plain _ ok fun _ _ found => by
       rcases resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> rfl
+  case dropColumn => exact plain _ ok fun _ _ found => (resolveDropColumn_no_success _ _ _ _ _ _ found).elim
   case dropTable => exact ResolveState.withWrite_single ok fun _ _ found => resolveDropTable_single _ _ _ found
   case dropView => exact plain _ ok fun _ _ found => resolveDropView_single _ _ _ found
   case dropIndex => exact plain _ ok fun _ _ found => resolveDropIndex_single _ _ _ found

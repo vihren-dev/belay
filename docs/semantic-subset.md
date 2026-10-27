@@ -19,7 +19,8 @@ The frontend maps these statements, and refuses every other statement as
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition, `ALTER TABLE … RENAME TO name` and
-  `ALTER TABLE … RENAME [COLUMN] a TO b` (ADR 0019, D4);
+  `ALTER TABLE … RENAME [COLUMN] a TO b` (ADR 0019, D4); `ALTER TABLE … DROP [COLUMN] a` is only a
+  restriction until its resolution lands (ADR 0019, D4);
 - `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
@@ -628,6 +629,7 @@ should shrink.
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |
 | `initial-database` | A table qualified with `before` outside a two-state query that is given the initial database, such as a table in the body of a trigger, and a function or pragma source with that schema name, are not modeled; the model never reads the current table instead. `CREATE VIEW` with such a table in its body is refused with the same restriction, because SQLite refuses it. A function call such as `json_each('[1]')` in the body of a view of the initial database is also refused when the current catalog has a view of the same name, because the model would read the wrong catalog, and a call of `pragma_table_info` or `pragma_foreign_key_list` in such a view body is refused, because SQLite refuses a view over a pragma function in an attached database. A three-part column name needs such a source, so without one it is the ordinary missing-column error, except that a rowid name in it is the restriction `rowid-name` | ADR 0017, S6 |
 | `alter-rename` | `ALTER TABLE t RENAME TO u` and `ALTER TABLE t RENAME COLUMN a TO b` are checked in SQLite's order (table, new name, system table, view, old column) and then rewrite the catalog as SQLite does: foreign keys, CHECK labels, views and triggers follow the new name, and a view or trigger that does not resolve is the error of SQLite. The statement is refused when a view or trigger of the schema has a name that the model cannot rewrite exactly (a column that a join merged, ON CONFLICT clauses in a trigger, a trigger statement or a view that fails only when it runs, such as an INSERT with too few values or a recursive WITH term with an aggregate), when a column rename finds a CHECK text with a double quote that no name covers, or when the new name is outside the model; drop and create the object again, or rename the table before you create the object | ADR 0019, D4 |
+| `alter-drop` | `ALTER TABLE t DROP COLUMN a` is not modeled when the table, a view or a trigger depends on the column in a way that the model cannot check as SQLite does; drop the dependent object first, or rebuild the table with `CREATE TABLE`, `INSERT SELECT`, `DROP TABLE` and `RENAME` | ADR 0019, D4 |
 
 #### Undecided
 

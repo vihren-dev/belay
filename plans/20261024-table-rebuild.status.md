@@ -586,3 +586,22 @@ rebuild proof is separate.
 - Reviews of the last commits: `20261027T041119Z-f7b3be39` and `20261027T050120Z-e548dbb3` have no findings.
 - Part 2 is complete (PR #279, bookmark `tasks/table-rebuild-part2` at fa4ec661). Part 3 (DROP COLUMN and the
   integrated rebuild coverage) starts next.
+
+## Part 3: DROP COLUMN and the integrated rebuild coverage
+
+### Unit 3.1: the DROP COLUMN statement form, still a restriction
+
+- `Syntax.Statement.dropColumn table column columnToken` (path 0 table, path 1 column); the translator maps
+  `ALTER TABLE fullname DROP kwcolumn_opt nm` (`Translation/Renames.lean`, `Statements.lean`); a schema name before the
+  table is still refused. The "not modeled" message now lists ALTER TABLE DROP COLUMN (the golden text in
+  `tests/surface/DbBangErrors.lean` follows; this is a change of an existing expected text, flagged to `main`).
+- The new restriction `alter-drop` (`RestrictionKind.alterDrop`, text, registry, `docs/semantic-subset.md`, conformance
+  example) is what `resolveDropColumn` returns for every input in this unit; `resolveDropColumn_no_success` lets the
+  catalog-level laws (`NamesSpec`, `ResolveStateSpec`, `ResolveStatementValid/Facts/Single`) cover the form. Later units
+  replace the placeholder and these arms.
+- Exhaustive matches over `Syntax.Statement` got a `.dropColumn ..` arm, among them the editor modules of
+  `packages/belay` (`SqlTableSlots` treats the table as path 0 like ADD COLUMN; the others list it with the other ALTER
+  forms). This is the same minimal-arm deviation as in part 2.
+- Tests: `tests/syntax_mapping_test.py` (DROP COLUMN mapping with and without COLUMN, quoted names and tokens; the
+  schema-qualified form is refused); the refusal case that used DROP COLUMN as an unmodeled form is gone.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.

@@ -62,6 +62,15 @@ def test_renames_keep_names_and_the_spelling_of_the_column_tokens(parse_sql: Cal
         {"renameColumn": {"table": "t", "column": "a", "newName": "b", "columnToken": "a", "quoted": False}}]
 
 
+def test_drop_column_keeps_the_column_as_written(parse_sql: Callable[..., Translation]) -> None:
+    """DROP COLUMN maps with and without the word COLUMN; the name is unquoted and the token stays as
+    written, because SQLite prints the token in its error for a missing column."""
+    sql = 'ALTER TABLE "T" DROP COLUMN [Old]; ALTER TABLE t DROP a;'
+    assert mapped(parse_sql, sql) == [
+        {"dropColumn": {"table": "T", "column": "Old", "columnToken": "[Old]"}},
+        {"dropColumn": {"table": "t", "column": "a", "columnToken": "a"}}]
+
+
 def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Translation]) -> None:
     """`COLLATE` maps on a column, quoted or not, and as an expression, also in `ORDER BY` and
     an index term, with the name as written; resolution decides what the name means
@@ -111,7 +120,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),
     ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
     ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
-    ("ALTER TABLE t DROP COLUMN a;", "ALTER TABLE t DROP COLUMN a"),
+    ("ALTER TABLE main.t DROP COLUMN a;", "main.t"),
     ("ALTER TABLE main.t RENAME TO u;", "main.t"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "SELECT 1"),
     ("INSERT INTO t VALUES (a & 1);", "a & 1"), ("UPDATE t SET a = 1 WHERE a IN u;", "a IN u"),
@@ -127,7 +136,6 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
 
 
 @pytest.mark.parametrize(("sql", "advice"), [
-    ("ALTER TABLE t DROP COLUMN a;", "rewrite it with the modeled forms: CREATE TABLE"),
     ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
     ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "write INSERT ... VALUES (...)"),
     ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),

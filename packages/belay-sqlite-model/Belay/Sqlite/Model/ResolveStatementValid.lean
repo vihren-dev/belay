@@ -82,6 +82,10 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ (by assumption)).valid current)
+  | dropColumn table column columnToken =>
+    simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact (resolveDropColumn_no_success _ _ _ _ _ _ (by assumption)).elim
   | dropTable name ifExists =>
     simp only [statement_arms] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found
