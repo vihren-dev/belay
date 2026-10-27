@@ -187,13 +187,16 @@ that names `ifOk_send_expansion` becomes `ifOk_send_derivedColumn`; the migratio
 - 2026-10-27: review `20261027T093743Z-84c09111` (1 should: part 3 shares the model barrel and
   lakefile; fixed in the next commit).
 - 2026-10-27: review `20261027T093842Z-bcc1caa1` (no findings).
-- 2026-10-27: commit `dbb25391` (general laws, deletion of the `NormalizedField*` modules, `Lowercase*` fixtures,
-  driver changes). Local checks: model, belay and verifier-conformance builds; `just dev-build`; predictions
-  rebuilt and byte-identical to the baseline (55 files); pytest of the migration, application and assertion
-  fixture drivers (local scratch runtime root).
-- 2026-10-27: the universal claim, the kernel examples and the new driver `tests/surface_derived_column_test.py`
-  (in `surfaceChecks` of `tests/nix_suites.json`) are in the next commit. Pytest: 21 passed in 175 s for the
-  four touched driver files.
+- 2026-10-27: commit `dbb25391`: general laws, deletion of the `NormalizedField*` modules, the `Lowercase*`
+  fixtures and the driver changes. Nix results: pending (end-of-task gates).
+- 2026-10-27: commit `593d6f21`: the universal claim, the kernel examples and the new driver
+  `tests/surface_derived_column_test.py` (in `surfaceChecks` of `tests/nix_suites.json`). Nix results: pending.
 - 2026-10-27: review `20261027T110912Z-dbb25391` of `dbb25391`: finding 1 (R19, the status file named files
-  of the next commit) is a commit boundary; findings 2 and 3 (R2, plain-words statements of
-  `Expr.eval_compare_stored_left` and `sourceRows_addDerivedColumn`) are fixed in the `refactor:` commit.
+  of the next commit) is a commit boundary and was rejected; findings 2 and 3 (R2, plain-words statements of
+  `Expr.eval_compare_stored_left` and `sourceRows_addDerivedColumn`) were fixed in a `refactor:` commit.
+- 2026-10-27: review `20261027T111149Z-593d6f21` of `593d6f21`: finding 1 (R11, the new driver imports
+  `tests/surface_assertion_examples_test.py`, which the inputs of `surfaceChecks` lacked) is fixed by adding
+  the module to the shared inputs in `build-support/tests.nix`; finding 2 (R19) and finding 3 (R19, local
+  results in the status file) are fixed by this wording.
+- 2026-10-27: review `20261027T111227Z-7a296e38` of the first `refactor:` commit: the example of when the
+  premise `agree` holds was too weak (BLOB affinity); the example is deleted.
