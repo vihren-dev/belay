@@ -67,10 +67,11 @@ fixtures show.
   by `sql_refute` in `RebuildRefutation.lean`, and replayed on pinned SQLite in `RebuildReplays.lean` (`wrong-enforced`).
 - (b) The claims "preserves" and "succeeds" about the right rebuild hold for the databases that have the tables of
   the guide's schema, not for every database. A database without the column `customers.email` makes the copy fail,
-  and a database without `customers` makes it fail too. The fixtures for these two claims are planned
-  work (claim 1 and claim 2 of the task file). They state the claims over every database whose catalog is the guide's
-  schema (a site), and the success claim keeps the premise that no name is NULL. Until they land, the concrete
-  replays of `RebuildReplays.lean` are the only evidence.
+  and a database without `customers` makes it fail too. The fixtures state the claims over every
+  database whose catalog is the guide's schema (a site). Claim 1 (preservation) is implemented:
+  `requireName_preserves_allSessions` in `tests/surface/RebuildKeeps.lean`. Claim 2 (success) is planned work, and its
+  fixture will keep the premise that no name is NULL. Until it lands, the concrete replays of `RebuildReplays.lean`
+  are the only evidence for success.
 - (c) `requireName` does not stop when `PRAGMA foreign_key_check` reports rows: the pragma returns them as rows, and
   the commit goes on. The replay `dangling` (a session of customer 99) and the replay `without-name` show it on
   pinned SQLite and in the model. A migration that must stop has to check the rows itself.
@@ -148,7 +149,7 @@ Implementation of the step laws (2026-10-27). All new modules are in
   `InsertFits` that fails. The native check runs four scripts on pinned SQLite 3.51.0 and compares rows and
   refusals with the model.
 - Every execution of an ordinary statement (`ExecutionEffects.lean`). General form: any statement that is not
-  BEGIN, COMMIT or ROLLBACK, and any execution of its step, the own one or one of an alternative run
+  BEGIN, COMMIT, ROLLBACK or a setting (`isControl = false`), and any execution of its step, the own one or one of an alternative run
   (`runScriptStep_execution_effects`): an execution without an error output has the successful effect of one run.
   `StatementExecution.ofAlternatives_mem` now also gives the output of the alternative. For INSERT from a query
   without rules (`runScriptStep_insertSelect_frame`) every such execution replaces the rows of the target and

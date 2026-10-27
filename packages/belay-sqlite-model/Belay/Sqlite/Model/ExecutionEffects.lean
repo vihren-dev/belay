@@ -12,12 +12,15 @@ that every such execution writes the rows of the target table and nothing else. 
 
 namespace Belay.Sqlite.Model
 
-/-- For every step that continues, statement that resolves to an ordinary statement (no BEGIN, COMMIT or
-ROLLBACK) and every execution of the step: if the output of the execution is no error, then the effect of
-some run of the statement is a success with a database, and the next connection of the execution is the
-connection with that database and the counters after the counts of that run. The run is the own run or an
-alternative run ({name}`StatementRun.effects`). In plain words, an execution that does not fail has the
-effect of one successful run, whichever run it comes from; the snapshot, the clock and the settings stay.
+/-- For every step that continues, statement that resolves to an ordinary statement (none of BEGIN, COMMIT,
+ROLLBACK or a setting: {name}`Resolved.Statement.isControl` is false) and every execution of the step: if the
+output of the execution is no error, then the effect of some run of the statement is a success with a database,
+and the next connection of the execution is the connection with that database and the counters after the counts
+of that run. The run is the own run or an alternative run, and it is listed among the effects of the statement
+({name}`StatementRun.effects`). In plain words, an execution that does not fail has the effect of one
+successful run, whichever run it comes from; the snapshot, the clock and the settings stay. The formula ties
+the counts to the run that it names, and says only that the effect of that run is listed; it does not say which
+execution of the step the run belongs to.
 Proof sketch: {name}`runScriptStep_continued_spec` gives the own execution and the executions of the
 alternatives; {name}`StatementExecution.ofAlternatives_mem` gives the run, transition and output of an
 alternative. In both cases {name}`successful_output_effect` turns an output that is no error and does not end
@@ -58,9 +61,9 @@ theorem runScriptStep_execution_effects {context : ResolveContext} {clock : Opti
     rw [nextEq', transitionEq, transition, afterEq]
     rfl
 
-/-- For every upsert of rows into a target, with the values of its clauses, and every database: if the effect
-of the run succeeds with a database, that database is the input database with the rows of the target
-replaced. Proof sketch: unfold the run; a missing table is an error, and the effect of the summary of the
+/-- For every upsert of rows into a target, with the values of its clauses, and every database: if the upsert has
+no rules (no trigger and no foreign-key action: the last argument is {lit}`none`) and the effect of the run
+succeeds with a database, that database is the input database with the rows of the target replaced. Proof sketch: unfold the run; a missing table is an error, and the effect of the summary of the
 steps writes the rows of the target. -/
 theorem runStatement_upsert_ok_setRows (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
     (literals : List (List Resolved.Cell)) (clauses : List Resolved.ConflictClause)
