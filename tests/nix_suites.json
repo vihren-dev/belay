@@ -184,7 +184,8 @@
     "tests/surface_replay_test.py",
     "tests/surface_sql_docs_test.py",
     "tests/surface_sql_doc_blocks_test.py",
-    "tests/surface_foreign_key_atoms_test.py"
+    "tests/surface_foreign_key_atoms_test.py",
+    "tests/surface_rebuild_affinity_test.py"
   ],
   "surfaceChecks": [
     "tests/surface_check_command_test.py",

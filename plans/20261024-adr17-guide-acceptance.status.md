@@ -33,3 +33,13 @@ including unrelated private history or copying private contents publicly.
   the done tasks, the open S6 tasks, the public stack, the private guide PR chain #6 to #9, the unpublished
   S2/S3 guide commits, and the list of recorded guide changes. Workspace `sqlite-verifier-guide-accept`
   on `tasks/surface-editor-part3`.
+- 2026-10-27: workspace `sqlite-verifier-guide-accept` (jj workspace of the public repository), private guide
+  workspace `sqlite-verifier-product-adr17-accept`. Item 3 of the migration-pattern remainder (the type-affinity
+  data-loss example): the guide's example is a rebuild that copies a TEXT column `zip` into an INTEGER column. No
+  existing check covers it: the derived-column examples store `a + b` in a TEXT column, which is a different case.
+  `tests/surface/RebuildAffinity.lean` and `tests/surface_rebuild_affinity_test.py` (suite `surface`) add it. The
+  kernel proves that the rebuild succeeds, that '01234' becomes the integer 1234 and 'n/a' stays text, that the
+  rebuild does not preserve the query of both columns (`rebuild_not_preserved`), and that a copy into a STRICT table
+  refuses 'n/a' with result code 19. Native SQLite 3.51.0 gives the same rows for the three runs and the column name
+  in the error text of the STRICT copy. The local focused run is not Nix evidence: the Nix result is recorded in the
+  final gates.
