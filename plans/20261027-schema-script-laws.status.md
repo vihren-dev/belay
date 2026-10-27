@@ -65,8 +65,10 @@ fixtures show.
   by `sql_refute` in `RebuildRefutation.lean`, and replayed on pinned SQLite in `RebuildReplays.lean` (`wrong-enforced`).
 - (b) The claims "preserves" and "succeeds" about the right rebuild hold for the databases that have the tables of
   the guide's schema, not for every database. A database without the column `customers.email` makes the copy fail,
-  and a database without `customers` makes it fail too. The fixtures state the claims over every database whose
-  catalog is the guide's schema (a site).
+  and a database without `customers` makes it fail too. The fixtures for these two claims are planned
+  work (claim 1 and claim 2 of the task file). They state the claims over every database whose catalog is the guide's
+  schema (a site), and the success claim keeps the premise that no name is NULL. Until they land, the concrete
+  replays of `RebuildReplays.lean` are the only evidence.
 - (c) `requireName` does not stop when `PRAGMA foreign_key_check` reports rows: the pragma returns them as rows, and
   the commit goes on. The replay `dangling` (a session of customer 99) and the replay `without-name` show it on
   pinned SQLite and in the model. A migration that must stop has to check the rows itself.
