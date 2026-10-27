@@ -79,7 +79,7 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 -- Constraints of one index merge (slice 5d): the explicit algorithm wins; two different
 -- explicit algorithms are SQLite's prepare error.
 #guard (catalogOf (schema [.createTable (name! "t") [constrained (.unique (some .replace))] [.unique [(name! "a")]]])).map (·.entry) ==
-  [.table { columns := [{ name := (name! "a"), declaredType := none }], uniqueKeys := [[0]], uniqueAlgorithms := [some .replace] }]
+  [.table { columns := [{ name := (name! "a"), declaredType := none }], uniqueKeys := [[0]], uniqueAlgorithms := [some .replace], inlineUnique := [0] }]
 #guard statements (schema [.createTable (name! "t") [constrained (.primaryKey false (some .ignore))] [.unique [(name! "a")] (some .replace)]])
   matches [.prepareError (.expression .conflictingAlgorithms)]
 

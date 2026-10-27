@@ -125,7 +125,8 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
         | ok resolvedFilter =>
           simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
             named, keys, filters, ResolveState.withCatalog, Except.map, resolvedStepOutput_createIndex clock index connection parameters name
-              { table := position, keys := keyTerms, unique, filter := resolvedFilter }
+              { table := position, keys := keyTerms, unique, filter := resolvedFilter,
+                exactNames := indexSpelledAsDeclared table.columns terms filter }
               { shape := table, rows := connection.state.database.rows.getD position [] } aligned
               (connection.state.database.table_of_findTable tableName position table found),
             Output.isError, Output.endsRun]

@@ -29,12 +29,13 @@ def CatalogColumn.blankNames (column : CatalogColumn) : CatalogColumn :=
     foreignKeys := column.foreignKeys.map ForeignKey.blankNames }
 
 /-- The table without the names of its columns and without the names in its CHECK constraints and
-foreign keys. -/
+foreign keys, and without the note that a column rename quoted a name ({name}`CatalogTable.quotedRename`). -/
 def CatalogTable.blankNames (table : CatalogTable) : CatalogTable :=
   { table with
     columns := table.columns.map CatalogColumn.blankNames
     checks := table.checks.map CheckConstraint.blankNames
-    foreignKeys := table.foreignKeys.map ForeignKey.blankNames }
+    foreignKeys := table.foreignKeys.map ForeignKey.blankNames
+    quotedRename := false }
 
 /-- The part of a catalog object that a rename keeps: a table without names, an index as it is,
 and only the kind of a view or a trigger, whose definitions are syntax that a rename rewrites. -/

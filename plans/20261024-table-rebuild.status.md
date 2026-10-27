@@ -605,3 +605,21 @@ rebuild proof is separate.
 - Tests: `tests/syntax_mapping_test.py` (DROP COLUMN mapping with and without COLUMN, quoted names and tokens; the
   schema-qualified form is refused); the refusal case that used DROP COLUMN as an unmodeled form is gone.
 - Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Unit 3.2: facts about the text of a definition
+
+- SQLite keeps the text of a table and of an index, and prints a name of that text as written when the text no longer
+  resolves after DROP COLUMN. The model keeps no text for generated columns, table-level keys, foreign keys and
+  indexes, so the catalog now records the facts that the error spelling needs: `CatalogTable.inlineUnique` (columns
+  with a UNIQUE column constraint, because SQLite refuses to drop only those), `CatalogTable.exactNames` and
+  `CatalogIndex.exactNames` (the text spells every column as declared, with no double quote), and
+  `CatalogTable.quotedRename` (a quoted column rename wrote a quoted name into the text). `Resolution/SpelledNames.lean`
+  computes them at CREATE TABLE (`CatalogTable.withSpelling`) and CREATE INDEX; `blankNames` resets `quotedRename`, so
+  the outline of a table does not change.
+- `statisticsTable` moved to `Resolution/StatisticsTables.lean` to keep `Definitions.lean` under 200 lines.
+- Proof repairs (3 manual): `CatalogTable.supported_withSpelling` (new, by `rfl`) and the three `createTable` validity
+  theorems now speak of the table with its spelling; `Catalog.Valid.createIndex` takes the `exactNames` flag;
+  `CreateIndexSuccessLaws` states the index with its flag. One `#guard` of `Examples.lean` got `inlineUnique := [0]`.
+- Tests: `Resolution/SpelledNamesExamples.lean` (compiled-evaluator `#guard` checks of the facts at CREATE TABLE,
+  CREATE INDEX and the quoted column rename).
+- Manual proof repairs in this unit: 3. Total for the task so far: about 125.

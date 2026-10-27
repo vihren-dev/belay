@@ -46,6 +46,9 @@ structure CatalogIndex where
   unique : Bool
   /-- The filter of a partial index, over the table's row; none for a full index. -/
   filter : Option Resolved.Expr := none
+  /-- Whether the text of the index spells every column name as the column is declared, with no double
+  quote ({lit}`SpelledNames.lean`); the default describes an index written that way. -/
+  exactNames : Bool := true
   deriving Repr, DecidableEq
 
 /-- One unique key of a table: its terms with their collations, and the filter of a partial
