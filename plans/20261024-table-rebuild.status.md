@@ -394,3 +394,21 @@ rebuild proof is separate.
   and the trigger tests of the conformance suites.
 - Review of unit 2.2: `20261027T004253Z-27fd1515` (2 musts and 1 should, all fixed in the refactor commit).
 - Manual proof repairs in this unit: 0.
+
+### Part 2, unit 2.4: replace a name of an object by its trace path
+
+- `Resolution/RewriteEdit.lean` (`NameEdit`: path, old name, new name, `RenameStyle`; the quote rule of SQLite for
+  `RENAME TO` and `RENAME COLUMN`), `RewriteExpr.lean` (`Expr.renameAt`), `RewriteQuery.lean` (`TableReference`,
+  `ResultColumn`, `Join`, `Subquery`), `RewriteText.lean` (`SourceText.replaceTokens`, `SourceText.renameAt`: the
+  bytes of the name tokens that have the path of the edit, with the tokens behind them moved), `RewriteSelect.lean`
+  (`renameSelectAt`: query and subqueries of a statement, with the texts of the result columns) and
+  `RewriteBody.lean` (`BodyStatement.renameAt`, `CatalogTrigger.renameAt`). Every function takes the path of a
+  name occurrence of the name trace and gives none when the path does not lead to the old name, so a layout
+  that the engine does not know is a failure of the rewrite, never a silent change of another name.
+- Tests: `Resolution/RewriteExamples.lean` checks, for samples that cover every expression form, the clauses of a
+  query, subqueries, the program of a trigger and a raising SELECT, that the rewrite works at the path of every
+  occurrence that a rename rewrites and that the trace of the rewritten object has the new name at that path;
+  and the rewrite of the text of a result column (quote rule, moved tokens).
+- Not covered yet (restricted by the guard of the path, decided in unit 2.5): names in the arguments of a
+  table-valued function, ON CONFLICT targets, and USING names (to be probed against native SQLite).
+- Manual proof repairs in this unit: 0.
