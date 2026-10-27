@@ -1,0 +1,71 @@
+{
+  "caller": "claude",
+  "commit": "f0c30a5b20425b4cc65b6bbcf1553b592a1e3574",
+  "date": "2026-10-27T14:24:34+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ControlStepFrames.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ControlStepLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CreateTableStepLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DropTableResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DropTableStepLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/OrdinaryStepEffects.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/PragmaStepLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/RewriteStepLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SchemaFailureLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/TableByName.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261027-schema-script-laws.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261027T142434Z-f0c30a5b#1",
+      "line": 51,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DropTableResolution.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatement says enforcement off gives a drop with no rules, but the formula preserves the arbitrary supplied `rules`, including `some rules`. Fix: state that the wrapper adds no rules and preserves any supplied rules."
+    },
+    {
+      "id": "20261027T142434Z-f0c30a5b#2",
+      "line": 62,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DropTableStepLaws.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatement presents resolution to a drop as a conclusion, but the theorem assumes it through `found`, excluding continuing prepare errors such as dropping a missing table. Fix: state the resolution premise explicitly and restate the table-lookup equality as the conclusion."
+    },
+    {
+      "id": "20261027T142434Z-f0c30a5b#3",
+      "line": 9,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SchemaFailureLaws.lean",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The module docstring claims modeled DROP TABLE execution never fails and every failure preserves the connection, although enforced drops can fail during execution and the module’s failure theorem requires foreign keys off. Fix: restrict these claims about DROP TABLE to connections with foreign keys off."
+    }
+  ],
+  "id": "20261027T142434Z-f0c30a5b",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

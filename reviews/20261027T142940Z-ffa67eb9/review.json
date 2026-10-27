@@ -1,0 +1,52 @@
+{
+  "caller": "claude",
+  "commit": "ffa67eb95dc310c5b5de0a178e8d68cd96669e88",
+  "date": "2026-10-27T14:29:40+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay/Belay/Sqlite/CertifiedQueryCommutation.lean",
+    "packages/belay/Belay/Sqlite/DerivedColumnQueries.lean",
+    "packages/belay/Belay/Sqlite/MigrationPatternAfter.lean",
+    "packages/belay/Belay/Sqlite/ReadCertificate.lean",
+    "packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DerivedColumnOutputs.lean",
+    "plans/20261027-schema-script-laws.status.md",
+    "tests/surface/S6RulesNegativeReads.lean",
+    "tests/surface/S6RulesQueryPattern.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261027T142940Z-ffa67eb9#1",
+      "line": 101,
+      "path": "tests/surface/S6RulesQueryPattern.lean",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The updated fixtures still use table position 0 on both connections and a migration with one end state, so they do not test either generalization introduced by this commit. Fix: add kernel examples that apply the generalized rules after dropping an earlier table and after a migration whose branches reach different connections and output counts."
+    }
+  ],
+  "id": "20261027T142940Z-ffa67eb9",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "ffa67eb9",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

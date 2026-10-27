@@ -168,7 +168,10 @@ and DROP COLUMN with their contracts, and a general unique-index rule for
 `sql_run`: a plain insert that succeeds gives a valid database, so its unique
 and partial unique indexes hold (reuse `Table.KeysUnique.keptRows_pairwise`).
 With it the tactics prove the partial-index invariant fixture (owner decision
-of 2026-10-27).
+of 2026-10-27). The rebuild example needs general step, frame, translation and
+success laws that this task did not plan; the schema-script task
+(`plans/20261027-schema-script-laws.task.md`, owner decision of 2026-10-27)
+adds them and the rebuild fixture, and its task-end checks complete this task.
 
 Two guide claims are proved outside this task (owner decisions of
 2026-10-27). The `notBlockedIn ≈ notBlockedEx` claim for every database under

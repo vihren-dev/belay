@@ -81,7 +81,7 @@ columns as the certificate, which is 3. -/
 theorem star_obligations_fail : ¬ (⟨0, 3, none, [.scalar (.column 0), .scalar (.column 1), .scalar (.column 2)]⟩ :
     ReadCertificate).Obligations runContext star initial.connection reachedConnection := by
   intro obligations
-  obtain ⟨names, state, resolved⟩ := obligations.resolvesOther
+  obtain ⟨_, _, _, _, _, _, _, ⟨names, state, resolved⟩, _⟩ := obligations.appended
   have count : columnCount reachedConnection.resolveState star = 3 := by
     unfold columnCount
     rw [resolved]
