@@ -77,3 +77,15 @@ def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path
     test_rebuild_replays_agree_with_pinned_sqlite shows the same loss on pinned SQLite."""
     check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildRefutation", 1)),
                        timeout=CHAIN_TIMEOUT_SECONDS)
+
+
+def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:
+    """The right rebuild preserves the read of all sessions on every database whose catalog is the guide's schema,
+    for every complete environment (claim 1 of the guide). The rebuild is an INSERT from a query, so its branches
+    can reach different connections; the fixtures show that every execution of every step keeps the resolution
+    state of the sample run and the table of the sessions, which moves from position 1 to position 0
+    (RebuildKeepsInvariant, RebuildKeepsFinish), and the certificate of the read (RebuildKeepsRead) turns that into
+    the preservation claim (RebuildKeeps). The final proof uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildKeepsFinish", 0), ("RebuildKeepsRead", 0),
+        ("RebuildKeeps", 1)), timeout=CHAIN_TIMEOUT_SECONDS)

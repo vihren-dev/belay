@@ -52,6 +52,8 @@ reason: the model has no earlier law for the statements.
 - 2026-10-27: `tasks/surface-editor-part3` is merged into the branch (change `qsttolov`, no conflicts).
 - 2026-10-27: Part 2 slice 2 committed: the rules of `sql_run` for CREATE TABLE, DROP TABLE without rules, a rename, a pragma setting, BEGIN and COMMIT (`SchemaStepRules`, `ControlStepRules`, premise names `atEnd` and `outline`, `statementKind?` reads the constructor of a pragma). The tactic closes the resolution of CREATE TABLE only with all definitions unfolded, so `closeSide` tries each hint also under `with_unfolding_all`; a variable of a rule that takes the tag of a premise name (`after`) is no premise any more. The fixtures `RebuildGuide` (schema, the rebuilds and the read of the guide) and `SchemaRuleExamples` (one program with all six kinds) are checked by `tests/surface_rebuild_test.py`, in the suite `surfaceS6`.
 - 2026-10-27: Part 2 slice 3 committed: claim 3. `sql_refute` refutes `requireNameWrongEnforced preserves allSessions` (`RebuildRefutation`), and the fixture `RebuildReplays` runs the right rebuild on three databases and the wrong one on a connection with foreign keys on, for a check against pinned SQLite 3.51.0 (`tests/surface_rebuild_test.py`).
+- 2026-10-27: Part 2 slice 4 committed: claim 1. `requireName_preserves_allSessions` in `RebuildKeeps` proves `Migration.QueryPreserves (send requireName) allSessions` for every database whose catalog is the guide's schema, for every complete environment. The rebuild has an INSERT from a query, so the branches reach different connections and `sql_commute` does not cover it (its `single` premise). The proof uses new general laws: every execution of an INSERT from a query without rules writes only the rows of its target (`runScriptStep_insertSelect_frame`), a property that each step keeps holds at the end of every successful branch of a sent script (`sendStatements_branch_invariant`), and the table found by name survives a rename (`Database.tableNamed_rewrite`). The fixtures `RebuildKeepsInvariant`, `RebuildKeepsFinish` (the nine statements keep the resolution state of the sample run and the sessions table, which moves from position 1 to position 0), `RebuildKeepsRead` (the certificate) and `RebuildKeeps` are checked by `tests/surface_rebuild_test.py`. The advice of `sql_commute` for the premise `single` names this route. This is also the example of moved positions and of a migration whose branches reach different connections that review `20261027T142940Z-ffa67eb9` asked for.
+- 2026-10-27: review `20261027T162458Z-24973423` of slice 3 (1 must: the status said the universal fixtures were done; fixed in `3ceb382c`).
 
 ## Changes that the guide needs
 
@@ -145,3 +147,16 @@ Implementation of the step laws (2026-10-27). All new modules are in
   key, CHECK and a STRICT type, each with the constraint error 19 from the model and with the field of
   `InsertFits` that fails. The native check runs four scripts on pinned SQLite 3.51.0 and compares rows and
   refusals with the model.
+- Every execution of an ordinary statement (`ExecutionEffects.lean`). General form: any statement that is not
+  BEGIN, COMMIT or ROLLBACK, and any execution of its step, the own one or one of an alternative run
+  (`runScriptStep_execution_effects`): an execution without an error output has the successful effect of one run.
+  `StatementExecution.ofAlternatives_mem` now also gives the output of the alternative. For INSERT from a query
+  without rules (`runScriptStep_insertSelect_frame`) every such execution replaces the rows of the target and
+  the counters, and nothing else. Left specific: the case with rules (foreign keys on, or triggers) is not
+  covered; the counts are not described.
+- Table found by name across a rename (`Database.tableNamed_rewrite`). General form: any rewrite of the catalog
+  in which the name finds the same definition at the same position.
+- Branches of a sent script (`SendStatementsInvariant.lean`). General form: any list of statements and any
+  property that every execution of every step keeps (the property can depend on the position in the list):
+  it holds at the end of every branch that returns a value without an error. Unlike the shape lemma it does not
+  need the statements to be free of INSERT from a query.

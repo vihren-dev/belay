@@ -49,8 +49,9 @@ list of further executions: if the executions of the alternatives of the run
 ({name}`StatementExecution.ofAlternatives`) are the list, each of them comes from an alternative of the
 run: its run is the run of the alternative ({name}`StatementRun.Alternative.toRun`), its transition is the
 transition of {name}`advanceRun` on the connection, and its next connection is
-{name}`Connection.afterStep` of that transition with the counts of the alternative. So a law about the
-effect of every run of a statement is a law about every further execution. Proof sketch:
+{name}`Connection.afterStep` of that transition with the counts of the alternative, and its output is the
+output of that run and transition ({name}`Output.ofStep`). So a law about the effect of every run of a
+statement is a law about every further execution. Proof sketch:
 {name}`List.mapM_except_mem` finds the alternative; the execution of an alternative is built from its
 run and its transition. -/
 theorem StatementExecution.ofAlternatives_mem {index : Nat} {parameters : List Value} {connection : Connection}
@@ -59,7 +60,8 @@ theorem StatementExecution.ofAlternatives_mem {index : Nat} {parameters : List V
     (listed : StatementExecution.ofAlternatives index parameters connection resolved after value run = .ok further) :
     ∀ traced ∈ further, ∃ alternative ∈ run.alternatives,
       traced.run = alternative.toRun ∧ traced.transition = advanceRun index resolved connection.state alternative.toRun ∧
-        traced.execution.next = connection.afterStep after alternative.counts traced.transition := by
+        traced.execution.next = connection.afterStep after alternative.counts traced.transition ∧
+        traced.execution.output = Output.ofStep value parameters resolved connection.state alternative.toRun traced.transition := by
   intro traced member
   obtain ⟨alternative, inAlternatives, built⟩ := List.mapM_except_mem _ _ _ listed traced member
   refine ⟨alternative, inAlternatives, ?_⟩
@@ -72,7 +74,7 @@ theorem StatementExecution.ofAlternatives_mem {index : Nat} {parameters : List V
       simp only [produced, Except.map] at built
       injection built with same
       subst same
-      exact ⟨rfl, rfl, rfl⟩
+      exact ⟨rfl, rfl, rfl, produced.symm⟩
 
 /-- For every index, values, connection, resolved statement, resolution state, clock value, run and
 list of further executions: if the executions of the alternatives of the run

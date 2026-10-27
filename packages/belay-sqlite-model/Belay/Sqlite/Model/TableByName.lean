@@ -89,4 +89,22 @@ theorem Database.tableNamed_setRows_other {database : Database} {name : Identifi
   rw [Database.tableNamed_of_findTable moved, Database.table_setRows_other database rows other, present]
   rfl
 
+/-- For every database, name, table found by the name and catalog in which the name finds the table's definition at
+the same position: the database with that catalog finds the same table, with the same rows, at the same position.
+In plain words, a rewrite of the catalog that leaves one table's name, position and definition as they are, such as
+a rename of another table, does not disturb the table found by that name. Proof sketch: the new catalog finds the
+definition at the position, so {name}`Database.table_of_findTable` gives the table with the rows of the position,
+which are the rows of the old table. -/
+theorem Database.tableNamed_rewrite {database : Database} {name : Identifier} {position : Nat} {table : Table}
+    (found : database.tableNamed name = some (position, table)) {renamed : Catalog}
+    (same : renamed.findTable name = some (position, table.shape)) :
+    ({ database with catalog := renamed } : Database).tableNamed name = some (position, table) := by
+  obtain ⟨-, present⟩ := Database.tableNamed_some found
+  have moved := Database.table_of_findTable ({ database with catalog := renamed } : Database) name position table.shape same
+  have old := Database.table_of_findTable database name position table.shape (Database.tableNamed_some found).1
+  rw [present] at old
+  rw [Database.tableNamed_of_findTable same, moved]
+  change some (position, ({ shape := table.shape, rows := database.rows.getD position [] } : Table)) = _
+  rw [← Option.some.inj old]
+
 end Belay.Sqlite.Model

@@ -88,6 +88,7 @@ import Belay.Sqlite.PlainDeleteStepRule
 import Belay.Sqlite.AddColumnStepRule
 import Belay.Sqlite.SchemaStepRules
 import Belay.Sqlite.ControlStepRules
+import Belay.Sqlite.SendStatementsInvariant
 import Belay.Sqlite.ReadStepRule
 import Belay.Sqlite.SqlRun
 import Belay.Sqlite.SqlCommute
