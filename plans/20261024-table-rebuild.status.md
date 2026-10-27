@@ -844,3 +844,56 @@ For each new public statement: the general form chosen, and what stays specific.
   or changes run in the daily CI job.
 - The task is DONE. The authored corpus freeze (corpus numbers, Nix corpus list, evidence writers, lock) remains for the
   judge PR. The part 3 chain is merged with `tasks/not-in-subquery-laws`.
+
+## Judge PR: freeze of the authored cases (corpus-v55)
+
+Branch `tasks/table-rebuild-judge` on top of `tasks/table-rebuild-part3` (PR #282). The owner must approve this change
+(ADR 0011); the implementation PRs leave the lock unchanged.
+
+- Corpus: `conformance/corpus-v55` (next free number after v54), written by `python -m conformance.table_rebuild_evidence`
+  through `conformance.authored_evidence`. It joins four case modules in `conformance/authored_table_rebuild_set.py`:
+  `authored_insert_queries` (60 cases), `authored_renames` (51), `authored_column_drops` (40) and `authored_rebuilds` (11).
+  All records are native version 7 (run on after an error, with the writer counters). The replay of the writer is
+  deterministic: a second run gives the same shard bytes.
+- Claim: `corpus-v55` in `judge/claims.json` with `DISAGREE` and `HARNESS_ERROR` forbidden and `mustAgree` of the 149 cases
+  that agree (insert 53, rename 47, column drop 39, rebuild 10). The 13 other cases are MODEL_UNSUPPORTED: 7 INSERT
+  cases whose source the model does not describe (compound, GROUP BY, ORDER BY of a failing source, transfer
+  optimization, two-order trigger), `rename-column-check-loose-quote`, `rename-column-view-error`,
+  `rename-column-view-recursive-aggregate`, `rename-table-main-schema`, `column-drop-parent-unrelated` and
+  `rebuild-drop-column-instead`. No existing claim changed; no `mustAgree` list of another corpus changed.
+- Left out of the corpus: `insert-query-index-order` and `insert-query-index-order-keeps-other-rows`. SQLite reads the
+  source by its index, so the rows get other ids than the model's own execution gives. The model agrees through its second
+  execution (kernel test), but the judge compares the one prediction of `runPassFrom`, so the verdict is DISAGREE, which a
+  claimed corpus forbids. A change that lets the judge accept any possible execution is a judge-protocol change and
+  needs an owner decision. The cases stay in `conformance/authored_insert_queries.py` with their kernel proofs and mutants.
+- Lock: `integrity/judge.lock.json` from `just judge-lock` adds `corpus corpus-v55` and the new `judge` hash.
+- Tests: `tests/conformance_corpus_writers_test.py::test_table_rebuild_corpus_round_trips`; the module list of
+  `build-support/tests.nix` has the two new modules.
+- Reviews: 976d26cb (2 should, fixed), c99f828f (1 should, fixed), 743118db (none), 6dab14f3 (none).
+- Gates (Nix): `just dev-build`, then `just test-full` on the same tree: 407 surface tests and the other suites pass,
+  `/nix/store/ckx81jfqla5na9kiqad8fw4djsrd51ij-sqlite-verifier-test-reports` (a first run timed out in the surface
+  suite while three heavy jobs ran at once; the rerun with two passed). `just verdict`: no DISAGREE and no HARNESS_ERROR,
+  `/nix/store/0i6ls6sj7hz6adxw6d7sx864n2gqdcxv-sqlite-verifier-verdict` (AGREE 5653, MODEL_UNSUPPORTED 2109). Against the
+  part 3 verdict (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`) only `corpus-v55` is new
+  (149 AGREE, 13 MODEL_UNSUPPORTED); every other corpus is unchanged.
+- Owner decisions of 2026-10-27 (through the coordinator).
+  1. The 186 cases of the corpora v1 to v5 that part 3 made agree (v1 28, v2 28, v3 28, v4 51, v5 51) are now in the
+     `mustAgree` lists, as the pragma and compound slices did. The list sizes are v1 64, v2 70, v3 170, v4 726, v5 3024.
+     The cases are those that are AGREE in the part 3 verdict and MODEL_UNSUPPORTED in the part 2 verdict
+     (`/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`); none was claimed before. The change adds 186 lines to `judge/claims.json` and removes none.
+  2. `insert-query-index-order` and `insert-query-index-order-keeps-other-rows` stay out of the corpus.
+     Follow-up, not done: a judge-protocol change that accepts a native result that matches any possible execution of
+     the model. It needs its own owner decision.
+- Merges: `uoszqptt` (derived-column laws with S6 part 3a, PR #283) and then `tasks/surface-suite-split-3` (the split of
+  the surface tests into the Nix suites `surface`, `surfaceChecks` and `surfaceS6`) were merged without conflicts. The
+  `NormalizedField*` modules stay removed. The new modules of this change are in the module list of
+  `build-support/tests.nix`, which the split did not change.
+- Lock after the claim change: only the `judge` hash changed, to `/nix/store/ldd5xnqzd2k0pd3bigskx5g4j6i64g6y-source`.
+- Reviews of the claim and the lock: `20261027T140349Z-d8acaa23` and `20261027T140434Z-c03298ae`, no findings.
+- Gates (Nix) on the merged tree: `just dev-build`, then `just test-full` on the same tree:
+  `/nix/store/06b9qf4nwqi3ghrpkzs3xaasz6vmasnk-sqlite-verifier-test-reports` (the first run failed in `surfaceS6`: the
+  set-up of `surface_s6_check_programs_test.py` took 392 s, above the 300 s test timeout, while other heavy jobs
+  loaded the machine; the rerun with a free machine passed, 377 surface tests). `just verdict`: no DISAGREE and no
+  HARNESS_ERROR, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. All 5410 claimed cases are
+  AGREE (v1 71 AGREE of 177, v2 77, v3 177, v4 824, v5 3148; corpus-v55 149 AGREE and 13 MODEL_UNSUPPORTED).
+- Review `20261027T145326Z-fa448e66` of this record: no findings.
