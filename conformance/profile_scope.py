@@ -54,6 +54,28 @@ def foreign_key_scope(record: Mapping[str, Json], statements: Iterable[Located])
                        "whether foreign keys are on is unknown; this case stays out of scope")
 
 
+def has_rename(value: object) -> bool:
+    """Whether statement syntax has an `ALTER TABLE ... RENAME` statement (table or column)."""
+    if isinstance(value, Located):
+        return has_rename(value.value)
+    if isinstance(value, dict):
+        return "renameTable" in value or "renameColumn" in value or any(has_rename(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(has_rename(item) for item in value)
+    return False
+
+
+def legacy_alter_scope(record: Mapping[str, Json], statements: Iterable[Located]) -> None:
+    """Raise `SqlError` with status `UNSUPPORTED` for a record without a profile whose
+    statements have a rename: its setup may have turned `PRAGMA legacy_alter_table` on, which
+    changes how SQLite renames (it skips the check of views, triggers and indexes, and
+    does not rewrite references in triggers and views the same way), and the subject cannot
+    see it. The model implements only the default, off (ADR 0019, D4)."""
+    if record.get("nativeVersion") not in PROFILED and any(has_rename(item) for item in statements):
+        raise SqlError("UNSUPPORTED", f"{record.get('name', 'case')}: the record has no execution profile, so "
+                       "whether legacy_alter_table is on is unknown; this case stays out of scope")
+
+
 def modeled_profile(record: Mapping[str, Json]) -> Json:
     """The case profile (`case_format.case_profile`) of a record or subject input.
 

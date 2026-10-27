@@ -537,3 +537,16 @@ rebuild proof is separate.
   the recursive aggregate, the quotefix of the text of a view column, and exhaustive matches); the refactor commit
   `20261027T033625Z-bd168538` has no findings.
 - Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Unit 2.7: renames stay out of scope for records without a profile
+
+- The first part-2 `just verdict` found four DISAGREE cases in the corpora v1 to v3: `alterlegacy-1.2:2`, `1.3:5`,
+  `4.1b:22` and `9.3:43`. Their setup turns `PRAGMA legacy_alter_table` on, which the subject cannot see in a record of
+  version 1 (no profile), and the model implements only the default (off). The same situation exists for foreign
+  keys (ADR 0014, slice 4), so the fix follows that rule: `conformance/profile_scope.legacy_alter_scope` makes a
+  rename in a record without a profile UNSUPPORTED; `conformance/predict.py` and `conformance/native_replay.py` call it
+  next to `foreign_key_scope`. Profiled records (version 4 and later) cannot change the setting (the recorder refuses
+  the pragma), so the authored rename cases are unaffected.
+- Tests: `tests/profile_scope_test.py` (rename forms found; unprofiled records with a rename are out of scope;
+  profiled records and records without a rename stay in scope).
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
