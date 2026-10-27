@@ -550,3 +550,9 @@ rebuild proof is separate.
 - Tests: `tests/profile_scope_test.py` (rename forms found; unprofiled records with a rename are out of scope;
   profiled records and records without a rename stay in scope).
 - Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+- Reviews: `20261027T040327Z-cf19e736` and `20261027T041119Z-f7b3be39` have no findings; `20261027T040944Z-5b83c434`
+  (2 shoulds: the message names the next action; the test docstrings name the code under test) both fixed in
+  `f7b3be39`.
+- Nix verdict after the fix: `just verdict` passes with no DISAGREE. Of the 55 prediction files, those of corpora v1 to
+  v5 differ from the baseline only in newly supported cases (149 cases go from unsupported to predicted, none
+  changes otherwise).
