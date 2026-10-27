@@ -1,5 +1,8 @@
 import Lean.Meta.ForEachExpr
 import Belay.Sqlite.CounterexampleWitness
+import Belay.Sqlite.CheckProgram
+import Belay.Sqlite.ExecutionObservations
+import Belay.Sqlite.ExecutionViewEquivalence
 import Belay.Sqlite.Queries
 import Belay.Sqlite.SqlSource
 import Belay.Sqlite.SampleValues
@@ -14,9 +17,12 @@ namespace Belay.Sqlite.Check
 
 open Lean Meta
 
-/-- Names whose occurrences identify SQL observations, rather than unrelated Lean facts. -/
+/-- Names whose occurrences identify SQL observations, rather than unrelated Lean facts. The check of a
+program and the four equivalence relations between programs cover the claims of triples, fresh runs,
+equivalences and migration patterns, which unfold to them. -/
 def queryNames : Array Name :=
-  #[``Holds, ``Empty, ``Fails, ``Succeeds, ``Script.outputOn, ``Database.run, ``Sql.SucceedsFrom]
+  #[``Holds, ``Empty, ``Fails, ``Succeeds, ``Script.outputOn, ``Database.run, ``Sql.SucceedsFrom, ``Sql.check] ++
+    programRelationNames
 
 /-- These existing helpers inspect SQL syntax or database data without executing a script.
 Their arguments are still inspected; their implementation dependencies cannot add an SQL site. -/
@@ -82,10 +88,35 @@ structure QuerySites where
   sites : Array QuerySite := #[]
   /-- Some SQL cannot be replayed by this structural query/script inspection. -/
   unsupported : Bool := false
+  /-- Part of a program is Lean code, which the replay cannot run: the sites are the scripts that the
+  program sends first, and a report must say that the failing result is the model's run of the whole program. -/
+  leanCode : Bool := false
 
 /-- Combine inspections without dropping an unsupported branch. -/
 def QuerySites.append (first second : QuerySites) : QuerySites :=
-  { sites := first.sites ++ second.sites, unsupported := first.unsupported || second.unsupported }
+  { sites := first.sites ++ second.sites, unsupported := first.unsupported || second.unsupported,
+    leanCode := first.leanCode || second.leanCode }
+
+/-- The database of a context that is the initial context of a database and an environment, when the context
+has that form after at most a few unfoldings of definitions, as a named context has. A replay starts at this
+database. -/
+def initialDatabase? (state : Expr) (unfoldings : Nat := 8) : MetaM (Option Expr) := do
+  if state.isAppOfArity ``ExecutionContext.initial 2 then return some state.appFn!.appArg!
+  match unfoldings with
+  | 0 => return none
+  | unfoldings + 1 =>
+    let some next ← unfoldDefinition? state | return none
+    initialDatabase? next unfoldings
+
+/-- The first scripts of the programs, at the initial database of the context. A context that is no initial
+context has no database to replay from, so its sites are unsupported. -/
+def programSites (programs : Array Expr) (state : Expr) : MetaM QuerySites := do
+  let some database ← initialDatabase? (← instantiateMVars state) | return { unsupported := true }
+  let mut result : QuerySites := {}
+  for program in programs do
+    let shape ← programScripts defaultProgramFuel program
+    result := result.append { sites := shape.scripts.map ({ script := ·, database }), leanCode := shape.leanCode }
+  return result
 
 /-- Inspect a proposition under concrete data inputs. Implication premises retain local
 proof variables while their SQL is inspected; these variables are never supplied to the
@@ -127,6 +158,10 @@ where
         let some script := script? | return { unsupported := true }
         let premise ← visit fuel (mkApp arguments[4]! database)
         return premise.append { sites := #[{ script, database }] }
+      if head.isConstOf ``Sql.check && arguments.size == 4 then
+        return ← programSites #[arguments[1]!] arguments[3]!
+      if programRelationNames.any head.isConstOf && arguments.size ≥ 4 then
+        return ← programSites #[arguments[1]!, arguments[2]!] arguments.back!
       if head.isLambda then return ← visit fuel (head.beta arguments)
       if let .const name levels := head then
         -- Logical constructors are inspected by their proposition arguments below.
@@ -141,43 +176,5 @@ where
         else if (← sqlMention? argument (includeSource := false)) != some false then
           result := { result with unsupported := true }
       return result
-
-open Lean Meta
-
-/-- Fill unassigned quantified SQL Value inputs with a selected value. Database and Env
-inputs use the witness's typed selector; other types need explicit named inputs. The default
-search repeats this operation over its configured values, rather than assuming NULL proves
-anything. Named inputs and the arbitrary selector primitive remain available for other types.
-The same value is used for every otherwise unassigned Value binder in one candidate. -/
-def fillValueInputs (proposition : Expr) (witness : Witness) (value : Value)
-    (fuel : Nat := 128) : MetaM Witness :=
-  visit fuel proposition witness
-where
-  /-- Traverse the universal prefix and named proposition definitions without unfolding
-  query evaluation or universal success execution. -/
-  visit : Nat → Expr → Witness → MetaM Witness
-    | 0, _, _ => throwError "SQL input inference exhausted its declaration budget"
-    | fuel + 1, proposition, witness => do
-      match proposition with
-      | .mdata _ body => visit fuel body witness
-      | .letE _ _ input body _ => visit fuel (body.instantiate1 input) witness
-      | .forallE name domain body _ =>
-        if ← isProp domain then
-          withLocalDeclD name domain fun input => visit fuel (body.instantiate1 input) witness
-        else
-          let supplied := witness.named.any (fun (found, _) => found == name)
-          let witness ← if !supplied && (← isDefEq domain (mkConst ``Value)) then
-              pure { witness with named := witness.named.push (name, toExpr value) }
-            else pure witness
-          visit fuel (body.instantiate1 (← witness.choose name domain)) witness
-      | _ =>
-        let head := proposition.getAppFn
-        let arguments := proposition.getAppArgs
-        if queryNames.any head.isConstOf then return witness
-        if head.isLambda then return ← visit fuel (head.beta arguments) witness
-        let .const name levels := head | return witness
-        let some info := (← getEnv).find? name | return witness
-        let some body := info.value? | return witness
-        visit fuel ((body.instantiateLevelParams info.levelParams levels).beta arguments) witness
 
 end Belay.Sqlite.Check

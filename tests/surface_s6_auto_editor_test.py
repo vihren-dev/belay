@@ -13,8 +13,8 @@ from tests.surface_support import FIXTURES, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
-TITLE_PREFIX = "Try this:"
-"""The title prefix of the code action that `sql_auto` offers; the title adds the new steps."""
+TITLE = "Replace sql_auto with its steps"
+"""The title of the code action that `sql_auto` offers."""
 
 HEADER = '''import S6RulesEffects
 set_option maxRecDepth 8192
@@ -55,7 +55,7 @@ def check_alone(runtime_root: Path, directory: Path, extra: dict[str, list[list[
     assert audit is not None, result.stdout
     dependencies = set(filter(None, map(str.strip, (audit[1] or "").split(","))))
     assert dependencies <= ALLOWED_PROOF_AXIOMS, dependencies
-    assert "sql_auto" not in source and "Try this" not in result.stdout, result.stdout
+    assert "sql_auto" not in source and "Replace sql_auto" not in result.stdout, result.stdout
 
 
 @pytest.mark.parametrize("case", sorted(CASES))
@@ -76,7 +76,7 @@ def test_sql_auto_action_replaces_the_call_with_its_steps(runtime_root: Path, tm
         span = {"start": start, "end": {**start, "character": start["character"] + len(call)}}
         actions = server.request("textDocument/codeAction", {"textDocument": {"uri": uri},
             "range": span, "context": {"diagnostics": []}})
-        matching = [action for action in actions if str(action.get("title", "")).startswith(TITLE_PREFIX)]
+        matching = [action for action in actions if action.get("title") == TITLE]
         assert len(matching) == 1, actions
         changes = matching[0]["edit"]["documentChanges"]
         assert len(changes) == 1 and changes[0]["textDocument"] == {"uri": uri, "version": 1}, changes
@@ -90,7 +90,7 @@ def test_sql_auto_action_replaces_the_call_with_its_steps(runtime_root: Path, tm
             "textDocument": {"uri": uri, "version": 2}, "contentChanges": [{"text": edited}]}})
         edited_reports = diagnostics(server, uri, 2)
         assert not [report for report in edited_reports if report.get("severity") in (1, 2)], edited_reports
-        assert not any("Try this" in str(report) for report in edited_reports), edited_reports
+        assert not any("Replace sql_auto" in str(report) for report in edited_reports), edited_reports
         check_alone(runtime_root, tmp_path, extra, edited, name)
     finally:
         server.close()
@@ -113,6 +113,6 @@ def test_sql_auto_offers_no_action_when_no_route_closes_the_goal(runtime_root: P
         point = position(source, "sql_auto")
         actions = server.request("textDocument/codeAction", {"textDocument": {"uri": uri},
             "range": {"start": point, "end": point}, "context": {"diagnostics": []}})
-        assert not any(str(action.get("title", "")).startswith(TITLE_PREFIX) for action in actions), actions
+        assert not any(action.get("title") == TITLE for action in actions), actions
     finally:
         server.close()

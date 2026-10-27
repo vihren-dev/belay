@@ -28,7 +28,7 @@ lean_lib Belay where
     .one `Belay.Sqlite.DbBang, .one `Belay.Sqlite.Queries, .one `Belay.Sqlite.QueryLaws, .one `Belay.Sqlite.QueryBridge, .one `Belay.Sqlite.QueryCases, .one `Belay.Sqlite.SelectOneFrom, .one `Belay.Sqlite.SqlSimp, .one `Belay.Sqlite.SqlSimpLaws, .one `Belay.Sqlite.ExistsQuery, .one `Belay.Sqlite.NotExistsQuery, .one `Belay.Sqlite.SelectOneMayFail, .one `Belay.Sqlite.ExistsMayFail, .one `Belay.Sqlite.ScalarNoFrom, .one `Belay.Sqlite.SelectNoFrom, .one `Belay.Sqlite.CountQuery, .one `Belay.Sqlite.ColumnQuery, .one `Belay.Sqlite.TableInfoQuery, .one `Belay.Sqlite.FilteredDuplicateKeyQuery, .one `Belay.Sqlite.FilteredDuplicateKeyEmpty, .one `Belay.Sqlite.DuplicateKeyQuery, .one `Belay.Sqlite.AggregateQuery, .one `Belay.Sqlite.UniqueLookupQuery, .one `Belay.Sqlite.SqlCommand, .one `Belay.Sqlite.TwoStateObservation, .one `Belay.Sqlite.TwoStateAssertions, .one `Belay.Sqlite.FreshFromNotation,
     .one `Belay.Sqlite.ContextObservation, .one `Belay.Sqlite.ContextObservationLaws, .one `Belay.Sqlite.ContextObservationBridge, .one `Belay.Sqlite.FreshRules, .one `Belay.Sqlite.AssertionTerms, .one `Belay.Sqlite.FreshNotation, .one `Belay.Sqlite.ClaimExplanation, .one `Belay.Sqlite.PlainInsertEffect, .one `Belay.Sqlite.PlainDeleteEffect, .one `Belay.Sqlite.SingleStatementChecks, .one `Belay.Sqlite.SendSuccessIfOk]
     ++ #[.one `Belay.Sqlite.PlainUpdateEffect, .one `Belay.Sqlite.AddColumnEffect, .one `Belay.Sqlite.SqlFrames, .one `Belay.Sqlite.PlainWriteFrames, .one `Belay.Sqlite.ReadCertificate, .one `Belay.Sqlite.ReadAnalysis, .one `Belay.Sqlite.ReadCertificatePreservation, .one `Belay.Sqlite.CertifiedQueryCommutation, .one `Belay.Sqlite.SendStepRules, .one `Belay.Sqlite.PlainInsertStepRule, .one `Belay.Sqlite.PlainUpdateStepRule, .one `Belay.Sqlite.PlainDeleteStepRule, .one `Belay.Sqlite.AddColumnStepRule, .one `Belay.Sqlite.ReadStepRule, .one `Belay.Sqlite.SqlRunTriples, .one `Belay.Sqlite.SqlRunShape, .one `Belay.Sqlite.SqlRunGoals, .one `Belay.Sqlite.SqlRunRules, .one `Belay.Sqlite.SqlRun, .one `Belay.Sqlite.SqlCommute, .one `Belay.Sqlite.AutoSearch, .one `Belay.Sqlite.SqlAuto]
-    ++ #[.one `Belay.Sqlite.CounterexampleCertificate, .one `Belay.Sqlite.CounterexampleWitness,
+    ++ #[.one `Belay.Sqlite.CounterexampleCertificate, .one `Belay.Sqlite.CounterexampleActual, .one `Belay.Sqlite.CounterexampleWitness,
       .one `Belay.Sqlite.SqlRefute, .one `Belay.Sqlite.SampleValues, .one `Belay.Sqlite.SampleDatabases,
       .one `Belay.Sqlite.SampleShrink, .one `Belay.Sqlite.CounterexampleShrink,
       .one `Belay.Sqlite.SampleHints, .one `Belay.Sqlite.SampleQueryHints, .one `Belay.Sqlite.SampleScriptHints,
@@ -41,8 +41,9 @@ lean_lib Belay where
       .one `Belay.Sqlite.SqlNameDescription, .one `Belay.Sqlite.SqlNameCorrections,
       .one `Belay.Sqlite.SqlNameInfo]
     ++ #[.one `Belay.Sqlite.CheckBudget, .one `Belay.Sqlite.CheckData,
-      .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof,
+      .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof, .one `Belay.Sqlite.CheckAutoProof,
       .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,
+      .one `Belay.Sqlite.CheckProgram, .one `Belay.Sqlite.CheckObservation, .one `Belay.Sqlite.CheckValueInputs, .one `Belay.Sqlite.CheckDomain,
       .one `Belay.Sqlite.CheckRandom, .one `Belay.Sqlite.CheckSamples,
       .one `Belay.Sqlite.CheckReplay, .one `Belay.Sqlite.CheckOperation,
       .one `Belay.Sqlite.CheckInputSyntax, .one `Belay.Sqlite.CheckDeclarations, .one `Belay.Sqlite.CheckExample, .one `Belay.Sqlite.SqlAutomatic,

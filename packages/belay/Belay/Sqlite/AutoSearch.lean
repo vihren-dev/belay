@@ -1,4 +1,3 @@
-import Lean.Util.Heartbeats
 import Belay.Sqlite.SqlRun
 import Belay.Sqlite.SqlCommute
 import Belay.Sqlite.CheckBudget
@@ -99,9 +98,7 @@ def search (hints : Array (TSyntax `term)) (goal : MVarId) : TermElabM (Except S
   let mut reasons : Array String := #[]
   let mut left := Route.all.length
   for route in Route.all do
-    let remaining ← do
-      if (← getMaxHeartbeats) == 0 then pure maxHeartbeats.defValue else pure ((← getRemainingHeartbeats) / 1000)
-    let share := remaining / left
+    let share := (← Check.remainingUnits) / left
     left := left - 1
     try
       let outcome ← Check.withinBudget share do

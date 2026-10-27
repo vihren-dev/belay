@@ -1,4 +1,5 @@
 import Lean.Elab.Term
+import Lean.Util.Heartbeats
 
 set_option doc.verso true
 
@@ -57,6 +58,12 @@ interrupts propagate after restoring state; they cannot become evidence from ano
 def attempt (action : TermElabM α) : TermElabM (Option α) := do
   try some <$> speculative action
   catch _ => pure none
+
+/-- The heartbeat units left in the current budget, in the unit of {lit}`withinBudget`. When the budget is
+unlimited, the units are Lean's default work limit, so a share of the budget stays finite. -/
+def remainingUnits : CoreM Nat := do
+  if (← getMaxHeartbeats) == 0 then return maxHeartbeats.defValue
+  return (← getRemainingHeartbeats) / 1000
 
 /-- Run a checking attempt with a fresh heartbeat origin and a finite Lean heartbeat budget.
 Zero disables work, rather than using Lean's unlimited zero convention. Check again after

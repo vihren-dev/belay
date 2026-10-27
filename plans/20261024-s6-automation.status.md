@@ -238,3 +238,55 @@ Commit (`sql_auto`, 2026-10-27):
   `tests/surface_s6_auto_editor_test.py` (in the `surface` suite): real server, code action request at the call
   range, the edit replaces exactly the call, the edited document has no error, warning or suggestion, the
   steps elaborate alone with ordinary axioms only, and a call that no route closes offers no action.
+
+Commit (S5 checker covers claims about programs, 2026-10-27):
+
+- Claims. `#sql_check`, the tactic and the automatic check now accept `Sql.check`, the four equivalence structures
+  (`Sql.EquivAt`, `Sql.ObservationEquivAt`, `Sql.View.EquivAt`, `Sql.View.ObservationEquivAt`) and every
+  definition that unfolds to them (`FreshEnsures`, `Sql.Equiv`, `Migration.PreservesAt`, `Migration.CommutesOn`, and so on).
+  `queryNames` and `querySites` read them: the sites are the scripts that the programs send first
+  (`CheckProgram`), at the database of the initial context (`initialDatabase?` unfolds a named context such as
+  `initial`). A program with a continuation in Lean code gives the replay of its first scripts only. Its report
+  carries a note that says so, and says that the model's run of the whole program gives the failing result
+  (`Replay.Report.note`, printed as `Note:`). It is not shown as a failure of one native statement.
+- Witness. `Witness.choose` supplies `ExecutionContext.initial database environment` for a context binder.
+  `domainDatabases` (`CheckDomain`) adds the databases that an equality premise `db = d` names to the candidates, after
+  the empty database, so a claim "for every database equal to `sample`" is refuted at `sample`. `DecidableEq Database`
+  and the instances for `ifOk`, `andOk` and `ifOkWith` posts (`AssertionTerms`) and `Migration.Domain`
+  (`MigrationPattern`) let the kernel decide these premises and the negated conclusion. A relation whose actual runs
+  differ is refuted by the difference of the run, field by field when the run type has no decision procedure
+  (`CounterexampleActual`). A relation that agrees on the actual run and differs only on a branch stays unknown.
+- Failing observation. `CheckObservation` explains a certified refutation: the check fails on the actual run, or the
+  actual run satisfies the check and another branch fails, or the post has no decision procedure; for a relation
+  the outputs of both runs, and the words "in the connection that they leave" when value and outputs are equal.
+  The text says where the run starts when the claim fixes a database other than the witness database. It is
+  shown as `Failing observation:` and it is best effort within the budget that is left.
+- Proofs. The default proof attempt is `defaultProof`: the closing tactics of `tryProof` (now also
+  `Sql.Equiv.refl` and `Sql.EquivAt.refl`), then the search of `sql_auto` with the hints `rfl` and `⟨_, _, _, rfl⟩` on
+  a claim that opens to the check of a program, at most a third of the budget. The printed script holds the opening
+  and the explicit steps; the checker elaborates it again without a search before it reports `proved`.
+- Budget. Shrinking uses at most half of the budget that is left, and the observation may use what is left before
+  that. Before this change a refutation that was certified and replayed was lost when shrinking used the rest of
+  the budget (the claim came out `unknown`). Exhaustion inside the explanation or the shrink now keeps the refutation.
+  The cost of a candidate that does not refute is high for universal equivalences (about 60 to 80 thousand units
+  per database), so the fixtures name the database (`with (db := sample)`) or raise `sql.checkBudget`.
+- Fixtures: `S6CheckPrograms` (triple proved, triple false with the failing run, continuation in Lean code,
+  equivalence proved by reflexivity, two false equivalences, an unknown for a too small budget, an unknown for a
+  post without a decision procedure, the migration claim for a read of all columns refuted, and an unknown for the
+  universal lookup claim that has no default proof) and `S6NotBlocked` (`NOT IN` against `NOT EXISTS`: the three
+  counterexamples, each refuted with a replay, and one database that meets the premises where the outputs agree).
+  The driver `tests/surface_s6_check_programs_test.py` replays each false block in native SQLite and compares the rows
+  (for example 6 and 7 for the two updates, and `[]` against `[[1]]` for a NULL blocked id), and elaborates each
+  printed proof again with the axiom audit. `S6CheckLabels` holds the marker command.
+- Open points. (1) The claim `notBlockedIn ≈ notBlockedEx` under the premises "rowid alias and no NULL blocked id" is
+  not proved for every database: the general laws describe `SELECT 1 WHERE x IN (SELECT ...)` and NOT EXISTS
+  duplicate-key queries, but not the rows of a filtered scan with a subquery, so a proof needs new row laws
+  (more than 200 lines). The fixture shows the counterexamples and one satisfying instance. (2) Guide change: the text
+  "`notBlocked_same` where no NULL `customer_id` in `blocked`" omits the second counterexample (NULL `customers.id`
+  with a non-NULL blocked id) and the collation counterexample; the claim needs the rowid alias premise too.
+  (3) The partial-index invariant is covered by the earlier fixtures `SignupInvariantClaims` and `GlobalSignupInvariant`
+  (site, counterexample of the nullable UNIQUE); the tactics do not prove it, because the plain insert rule has
+  no law of unique indexes. (4) The automatic default budget (100000 units) is enough to prove a fresh triple and
+  to refute a triple, but not always to explain the refutation of an equivalence.
+- The code action of `sql_auto` is titled "Replace sql_auto with its steps" and its text is built as a string with
+  the layout of the call (a `Try this` edit with syntax objects indented the steps of a multi-line script wrongly).

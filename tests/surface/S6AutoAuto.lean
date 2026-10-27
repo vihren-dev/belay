@@ -15,7 +15,7 @@ namespace S6RulesEffects
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 
-/-- info: Try this:
+/-- info: Replace sql_auto with its steps:
   [apply]
     sql_run [rfl, ⟨_, _, _, rfl⟩]
     · intros; rfl -/
@@ -39,7 +39,7 @@ theorem bump_by_replacement :
   sql_run [rfl, ⟨_, _, _, rfl⟩]
   · intros; rfl
 
-/-- info: Try this:
+/-- info: Replace sql_auto with its steps:
   [apply] grind -/
 #guard_msgs (whitespace := lax) in
 /-- A fact that is no claim about a SQL program is closed by the last route. The hint {lit}`given` names a
@@ -66,7 +66,7 @@ example : ∀ n : Nat, n = 0 := by
   guard_target =ₛ ∀ n : Nat, n = 0
   sorry
 
-/-- info: Try this:
+/-- info: Replace sql_auto with its steps:
   [apply] grind -/
 #guard_msgs (whitespace := lax) in
 /-- The goals that follow the main goal stay after a call that closes the main goal. -/
@@ -102,7 +102,7 @@ namespace S6RulesQueryPattern
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 
-/-- info: Try this:
+/-- info: Replace sql_auto with its steps:
   [apply] sql_commute [analysis, obligations] -/
 #guard_msgs (whitespace := lax) in
 /-- For every bound value, the lookup is preserved by the migration. The first route closes the claim. -/
