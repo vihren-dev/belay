@@ -1,6 +1,6 @@
 # NOT IN and correlated NOT EXISTS: general query laws
 
-Created 2026-10-27. Status: OPEN.
+Created 2026-10-27. Status: DONE (2026-10-27).
 Status: [progress](20261027-not-in-subquery-laws.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S4 and S6;
 [S6 automation](20261024-s6-automation.task.md), the outcome "The guide

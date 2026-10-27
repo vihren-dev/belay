@@ -1,9 +1,20 @@
 # Status: NOT IN and correlated NOT EXISTS query laws
 
-Created 2026-10-27. Status: OPEN (in progress).
+Created 2026-10-27. Status: DONE (2026-10-27).
 Task: [task file](20261027-not-in-subquery-laws.task.md).
 Specs: ADR 0017 S4 and S6; the S6 automation task and its part 2 open point
 "notBlocked".
+
+## Nix results (2026-10-27)
+
+- `just test-full`: `/nix/store/y6yfrk4vih186m3q6jzmarh2g8zfcags-sqlite-verifier-test-reports` (the first run hit the
+  1500 s limit with no failed test; the rerun after a passing `just dev-build` passed). The `surface` suite:
+  `/nix/store/wviksvdr4xdn661qqwccmr6wnpgg2vgp-sqlite-verifier-test-surface-1`, 406 tests, 1015 s of its 1200 s limit.
+- `just verdict`: `/nix/store/v1745iypmy7wi0nnmzcnzr7d8fwh70zh-sqlite-verifier-verdict`.
+- `just test-nix`: 71 passed. `just test-scheduled-checks`:
+  `/nix/store/pkklyrcsabkqsk9sdl7ldbrwdrjdjg6b-sqlite-verifier-scheduled-check-reports`.
+- Predictions (`nix-build integrity/judge.nix -A predictions`, 55 files): `/nix/store/j8hd4csamhch624aadplv8bd5dn6kpav-sqlite-verifier-predictions`,
+  byte-identical to the base `/nix/store/ci6rv6zsmhqfr2ck2q37w8nrwqq3adgl-sqlite-verifier-predictions`.
 
 ## Decisions
 
