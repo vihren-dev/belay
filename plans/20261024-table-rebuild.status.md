@@ -1,7 +1,7 @@
 # Status: query inserts and ALTER table rebuild
 
-Created 2026-10-24. Status: OPEN. The task was checked against the code on
-2026-10-26; stage (a) of part 1 is implemented (see Progress).
+Created 2026-10-24. Status: DONE (2026-10-27). The task was checked against the code on
+2026-10-26; all three parts are implemented (see Progress and the gates sections).
 Task: [task file](20261024-table-rebuild.task.md).
 Specs: ADR19 D4/slice 5, ADR17 S6 and ADR22 preservation contracts.
 
@@ -839,3 +839,8 @@ For each new public statement: the general form chosen, and what stays specific.
   changed its prediction.
 - Reviews of part 3: 86f55729 (1 must, 1 should, fixed), the refactor 0e19a8a2 (none), e690b7fd (1 must, fixed),
   26f2cb7b (none), ffa5d786 (none).
+- End-of-task gates: `just test-nix` passes (71 tests of the Nix-requiring suite), and `just test-scheduled-checks` passes:
+  `/nix/store/nh7a5ff9mghhcm8rppafajzdz35xkfw6-sqlite-verifier-scheduled-check-reports`. The mutant tests that the task adds
+  or changes run in the daily CI job.
+- The task is DONE. The authored corpus freeze (corpus numbers, Nix corpus list, evidence writers, lock) remains for the
+  judge PR. The part 3 chain is merged with `tasks/not-in-subquery-laws`.
