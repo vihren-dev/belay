@@ -24,7 +24,8 @@ UPDATE items SET name_lower = lower(name);
 
 Sixteen `NormalizedField*` modules (13 in `belay-sqlite-model`, 3 in `belay`,
 about 1,900 lines) prove this example. They are general in table and column
-names, but they fix the derived expression to `lower` of one TEXT column, and
+names, but they fix the derived expression to `lower` of one source column
+(of any affinity), stored in an appended TEXT column, and
 the `belay` modules fix the four-statement expansion script of the guide (the
 column, the backfill, two triggers), its plan and its lookup simulation. Two
 owner decisions apply:
@@ -65,9 +66,9 @@ claim and no judge file.
   reads only the old columns, has no subquery, no parameter-dependent or
   nondeterministic part (or the law takes the parameters as given), and
   evaluates without a fault on every row; no trigger fires. "Stored value" is
-  the value after the column affinity. `lower` of a TEXT column is one
-  instance; its stability under TEXT affinity is the instance of the affinity
-  premise.
+  the value after the column affinity. `lower` of one column into a TEXT column is one
+  instance; the stability of its value under TEXT affinity is the instance of
+  the affinity premise.
 - **The scan law is general over row maps.** The full scan of a table whose
   rows are mapped by a function that keeps each rowid and the sort key equals
   the old scan with the same map applied (the stable-sort-commutes-with-map
@@ -80,8 +81,10 @@ claim and no judge file.
   condition. The premises state when the stored value compares with `p` as the
   value of `e` does: affinity and collation of both comparisons, as the
   NOT IN task's value law does. The laws reuse `Query.simple_results_append`
-  where it applies (it cannot cover a condition that reads the appended
-  column).
+  where it applies. That law cannot cover a condition that reads the appended
+  column; the private filter-agreement lemma of `NormalizedFieldQueries`
+  (any two conditions that agree on each old row and its extended row give
+  the same results) covers it and is general content to keep.
 - **The surface has the general migration statement.** A `belay` statement
   relates the lookups before and after the migration "add a column, backfill it
   from an expression", as the relation that the guide uses, over a site

@@ -20,16 +20,19 @@ the migration-patterns status section "Owner decision on the example modules
 
 M = `packages/belay-sqlite-model/Belay/Sqlite/Model/`, S =
 `packages/belay/Belay/Sqlite/`. No declaration names a guide table or fixes SQL
-text. "lower" marks laws that fix the derived expression to `lower` of one TEXT
-column.
+text. "lower" marks laws that fix the derived expression to `lower` of one
+source column (of any affinity), stored in an appended TEXT column.
 
 - M/NormalizedFieldRows: `store_lower`, `comparisonOperands_lower`,
   `eval_lower`, `assign_lower_append`, `updated_lower_append` (lower);
   `generatedCells_plain`, `movedRowid_append` (general; `PlainInsertRows.lean`
   uses `generatedCells_plain`).
 - M/NormalizedFieldQueries: `originalFilter`, `storedFilter`,
-  `*_append`, `results_translate`, `results_preserve` (lower; the private
-  `simple_results_append` specializes `Query.simple_results_append`).
+  `*_append`, `results_translate`, `results_preserve` (lower). The private
+  `simple_results_append` is general content: any two conditions that agree on
+  each old row and its extended row give the same results, also when the new
+  condition reads the appended cells. `Query.simple_results_append` does not
+  cover that case (it needs a condition that reads below the old width).
 - M/NormalizedFieldScan: private stable-sort-commutes-with-map lemmas
   (general content, no counterpart elsewhere); `sourceRows_updated_lower`.
 - M/NormalizedFieldEffects: `Model.runStatement_update_ok`,
