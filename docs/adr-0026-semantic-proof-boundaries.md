@@ -168,9 +168,18 @@ after migration; the experiment makes no net-saving or speed claim.
 
 ## Implementation specifications
 
-- [Query outputs and execution observations](spec-proof-observations.md).
-- [Source and expression agreement](spec-proof-agreement.md).
-- [Resolver certificates and primitive ownership](spec-proof-foundations.md).
+- [Query outputs and execution observations](spec-proof-observations.md), with
+  [endpoint, relation and caller targets](spec-proof-query-observation-targets.md).
+- [Source and expression agreement](spec-proof-agreement.md), with
+  [traversal, congruence and definition targets](spec-proof-agreement-targets.md).
+- [Resolver certificates and primitive ownership](spec-proof-foundations.md), with
+  [dispatch, relocation, import and deferred targets](spec-proof-resolver-foundation-targets.md).
+
+The grouped target inventories were added 2026-10-27 at the owner's request
+and checked against production revision `3fe5caef`. They separate required
+changes, placement choices, reused evidence and retained or deferred work.
+Reconcile branch drift at assignment and update links when owner files disappear.
+They do not introduce permanent inventory checks or alter test retirement.
 
 These specify outcomes and checks. Create dated implementation task/status files
 only when an implementer is about to take the work. Batch their edits by decision.

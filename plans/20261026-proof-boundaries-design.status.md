@@ -85,3 +85,23 @@ must findings and one should finding: date the owner-approved amendment in
 the ADR text itself. Both ADRs now contain that date; the resolution is recorded.
 Claude reviewed clarification commit `03d0f498` with no findings. Amendment
 review is complete; production and experiment inputs remain unchanged.
+
+## Amendment: grouped implementation targets, 2026-10-27
+
+The owner requested concrete files, theorem names and propositions grouped by
+the change to attempt. Added five linked inventories across ADRs 0025 and 0026:
+preservation API removals/callers; preservation proof foundations/conditions;
+query/observation changes; source/expression agreement; resolver/foundation
+changes. They enumerate required replacements, retained facts, definition moves,
+direct callers, reused evidence and deferred row-engine work separately.
+
+Names and owners were checked against the unchanged production revision
+`3fe5caef`; the older 84-name preservation inventory still matches those sources.
+Future module names remain implementation choices where experiments establish
+only the required import boundary. The approved temporary-test retirement rule
+is unchanged. No production, experiment, CI or new task file was added.
+Existing task links for this decision are batched in one commit.
+
+Per-commit checks are the existing `tests/docs_test.py`, one-time source/link
+inspection and independent Claude review. These are documentation diagnostics;
+the accepted Nix experiment and production inputs above remain unchanged.

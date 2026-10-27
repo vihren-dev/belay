@@ -4,6 +4,7 @@ Date: 2026-10-26. Status: READY; implementation has not started.
 Audience: the implementation team.
 Specification: [ADR 0025 D1 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-api.status.md).
+Targets: [endpoint, predicate and caller inventory](../docs/spec-preservation-api-targets.md).
 Present problem: the owner requested removal of the per-atom endpoint matrix;
 the [inventory](../experiments/proof-simplification/inventory.json) identifies
 84 concrete specializations over existing general proofs.

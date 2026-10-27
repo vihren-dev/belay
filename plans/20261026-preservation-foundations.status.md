@@ -17,6 +17,10 @@ evidence and independent reviews.
 
 ## Remaining work
 
+On 2026-10-27 the owner requested detailed targets. The task now links the
+source-checked ownership, primitive and dispatch inventory. Required targets
+and consolidation candidates are separate; implementation has not started.
+
 Implement the task's production consolidation and acceptance checks. The
 experiment does not perform the module relocation or migrate callers. General
 `Database.Every.setRows` can stay in its existing cycle-safe location; only

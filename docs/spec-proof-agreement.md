@@ -4,6 +4,7 @@ Date: 2026-10-26. Status: PROPOSED; ready for implementation assignment review.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
 Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).
+Targets: [source helpers, expression proofs, definitions and callers](spec-proof-agreement-targets.md).
 
 ## Required source behavior
 

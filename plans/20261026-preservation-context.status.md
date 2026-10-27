@@ -17,6 +17,10 @@ holds Nix evidence and independent reviews.
 
 ## Remaining work
 
+On 2026-10-27 the owner requested detailed targets. The task now links the
+source-checked condition, induction and certificate inventory. Retained transport
+and resolver bridges are explicit; implementation has not started.
+
 Implement the new production interface, migrate evidence and callers, and
 complete the task's acceptance checks. Delete old condition predicates and
 parallel traversals. Experiment-only old-formula conversions must not become

@@ -16,6 +16,10 @@ evidence and independent reviews. It does not certify a completed migration.
 
 ## Remaining work
 
+On 2026-10-27 the owner requested detailed targets. The task now links the
+source-checked endpoint, predicate and caller inventory. Implementation remains
+unassigned; this refinement changes no production code or acceptance policy.
+
 Implement all outcomes and acceptance checks in the task. Reconcile the frozen
 inventory with the selected integration revision, including concurrent
 name-trace work. No production code, caller or public endpoint has changed yet.

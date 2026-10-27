@@ -4,6 +4,7 @@ Date: 2026-10-26. Status: READY; implementation has not started.
 Audience: the implementation team.
 Specification: [ADR 0025 D3 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-context.status.md).
+Targets: [condition, induction and evidence inventory](../docs/spec-preservation-proof-targets.md).
 Present problem: conditions omit the clock, counters and parameters, causing
 parallel readiness-dependent step/run proofs and a repeated surface traversal.
 

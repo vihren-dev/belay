@@ -5,6 +5,7 @@ Audience: implementers and reviewers.
 Decision: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).
 Evidence: [resolver and import findings](../experiments/proof-boundaries/resolver-import-findings.md)
 and [row-engine findings](../experiments/proof-boundaries/row-engine-findings.md).
+Targets: [resolver declarations, ownership, imports and deferred work](spec-proof-resolver-foundation-targets.md).
 
 ## Required resolver behavior
 

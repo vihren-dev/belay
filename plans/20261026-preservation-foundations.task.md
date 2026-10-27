@@ -4,6 +4,7 @@ Date: 2026-10-26. Status: READY; implementation has not started.
 Audience: the implementation team.
 Specification: [ADR 0025 D2 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-foundations.status.md).
+Targets: [ownership, primitive and dispatch inventory](../docs/spec-preservation-proof-targets.md).
 Present problem: repeated statement case analyses and backwards proof imports
 prevent use of the general lemmas already in the model.
 

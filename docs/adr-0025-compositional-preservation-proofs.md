@@ -165,6 +165,18 @@ recursion are separate opportunities. This ADR does not authorize those changes.
 
 ## Implementation specifications
 
+Target inventories added 2026-10-27 at the owner's request, checked against
+production revision `3fe5caef`:
+
+- [Endpoint, predicate and caller inventory](spec-preservation-api-targets.md):
+  84 endpoint removals, duplicated aliases, retained claims and test retirement.
+- [Proof and proposition inventory](spec-preservation-proof-targets.md):
+  ownership moves, shared statement/run proofs, conditions and evidence migrations.
+
+Each inventory separates required changes, placement choices, candidates and
+retained declarations. Reconcile branch drift at assignment and update source
+links when an owner file is removed. These are specifications, not CI manifests.
+
 | Task | Result | Dependency |
 | --- | --- | --- |
 | [Proof API](../plans/20261026-preservation-api.task.md) | Generic applications replace the endpoint matrix | Foundations provide cycle-safe generic effect predicates |
