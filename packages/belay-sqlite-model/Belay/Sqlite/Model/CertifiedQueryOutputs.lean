@@ -1,14 +1,15 @@
 import Belay.Sqlite.Model.SimpleQueryAppend
 import Belay.Sqlite.Model.SimpleTableRowsOutput
 import Belay.Sqlite.Model.QueryStepOutput
+import Belay.Sqlite.Model.TableByName
 
 set_option doc.verso true
 
 /-!
 The outputs of a simple read of one table on two connections whose scans of the table differ by appended
 cells (ADR 0017, S6). Both connections run the same statement. The statement resolves to the same
-simple query on each connection, which reads one table, with a filter and scalar result columns that
-read only columns below a width. The scan of the table on the second connection is the scan on the
+simple query on each connection, which reads the table that a name finds there (the positions can differ),
+with a filter and scalar result columns that read only columns below a width. The scan of the table on the second connection is the scan on the
 first with a computed list of cells appended to each row. Then the steps of the two connections give
 the same output, whatever the clock and the statement indexes. This is the statement-level fact that
 turns a dependency certificate of a read into the preservation of the read by a migration that adds
@@ -94,29 +95,38 @@ theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock
       extra [QuerySource.first beforePosition] [QuerySource.first afterPosition] beforeFilter afterFilter columns
       beforeNames afterNames width wide columnsBelow agree]
 
-/-- For every two connections, statement and parameters that satisfy the premises below, the steps of
-the statement on the two connections give the same output, at any clocks and statement indexes. The
-premises are those of {name}`runScriptStep_simpleTable_output_agree` for one statement with one filter on
-both connections, which reads only columns below the width: the statement resolves on each connection
-to a simple query of the table at one position, with the same filter and result columns and possibly
-different result names, and the scan of the second table is the scan of the first with cells appended
-to each row. In plain words, appended cells that the query does not read cannot change its output. For
-example, a query that selects the column {lit}`id` of rows filtered by {lit}`name = ?1` gives the same output
-after any column is appended to the table, provided that the query still resolves to the same columns.
-Proof sketch: {name}`runScriptStep_simpleTable_output_agree`, whose agreement premise holds because the
-filter reads below the width ({name}`Query.filterKeeps_append`). -/
+/-- For every two connections, statement, parameters and table name that satisfy the premises below, the
+steps of the statement on the two connections give the same output, at any clocks and statement indexes.
+The premises are those of {name}`runScriptStep_simpleTable_output_agree` for one statement with one filter
+on both connections, which reads only columns below the width:
+* The name finds a table in each connection ({name}`Database.tableNamed`), at positions that can differ,
+  for example after the drop of an earlier table.
+* The statement resolves on each connection to a simple query of the table at the position that the name
+  finds there, with the same filter and result columns and possibly different result names.
+* Both queries are calm, the scan of the second table is the scan of the first with cells appended to each
+  row, and every scanned row of the first table has at least the width.
+
+In plain words, appended cells that the query does not read cannot change its output. For example, a query
+that selects the column {lit}`id` of rows filtered by {lit}`name = ?1` gives the same output after any column
+is appended to the table, provided that the query still resolves to the same columns. Proof sketch:
+{name}`runScriptStep_simpleTable_output_agree`, whose agreement premise holds because the filter reads below
+the width ({name}`Query.filterKeeps_append`); the tables come from the lookups by name
+({name}`Database.tableNamed_some`). -/
 theorem runScriptStep_simpleTable_output_append (context : ResolveContext) (clock : Option Clock)
     (before after : Nat) (connection expanded : Connection) (statement : Syntax.Statement)
-    (parameters : List Value) (position : Nat) (table extended : Table) (filter : Option Expr)
-    (columns : List Resolved.Output) (names other : List String) (width : Nat) (extra : List Value → List Value)
-    {afterState expandedState : ResolveState}
+    (parameters : List Value) (name : Identifier) (beforePosition afterPosition : Nat) (table extended : Table)
+    (filter : Option Expr) (columns : List Resolved.Output) (names other : List String) (width : Nat)
+    (extra : List Value → List Value) {beforeState afterState : ResolveState}
+    (foundBefore : connection.state.database.tableNamed name = some (beforePosition, table))
+    (foundAfter : expanded.state.database.tableNamed name = some (afterPosition, extended))
     (resolvedBefore : resolveStatement context connection.resolveState statement =
-      .ok (.query (Query.simple [QuerySource.first position] filter columns names) [], afterState))
+      .ok (.query (Query.simple [QuerySource.first beforePosition] filter columns names) [], beforeState))
     (resolvedAfter : resolveStatement context expanded.resolveState statement =
-      .ok (.query (Query.simple [QuerySource.first position] filter columns other) [], expandedState))
-    (presentBefore : connection.state.database.table position = some table)
-    (presentAfter : expanded.state.database.table position = some extended)
-    (calm : (Resolved.Statement.query (Query.simple [QuerySource.first position] filter columns names) []).Calm)
+      .ok (.query (Query.simple [QuerySource.first afterPosition] filter columns other) [], afterState))
+    (calmBefore : (Resolved.Statement.query
+      (Query.simple [QuerySource.first beforePosition] filter columns names) []).Calm)
+    (calmAfter : (Resolved.Statement.query
+      (Query.simple [QuerySource.first afterPosition] filter columns other) []).Calm)
     (scans : sourceRows extended = (sourceRows table).map fun row => row ++ extra row)
     (wide : ∀ row ∈ sourceRows table, width ≤ row.length)
     (filterBelow : ∀ condition ∈ filter, condition.readsBelow width = true)
@@ -124,8 +134,9 @@ theorem runScriptStep_simpleTable_output_append (context : ResolveContext) (cloc
     (runScriptStep context clock before connection statement parameters).output =
       (runScriptStep context clock after expanded statement parameters).output :=
   runScriptStep_simpleTable_output_agree context clock before after connection expanded statement statement
-    parameters position position table extended filter filter columns names other width extra resolvedBefore
-    resolvedAfter presentBefore presentAfter calm calm scans wide columnsBelow fun row member =>
+    parameters beforePosition afterPosition table extended filter filter columns names other width extra
+    resolvedBefore resolvedAfter (Database.tableNamed_some foundBefore).2 (Database.tableNamed_some foundAfter).2
+    calmBefore calmAfter scans wide columnsBelow fun row member =>
       Query.filterKeeps_append (EvalContext.bound parameters) (EvalContext.plain_rowFree 0) row (extra row) width
         (wide row member) filter filterBelow
 

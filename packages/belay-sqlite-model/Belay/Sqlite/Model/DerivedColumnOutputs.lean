@@ -73,7 +73,7 @@ parameters that satisfy the premises of {name}`derivedColumn_lookup_outputs` for
 old columns on both connections, the steps of the statement give the same output, at any clocks and
 statement indexes. In plain words, a read of old columns that does not read the new column keeps its output
 across the migration: the added column, its backfill and the triggers cannot change it. Proof sketch:
-{name}`runScriptStep_simpleTable_output_append` with the scan of {name}`Table.addDerivedColumn`. -/
+{name}`runScriptStep_simpleTable_output_agree` at one position with the scan of {name}`Table.addDerivedColumn`. -/
 theorem derivedColumn_preserved_outputs (context : ResolveContext) (clock : Option Clock) (before after : Nat)
     (connection migrated : Connection) (statement : Syntax.Statement) (parameters : List Value) (position : Nat)
     (table : Table) (column : CatalogColumn) (derived : Resolved.Expr) (triggers : List (Identifier × CatalogTrigger))
@@ -96,11 +96,15 @@ theorem derivedColumn_preserved_outputs (context : ResolveContext) (clock : Opti
     (columnsBelow : ∀ output ∈ columns, output.readsBelow table.shape.columns.length = true) :
     (runScriptStep context clock before connection statement parameters).output =
       (runScriptStep context clock after migrated statement parameters).output :=
-  runScriptStep_simpleTable_output_append context clock before after connection migrated statement parameters
-    position table (table.addDerivedColumn column derived) filter columns names other table.shape.columns.length
+  runScriptStep_simpleTable_output_agree context clock before after connection migrated statement statement
+    parameters position position table (table.addDerivedColumn column derived) filter filter columns names other
+    table.shape.columns.length
     (fun cells => [Value.store column.affinity (derived.eval (EvalContext.plain 0) cells)]) resolvedBefore
     resolvedAfter present (by rw [reached]; exact Database.table_addDerivedColumn column derived triggers present aligned)
-    calm (sourceRows_addDerivedColumn table column derived wide aliased below keysInside plain newPlain)
-    (fun cells member => Nat.le_of_eq (sourceRows_width wide cells member).symm) filterBelow columnsBelow
+    calm calm (sourceRows_addDerivedColumn table column derived wide aliased below keysInside plain newPlain)
+    (fun cells member => Nat.le_of_eq (sourceRows_width wide cells member).symm) columnsBelow
+    fun row member =>
+      Query.filterKeeps_append (EvalContext.bound parameters) (EvalContext.plain_rowFree 0) row _
+        table.shape.columns.length (Nat.le_of_eq (sourceRows_width wide row member).symm) filter filterBelow
 
 end Belay.Sqlite.Model

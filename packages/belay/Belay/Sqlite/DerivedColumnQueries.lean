@@ -65,8 +65,17 @@ theorem translatesAt_of_outputs (tableName : Identifier) (definition : Syntax.Co
     (fun _ after found => resolveStatement_single _ _ after original _ originalSingle found)
     (fun _ after found => resolveStatement_single _ _ after replacement _ replacementSingle found)
     (outputs wide aliased aligned run.connection (0 + run.outputs.length) database)
-  exact Migration.translatesAt_of_observations _ _ _ (ExecutionContext.initial db env) run.outputs.length
-    run.connection success uniform actual branches
+  have actualBranch := Sql.Branch.actual (send (migration tableName definition value addValues updateValues triggers))
+    env.clock 0 (db.raw.connection env.counters)
+  obtain ⟨sameConnection, sameCount⟩ := uniform _ actualBranch
+  refine Migration.translatesAt_of_observations _ _ _ (ExecutionContext.initial db env) success
+    (by dsimp only [ExecutionContext.initial]; rw [sameConnection, sameCount]; exact actual)
+    fun observation => (branches observation).trans ⟨?_, ?_⟩
+  · intro ⟨result, branch, seen⟩
+    exact ⟨_, actualBranch, result, by dsimp only [ExecutionContext.initial]; rw [sameConnection, sameCount]; exact branch, seen⟩
+  · rintro ⟨first, ran, result, branch, seen⟩
+    obtain ⟨oneConnection, oneCount⟩ := uniform _ ran
+    exact ⟨result, by dsimp only [ExecutionContext.initial] at branch; rw [oneConnection, oneCount] at branch; exact branch, seen⟩
 
 /-- For every class of valid databases that each give a {name}`Site`, complete environment and read that is
 moved by {name}`Site.LookupMove` for the site of the database, if the migration succeeds, then the original statement and the replacement

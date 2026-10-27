@@ -90,27 +90,25 @@ theorem ReadCertificate.commutesOn {μ : Type} (migration : Sql μ) {certificate
   have translation : Migration.TranslatesOn migration admitted (send ⟨[(statement, values)]⟩)
       (send ⟨[(statement, values)]⟩) := fun state =>
     ReadCertificate.preservesAt migration valid statement values admitted state
-      (migration.runFrom state.clock state.index state.connection).outputs.length
-      (migration.runFrom state.clock state.index state.connection).connection
-      (fun domain branch ran => uniform state domain branch _ ran
-        (Sql.Branch.actual migration state.clock state.index state.connection))
-      (fun domain => obligations state domain _ (Sql.Branch.actual migration state.clock state.index state.connection))
+      (fun domain branch ran => obligations state domain branch ran)
   have stepOriginal : ∀ state, Migration.Domain migration admitted state → ∀ ran,
       migration.Branch state.clock state.index state.connection ran →
         ∃ output, runScriptStep runContext state.clock state.index state.connection statement values =
           .continued output state.connection [] := by
     intro state domain ran ran'
     obtain ⟨names, resolved, resolvedOriginal⟩ := (obligations state domain ran ran').resolvesOriginal
-    obtain ⟨table, extended, extra, present, -⟩ := (obligations state domain ran ran').appended
-    exact ReadCertificate.step_keeps valid resolvedOriginal present state.clock state.index values
+    obtain ⟨_, _, _, _, _, found, _⟩ := (obligations state domain ran ran').appended
+    exact ReadCertificate.step_keeps valid resolvedOriginal (Database.tableNamed_some found).2 state.clock
+      state.index values
   have stepOther : ∀ state, Migration.Domain migration admitted state → ∀ ran,
       migration.Branch state.clock state.index state.connection ran →
         ∃ output, runScriptStep runContext state.clock (state.index + ran.outputs.length) ran.connection statement
           values = .continued output ran.connection [] := by
     intro state domain ran ran'
-    obtain ⟨names, resolved, resolvedOther⟩ := (obligations state domain ran ran').resolvesOther
-    obtain ⟨table, extended, extra, -, present, -⟩ := (obligations state domain ran ran').appended
-    exact ReadCertificate.step_keeps valid resolvedOther present state.clock (state.index + ran.outputs.length) values
+    obtain ⟨_, otherPosition, _, _, _, _, found, ⟨names, resolved, resolvedOther⟩, _⟩ :=
+      (obligations state domain ran ran').appended
+    exact ReadCertificate.step_keeps (valid.moved otherPosition) resolvedOther (Database.tableNamed_some found).2
+      state.clock (state.index + ran.outputs.length) values
   refine Migration.TranslatesOn.commutes_of_query translation ⟨?_, ?_, ?_, ?_⟩ constant uniform
   · intro state domain first branch
     obtain ⟨output, step⟩ := stepOriginal state domain _

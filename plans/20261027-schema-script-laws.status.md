@@ -24,7 +24,8 @@ stopped at a gap (2026-10-27)".
 - 2026-10-27: review `20261027T130242Z-a51577be` (1 must: a premise on direct foreign keys does not
   exclude a cascade through other tables; fixed in the next commit).
 - 2026-10-27: review `20261027T130345Z-06c93a5f` (no findings).
-- 2026-10-27: slice 1 committed: the step, frame and failure laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas `foreign_keys` and `foreign_key_check`, and rename, with the table found by name (`TableByName`). Checked by `just dev-build` on the full tree (Part 1 work in progress; the Nix gates run at the end of Part 1).
+- 2026-10-27: slice 1 committed: the step, frame and failure laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas `foreign_keys` and `foreign_key_check`, and rename, with the table found by name (`TableByName`). Review `20261027T142434Z-f0c30a5b`: 3 musts (restatements of three drop and failure laws), fixed in the refactor commit after it. Part 1 is checked by `just dev-build` on the full tree; the Nix gates run at the end of Part 1.
+- 2026-10-27: slice 2 committed: read certificates and frames by table name (the single-position form is replaced and all callers moved), and translation over several end states (`Migration.translatesAt_of_observations`).
 
 ## Generalization analysis (per statement)
 
@@ -60,3 +61,18 @@ Implementation of the step laws (2026-10-27). All new modules are in
   connection. Frame: database equality (`ControlStepFrames.lean`).
 - Rename (`RewriteStepLaws.lean`): a rename changes the catalog and keeps the rows; the guide's rebuild
   needs it.
+- Read certificates by name (`CertifiedQueryOutputs.lean`, `ReadCertificate.lean`,
+  `CertifiedQueryCommutation.lean`, `ReadCertificatePreservation.lean`, `DerivedColumnOutputs.lean`). The
+  single-position form is replaced. `runScriptStep_simpleTable_output_append` takes a name, the position of
+  the table found in the database before and the position found in the database after, with the
+  resolution of the statement at each position. `ReadCertificate.Obligations` has the fields
+  `resolvesOriginal` and `appended`; `appended` names the table, finds it in the second connection at a
+  position that may differ, and resolves the statement moved to that position
+  (`ReadCertificate.moved`). Callers moved: `DerivedColumnOutputs`, `ReadCertificate`,
+  `CertifiedQueryCommutation`, `ReadCertificatePreservation` and the fixtures
+  `S6RulesQueryPattern`, `S6RulesNegativeReads` (10 files estimated, 7 touched).
+- Translation over several end states (`MigrationPatternAfter.lean`):
+  `Migration.translatesAt_of_observations` now takes, for each execution of the migration, its own
+  reached connection and output count, as a statement over branches. The caller
+  `DerivedColumnQueries.translatesAt_of_outputs` derives the one-connection form from its uniform-branch
+  fact. General form: yes, the premises that fixed one connection and one count are removed.

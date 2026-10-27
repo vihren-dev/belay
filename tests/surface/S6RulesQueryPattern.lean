@@ -96,12 +96,12 @@ migration, for the lookup statement. The backfill appends the lowercase of the n
 Proof sketch: the two resolutions are the checks above; the scans are compared by kernel evaluation, with
 the lowercase cell as the appended cells. -/
 theorem obligations : certificate.Obligations runContext lookupStatement initial.connection reachedConnection := by
-  refine ⟨ReadAnalysis.resolvesOriginal (resolvesTo_sound resolves_original).choose_spec analysis, ?_, ?_⟩
-  · obtain ⟨after, found⟩ := resolvesTo_sound resolves_reached
-    exact ⟨["id"], after, by rw [found]; rfl⟩
-  · refine ⟨_, _, fun row => [Resolved.mapText Resolved.lowerByte (row.getD 1 .null)], rfl, rfl, ?_, ?_⟩
-    · decide +kernel
-    · decide +kernel
+  refine ⟨ReadAnalysis.resolvesOriginal (resolvesTo_sound resolves_original).choose_spec analysis, ?_⟩
+  obtain ⟨after, found⟩ := resolvesTo_sound resolves_reached
+  refine ⟨name! "items", 0, _, _, fun row => [Resolved.mapText Resolved.lowerByte (row.getD 1 .null)], rfl, rfl,
+    ⟨["id"], after, by rw [found]; rfl⟩, ?_, ?_⟩
+  · decide +kernel
+  · decide +kernel
 
 /-- No statement of the migration is written as INSERT from a query, so each has one execution. Proof sketch:
 kernel evaluation of the syntax of the four statements. -/
