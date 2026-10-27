@@ -87,7 +87,7 @@ def PrepareError.viewModified? : PrepareError → Option Identifier
 ({name}`PrepareError.viewModified?`). -/
 def Resolved.Statement.isViewModify : Resolved.Statement → Bool
   | .prepareError error => error.viewModified?.isSome
-  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .dropColumn ..
   | .drop .. | .begin | .commit | .rollback | .setting .. | .query .. | .insert .. | .update ..
   | .upsert .. | .insertSelect .. | .delete .. => false
 

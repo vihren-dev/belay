@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.DatabaseFacts
 import Belay.Sqlite.Model.OutlineDatabaseLaws
 import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.DropColumnFactLaws
 
 set_option doc.verso true
 
@@ -57,12 +58,13 @@ theorem Table.RowsAliased.frame {table other : Table} (aliased : table.RowsAlias
   fun row member => alias ▸ aliased row (rows row member)
 
 /-- A property of a table that behaves like the five table atoms of {lit}`Database.Admitted`: what
-the proofs about statements without a row write need. Two facts:
+the proofs about statements without a row write need. Four facts:
 * a table without rows has it (CREATE TABLE stores such a table);
 * a table with the same catalog entry as a table that has it, and a sublist of its rows, has it
   (DELETE stores such a table);
 * a table with the same rows as a table that has it, and a shape that differs only in names
-  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table).
+  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table);
+* a table that has it and can lose a column cleanly still has it without the column (DROP COLUMN stores such a table).
 
 {lit}`Table.rowidsDistinctAtom` and its four siblings are the instances. -/
 structure TableAtom (atom : Table → Prop) : Prop where
@@ -75,6 +77,9 @@ structure TableAtom (atom : Table → Prop) : Prop where
   ({lit}`CatalogTable.blankNames`) as a table that has the property has it. -/
   renamed : ∀ table other, atom table → other.rows = table.rows →
     table.shape.blankNames = other.shape.blankNames → atom other
+  /-- A table that can lose a column ({lit}`CatalogTable.DropsCleanly`) and has the property still has it after
+  the drop ({lit}`Table.dropColumn`): a DROP COLUMN stores such a table. -/
+  dropped : ∀ table index, atom table → table.shape.DropsCleanly index → atom (table.dropColumn index)
 
 /-- "Rowids distinct" is a {name}`TableAtom`. Proof sketch: no rows have no rowids to repeat;
 {name}`Table.RowidsDistinct.frame` gives the sublist. -/
@@ -82,6 +87,7 @@ theorem Table.rowidsDistinctAtom : TableAtom Table.RowidsDistinct where
   empty table none := by simp [Table.RowidsDistinct, none]
   sublist _ _ distinct _ sub := distinct.frame sub
   renamed _ _ distinct rows _ := by simpa [Table.RowidsDistinct, rows] using distinct
+  dropped _ _ distinct _ := distinct.dropColumn _
 
 /-- "Rowids in range" is a {name}`TableAtom`. Proof sketch: no rows leave nothing to check; a
 sublist has only rows of the first table ({name}`Table.RowidsInRange.frame`). -/
@@ -89,6 +95,7 @@ theorem Table.rowidsInRangeAtom : TableAtom Table.RowidsInRange where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ inRange _ sub := inRange.frame fun _ member => sub.subset member
   renamed _ _ inRange rows _ := by simpa [Table.RowidsInRange, rows] using inRange
+  dropped _ _ inRange _ := inRange.dropColumn _
 
 /-- "Rows wide" is a {name}`TableAtom`. Proof sketch: no rows leave nothing to check; a sublist has
 only rows of the first table, and the same entry has the same columns
@@ -97,6 +104,7 @@ theorem Table.rowsWideAtom : TableAtom Table.RowsWide where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ wide same sub := wide.frame (fun _ member => sub.subset member) (by rw [same])
   renamed _ _ wide rows same := wide.of_blankNames rows same
+  dropped _ _ wide clean := wide.dropColumn clean.inside
 
 /-- "Rows stored" is a {name}`TableAtom`. Proof sketch: as {name}`Table.rowsWideAtom`, with
 {name}`Table.RowsStored.frame`. -/
@@ -104,6 +112,7 @@ theorem Table.rowsStoredAtom : TableAtom Table.RowsStored where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ stored same sub := stored.frame (fun _ member => sub.subset member) (by rw [same])
   renamed _ _ stored rows same := stored.of_blankNames rows same
+  dropped _ _ stored _ := stored.dropColumn _
 
 /-- "Rows aliased" is a {name}`TableAtom`. Proof sketch: as {name}`Table.rowsWideAtom`, with
 {name}`Table.RowsAliased.frame`. -/
@@ -111,6 +120,7 @@ theorem Table.rowsAliasedAtom : TableAtom Table.RowsAliased where
   empty table none := fun row member => by simp [none] at member
   sublist _ _ aliased same sub := aliased.frame (fun _ member => sub.subset member) (by rw [same])
   renamed _ _ aliased rows same := aliased.of_blankNames rows same
+  dropped _ _ aliased clean := aliased.dropColumn clean.alias
 
 /-- For every atom, database and object whose row lists match its catalog: if the atom is a
 {name}`TableAtom` and every table of the database has it, every table of the database with the

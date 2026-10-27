@@ -41,7 +41,9 @@ theorem CatalogTable.supported_withSpelling (limits : Limits) (definitions : Lis
     (table.withSpelling definitions constraints).supported limits = table.supported limits := rfl
 
 /-- For every valid catalog and every table that CREATE TABLE builds: if the name is not used, is not
-reserved, and the table is supported, the catalog with the table appended is valid. The stages before
+reserved, and the table is supported, the catalog with the table appended is valid. The appended table is the
+table with the spelling of its definitions and constraints ({name}`CatalogTable.withSpelling`), which does not
+change whether it is supported. The stages before
 the table are facts about the table {lit}`first`, which the options of the table give, and the CHECK
 constraints and generated columns that follow. Proof sketch: {name}`Catalog.Valid.append`, with the
 table supported by {name}`CatalogTable.supported_of_finished`. -/

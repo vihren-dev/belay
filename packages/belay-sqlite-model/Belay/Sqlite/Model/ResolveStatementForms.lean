@@ -23,7 +23,7 @@ For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
   | .addColumn _ column _ => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .dropColumn .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every successful resolution of CREATE TABLE, the resolved statement meets

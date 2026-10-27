@@ -623,3 +623,70 @@ rebuild proof is separate.
 - Tests: `Resolution/SpelledNamesExamples.lean` (compiled-evaluator `#guard` checks of the facts at CREATE TABLE,
   CREATE INDEX and the quoted column rename).
 - Manual proof repairs in this unit: 3. Total for the task so far: about 125.
+
+### Units 3.3 to 3.6: the DROP COLUMN model, its laws and the contracts (one commit)
+
+- Statement form `Resolved.Statement.dropColumn table index stored` (kind `.rewrite`; `stored` is the catalog that
+  the resolver computed). `Database.runsDropColumn` holds when `Catalog.droppable` accepts the drop and the stored
+  catalog has the outline of the catalog after the drop (`Catalog.dropColumn`); the step then stores the catalog and
+  removes the cell of every row (`Database.dropColumn`, `Row.dropValue`), keeps the rowids and the table order, and
+  otherwise fails with `ExecutionError.unmodeled` and the input database (the same shape as the rename step).
+- `Catalog.droppable` (Resolution/ColumnDropCatalog, ColumnDropSpec): the column is no PRIMARY KEY, no UNIQUE, no key
+  column, no column of an index definition, no alias of the rowid, not read by a generated column or by a CHECK of
+  another column, not named by a foreign key of the table, and no table has a foreign key to the table (the model
+  restricts this case; see the open items). `CatalogTable.DropsCleanly` is the structure of the table-side facts, and
+  `Catalog.droppable_spec` gives it back. The columns whose constraints the dropped column owns alone (a CHECK that
+  reads only that column, a column-level constraint) are not dependencies: `CatalogTable.checksAfterDrop` removes
+  them, and `CatalogTable.allChecks_dropColumnAt` shows what remains.
+- Laws in new files (all under 200 lines): expression and key rewrite (`ColumnDropExpr*`, `ColumnDropKeys`,
+  `ColumnDropKeyLaws`, `ColumnDropTable`), cells (`DropColumnCellLaws`), per-fact table laws (`DropColumnFactLaws`,
+  `DropColumnKeyLaws`), the transport through the database (`DropColumnDatabaseLaws`: `Database.table_dropColumn`,
+  `runsDropColumn_spec`, `Database.EveryTable.dropColumn`), Admitted and Valid facts for the run
+  (`DropColumnAdmittedLaws`, `DropColumnValidLaws`), and the foreign key part: parent invariance and child positions
+  (`ColumnDropParent*Laws`, `ColumnDropParentChildren`), mapped keys (`ColumnDropParentMapLaws`), link transport
+  (`DropColumnLinkLaws`, `DropColumnReferenceLaws`), and `RowReferencesHold` / `ParentSchemasCompatible` for the run
+  (`DropColumnForeignFacts`). The statement contracts are in `StatementDropColumn`.
+- Contracts: `runStatement_dropColumn_satisfies` (any property that the run keeps; the failing run keeps the
+  database) and `runStatement_dropColumn_eachTable`. The clients (`runStatement_rowidsDistinct` and its siblings,
+  `runStatement_keysUnique`, `runStatement_catalogSupported`, `runStatement_rowReferences`,
+  `runStatement_parentSchemasCompatibleSelected`, `runStatement_foreignKeyAtomsSelected`, the Admitted/ValidAtoms
+  theorems, `literalStep_success_catalog`) add one arm each and do not unfold the run. `ForeignKeyRowsCondition`,
+  `ForeignKeySchemaCondition` and `ForeignKeyAtomsCondition` are `True` for the new form, with a bullet that says why:
+  the run stores a catalog only when it keeps the outline and the selected parents of the catalog after the drop, and
+  `Catalog.droppable` refuses the columns that a foreign key names.
+- Shared structures changed: `RowLocalAtom` and `TableAtom` gained the field `dropped` (a table that has the atom and
+  loses a column cleanly still has it). Every instance discharges it from the new per-fact laws. This affects the S6
+  automation agent only where it builds a new instance of these structures; told to `main` in the report.
+- The review of unit 3.2 (`20261027T061435Z-1d272086`): one must (the docstring of `Catalog.Valid.createTable` now
+  names the spelling metadata) and one should (the two `#guard` matches list every `CatalogEntry` constructor); both
+  fixed.
+- Placement of the arms in the packages `belay` (`ReadAnalysis`, `DbDiagnostics`): minimal exhaustive-match arms only.
+- Manual proof repairs in this unit: about 30 (new arms in the existing statement theorems and their helpers, and the
+  seven new `dropped` fields). Total for the task so far: about 155.
+
+#### Generalization analysis (owner rule of 2026-10-27)
+
+For each new public statement: the general form chosen, and what stays specific.
+
+- `Catalog.find_mapIdx`: general (any change of the objects that keeps names and kinds); `Catalog.find_dropColumn` is
+  an instance. Other lemmas of `ColumnDropParentLaws` (`parentIndexes_dropColumn_other`, `parentLink_dropColumn`) stay
+  specific to `CatalogObject.dropColumn`: their proofs read the fact that tables and indexes at other positions are
+  unchanged, which a general rewrite statement would need as one more premise per use; no second client exists.
+- `ParentKey.mapChildren`, `ParentLink.mapChildren`, `ForeignKey.mapColumns`, `matchIndex_mapColumns`,
+  `primaryKey_zip_mapColumns`, `Catalog.parentKey_mapColumns`, `Catalog.parentLink_mapColumns`,
+  `ForeignKeyLink.satisfied_mapChildren`, `indexHolds_mapChildren`, `childValues_mapChildren`,
+  `parentFound_mapChildren`: general in the column move (any function on positions; the only premises are the ones
+  the proof reads: the moved cells equal the old cells, and the located parents have the same table and rows in both
+  databases). Only the final instance
+  (`Catalog.parentLink_dropColumn_mapColumns`, `Database.foreignKey_of_drop`) names the dropped column.
+- `Database.EveryTable.dropColumn`: general in the fact (any fact of a position and table, with a premise for the
+  unchanged tables and one for the changed table). `runStatement_dropColumn_satisfies`: general in the property.
+  `runStatement_dropColumn_eachTable`: general in the atom, with the minimal two premises.
+- `Table.*.dropColumn` (one per atom): each states the atom for the table without the column with only the premise the
+  proof uses (for example `RowsStored` and `NotNull` need no clean-drop premise); a joint statement over all atoms
+  would only restate the field `dropped` of `RowLocalAtom` and `TableAtom`, which is the general form for atoms.
+- `Expr.evaluate_dropColumn` and `Expr.eval_dropColumn` (ColumnDropExprLaws): general in the expression and the
+  row, with the premise that the expression does not read the dropped column. `LiteralData.*_dropValue`: general in
+  the key and the row.
+- Stays specific, no general form attempted: `Catalog.droppable_spec` and `CatalogTable.droppable_spec` (they are the
+  definition unfolded), `Catalog.uniqueKeys_free` (two uses only, both on the dropped table).

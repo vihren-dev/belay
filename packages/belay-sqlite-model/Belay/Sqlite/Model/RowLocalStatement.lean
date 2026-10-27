@@ -4,6 +4,7 @@ import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalUpsert
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
 import Belay.Sqlite.Model.InsertSelectLaws
 
 set_option doc.verso true
@@ -58,6 +59,8 @@ theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
     exact runStatement_createTrigger_rowLocal rowLocal clock counters parameters target name trigger every
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every (appended target column refuses rfl)
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_eachTable rowLocal.dropped rowLocal.renamed clock counters parameters position index stored every
   | rewrite renamed => exact runStatement_rewrite_rowLocal rowLocal clock counters parameters renamed every
   | drop positions rules =>
     cases rules with

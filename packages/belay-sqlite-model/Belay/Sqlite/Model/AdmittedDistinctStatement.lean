@@ -9,6 +9,8 @@ import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
+import Belay.Sqlite.Model.DropColumnAdmittedLaws
 
 set_option doc.verso true
 
@@ -48,6 +50,9 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal (atom := Table.RowidsDistinct) clock counters parameters target column refuses
       distinct fun table _ found _ => Table.RowidsDistinct.appendColumns (distinct target table found) _
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_satisfies clock counters parameters position index stored distinct fun runs =>
+      distinct.dropColumn runs
   | rewrite renamed =>
     exact runStatement_rewrite_satisfies clock counters parameters renamed distinct fun same _ => distinct.of_outline same
   | drop positions rules =>

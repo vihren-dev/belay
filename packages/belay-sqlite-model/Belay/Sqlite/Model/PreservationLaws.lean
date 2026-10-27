@@ -93,6 +93,7 @@ theorem step_extends (clock : Int) (counters : Counters) (parameters : List Valu
   cases statement with
   | drop _ _ => exact absurd rfl kept
   | rewrite _ => exact absurd rfl unrenamed
+  | dropColumn _ _ _ => exact absurd rfl unrenamed
   | createTable target name table =>
     simp only [step]
     split

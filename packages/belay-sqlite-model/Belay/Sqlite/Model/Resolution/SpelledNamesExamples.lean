@@ -33,11 +33,11 @@ def withConstraint (constraint : ColumnConstraint) : List ColumnDefinition :=
 #guard match (catalogOf (schema [.createTable (name! "t") (withConstraint (.notNull none)) [],
     .createIndex (name! "i") false (name! "t") [key (name! "b")] none]))[1]?.map (·.entry) with
   | some (CatalogEntry.index index) => index.exactNames
-  | _ => false
+  | none | some (CatalogEntry.table _) | some (CatalogEntry.view _) | some (CatalogEntry.trigger _) => false
 #guard match (catalogOf (schema [.createTable (name! "t") (withConstraint (.notNull none)) [],
     .createIndex (name! "i") false (name! "t") [key (name! "B")] none]))[1]?.map (·.entry) with
   | some (CatalogEntry.index index) => !index.exactNames
-  | _ => false
+  | none | some (CatalogEntry.table _) | some (CatalogEntry.view _) | some (CatalogEntry.trigger _) => false
 
 -- A quoted new name of a column rename is noted on the table, an unquoted one is not.
 #guard (tableIn (renamedBy base { columnToZ with style := .column true } "t" "a") 0).map (·.quotedRename) == some true

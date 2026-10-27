@@ -5,6 +5,8 @@ import Belay.Sqlite.Model.KeysUniqueCreate
 import Belay.Sqlite.Model.KeysUniqueAddColumn
 import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
+import Belay.Sqlite.Model.DropColumnValidLaws
 
 set_option doc.verso true
 
@@ -22,7 +24,7 @@ namespace Belay.Sqlite.Model
 def Resolved.Statement.KeysCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .begin | .commit | .rollback | .insert .. | .update ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .dropColumn .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every rules, clock value, target, work, database, flag and algorithm: if the database
@@ -54,6 +56,9 @@ theorem runStatement_keysUnique (clock : Int) (counters : Counters) (parameters 
   | createTrigger target name trigger =>
     exact runStatement_createTrigger_keysUnique clock counters parameters target name trigger unique
   | addColumn target column refuses => exact runStatement_addColumn_keysUnique clock counters parameters target column refuses unique condition
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_satisfies clock counters parameters position index stored unique fun runs =>
+      unique.dropColumn runs
   | rewrite renamed =>
     exact runStatement_rewrite_satisfies clock counters parameters renamed unique fun same _ => unique.of_outline same
   | drop positions rules =>

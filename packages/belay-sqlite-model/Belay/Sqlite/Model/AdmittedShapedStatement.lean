@@ -4,6 +4,8 @@ import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
+import Belay.Sqlite.Model.DropColumnValidLaws
 
 set_option doc.verso true
 
@@ -63,6 +65,9 @@ theorem runStatement_rowsShaped (clock : Int) (counters : Counters) (parameters 
       show (effectDatabase _).RowsShaped
       rw [eq]
       exact shaped.addColumn found column value
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_satisfies clock counters parameters position index stored shaped fun runs =>
+      shaped.dropColumn runs
   | rewrite renamed =>
     exact runStatement_rewrite_satisfies clock counters parameters renamed shaped fun same _ => shaped.of_outline same
   | drop positions rules =>
