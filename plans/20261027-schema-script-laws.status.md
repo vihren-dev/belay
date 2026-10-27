@@ -55,6 +55,9 @@ reason: the model has no earlier law for the statements.
 - 2026-10-27: Part 2 slice 4 committed: claim 1. `requireName_preserves_allSessions` in `RebuildKeeps` proves `Migration.QueryPreserves (send requireName) allSessions` for every database whose catalog is the guide's schema, for every complete environment. The rebuild has an INSERT from a query, so the branches reach different connections and `sql_commute` does not cover it (its `single` premise). The proof uses new general laws: every execution of an INSERT from a query without rules writes only the rows of its target (`runScriptStep_insertSelect_frame`), a property that each step keeps holds at the end of every successful branch of a sent script (`sendStatements_branch_invariant`), and the table found by name survives a rename (`Database.tableNamed_rewrite`). The fixtures `RebuildKeepsInvariant`, `RebuildKeepsFinish` (the nine statements keep the resolution state of the sample run and the sessions table, which moves from position 1 to position 0), `RebuildKeepsRead` (the certificate) and `RebuildKeeps` are checked by `tests/surface_rebuild_test.py`. The advice of `sql_commute` for the premise `single` names this route. This is also the example of moved positions and of a migration whose branches reach different connections that review `20261027T142940Z-ffa67eb9` asked for.
 - 2026-10-27: review `20261027T162458Z-24973423` of slice 3 (1 must: the status said the universal fixtures were done; fixed in `3ceb382c`).
 
+- 2026-10-27: Part 2 slice 5 committed: the general laws that claim 2 needs. Success of a sent script from a property that each step keeps and the continuation of each step (`SendStatementsSuccess.lean`), the success law of CREATE TABLE, DROP TABLE, rename, a setting, BEGIN, COMMIT and `PRAGMA foreign_key_check` (`StepContinuesOk.lean`, `ForeignKeyCheckContinues.lean`), the rows and fit of a copying INSERT from a query (`CopyInsertFits.lean`, `CopyInsertRows.lean`), and the scan order of a table whose only key is its rowid alias (`AliasIndexOrder.lean`). The fixture of claim 2 follows in the next commit. The size of claim 2 exceeds the limit of about 800 lines of the coordinator: the general laws are about 900 lines and the fixtures about 500. They are general laws that other migrations reuse; this is an open point for the coordinator.
+- 2026-10-27: review `20261027T170511Z-911176f9` of the refactor commit before slice 5 has no findings.
+
 ## Changes that the guide needs
 
 The private guide (`model-user-guide.md`, the table rebuild section) is not edited here. These are the changes that the
@@ -69,9 +72,8 @@ fixtures show.
   the guide's schema, not for every database. A database without the column `customers.email` makes the copy fail,
   and a database without `customers` makes it fail too. The fixtures state the claims over every
   database whose catalog is the guide's schema (a site). Claim 1 (preservation) is implemented:
-  `requireName_preserves_allSessions` in `tests/surface/RebuildKeeps.lean`. Claim 2 (success) is planned work, and its
-  fixture will keep the premise that no name is NULL. Until it lands, the concrete replays of `RebuildReplays.lean`
-  are the only evidence for success.
+  `requireName_preserves_allSessions` in `tests/surface/RebuildKeeps.lean`. Claim 2 (success) is `requireName_succeeds` in
+  `tests/surface/RebuildSucceeds.lean`: it keeps the premise that no name is NULL (`NoNullName`).
 - (c) `requireName` does not stop when `PRAGMA foreign_key_check` reports rows: the pragma returns them as rows, and
   the commit goes on. The replay `dangling` (a session of customer 99) and the replay `without-name` show it on
   pinned SQLite and in the model. A migration that must stop has to check the rows itself.
@@ -161,3 +163,27 @@ Implementation of the step laws (2026-10-27). All new modules are in
   property that every execution of every step keeps (the property can depend on the position in the list):
   it holds at the end of every branch that returns a value without an error. Unlike the shape lemma it does not
   need the statements to be free of INSERT from a query.
+- Success of a sent script (`SendStatementsSuccess.lean`). General form: any list of statements and any property
+  with a step premise: if each step continues and every execution of it has no error output and keeps the property,
+  the script succeeds (`sendStatements_succeedsFrom`). The premise about the step is stated for every valid connection
+  where the property holds, so it covers every branch. Left specific: nothing.
+- Success laws for the other statements (`StepContinuesOk.lean`): CREATE TABLE at the end of the catalog with aligned
+  rows, DROP TABLE without rules, a rename that keeps the outline, a setting, BEGIN outside and COMMIT inside a
+  transaction continue without an error output, with no further execution. General form: each law is for
+  any such statement. Left specific: DROP TABLE with rules (foreign keys on) has only the failure law with `noStop`.
+- `PRAGMA foreign_key_check` (`ForeignKeyCheckContinues.lean`): the step continues without an error and keeps the
+  connection when the check gives rows (`rowsOn = some rows`) and the catalog prepares. General form: any
+  catalog. `Database.foreignKeyCheckRows_isSome` gives the rows when at most one table (a given one) has a failing
+  key, because the model describes the check for one table only. Left specific: the case with several tables
+  that give rows, where SQLite's order is not modeled.
+- Copying INSERT from a query (`CopyInsertFits.lean`, `CopyInsertRows.lean`, `AliasIndexOrder.lean`). General form:
+  copying the rows of a table into an empty table with the same affinities, where the rowid alias is at a position
+  and the only unique keys are that alias: the rows fit when the NOT NULL columns of the target meet no NULL
+  (`InsertFits.copy`), the selected rows are the rows of the source (`Resolved.Query.results_copy`,
+  `insertSelectRows_copy`), and the table is read in one order (`Table.accessOrders_alias`). Left specific:
+  a target with generated columns, STRICT types or CHECK constraints (the premises `plain`, `untyped` and
+  `unchecked` exclude them), and a target with other unique keys.
+- Fixture of claim 2 (`RebuildCopyFacts`, `RebuildSucceedsCopy`, `RebuildSucceedsSteps`, `RebuildSucceedsFinish`,
+  `RebuildSucceeds` in `tests/surface/`): the facts about the shapes and keys are checked by evaluation on the
+  catalog after three statements; the rest uses the general laws. `kept_start` (new, in `RebuildKeepsInvariant`)
+  is shared with claim 1.

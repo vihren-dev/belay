@@ -489,6 +489,11 @@ import Belay.Sqlite.Model.InsertSelectStepLaws
 import Belay.Sqlite.Model.SchemaFailureLaws
 import Belay.Sqlite.Model.StepContinues
 import Belay.Sqlite.Model.ExecutionEffects
+import Belay.Sqlite.Model.CopyInsertFits
+import Belay.Sqlite.Model.ForeignKeyCheckContinues
+import Belay.Sqlite.Model.StepContinuesOk
+import Belay.Sqlite.Model.AliasIndexOrder
+import Belay.Sqlite.Model.CopyInsertRows
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
