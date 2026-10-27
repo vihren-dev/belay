@@ -876,6 +876,23 @@ Branch `tasks/table-rebuild-judge` on top of `tasks/table-rebuild-part3` (PR #28
   `/nix/store/0i6ls6sj7hz6adxw6d7sx864n2gqdcxv-sqlite-verifier-verdict` (AGREE 5653, MODEL_UNSUPPORTED 2109). Against the
   part 3 verdict (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`) only `corpus-v55` is new
   (149 AGREE, 13 MODEL_UNSUPPORTED); every other corpus is unchanged.
-- Option for the owner, not done: the 186 cases of the corpora v1 to v5 that part 3 made agree (v1 28, v2 28, v3 28,
-  v4 51, v5 51) are in no `mustAgree` list. Earlier judge changes added such cases (the pragma and compound slices).
-  Adding them would guard against regressions and is a claim change.
+- Owner decisions of 2026-10-27 (through the coordinator).
+  1. The 186 cases of the corpora v1 to v5 that part 3 made agree (v1 28, v2 28, v3 28, v4 51, v5 51) are now in the
+     `mustAgree` lists, as the pragma and compound slices did. The list sizes are v1 64, v2 70, v3 170, v4 726, v5 3024.
+     The cases are those that are AGREE in the part 3 verdict and MODEL_UNSUPPORTED in the part 2 verdict
+     (`/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`); none was claimed before. The change adds 186 lines to `judge/claims.json` and removes none.
+  2. `insert-query-index-order` and `insert-query-index-order-keeps-other-rows` stay out of the corpus.
+     Follow-up, not done: a judge-protocol change that accepts a native result that matches any possible execution of
+     the model. It needs its own owner decision.
+- Merges: `uoszqptt` (derived-column laws with S6 part 3a, PR #283) and then `tasks/surface-suite-split-3` (the split of
+  the surface tests into the Nix suites `surface`, `surfaceChecks` and `surfaceS6`) were merged without conflicts. The
+  `NormalizedField*` modules stay removed. The new modules of this change are in the module list of
+  `build-support/tests.nix`, which the split did not change.
+- Lock after the claim change: only the `judge` hash changed, to `/nix/store/ldd5xnqzd2k0pd3bigskx5g4j6i64g6y-source`.
+- Reviews of the claim and the lock: `20261027T140349Z-d8acaa23` and `20261027T140434Z-c03298ae`, no findings.
+- Gates (Nix) on the merged tree: `just dev-build`, then `just test-full` on the same tree:
+  `/nix/store/06b9qf4nwqi3ghrpkzs3xaasz6vmasnk-sqlite-verifier-test-reports` (the first run failed in `surfaceS6`: the
+  set-up of `surface_s6_check_programs_test.py` took 392 s, above the 300 s test timeout, while other heavy jobs
+  loaded the machine; the rerun with a free machine passed, 377 surface tests). `just verdict`: no DISAGREE and no
+  HARNESS_ERROR, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. All 5410 claimed cases are
+  AGREE (v1 71 AGREE of 177, v2 77, v3 177, v4 824, v5 3148; corpus-v55 149 AGREE and 13 MODEL_UNSUPPORTED).

@@ -367,9 +367,13 @@ records that run on after an error (162 cases): 60 of INSERT from a query, 51 of
 the rebuild. The claim lists the 149 cases that agree. The other 13 are the documented restrictions above and the
 INSERT cases whose source the model does not describe. Two INSERT cases whose source SQLite reads by its index are not
 in the corpus: the model agrees with them only through its second execution, but the judge compares one prediction,
-the model's own execution, and its verdict would be DISAGREE. The frozen verdict has no DISAGREE and no
-HARNESS_ERROR (`/nix/store/0i6ls6sj7hz6adxw6d7sx864n2gqdcxv-sqlite-verifier-verdict`, AGREE 5653, MODEL_UNSUPPORTED 2109),
-and the Nix-selected tests pass (`/nix/store/ckx81jfqla5na9kiqad8fw4djsrd51ij-sqlite-verifier-test-reports`).
+the model's own execution, and its verdict would be DISAGREE. The same change adds the 186 cases of the corpora v1 to v5 that the
+table rebuild made agree to their claims (v1 28, v2 28, v3 28, v4 51, v5 51), as earlier slices did. The frozen
+verdict has no DISAGREE and no HARNESS_ERROR, and every claimed case is AGREE
+(`/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`, AGREE 5653, MODEL_UNSUPPORTED 2109).
+The Nix-selected tests pass (`/nix/store/06b9qf4nwqi3ghrpkzs3xaasz6vmasnk-sqlite-verifier-test-reports`). A judge
+protocol that accepts a native result matching any possible execution of the model would let the two left-out cases
+in; that change needs its own owner decision.
 
 ## Owner decisions
 
