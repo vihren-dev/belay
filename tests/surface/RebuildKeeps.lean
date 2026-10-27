@@ -102,19 +102,13 @@ theorem requireName_preserves_allSessions :
     Migration.QueryPreserves (send requireName) allSessions (fun db => db.raw.catalog = sample.raw.catalog) := by
   intro db pre env complete
   obtain ⟨sessions, named⟩ := sessions_found pre
-  have start : Kept sessions 0 (db.raw.connection env.counters) := by
-    have sameDatabase : (db.raw.connection env.counters).state.database = db.raw := rfl
-    refine ⟨?_, by rw [sameDatabase]; simpa [sessionsPosition] using named⟩
-    have same : (db.raw.connection env.counters).resolveState = sample.raw.connection.resolveState := by
-      simp [Database.Raw.connection, Connection.resolveState, pre]
-    rw [same]
-    with_unfolding_all rfl
   exact ReadCertificate.preservesAt (send requireName) sessionsCertificate_valid sessionsRead [] (fun _ => True)
     (ExecutionContext.initial db env) fun domain branch ran => by
       have ok := (Sql.succeedsFrom_iff_branches _ _ _ _).mp domain.2 branch ran
       exact sessions_obligations pre named (sendStatements_branch_invariant requireName.statements (Kept sessions)
         env.clock 0 (db.raw.connection env.counters) branch ran ok.1 ok.2
-        ⟨db.valid, fun _ shown => by simp [Database.Raw.connection] at shown⟩ start (kept_advance env.clock sessions))
+        ⟨db.valid, fun _ shown => by simp [Database.Raw.connection] at shown⟩ (kept_start pre named)
+        (kept_advance env.clock sessions))
 
 #print axioms requireName_preserves_allSessions
 

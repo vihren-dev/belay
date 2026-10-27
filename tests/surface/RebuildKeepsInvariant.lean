@@ -46,6 +46,18 @@ theorem resolveState_parts {c : Connection} {R : ResolveState} (h : c.resolveSta
   simp only [Connection.resolveState, ResolveState.mk.injEq] at h
   exact h
 
+/-- For every database of the guide's schema, counters and table of the sessions that the name finds at position 1: a
+connection to the database satisfies {name}`Kept` before the first statement. Proof sketch: the resolution state
+depends on the catalog only, and the sample has the same catalog. -/
+theorem kept_start {db : Database} {counters : Counters} {sessions : Table}
+    (pre : db.raw.catalog = sample.raw.catalog) (named : db.raw.tableNamed sessionsName = some (1, sessions)) :
+    Kept sessions 0 (db.raw.connection counters) := by
+  refine ⟨?_, by simpa [Database.Raw.connection, sessionsPosition] using named⟩
+  have same : (db.raw.connection counters).resolveState = sample.raw.connection.resolveState := by
+    simp [Database.Raw.connection, Connection.resolveState, pre]
+  rw [same]
+  with_unfolding_all rfl
+
 /-- The single execution of a step with no further execution: its connection is the next connection. -/
 theorem single_next {output : Output} {next : Connection} {found : StatementExecution}
     (member : found ∈ (RunStep.continued output next []).executions) : found.next = next := by

@@ -56,7 +56,8 @@ reason: the model has no earlier law for the statements.
 - 2026-10-27: review `20261027T162458Z-24973423` of slice 3 (1 must: the status said the universal fixtures were done; fixed in `3ceb382c`).
 
 - 2026-10-27: Part 2 slice 5 committed: the general laws that claim 2 needs. Success of a sent script from a property that each step keeps and the continuation of each step (`SendStatementsSuccess.lean`), the success law of CREATE TABLE, DROP TABLE, rename, a setting, BEGIN, COMMIT and `PRAGMA foreign_key_check` (`StepContinuesOk.lean`, `ForeignKeyCheckContinues.lean`), the rows and fit of a copying INSERT from a query (`CopyInsertFits.lean`, `CopyInsertRows.lean`), and the scan order of a table whose only key is its rowid alias (`AliasIndexOrder.lean`). The fixture of claim 2 follows in the next commit. The size of claim 2 exceeds the limit of about 800 lines of the coordinator: the general laws are about 680 lines and the fixtures about 540. They are general laws that other migrations reuse; this is an open point for the coordinator.
-- 2026-10-27: review `20261027T170511Z-911176f9` of the refactor commit before slice 5 has no findings.
+- 2026-10-27: review `20261027T170511Z-911176f9` of the refactor commit before slice 5 has no findings. Review `20261027T175841Z-11bf71a0` of slice 5 (2 musts: the status listed the fixtures of claim 2 before they landed; no proof sketches on the public key-check query laws) is fixed in `e934336b`, whose review `20261027T180005Z-e934336b` has no findings.
+- 2026-10-27: Part 2 slice 6 committed: claim 2. `requireName_succeeds` in `RebuildSucceeds` proves `Succeeds requireName (fun db => db.raw.catalog = sample.raw.catalog ∧ NoNullName db)`: the rebuild succeeds on every database of the guide's schema in which no customer lacks a name, on the actual run and on every branch. The fixtures are checked by `test_rebuild_succeeds_when_no_customer_lacks_a_name` in `tests/surface_rebuild_test.py`; the proof uses only logical axioms.
 
 ## Changes that the guide needs
 
@@ -72,9 +73,8 @@ fixtures show.
   the guide's schema, not for every database. A database without the column `customers.email` makes the copy fail,
   and a database without `customers` makes it fail too. The fixtures state the claims over every
   database whose catalog is the guide's schema (a site). Claim 1 (preservation) is implemented:
-  `requireName_preserves_allSessions` in `tests/surface/RebuildKeeps.lean`. Claim 2 (success) is planned work, and its
-  fixture will keep the premise that no name is NULL. Until it lands, the concrete replays of `RebuildReplays.lean`
-  are the only evidence for success.
+  `requireName_preserves_allSessions` in `tests/surface/RebuildKeeps.lean`. Claim 2 (success) is `requireName_succeeds` in
+  `tests/surface/RebuildSucceeds.lean`: it keeps the premise that no name is NULL (`NoNullName`).
 - (c) `requireName` does not stop when `PRAGMA foreign_key_check` reports rows: the pragma returns them as rows, and
   the commit goes on. The replay `dangling` (a session of customer 99) and the replay `without-name` show it on
   pinned SQLite and in the model. A migration that must stop has to check the rows itself.
@@ -184,5 +184,8 @@ Implementation of the step laws (2026-10-27). All new modules are in
   `insertSelectRows_copy`), and the table is read in one order (`Table.accessOrders_alias`). Left specific:
   a target with generated columns, STRICT types or CHECK constraints (the premises `plain`, `untyped` and
   `unchecked` exclude them), and a target with other unique keys.
-- Fixture of claim 2: planned in the next commit. Its facts about shapes and keys are checked by evaluation on the
-  catalog after three statements, and the rest uses the general laws above.
+- Fixture of claim 2 (`RebuildCopyFacts`, `RebuildSucceedsCopy`, `RebuildSucceedsSteps`, `RebuildSucceedsFinish`,
+  `RebuildSucceeds` in `tests/surface/`): the facts about the shapes and keys are checked by evaluation on the
+  catalog after three statements; the rest uses the general laws above. `kept_start` (new, in `RebuildKeepsInvariant`)
+  is shared with claim 1. The rename needs its outline test by kernel evaluation of a Boolean function
+  (`renameKeepsOutline`): proving it with the resolved catalog as a metavariable did not finish.
