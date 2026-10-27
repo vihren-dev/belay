@@ -138,7 +138,9 @@ test-scheduled-checks`. Only Nix results are acceptance evidence.
   `NormalizedFieldSelectResolution`, `NormalizedFieldUpdateResolution` and
   `NormalizedFieldLookups` (the `aliased` argument of the rename work) and
   adds DROP COLUMN in its part 3. Part 3 (in progress on 2026-10-27) touches
-  none of the files of this task, but it changes shared laws: a field
+  none of the 16 modules or their fixtures. It shares the barrel
+  `Belay/Sqlite/Model.lean` and the model lakefile with this task, and it
+  changes shared laws: a field
   `dropped` in `RowLocalAtom` and `TableAtom`, new `dropColumn` constructors
   of `Syntax.Statement` and `Resolved.Statement`, the rename guard
   `Catalog.sameOutline`, and the golden text of `DbBangErrors.lean`. The
