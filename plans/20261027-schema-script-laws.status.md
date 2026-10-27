@@ -29,6 +29,25 @@ stopped at a gap (2026-10-27)".
 - 2026-10-27: slice 3 committed: the success law of INSERT from a query without rules (`runScriptStep_insertSelect_success`), the productions of a plain scan, and the upsert of appended rows. The case with rules (foreign keys on, or triggers) is an open point.
 - 2026-10-27: slice 4 committed: the fixtures `SchemaStepLaws`, `ControlStepExamples`, `CertificateAfterDrop`, `InsertSelectExamples` and `SchemaScriptReplays` with `tests/surface_schema_script_test.py` (in the suite `surfaceS6`, 611 s of 1200 s in the last full run of the split). The suite split (`tasks/surface-suite-split-3`) is merged below this commit.
 - 2026-10-27: reviews of slices 1-4: `20261027T142434Z-f0c30a5b` (3 musts, fixed in `92d99c24`), `20261027T142801Z-92d99c24` (no findings), `20261027T142940Z-ffa67eb9` (1 should: no example of moved positions or several end states; the moved position is in `CertificateAfterDrop`, the several-end-states example comes with the rebuild fixture of part 2), `20261027T143133Z-96cffcde` (3 musts: the `InsertFits` and success-law docstrings and the coverage of `productions_scan` in this file), `20261027T143302Z-52921cdb` (4 shoulds: two fixture files over 200 lines, catch-all matches, a local result in this file). The next `refactor:` commit fixes them: the fixture is split in `SchemaStepLaws`, `SchemaDropExamples` and `SchemaCreateExamples`, and a classifier of the resolved statement replaces the catch-all matches.
+- 2026-10-27: part 1 done (the general laws), bookmark `tasks/schema-script-laws-part1`, on a tree that contains the judge branch `tasks/table-rebuild-judge` (5a0aa7c3). Nix results after `just dev-build`: `just test-full` exit 0, `/nix/store/420apaq9icrvvrqkqh8f4c2hyhvh63ia-sqlite-verifier-test-reports` (suite `surface` 377 tests, 735 s; `surfaceChecks` 15 tests, 352 s; `surfaceS6` 60 tests, 606 s; no failures); `just verdict` exit 0, `/nix/store/ybwxm2l5xcq2986a43h5m106c37zjpsy-sqlite-verifier-verdict`; predictions `/nix/store/i3mh3pvjl636aym1s4231s2kcy1lizvf-sqlite-verifier-predictions`: the 55 files of the earlier base are byte-identical, and `corpus-v55.jsonl` comes from the judge branch. Review `20261027T144034Z-ece07f5d` of the refactor commit has no findings.
+
+## Part 2: tactic rules and the rebuild fixture
+
+Decision (coordinator, 2026-10-27): option A, all three guide claims, in the order tactic rules and claim 3,
+claim 1, claim 2. The gates run once, at the end of Part 2, on a tree that contains `tasks/surface-editor-part3`.
+
+Size (2026-10-27): the task file planned about 100 lines for Part 2. The estimate is now 1100 to 1300 lines. The
+reasons: (1) a proof over an abstract database needs the general "step continues" laws, because a rule needs the
+step to continue (`modeled`) and nothing else gives it for CREATE TABLE, DROP TABLE, rename, BEGIN, COMMIT and the
+pragmas (about 300 lines with the pragma `foreign_key_check`); (2) each new statement needs a rule for `sql_run`
+and the tactic needs its premise names and roles (about 250 lines); (3) INSERT FROM a query has several executions,
+so claim 1 needs a chain lemma over the branches of a send of statements (about 100 lines) and claim 2 needs a
+law that a valid database fits the INSERT (about 150 lines); (4) the fixtures with the schema, the hints and the
+native check (about 400 lines). Part 1 also exceeded its estimate (1900 lines against 700) for the same kind of
+reason: the model has no earlier law for the statements.
+
+- 2026-10-27: Part 2 slice 1 committed: `StepContinues` (the laws that the step of CREATE TABLE, DROP TABLE without
+  rules, rename, a setting, BEGIN and COMMIT continues). The law for `PRAGMA foreign_key_check` comes with claim 2.
 
 ## Generalization analysis (per statement)
 
