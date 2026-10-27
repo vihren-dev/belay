@@ -70,4 +70,11 @@ def rows (db : Database) (name : String) : Option (List (List Value)) :=
 
 end Database
 
+/-- Two databases are equal exactly when their model databases are equal, because the proof of validity
+is a proposition. The decision compares the catalog and all rows. Use it to decide a claim that fixes
+the database, for example {lit}`db = sample`. -/
+instance : DecidableEq Database := fun first second =>
+  if same : first.raw = second.raw then isTrue (by cases first; cases second; cases same; rfl)
+  else isFalse fun equal => same (congrArg Database.raw equal)
+
 end Belay.Sqlite

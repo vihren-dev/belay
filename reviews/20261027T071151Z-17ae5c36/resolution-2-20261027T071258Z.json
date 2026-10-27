@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T07:12:58+00:00",
+  "finding": "20261027T071151Z-17ae5c36#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Status states the empty-list result and restricts the NULL-probe statement to nonempty lists."
+}

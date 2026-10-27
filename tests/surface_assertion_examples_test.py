@@ -28,11 +28,11 @@ def lines_after(stdout: str, tag: str) -> list[object]:
 
 
 def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
-                       timeout: int = 120) -> str:
+                       timeout: int = 120, output_of: str | None = None) -> str:
     """Elaborate the fixture modules in order, each importing the earlier ones, and audit the axioms of
     each module: its count of `#print axioms` reports is the given one, each report lists only ordinary
     logical axioms, and no proof is missing. The timeout, in seconds, applies to each module. It gives the
-    output of the last module."""
+    output of the module named by `output_of`, or of the last module when none is named."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     for module, count in modules:
@@ -49,7 +49,9 @@ def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[
             assert report <= ALLOWED_PROOF_AXIOMS, result.diagnostic()
         assert "sorryAx" not in result.stdout, result.diagnostic()
         configuration["importArts"][module] = [[str(artifact)]]
-    return result.stdout
+        if module == output_of:
+            chosen = result.stdout
+    return result.stdout if output_of is None else chosen
 
 
 def test_insert_then_lookup_claims_over_every_database(runtime_root: Path, tmp_path: Path) -> None:

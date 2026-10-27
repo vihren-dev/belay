@@ -811,3 +811,15 @@ For each new public statement: the general form chosen, and what stays specific.
   `runStatement_rewrite_satisfies` is more general than before (it needs only the outline). The condition for the rewrite
   states the equality for any renamed catalog; the dangling-to-located case is the instance that it excludes.
 - Manual proof repairs in this unit: 6, all one-line changes of a lambda or a condition. Total for the task so far: about 171.
+
+### Merge of the NOT IN laws task (PR #281, with S6 automation part 2, PR #280)
+
+- Merge commit of `tasks/not-in-subquery-laws` (d92513aa) into the part 3 chain. The only conflict was the module glob
+  list of `packages/belay-sqlite-model/lakefile.toml`; I took the union of both sides (`union_globs.py`, 11 modules
+  added from part 3, none removed).
+- Adaptation to the five shared-law changes (the `dropped` field, `Syntax.Statement.dropColumn`,
+  `Resolved.Statement.dropColumn`, `Catalog.sameOutline` with its changed arities, and the golden text): none was
+  needed. The NOT IN modules build no `RowLocalAtom` or `TableAtom` instance and match no statement type
+  exhaustively, and the S6 tactics and the S5 checker use the shared theorems only through their general statements.
+  The model package and the whole `dev-build` (2545 jobs) build on the merged tree. The surface fixtures of S6 compile in
+  `just test-full`, whose result is below.

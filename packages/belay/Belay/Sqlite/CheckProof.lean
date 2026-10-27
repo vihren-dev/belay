@@ -2,10 +2,12 @@ import Lean.Elab.Tactic.Basic
 import Belay.Sqlite.CounterexampleCertificate
 import Belay.Sqlite.CheckBudget
 import Belay.Sqlite.SqlSimpLaws
+import Belay.Sqlite.ExecutionEquivalenceLaws
 
 set_option doc.verso true
 
-/-! Available checked proof automation, before S6 supplies {lit}`sql_auto`. The tactic's claim of
+/-! Checked proof automation with short closing tactics. The search of {lit}`sql_auto` is in
+{lit}`Belay.Sqlite.CheckAutoProof`. The tactic's claim of
 success is insufficient: the resulting term must prove the original proposition in the kernel
 and pass the same dependency exclusions as counterexamples. -/
 
@@ -42,11 +44,17 @@ def proveWith (proposition : Expr) (tactic : Syntax) (excluded : Array Name := #
   let proof ← certify proposition (← instantiateMVars goal) excluded excludedLocals
   return { proof, tactic }
 
-/-- Try the existing logical, SQL simp-set and kernel-decision primitives. This is a bounded
-attempt, not the future S6 {lit}`sql_auto` tactic. Failed automation supplies no evidence for P. -/
+/-- Try the existing logical, SQL simp-set and kernel-decision primitives, and the equivalence of a
+program with itself ({name}`Sql.Equiv.refl` and {name}`Sql.EquivAt.refl`). This is a bounded attempt. Failed automation supplies no evidence for P. -/
 def tryProof (proposition : Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM (Option Proven) := do
-  let tactic ← `(tactic| (intros; first | rfl | trivial | (simp [sql_simp]; done) | decide +kernel))
+  let tactic ← `(tactic| (intros; first
+    | rfl
+    | trivial
+    | (simp [sql_simp]; done)
+    | decide +kernel
+    | exact Sql.Equiv.refl _
+    | exact Sql.EquivAt.refl _ _))
   attempt (proveWith proposition tactic excluded excludedLocals)
 
 end Belay.Sqlite.Check

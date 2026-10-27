@@ -79,6 +79,16 @@ import Belay.Sqlite.ReadCertificate
 import Belay.Sqlite.ReadAnalysis
 import Belay.Sqlite.ReadCertificatePreservation
 import Belay.Sqlite.CertifiedQueryCommutation
+import Belay.Sqlite.SendStepRules
+import Belay.Sqlite.PlainInsertStepRule
+import Belay.Sqlite.PlainUpdateStepRule
+import Belay.Sqlite.PlainDeleteStepRule
+import Belay.Sqlite.AddColumnStepRule
+import Belay.Sqlite.ReadStepRule
+import Belay.Sqlite.SqlRun
+import Belay.Sqlite.SqlCommute
+import Belay.Sqlite.AutoSearch
+import Belay.Sqlite.SqlAuto
 import Belay.Sqlite.SingleStatementChecks
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand
@@ -103,6 +113,7 @@ import Belay.Sqlite.SqlSimp
 import Belay.Sqlite.SqlSimpLaws
 import Belay.Sqlite.ExistsQuery
 import Belay.Sqlite.NotExistsQuery
+import Belay.Sqlite.NotInQuery
 import Belay.Sqlite.SelectOneMayFail
 import Belay.Sqlite.ExistsMayFail
 import Belay.Sqlite.ScalarNoFrom

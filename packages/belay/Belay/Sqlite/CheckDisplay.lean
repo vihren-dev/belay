@@ -20,10 +20,14 @@ def describe (outcome : Outcome) : MetaM MessageData := do
     let mut message := m!"SQL check: false.\nDatabase: {witness.database}\nEnvironment: {witness.environment}"
     for (name, value) in witness.named do
       message := message ++ m!"\n{name}: {value}"
+    if let some observation := outcome.observation then
+      message := message ++ m!"\nFailing observation: {observation}"
     for report in outcome.replays do
       message := message ++ m!"\nDatabase construction:\n{report.construction}"
       if report.original.isSome then
         message := message ++ m!"\nBindings: {repr report.bindings}\nModel outputs: {repr report.outputs}"
+      if let some note := report.note then
+        message := message ++ m!"\nNote: {note}"
       message := message ++ m!"\nSQLite replay:\n{report.sqlite}"
     return message
 
