@@ -81,7 +81,7 @@ the actual verification evidence.
 
 `tests.model`, `tests.frozen`, `tests.harness`, `tests.sample`, `tests.upstream`,
 `tests.corpora`, `tests.parserLibrary`, `tests.packages`, `tests.documentation`,
-`tests.surface` and `tests.surfaceChecks` are independent pytest derivations declared in `tests.nix`. `tests/nix_suites.json` gives their test-file ownership and also
+`tests.surface`, `tests.surfaceChecks` and `tests.surfaceS6` are independent pytest derivations declared in `tests.nix`. `tests/nix_suites.json` gives their test-file ownership and also
 drives the host `--source-checks` exclusions. The model, coverage, frozen and
 harness inputs are shared pytest support, pinned Python/pytest, their explicit
 conformance helpers, the SQL frontend modules in `tests/conformance_frontend.json`,
