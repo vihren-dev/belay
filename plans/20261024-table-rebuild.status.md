@@ -416,3 +416,13 @@ rebuild proof is separate.
 - Not covered yet (restricted by the guard of the path, decided in unit 2.5): names in the arguments of a
   table-valued function, ON CONFLICT targets, and USING names (to be probed against native SQLite).
 - Manual proof repairs in this unit: 0.
+
+### Unit 2.5a: the trace tells an aliased source
+
+- `SourceRef.aliased` and `ScopeSource.aliased` (default false) tell whether the `FROM` item has an alias. A rename of
+  a table renames a qualifier that names the table and keeps a qualifier that names an alias (native SQLite 3.51.0:
+  `select t.a from t as t` stays `t.a`, with `FROM "u" as t`). `tableScope` and the table reference set the flag;
+  `Scope.singleAt` takes it as a last argument with the default false.
+- Tests: `NameTraceSourceExamples.lean` checks the flag for a table with and without an alias.
+- Manual proof repairs in this unit: 7 (the single-source laws and the normalized-field lookup laws gained an
+  `aliased` argument; one call site passes `aliased := false`). Total for the task so far: about 110.

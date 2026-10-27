@@ -20,14 +20,14 @@ theorem Scope.columns_single (source : Identifier) (columns : List CatalogColumn
 /-- The columns of the scope of one source read from the catalog are the columns of the source. Proof
 sketch: the definitions compute. -/
 theorem Scope.columns_singleAt (position : Option Nat) (source : Identifier) (columns : List CatalogColumn)
-    (hasRowid : Bool) : (Scope.singleAt position source columns hasRowid).columns = columns := by
+    (hasRowid aliased : Bool) : (Scope.singleAt position source columns hasRowid aliased).columns = columns := by
   simp [Scope.columns, Scope.singleAt]
 
 /-- In the scope of one source read from the catalog, an unqualified name that names the column at
 position {lit}`index` resolves to that column alone. Proof sketch: as {lit}`resolveName_one_source`. -/
 theorem resolveName_one_source_at {position : Option Nat} {name : Identifier} {source : Identifier}
-    {columns : List CatalogColumn} {hasRowid : Bool} {index : Nat} (found : columnPosition columns name = some index) :
-    (Scope.singleAt position source columns hasRowid).resolveName name = .found index [index] := by
+    {columns : List CatalogColumn} {hasRowid aliased : Bool} {index : Nat} (found : columnPosition columns name = some index) :
+    (Scope.singleAt position source columns hasRowid aliased).resolveName name = .found index [index] := by
   simp [Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, found]
 
 /-- In the scope of one source, an unqualified name that names the column at position {lit}`index`
@@ -55,9 +55,9 @@ position {lit}`index` resolves to that column, with the affinity of the column. 
 scope finds and says nothing about a name that it does not find. Proof sketch: as
 {name}`resolveOperand_identifier_single`, with {name}`resolveName_one_source_at`. -/
 theorem resolveOperand_identifier_singleAt {position : Option Nat} {name : Identifier} {quote : Syntax.QuoteKind}
-    {source : Identifier} {columns : List CatalogColumn} {hasRowid : Bool} {index : Nat}
+    {source : Identifier} {columns : List CatalogColumn} {hasRowid aliased : Bool} {index : Nat}
     (found : columnPosition columns name = some index) :
-    resolveOperand dqs (Scope.singleAt position source columns hasRowid) shapes misuse (.identifier name quote) =
+    resolveOperand dqs (Scope.singleAt position source columns hasRowid aliased) shapes misuse (.identifier name quote) =
       .ok (.column index, columns[index]?.map CatalogColumn.affinity) := by
   simp only [traced_arms, resolveName_one_source_at found]
   simp [Scope.nameRead, Scope.nameOperand, Scope.affinityAt, Scope.singleAt, Scope.argumentCell, Scope.triggerCell,

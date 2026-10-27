@@ -100,9 +100,9 @@ column's lowercase expression with no comparison affinity. The column's own affi
 not change a function result's metadata. Proof sketch: resolve its one argument with the column lookup
 law, then reduce the known call. -/
 theorem resolve_lower_column_at {dqs : Bool} {position : Option Nat} {tableName name : Identifier}
-    {columns : List CatalogColumn} {rowid : Bool} {source : Nat}
+    {columns : List CatalogColumn} {rowid aliased : Bool} {source : Nat}
     (found : columnPosition columns name = some source) :
-    resolveOperand dqs (Scope.singleAt position tableName columns rowid) {} true
+    resolveOperand dqs (Scope.singleAt position tableName columns rowid aliased) {} true
       (.call "lower" [.identifier name .none]) =
       .ok (.scalar .lower (.cons (.column source) .nil), none) := by
   rw [resolveOperand_arm_call, resolveArguments_arm_cons, resolveArguments_arm_nil,

@@ -25,6 +25,8 @@ structure SourceRef where
   position : Option Nat := none
   /-- The index of the query that supplies a view, a {lit}`WITH` definition or a derived table. -/
   query : Option Nat := none
+  /-- Whether the table was written with an alias, so that a qualifier names the alias and not the table. -/
+  aliased : Bool := false
   deriving Repr, DecidableEq
 
 /-- The constraints of a column of a catalog table. -/

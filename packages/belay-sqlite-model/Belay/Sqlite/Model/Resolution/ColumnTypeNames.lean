@@ -44,8 +44,8 @@ theorem Scope.nameFlexibleNumeric_single (name : Identifier) (columns : List Cat
 /-- In the scope of one physical table read from the catalog, every name resolution has ordinary
 affinity metadata. Proof sketch: as for {lit}`Scope.nameFlexibleNumeric_single`. -/
 theorem Scope.nameFlexibleNumeric_singleAt (position : Option Nat) (name : Identifier)
-    (columns : List CatalogColumn) (hasRowid : Bool) (resolution : NameResolution) :
-    (Scope.singleAt position name columns hasRowid).nameFlexibleNumeric resolution = false := by
+    (columns : List CatalogColumn) (hasRowid aliased : Bool) (resolution : NameResolution) :
+    (Scope.singleAt position name columns hasRowid aliased).nameFlexibleNumeric resolution = false := by
   unfold Scope.nameFlexibleNumeric
   split <;> simp [Scope.flexibleNumericAt, Scope.singleAt]
 
@@ -74,9 +74,9 @@ theorem Syntax.Expr.flexibleNumeric_single (name : Identifier) (columns : List C
 /-- Every expression in a physical table scope read from the catalog, with no resolved subqueries,
 has ordinary affinity metadata. Proof sketch: as for {lit}`Syntax.Expr.flexibleNumeric_single`. -/
 theorem Syntax.Expr.flexibleNumeric_singleAt (position : Option Nat) (name : Identifier)
-    (columns : List CatalogColumn) (hasRowid : Bool) (current : Option Nat) (value : Syntax.Expr) :
-    value.flexibleNumeric (Scope.singleAt position name columns hasRowid) { current } = false := by
-  fun_induction Syntax.Expr.flexibleNumeric (Scope.singleAt position name columns hasRowid) { current } value <;>
+    (columns : List CatalogColumn) (hasRowid aliased : Bool) (current : Option Nat) (value : Syntax.Expr) :
+    value.flexibleNumeric (Scope.singleAt position name columns hasRowid aliased) { current } = false := by
+  fun_induction Syntax.Expr.flexibleNumeric (Scope.singleAt position name columns hasRowid aliased) { current } value <;>
     simp_all [Scope.nameFlexibleNumeric_singleAt,
       SubqueryShapes.find, SubqueryShapes.base]
 

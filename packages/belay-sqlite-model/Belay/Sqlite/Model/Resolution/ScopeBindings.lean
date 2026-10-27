@@ -12,7 +12,7 @@ namespace Belay.Sqlite.Model
 /-- The reference of the source at an index of the scope. -/
 def ScopeSource.reference (source : ScopeSource) (index : Nat) : SourceRef :=
   { kind := source.role, name := source.name, index, depth := source.depth,
-    position := source.catalogPosition, query := source.queryIndex }
+    position := source.catalogPosition, query := source.queryIndex, aliased := source.aliased }
 
 /-- The column at an index of a source with the facts that the source holds. The constraints of a
 catalog column are added from the catalog after the resolution ({lit}`NameTrace.withConstraints`). -/

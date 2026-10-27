@@ -39,7 +39,7 @@ theorem update_resolution {context : ResolveContext} {catalog : Catalog}
   have mentions := lower_mentions (position := some position) (tableName := tableName)
     (rowid := !table.withoutRowid) old
   have operand := resolve_lower_column_at (dqs := context.profile.dqsDml) (position := some position)
-    (tableName := tableName) (rowid := !table.withoutRowid) old
+    (tableName := tableName) (rowid := !table.withoutRowid) (aliased := false) old
   have generated : ((table.columns ++ [textColumn name table.strict])[table.columns.length]?.bind
       (·.generated)).isSome = false := by
     rw [List.getElem?_append_right (Nat.le_refl table.columns.length), Nat.sub_self]
