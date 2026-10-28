@@ -105,3 +105,9 @@ mutants). At timeout all four workers were compiling classifier dependencies.
 Source inspection supports separate measurements of those tables with the
 same target mappings. Hosted timings remain to be established. The extended
 task's documentation-link diagnostic passed; independent review follows.
+
+Claude reviewed scope amendment `7b651616` with zero must and zero should
+findings (`reviews/20261028T144207Z-7b651616/review.json`). The worker is assigned
+the import-boundary repair and join grouping in this isolated CI workspace.
+Local diagnostics may run with bounded parallelism; Nix acceptance waits for
+the coordinator's currently occupied build slot. No final acceptance is claimed.
