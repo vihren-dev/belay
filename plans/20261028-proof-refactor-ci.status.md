@@ -652,3 +652,7 @@ The coordinator retained the Linux general-mutant log under
 `build/final-23a/logs/hosted-40742662857-mutants-linux.log`. The repair is split
 between mutant scheduling/grouping and the independent default-fixture import
 boundary. Neither work surface may change production semantics or deadlines.
+
+Independent review of follow-up specification `af674848` has zero must and
+one should finding: an import requirement prescribed implementation order.
+The requirement now states the resulting dependency boundary instead.

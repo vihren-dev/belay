@@ -94,8 +94,8 @@ work, add automatic retries or introduce a scheduler or another runner type.
 
 The oversized-hex default test must compare the same prepare phase and error
 message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
-Lean subprocess limit. Remove dependencies the generated fixture does not
-use before changing its structure. Its result contains only strings; the
+Lean subprocess limit. The generated fixture imports only the dependencies
+it uses. Its result contains only strings; the
 neighboring default-value test serializes model values and has different
 codec requirements. Preserve that neighbor and the shared check helper's
 timeout, compiler invocation and trust assertions. No SQL semantics change
