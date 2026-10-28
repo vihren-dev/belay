@@ -66,3 +66,36 @@ and source-agreement workers. Shared registrations require coordinator sequencin
   temporary witness retirement and push. The shared contract and
   focused fixtures add maintained code; no size or build-time saving is claimed.
   No implementation acceptance is recorded by the historical experiment.
+
+## Integrated proof-cost diagnostic
+
+At production source `a7eddc9d`, a one-time native Lean 4.34.1 profiler run
+measured nine shared proof owners after integration. Source copies were unchanged;
+source hashes and the selected compiled-artifact hashes were checked before and
+after. The repository and its caches were not modified. This is a local cost
+diagnostic, separate from Nix acceptance and from the source-size goal.
+
+| Representative body | Internal heartbeats |
+| --- | ---: |
+| `runSqlFrom_holds` | 199,107 |
+| `runScriptAllFrom_holds` | 305,666 |
+| `resolvedStepOutput_query_source` | 313,444 |
+| `resolvedStepOutput_query_isError` | 525,388 |
+| `resolvedStepOutput_selectOne` | 631,459 |
+| `subqueryContext_agrees` | 271,300 |
+| `resolveStatement_certificate` | 1,620,488 |
+| `Expr.evaluate_congr` | 7,229,249 |
+| `observationProfile_eq_iff` | 40,759 |
+
+The run used one thread, `Elab.async=false`, native profiler heartbeats and the
+`Elab.definition.value` trace. Its threshold was `9007199254740991` to suppress
+other profiler nodes. Two profiled repetitions produced identical body counts.
+These are internal heartbeats, not the compiler's budget units; they cover body
+elaboration, not total kernel checking or package build cost.
+After control/profile warmups, the sample order was control/profile/profile/control.
+The sum of nine whole-file medians was 8.085 seconds without profiling and
+8.617 seconds with it: 6.58 percent observed overhead in this small, noisy sample.
+There is no comparable pre-migration measurement and no speedup claim.
+Raw logs, unchanged source copies, options and hashes are in
+`/tmp/adr26-proof-costs-20261028/measurements.json` and its containing directory.
+No collector import, permanent benchmark or measurement gate was added.
