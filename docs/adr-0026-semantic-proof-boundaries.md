@@ -196,4 +196,6 @@ changes, placement choices, reused evidence and retained or deferred work.
 Reconcile branch drift at assignment and update links when owner files disappear.
 They do not introduce permanent inventory checks or alter test retirement.
 
-Assigned: [primitive ownership and surface imports](../plans/20261028-proof-primitive-imports.task.md). Create further tasks only at assignment; batch edits by decision.
+Assigned: [primitive ownership and surface imports](../plans/20261028-proof-primitive-imports.task.md)
+and [shared source agreement](../plans/20261028-source-agreement.task.md).
+Create further tasks only at assignment; batch edits by decision.
