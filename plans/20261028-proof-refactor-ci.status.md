@@ -16,7 +16,10 @@ module and native object remains current. The direct and installed local replay
 orders agree; the hosted failure is the acceptance case for relocation.
 
 The producer manifest now uses explicit names for the four former wildcard
-selections. It retains all 874 model library modules and both library declarations.
+selections. It retains all 874 modules of the `Belay.Sqlite.Model` library.
+The package's other four modules are `Codec`, `Codec.Resolution`,
+`Codec.SyntaxJson` and `Codec.StatementExamples`, each under `Belay.Sqlite.Model`:
+878 package modules in total. Both library declarations remain.
 No source, object, output trace or installed-package permission is rewritten.
 The existing package replay test checks the configuration that avoids this
 failure, then requires the real immutable native facets to replay. Retire the
@@ -44,7 +47,10 @@ The selected consumer runs use an untracked expression in
 `build/ci-repair/selected.nix` that changes only the existing owner's pytest file
 selection. Logs are `/tmp/proof-refactor-ci-{packages-final,consumers}.log`.
 
-Resolver measurement and independent review remain pending. Whole acceptance
+Native repair `15a4bd15` received independent Claude review
+`20261028T114602Z-15a4bd15`: zero must findings and one should finding. The
+finding requested the model-library versus codec module-count distinction
+above; it is fixed. Resolver measurement and review remain pending. Whole acceptance
 remains with the coordinator. The Linux hosted result is pending and is separate
 from local Nix checks. PR 295's earlier API-reference and verdict successes do
 not establish acceptance of this repair.
