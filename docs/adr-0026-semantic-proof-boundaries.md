@@ -200,5 +200,6 @@ Assigned: [primitive ownership and surface imports](../plans/20261028-proof-prim
 and [shared source agreement](../plans/20261028-source-agreement.task.md),
 plus [expression congruence](../plans/20261028-expression-congruence.task.md),
 [execution observation profiles](../plans/20261028-execution-profiles.task.md)
-and [query output facts](../plans/20261028-query-output-facts.task.md).
+and [query output facts](../plans/20261028-query-output-facts.task.md),
+plus [resolver certificates](../plans/20261028-resolver-certificate.task.md).
 Create further tasks only at assignment; batch edits by decision.
