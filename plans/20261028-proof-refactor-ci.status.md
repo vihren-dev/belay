@@ -5,6 +5,21 @@ Audience: the implementation team.
 Task: [restore acceptance checks](20261028-proof-refactor-ci.task.md).
 Source baseline: PR 295, `e8f46dae`; production `3e2212ed`.
 
+## Current acceptance state
+
+All local ADR25/26 acceptance items have passed at frozen source `23a3427b`;
+the checked API reference passed in the source-identical hosted build. The
+fixed capability audit retains all 30 groups, including every essential group.
+The nine implementation tasks are preparing their reviewed completion record.
+
+This CI-repair task remains IN PROGRESS only because the required hosted
+resolver/query/join mutation measurements have not run. PR scopes skipped the
+mutation steps. The existing full workflow dispatch returns HTTP 403 for the
+integration credential; the owner has been asked to dispatch it or provide
+Actions write access. No local result substitutes for hosted timing headroom.
+The later sections record final results; earlier sections are historical
+checkpoints.
+
 ## Native replay diagnosis and repair
 
 The model producer already supplies all required native artifacts. Pinned
@@ -566,3 +581,38 @@ SIGINT after confirming the hosted evidence. The local command exited 1 after
 API result is the successful hosted Nix build. No required mutation check,
 deadline or source scope was changed. The scoped proof-cost sample is the last
 local acceptance item still running.
+
+## Final proof costs, source integrity and capability audit
+
+The one-time Nix proof-cost sample exited 0 in 52.907 seconds. It covers nine
+owner modules and 50 definition-body profiler nodes, using pinned Lean 4.34.1,
+one thread, warmups and repeated control/profile measurements. Its sources,
+artifact/compiler hashes, raw logs and measurements are retained at
+`/nix/store/8mzc56z463p8pzcf95ccbzxij6c14a9k-sqlite-verifier-adr26-final-proof-cost-sample`.
+This is a current-state body-elaboration sample, not exhaustive proof coverage
+or a before/after speed comparison. Two repeated body measurements differed by
+two or four internal heartbeats; raw samples retain that variation.
+
+The final Nix producer log records build phases of 233 seconds for the model,
+31 seconds for text, 64 seconds for the surface and 63 seconds for checked
+public documentation. These phases rebuilt changed outputs with cached
+prerequisites; they are not clean-build times or evidence of a speedup.
+
+All 7,337 tracked files in the acceptance workspace still match the frozen
+source manifest. The final fixed-baseline capability audit retains S01–S17
+and M01–M13: 30/30 groups, none unknown or lost. Essential groups S01–S04 and
+S06 remain intact. This combines unchanged executable definitions, the
+accepted original-formula witnesses, final source and compiled-reference
+inspection, and each group's existing Nix acceptance owners. Test counts alone
+do not establish retention. No capability loss was requested or approved.
+
+Before workspace cleanup, the coordinator copied the final summaries, source
+manifest and host XML reports to `build/final-23a` in the coordinator workspace.
+Thirteen existing Nix outputs, including the dependency report, source counts
+and pre-retirement contract results, have indirect roots under that directory.
+The final summary is `build/final-23a/acceptance-summary.json`; the host source
+and development-loop XML reports are under `build/final-23a/host-results`.
+Retaining this evidence built no new derivations and changed no tracked source.
+
+All local acceptance work is terminal. Remaining work is the reviewed
+completion-record publication and the externally blocked hosted mutation run.
