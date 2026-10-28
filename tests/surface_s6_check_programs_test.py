@@ -9,13 +9,13 @@ import pytest
 
 from tests.lean_server_support import compile_helper_module
 from tests.runtime_support import run_command
-from tests.s6_check_support import CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
 from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
 from tests.surface_support import FIXTURES, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
-              pytest.mark.requires_native("sqlite3")]
+              pytest.mark.requires_native("sqlite3"), pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
 PROVED = {"triple-proved", "equiv-proved"}
 """The cases for which the checker finds a proof."""

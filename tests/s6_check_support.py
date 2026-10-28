@@ -8,6 +8,12 @@ from tests.surface_replay_test import native_replay, native_rows
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, in seconds."""
 
+CHAIN_TEST_TIMEOUT_SECONDS = 600
+"""The `pytest-timeout` limit of a test that compiles a chain of fixture modules, in seconds.
+
+The usual limit of 300 seconds ended the module fixture of `surface_s6_check_programs_test`
+on the CI runner, where its chain of four modules took 358 seconds."""
+
 
 def split_blocks(output: str) -> dict[str, str]:
     """The text of each labelled command in the output of a fixture module."""
