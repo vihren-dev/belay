@@ -205,6 +205,7 @@ import Belay.Sqlite.Model.ScriptRunApplied
 import Belay.Sqlite.Model.AtomsConditionsOfLink
 import Belay.Sqlite.Model.AdmittedStatementKeeps
 import Belay.Sqlite.Model.ResolveStatementApplied
+import Belay.Sqlite.Model.ResolverCertificate
 import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.ResolveStatementLink
 import Belay.Sqlite.Model.ResolveStatementForms

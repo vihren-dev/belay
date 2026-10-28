@@ -159,7 +159,7 @@ theorem runScriptStep_plainWrite_frame {context : ResolveContext}
     cases resolved <;> simp_all [Resolved.Statement.plainWriteTarget, Resolved.Statement.fromQuery]
   have ordinary : resolved.isControl = false := by
     cases resolved <;> simp_all [Resolved.Statement.plainWriteTarget, Resolved.Statement.isControl]
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   rw [ResolveState.after_of_isControl _ ordinary] at afterEq
   obtain ⟨okFrame, errorFrame⟩ := runStatement_plainWrite_effect plain value
     (connection.state.counters.view resolved.counterReads) parameters connection.state.database

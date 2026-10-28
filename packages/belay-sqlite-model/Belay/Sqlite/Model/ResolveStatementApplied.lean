@@ -1,5 +1,4 @@
 import Belay.Sqlite.Model.ResolveStatementFacts
-import Belay.Sqlite.Model.Resolution.ResolveStateSpec
 
 set_option doc.verso true
 
@@ -21,17 +20,18 @@ theorem Resolved.Statement.applyCatalog_of_control {statement : Resolved.Stateme
 limits of the profile of the context ({name}`ResolveState.Valid`), the catalog that
 {name}`Resolved.Statement.applyCatalog` gives for the resolved statement on the catalog of the state is
 valid under the limits. Proof sketch: for transaction control and a setting the catalog does not change;
-for every other statement the next state has this catalog ({name}`resolveStatement_after`,
-{name}`ResolveState.after_of_isControl`) and is valid ({name}`resolveStatement_valid`). -/
+for every other statement the next state has this catalog ({name}`resolveStatement_certificate`,
+{name}`ResolveState.after_of_isControl`) and is valid ({name}`resolveStatement_certificate`). -/
 theorem resolveStatement_applyCatalog_valid (context : ResolveContext) (state next : ResolveState)
     (statement : Syntax.Statement) (resolved : Resolved.Statement) (execution : context.mode = .execution)
     (valid : state.Valid context.profile.limits)
     (ok : resolveStatement context state statement = .ok (resolved, next)) :
     (resolved.applyCatalog state.catalog).Valid context.profile.limits := by
   cases control : resolved.isControl
-  · have after := resolveStatement_after context state next statement resolved ok
+  · have certificate := resolveStatement_certificate context state next statement resolved ok
+    have after := certificate.after
     rw [state.after_of_isControl control] at after
-    have valid' := resolveStatement_valid context state next statement resolved execution valid ok
+    have valid' := certificate.valid execution valid
     rw [after] at valid'
     exact valid'.1
   · rw [Resolved.Statement.applyCatalog_of_control control]

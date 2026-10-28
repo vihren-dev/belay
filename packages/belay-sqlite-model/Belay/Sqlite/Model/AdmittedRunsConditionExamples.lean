@@ -45,7 +45,7 @@ example : (match resolveStatement execution indexedState (.dropTable (name! "t")
 example (resolved : Resolved.Statement) (next : ResolveState)
     (ok : resolveStatement execution indexedState (.dropTable (name! "t") false) = .ok (resolved, next)) :
     resolved.SchemaLink indexedCatalog :=
-  resolveStatement_schemaLink (limits := defaults.limits) execution indexedState next _ resolved (by decide +kernel) ok
+  (resolveStatement_certificate execution indexedState next _ resolved ok).link defaults.limits (by decide +kernel)
 
 -- The invariants. The empty database satisfies each; {name}`Database.AdmittedWith` adds an atom to the fields
 -- of {name}`Database.Admitted`.

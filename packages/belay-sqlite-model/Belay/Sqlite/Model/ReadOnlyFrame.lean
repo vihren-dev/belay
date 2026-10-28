@@ -50,7 +50,7 @@ theorem runScriptStep_readOnly_keeps {context : ResolveContext}
     rcases readOnly with ⟨query, subqueries, rfl⟩ | ⟨error, rfl⟩ <;> rfl
   have ordinary : resolved.isControl = false := by
     rcases readOnly with ⟨query, subqueries, rfl⟩ | ⟨error, rfl⟩ <;> rfl
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   rw [ResolveState.after_of_isControl _ ordinary] at afterEq
   obtain ⟨okFrame, errorFrame⟩ := runStatement_readOnly_effect readOnly value
     (connection.state.counters.view resolved.counterReads) parameters connection.state.database

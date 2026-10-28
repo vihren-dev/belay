@@ -27,7 +27,7 @@ theorem runScriptStep_begin_idle {context : ResolveContext}
   obtain ⟨resolved, after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   refine ⟨?_, runScriptStep_others step found rfl, ?_⟩
   · rw [← ofStep]
     exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ (by intro _ _ same; cases same)
@@ -53,7 +53,7 @@ theorem runScriptStep_begin_active {context : ResolveContext}
   obtain ⟨resolved, after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   refine ⟨?_, runScriptStep_others step found rfl, ?_⟩
   · rw [← ofStep]
     simp [Output.ofStep, advanceRun, advanceWith, active, SqlTransition.counted, haltError, SqlState.finish,
@@ -83,7 +83,7 @@ theorem runScriptStep_commit_active {context : ResolveContext}
   obtain ⟨resolved, after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   refine ⟨?_, runScriptStep_others step found rfl, ?_⟩
   · rw [← ofStep]
     exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ (by intro _ _ same; cases same)
@@ -108,7 +108,7 @@ theorem runScriptStep_commit_idle {context : ResolveContext}
   obtain ⟨resolved, after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   refine ⟨?_, runScriptStep_others step found rfl, ?_⟩
   · rw [← ofStep]
     simp [Output.ofStep, advanceRun, advanceWith, idle, SqlTransition.counted, haltError,
