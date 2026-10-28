@@ -1,6 +1,6 @@
 # Resolver certificate task status
 
-Date: 2026-10-28. Status: IN PROGRESS.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [shared resolved-statement certificate](20261028-resolver-certificate.task.md).
 Specification: [ADR 0026 D3](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -130,3 +130,32 @@ exactly one addition (`ResolverCertificate`), unchanged codec registrations and
 all 19 public roots. No formula or proof changed during integration.
 The build log is `/tmp/proof-refactor-resolver-integration-dev.log`.
 Final combined Nix acceptance remains pending.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The temporary after-state, next-validity and applied-catalog projections are
+retired from `admitted_atoms_resolver_facts_test.py`. Its arbitrary-limits
+schema-link assertion remains as a current independent-premise check: supplied
+limits need not match the context, and no execution-mode or saved-validity
+assumption is available. `resolveFrom_after` and `Connection.resolveState_after_next`
+retain unconditional state equality; `resolve_valid` retains arbitrary valid
+saved states; `resolveStatement_appliedValid` retains all statements, including
+controls, and the distinction between `applyCatalog` and the next catalog.
+Leaf contracts and the generic certificate axiom audit remain.
+
+Affected existing check: `admitted_atoms_resolver_facts_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

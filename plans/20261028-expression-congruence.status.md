@@ -1,6 +1,6 @@
 # Expression congruence task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation reviewed, Nix acceptance pending.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [shared expression congruence](20261028-expression-congruence.task.md).
 Specification: [ADR 0026 D5](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -99,3 +99,30 @@ There is no comparable pre-migration measurement and no speedup claim.
 Raw logs, unchanged source copies, options and hashes are in
 `/tmp/adr26-proof-costs-20261028/measurements.json` and its containing directory.
 No collector import, permanent benchmark or measurement gate was added.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The four-formula migration file and its driver entry are retired. Its full
+append value/fault/subtype assertion moves to `ClaimsExpressionCongruence.lean`
+as a current boundary check, because downstream append clients use only values.
+The existing stronger context assertions, fallible local JSON, separate first/row
+certainty, lazy operands and subtype counterexample remain. Rowwise's query consumer for arbitrary
+contexts and independent fault-free theorem retain its guarantee.
+The same three generic/independent axiom audits remain.
+
+Affected existing check: `surface_claims_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

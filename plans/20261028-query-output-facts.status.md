@@ -1,6 +1,6 @@
 # Query output task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation awaiting combined Nix acceptance.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [generalize query output proofs](20261028-query-output-facts.task.md).
 Specification: [ADR 0026 D1](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -138,3 +138,29 @@ comparison. The coordinator separately checked that complete equality and the
 two-module delta, with unchanged roots and codec registrations.
 
 Pending: final combined Nix acceptance, temporary witness retirement and push.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The 16 `ClaimsQueryOutput*Migration.lean` fixtures and their single
+`test_query_output_original_formulas` registration are retired. No production
+law changes. The lasting coverage table above still applies: value-level SUM,
+error precedence, optional windows, possible source faults, all LIMIT results,
+scalar/count certainty, filtered NULL/collation groups, metadata and unique lookup
+remain covered by their current consumers and generic proof audits.
+
+Affected existing check: `surface_claims_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

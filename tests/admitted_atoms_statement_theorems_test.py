@@ -7,9 +7,8 @@ There is one theorem for each atom: `runStatement_rowidsDistinct`, `runStatement
 `runStatement_rowsAliased` cover every form too, with the support check as a hypothesis, also with
 foreign key rules and trigger programs (owner decision M: the row engine tests every row that it
 writes, `LiteralData.rowAdmitted`).
-The check file restates each formula, so a change that weakens a formula (for example a hypothesis
-that is dropped, or an atom that changes) fails here, and it refuses `sorryAx`, `ofReduceBool` and
-`_native` in the `#print axioms` output (`compile_checks`).
+The check file retains independent-premise formulas and audits each theorem. It refuses
+`sorryAx`, `ofReduceBool` and `_native` in the `#print axioms` output (`compile_checks`).
 """
 
 from pathlib import Path
@@ -35,10 +34,6 @@ STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 CHECKS = """
 import Belay.Sqlite.Model
 open Belay.Sqlite.Model
-example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
-    (database : Database) (distinct : database.RowidsDistinct) :
-    (runStatement clock counters parameters statement database).effect.Satisfies Database.RowidsDistinct :=
-  runStatement_rowidsDistinct clock counters parameters statement distinct
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     (database : Database) (shaped : database.RowsShaped) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsShaped :=

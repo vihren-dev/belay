@@ -1,6 +1,6 @@
 # Source agreement task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation awaiting acceptance.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [shared query source agreement](20261028-source-agreement.task.md).
 Specification: [ADR 0026 D2](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -86,3 +86,29 @@ zero must findings and one should finding in independent Claude review
 `reviews/20261028T120510Z-bef73db7`: the pending list still included the finished
 implementation review. This status-only correction removes that obsolete item.
 All findings from both reviews are resolved; integrated acceptance remains pending.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+Both original-formula migration fixtures and their driver entries are retired.
+`SourceAgreement.lean` retains source absence, unequal shape, fixed and dependent
+pragma cases. One current generic context assertion protects arbitrary depth,
+independent of query-list length; it replaces the two origin-specific depth
+witnesses. The generic nesting proof uses arbitrary correlated outer rows.
+Existing native observation, changed-current, origin-swap and axiom checks remain.
+
+Affected existing check: `surface_two_state_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

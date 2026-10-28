@@ -1,6 +1,6 @@
 # Preservation API task status
 
-Date: 2026-10-26. Status: IN PROGRESS; assigned 2026-10-28.
+Date: 2026-10-26. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [API replacement](20261026-preservation-api.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
@@ -98,3 +98,29 @@ independent Claude review with zero must and zero should findings
 (`20261028T115625Z-69c431c4`). Both findings from the implementation review are
 recorded as fixed. The reviewed changes are ready for the root's integrated
 Nix acceptance; the shared migration fixtures remain in place.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The four `PreservationApiWitnesses` fixtures and both frozen-condition helpers
+are retired with `test_preservation_api_migration`. The model suite again uses
+`modelInputs` without those six additions; its existing test owners remain.
+Independent atom premises, actual raw/surface clients, validity helpers,
+selected-FK mapping, failure and transaction examples retain their coverage.
+
+Affected existing checks: `valid_atoms_theorems_test.py`,
+`admitted_atoms_statement_theorems_test.py` and Nix test-source selection.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

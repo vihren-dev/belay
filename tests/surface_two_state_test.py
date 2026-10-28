@@ -101,11 +101,9 @@ def test_two_state_theorems_use_no_forbidden_axioms(runtime_root: Path, tmp_path
     assert all(term not in result.stdout for term in FORBIDDEN_AXIOM_TERMS), result.stdout
 
 
-@pytest.mark.parametrize("fixture", ["SourceAgreement", "SourceAgreementInitialMigration",
-                                    "SourceAgreementCurrentMigration"])
-def test_source_agreement_contract(runtime_root: Path, tmp_path: Path, fixture: str) -> None:
-    """Check source absence, shape, pragma dependence and temporary original-formula witnesses
-    against the shared agreement proof. Retire the migration fixtures after Nix acceptance."""
-    result = run_command(surface_command(runtime_root, FIXTURES / f"{fixture}.lean", tmp_path),
+def test_source_agreement_contract(runtime_root: Path, tmp_path: Path) -> None:
+    """SourceAgreement keeps absence, shape and pragma observations, and its context law
+    accepts arbitrary nesting depth independently of the query-list length."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SourceAgreement.lean", tmp_path),
                          cwd=tmp_path, timeout=600)
     assert result.returncode == 0, result.diagnostic()

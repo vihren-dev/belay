@@ -1,6 +1,6 @@
 # Execution profile task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation reviewed, Nix acceptance pending.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [execution observation profiles](20261028-execution-profiles.task.md).
 Specification: [ADR 0026 D4](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -120,3 +120,30 @@ Logs are `/tmp/proof-refactor-profiles-integration-dev.log` and
 acceptance and migration-witness retirement remain pending.
 Integration `a33b8756` received independent Claude review
 `20261028T133834Z-a33b8756`: zero must and zero should findings.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+`ExecutionProfileMigration.lean` and its four-audit driver entry are retired.
+The existing execution owner retains `ExecutionProfileBranches`, the ten
+INSERT-SELECT audits and all composition/WP cases. `ExecutionEquivalence` and
+`ExecutionViewChoices` distinguish actual from possible results;
+`ExecutionViewComparisons`, migration and application clients distinguish full
+and scoped observations. The S6 alias/NOT-IN checker cases retain automation
+and independent proof-certification coverage.
+
+Affected existing check: `surface_execution_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

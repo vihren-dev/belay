@@ -1,13 +1,13 @@
 """The resolver facts of the atoms of `Database.Admitted` (ADR 0022, D3, slice 4, part 1) have their
-stated formulas and rest only on the standard axioms. The four resolver projections are
-temporary D3 migration witnesses; retire them after final condition Nix acceptance,
-while retaining independent certificate-field and saved-catalog coverage.
+stated formulas and rest only on the standard axioms. The schema-link check requires
+only current-catalog validity at arbitrary supplied limits; it requires no execution
+mode or saved-catalog validity. Production fold and run clients cover the other fields.
 
 The facts say that CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and DROP give a catalog that
 satisfies `Catalog.Valid`, that `resolveStatement` and `resolve` keep it, and that a valid or admitted
-database meets the conditions of ADD COLUMN and DROP. The check file restates each formula, so a change
-that weakens a formula fails here, and it refuses `sorryAx`, `ofReduceBool` and `_native` in the
-`#print axioms` output (`compile_checks`).
+database meets the conditions of ADD COLUMN and DROP. The check file retains the leaf and
+independent-premise formulas and audits their proofs and the shared certificate. It refuses
+`sorryAx`, `ofReduceBool` and `_native` in the `#print axioms` output (`compile_checks`).
 """
 
 from pathlib import Path
@@ -89,28 +89,12 @@ example (limits : Limits) (catalog after : Catalog) (name : Identifier) (ifExist
     (positions : List Nat) (valid : catalog.Valid limits)
     (ok : resolveDropTrigger catalog name ifExists = .ok (.drop positions, after)) : catalog.DropClosed positions :=
   resolveDropTrigger_closed limits catalog after name ifExists positions valid ok
--- Temporary D3 witnesses: the three old dispatch formulas and full applied-catalog validity.
-example (context : ResolveContext) (state next : ResolveState)
-    (statement : Syntax.Statement) (resolved : Resolved.Statement)
-    (ok : resolveStatement context state statement = .ok (resolved, next)) :
-    next = state.after resolved :=
-  (resolveStatement_certificate context state next statement resolved ok).after
+-- Schema linkage needs only current-catalog validity at independently supplied limits.
+-- No execution-mode or saved-catalog validity assumption is required.
 example {limits : Limits} (context : ResolveContext) (state next : ResolveState)
     (statement : Syntax.Statement) (resolved : Resolved.Statement) (valid : state.catalog.Valid limits)
     (ok : resolveStatement context state statement = .ok (resolved, next)) : resolved.SchemaLink state.catalog :=
   (resolveStatement_certificate context state next statement resolved ok).link limits valid
-example (context : ResolveContext) (state next : ResolveState)
-    (statement : Syntax.Statement) (resolved : Resolved.Statement) (execution : context.mode = .execution)
-    (valid : state.Valid context.profile.limits)
-    (ok : resolveStatement context state statement = .ok (resolved, next)) :
-    (resolved.applyCatalog state.catalog).Valid context.profile.limits :=
-  resolveStatement_applyCatalog_valid context state next statement resolved execution valid ok
-example (context : ResolveContext) (state next : ResolveState) (statement : Syntax.Statement)
-    (resolved : Resolved.Statement) (execution : context.mode = .execution)
-    (valid : state.Valid context.profile.limits)
-    (ok : resolveStatement context state statement = .ok (resolved, next)) :
-    next.Valid context.profile.limits :=
-  (resolveStatement_certificate context state next statement resolved ok).valid execution valid
 example (context : ResolveContext) (catalog after : Catalog) (script : List Syntax.Statement)
     (statements : List Resolved.Statement) (execution : context.mode = .execution)
     (valid : catalog.Valid context.profile.limits)

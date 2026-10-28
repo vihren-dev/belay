@@ -1,6 +1,6 @@
 # Execution-condition task status
 
-Date: 2026-10-26. Status: IN PROGRESS; assigned on 2026-10-28.
+Date: 2026-10-26. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
 Audience: the implementation team.
 Task: [execution-aware conditions](20261026-preservation-context.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
@@ -152,3 +152,30 @@ and successful build supply that diagnostic evidence.
 Keep this task IN PROGRESS until final combined Nix acceptance, required
 migration-witness retirement and push. No source or registration in the first
 isolated acceptance workspace was changed; it predates this context integration.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The shared 84-formula fixture set and frozen raw/surface condition adapters
+are retired with the API task. The lasting raw-input, nonzero-position,
+halted-suffix, counter-knowledge and unconditional/ready checks remain in
+`valid_atoms_theorems_test.py`. `InsertSelectExecutions` keeps its ten audits,
+including conditions on each alternative branch's database, clock, counters
+and parameters; existing snapshot, rollback and partial-FAIL clients remain.
+
+Affected existing checks: `valid_atoms_theorems_test.py` and
+`surface_execution_test.py`.
+
+The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
+run checked the six changed Python test owners plus `test_test_ownership.py` and
+`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
+compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
+The log is `/tmp/adr25-26-retirement-diagnostics.log`.
+
+Retirement Nix acceptance, independent review, integration and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.
