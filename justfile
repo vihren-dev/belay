@@ -7,8 +7,10 @@
 # that build test suites use suite_build_limit.
 
 # Seconds for a nix-build of test suites: more than the per-suite limit in
-# build-support/tests.nix, so a suite that hangs fails with its own name.
-suite_build_limit := "1500"
+# build-support/tests.nix, so a suite that hangs fails with its own name. Nix runs the suites in
+# parallel, and on the 4-vCPU CI runner all suites of `test-full` took more than 1500 s
+# (owner decision of 2026-10-28). The job limit of 75 minutes still holds.
+suite_build_limit := "2700"
 # Seconds for a nix-build of one mutant suite: more than its limit in build-support/tests.nix.
 mutant_build_limit := "3000"
 default:
