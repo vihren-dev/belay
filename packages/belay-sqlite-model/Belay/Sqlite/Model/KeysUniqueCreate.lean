@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
 import Belay.Sqlite.Model.KeysUniqueFrame
+import Belay.Sqlite.Model.TableAtomFrames
 import Belay.Sqlite.Model.StatementStep
 
 set_option doc.verso true
@@ -37,33 +38,6 @@ theorem Catalog.mem_uniqueKeys_append {catalog : Catalog} {object : CatalogObjec
       · have off : (index.table == position && index.unique) = false := by
           simpa [Bool.and_eq_true, beq_iff_eq] using on
         simp [off] at new
-
-/-- For every database whose row lists match its catalog, object and position: the table at the
-position after the object and an empty row list are appended is the table at the position
-before, or a table without rows. Proof sketch: a position below the old catalog length sees the
-old catalog entry and row list; every other position reads the appended empty row list or the
-default. -/
-theorem Database.table_append_cases {database : Database} (aligned : database.rows.length = database.catalog.length)
-    (object : CatalogObject) {position : Nat} {table : Table}
-    (present : ({ catalog := database.catalog ++ [object], rows := database.rows ++ [[]] } : Database).table position =
-      some table) :
-    database.table position = some table ∨ table.rows = [] := by
-  by_cases below : position < database.catalog.length
-  · refine .inl ?_
-    unfold Database.table Catalog.tableAt at present ⊢
-    rw [List.getElem?_append_left below, rows_getD_append_nil] at present
-    exact present
-  · refine .inr ?_
-    unfold Database.table at present
-    obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp present
-    rw [← same]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_append]
-    split
-    · omega
-    · rename_i _ beyond
-      cases rest : position - database.rows.length with
-      | zero => simp
-      | succ _ => simp
 
 /-- For every database whose row lists match its catalog and object: if the database satisfies
 {name}`Database.KeysUnique`, and when the object is a unique index on a table its rows have no

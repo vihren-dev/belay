@@ -64,7 +64,9 @@ import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalUpsert
 import Belay.Sqlite.Model.RowLocalWriteTheorems
 import Belay.Sqlite.Model.RowLocalWrites
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.EffectSatisfies
+import Belay.Sqlite.Model.TableAtomFrames
+import Belay.Sqlite.Model.TableAtomWrites
 import Belay.Sqlite.Model.RowLocalAtoms
 import Belay.Sqlite.Model.ValidAtomsTogether
 import Belay.Sqlite.Model.ValidAtomsRuns

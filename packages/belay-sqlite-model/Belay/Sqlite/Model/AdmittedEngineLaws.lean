@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.AdmittedAtomFrames
 import Belay.Sqlite.Model.AdmittedPlainWrites
 import Belay.Sqlite.Model.DatabaseShapedLaws
 import Belay.Sqlite.Model.RowEngineWrites

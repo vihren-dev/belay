@@ -1,47 +1,47 @@
 # Preservation proofs: generalization and ownership inventory
 
-Date: 2026-10-27. Status: PROPOSED; implementation targets, not completed changes.
+Date: 2026-10-27. Status: foundation changes await acceptance; API and execution-condition work remain.
 Audience: designers and reviewers.
 Contract: [ADR 0025 D2–D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [API removals and callers](spec-preservation-api-targets.md).
 
 Names were checked against production revision `3e2212ed6983` on 2026-10-28. All declarations
-below belong to `Belay.Sqlite.Model`. Current owners identify the source to
-change. Future placement is constrained by imports; these lists do not require
+below belong to `Belay.Sqlite.Model`. Foundation owners were updated during the
+2026-10-28 implementation; the other rows remain targets. Future placement is constrained by imports; these lists do not require
 one new module per group. Retained evidence can move without changing its claim.
 
 ## Move shared definitions and facts below their instances
 
 | Current file | Definitions, fields or facts | Intended boundary |
 | --- | --- | --- |
-| [RowLocalFrame][frame] | `Database.EachTable`; `Effect.Satisfies`; `Effect.satisfies_of_effectDatabase`; `Effect.satisfies_of_database` | General table quantification and success/carried-FAIL preservation must be available without importing `RowLocalAtoms` or key instances. |
-| [AdmittedAtomFrames][atom-frames] | `TableAtom` and fields `empty`, `sublist`, `renamed`, `dropped`; `Database.EachTable.appendEmpty` | Put the shared table contract below `RowLocalAtom`; retain atom-specific frame lemmas/instances above it. |
-| [RowLocalAtoms][atoms] | `RowLocalAtom.empty`, `.sublist`, `.renamed`, `.dropped`, `.constraints`; `RowLocalAtom.facts` | Share empty/sublist/rename/drop facts with `TableAtom`, and keep the independent constraint implication. Use inheritance or a small projection; no second frame implementation. |
+| [TableAtomFrames][frame] and [EffectSatisfies][effect] | `Database.EachTable`; `Effect.Satisfies`; `Effect.satisfies_of_effectDatabase`; `Effect.satisfies_of_database` | General quantification and success/carried-FAIL preservation now sit below `RowLocalAtoms` and key instances. |
+| [TableAtomFrames][frame] | `TableAtom` and fields `empty`, `sublist`, `renamed`, `dropped`; `Database.EachTable.appendEmpty` | The shared contract is below `RowLocalAtom`; atom-specific frames and instances remain above it. |
+| [RowLocalAtoms][atoms] | `RowLocalAtom.toTableAtom`, `.constraints`; `RowLocalAtom.facts` | Share empty/sublist/rename/drop facts with `TableAtom`, and keep the independent constraint implication. Inheritance now supplies the four frame fields without a second implementation. |
 | [RowEngineFacts][engine-facts] | `Database.Every`, `Database.Every.setRows` | Expose the catalog/position-dependent update primitive below both table-local and key instances; keep its out-of-range row-list behavior. |
-| [AdmittedPlainWrites][plain] | `checkedWrite_satisfies`, `insertOutcome_satisfies` | Make the general checked-write/insert facts usable by `RowLocalWrites` without the current reverse import. |
+| [TableAtomWrites][table-writes] | `checkedWrite_satisfies`, `insertOutcome_satisfies` | General checked-write/insert facts now serve `RowLocalWrites` without a reverse import. |
 | [RunHoldsStep][step] | `SqlState.Holds`, `Outcome.Holds`, `SqlTransition.Holds` | General state/outcome predicates remain below per-atom run evidence; move only as needed to break specialization imports. |
-| [ValidAtomsTogether](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsTogether.lean) | `Effect.satisfies_and` | Place shared conjunction evidence with the generic effect facts if used there; its four-way application need not define a new framework. |
+| [EffectSatisfies][effect] | `Effect.satisfies_and` | The existing four-way conjunction evidence now lives with the generic effect facts. |
 
-The current reverse dependency paths are `AdmittedAtomFrames → RowLocalFrame →
-RowLocalAtoms` and `AdmittedPlainWrites → RowLocalWrites`. Adding the opposite
-imports would create cycles; generalization must first change ownership.
+The former reverse paths through `RowLocalFrame` and `RowLocalWrites` are removed.
+`RowLocalFrame` is deleted. `Database.table_append_cases` also moved from
+`KeysUniqueCreate` to the general frame owner, removing the remaining key-instance import.
 
 ## Replace duplicated update proofs with generic applications
 
 | Current file and declaration | Replacement proof source | Preserve |
 | --- | --- | --- |
-| [RowLocalFrame][frame]: `Database.EachTable.setRows` | `Database.Every.setRows`, ignoring catalog/position | No extra `RowsShaped` assumption. |
+| [TableAtomFrames][frame]: `Database.EachTable.setRows` | `Database.Every.setRows`, ignoring catalog/position | No extra `RowsShaped` assumption. |
 | [KeysUniqueFrame](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueFrame.lean): `Database.KeysUnique.setRows` | `Database.Every.setRows`, using catalog-selected keys | Selection depends on catalog and table position. |
-| [RowLocalWrites][writes]: `checkedWrite_rowLocal` | `checkedWrite_satisfies` and `RowLocalAtom.constraints` | Success and carried constraint FAIL. |
-| [RowLocalWrites][writes]: `insertOutcome_rowLocal` | `insertOutcome_satisfies` and `RowLocalAtom.constraints` | Same shape and original write assumptions. |
-| [RowLocalFrame][frame]: `Database.EachTable.append` | `Database.EachTable.appendEmpty` with the shared table contract | Original empty-table assumptions. |
+| Removed `checkedWrite_rowLocal` | `checkedWrite_satisfies` and `RowLocalAtom.constraints` | Success and carried constraint FAIL. |
+| Removed `insertOutcome_rowLocal` | `insertOutcome_satisfies` and `RowLocalAtom.constraints` | Same shape and original write assumptions. |
+| Removed `Database.EachTable.append` | `Database.EachTable.appendEmpty` with the shared table contract | Original empty-table assumptions. |
 
 The first four have historical replacement proofs in
 [DispatchPrimitives](../experiments/proof-simplification/DispatchPrimitives.lean).
-Recheck them against the current contracts; this is not a current build result.
-The append row is a consolidation candidate from the shared empty-table field;
-verify its original formula during implementation. Delete replaced proof bodies
-and unnecessary specializations after callers migrate. These counts do not add
+The implementation uses the general primitives and removes the two row-local
+write wrappers. Append callers now pass the inherited table contract directly.
+Current acceptance and temporary witness retirement are recorded in the
+[foundations status](../plans/20261026-preservation-foundations.status.md). These counts do not add
 to the 84 endpoint deletion count as measured savings.
 
 ## Consolidate complete statement dispatches
@@ -60,8 +60,8 @@ Retain the independent leaf evidence used by those applications:
   `Table.rowidsInRangeAtom`, `Table.rowsWideAtom`, `Table.rowsStoredAtom`,
   `Table.rowsAliasedAtom` and their frame lemmas.
 - [RowEngineFacts][engine-facts]: `TableFacts`, `WriteLaws`, `TableFacts.laws`.
-- [AdmittedPlainWrites][plain]: `passed_rowidsDistinct` and the generic
-  `runStatement_insert_atom`, `runStatement_update_atom`,
+- [AdmittedPlainWrites][plain]: `passed_rowidsDistinct`; [TableAtomWrites][table-writes]
+  owns the generic `runStatement_insert_atom`, `runStatement_update_atom`,
   `runStatement_delete_tableAtom` operation facts.
 - [AdmittedSchemaStatements](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedSchemaStatements.lean):
   `runStatement_create_tableAtom`; [RowLocalSchema](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalSchema.lean):
@@ -70,7 +70,7 @@ Retain the independent leaf evidence used by those applications:
   the generic ADD COLUMN fact and distinct atom extension facts listed in the
   companion inventory. Placement changes may be needed to remove wrapper imports.
 - [StatementRewrite](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRewrite.lean):
-  `runStatement_rewrite_satisfies`, `runStatement_rewrite_rowLocal`,
+  `runStatement_rewrite_satisfies` and
   `runStatement_rewrite_tableAtom` supply rename evidence with unchanged rows
   and equal `blankNames` shapes. `runStatement_rewrite_satisfies` now assumes
   only outline equality; FK selection equality must come from its caller.
@@ -165,7 +165,9 @@ their previous successful builds do not validate the changed contracts.
 These inventories are review guides, not permanent CI manifests or promised
 net source/build savings.
 
-[frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalFrame.lean
+[frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableAtomFrames.lean
+[effect]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/EffectSatisfies.lean
+[table-writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableAtomWrites.lean
 [atom-frames]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedAtomFrames.lean
 [atoms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAtoms.lean
 [engine-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowEngineFacts.lean

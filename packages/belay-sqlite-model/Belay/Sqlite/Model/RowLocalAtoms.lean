@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
 import Belay.Sqlite.Model.OutlineTableLaws
-import Belay.Sqlite.Model.RowEngineFacts
+import Belay.Sqlite.Model.TableAtomFrames
 import Belay.Sqlite.Model.DropColumnFactLaws
 
 set_option doc.verso true
@@ -8,9 +8,8 @@ set_option doc.verso true
 /-! The frame lemmas of the atoms "not null", "types fit" and "checks hold" (ADR 0022, D3,
 slice 3), and what the three share. Each atom says a fact of each row with the catalog entry of
 its table, so a table whose rows are rows of a table that satisfies the atom, with the same
-columns (or the same CHECK constraints), satisfies it. {lit}`RowLocalAtom` collects the three
-facts that the proofs about statements use, so one argument serves the three atoms; the theorems
-of the statements stay one for each atom. -/
+columns (or the same CHECK constraints), satisfies it. {lit}`RowLocalAtom` extends the shared table frame contract with the constraint
+implication, so one statement proof serves all three atoms. -/
 
 namespace Belay.Sqlite.Model
 
@@ -44,34 +43,13 @@ theorem Table.ChecksHold.frame {table other : Table} (holds : table.ChecksHold)
     other.ChecksHold :=
   fun row member check inChecks => holds row (rows row member) check (checks ▸ inChecks)
 
-/-- A property of a table that behaves like the three atoms of this slice: what the proofs about
-statements need of an atom that reads one row at a time. Three facts:
-* a table without rows has it;
-* a table with the same catalog entry as a table that has it, and a sublist of its rows, has it
-  (a DELETE stores such a table);
-* a table that passes the checks of a write ({name}`LiteralData.constraints`) has it, for every
-  keys;
-* a table with the same rows as a table that has it, and a shape that differs only in names
-  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table);
-* a table that has it and can lose a column cleanly still has it without the column (DROP COLUMN stores such a table).
-
-{lit}`Table.notNullAtom`, {lit}`Table.typesFitAtom` and {lit}`Table.checksHoldAtom` are the
-instances. -/
-structure RowLocalAtom (atom : Table → Prop) : Prop where
-  /-- A table without rows has the property. -/
-  empty : ∀ table, table.rows = [] → atom table
-  /-- A table with the same entry and a sublist of the rows of a table that has the property has
-  it. -/
-  sublist : ∀ table other, atom table → other.shape = table.shape → other.rows.Sublist table.rows → atom other
+/-- A table property with the shared frame facts of {name}`TableAtom` and the independent
+constraint fact: every table that passes {name}`LiteralData.constraints` for any keys has the
+property. Use {lit}`Table.notNullAtom`, {lit}`Table.typesFitAtom`, or {lit}`Table.checksHoldAtom`
+for the corresponding row-local constraint. -/
+structure RowLocalAtom (atom : Table → Prop) extends TableAtom atom : Prop where
   /-- A table that passes the checks of a write for some keys has the property. -/
   constraints : ∀ keys table, LiteralData.constraints keys table = true → atom table
-  /-- A table with the same rows and a shape with the same names blanked
-  ({lit}`CatalogTable.blankNames`) as a table that has the property has it. -/
-  renamed : ∀ table other, atom table → other.rows = table.rows →
-    table.shape.blankNames = other.shape.blankNames → atom other
-  /-- A table that can lose a column ({lit}`CatalogTable.DropsCleanly`) and has the property still has it after
-  the drop ({lit}`Table.dropColumn`): a DROP COLUMN stores such a table. -/
-  dropped : ∀ table index, atom table → table.shape.DropsCleanly index → atom (table.dropColumn index)
 
 /-- A {name}`RowLocalAtom` gives the facts of {name}`TableFacts` for the fact that ignores the catalog
 and the position: the row engine keeps it. Proof sketch: the sublist and constraints facts of the

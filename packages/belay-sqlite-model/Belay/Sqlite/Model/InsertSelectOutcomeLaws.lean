@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.StatementStep
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.EffectSatisfies
 
 set_option doc.verso true
 

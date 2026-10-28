@@ -40,15 +40,6 @@ theorem Resolved.Statement.atomsCondition_of_unconditioned {database : Database}
   intro statement unconditioned
   cases statement <;> first | exact ⟨trivial, trivial, trivial, trivial⟩ | exact nomatch unconditioned
 
-/-- For every four properties of an effect: if the effect satisfies each of them
-({name}`Effect.Satisfies`), it satisfies their conjunction. Proof sketch: a database that a run keeps
-from the effect has each property. -/
-theorem Effect.satisfies_and {first second third fourth : Database → Prop} {effect : Effect}
-    (one : effect.Satisfies first) (two : effect.Satisfies second) (three : effect.Satisfies third)
-    (four : effect.Satisfies fourth) : effect.Satisfies fun database => first database ∧ second database ∧
-      third database ∧ fourth database :=
-  fun database kept => ⟨one database kept, two database kept, three database kept, four database kept⟩
-
 /-- The statement theorem of the four atoms together, in the form of {name}`StatementKeeps`, for the
 condition {name}`Resolved.Statement.AtomsCondition`. For every clock value, counters, parameter list,
 resolved statement and database: if the database satisfies {name}`Database.ConstraintAtoms` and the

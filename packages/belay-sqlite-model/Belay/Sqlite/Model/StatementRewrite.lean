@@ -1,6 +1,6 @@
-import Belay.Sqlite.Model.AdmittedAtomFrames
+import Belay.Sqlite.Model.OutlineDatabaseLaws
 import Belay.Sqlite.Model.StatementStep
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.TableAtomFrames
 import Belay.Sqlite.Model.OutlineKeyLaws
 
 set_option doc.verso true
@@ -59,23 +59,9 @@ theorem runStatement_rewrite_satisfies (clock : Int) (counters : Counters) (para
     exact Effect.satisfies_of_effectDatabase (stored (Catalog.sameOutline_eq same))
   · exact Effect.satisfies_of_database kept rfl
 
-/-- For every atom that is a {name}`RowLocalAtom` and every database whose tables have it: the effect
-of a rewrite satisfies "every table has the atom". Proof sketch:
-{name}`runStatement_rewrite_satisfies` with {name}`Database.EveryTable.of_outline` and the
-renaming fact of the atom. Success and {lit}`constraintFail` need the atom, and every other error,
-including the rejection as {lit}`ExecutionError.unmodeled`, puts no obligation on the database. -/
-theorem runStatement_rewrite_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (counters : Counters) (parameters : List Value) (renamed : Catalog) {database : Database}
-    (every : database.EachTable atom) :
-    (runStatement clock counters parameters (.rewrite renamed) database).effect.Satisfies
-      fun after => after.EachTable atom :=
-  runStatement_rewrite_satisfies clock counters parameters renamed every fun same =>
-    Database.EveryTable.of_outline (fun _ first second rows shapes holds => rowLocal.renamed first second holds rows shapes)
-      every same
-
 /-- For every atom that is a {name}`TableAtom` and every database whose tables have it: the effect of
-a rewrite satisfies "every table has the atom". Proof sketch: as
-{name}`runStatement_rewrite_rowLocal`. Success and {lit}`constraintFail` need the atom, and every
+a rewrite satisfies "every table has the atom". Proof sketch: {name}`runStatement_rewrite_satisfies` and
+{name}`Database.EveryTable.of_outline` with the atom's renaming fact. Success and {lit}`constraintFail` need the atom, and every
 other error, including the rejection as {lit}`ExecutionError.unmodeled`, puts no obligation on the
 database. -/
 theorem runStatement_rewrite_tableAtom {atom : Table → Prop} (tableAtom : TableAtom atom) (clock : Int)
