@@ -80,3 +80,16 @@ above; it is fixed. Resolver repair `33611eda` received independent Claude revie
 remains with the coordinator. The Linux hosted result is pending and is separate
 from local Nix checks. PR 295's earlier API-reference and verdict successes do
 not establish acceptance of this repair.
+
+The coordinator's first combined snapshot `5540e15f` includes this repair,
+ADR 0025 foundations and API, and ADR 0026 source agreement and primitive
+ownership. Its first `just test-full` invocation reached the final S6 suite,
+then the unchanged 2,700-second suite-build deadline expired with exit 124.
+Every completed individual test passed, but the invocation did not complete
+acceptance. The log is `/tmp/proof-refactor-batch1-test-full.log`.
+After confirming the old build had stopped and resource checks passed, the
+coordinator retried the same snapshot and limits, reusing completed Nix
+derivations. The retry log is
+`/tmp/proof-refactor-batch1-test-full-retry.log`; its result is pending.
+Later expression, context, query, resolver and profile changes still require
+their own final combined acceptance.
