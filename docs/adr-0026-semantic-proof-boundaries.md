@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Owner request: test the causes of proof duplication, then specify the refactor
 supported by the results.
 Evidence: [experiment record](../experiments/proof-boundaries/README.md).
-Related: [ADR 0025](adr-0025-compositional-preservation-proofs.md).
+Direction: [Lean simplification goal](lean-simplification-goal.md); related [ADR 0025](adr-0025-compositional-preservation-proofs.md).
 
 ## Problem
 

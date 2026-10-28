@@ -2,6 +2,7 @@
 
 Date: 2026-10-26. Status: PROPOSED; historical prototypes checked; current targets source-reviewed.
 Audience: designers and reviewers.
+Direction: [long-term Lean simplification goal](lean-simplification-goal.md).
 Owner request: simplify the theorem and proof API, including changing the
 per-atom product contracts, after experiments in a separate workspace.
 Related: [ADR 0022](adr-0022-database-validity.md),

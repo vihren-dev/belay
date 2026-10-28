@@ -35,6 +35,13 @@ Lean developers state and prove facts about SQLite databases, statements and
 queries, and can trust that the model behaves as SQLite does, which the
 conformance evidence checks against native SQLite.
 
+Lean design and refactoring work follows the
+[long-term simplification goal](docs/lean-simplification-goal.md): at most 45,000
+maintained Lean code lines with at least 90% of the fixed capability baseline.
+Consult its scope and retention rules before proposing changes. At substantial
+milestones, record net code changes and capability effects there; temporary
+growth is allowed. Capability losses require an explicit owner decision.
+
 Core code is the model and the evidence that it agrees with SQLite. It must
 serve the goal, and a specification may plan it ahead. Supporting code is
 everything else: tooling, CI, harness features, measurement scripts, process

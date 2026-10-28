@@ -193,3 +193,7 @@ Clarified the earlier baseline's historical four-primitive scope and separated
 unchanged required expression replacements from newly listed retained consumers.
 Both findings are resolved. Claude reviewed clarification commit `1a49a919`
 with no findings. Reconciliation is complete; implementation remains unassigned.
+
+2026-10-28: recorded the owner's [long-term reduction goal](../docs/lean-simplification-goal.md).
+Its fixed baseline, capability accounting, Nix count and milestones govern later work.
+Checks: `tests/docs_test.py`, the goal's Nix source count and independent review.
