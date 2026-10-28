@@ -1,6 +1,6 @@
 # Restore acceptance checks needed by the proof refactor
 
-Date: 2026-10-28. Status: READY for immediate assignment.
+Date: 2026-10-28. Status: IN PROGRESS.
 Audience: the implementation team.
 Record: [status](20261028-proof-refactor-ci.status.md).
 Baseline: PR [295](https://github.com/vihren-dev/sqlite-verifier/pull/295),

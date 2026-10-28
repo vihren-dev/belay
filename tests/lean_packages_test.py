@@ -50,9 +50,18 @@ def replay_targets(lakefile: dict[str, object]) -> list[str]:
 
 
 def test_package_output_compiles_nothing(package: str, runtime_root: Path, tmp_path: Path) -> None:
-    """The installed package replays its modules and required model native facets without compiling."""
+    """The installed package replays its modules and required model native facets without compiling.
+
+    PR 295 exposed a model shared-library replay failure. Lake 4.34.1 hashes
+    objects in filesystem glob order; explicit selections keep that link order
+    stable across filesystems. Remove this guard when Lake sorts glob expansion.
+    """
     folder = runtime_root / "packages" / package
     lakefile = tomllib.loads((folder / "lakefile.toml").read_text())
+    if lakefile["name"] == MODEL_PACKAGE:
+        assert all(not pattern.endswith((".*", ".+")) for library in lakefile["lean_lib"]
+                   for pattern in library.get("globs", [])), (
+            "Model native libraries need explicit module selections: filesystem glob order changes their link traces")
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     (workspace / "lakefile.toml").write_text(f'name = "replayCheck"\n\n[[require]]\nname = {json.dumps(lakefile["name"])}\n'
