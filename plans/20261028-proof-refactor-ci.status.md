@@ -624,3 +624,7 @@ the governing ADR/task completion requirements and cited Nix artifacts.
 No executable source, proof, test or acceptance configuration changed during
 this closing integration. The remaining acceptance item is the externally
 blocked hosted mutation run.
+
+The independent review of integration `a8636c41` also has zero must and zero
+should findings (`20261028T174514Z-a8636c41`). The closing changes consist only
+of task, status, goal-ledger and review records; final code remains `23a3427b`.
