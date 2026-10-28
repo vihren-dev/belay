@@ -374,3 +374,19 @@ HTTP 403, `Resource not accessible by integration`. The coordinator asked the
 owner to start that workflow or provide Actions write access. No workflow,
 permission or test scope was changed to bypass this restriction. Local final
 acceptance continues independently; hosted mutation acceptance remains pending.
+
+## Completed worker workspace cleanup
+
+The coordinator removed the nine original implementation workspaces after
+checking that each working copy was empty and its parent was an ancestor of
+published `tasks/proof-refactor@origin` at `9eb179de`:
+
+- `adr25-api`, `adr25-foundations` and `adr25-preservation-context`.
+- `adr26-execution-profiles`, `adr26-expression-congruence` and `adr26-primitives`.
+- `adr26-query-outputs`, `adr26-resolver-certificate` and `adr26-source-agreement`.
+
+No live process used those directories. The active acceptance workspace uses
+independent package caches and immutable Nix inputs; its worker confirmed that
+cleanup does not affect the run. The coordinator, acceptance, CI-repair,
+retirement, comparison-correction and user review workspaces remain. Cleanup
+changes no tracked source or acceptance result.
