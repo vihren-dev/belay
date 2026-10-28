@@ -1,9 +1,7 @@
 """The measurement of mutant tables over authored cases, shared by the mutant tests.
 
-`tests/conformance_query_mutants_test.py`, `tests/conformance_table_mutants_test.py` and
-`tests/conformance_function_mutants_test.py` run in the Nix suites `mutants`, `tableMutants` and
-`functionMutants`, whose sources contain only their own test files and their inputs. This module
-is an input of each, so no test file imports another.
+The scheduled owners in `tests/nix_mutant_suites.json` contain only their own test files
+and inputs. This module is an input of each, so no test file imports another.
 """
 
 from collections.abc import Mapping

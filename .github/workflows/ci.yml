@@ -140,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [mutants, tableMutants, functionMutants]
+        suite: [mutants, valueMutants, queryFeatureMutants, querySourceMutants, insertQueryMutants, renameMutants, columnDropMutants, tableMutants, functionMutants]
         system: [x86_64-linux, aarch64-darwin]
         include:
           - system: x86_64-linux

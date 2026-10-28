@@ -1,5 +1,11 @@
 [
   "mutants",
+  "valueMutants",
+  "queryFeatureMutants",
+  "querySourceMutants",
+  "insertQueryMutants",
+  "renameMutants",
+  "columnDropMutants",
   "tableMutants",
   "functionMutants",
   "writers"

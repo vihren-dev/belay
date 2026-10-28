@@ -40,6 +40,7 @@ class CiScopeTest(unittest.TestCase):
                     (["tests/test_nix_test_targets.py"], "infrastructure"),
                     (["tests/environment_snapshot_test.py"], "infrastructure"),
                     (["tests/nix_suites.json"], "infrastructure"),
+                    (["tests/nix_mutant_suites.json"], "infrastructure"),
                     (["pytest.ini"], "infrastructure"), (["tests/conftest.py"], "infrastructure"),
                     (["conftest.py"], "infrastructure"),
                     (["tests/runtime_support.py"], "infrastructure"),

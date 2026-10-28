@@ -658,3 +658,51 @@ one should finding: an import requirement prescribed implementation order.
 The requirement now states the resulting dependency boundary instead.
 The corrected specification at `bcad4b11` passed independent review with zero
 must and zero should findings.
+
+## Hosted mutant workload partition, 2026-10-28
+
+The follow-up retains the existing mutant edits, guards, target mappings, native
+records and base-model agreement. Arithmetic is now two three-mutant
+measurements, selected by its existing real-arithmetic guards. Writes use the
+three existing tables as separate measurements: write (five), row-write
+(seven) and DELETE (five). The existing `measure_set` executable body is unchanged.
+
+The former general owner is now seven static owners. `mutants` retains resolver,
+core query/key/conflict and rebuild tests. `valueMutants` owns the extracted
+number/FROMless/JSON/date tests. Query features, query sources, INSERT queries,
+rename and column drop each use their existing file in a separate owner.
+The table and function owners remain. The existing Nix inventory generates
+the shared suite definition, and the CI matrix names all nine mutant owners.
+The existing ownership check verifies that every mutant test file belongs to
+exactly one scheduled mutant owner. Nix command evaluation verifies all nine
+file lists and unchanged 2,700/300-second limits. An inventory-only change
+now selects the infrastructure checks.
+
+The partition bounds work without changing the 300-second test, 2,700-second
+suite, subprocess or 75-minute job deadlines. Hosted run `40742662857` measured
+macOS resolver and core comparison/evaluation/resolution work at about
+1,216 seconds. The remaining tail was not measured there. The query-feature
+and other extracted owners therefore remain candidates for hosted validation;
+test counts alone do not establish timing headroom.
+
+Focused arithmetic Nix acceptance passed both groups: integer-and-CAST in
+123.720 seconds and real arithmetic in 125.208 seconds, with no failure,
+error or skip. The selected run took 249.106 seconds. Its immutable report is
+`/nix/store/4ldcn9xzfbljwq2myyl3v7mkmp5g7a8w-sqlite-verifier-test-hosted-arithmetic-groups-1/junit.xml`.
+The captured source differs from the final tree only in the helper's module
+docstring; its executable AST and all other captured source files match.
+Focused write Nix acceptance passed all three groups: write in 81.556 seconds,
+row-write in 125.465 seconds and DELETE in 74.895 seconds, with no failure,
+error or skip. The selected run took 282.154 seconds. Its immutable report is
+`/nix/store/a5zzn7bs3l61hrc2plhj6mw2n675ibhw-sqlite-verifier-test-hosted-write-groups-1/junit.xml`.
+Its captured source matches the final inputs. Both focused runs selected the
+existing test by name through its actual owner, with normal dependencies,
+`--max-jobs 1 --cores 3` and all existing limits. These are local Nix timings;
+new hosted Linux/macOS results remain required.
+
+The changed static checks are `test_test_ownership`, `test_ci_scope`,
+`test_ci_workflow`, `test_recipe_limits` and the bounded-command check in
+`test_nix_test_targets`; doc links and the existing affected mutant-guard
+checks also apply. The full combined acceptance runs once through the
+coordinator. The CI task remains IN PROGRESS until all scheduled mutant
+suites and the model suite succeed on both hosted platforms.
