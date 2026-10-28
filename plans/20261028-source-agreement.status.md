@@ -26,7 +26,7 @@ the acceptance owner. The implementation below awaits integrated Nix acceptance.
 - Assignment commit `d3b75dfb`: independent Claude review found zero must and
   zero should findings (`reviews/20261028T114133Z-d3b75dfb`). The earlier
   review record covers the draft before its goal link was added.
-- Pending: independent implementation review, Nix acceptance, temporary
+- Pending: Nix acceptance, temporary
   migration-witness retirement, integration and push.
 
 ## Shared source argument
@@ -67,7 +67,7 @@ That case failed during copying, before its `nix-build` command ran. Its tempora
 copy was removed. This is not a D2 acceptance result or a task source change;
 the coordinator runs those checks when integrated package work is at rest.
 
-Pending: independent implementation review, integrated Nix acceptance, final
+Pending: integrated Nix acceptance, final
 source accounting, retirement of redundant migration witnesses with the accepted
 revision recorded for replay, and integration/push confirmation.
 
@@ -80,3 +80,9 @@ the D2 status changes in the two agreement specifications. The follow-up
 records 2026-10-28 as the status-change date and retains each creation date.
 The proof implementation did not change. Nix acceptance and witness retirement
 remain pending.
+
+The documentation follow-up `bef73db7931d35f361b966ac88eb356d18ad3b4b` received
+zero must findings and one should finding in independent Claude review
+`reviews/20261028T120510Z-bef73db7`: the pending list still included the finished
+implementation review. This status-only correction removes that obsolete item.
+All findings from both reviews are resolved; integrated acceptance remains pending.

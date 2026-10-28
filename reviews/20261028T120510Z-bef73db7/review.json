@@ -1,0 +1,48 @@
+{
+  "caller": "codex",
+  "commit": "bef73db7931d35f361b966ac88eb356d18ad3b4b",
+  "date": "2026-10-28T12:05:10+00:00",
+  "exit": 0,
+  "files": [
+    "docs/spec-proof-agreement-targets.md",
+    "docs/spec-proof-agreement.md",
+    "plans/20261028-source-agreement.status.md",
+    "reviews/20261028T120340Z-10a1ab51/resolution-1-20261028T120432Z.json",
+    "reviews/20261028T120340Z-10a1ab51/resolution-2-20261028T120432Z.json",
+    "reviews/20261028T120340Z-10a1ab51/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261028T120510Z-bef73db7#1",
+      "line": 70,
+      "path": "plans/20261028-source-agreement.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The \"Pending\" paragraph still lists \"independent implementation review\" as pending, but the new section at line 74 says that review is done. Fix: remove \"independent implementation review\" from the pending list."
+    }
+  ],
+  "id": "20261028T120510Z-bef73db7",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
