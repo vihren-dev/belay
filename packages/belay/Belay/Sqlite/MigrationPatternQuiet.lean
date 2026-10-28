@@ -31,6 +31,7 @@ theorem quiet_return_observation {μ α : Type} (migration : Sql μ) (value : α
           (first.outputs ++ []) = []
         rw [Sql.View.project_bind_return before _ returnedValue]
         simp only [Sql.View.project, List.append_nil, Sql.View.project_quiet_of_allOk before ok]
+  apply observationProfile_eq_iff.mpr
   constructor
   · exact constant _ (Sql.Branch.actual _ _ _ _)
   · intro seen

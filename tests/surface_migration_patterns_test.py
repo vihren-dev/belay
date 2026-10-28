@@ -20,7 +20,7 @@ def test_migration_patterns_keep_original_domains_and_full_effects(runtime_root:
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     allowed = {"propext", "Classical.choice", "Quot.sound"}
-    for module, count in (("ExecutionViewComparisons", 15), ("ExecutionViewChoices", 5), ("MigrationPatterns", 12),
+    for module, count in (("ExecutionViewComparisons", 9), ("ExecutionViewChoices", 5), ("MigrationPatterns", 12),
                           ("MigrationComposition", 16), ("ExecutionViewComposition", 20),
                           ("MigrationFrameBoundaries", 5), ("MigrationApplicationComposition", 14)):
         configuration["name"] = module

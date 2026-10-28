@@ -79,7 +79,7 @@ theorem missing_trigger_is_not_a_translation :
     ¬ Migration.TranslatesAt (send buggyExpansion) (fun _ => True) (addThenFind.interp shopPairing.old)
       (addThenFind.interp shopPairing.new) initial := by
   intro claim
-  have same := congrArg Prod.fst (claim buggy_domain).actual
+  have same := congrArg Prod.fst (observationProfile_actual (claim buggy_domain))
   change ((addThenFind.interp shopPairing.old).runFrom initial.clock initial.index initial.connection).value =
     ((Migration.after (send buggyExpansion) (addThenFind.interp shopPairing.new)).runFrom initial.clock
       initial.index initial.connection).value at same

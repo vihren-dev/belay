@@ -10,7 +10,7 @@ and view reduce to the unchanged application's identity view. -/
 theorem preserves_pure {μ α : Type} (value : μ) (application : Sql α) (pre : ExecutionContext → Prop) :
     PreservesOn (.pure value) pre application := by
   intro state _
-  exact Sql.View.ObservationEquivAt.refl _ state
+  exact rfl
 
 /-- A pure migration preserves every admitted read-only query in all valid databases
 and complete fresh environments. Proof sketch: specialize pure preservation at each

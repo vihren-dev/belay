@@ -33,7 +33,8 @@ theorem TranslatesAt.commutes_of_frames {μ α : Type} {migration : Sql μ}
         one.outputs.length = two.outputs.length) :
     CommutesAsAt migration pre application replacement state := by
   intro entry
-  exact ((before_observation migration application state (laterSuccess entry)).trans (translation entry)).full_of_frames
+  exact Sql.View.ObservationEquivAt.full_of_frames
+    ((before_observation migration application state (laterSuccess entry)).trans (translation entry))
     (connections entry) (steps entry)
 
 /-- The fixed-context frame bridge applies at every context satisfying the original

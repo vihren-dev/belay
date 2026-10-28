@@ -73,7 +73,7 @@ theorem Sql.View.EquivAt.bind_branch {α β : Type} {first second : Sql α}
     ∃ matched, (second.bind other).Branch state.clock state.index state.connection matched ∧
       (right.bind other last).fullObservation state matched = (left.bind next later).fullObservation state result := by
   obtain ⟨one, before, continuation⟩ := (Sql.branch_bind_iff first next _ _ _ result).mp branch
-  obtain ⟨two, after, prefixSame⟩ := (same.branches _).mp ⟨one, before, rfl⟩
+  obtain ⟨two, after, prefixSame⟩ := ((observationProfile_eq_iff.mp same).2 _).mp ⟨one, before, rfl⟩
   have values := congrArg Prod.fst prefixSame
   obtain ⟨_, connections, steps⟩ := (fullObservation_eq_iff _ _ _ _ _).mp prefixSame
   cases returned : one.value with
@@ -86,7 +86,7 @@ theorem Sql.View.EquivAt.bind_branch {α β : Type} {first second : Sql α}
   | some value =>
     simp only [returned] at continuation
     obtain ⟨tail, tailBranch, rfl⟩ := continuation
-    obtain ⟨otherTail, otherBranch, tailSame⟩ := ((tails one before value returned).branches _).mp
+    obtain ⟨otherTail, otherBranch, tailSame⟩ := ((observationProfile_eq_iff.mp (tails one before value returned)).2 _).mp
       ⟨tail, tailBranch, rfl⟩
     have otherReturned : two.value = some value := values.trans returned
     refine ⟨{ otherTail with outputs := two.outputs ++ otherTail.outputs },

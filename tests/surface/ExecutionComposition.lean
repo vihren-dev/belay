@@ -33,7 +33,7 @@ theorem restricted_write : Sql.EquivOn (fun state => state = initial)
     (Sql.Equiv.on (Sql.Equiv.refl writeOne) _)
   · intro count state reached
     rw [reached.1]
-    exact Sql.EquivAt.refl _ _
+    exact rfl
   · apply Sql.returnsIn_of_check
     intro state entry
     exact writeOne_spec state entry
@@ -48,7 +48,7 @@ theorem reaches_is_essential : ¬ (∀ (first second : Sql Unit) (left right : U
   have falseSame := rule (.pure ()) (.pure ()) (fun _ => .pure 1) (fun _ => .pure 2)
     (Sql.Equiv.on (Sql.Equiv.refl (.pure ())) _) (fun _ _ impossible => impossible.elim)
     initial True.intro
-  have returned := congrArg SqlRun.value falseSame.actual
+  have returned := congrArg SqlRun.value (observationProfile_actual falseSame)
   contradiction
 
 /-- A transported fresh success claim still quantifies every complete environment. -/
@@ -64,9 +64,6 @@ theorem success_transport {α : Type} {first second : Sql α} (same : first ≈ 
 #print axioms reaches_is_essential
 #print axioms success_transport
 #print axioms sqlSetoid
-#print axioms Sql.EquivAt.refl
-#print axioms Sql.EquivAt.symm
-#print axioms Sql.EquivAt.trans
 #print axioms Sql.EquivOn.bind
 #print axioms Sql.Equiv.bind
 #print axioms Sql.Equiv.bind_left

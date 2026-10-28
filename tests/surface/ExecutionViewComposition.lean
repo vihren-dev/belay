@@ -33,6 +33,7 @@ theorem another_unique (result : SqlRun Nat) :
 /-- Quiet prefixes compare fully despite different raw traces. Both connections, raw
 counts and returned values agree. Proof sketch: classify the two deterministic branches. -/
 theorem quiet_prefixes : (Sql.View.quiet one).EquivAt (Sql.View.quiet another) initial := by
+  apply observationProfile_eq_iff.mpr
   constructor
   · rfl
   · intro observed
@@ -62,7 +63,7 @@ theorem raw_domain_composition :
     (fun state equal => by subst state; exact quiet_prefixes) ?_ ?_ initial rfl
   · intro value state _
     rw [Nat.add_comm 1 value]
-    exact Sql.View.EquivAt.refl (.pure (value + 1)) state
+    exact rfl
   · intro state equal result branch value returned
     subst state
     have resultEq := (one_unique _ _ result).mp branch
@@ -76,10 +77,10 @@ theorem all_choice_composition :
     ((Sql.View.quiet (choices false)).bind (fun value => .pure (value + 1)) (fun value => .pure (value + 1))).EquivAt
       ((Sql.View.quiet (choices false)).bind (fun value => .pure (1 + value)) (fun value => .pure (1 + value))) initial := by
   apply Sql.View.EquivOn.bind (pre := fun state => state = initial) (post := fun _ state => state.outputs.length = 2)
-    (fun state _ => Sql.View.EquivAt.refl _ state) ?_ ?_ initial rfl
+    (fun _ _ => rfl) ?_ ?_ initial rfl
   · intro value state _
     rw [Nat.add_comm 1 value]
-    exact Sql.View.EquivAt.refl (.pure (value + 1)) state
+    exact rfl
   · intro state equal result branch value returned
     subst state
     obtain ⟨selected, later, choice, tail, rfl⟩ := (Sql.branch_continued_iff choices_step result).mp branch

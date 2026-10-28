@@ -34,17 +34,9 @@ theorem Sql.View.EquivAt.with_outputs {α : Type} {first second : Sql α}
     {left : View first} {right : View second} {state : ExecutionContext}
     (same : left.EquivAt right state) (outputs : List Output) :
     left.EquivAt right { state with outputs } := by
-  refine ⟨(fullObservation_eq_iff _ _ _ _ _).mpr ((fullObservation_eq_iff _ _ _ _ _).mp same.actual), ?_⟩
-  intro observed
-  constructor
-  · rintro ⟨result, branch, seen⟩
-    obtain ⟨other, matched, equal⟩ := (same.branches _).mp ⟨result, branch, rfl⟩
-    exact ⟨other, matched, ((fullObservation_eq_iff _ _ _ _ _).mpr
-      ((fullObservation_eq_iff _ _ _ _ _).mp equal)).trans seen⟩
-  · rintro ⟨result, branch, seen⟩
-    obtain ⟨other, matched, equal⟩ := (same.branches _).mpr ⟨result, branch, rfl⟩
-    exact ⟨other, matched, ((fullObservation_eq_iff _ _ _ _ _).mpr
-      ((fullObservation_eq_iff _ _ _ _ _).mp equal)).trans seen⟩
+  exact observationProfile_transport same (Sql.Branch.actual first _ _ _)
+    (Sql.Branch.actual second _ _ _) (fun _ _ _ _ equal =>
+      (fullObservation_eq_iff _ _ _ _ _).mpr ((fullObservation_eq_iff _ _ _ _ _).mp equal))
 
 /-- Weak comparison lifts to full comparison if every pair of branches with the same
 weak observation also has equal complete connections and raw step counts. These are
@@ -64,16 +56,9 @@ theorem Sql.View.ObservationEquivAt.full_of_frames {α : Type} {first second : S
       second.Branch state.clock state.index state.connection two →
       left.observation one = right.observation two → one.outputs.length = two.outputs.length) :
     left.EquivAt right state := by
-  have complete one two before after observed := (fullObservation_eq_iff left right state one two).mpr
-    ⟨observed, connections one two before after observed, steps one two before after observed⟩
-  refine ⟨complete _ _ (Sql.Branch.actual first _ _ _) (Sql.Branch.actual second _ _ _) same.actual, ?_⟩
-  intro observed
-  constructor
-  · rintro ⟨result, branch, seen⟩
-    obtain ⟨other, matched, equal⟩ := (same.branches _).mp ⟨result, branch, rfl⟩
-    exact ⟨other, matched, (complete _ _ branch matched equal.symm).symm.trans seen⟩
-  · rintro ⟨result, branch, seen⟩
-    obtain ⟨other, matched, equal⟩ := (same.branches _).mpr ⟨result, branch, rfl⟩
-    exact ⟨other, matched, (complete _ _ matched branch equal).trans seen⟩
+  exact observationProfile_transport same (Sql.Branch.actual first _ _ _)
+    (Sql.Branch.actual second _ _ _) (fun one two before after observed =>
+      (fullObservation_eq_iff left right state one two).mpr
+        ⟨observed, connections one two before after observed, steps one two before after observed⟩)
 
 end Belay.Sqlite

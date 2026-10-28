@@ -49,7 +49,7 @@ theorem Sql.View.observation_bind_branch {α β : Type} {program : Sql α}
   | some value =>
     simp only [returned] at continuation
     obtain ⟨tail, tailBranch, rfl⟩ := continuation
-    obtain ⟨otherTail, otherBranch, equal⟩ := ((tails first before value returned).branches _).mp
+    obtain ⟨otherTail, otherBranch, equal⟩ := ((observationProfile_eq_iff.mp (tails first before value returned)).2 _).mp
       ⟨tail, tailBranch, rfl⟩
     exact ⟨_, before.bind_return returned other otherBranch,
       observation_bind_return_eq view before returned other next last later otherTail tail equal⟩
@@ -67,6 +67,7 @@ theorem Sql.View.ObservationEquivOn.bind_same {α β : Type} {program : Sql α}
     ObservationEquivOn pre (view.bind next later) (view.bind other last) := by
   intro state entry
   have forward beforeRun branch value returned := tails value _ (reaches state entry beforeRun branch value returned)
+  apply observationProfile_eq_iff.mpr
   constructor
   · rw [Sql.runFrom_bind, Sql.runFrom_bind]
     let first := program.runFrom state.clock state.index state.connection
@@ -84,7 +85,7 @@ theorem Sql.View.ObservationEquivOn.bind_same {α β : Type} {program : Sql α}
     | some value =>
       simp only [SqlRun.andThen, returned]
       exact observation_bind_return_eq view before returned next other later last _ _
-        (forward first before value returned).actual
+        (observationProfile_actual (forward first before value returned))
   · intro observed
     constructor
     · rintro ⟨result, branch, seen⟩

@@ -17,7 +17,7 @@ from tests.surface_support import FIXTURES, module_setup
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3"), pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
-PROVED = {"triple-proved", "equiv-proved"}
+PROVED = {"triple-proved", "equiv-proved", "profile-alias-proved"}
 """The cases for which the checker finds a proof."""
 
 FALSE = {"triple-false", "lean-continuation-false", "equiv-false", "equiv-at-false", "equiv-shrink-exhausted",
@@ -31,6 +31,8 @@ PROOF_STATEMENTS = {
     "triple-proved": """FreshEnsures (send bump) (fun db => db = sample)
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 6]]⌝ : ContextAssertion))""",
     "equiv-proved": "Sql.Equiv (send bump) (send bump)",
+    "profile-alias-proved": """∀ state : ExecutionContext,
+      bumpView.ObservationEquivAt (Sql.View.identity (send bump)) state""",
 }
 """The claim of each proved case, as the test states it again to check the printed script."""
 
@@ -48,7 +50,7 @@ def blocks(runtime_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict
 
 
 def test_each_case_has_the_outcome_that_its_claim_deserves(blocks: dict[str, str]) -> None:
-    """The checker proves the true triple and the equivalence of a program with itself, refutes the false
+    """The checker proves the true triple, program reflexivity and equality through a named view, refutes the false
     triple, the false equivalences and the false migration claim, and reports unknown when the budget is
     too small, when the postcondition has no decision procedure, and when the claim is true for every
     candidate but has no default proof. Unknown is never reported as false."""
@@ -158,6 +160,8 @@ set_option exponentiation.threshold 2048
 namespace S6RulesEffects
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
+/-- The named view from S6CheckPrograms, retained when checking its printed suggestion. -/
+def bumpView : Sql.View (send bump) := Sql.View.identity (send bump)
 theorem printed : {PROOF_STATEMENTS[name]} := by
 {indent(proof, '  ')}
 #print axioms printed

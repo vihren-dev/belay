@@ -50,7 +50,7 @@ theorem moving_clock_not_commuting :
   intro same
   have inDomain : Migration.Domain (send stampMigration) (fun _ => True) startMoving :=
     ⟨True.intro, by decide +kernel⟩
-  have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0) (same inDomain).actual
+  have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0) (observationProfile_actual (same inDomain))
   have different :
       ((Migration.before (send lookupAda) (send stampMigration)).runFrom startMoving.clock startMoving.index
         startMoving.connection).connection.state.database.rowsAt 0 ≠
