@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Comparison
+import Belay.Sqlite.Model.ComparisonLaws
 import Belay.Sqlite.Model.ForeignKeyParentUnique
 
 set_option doc.verso true

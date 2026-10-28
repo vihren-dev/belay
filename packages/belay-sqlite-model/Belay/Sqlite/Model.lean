@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Declarations
 import Belay.Sqlite.Model.Comparison
+import Belay.Sqlite.Model.ComparisonLaws
 import Belay.Sqlite.Model.QueryEval
 import Belay.Sqlite.Model.Truth
 import Belay.Sqlite.Model.QueryJoins
