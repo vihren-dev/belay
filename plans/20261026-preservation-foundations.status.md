@@ -94,3 +94,9 @@ exclude docstrings, and are not a performance claim. Three small general modules
 replace the deleted frame module; the local maximum of those new modules is
 130 lines. Final whole-suite Nix checks will run on the root's integrated ADR25
 and ADR26 tree to avoid duplicate builds; task completion remains pending them.
+
+Independent Claude review of `50a3d18e` reported no must findings and one
+R2 should finding: the missing-row-list regression's docstring described the
+general law instead of its concrete conjuncts. The follow-up states both
+concrete conjuncts and points to the general `Database.EachTable.setRows` law.
+The follow-up requires its development build and independent review.

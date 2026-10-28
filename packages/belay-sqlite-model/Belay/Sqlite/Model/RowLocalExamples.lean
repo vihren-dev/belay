@@ -108,9 +108,10 @@ example : strictOne.TypesFit ∧ strictOne.RowsWide ∧ strictDefaultFits intege
 def missingRows : Database :=
   { catalog := [tableT { columns := [plain "a"] }], rows := [] }
 
-/-- Row replacement preserves NOT NULL even when the row-list count differs from the catalog
-length. This application requires no {name}`Database.RowsShaped` premise. Proof sketch:
-{name}`Database.EachTable.setRows` keeps the property; replacement past the row-list end is a no-op. -/
+/-- The concrete database {name}`missingRows` does not satisfy {name}`Database.RowsShaped`,
+and replacing its rows at position zero with the single row containing NULL preserves NOT NULL.
+The general guarantee is {name}`Database.EachTable.setRows`. Proof sketch: apply that theorem;
+replacement past the row-list end is a no-op. -/
 theorem missingRows_preserved : ¬missingRows.RowsShaped ∧
     (missingRows.setRows 0 [stored 1 [.null]]).NotNull := by
   constructor
