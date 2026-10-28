@@ -133,6 +133,22 @@ endpoint fixtures, also with zero must and zero should findings. These were
 read-only reviews; the local compiler/test diagnostics above supplied execution
 checks. The review records are retained verbatim.
 
-Source is ready for coordinator integration. Keep this task IN PROGRESS until
-final combined Nix acceptance and the required migration-witness retirement.
-No source or registration in the isolated acceptance workspace was changed.
+Coordinator integration `5dc38c0a` includes the query-task assignment and the
+reviewed expression work. The complete four-package development build passed
+(2607 jobs), as did 16 documentation/layer source checks. An earlier diagnostic
+invocation selected installed-package replay tests against the development tree;
+its layout failures do not test installed artifacts. Those checks remain part
+of Nix acceptance.
+
+The only merge conflict was the model manifest. The coordinator checked its
+exact source-module set and the parent deltas: 871 explicit modules, removal
+of only `RunHoldsReady` from the prior integration, and all 19 public roots
+unchanged. The first integration review returned no parseable result because
+its comparison command was unavailable. The required retry
+`reviews/20261028T130523Z-5dc38c0a` reported zero must and zero should findings,
+but still marked that comparison unverified; the coordinator's explicit checks
+and successful build supply that diagnostic evidence.
+
+Keep this task IN PROGRESS until final combined Nix acceptance, required
+migration-witness retirement and push. No source or registration in the first
+isolated acceptance workspace was changed; it predates this context integration.
