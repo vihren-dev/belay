@@ -4,9 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
 from tests.surface_assertion_examples_test import check_module_chain
 
-pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
+pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
+              pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, in seconds. The fixtures use kernel evaluation of small programs."""
