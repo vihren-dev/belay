@@ -21,7 +21,7 @@ has a cell equal to the value after the affinity of the column, so the number of
 The statement needs the collation of the comparison to be the collation of the key: with a column {lit}`COLLATE NOCASE` and a
 unique index {lit}`COLLATE BINARY` a table can hold {lit}`'a'` and {lit}`'A'`, and {lit}`c = 'a'` then matches both rows.
 The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Holds.iff_selectOne_count` turns the claim into the truth of the condition {lit}`n <= 1` for the number of
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_count` turns the claim into the truth of the condition {lit}`n <= 1` for the number of
 rows ({name}`Resolved.truthy_count_le_one`); the unique lookup bounds that number
 ({name}`Table.KeysUnique.countMatching_le_one`) with the unique keys and the stored cells of the valid database. -/
 theorem Holds.selectOne_count_unique_lookup
@@ -46,11 +46,12 @@ theorem Holds.selectOne_count_unique_lookup
     (oneTerm : key.terms = [{ term := .column index, descending, collation }]) :
     Holds script db isQuery := by
   have present := Database.table_of_findTable db.raw _ position table found
-  refine (Holds.iff_selectOne_count head count namedSource current arguments found subResolves mainResolves (by simp [sql_simp])
-    (by simp [sql_simp])).2 ?_
-  rw [Resolved.truthy_count_le_one]
-  simpa using Table.KeysUnique.countMatching_le_one (db.valid.unique position _ present)
+  unfold Holds
+  rw [Script.outputOn_count head count namedSource current arguments found subResolves mainResolves
+    (by simp [sql_simp]) (by simp [sql_simp])]
+  have bound := Table.KeysUnique.countMatching_le_one (db.valid.unique position _ present)
     (db.valid.admitted.rowsStored position _ present) member columnAt noFilter oneTerm
     (Resolved.EvalContext.bound parameters) (.parameter slot) (parameterValue parameters slot) fun _ => rfl
+  simpa [Resolved.truthy_count_le_one, Output.hasRows] using bound
 
 end Belay.Sqlite

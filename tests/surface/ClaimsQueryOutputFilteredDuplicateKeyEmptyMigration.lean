@@ -2,19 +2,13 @@ import Belay.Sqlite.FilteredDuplicateKeyQuery
 
 set_option doc.verso true
 
-/-! The claims {lit}`Empty` and {lit}`Fails` of the query form of {lit}`Belay/Sqlite/FilteredDuplicateKeyQuery.lean`:
-{lit}`Empty` means that two rows that {lit}`WHERE` keeps have keys that are equal under the collation, and {lit}`Fails`
-never holds for a query whose expressions are calm. -/
+/-! Temporary exact baseline formulas for D1; retire after final contract acceptance. -/
 
 namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeysWhere`: {name}`Empty` of the script on the
-database means that some group of the rows that {lit}`WHERE` keeps, grouped by the key under the collation, has more
-than one row: two such rows have keys that compare equal under the collation (two NULL keys compare equal). Proof
-sketch: {name}`Script.outputOn_selectOne_noDuplicateKeysWhere` and
-{name}`resolvedStepOutput_notExists_duplicateKeys_hasNoRows`. -/
-theorem Empty.iff_selectOne_noDuplicateKeysWhere
+-- Original Empty.iff_selectOne_noDuplicateKeysWhere.
+example
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
     {value : Syntax.Expr} {text : String} {filter : Option Syntax.Expr} {term : Syntax.Expr}
     {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
@@ -44,20 +38,11 @@ theorem Empty.iff_selectOne_noDuplicateKeysWhere
         (Resolved.keptRows (Resolved.EvalContext.bound parameters) whereCondition
           (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })), 1 < group.length := by
   unfold Empty
-  rw [Script.outputOn_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
-    columnResolves columnGrouped columnFeeds filterResolves groupResolves, Option.any_some]
-  exact resolvedStepOutput_notExists_duplicateKeys_hasNoRows 0 position db.raw.connection parameters
-    { shape := table, rows := db.raw.rows.getD position [] } whereCondition column columnName key collation
-    (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_duplicateKeys position _ whereCondition column columnName key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) whereCalm columnCalm keyCalm)
+  rw [Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves whereCalm columnCalm keyCalm]
+  simp [Output.hasNoRows, apply_ite, List.all_eq_true, Nat.not_le]
 
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeysWhere`, {name}`Fails` of the script on the
-database does not hold: a calm query of a table that exists neither fails to resolve nor fails to run, so the
-premise of calm expressions excludes a condition that can fail. The law says nothing about such a condition, and it is
-never read as false. Proof sketch:
-{name}`Script.outputOn_selectOne_noDuplicateKeysWhere` and
-{name}`resolvedStepOutput_notExists_duplicateKeys_not_isError`. -/
-theorem Fails.not_selectOne_noDuplicateKeysWhere
+-- Original Fails.not_selectOne_noDuplicateKeysWhere.
+example
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
     {value : Syntax.Expr} {text : String} {filter : Option Syntax.Expr} {term : Syntax.Expr}
     {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
@@ -84,12 +69,7 @@ theorem Fails.not_selectOne_noDuplicateKeysWhere
     (keyCalm : key.Calm) :
     ¬ Fails script db isQuery := by
   unfold Fails
-  rw [Script.outputOn_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
-    columnResolves columnGrouped columnFeeds filterResolves groupResolves, Option.any_some,
-    resolvedStepOutput_notExists_duplicateKeys_not_isError 0 position db.raw.connection parameters
-    { shape := table, rows := db.raw.rows.getD position [] } whereCondition column columnName key collation
-    (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_duplicateKeys position _ whereCondition column columnName key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) whereCalm columnCalm keyCalm)]
-  simp
+  rw [Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves whereCalm columnCalm keyCalm]
+  simp [Output.isError, apply_ite, List.all_eq_true]
 
 end Belay.Sqlite

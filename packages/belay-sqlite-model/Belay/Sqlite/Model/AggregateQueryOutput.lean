@@ -10,82 +10,34 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Model
 
-/-- For every connection, values, table at a catalog position of the database of the connection, and calm statement
-of the whole-table aggregate query of that table ({name}`Resolved.Query.aggregateOf`), the output of the step has
-rows exactly when the aggregate does not fail ({name}`Resolved.Aggregate.fails`) over the rows of the table in scan
-order for which the condition is true, in the context of the values ({name}`Resolved.EvalContext.bound`). Without a
-condition, these are all the rows. For example, {lit}`SUM` fails when the sum of integers leaves the 64-bit range and
-no REAL value follows. Proof sketch: {name}`resolvedStepOutput_query_hasRows` with the source rows of
-{name}`Resolved.Query.source_first` and the run of {name}`Resolved.Query.aggregateOf_run_of_faultless`; the one result
-is a row. -/
-theorem resolvedStepOutput_aggregateTable_hasRows (index position : Nat) (connection : Connection)
+/-- For every calm whole-table aggregate statement over an existing table, the complete
+output is the integer-overflow error when the aggregate fails on the kept rows; otherwise it
+gives every possible result of that aggregate query. The source filter runs before aggregation,
+including on empty input. Proof sketch: substitute the table source and fault-free aggregate run
+in the complete source-output equation. -/
+theorem resolvedStepOutput_aggregateTable (index position : Nat) (connection : Connection)
     (parameters : List Value) (table : Table) (condition : Option Resolved.Expr) (aggregate : Resolved.Aggregate)
     (name : String) (present : connection.state.database.table position = some table)
     (calm : (Resolved.Statement.query
       (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])).hasRows =
-        true ↔
-      aggregate.fails (Resolved.EvalContext.bound parameters) ((Resolved.sourceRows table).filter fun row =>
-        condition.all fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) =
-        false := by
+    resolvedStepOutput none index connection parameters
+      (.query (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) []) =
+      if aggregate.fails (Resolved.EvalContext.bound parameters) ((Resolved.sourceRows table).filter fun row =>
+          condition.all fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row))
+        then .error ExecutionError.integerOverflow.primaryCode
+        else Output.ofResults ((Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name).possibleResults
+           (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)) := by
   have found := Resolved.Query.source_first (connection.queryContext parameters
     (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])
     (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name)
     connection.state.database position table rfl present
-  have plain := calm.subqueries_plain
-  rw [resolvedStepOutput_query_hasRows index connection parameters _ _ [] _ calm.readsClock (calm.firstUnknown _) found
-      (Resolved.Query.aggregateOf_bindWindow _ _ _ _ parameters),
-    Resolved.Query.aggregateOf_run_of_faultless _ _ _ _ _ calm.query_plain _ (calm.faultless_nil connection parameters),
-    Resolved.Query.aggregateOf_results, Connection.queryContext_of_calm connection parameters _ calm]
-  simp [plain, Resolved.Query.aggregateOf_filtered]
-
-/-- For every connection, values, table and calm statement as in
-{name}`resolvedStepOutput_aggregateTable_hasRows`, the output of the step never has no rows. Proof sketch: the
-one result of the run is one row ({name}`Resolved.Query.aggregateOf_results`). -/
-theorem resolvedStepOutput_aggregateTable_not_hasNoRows (index position : Nat) (connection : Connection)
-    (parameters : List Value) (table : Table) (condition : Option Resolved.Expr) (aggregate : Resolved.Aggregate)
-    (name : String) (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query
-      (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])).hasNoRows =
-        false := by
-  have found := Resolved.Query.source_first (connection.queryContext parameters
-    (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])
-    (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name)
-    connection.state.database position table rfl present
-  refine Bool.eq_false_iff.2 fun hasNoRows => ?_
-  have := (resolvedStepOutput_query_hasNoRows index connection parameters _ _ [] _ calm.readsClock (calm.firstUnknown _)
-    found (Resolved.Query.aggregateOf_bindWindow _ _ _ _ parameters)).1 hasNoRows
-  rw [Resolved.Query.aggregateOf_run_of_faultless _ _ _ _ _ calm.query_plain _ (calm.faultless_nil connection parameters),
-    Resolved.Query.aggregateOf_results] at this
-  simp at this
-
-/-- For every connection, values, table and calm statement as in
-{name}`resolvedStepOutput_aggregateTable_hasRows`, the output of the step is an error exactly when the aggregate
-fails over the rows that the condition keeps. Proof sketch: {name}`resolvedStepOutput_query_isError` with the run of
-{name}`Resolved.Query.aggregateOf_run_of_faultless`, which has no window mismatch and no fault. -/
-theorem resolvedStepOutput_aggregateTable_isError (index position : Nat) (connection : Connection)
-    (parameters : List Value) (table : Table) (condition : Option Resolved.Expr) (aggregate : Resolved.Aggregate)
-    (name : String) (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query
-      (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])).isError =
-        true ↔
-      aggregate.fails (Resolved.EvalContext.bound parameters) ((Resolved.sourceRows table).filter fun row =>
-        condition.all fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) =
-        true := by
-  have found := Resolved.Query.source_first (connection.queryContext parameters
-    (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) [])
-    (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name)
-    connection.state.database position table rfl present
-  have plain := calm.subqueries_plain
-  rw [resolvedStepOutput_query_isError index connection parameters _ [] _ calm.readsClock (calm.firstUnknown _) found,
-    Resolved.Query.aggregateOf_run_of_faultless _ _ _ _ _ calm.query_plain _ (calm.faultless_nil connection parameters),
-    Connection.queryContext_of_calm connection parameters _ calm]
-  simp [plain, Resolved.Query.aggregateOf_filtered]
+  rw [resolvedStepOutput_query_source index connection parameters _ [] _ calm.readsClock (calm.firstUnknown _) found]
+  dsimp only
+  rw [Resolved.Query.aggregateOf_run_of_faultless _ _ _ _ _ calm.query_plain _ (calm.faultless_nil connection parameters)]
+  simp only [calm.subqueries_plain, ↓reduceIte,
+    Bool.false_eq_true, Resolved.Query.aggregateOf_bindWindow, Connection.queryContext_of_calm connection parameters _ calm,
+    Resolved.Query.aggregateOf_filtered]
+  rfl
 
 /-- For every condition and aggregate whose expressions are calm ({name}`Resolved.Expr.Calm`) and every position, the
 statement of the whole-table aggregate query of the first source of a table is calm

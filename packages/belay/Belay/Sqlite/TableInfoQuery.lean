@@ -37,15 +37,13 @@ theorem Script.outputOn_selectOne_tableInfo
     (resolveStatement_select_one_tableInfo runContext db.raw.connection.resolveState reference argument rows filter condition
       namedSource current arguments isFunction notTable notView info resolves)
 
-/-- For every query script as in {name}`Script.outputOn_selectOne_tableInfo` whose condition resolves to a calm condition
-(no fallible call, no clock read and no counter read): {name}`Holds` of the script on the database means that the condition
-is true for some row of the pragma, evaluated in the context of the values. A row of the pragma is a row of
-{name}`Catalog.tableInfoRows` with the argument and NULL as its two hidden cells. Without {lit}`WHERE`, it means that the
-pragma has a row. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_tableInfo` and
-{name}`resolvedStepOutput_simplePragma_hasRows`. -/
-theorem Holds.iff_selectOne_tableInfo
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the resolution premises of {name}`Script.outputOn_selectOne_tableInfo`,
+when the resolved expressions satisfy the stated calmness premises, its complete first output is
+one row containing integer one for each metadata row that passes its condition, in normal
+form. The condition sees both appended hidden cells: the argument text and NULL.
+Proof sketch: resolve once, then substitute {name}`resolvedStepOutput_simplePragma`. -/
+theorem Script.outputOn_tableInfo
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {filter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     {argument : List UInt8} {rows : List (List Value)} {condition : Option Resolved.Expr}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none []
@@ -57,61 +55,12 @@ theorem Holds.iff_selectOne_tableInfo
     (info : db.raw.catalog.tableInfoRows ⟨argument⟩ = some rows)
     (resolves : FilterResolves runContext.profile.dqsDml (tableInfoScope reference argument rows) [] filter condition)
     (calm : ∀ expression ∈ condition.toList, expression.Calm) :
-    Holds script db isQuery ↔
-      ∃ row ∈ rows.map (· ++ [Value.text argument, Value.null]), condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = true := by
-  unfold Holds
-  rw [Script.outputOn_selectOne_tableInfo head namedSource current arguments isFunction notTable notView info resolves, Option.any_some]
-  exact resolvedStepOutput_simplePragma_hasRows 0 db.raw.connection parameters _ _ condition _ _
-    (Resolved.Statement.Calm.selectOne_pragma _ condition calm)
-
-/-- For every query script as in {name}`Holds.iff_selectOne_tableInfo`: {name}`Empty` of the script on the database means
-that the condition is not true for any row of the pragma. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_tableInfo` and
-{name}`resolvedStepOutput_simplePragma_hasNoRows`. -/
-theorem Empty.iff_selectOne_tableInfo
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {filter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
-    {argument : List UInt8} {rows : List (List Value)} {condition : Option Resolved.Expr}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none []
-      none false none, parameters) :: rest)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = some [.string argument])
-    (isFunction : reference.table.isKeyword (bytes! "pragma_table_info") = true)
-    (notTable : db.raw.catalog.findTable reference.table = none)
-    (notView : db.raw.catalog.findView reference.table = none)
-    (info : db.raw.catalog.tableInfoRows ⟨argument⟩ = some rows)
-    (resolves : FilterResolves runContext.profile.dqsDml (tableInfoScope reference argument rows) [] filter condition)
-    (calm : ∀ expression ∈ condition.toList, expression.Calm) :
-    Empty script db isQuery ↔
-      ∀ row ∈ rows.map (· ++ [Value.text argument, Value.null]), condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = false := by
-  unfold Empty
-  rw [Script.outputOn_selectOne_tableInfo head namedSource current arguments isFunction notTable notView info resolves, Option.any_some]
-  exact resolvedStepOutput_simplePragma_hasNoRows 0 db.raw.connection parameters _ _ condition _ _
-    (Resolved.Statement.Calm.selectOne_pragma _ condition calm)
-
-/-- For every query script as in {name}`Holds.iff_selectOne_tableInfo`, {name}`Fails` of the script on the database does
-not hold. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_tableInfo` and {name}`resolvedStepOutput_simplePragma_not_isError`. -/
-theorem Fails.not_selectOne_tableInfo
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {filter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
-    {argument : List UInt8} {rows : List (List Value)} {condition : Option Resolved.Expr}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none []
-      none false none, parameters) :: rest)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = some [.string argument])
-    (isFunction : reference.table.isKeyword (bytes! "pragma_table_info") = true)
-    (notTable : db.raw.catalog.findTable reference.table = none)
-    (notView : db.raw.catalog.findView reference.table = none)
-    (info : db.raw.catalog.tableInfoRows ⟨argument⟩ = some rows)
-    (resolves : FilterResolves runContext.profile.dqsDml (tableInfoScope reference argument rows) [] filter condition)
-    (calm : ∀ expression ∈ condition.toList, expression.Calm) :
-    ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectOne_tableInfo head namedSource current arguments isFunction notTable notView info resolves, Option.any_some]
-  have notError := resolvedStepOutput_simplePragma_not_isError 0 db.raw.connection parameters (tableInfoNames.length + 2)
-    (rows.map (· ++ [Value.text argument, Value.null])) condition _ _
-    (Resolved.Statement.Calm.selectOne_pragma _ condition calm)
-  simpa [pragmaSource] using notError
+    script.outputOn db = some (.rows (Resolved.normalForm
+      (((rows.map (· ++ [Value.text argument, Value.null])).filter fun row => condition.all
+        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row))).map
+          fun _ => [Value.integer 1]))) := by
+  rw [Script.outputOn_selectOne_tableInfo head namedSource current arguments isFunction notTable notView info resolves]
+  exact congrArg some (resolvedStepOutput_simplePragma 0 db.raw.connection parameters _ _ condition _ _
+    (Resolved.Statement.Calm.selectOne_pragma _ condition calm))
 
 end Belay.Sqlite

@@ -47,8 +47,11 @@ theorem table_has_a_stored_column_named {script : Script} {isQuery : script.isQu
     FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
       (.literal (.text bytes)) .binary, none))
       (by simp [namesAlias]) (by simp [sql_simp])
-  refine Iff.trans (Holds.iff_selectOne_tableInfo (namedSource := rfl) (current := rfl) head rfl (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves
-    (by simp [sql_simp])) (Iff.trans ?_ (Iff.trans (CatalogTable.exists_pragmaRow_name table argument
+  refine Iff.trans ((by simpa only [Holds, Option.any_some, Output.hasRows, Bool.not_eq_true', List.isEmpty_eq_false_iff, ne_eq,
+      Resolved.normalForm_eq_nil, List.map_eq_nil_iff, List.filter_eq_nil_iff,
+      Classical.not_forall, Classical.not_not, exists_prop] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasRows = true)
+      (Script.outputOn_tableInfo (script := script) (namedSource := rfl) (current := rfl) head rfl (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves
+    (by simp [sql_simp]))))) (Iff.trans ?_ (Iff.trans (CatalogTable.exists_pragmaRow_name table argument
       (fun cell => cell = Value.text bytes)) ?_))
   · refine exists_congr fun row => and_congr_right fun _ => ?_
     simp [sql_simp, Resolved.comparisonOperands, comparisonAffinity, Value.isNull, Comparison.holds]
@@ -110,7 +113,7 @@ set_option doc.verso true
 
 /-- Over every database with an invoices table and no table or view shadowing the pragma function, the status-name query
 is empty exactly when its name comparison is false on every pragma row, and it never fails. Proof sketch: resolve the
-name cell once, then apply {name}`Empty.iff_selectOne_tableInfo` and {name}`Fails.not_selectOne_tableInfo`. -/
+name cell once, then apply {name}`Script.outputOn_tableInfo`. -/
 theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
     (notFunction : db.raw.catalog.findTable (name! "pragma_table_info") = none)
@@ -128,10 +131,13 @@ theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : C
     FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
       (.literal (.text (bytes! "status"))) .binary, none)) (by simp [namesAlias]) (by simp [sql_simp])
   constructor
-  · simpa using Empty.iff_selectOne_tableInfo (namedSource := rfl) (current := rfl) (head := rfl) rfl
-      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp])
-  · exact Fails.not_selectOne_tableInfo (namedSource := rfl) (current := rfl) (head := rfl) rfl
-      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp])
+  · exact (by simpa only [Belay.Sqlite.Empty, Option.any_some, Output.hasNoRows, List.isEmpty_iff, Resolved.normalForm_eq_nil, List.map_eq_nil_iff, List.filter_eq_nil_iff, Bool.not_eq_true, Option.all_some] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasNoRows = true)
+      (Script.outputOn_tableInfo (script := (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'")) (namedSource := rfl) (current := rfl) (head := rfl) rfl
+      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp]))))
+  · exact (by
+    rw [Fails, Script.outputOn_tableInfo (script := (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'")) (namedSource := rfl) (current := rfl) (head := rfl) rfl
+      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp])]
+    simp [Output.isError])
 
 /-- An existing table whose schema has no status column. The pragma query succeeds with no matching row. -/
 def noStatus : Database := db! r"CREATE TABLE invoices (id INTEGER PRIMARY KEY);"

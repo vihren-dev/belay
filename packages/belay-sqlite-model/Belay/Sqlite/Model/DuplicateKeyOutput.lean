@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.NotExistsSubqueryOutput
 
@@ -76,73 +77,33 @@ theorem Connection.queryContext_duplicateKeys_zero (connection : Connection) (pa
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   exact Resolved.Expr.fault_of_plain _ (Resolved.EvalContext.bound_quiet parameters) row expression (plain expression member)
 
-/-- For every connection, values, table at a position of the database, {lit}`WHERE` condition, result column, name, key,
-collation and calm statement of {lit}`SELECT 1 WHERE NOT EXISTS (q)` with the duplicate-key query of that table as its
-subquery, the output of the step has rows exactly when no group of the rows of the table that the condition keeps
-({name}`Resolved.keptRows`), grouped by the key under the collation ({name}`Resolved.groups`), has more than one row. Proof sketch: {name}`resolvedStepOutput_noFrom_hasRows`; the value of
-{lit}`NOT EXISTS` is true when the subquery has no row ({name}`Connection.queryContext_duplicateKeys_zero`), which is
-the case exactly when no group has more than one row ({name}`Resolved.Query.duplicateKeys_results`). -/
-theorem resolvedStepOutput_notExists_duplicateKeys_hasRows (index position : Nat) (connection : Connection)
+/-- For every calm SELECT 1 statement with a duplicate-key subquery over an existing table,
+the complete output contains integer one when every group of kept rows has at most one row,
+and is empty otherwise. Groups use the supplied key and collation; the filter runs before grouping.
+Proof sketch: substitute the grouped subquery result and characterize its empty list. -/
+theorem resolvedStepOutput_notExists_duplicateKeys (index position : Nat) (connection : Connection)
     (parameters : List Value) (table : Table) (filter : Option Resolved.Expr) (column : Resolved.Expr) (name : String) (key : Resolved.Expr)
     (collation : Collation)
     (present : connection.state.database.table position = some table)
     (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
       [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation])).hasRows = true ↔
-      ∀ group ∈ Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
-        (Resolved.keptRows (Resolved.EvalContext.bound parameters) filter (Resolved.sourceRows table)),
-        group.length ≤ 1 := by
+    resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
+      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation]) =
+      .rows (if (Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
+        (Resolved.keptRows (Resolved.EvalContext.bound parameters) filter (Resolved.sourceRows table))).all
+          (fun group => decide (group.length ≤ 1)) then [[.integer 1]] else []) := by
   have run := connection.queryContext_duplicateKeys_zero parameters _ position table filter column name key collation present calm
-  rw [resolvedStepOutput_noFrom_hasRows index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, run]))]
-  simp only [Option.all_some, Resolved.Expr.eval_not, Resolved.Expr.eval_exists, Resolved.truthy_not, run,
-    Resolved.falsy, truthy_truth, isNull_truth, Bool.not_false, Bool.true_and, Bool.not_not, List.isEmpty_iff,
-    Resolved.Query.duplicateKeys_results, List.map_eq_nil_iff, List.filter_eq_nil_iff, decide_eq_true_eq]
-  exact ⟨fun every group member => Nat.not_lt.mp (every group member), fun every group member => Nat.not_lt.mpr (every group member)⟩
-
-/-- For every connection, values, table, condition, result column, name, key, collation and calm statement as in
-{name}`resolvedStepOutput_notExists_duplicateKeys_hasRows`, the output of the step has no rows exactly when some
-group of the rows of the table that the condition keeps, grouped by the key under the collation, has more than one row. Proof sketch: as for
-{name}`resolvedStepOutput_notExists_duplicateKeys_hasRows`, with {name}`resolvedStepOutput_noFrom_hasNoRows`. -/
-theorem resolvedStepOutput_notExists_duplicateKeys_hasNoRows (index position : Nat) (connection : Connection)
-    (parameters : List Value) (table : Table) (filter : Option Resolved.Expr) (column : Resolved.Expr) (name : String) (key : Resolved.Expr)
-    (collation : Collation)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation])).hasNoRows = true ↔
-      ∃ group ∈ Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
-        (Resolved.keptRows (Resolved.EvalContext.bound parameters) filter (Resolved.sourceRows table)),
-        1 < group.length := by
-  have run := connection.queryContext_duplicateKeys_zero parameters _ position table filter column name key collation present calm
-  rw [resolvedStepOutput_noFrom_hasNoRows index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, run]))]
-  simp only [Option.all_some, Resolved.Expr.eval_not, Resolved.Expr.eval_exists, Resolved.truthy_not, run,
-    Resolved.falsy, truthy_truth, isNull_truth, Bool.not_false, Bool.true_and, Bool.not_not,
-    List.isEmpty_eq_false_iff, Resolved.Query.duplicateKeys_results, ne_eq, List.map_eq_nil_iff, List.filter_eq_nil_iff,
-    decide_eq_true_eq]
-  constructor
-  · intro notAll
-    exact Classical.byContradiction fun none => notAll fun group member long => none ⟨group, member, long⟩
-  · rintro ⟨group, member, long⟩ every
-    exact every group member long
-
-/-- For every connection, values, table, condition, result column, name, key, collation and calm statement as in
-{name}`resolvedStepOutput_notExists_duplicateKeys_hasRows`, the output of the step is no error. Proof sketch:
-{name}`resolvedStepOutput_noFrom_not_isError`, with the fault of the subquery from
-{name}`Connection.queryContext_duplicateKeys_zero`. -/
-theorem resolvedStepOutput_notExists_duplicateKeys_not_isError (index position : Nat) (connection : Connection)
-    (parameters : List Value) (table : Table) (filter : Option Resolved.Expr) (column : Resolved.Expr) (name : String) (key : Resolved.Expr)
-    (collation : Collation)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-      [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation])).isError = false := by
-  have run := connection.queryContext_duplicateKeys_zero parameters _ position table filter column name key collation present calm
-  exact resolvedStepOutput_noFrom_not_isError index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, run]))
+  rw [resolvedStepOutput_selectOne index connection parameters _ _ calm
+    (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, run])]
+  simp only [Resolved.Expr.eval_not, Resolved.Expr.eval_exists, Resolved.truthy_not, run,
+    Resolved.falsy, truthy_truth, isNull_truth, Bool.not_false, Bool.true_and, Bool.not_not]
+  have same : ((Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] filter column name key collation).results
+      (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)).isEmpty =
+      (Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
+        (Resolved.keptRows (Resolved.EvalContext.bound parameters) filter (Resolved.sourceRows table))).all
+          (fun group => decide (group.length ≤ 1)) := by
+    apply Bool.eq_iff_iff.mpr
+    simp [List.isEmpty_iff, Resolved.Query.duplicateKeys_results, List.filter_eq_nil_iff, Nat.not_lt]
+  rw [same]
 
 end Belay.Sqlite.Model

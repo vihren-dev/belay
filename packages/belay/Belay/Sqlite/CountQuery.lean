@@ -43,16 +43,13 @@ theorem Script.outputOn_selectOne_count
     (resolveStatement_selectOne_count runContext db.raw.connection.resolveState reference subFilter mainFilter position table
       subCondition mainCondition name text count namedSource current arguments found subResolves mainResolves plain)
 
-
-/-- For every script that is one read-only statement and is as in {name}`Script.outputOn_selectOne_count`, where {lit}`c` and {lit}`p` resolve to calm
-expressions (no fallible call, no clock read and no counter read): {name}`Holds` of the script on the database
-means that {lit}`c` is true in the context of the values in which the subquery is one row with the number of rows
-of the table in scan order for which {lit}`p` is true ({name}`Resolved.countMatching`; all the rows without {lit}`WHERE`),
-which is zero for an empty table. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_count` and
-{name}`resolvedStepOutput_count_hasRows`. -/
-theorem Holds.iff_selectOne_count
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the resolution premises of {name}`Script.outputOn_selectOne_count`,
+when the resolved expressions satisfy the stated calmness premises, its complete first output is
+one row containing integer one when its condition on the certain count is true, and no rows
+otherwise. The count includes exactly the source rows whose subquery condition is true.
+Proof sketch: resolve once, then substitute {name}`resolvedStepOutput_count`. -/
+theorem Script.outputOn_count
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
     {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
@@ -66,70 +63,12 @@ theorem Holds.iff_selectOne_count
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition) { later := [countShape lowest] })
     (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    Holds script db isQuery ↔
-      Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition
-          { shape := table, rows := db.raw.rows.getD position [] })]) []) = true := by
-  unfold Holds
-  rw [Script.outputOn_selectOne_count head count namedSource current arguments found subResolves mainResolves mainCalm.1, Option.any_some]
-  exact resolvedStepOutput_count_hasRows 0 db.raw.connection parameters mainCondition position
+    script.outputOn db = some (.rows (if Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
+        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition { shape := table, rows := db.raw.rows.getD position [] })]) [])
+        then [[.integer 1]] else [])) := by
+  rw [Script.outputOn_selectOne_count head count namedSource current arguments found subResolves mainResolves mainCalm.1]
+  exact congrArg some (resolvedStepOutput_count 0 db.raw.connection parameters mainCondition position
     { shape := table, rows := db.raw.rows.getD position [] } subCondition text (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_count position _ subCondition text mainCalm subCalm)
-
-/-- For every script as in {name}`Holds.iff_selectOne_count`: {name}`Empty` of the script on the database means that
-{lit}`c` is not true in the same context. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_count` and
-{name}`resolvedStepOutput_count_hasNoRows`. -/
-theorem Empty.iff_selectOne_count
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
-    {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
-    {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
-      [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none none] none false none, parameters) :: rest)
-    (count : normalizeIdentifier name = "count")
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (mainResolves : ∀ lowest : Option Nat,
-      FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition) { later := [countShape lowest] })
-    (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    Empty script db isQuery ↔
-      Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition
-          { shape := table, rows := db.raw.rows.getD position [] })]) []) = false := by
-  unfold Empty
-  rw [Script.outputOn_selectOne_count head count namedSource current arguments found subResolves mainResolves mainCalm.1, Option.any_some]
-  exact resolvedStepOutput_count_hasNoRows 0 db.raw.connection parameters mainCondition position
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition text (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_count position _ subCondition text mainCalm subCalm)
-
-/-- For every script as in {name}`Holds.iff_selectOne_count`, {name}`Fails` of the script on the database does not
-hold: a calm query of a table that exists neither fails to resolve nor fails to run, and {lit}`count(*)` cannot
-overflow. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_count` and {name}`resolvedStepOutput_count_not_isError`. -/
-theorem Fails.not_selectOne_count
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
-    {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
-    {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
-      [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none none] none false none, parameters) :: rest)
-    (count : normalizeIdentifier name = "count")
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (mainResolves : ∀ lowest : Option Nat,
-      FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition) { later := [countShape lowest] })
-    (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectOne_count head count namedSource current arguments found subResolves mainResolves mainCalm.1, Option.any_some,
-    resolvedStepOutput_count_not_isError 0 db.raw.connection parameters mainCondition position
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition text (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_count position _ subCondition text mainCalm subCalm)]
-  simp
+    (Resolved.Statement.Calm.selectOne_count position _ subCondition text mainCalm subCalm))
 
 end Belay.Sqlite
