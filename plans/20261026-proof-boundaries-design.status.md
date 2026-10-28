@@ -191,3 +191,5 @@ proof-refactor acceptance.
 Claude reviewed `3023b981` with no must findings and two should findings.
 Clarified the earlier baseline's historical four-primitive scope and separated
 unchanged required expression replacements from newly listed retained consumers.
+Both findings are resolved. Claude reviewed clarification commit `1a49a919`
+with no findings. Reconciliation is complete; implementation remains unassigned.
