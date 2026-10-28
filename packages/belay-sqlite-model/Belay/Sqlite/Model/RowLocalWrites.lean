@@ -8,7 +8,7 @@ set_option doc.verso true
 /-! The theorems of the atoms "not null", "types fit" and "checks hold" (ADR 0022, D3, slice 3),
 stated for every {lit}`RowLocalAtom`, for plain INSERT, UPDATE and DELETE, the writes without the
 row engine (no foreign keys checked and no trigger programs), and for the statements that write no
-row: a query, a setting, a prepare error, BEGIN, COMMIT and ROLLBACK. {lit}`RowLocalWriteTheorems`
+row: a query, a setting, a prepare error, BEGIN, COMMIT and ROLLBACK. {lit}`ValidAtomsStatement`
 states them for each atom. -/
 
 namespace Belay.Sqlite.Model

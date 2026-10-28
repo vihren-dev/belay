@@ -41,10 +41,12 @@ example : cascadeScript.length = 8 ∧
 
 /-- The run theorem applied to {name}`cascadeScript`: each database of the outcome of
 {name}`runSql` from the empty database satisfies {name}`Database.KeysUnique`. The script has no
-CREATE INDEX, ADD COLUMN or DROP, so it meets {name}`RunConditions`
-({name}`RunConditions.of_unconditioned`). -/
-theorem cascadeScript_keysUnique : (runSql cascadeScript {}).KeysUnique :=
-  runSql_keysUnique cascadeScript (by decide +kernel) (RunConditions.of_unconditioned _ _ _ (by decide +kernel))
+CREATE INDEX, ADD COLUMN or DROP, so it meets {name}`RunConditionsWith` for {name}`Resolved.Statement.RunCondition`
+({name}`RunConditionsWith.of_unconditioned`). -/
+theorem cascadeScript_keysUnique : (runSql cascadeScript {}).Holds Database.KeysUnique :=
+  runSql_holds keysUnique_statementKeeps cascadeScript (by decide +kernel)
+    (RunConditionsWith.of_unconditioned (fun _ _ => Resolved.Statement.runCondition_of_unconditioned)
+      _ _ _ (by decide +kernel))
 
 /-- Finding 1 as a run: the resolved CREATE INDEX of the index of
 {lit}`KeysUniqueExamples.filterPastWidth`, whose filter reads past the width of {lit}`t`, then
@@ -54,6 +56,6 @@ def findingScript : List (Resolved.Statement × List Value) :=
 
 -- The start database keeps the keys unique, and the outcome of the run does not: the run
 -- theorem of `runSql` needs its run conditions (the CREATE INDEX does not meet its condition).
-example : tableOnly.KeysUnique ∧ ¬(runSql findingScript tableOnly).KeysUnique := by decide +kernel
+example : tableOnly.KeysUnique ∧ ¬(runSql findingScript tableOnly).Holds Database.KeysUnique := by decide +kernel
 
 end Belay.Sqlite.Model.KeysUniqueRunExamples

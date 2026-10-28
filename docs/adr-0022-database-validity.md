@@ -247,6 +247,12 @@ restriction and keeps its current result, and SQLite fails at the commit. The pr
 the status file of the task. The native cases of the part are in `conformance/corpus-v54`, which
 `judge/claims.json` claims in the separate judge change (the lock of that change is the owner's to approve).
 
+API amendment, 2026-10-28 ([ADR 0025](adr-0025-compositional-preservation-proofs.md)):
+the per-atom endpoint names in the historical slice records below are removed.
+Generic run laws take independent invariant evidence and preserve the same premises,
+including support-independent constraint atoms and every complete surface execution.
+`runScriptAllFrom_admittedWith` and the used Valid helpers remain.
+
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
 with a condition only for ADD COLUMN (`Database.AddColumnCondition`) and DROP
