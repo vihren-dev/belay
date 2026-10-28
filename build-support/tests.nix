@@ -306,7 +306,8 @@ in {
     tools = [ pkgs.nodejs ];
   };
   model = suite "model" {
-    inputs = modelInputs;
+    # Temporary ADR25 formulas remain through the final execution-condition acceptance.
+    inputs = modelInputs ++ map (index: root + "/tests/surface/PreservationApiWitnesses${toString index}.lean") [ 1 2 3 4 ];
     runtime = conformance;
     tools = modelTools;
   };

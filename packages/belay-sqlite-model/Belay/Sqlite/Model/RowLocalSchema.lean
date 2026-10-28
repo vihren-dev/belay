@@ -10,7 +10,7 @@ stated for every {lit}`RowLocalAtom`, for CREATE TABLE, CREATE INDEX, CREATE TRI
 and DROP without the row engine. The four CREATE forms append one object and an empty row list, so every kept
 table is a table of the database or has no rows. A drop keeps its tables whole, with their rows
 and entries, so it keeps every such atom for every database, without a condition: the atoms read
-no index and no position. {lit}`RowLocalSchemaTheorems` states them for each atom. -/
+no index and no position. {lit}`ValidAtomsStatement` states them for each atom. -/
 
 namespace Belay.Sqlite.Model
 

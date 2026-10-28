@@ -1,5 +1,4 @@
 import Belay.Sqlite.Model.ScriptRunValid
-import Belay.Sqlite.Model.AdmittedSqlRunsRows
 import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.AdmittedAtomsSchemaExamples
 import Belay.Sqlite.Model.AdmittedAtomsCounterExamples
@@ -72,7 +71,10 @@ when a transaction is open. The theorem has no hypothesis on the statements eith
 theorem mixedRun_rowsAliased :
     ∀ run ∈ runScriptAllFrom mixedContext none 0 start (bindValues mixedSyntax []),
       run.connection.state.Holds (Database.RowsAliasedSupported keysOn.limits) :=
-  runScriptAllFrom_rowsAliased mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
+  runScriptAllFrom_holds_derived (rowsAliased_statementKeeps keysOn.limits) mixedContext none
+    (fun _ _ _ _ keep ok => resolveStatement_appliedValid mixedContext rfl rfl
+      (keep.mono fun _ holds => holds.2) ok)
+    0 (bindValues mixedSyntax [])
     ⟨⟨(Database.valid_empty keysOn).admitted.rowsAliased, (Database.valid_empty keysOn).admitted.catalogSupported⟩, fun _ same => nomatch same⟩
 
 end Belay.Sqlite.Model.AdmittedRunsExamples

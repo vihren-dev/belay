@@ -67,7 +67,7 @@ theorem dropChildCondition : (Resolved.Statement.drop [1] none).ForeignKeyAtomsC
 theorem dropRun : (runSql [(.drop [1] none, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single dropChildCondition)
+  runSql_holds (foreignKeyAtomsSelected_statementKeeps Profile.pinned) _ inputAtoms (single dropChildCondition)
 
 /-- The run succeeds and leaves only the parent. -/
 theorem dropRuns : Succeeds (fun result => result.catalog.length = 1) (runSql [(.drop [1] none, [])] input.raw) := by
@@ -100,10 +100,4 @@ end ForeignKeyDdlDropRunsFixture
 #print axioms Belay.Sqlite.Model.runStatement_foreignKeyAtomsSelected
 #print axioms Belay.Sqlite.Model.runStatement_rowReferences
 #print axioms Belay.Sqlite.Model.parentSchemasCompatibleSelectedKeeps
-#print axioms Belay.Sqlite.Model.runSqlFrom_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runSql_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runScriptAllFrom_parentSchemasCompatibleSelected
 #print axioms Belay.Sqlite.Model.foreignKeyAtomsSelected_statementKeeps
-#print axioms Belay.Sqlite.Model.runSqlFrom_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runSql_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runScriptAllFrom_foreignKeyAtomsSelected

@@ -59,10 +59,8 @@ import Belay.Sqlite.Model.KeysUniqueRunStep
 import Belay.Sqlite.Model.KeysUniqueRuns
 import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.RowLocalAddColumn
-import Belay.Sqlite.Model.RowLocalSchemaTheorems
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalUpsert
-import Belay.Sqlite.Model.RowLocalWriteTheorems
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.EffectSatisfies
 import Belay.Sqlite.Model.TableAtomFrames
@@ -200,12 +198,8 @@ import Belay.Sqlite.Model.ResolveTermsBelow
 import Belay.Sqlite.Model.ResolveIndexBelow
 import Belay.Sqlite.Model.ScriptRunValid
 import Belay.Sqlite.Model.ScriptRunConstraints
-import Belay.Sqlite.Model.ScriptRunAdmittedRows
-import Belay.Sqlite.Model.ScriptRunAdmittedCatalog
 import Belay.Sqlite.Model.ScriptRunApplied
 import Belay.Sqlite.Model.AtomsConditionsOfLink
-import Belay.Sqlite.Model.AdmittedSqlRunsRows
-import Belay.Sqlite.Model.AdmittedSqlRunsCatalog
 import Belay.Sqlite.Model.AdmittedStatementKeeps
 import Belay.Sqlite.Model.ResolveStatementApplied
 import Belay.Sqlite.Model.ResolveStatementFacts

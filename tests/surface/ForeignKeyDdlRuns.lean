@@ -60,7 +60,7 @@ theorem createCondition : created.ForeignKeyAtomsCondition Profile.pinned input.
 theorem createRun : (runSql [(created, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single createCondition)
+  runSql_holds (foreignKeyAtomsSelected_statementKeeps Profile.pinned) _ inputAtoms (single createCondition)
 
 /-- The run adds the table and keeps both original child rows. -/
 theorem createRuns : Succeeds (fun result => result.catalog.length = 3 ∧ (result.rowsAt 1).length = 2)
@@ -78,7 +78,7 @@ def forward : Resolved.Statement := .createTable 2 (.ofString "forward") forward
 parent schemas give for every object. The new table has no rows. -/
 theorem forwardRowsRun : (runSql [(forward, [])] input.raw).Holds
     (fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_rowReferences Profile.pinned _ inputAtoms.2 (single (inputAtoms.1.createKeepsSelection _))
+  runSql_holds (rowReferences_statementKeeps Profile.pinned) _ inputAtoms.2 (single (inputAtoms.1.createKeepsSelection _))
 
 /-- The atoms contract refuses the forward reference, because its new declaration has no located
 parent. -/
@@ -140,7 +140,7 @@ theorem plainCondition : (Resolved.Statement.addColumn 1 plainColumn false).Fore
 theorem addRun : (runSql [(.addColumn 1 plainColumn false, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single plainCondition)
+  runSql_holds (foreignKeyAtomsSelected_statementKeeps Profile.pinned) _ inputAtoms (single plainCondition)
 
 /-- The run succeeds and appends a cell to each child row. -/
 theorem addRuns : Succeeds (fun result => (result.rowsAt 1).map (·.values.length) = [2, 2])
@@ -164,7 +164,7 @@ theorem refusedCondition : (Resolved.Statement.addColumn 1 numberColumn true).Fo
 theorem refusedRun : (runSql [(.addColumn 1 numberColumn true, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single refusedCondition)
+  runSql_holds (foreignKeyAtomsSelected_statementKeeps Profile.pinned) _ inputAtoms (single refusedCondition)
 
 /-- The refusal is the error {name}`ExecutionError.referenceColumnDefault` with the input database. -/
 theorem refusedFails : (runStatement 0 {} [] (.addColumn 1 numberColumn true) input.raw).effect =

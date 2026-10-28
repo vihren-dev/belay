@@ -15,15 +15,15 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 
 @pytest.mark.parametrize("fixture,axioms", [("ForeignKeyAtoms.lean", 14), ("ForeignKeyComparison.lean", 6),
-                                         ("ForeignKeyCounter.lean", 13), ("ForeignKeySchemaRuns.lean", 8),
+                                         ("ForeignKeyCounter.lean", 13), ("ForeignKeySchemaRuns.lean", 5),
                                          ("ForeignKeyDelete.lean", 20), ("ForeignKeyInsert.lean", 34),
                                          ("ForeignKeyUpdate.lean", 30), ("ForeignKeyUpdateNecessity.lean", 6),
                                          ("ForeignKeyCoverage.lean", 33), ("ForeignKeyEngine.lean", 6),
                                          ("ForeignKeyEngineAxioms.lean", 33), ("ForeignKeyStatement.lean", 9),
-                                         ("ForeignKeyRuns.lean", 9), ("ForeignKeyStatementAxioms.lean", 14),
+                                         ("ForeignKeyRuns.lean", 9), ("ForeignKeyStatementAxioms.lean", 11),
                                          ("ForeignKeyCreate.lean", 19), ("ForeignKeyDdlDrop.lean", 16),
                                          ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4),
-                                         ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 19), ("ForeignKeyDdlDropRuns.lean", 27),
+                                         ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 19), ("ForeignKeyDdlDropRuns.lean", 21),
                                          ("ForeignKeyDdlNecessity.lean", 6), ("ForeignKeyActionRuns.lean", 8),
                                          ("ForeignKeyDdlViews.lean", 8), ("RebuildRuns.lean", 7)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
@@ -45,8 +45,8 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     and an AFTER-trigger FAIL that retains both changes; a separate fixture audits every
     exported engine proof. The statement fixtures exercise cascading UPDATE and the other
     enforced write forms, while the run fixture checks enforcement-off writes outside the FK
-    footprint, partial FAIL, rollback and surface resolution. The statement audit covers all
-    exported statement/run proofs. CREATE and plain DROP fixtures distinguish row truth
+    footprint, partial FAIL, rollback and surface resolution. The statement audit covers generic run lifting and independent
+    foreign-key evidence. CREATE and plain DROP fixtures distinguish row truth
     from parent-schema compatibility, transport shifted positions, and permit removal
     of children together with parents. Enforced DROP uses the actual implicit DELETE and
     checks SET NULL, CASCADE, retained FAIL rows, NO ACTION rejection and rollback. Its

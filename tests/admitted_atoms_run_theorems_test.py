@@ -1,15 +1,7 @@
-"""The run theorems of the atoms of `Database.Admitted` and the corollary for `Database.Valid` (ADR 0022,
-D3, slice 4, part 3) have their stated formulas and rest only on the standard axioms.
+"""The used Valid helpers preserve every execution with their stated entry assumptions.
 
-There is one theorem of `runSqlFrom`, one of `runSql` and one of `runScriptAllFrom` for each atom, and the
-same three for the bundle `Database.Admitted`. The theorems of `runScriptAllFrom` have no hypothesis on the
-statements of the script: the atoms that need the catalog assume a context in execution mode with the limits
-of the invariant, and the resolver gives the conditions. The theorems of `runSqlFrom` and `runSql` assume
-the support check `supportedSqlFrom` and, for "catalog supported", "rows aliased" and the bundle, the run
-condition `Resolved.Statement.AppliedValid`. The corollary `runScriptAllFrom_valid` is the form that ADR 0017,
-S4 uses. The check file restates each formula, so a change that weakens a formula (for example a hypothesis
-that is dropped, or an atom that changes) fails here, and it refuses `sorryAx`, `ofReduceBool` and `_native`
-in the `#print axioms` output (`compile_checks`).
+The empty database and the equivalence with admitted constraint atoms keep their contracts.
+The former per-atom run matrix now lives once in the temporary ADR25 migration fixtures.
 """
 
 from pathlib import Path
@@ -21,66 +13,16 @@ from tests.shared_table_shape_test import compile_checks
 pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
-ATOMS = [
-    # (name, invariant, parameter of the invariant, the parameter is explicit in the theorems of runSql)
-    ("catalogSupported", "Database.CatalogSupported limits", "limits : Limits", True),
-    ("rowsShaped", "Database.RowsShaped", "", False),
-    ("rowidsDistinct", "Database.RowidsDistinct", "", False),
-    ("rowidsInRange", "Database.RowidsInRange", "", False),
-    ("rowsWide", "Database.RowsWide", "", False),
-    ("rowsStored", "Database.RowsStoredWide", "", False),
-    ("rowsAliased", "Database.RowsAliasedSupported limits", "limits : Limits", True),
-    ("admitted", "Database.Admitted profile", "profile : Profile", False),
-]
-
-THEOREMS = [f"{prefix}_{name}" for name, *_ in ATOMS for prefix in ("runSqlFrom", "runSql", "runScriptAllFrom")] + [
-    "runScriptAllFrom_keysUnique", "runScriptAllFrom_notNull", "runScriptAllFrom_typesFit", "runScriptAllFrom_checksHold",
-    "runScriptAllFrom_constraintAtoms", "runScriptAllFrom_valid", "runScriptStep_valid", "Database.valid_empty", "Database.valid_iff",
-]
+THEOREMS = ["runScriptAllFrom_valid", "runScriptStep_valid", "Database.valid_empty", "Database.valid_iff"]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 """The axioms of Lean's logic that a proof of the model may use; any other axiom, such as
 `sorryAx` or one that a proof adds, is refused."""
 
 
-def atom_checks(name: str, invariant: str, parameter: str, explicit: bool) -> str:
-    """The restated formulas of the three run theorems of one atom. An atom with a parameter needs the
-    catalog: its theorems of `runSqlFrom` and `runSql` ask for the run condition `AppliedValid`, and its
-    theorem of `runScriptAllFrom` asks for the mode and the limits of the context."""
-    argument = parameter.split(" :")[0]
-    needs_catalog = bool(parameter)
-    limits = "profile.limits" if argument == "profile" else "limits"
-    binder = f"({parameter}) " if explicit else (f"{{{parameter}}} " if parameter else "")
-    passed = f"{argument} " if explicit else ""
-    implicit = f"{{{parameter}}} " if parameter else ""
-    applied = f"Resolved.Statement.AppliedValid {limits}"
-    sql_from_condition = (f"\n    (conditions : RunConditionsWith ({applied}) position script state)"
-                          if needs_catalog else "")
-    sql_condition = (f"\n    (conditions : RunConditionsWith ({applied}) 0 script {{ database }})"
-                     if needs_catalog else "")
-    script_hypotheses = (f"\n    (execution : context.mode = .execution) (same : context.profile.limits = {limits})"
-                         if needs_catalog else "")
-    return f"""
-example {binder}(position : Nat) (script : List (Resolved.Statement × List Value)) {{state : SqlState}}
-    (holds : state.Holds ({invariant}))
-    (supported : supportedSqlFrom position script state = true){sql_from_condition} :
-    (runSqlFrom position script state).Holds ({invariant}) :=
-  runSqlFrom_{name} {passed}position script holds supported{" conditions" if needs_catalog else ""}
-example {binder}(script : List (Resolved.Statement × List Value)) {{database : Database}}
-    (holds : ({invariant}) database) (supported : supportedSqlFrom 0 script {{ database }} = true){sql_condition} :
-    (runSql script database).Holds ({invariant}) :=
-  runSql_{name} {passed}script holds supported{" conditions" if needs_catalog else ""}
-example {implicit}(context : ResolveContext) (clock : Option Clock) (index : Nat) {{connection : Connection}}
-    (script : List (Syntax.Statement × List Value)){script_hypotheses}
-    (holds : connection.state.Holds ({invariant})) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds ({invariant}) :=
-  runScriptAllFrom_{name} context clock index script{" execution same" if needs_catalog else ""} holds
-"""
-
-
-CHECKS = "\nimport Belay.Sqlite.Model\nopen Belay.Sqlite.Model" + "".join(
-    atom_checks(*atom) for atom in ATOMS) + """
+CHECKS = """
+import Belay.Sqlite.Model
+open Belay.Sqlite.Model
 example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
@@ -103,7 +45,7 @@ example {profile : Profile} {database : Database} :
 
 def test_admitted_atoms_run_theorems(tmp_path: Path, lean_sysroot: Path,
                                      lean_libraries: tuple[Path, Path]) -> None:
-    """Each run theorem of part 3 compiles with its formula and uses only propext, choice and quotients."""
+    """The Valid helpers retain all-execution formulas and use only standard axioms."""
     output = compile_checks(CHECKS, tmp_path, lean_sysroot, lean_libraries)
     reports = [line for line in output.splitlines() if "depends on axioms" in line]
     assert len(reports) == len(THEOREMS), output

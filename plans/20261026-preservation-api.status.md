@@ -1,6 +1,6 @@
 # Preservation API task status
 
-Date: 2026-10-26. Status: READY; implementation has not started.
+Date: 2026-10-26. Status: IN PROGRESS; assigned 2026-10-28.
 Audience: the implementation team.
 Task: [API replacement](20261026-preservation-api.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
@@ -29,3 +29,62 @@ Coordinate generic interface edits with the execution-condition task.
 Reconciled again on 2026-10-28 with main `3e2212ed`. The 84 names remain;
 their current DROP COLUMN and FK rename premises govern migration acceptance.
 Implementation remains unassigned.
+
+## Implementation, 2026-10-28
+
+Assigned after reviewed foundations integration `85ef8387`; the implementation
+workspace is `sqlite-verifier-adr25-api`. Production source migration is complete; acceptance remains pending.
+The earlier preparation notes describe the unassigned specification stage.
+
+- Removed all 84 inventoried endpoints and six pure-wrapper modules, including
+  their root imports and Lake entries. No compatibility aliases remain.
+- Replaced the five unique-key effect/state/outcome declarations and six
+  duplicated run-condition declarations with the generic predicates and laws.
+  Database/table uniqueness and distinct statement conditions remain.
+- Migrated the six production endpoint callers, FK semantic examples, checked
+  references and live owner links. The Valid helpers retain every complete
+  surface execution; the additional invariant helper remains generic.
+- Captured the 84 current declarations and checked their signatures against
+  `3e2212ed6983` before deletion. Four anonymous fixture files restate them through
+  generic applications. The only formula substitutions expand removed aliases;
+  support, admission, fixed/selected mappings and all-execution premises remain.
+
+## Migration checks and retirement
+
+`tests/surface/PreservationApiWitnesses1.lean` through `PreservationApiWitnesses4.lean`
+contain exactly one witness per retired endpoint, with the former name in a comment.
+The existing `valid_atoms_theorems_test.py` compiles them in the existing model
+suite; `build-support/tests.nix` adds only those four inputs. No suite or runner
+is added. The generated `ATOMS` × run-prefix matrix and the other old endpoint
+checks are removed now, so they do not duplicate these witnesses.
+
+Keep this set through the execution-condition task's final Nix acceptance,
+record that exact revision, then delete its four source inputs and parameterized
+compile check. The five foundation witnesses remain shared until that point.
+Lasting coverage consists of generic proof/primitive audits, independently
+proved invariant evidence, whole-statement atom contracts with their distinct
+premises, the four used Valid contracts, uniqueness lookup and semantic fixtures
+for FAIL, rollback, missing saved-state invariants and fixed/selected FK mappings.
+Existing rename, DROP COLUMN and INSERT-query cases remain unchanged.
+
+## Validation and acceptance
+
+Checks before the implementation commit: `just dev-build`; the four existing
+model theorem test files (`valid_atoms_theorems_test.py`,
+`keys_unique_theorems_test.py`, `admitted_atoms_run_theorems_test.py`,
+`admitted_atoms_statement_theorems_test.py`); the five changed FK surface fixtures;
+`docs_test.py`, `surface_layers_test.py`, `test_test_ownership.py`,
+`test_lean_categories.py` and `test_nix_test_targets.py`. These are local
+diagnostics, not acceptance evidence. An additional broad `test_source_identity.py`
+selection exceeded its 90-second outer command bound without a reported assertion
+failure; it is outside this change's targeted checks. The root coordinates the
+integrated Nix gates; this task remains IN PROGRESS until their results are recorded.
+
+The production delta against assignment revision `85ef8387` is 95 fewer named
+declarations, six fewer modules and 1,207 fewer textual Lean lines (including
+comments and blanks). The four temporary fixtures add 683 textual Lean lines
+outside production, and replace the old duplicate matrices. These are source
+size observations, not the goal's scc metric or a claim about build speed.
+No execution semantics or capability was removed.
+
+Independent Claude review is the next gate; its result will be recorded here.

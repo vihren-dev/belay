@@ -42,11 +42,11 @@ example : strictCascadeScript.length = 8 ∧
 
 /-- The corollary applied to {name}`strictCascadeScript`: each database of the outcome of
 {name}`runSql` from the empty database satisfies {name}`Database.ConstraintAtoms`. The script has no
-CREATE INDEX, ADD COLUMN or DROP, so it meets {name}`AtomsRunConditions`
+CREATE INDEX, ADD COLUMN or DROP, so it meets {name}`RunConditionsWith` for {name}`Resolved.Statement.AtomsCondition`
 ({name}`RunConditionsWith.of_unconditioned` with
 {name}`Resolved.Statement.atomsCondition_of_unconditioned`). -/
 theorem strictCascadeScript_constraintAtoms : (runSql strictCascadeScript {}).Holds Database.ConstraintAtoms :=
-  runSql_constraintAtoms strictCascadeScript
+  runSql_holds constraintAtoms_statementKeeps strictCascadeScript
     ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
     (RunConditionsWith.of_unconditioned (unconditioned := Resolved.Statement.unconditioned)
       (fun _ _ => Resolved.Statement.atomsCondition_of_unconditioned) _ _ _
@@ -73,7 +73,7 @@ example : run setNullSyntax 0 = (some [[.integer 1], [.integer 2]], true) ∧
 /-- The run theorem of "not null" applied to {name}`setNullScript`: the database that the failed
 run keeps satisfies {name}`Database.NotNull`, because the write of NULL fails before it is stored. -/
 theorem setNullScript_notNull : (runSql setNullScript {}).Holds Database.NotNull :=
-  runSql_notNull setNullScript (by decide +kernel)
+  runSql_holds notNull_statementKeeps setNullScript (by decide +kernel)
     (RunConditionsWith.of_unconditioned (unconditioned := Resolved.Statement.unconditioned)
       (fun _ _ unconditioned => (Resolved.Statement.atomsCondition_of_unconditioned unconditioned).2.1) _ _ _
       (by decide +kernel))

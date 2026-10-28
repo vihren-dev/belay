@@ -1,5 +1,4 @@
-import Belay.Sqlite.Model.AdmittedSqlRunsCatalog
-import Belay.Sqlite.Model.AdmittedSqlRunsRows
+import Belay.Sqlite.Model.AdmittedStatementKeeps
 import Belay.Sqlite.Model.ScriptRunValid
 import Belay.Sqlite.Model.AtomsConditionsOfLink
 import Belay.Sqlite.Model.ResolveStatementApplied
@@ -63,7 +62,8 @@ example : Database.AdmittedWith defaults Database.KeysUnique ({} : Database) :=
 -- check, which the kernel decides, so the outcome keeps "rows shaped" and needs no run condition.
 example : (runSql [(.insert 0 [[.value (.integer 1), .value (.text [97])]] [], [])] emptyDatabase).Holds
     Database.RowsShaped :=
-  runSql_rowsShaped _ AdmittedAtomsEngineExamples.emptyDatabase_shaped (by decide +kernel)
+  runSql_holds_ready rowsShaped_statementKeeps _ AdmittedAtomsEngineExamples.emptyDatabase_shaped
+    (by decide +kernel) (RunConditionsWith.always _ _ _)
 
 -- A condition that stays: "rowids in range". The script of one INSERT after the largest rowid does not pass the
 -- support check (the run is not ready), and the database after it has the rowid 2 ^ 63, out of range.

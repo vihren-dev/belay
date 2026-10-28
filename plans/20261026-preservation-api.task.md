@@ -1,6 +1,6 @@
 # Replace specialized preservation endpoints with generic applications
 
-Date: 2026-10-26. Status: READY; implementation has not started.
+Date: 2026-10-26. Status: IN PROGRESS; assigned 2026-10-28.
 Audience: the implementation team.
 Specification: [ADR 0025 D1 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-api.status.md).
@@ -67,9 +67,9 @@ an obsolete unconditional rename claim from the historical baseline.
 
 Relevant existing suites include `valid_atoms_theorems_test.py`,
 `keys_unique_theorems_test.py`, `admitted_atoms_run_theorems_test.py` and the
-foreign-key theorem suites under `tests/`. The three named formula suites
-currently run as host-owned checks through `just test-source`, using Nix-built
-libraries. Only lasting checks of current contracts remain registered in the
+foreign-key theorem suites under `tests/`. The valid-atoms formula suite now runs in the existing `model` Nix suite
+through the foundations task. The other two named formula suites remain host-owned
+checks through `just test-source`, using Nix-built libraries. Only lasting checks of current contracts remain registered in the
 existing `model` Nix suite in `tests/nix_suites.json` after retirement, with
 needed helper/fixture inputs. Temporary checks can use the existing Nix harness
 during migration.
