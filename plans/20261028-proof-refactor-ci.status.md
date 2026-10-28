@@ -523,3 +523,46 @@ the aggregate is
 Its JUnit suite time is 453.324 seconds. These are writer checks, not mutation
 measurements. Local API-reference generation, affected resolver/comparison
 mutations and the proof-cost sample are the remaining local gates.
+
+## Final affected mutations and API-reference acceptance
+
+The existing resolver owner passed all six measurements covering all eleven
+resolver/control mutants. Each mutant compiled and changed an authored verdict;
+no compilation failure or timeout counted as detection. The unchanged
+300-second test deadline and all original mutant/target mappings were retained.
+The Nix invocation exited 0 in 511.442 seconds, with no failures, errors or skips.
+Its report is
+`/nix/store/ph0mnmjkvijlfwijmyk0vbllmmbnfi1j-sqlite-verifier-test-mutants-ci-repair-1/junit.xml`.
+
+| Resolver group | Seconds |
+| --- | ---: |
+| Identifier | 112.903 |
+| AddColumn | 90.558 |
+| Definitions | 86.520 |
+| ResolveStatement | 62.799 |
+| TypeAffinity | 91.779 |
+| SqlAdvance | 64.229 |
+
+The existing comparison measurement passed all three mutants after the
+comparison-law import correction. Its one JUnit case took 132.360 seconds;
+the Nix invocation exited 0 in 134.852 seconds, with no failures, errors or skips.
+The report is
+`/nix/store/zv8w1pxdwyc5l7ciwnd2l0d0pqvgsdv5-sqlite-verifier-test-mutants-comparison-boundary-1/junit.xml`.
+These local Nix measurements do not establish hosted timing headroom.
+
+API-reference acceptance uses the verified hosted PR 297 build recorded above.
+Its actual command ran `just reference` through the existing Nix target and
+produced
+`/nix/store/f6sy1s39hx680v9dhm88569ppbnmvhlg-sqlite-verifier-api-reference-9c3da650eab7`.
+The hosted and local runs use the identical documentation-base derivation
+`/nix/store/9nvhc7iackzzzibgk1iy9pl78qqhgv7l-sqlite-verifier-api-reference-base-2.drv`.
+The tested merge has the same files as publication head `9eb179de`, whose code
+matches frozen source `23a3427b`. Only the final source-link revision stamp
+differs from the redundant local rendering.
+
+The coordinator cancelled that duplicate local rendering with a targeted
+SIGINT after confirming the hosted evidence. The local command exited 1 after
+415.177 seconds and is recorded as cancelled, not passed. The required checked
+API result is the successful hosted Nix build. No required mutation check,
+deadline or source scope was changed. The scoped proof-cost sample is the last
+local acceptance item still running.
