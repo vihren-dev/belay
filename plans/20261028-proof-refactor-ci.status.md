@@ -80,3 +80,28 @@ above; it is fixed. Resolver repair `33611eda` received independent Claude revie
 remains with the coordinator. The Linux hosted result is pending and is separate
 from local Nix checks. PR 295's earlier API-reference and verdict successes do
 not establish acceptance of this repair.
+
+## Hosted follow-up, 2026-10-28
+
+The repair was pushed as PR 295 head `16ab6ad7`. Hosted Verdict run
+`40702241903` passed. CI run `40702241901` passed the API-reference build,
+function-mutant job and all six resolver-mutant groups. Two later measurements
+failed: query-resolution mutant `no_such_column` could not compile the imported
+`Resolution/OperandArms` proof, and the grouped join measurement exceeded its
+300-second limit (337.49 seconds including cleanup). These are failures, not
+detected mutants. The Linux check job was still running at this checkpoint.
+
+Logs are retained at `/tmp/ci295-122864838415.log` (query) and
+`/tmp/ci295-122864838065.log` (joins). Read-only diagnosis found the operand
+equation imports on the classifier's path through `Resolution/QueryExprs` at
+both production `3e2212ed` and repair `16ab6ad7`. The task now covers that import
+boundary and bounded join measurements with unchanged semantics, mutant edits,
+target mappings and deadlines. The worker assignment follows specification
+review. The already-running integrated proof acceptance remains frozen.
+
+The join measurement combines 22 mutants and 20 distinct target cases from
+the existing join, USING, right-join and merged-name tables (6, 6, 4 and 6
+mutants). At timeout all four workers were compiling classifier dependencies.
+Source inspection supports separate measurements of those tables with the
+same target mappings. Hosted timings remain to be established. The extended
+task's documentation-link diagnostic passed; independent review follows.
