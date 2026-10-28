@@ -111,11 +111,13 @@ Implementation `a6bfe314` passed independent Claude review with zero must and
 one should finding (`reviews/20261028T134433Z-a6bfe314`). The finding identified
 a stale current-consumer list in the resolver/foundation inventory. The follow-up
 marks the removed owner and identifies the replacement filtered semantic law;
-frozen inventory names and contracts remain unchanged.
+frozen inventory names and contracts remain unchanged. Follow-up `31dcebca`
+passed independent Claude review with zero must and zero should findings
+(`reviews/20261028T134856Z-31dcebca`).
 
 Source-size accounting includes helpers, callers and fixtures; no speedup or
 capability loss is claimed. The coordinator will record the final Nix source
 count with temporary witnesses separated from maintained code.
 
-Pending: follow-up documentation review, combined Nix
+Pending: combined Nix
 acceptance, temporary witness retirement, integration and push.
