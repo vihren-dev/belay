@@ -30,6 +30,12 @@ awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
 independent `just review`. Following sections preserve historical checkpoints;
 their pending notes are superseded by this completion record.
 
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
+
 Final Nix comparison acceptance compiles and detects all three original mutants,
 including `text_without_case`, under the unchanged limits. Its one test has no
 failure, error or skip; command wall time is 134.852 seconds. JUnit:

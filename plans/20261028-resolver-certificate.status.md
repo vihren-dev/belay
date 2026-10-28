@@ -31,6 +31,12 @@ awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
 independent `just review`. Following sections preserve historical checkpoints;
 their pending notes are superseded by this completion record.
 
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
+
 Final Nix resolver acceptance covers all 11 mutants in six groups, with no
 failure, error or skip and unchanged 300-second test limits. JUnit:
 `/nix/store/ph0mnmjkvijlfwijmyk0vbllmmbnfi1j-sqlite-verifier-test-mutants-ci-repair-1/junit.xml`.
