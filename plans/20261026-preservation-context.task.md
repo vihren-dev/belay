@@ -1,13 +1,19 @@
 # Unify preservation runs with execution-aware conditions
 
-Date: 2026-10-26. Status: READY; implementation has not started.
+Date: 2026-10-26. Status: IN PROGRESS; assigned on 2026-10-28.
 Audience: the implementation team.
 Specification: [ADR 0025 D3 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-context.status.md).
 Targets: [condition, induction and evidence inventory](../docs/spec-preservation-proof-targets.md).
 Baseline reviewed 2026-10-28: production revision `3e2212ed6983`.
+Assignment source: `5327d3fa`. Original generic condition contracts remain the
+migration baseline after endpoint removal.
 Present problem: conditions omit the clock, counters and parameters, causing
 parallel readiness-dependent step/run proofs and a repeated surface traversal.
+
+This task contributes to the [Lean simplification goal](../docs/lean-simplification-goal.md)
+by removing repeated preservation traversals and redundant migration witnesses.
+All existing capability guarantees remain required; no loss is authorized.
 
 ## Required behavior
 
@@ -93,6 +99,10 @@ transaction/FAIL outcomes and counter knowledge.
 Reuse existing clients and necessity examples before adding a case. These checks
 protect different semantics; they need not repeat every invariant at every run
 entry point. Record retirement in the existing status file.
+The API task has one current witness set, `PreservationApiWitnesses1.lean` through
+`PreservationApiWitnesses4.lean`, compiled by the existing model Nix suite through
+`valid_atoms_theorems_test.py`. Migrate that set rather than creating another
+per-atom matrix. Retire it only after this final condition contract passes Nix.
 
 ## Relevant code and traps
 
@@ -119,3 +129,8 @@ the new conditions directly, so those conversions do not become another family
 of duplicated run proofs.
 Coordinate this task with the API-removal task's final names. Statement engine,
 resolver, output semantics and conformance expectations remain unchanged.
+The expression worker owns `ExprAppendLaws`, `ExprContextLaws`, `RowwiseExpr` and
+their congruence clients; the source worker owns source agreement and two-state
+source laws. Their theorem formulas or imports must not be changed concurrently.
+Coordinate model manifest/aggregation edits and Nix test-source registrations
+with the coordinator. Use an isolated workspace and the shared full Nix build slot.
