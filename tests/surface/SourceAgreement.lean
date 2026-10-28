@@ -66,4 +66,13 @@ example :
   simp only [Source.Agrees]
   decide +kernel
 
+/-- Agreement gives equal complete contexts at every depth, including all correlated outer rows.
+The depth is independent of the number of nested queries. -/
+example (clock : Int) (counters : Counters) (parameters : List Value)
+    (first second : Database) (queries : List Query) (before after : Option Database)
+    (agree : ∀ query ∈ queries, Query.Agrees first second before after query) (depth : Nat) :
+    subqueryContext clock counters parameters first queries before depth =
+      subqueryContext clock counters parameters second queries after depth :=
+  subqueryContext_agrees clock counters parameters first second queries before after agree depth
+
 end Belay.Sqlite.Model

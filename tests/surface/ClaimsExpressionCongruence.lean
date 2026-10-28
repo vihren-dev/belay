@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.ExprAppendLaws
 import Belay.Sqlite.Model.ExprContextLaws
 import Belay.Sqlite.Model.RowwiseExpr
 
@@ -6,6 +7,14 @@ set_option doc.verso true
 /-! Current congruence contracts and the observations they must keep separate. -/
 
 open Belay.Sqlite.Model Belay.Sqlite.Model.Resolved
+
+/-- Appending cells preserves the value/fault pair and JSON subtype under only the
+row-independent subquery, width and column-bound premises. -/
+example (context : EvalContext) (rowFree : context.RowFree) {width : Nat} (row extra : List Value)
+    (wide : width ≤ row.length) (expression : Expr) (below : expression.any (Expr.isColumnFrom width) = false) :
+    expression.evaluate context (row ++ extra) = expression.evaluate context row ∧
+      expression.givesJson context (row ++ extra) = expression.givesJson context row :=
+  expression.evaluate_append context rowFree row extra wide below
 
 /-- Arbitrary subquery replacement needs no fallible-call exclusion and preserves subtype. -/
 example (context : EvalContext) (row : List Value) (other : Nat → List Value → SubqueryRun)

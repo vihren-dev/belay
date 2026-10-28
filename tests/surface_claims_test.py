@@ -173,22 +173,12 @@ def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_p
     assert result.returncode == 0, result.diagnostic()
 
 
-@pytest.mark.parametrize(("fixture", "audit_count"), [
-    ("ClaimsExpressionCongruence.lean", 3), ("ClaimsExpressionCongruenceMigration.lean", 0),
-])
-def test_expression_congruence_preserves_observations(runtime_root: Path, tmp_path: Path,
-        fixture: str, audit_count: int) -> None:
-    """Expression congruence keeps faults, subtype and distinct certainty observations;
-    temporary witnesses recover the four original contracts until final migration acceptance."""
-    result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path), cwd=tmp_path, timeout=60)
+def test_expression_congruence_preserves_observations(runtime_root: Path, tmp_path: Path) -> None:
+    """ExprCongruence and its context/append laws keep faults, subtype and distinct
+    certainty observations under their independent locality and row-width premises."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExpressionCongruence.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == audit_count, result.stdout
+    assert len(reports) == 3, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
-
-
-@pytest.mark.parametrize("fixture", sorted(FIXTURES.glob("ClaimsQueryOutput*Migration.lean")), ids=lambda p: p.stem)
-def test_query_output_original_formulas(runtime_root: Path, tmp_path: Path, fixture: Path) -> None:
-    """Temporarily recover all 45 pre-refactor contracts from complete output equations."""
-    result = run_command(surface_command(runtime_root, fixture, tmp_path), cwd=tmp_path, timeout=60)
-    assert result.returncode == 0, result.diagnostic()

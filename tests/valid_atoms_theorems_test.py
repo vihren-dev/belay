@@ -1,9 +1,7 @@
 """Independent NOT NULL, type and CHECK contracts use only standard axioms.
 
-The shared write primitives and row-local formula retain their ADR25 migration witnesses.
-The four temporary endpoint fixtures and two shared frozen-condition helpers contain the
-84 retired formulas once; remove them after the condition task's final Nix acceptance. Whole-statement contracts,
-independent-premise checks and generic proof audits remain.
+Whole-statement contracts, independent-premise checks and generic proof audits protect
+support-independent atoms, actual evaluator inputs, halted suffixes and counter knowledge.
 """
 
 from pathlib import Path
@@ -46,37 +44,6 @@ CHECKS = """
 import Belay.Sqlite.Model
 open Belay.Sqlite.Model
 
--- ADR25 migration witnesses: keep through the final API/context contract change.
-example {atom : Table → Prop} {database : Database} (every : database.EachTable atom)
-    {target : Nat} {table : Table} (found : database.table target = some table) {rows : List Row}
-    (stored : atom { table with rows }) : (database.setRows target rows).EachTable atom :=
-  Database.Every.setRows (fact := fun _ _ table => atom table) every found stored
-example {database : Database} (unique : database.KeysUnique) {target : Nat} {table : Table}
-    (found : database.table target = some table) {rows : List Row}
-    (stored : ({ table with rows } : Table).KeysUnique (database.catalog.uniqueKeys target table.shape)) :
-    (database.setRows target rows).KeysUnique :=
-  Database.Every.setRows (fact := fun catalog position table =>
-    table.KeysUnique (catalog.uniqueKeys position table.shape)) unique found stored
-example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
-    (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
-    (keys : List UniqueKey) (result : Table) (shape : result.shape = table.shape) :
-    (checkedWrite database target keys result).Satisfies fun after => after.EachTable atom :=
-  checkedWrite_satisfies every found keys result shape
-    fun passed => rowLocal.constraints keys result (Bool.and_eq_true_iff.mp passed).1
-example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
-    (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
-    (keys : List UniqueKey) (rows : List (List Value)) (result : Table) (shape : result.shape = table.shape) :
-    (insertOutcome database target keys table rows result).Satisfies fun after => after.EachTable atom :=
-  insertOutcome_satisfies every found keys rows result shape
-    fun passed => rowLocal.constraints keys result (Bool.and_eq_true_iff.mp passed).1
-example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
-    (every : database.EachTable atom)
-    (appended : ∀ target column refuses, statement = .addColumn target column refuses → ∀ table value,
-      database.table target = some table → AddedCell table column value →
-        atom (table.appendColumns [(column, value)])) :
-    (runStatement clock counters parameters statement database).effect.Satisfies fun after => after.EachTable atom :=
-  runStatement_rowLocal rowLocal clock counters parameters statement every appended
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.NotNull database) (condition : statement.NotNullCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.NotNull :=
@@ -138,13 +105,3 @@ def test_valid_atoms_theorems(tmp_path: Path, lean_sysroot: Path, lean_libraries
     for report in reports:
         assert set(filter(None, map(str.strip, report.split(",")))) <= STANDARD_AXIOMS, report
 
-
-@pytest.mark.parametrize("fixture", [f"PreservationApiWitnesses{index}.lean" for index in range(1, 5)])
-def test_preservation_api_migration(fixture: str, tmp_path: Path, lean_sysroot: Path,
-                                    lean_libraries: tuple[Path, Path]) -> None:
-    """Generic proofs derive all 84 old formulas with frozen condition meanings through final acceptance."""
-    source = Path(__file__).parent / "surface" / fixture
-    raw = (source.parent / "PreservationContextRaw.lean").read_text()
-    surface = (source.parent / "PreservationContextSurface.lean").read_text().replace("import PreservationContextRaw\n", "")
-    checks = raw + surface + source.read_text().replace("import Belay.Sqlite.Model\n", "")
-    compile_checks(checks, tmp_path, lean_sysroot, lean_libraries)

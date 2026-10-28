@@ -1,6 +1,6 @@
 # Preservation foundations task status
 
-Date: 2026-10-26. Status: IN PROGRESS; assigned 2026-10-28.
+Date: 2026-10-26. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
 Audience: the implementation team.
 Task: [foundations and dispatch](20261026-preservation-foundations.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
@@ -102,3 +102,30 @@ concrete conjuncts and points to the general `Database.EachTable.setRows` law.
 The follow-up `a9002cbd` completed its development build and received zero
 must and zero should findings from Claude (`20261028T112326Z-a9002cbd`).
 Reviewed implementation commits are ready for the root's integrated Nix checks.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The four primitive and two whole-statement migration formulas are retired:
+five inline examples in `valid_atoms_theorems_test.py` and the distinct-rowid
+example in `admitted_atoms_statement_theorems_test.py`. Current independent
+atom contracts and all generic/instance axiom audits remain. `RowLocalExamples`
+retains missing-row-list preservation without `RowsShaped` and the ADD premise;
+existing write, source-failure and carried-FAIL examples remain.
+
+Affected existing checks: `valid_atoms_theorems_test.py` and
+`admitted_atoms_statement_theorems_test.py`.
+
+Independent Claude review of `ca180788` reported zero must findings and one
+should finding. The finding is fixed: these acceptance records omit local
+diagnostic results, as required by `AGENTS.md`.
+The coordinator integrated reviewed retirement `e3ae5e92` with the current
+proof branch. Package and test sources match that reviewed retirement exactly;
+the other integration changes are documentation and review records only.
+Retirement Nix acceptance and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

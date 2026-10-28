@@ -1,6 +1,6 @@
 # Expression congruence task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation reviewed, Nix acceptance pending.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
 Audience: the implementation team.
 Task: [shared expression congruence](20261028-expression-congruence.task.md).
 Specification: [ADR 0026 D5](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -99,3 +99,30 @@ There is no comparable pre-migration measurement and no speedup claim.
 Raw logs, unchanged source copies, options and hashes are in
 `/tmp/adr26-proof-costs-20261028/measurements.json` and its containing directory.
 No collector import, permanent benchmark or measurement gate was added.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The four-formula migration file and its driver entry are retired. Its full
+append value/fault/subtype assertion moves to `ClaimsExpressionCongruence.lean`
+as a current boundary check, because downstream append clients use only values.
+The existing stronger context assertions, fallible local JSON, separate first/row
+certainty, lazy operands and subtype counterexample remain. Rowwise's query consumer for arbitrary
+contexts and independent fault-free theorem retain its guarantee.
+The same three generic/independent axiom audits remain.
+
+Affected existing check: `surface_claims_test.py`.
+
+Independent Claude review of `ca180788` reported zero must findings and one
+should finding. The finding is fixed: these acceptance records omit local
+diagnostic results, as required by `AGENTS.md`.
+The coordinator integrated reviewed retirement `e3ae5e92` with the current
+proof branch. Package and test sources match that reviewed retirement exactly;
+the other integration changes are documentation and review records only.
+Retirement Nix acceptance and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

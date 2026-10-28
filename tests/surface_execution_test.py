@@ -26,14 +26,13 @@ def test_execution_branches_and_wp(runtime_root: Path, tmp_path: Path) -> None:
     INSERT from a query has one execution for each source order; a claim must hold for all of them.
     Later preservation conditions read each branch's actual database, selected clock,
     visible counters and parameters.
-    Profiles retain alternate databases and errors even when their actual run succeeds.
-    Four temporary witnesses retain the previous relation formulas."""
+    Profiles retain alternate databases and errors even when their actual run succeeds."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
     for module, count in (("ExecutionBranches", 14), ("ExecutionProofs", 18), ("ExecutionSuccess", 22),
                           ("ExecutionEquivalence", 15), ("ExecutionComposition", 15), ("ExecutionHelpers", 14),
                           ("InsertSelectExecutions", 10), ("RenameExecutions", 5),
-                          ("ExecutionProfileBranches", 7), ("ExecutionProfileMigration", 4)):
+                          ("ExecutionProfileBranches", 7)):
         configuration["name"] = module
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"

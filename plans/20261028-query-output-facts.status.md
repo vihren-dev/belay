@@ -1,6 +1,6 @@
 # Query output task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation awaiting combined Nix acceptance.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
 Audience: the implementation team.
 Task: [generalize query output proofs](20261028-query-output-facts.task.md).
 Specification: [ADR 0026 D1](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -138,3 +138,29 @@ comparison. The coordinator separately checked that complete equality and the
 two-module delta, with unchanged roots and codec registrations.
 
 Pending: final combined Nix acceptance, temporary witness retirement and push.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The 16 `ClaimsQueryOutput*Migration.lean` fixtures and their single
+`test_query_output_original_formulas` registration are retired. No production
+law changes. The lasting coverage table above still applies: value-level SUM,
+error precedence, optional windows, possible source faults, all LIMIT results,
+scalar/count certainty, filtered NULL/collation groups, metadata and unique lookup
+remain covered by their current consumers and generic proof audits.
+
+Affected existing check: `surface_claims_test.py`.
+
+Independent Claude review of `ca180788` reported zero must findings and one
+should finding. The finding is fixed: these acceptance records omit local
+diagnostic results, as required by `AGENTS.md`.
+The coordinator integrated reviewed retirement `e3ae5e92` with the current
+proof branch. Package and test sources match that reviewed retirement exactly;
+the other integration changes are documentation and review records only.
+Retirement Nix acceptance and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.

@@ -1,6 +1,6 @@
 # Resolver certificate task status
 
-Date: 2026-10-28. Status: IN PROGRESS.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
 Audience: the implementation team.
 Task: [shared resolved-statement certificate](20261028-resolver-certificate.task.md).
 Specification: [ADR 0026 D3](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -130,3 +130,32 @@ exactly one addition (`ResolverCertificate`), unchanged codec registrations and
 all 19 public roots. No formula or proof changed during integration.
 The build log is `/tmp/proof-refactor-resolver-integration-dev.log`.
 Final combined Nix acceptance remains pending.
+
+## Final-contract witness retirement
+
+The coordinator confirmed final affected-contract Nix acceptance at
+`53a346e1899f7221c67faa3c6df379862e16edb8` before this retirement.
+The accepted formulas remain replayable at that revision; the
+[combined acceptance record](20261028-proof-refactor-ci.status.md) records the Nix evidence.
+This entry supersedes the earlier pending-acceptance notes.
+
+The temporary after-state, next-validity and applied-catalog projections are
+retired from `admitted_atoms_resolver_facts_test.py`. Its arbitrary-limits
+schema-link assertion remains as a current independent-premise check: supplied
+limits need not match the context, and no execution-mode or saved-validity
+assumption is available. `resolveFrom_after` and `Connection.resolveState_after_next`
+retain unconditional state equality; `resolve_valid` retains arbitrary valid
+saved states; `resolveStatement_appliedValid` retains all statements, including
+controls, and the distinction between `applyCatalog` and the next catalog.
+Leaf contracts and the generic certificate axiom audit remain.
+
+Affected existing check: `admitted_atoms_resolver_facts_test.py`.
+
+Independent Claude review of `ca180788` reported zero must findings and one
+should finding. The finding is fixed: these acceptance records omit local
+diagnostic results, as required by `AGENTS.md`.
+The coordinator integrated reviewed retirement `e3ae5e92` with the current
+proof branch. Package and test sources match that reviewed retirement exactly;
+the other integration changes are documentation and review records only.
+Retirement Nix acceptance and push remain pending.
+No production package, execution semantics or capability changes in this cleanup.
