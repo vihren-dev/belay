@@ -876,3 +876,18 @@ active. Their final evidence will be retained before another push. Manual
 dispatch for `c9fa3f73` returned HTTP 403; the next manual run must use the next
 repaired publication head. The owner review remains unfinished and this task
 remains IN PROGRESS.
+
+## Independent review blocked by credentials, 2026-10-28
+
+The value-workload specification is committed as `3933edbd`. Its required
+independent Claude review fails twice with HTTP 401: the OAuth access token
+has expired. The review records `20261028T220604Z-3933edbd` and
+`20261028T220709Z-3933edbd` contain no valid review result. The second attempt
+follows the repository's one-retry rule for reviewer failures.
+
+The owner has been asked to restore Claude Code authentication or authorize
+another independent reviewer for this repair. No implementation workspace or
+build has started for the value follow-up. Existing hosted main checks can
+continue independently; all nine mutant jobs are terminal and their logs,
+artifact identities and hashes are retained under
+`build/final-d61d/hosted-mutants-40771508608/`.
