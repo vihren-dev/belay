@@ -119,15 +119,17 @@ not establish their outcome. Temporary migration witnesses remain in place.
 
 On 2026-10-28 the coordinator pushed reviewed repair `16ab6ad7` to
 `plans/proof-boundaries`, updating PR 295 and its description. GitHub confirmed
-head `16ab6ad7c4109de6d34ba7c1d5eeb1ae0c463266`. Hosted acceptance is pending.
-This PR contains the report/specifications and CI repairs; the production proof
-refactors remain on the local integration branch for separate publication after
-their final acceptance and witness retirement. No merge is authorized or recorded.
+head `16ab6ad7c4109de6d34ba7c1d5eeb1ae0c463266`. At that publication
+checkpoint, hosted acceptance was pending and the PR was open. It contained
+the report/specifications and CI repairs. The production proof refactors remained
+on the local integration branch for separate publication after final acceptance
+and witness retirement. The later merge is recorded below.
 
-Hosted run `40702241903` passed Verdict at head `16ab6ad7`. In CI run
-`40702241901`, the Linux API-reference step and function-mutant job also passed.
-The Linux checks and other mutant jobs were still running at this checkpoint;
-the whole hosted result remains pending.
+At the 14:33 UTC checkpoint on 2026-10-28, hosted run `40702241903` had passed
+Verdict at head `16ab6ad7`. In CI run `40702241901`, the Linux API-reference step
+and function-mutant job had also passed. The Linux checks and other mutant jobs
+were still running, so the whole hosted result was then pending.
+
 ## Hosted follow-up, 2026-10-28
 
 The repair was pushed as PR 295 head `16ab6ad7`. Hosted Verdict run
@@ -217,7 +219,12 @@ this repair. The integrated `just dev-build` completed for all four packages;
 `test_lean_categories.py`). These are development diagnostics; independent
 integration review follows, and the selected Nix checks remain pending.
 
-The owner merged PR 295 at 15:00 UTC on 2026-10-28. Fetched main `2c5fff35`
+PR 295 was merged at 15:00 UTC on 2026-10-28. Fetched main `2c5fff35`
 has the same tree as `16ab6ad7`; it adds the merge commit only. The remaining
 CI repair will use a separate follow-up PR. The production proof refactors
 remain a separate publication. The coordinator did not merge the PR.
+
+Independent review of integration `5bdeebf4` found one must and one should:
+the earlier publication checkpoint needed an explicit historical label after
+the PR merge, and a following heading needed a blank line. Both are corrected
+here. These record corrections change no source, contract or test.
