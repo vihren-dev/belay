@@ -30,8 +30,8 @@ theorem Connection.queryContext_selectOne_rows (connection : Connection) (parame
       condition.eval ((Resolved.EvalContext.bound parameters).withRuns runs) [] := by
   have plain : condition.any Resolved.Expr.isFallibleCall = false :=
     (calm condition (by simp [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions])).1
-  have same := Resolved.Expr.evaluate_certainFirst
-    (connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries) [] condition noScalar plain
+  have same := (Resolved.Expr.evaluate_certainFirst
+    (connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries) [] condition noScalar).1
   have quietAt : ({ connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries with
       subqueries := fun index outer => ((connection.queryContext parameters (Resolved.Query.selectOneWhere condition)
         subqueries).subqueries index outer).certainFirst } : Resolved.EvalContext).QuietAt [] := fun index => by
@@ -44,11 +44,11 @@ theorem Connection.queryContext_selectOne_rows (connection : Connection) (parame
   refine ⟨?_, ?_⟩
   · rw [← same]
     exact Resolved.Expr.fault_of_plain_at _ [] quietAt condition plain
-  · have value := Resolved.Expr.evaluate_withSubqueries
+  · have value := (Resolved.Expr.evaluate_withSubqueries
       { connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries with
         subqueries := fun index outer => ((connection.queryContext parameters (Resolved.Query.selectOneWhere condition)
           subqueries).subqueries index outer).certainFirst } []
-      (fun index _ => (runs[index]?).getD { rows := [], fault := .none }) agree condition plain
+      (fun index _ => (runs[index]?).getD { rows := [], fault := .none }) agree condition).1
     have shape : ({ connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries with
         subqueries := fun index _ => (runs[index]?).getD { rows := [], fault := .none } } : Resolved.EvalContext) =
         (Resolved.EvalContext.bound parameters).withRuns runs := by

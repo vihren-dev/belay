@@ -81,4 +81,11 @@ theorem Expr.any_and_eq_false (test other : Expr → Bool) (expression : Expr) (
     expression found
   simp_all
 
+/-- The constant-false test finds no expression node. Proof sketch: mutual induction
+through the existing traversal; every disjunction has only false inputs. -/
+theorem Expr.any_false (expression : Expr) : expression.any (fun _ => false) = false := by
+  induction expression using Expr.rec
+    (motive_2 := fun arguments => arguments.any (fun _ => false) = false) <;>
+    simp_all [Expr.any, Arguments.any]
+
 end Belay.Sqlite.Model.Resolved

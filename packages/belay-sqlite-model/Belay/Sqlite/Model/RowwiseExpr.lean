@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.StatementCalm
 import Belay.Sqlite.Model.ExprEvalLaws
+import Belay.Sqlite.Model.ExprCongruence
 import Belay.Sqlite.Model.IntegerCompareLaws
 
 set_option doc.verso true
@@ -37,21 +38,19 @@ inductive Expr.Rowwise : Expr → Prop where
   /-- {lit}`IS NULL` or {lit}`IS NOT NULL` of such an expression. -/
   | isNull {operand : Expr} (negated : Bool) : Rowwise operand → Rowwise (.isNull operand negated)
 
-/-- For every row-wise expression, row and two contexts with the same bound values, the value and the fault of
-the expression are the same in both contexts. In plain words: the subqueries, the clock and the counters of a
-context do not matter to such an expression. Proof sketch: induction over the expression; a parameter reads the
-bound values, and no other form reads the context. -/
+/-- Every {name}`Expr.Rowwise` expression has no node that reads beyond the row and
+parameters. Proof sketch: induction on the syntax certificate, without evaluator reasoning. -/
+theorem Expr.Rowwise.localReads {expression : Expr} (rowwise : expression.Rowwise) :
+    expression.any Expr.readsBeyondRowAndParameters = false := by
+  induction rowwise <;> simp_all [Expr.any, Expr.readsBeyondRowAndParameters]
+
+/-- For every row-wise expression, row and two contexts with equal parameter lists, the
+value/fault pair is equal. Proof sketch: {name}`Expr.Rowwise.localReads` supplies the read
+boundary to {name}`Expr.evaluate_rowAndParameters`; project the pair equality. -/
 theorem Expr.Rowwise.evaluate_congr {expression : Expr} (rowwise : expression.Rowwise) (first second : EvalContext)
     (row : List Value) (same : first.parameters = second.parameters) :
-    expression.evaluate first row = expression.evaluate second row := by
-  induction rowwise with
-  | column | literal => rfl
-  | parameter => simp [Expr.evaluate, same]
-  | compare _ _ _ _ _ left right => simp [Expr.evaluate, left, right]
-  | and _ _ left right => simp [Expr.evaluate, left, right]
-  | or _ _ left right => simp [Expr.evaluate, left, right]
-  | not _ ih => simp [Expr.evaluate, ih]
-  | isNull _ _ ih => simp [Expr.evaluate, ih]
+    expression.evaluate first row = expression.evaluate second row :=
+  (expression.evaluate_rowAndParameters rowwise.localReads first second row same).1
 
 /-- For every row-wise expression, context and row, the evaluation has no fault. Proof sketch: induction over
 the expression; no form of it can fail, and the join and the softening of no faults is no fault. -/

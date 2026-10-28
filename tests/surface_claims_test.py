@@ -170,3 +170,17 @@ def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_p
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCommonTables.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+@pytest.mark.parametrize(("fixture", "audit_count"), [
+    ("ClaimsExpressionCongruence.lean", 3), ("ClaimsExpressionCongruenceMigration.lean", 0),
+])
+def test_expression_congruence_preserves_observations(runtime_root: Path, tmp_path: Path,
+        fixture: str, audit_count: int) -> None:
+    """Expression congruence keeps faults, subtype and distinct certainty observations;
+    temporary witnesses recover the four original contracts until final migration acceptance."""
+    result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path), cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
+    assert len(reports) == audit_count, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
