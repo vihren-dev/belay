@@ -1,6 +1,6 @@
 # Source and expression agreement targets
 
-Date: 2026-10-27. Status: D2 implemented; acceptance pending. D5 remains proposed.
+Date: 2026-10-27. Status (2026-10-28): D2 implemented; acceptance pending. D5 remains proposed.
 Audience: designers and reviewers.
 Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
 Production baseline reviewed 2026-10-28: `3e2212ed6983`. Reconcile this inventory with the

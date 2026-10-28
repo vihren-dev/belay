@@ -1,6 +1,6 @@
 # Source agreement and expression congruence
 
-Date: 2026-10-26. Status: D2 implemented; acceptance pending. D5 remains proposed.
+Date: 2026-10-26. Status (2026-10-28): D2 implemented; acceptance pending. D5 remains proposed.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
 Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).
