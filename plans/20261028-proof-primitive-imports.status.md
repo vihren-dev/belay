@@ -105,4 +105,7 @@ The theorem's name, formula and proof body, all SQL definitions, mutant edits,
 targets and deadlines remain unchanged. This ownership correction changes no
 mathematical contract accepted at `53a346e1`. The separate witness retirement
 continues; final combined acceptance must include the ownership correction.
-Implementation assignment follows review of this scope clarification.
+Claude reviewed scope clarification `684e46a2` with zero must and zero should
+findings (`reviews/20261028T151652Z-684e46a2/review.json`). A separate worker is
+assigned the ownership correction. It owns no retirement files and uses no
+Nix build slot until the coordinator releases one.
