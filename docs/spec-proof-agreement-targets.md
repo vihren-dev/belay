@@ -6,9 +6,10 @@ Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
 Production baseline reviewed 2026-10-28: `3e2212ed6983`. Reconcile this inventory with the
 implementation branch before editing. Prototype names do not prescribe the
 production API. This is the target list, not a prescribed implementation order.
-The fourteen source helpers and four expression targets are unchanged from
+The fourteen source helpers and four required expression replacements are unchanged from
 `3fe5caef`; the earlier prototype build is historical evidence, not validation
-of its imports on latest main.
+of its imports on latest main. Newly listed DROP COLUMN and derived-column
+consumers are retained evidence, not additional replacement targets.
 
 ## One traversal for both database origins
 

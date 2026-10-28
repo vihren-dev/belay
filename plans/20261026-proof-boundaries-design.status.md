@@ -130,8 +130,9 @@ and the current names of surface run guarantees. The preservation removal count
 stays 84; 18 surface names changed to `runScriptAllFrom_`. The query count grows
 from 42 to 45 through filtered duplicate-key observations. Retained NOT IN/IN
 equivalences, traced resolver equations, existing rename certificates, new
-frame consumers and read-certificate boundaries are explicit. Source/expression
-targets and the four primitive/three import edits remain the same.
+frame consumers and read-certificate boundaries are explicit. At that revision
+(`daa15385`), source/expression targets and four primitive/three import edits
+were unchanged. The 2026-10-28 amendment below records the later delivered move.
 
 Experiment READMEs now give explicit historical replay revisions. Their Nix
 results above remain valid for those sources only; no current-main prototype
@@ -186,3 +187,7 @@ documentation checks. One-time checks confirmed 84 preservation and 45 query
 names, 284 local links across ten ADR/spec files, and their size limits.
 Independent review follows this commit. These checks do not constitute production
 proof-refactor acceptance.
+
+Claude reviewed `3023b981` with no must findings and two should findings.
+Clarified the earlier baseline's historical four-primitive scope and separated
+unchanged required expression replacements from newly listed retained consumers.
