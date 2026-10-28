@@ -96,7 +96,18 @@ The aggregate report is
 15 suites and 1,444 test cases, with no failures, errors or skips. Host source
 checks recorded 513 tests and 49 subtests without failures. Public documentation
 checked 752 modules and 5,960 authored declarations with no missing, ordinary
-or unclassified declarations. Verdict, Nix configuration and scheduled-check
-results for this snapshot remain pending.
+or unclassified declarations. The remaining gates then completed:
+
+| First-batch gate | Result | Evidence |
+| --- | --- | --- |
+| `just verdict` | 56 corpora; 5,653 AGREE, 2,109 MODEL_UNSUPPORTED, no other outcome | `/nix/store/4bw2n219874pnc0wmw64937990k127np-sqlite-verifier-verdict` |
+| `just test-nix` | 71 passed, including the development loop | `/tmp/proof-refactor-batch1-test-nix.log`; frozen workspace `build/acceptance-batch1/nix.xml` |
+| `just test-scheduled-checks` | 50 writers checks passed; no mutant suite selected | `/nix/store/vrghz0ikwd6p6593yvkmbvbjqzsqapsi-sqlite-verifier-scheduled-check-reports` |
+
+The Nix configuration check used independent writable copies of this snapshot's
+exact Nix package caches, with all normal shell variables and tests retained.
+The seed record is `/tmp/proof-refactor-batch1-cache-seed.json`; all 7,285 tracked
+files retained their original hashes. Generated API-reference output is an
+additional required final gate; public documentation alone does not supply it.
 Later expression, context, query, resolver and profile changes still require
 their own final combined acceptance.
