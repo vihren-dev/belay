@@ -68,7 +68,7 @@ same one-output result in both. After a continuing step, which has one execution
 remaining statements. -/
 theorem sendStatements_branch_shape (statements : List (Syntax.Statement × List Value)) :
     ∀ clock index connection (result : SqlRun (List Output)),
-      ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
+      ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
       (sendStatements statements).Branch clock index connection result →
         result.connection = (runScriptFrom runContext clock index connection statements).connection ∧
         result.outputs.length = (runScriptFrom runContext clock index connection statements).outputs.length := by

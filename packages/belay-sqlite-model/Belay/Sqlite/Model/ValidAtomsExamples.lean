@@ -49,7 +49,7 @@ theorem strictCascadeScript_constraintAtoms : (runSql strictCascadeScript {}).Ho
   runSql_holds constraintAtoms_statementKeeps strictCascadeScript
     ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
     (RunConditionsWith.of_unconditioned (unconditioned := Resolved.Statement.unconditioned)
-      (fun _ _ => Resolved.Statement.atomsCondition_of_unconditioned) _ _ _
+      (fun _ _ _ _ _ => Resolved.Statement.atomsCondition_of_unconditioned) _ _ _
       (by decide +kernel))
 
 /-- {lit}`CREATE TABLE p(id PRIMARY KEY)`, the child
@@ -75,7 +75,7 @@ run keeps satisfies {name}`Database.NotNull`, because the write of NULL fails be
 theorem setNullScript_notNull : (runSql setNullScript {}).Holds Database.NotNull :=
   runSql_holds notNull_statementKeeps setNullScript (by decide +kernel)
     (RunConditionsWith.of_unconditioned (unconditioned := Resolved.Statement.unconditioned)
-      (fun _ _ unconditioned => (Resolved.Statement.atomsCondition_of_unconditioned unconditioned).2.1) _ _ _
+      (fun _ _ _ _ _ unconditioned => (Resolved.Statement.atomsCondition_of_unconditioned unconditioned).2.1) _ _ _
       (by decide +kernel))
 
 end Belay.Sqlite.Model.ValidAtomsExamples

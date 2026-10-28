@@ -58,12 +58,12 @@ example : Database.RowsAliasedSupported defaults.limits ({} : Database) :=
 example : Database.AdmittedWith defaults Database.KeysUnique ({} : Database) :=
   ⟨(Database.valid_empty defaults).admitted, (Database.valid_empty defaults).unique⟩
 
--- The theorem of `runSql` applied: a script of one INSERT into the table of `emptyDatabase` passes the support
--- check, which the kernel decides, so the outcome keeps "rows shaped" and needs no run condition.
+-- The theorem of `runSql` applied: one INSERT into `emptyDatabase` keeps "rows shaped".
+-- This invariant needs neither readiness nor a condition on the statement.
 example : (runSql [(.insert 0 [[.value (.integer 1), .value (.text [97])]] [], [])] emptyDatabase).Holds
     Database.RowsShaped :=
-  runSql_holds_ready rowsShaped_statementKeeps _ AdmittedAtomsEngineExamples.emptyDatabase_shaped
-    (by decide +kernel) (RunConditionsWith.always _ _ _)
+  runSql_holds rowsShaped_statementKeeps _ AdmittedAtomsEngineExamples.emptyDatabase_shaped
+    (RunConditionsWith.always _ _ _)
 
 -- A condition that stays: "rowids in range". The script of one INSERT after the largest rowid does not pass the
 -- support check (the run is not ready), and the database after it has the rowid 2 ^ 63, out of range.

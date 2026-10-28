@@ -9,54 +9,54 @@ open Belay.Sqlite.Model
 example (position : Nat) (script : List (Resolved.Statement × List Value))
     {state : SqlState}
     (holds : state.Holds (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping))
-    (conditions : RunConditionsWith (fun statement database => statement.ForeignKeySchemaCondition database)
+    (conditions : PreservationMigration.RawConditions (fun statement database => statement.ForeignKeySchemaCondition database)
       position script state) :
     (runSqlFrom position script state).Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping) :=
-  runSqlFrom_holds parentSchemasCompatibleSelectedKeeps position script holds conditions
+  PreservationMigration.raw parentSchemasCompatibleSelectedKeeps position script holds conditions
 
 -- Former endpoint: runSql_parentSchemasCompatibleSelected
 example (script : List (Resolved.Statement × List Value)) {database : Database}
     (holds : database.ParentSchemasCompatible database.catalog.foreignKeyMapping)
-    (conditions : RunConditionsWith (fun statement database => statement.ForeignKeySchemaCondition database)
+    (conditions : PreservationMigration.RawConditions (fun statement database => statement.ForeignKeySchemaCondition database)
       0 script {database}) :
     (runSql script database).Holds (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping) :=
-  runSql_holds parentSchemasCompatibleSelectedKeeps script holds conditions
+  PreservationMigration.raw_zero parentSchemasCompatibleSelectedKeeps script holds conditions
 
 -- Former endpoint: runScriptAllFrom_parentSchemasCompatibleSelected
 example (context : ResolveContext) (clock : Option Clock)
     (index : Nat) {connection : Connection} (script : List (Syntax.Statement × List Value))
     (holds : connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping))
-    (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeySchemaCondition database)
+    (conditions : PreservationMigration.SurfaceConditions (fun statement database => statement.ForeignKeySchemaCondition database)
       context clock index connection script) :
     ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping) :=
-  runScriptAllFrom_holds parentSchemasCompatibleSelectedKeeps context clock index script holds conditions
+  PreservationMigration.surface parentSchemasCompatibleSelectedKeeps context clock index script holds conditions
 
 -- Former endpoint: runSqlFrom_foreignKeyAtomsSelected
 example (profile : Profile) (position : Nat)
     (script : List (Resolved.Statement × List Value)) {state : SqlState}
     (holds : state.Holds (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
       database.RowReferencesHold database.catalog.foreignKeyMapping))
-    (conditions : RunConditionsWith (fun statement database => statement.ForeignKeyAtomsCondition profile database)
+    (conditions : PreservationMigration.RawConditions (fun statement database => statement.ForeignKeyAtomsCondition profile database)
       position script state) :
     (runSqlFrom position script state).Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runSqlFrom_holds (foreignKeyAtomsSelected_statementKeeps profile) position script holds conditions
+  PreservationMigration.raw (foreignKeyAtomsSelected_statementKeeps profile) position script holds conditions
 
 -- Former endpoint: runSql_foreignKeyAtomsSelected
 example (profile : Profile) (script : List (Resolved.Statement × List Value))
     {database : Database}
     (holds : database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
       database.RowReferencesHold database.catalog.foreignKeyMapping)
-    (conditions : RunConditionsWith (fun statement database => statement.ForeignKeyAtomsCondition profile database)
+    (conditions : PreservationMigration.RawConditions (fun statement database => statement.ForeignKeyAtomsCondition profile database)
       0 script {database}) :
     (runSql script database).Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runSql_holds (foreignKeyAtomsSelected_statementKeeps profile) script holds conditions
+  PreservationMigration.raw_zero (foreignKeyAtomsSelected_statementKeeps profile) script holds conditions
 
 -- Former endpoint: runScriptAllFrom_foreignKeyAtomsSelected
 example (profile : Profile) (context : ResolveContext)
@@ -64,12 +64,12 @@ example (profile : Profile) (context : ResolveContext)
     (holds : connection.state.Holds (fun database =>
       database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping))
-    (conditions : ScriptConditionsWith (fun statement database => statement.ForeignKeyAtomsCondition profile database)
+    (conditions : PreservationMigration.SurfaceConditions (fun statement database => statement.ForeignKeyAtomsCondition profile database)
       context clock index connection script) :
     ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds
       (fun database => database.ParentSchemasCompatible database.catalog.foreignKeyMapping ∧
         database.RowReferencesHold database.catalog.foreignKeyMapping) :=
-  runScriptAllFrom_holds (foreignKeyAtomsSelected_statementKeeps profile) context clock index script holds conditions
+  PreservationMigration.surface (foreignKeyAtomsSelected_statementKeeps profile) context clock index script holds conditions
 
 -- Former endpoint: runStatement_insert_notNull
 example (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))

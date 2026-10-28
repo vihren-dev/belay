@@ -106,14 +106,14 @@ per-atom matrix. Retire it only after this final condition contract passes Nix.
 
 ## Relevant code and traps
 
-`RunHolds`, `RunHoldsReady`, `ScriptConditions`, `ScriptRunHolds`, `ScriptRunDerived`,
-`RunHoldsStep`, `SqlAdvance` and `StatementStep` contain the affected contracts
-and transport. `advanceWith_holds`, `SqlTransition.counted_holds`,
+The baseline owners were `RunHolds`, `RunHoldsReady`, `ScriptConditions`, `ScriptRunHolds`, `ScriptRunDerived`,
+`RunHoldsStep`, `SqlAdvance` and `StatementStep`. The unified contract now lives in
+`RunHolds`; `RunHoldsReady` is deleted. `advanceWith_holds`, `SqlTransition.counted_holds`,
 `Connection.afterStep_holds` and `SqlState.finish_holds` already handle retained
 databases and can remain the transport foundation.
-`InsertSelectKeeps` owns `StatementKeeps.ofOwnRun` and
-`StatementKeepsReady.ofOwnRun`; migrate their compatibility premises with the
-condition interface. `ScriptRunAll` supplies canonical-run membership.
+`InsertSelectKeeps` now owns the unified `StatementKeeps.ofOwnRun`; the baseline
+ready-only bridge is deleted. Its compatibility premise retains the selected
+execution's readiness implication at the same evaluator inputs. `ScriptRunAll` supplies canonical-run membership.
 `ScriptRunSingleton` also consumes `ScriptConditionsWith` and must migrate.
 The separate relations in `ExecutionCounters` retain their meanings.
 

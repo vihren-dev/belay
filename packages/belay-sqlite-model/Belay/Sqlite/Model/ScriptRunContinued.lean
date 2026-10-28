@@ -120,7 +120,7 @@ theorem runScriptStep_others {context : ResolveContext} {clock : Option Clock} {
   simpa using same
 
 /-- For every step of a statement that continues, and every execution of the step
-({name}`RunStep.executions`): the statement resolves, its run passes the support check, and the next
+({name}`RunStep.executions`): the statement resolves, its clock is the value selected by {name}`statementClock`, its run passes the support check, and the next
 connection of the execution is the connection after the transition of some run
 ({name}`Connection.afterStep`, {name}`advanceRun`), whose effect is the effect of an admitted execution of
 the statement ({name}`StatementRun.effects`). So a law about the effect of every admitted execution of a
@@ -134,12 +134,13 @@ theorem runScriptStep_execution_runs {context : ResolveContext} {clock : Option 
     (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
     ∃ resolved after value,
       resolveStatement context connection.resolveState statement = .ok (resolved, after) ∧
+      statementClock clock index resolved = some value ∧
       (connection.state.statementRun value parameters resolved).ready = true ∧
       ∀ execution ∈ (RunStep.continued output next others).executions,
         ∃ run : StatementRun, run.effect ∈ (connection.state.statementRun value parameters resolved).effects ∧
           execution.next = connection.afterStep after run.counts (advanceRun index resolved connection.state run) := by
-  obtain ⟨resolved, after, value, found, _, _, ready, _, _, nextEq, further, listed, rfl⟩ := runScriptStep_continued_spec step
-  refine ⟨resolved, after, value, found, ready, ?_⟩
+  obtain ⟨resolved, after, value, found, selected, _, ready, _, _, nextEq, further, listed, rfl⟩ := runScriptStep_continued_spec step
+  refine ⟨resolved, after, value, found, selected, ready, ?_⟩
   intro execution member
   simp only [RunStep.executions, List.mem_cons, List.mem_map] at member
   rcases member with rfl | ⟨traced, inFurther, rfl⟩

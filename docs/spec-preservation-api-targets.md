@@ -62,8 +62,7 @@ The API migration deletes six pure-wrapper files: `AdmittedSqlRunsCatalog`, `Adm
 `RowLocalSchemaTheorems`. Update [model imports](../packages/belay-sqlite-model/Belay/Sqlite/Model.lean)
 and [Lake roots](../packages/belay-sqlite-model/lakefile.toml), plus direct imports
 at callers. Other listed files contain retained declarations. Their replacements are
-[generic raw run laws](../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHolds.lean),
-[ready run laws](../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHoldsReady.lean),
+[generic raw run laws and readiness conditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHolds.lean),
 [derived surface laws](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunDerived.lean),
 [row-local writes](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalWrites.lean) and
 [row-local schema facts](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalSchema.lean).

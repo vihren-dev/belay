@@ -38,7 +38,7 @@ instance (property : Model.Database → Prop) [DecidablePred property] :
 
 /-- A one-statement script reaches only that statement. -/
 theorem single {condition : Resolved.Statement → Model.Database → Prop} {statement : Resolved.Statement}
-    (met : condition statement input.raw) : RunConditionsWith condition 0 [(statement, [])] {database := input.raw} := by
+    (met : condition statement input.raw) : RunConditionsWith (fun _ _ _ => condition) 0 [(statement, [])] {database := input.raw} := by
   refine ⟨met, ?_⟩
   split <;> trivial
 

@@ -1,13 +1,13 @@
 # Preservation proofs: generalization and ownership inventory
 
-Date: 2026-10-27. Status: foundation changes await acceptance; API and execution-condition work remain.
+Date: 2026-10-27. Status: foundation, API and execution-condition source migrations await acceptance.
 Audience: designers and reviewers.
 Contract: [ADR 0025 D2–D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [API removals and callers](spec-preservation-api-targets.md).
 
 Names were checked against production revision `3e2212ed6983` on 2026-10-28. All declarations
-below belong to `Belay.Sqlite.Model`. Foundation owners were updated during the
-2026-10-28 implementation; the other rows remain targets. Future placement is constrained by imports; these lists do not require
+below belong to `Belay.Sqlite.Model`. Owners were updated during the 2026-10-28 implementation. Removed declarations
+are named as baseline targets; linked files are current owners. Future placement is constrained by imports; these lists do not require
 one new module per group. Retained evidence can move without changing its claim.
 
 ## Move shared definitions and facts below their instances
@@ -98,12 +98,12 @@ dispatches are outside this table-atom consolidation.
 | --- | --- | --- |
 | [RunHolds][raw] | `StatementKeeps`, `RunConditionsWith` | Conditions inspect actual clock, visible counters, parameters, resolved statement and database; preservation still covers every member of `StatementRun.effects`. |
 | [RunHolds][raw] | `advance_holds`, `runSqlFrom_holds`, `runSql_holds`; `RunConditionsWith.of_unconditioned` | One raw induction and its entry/condition laws use the richer condition. |
-| [RunHoldsReady][ready] | `StatementKeepsReady`, `StatementKeeps.toReady`, `advance_holds_ready`, `runSqlFrom_holds_ready`, `runSql_holds_ready` | Replace the parallel contract/traversal with explicit readiness in the common condition; remove old production names after migration. |
-| [RunHoldsReady][ready] | `StatementKeepsReady.and`, `RunConditionsWith.always`, `SqlState.Holds.mono` | Supply conjunction and unconditional-condition facts for the unified API; preserve generic state monotonicity. |
-| [ScriptConditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptConditions.lean) | `ScriptConditionsWith` | Conditions follow every reached execution's next connection, including branch-specific counters and database. |
+| Removed `RunHoldsReady` | `StatementKeepsReady`, `StatementKeeps.toReady`, `advance_holds_ready`, `runSqlFrom_holds_ready`, `runSql_holds_ready` | These names and their parallel traversal are deleted. Readiness is part of the common condition in [RunHolds][raw]. |
+| [RunHolds][raw] | `StatementKeeps.and`, `RunConditionsWith.always`, `RunConditionsWith.with_ready`, `SqlState.Holds.mono` | Unified conjunction, unconditional conditions, supported-run readiness and state monotonicity. |
+| [ScriptConditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptConditions.lean) | `ScriptStepCondition`, `ScriptConditionsWith`, `.of_invariant` | Guarded conditions follow every reached execution's next connection, selected clock, counters and database. Invariant-derived obligations use the same traversal. |
 | [ScriptRunHolds][surface] | `runScriptStep_holds`, `runScriptAllFrom_holds`, `runScriptFrom_holds` | One continuing-step proof and all-execution surface induction; derive the canonical-run result by membership. |
-| [ScriptRunDerived][derived] | `runScriptStep_holds_ready`, `runScriptAllFrom_holds_derived`, `runScriptFrom_holds_derived` | Derive resolver/invariant obligations through the same proof, without another script induction or compatibility traversal. |
-| [InsertSelectKeeps](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectKeeps.lean) | `StatementKeeps.ofOwnRun`, `StatementKeepsReady.ofOwnRun` | Adapt the own-run-to-all-effects proof to the unified contract; retain INSERT-query-to-upsert condition compatibility for the actual evaluator inputs. |
+| [ScriptRunDerived][derived] | `runScriptAllFrom_holds_derived`, `runScriptFrom_holds_derived` | Thin applications of the shared proof; the old `runScriptStep_holds_ready` and repeated preservation inductions are deleted. |
+| [InsertSelectKeeps](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectKeeps.lean) | `StatementKeeps.ofOwnRun` | The unified bridge retains INSERT-query-to-upsert condition compatibility at the actual inputs, including the selected execution's readiness implication. The ready-only bridge is deleted. |
 
 Keep these transport facts, adapting only their applications/imports:
 [RunHoldsStep][step] `SqlState.finish_holds`, `SqlState.failed_holds`,
@@ -142,8 +142,9 @@ interface. The listed propositions keep their meanings and distinct premises.
 
 The resolver bridge formulas stay available; adjust their use in
 `runScriptAllFrom_admittedWith` instead of repeating resolution reasoning at clients.
-Some certificates currently accept readiness that their body does not use;
-do not add it as a necessary premise for an independently unconditional claim.
+Catalog validity, row shape and distinct-rowid certificates now omit their unused
+readiness premise. Range, width, stored rows, row aliases and the combined
+admission certificate retain raw readiness in the condition.
 No FK schema/row atom, mapping selection or work condition is collapsed merely
 because the run-lifting contract becomes shared.
 Latest FK rename conditions require `renamed.selectedParents =
@@ -176,7 +177,6 @@ net source/build savings.
 [step]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHoldsStep.lean
 [dispatch]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedTableAtomStatement.lean
 [raw]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHolds.lean
-[ready]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHoldsReady.lean
 [surface]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunHolds.lean
 [derived]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunDerived.lean
 [admitted]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedStatementKeeps.lean

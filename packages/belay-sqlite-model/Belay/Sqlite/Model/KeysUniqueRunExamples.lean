@@ -45,7 +45,7 @@ CREATE INDEX, ADD COLUMN or DROP, so it meets {name}`RunConditionsWith` for {nam
 ({name}`RunConditionsWith.of_unconditioned`). -/
 theorem cascadeScript_keysUnique : (runSql cascadeScript {}).Holds Database.KeysUnique :=
   runSql_holds keysUnique_statementKeeps cascadeScript (by decide +kernel)
-    (RunConditionsWith.of_unconditioned (fun _ _ => Resolved.Statement.runCondition_of_unconditioned)
+    (RunConditionsWith.of_unconditioned (fun _ _ _ _ _ => Resolved.Statement.runCondition_of_unconditioned)
       _ _ _ (by decide +kernel))
 
 /-- Finding 1 as a run: the resolved CREATE INDEX of the index of

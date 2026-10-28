@@ -19,9 +19,9 @@ satisfies {name}`Database.NotNull` ({name}`Effect.Satisfies`): the database of a
 error with {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_notNull` for the own run, and {name}`StatementKeeps.ofOwnRun` for the
 alternative executions of an INSERT from a query. -/
-theorem notNull_statementKeeps : StatementKeeps Database.NotNull fun statement database => statement.NotNullCondition database :=
+theorem notNull_statementKeeps : StatementKeeps Database.NotNull fun _ _ _ statement database => statement.NotNullCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_notNull clock counters parameters statement holds condition)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "types fit" in the form of {name}`StatementKeeps`, for the condition of
 {name}`Resolved.Statement.TypesFitCondition`. For every clock value, counters, parameter list, resolved statement
@@ -32,9 +32,9 @@ satisfies {name}`Database.TypesFit` ({name}`Effect.Satisfies`): the database of 
 error with {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_typesFit` for the own run, and {name}`StatementKeeps.ofOwnRun` for the
 alternative executions of an INSERT from a query. -/
-theorem typesFit_statementKeeps : StatementKeeps Database.TypesFit fun statement database => statement.TypesFitCondition database :=
+theorem typesFit_statementKeeps : StatementKeeps Database.TypesFit fun _ _ _ statement database => statement.TypesFitCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_typesFit clock counters parameters statement holds condition)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 /-- The statement theorem of "checks hold" in the form of {name}`StatementKeeps`, for the condition of
 {name}`Resolved.Statement.ChecksHoldCondition`. For every clock value, counters, parameter list, resolved statement
@@ -45,8 +45,8 @@ satisfies {name}`Database.ChecksHold` ({name}`Effect.Satisfies`): the database o
 error with {name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
 nothing. Proof sketch: {name}`runStatement_checksHold` for the own run, and {name}`StatementKeeps.ofOwnRun` for the
 alternative executions of an INSERT from a query. -/
-theorem checksHold_statementKeeps : StatementKeeps Database.ChecksHold fun statement database => statement.ChecksHoldCondition database :=
+theorem checksHold_statementKeeps : StatementKeeps Database.ChecksHold fun _ _ _ statement database => statement.ChecksHoldCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds condition => runStatement_checksHold clock counters parameters statement holds condition)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model
