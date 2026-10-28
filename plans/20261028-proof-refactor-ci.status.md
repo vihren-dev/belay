@@ -390,3 +390,36 @@ independent package caches and immutable Nix inputs; its worker confirmed that
 cleanup does not affect the run. The coordinator, acceptance, CI-repair,
 retirement, comparison-correction and user review workspaces remain. Cleanup
 changes no tracked source or acceptance result.
+
+## Hosted CI-repair test acceptance
+
+PR 296's [Linux check](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40716887931/job/122916892875)
+passed. The runner checked merge `0b6da25affdc8496c857442bee0758726b49ed69`,
+containing repair head `46e5a7738c6c131eda4cde89d019a7b86d5729db` and main
+`2c5fff35d8356850529b79b0ba6ab06e2432a55e`. Routing selected `test` for its ten
+changed paths. The actual `just test-full` phase exited 0 in 1,867.414 seconds.
+The API-reference step also passed.
+
+The 15 Nix suite reports contain 1,435 tests with no failures, errors or skips.
+Twelve suites ran fresh. The corpora, documentation and parser-library suites
+reused matching Nix results. Fresh acceptance includes:
+
+- Native package replay: three tests in 1.240 seconds. The model check replays
+  its native `:shared` facets and rejects any `Built` output.
+- Surface S6: 65 tests in 841.359 seconds, including all six formerly failing
+  SQL checker/root cases with their no-rebuild assertions.
+- Surface: 378 tests in 928.767 seconds, including all six proof-cost report
+  cases and the installed SQL-file consumers.
+
+The separate host source report has two expected skips: its optional installed
+reviewer-CLI checks, because Codex and Claude are not installed on that runner.
+These are outside the 15 Nix suite totals above.
+
+The downloaded [case-report artifact](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40716887931/artifacts/12833170585)
+matches GitHub's SHA256
+`23be1db9595241cba42ecb512f2ccb6285d913d19d218b7a2dc9141c2619d01c`.
+Its parsed summary is `/tmp/pr296-case-reports-summary.json`; the complete job
+log is `/tmp/ci296-122916892875.log`. This result establishes the hosted installed
+consumer repair. Scope `test` did not run scheduled checks or mutation suites;
+hosted resolver/query/join mutant acceptance and the final combined gates remain
+pending.
