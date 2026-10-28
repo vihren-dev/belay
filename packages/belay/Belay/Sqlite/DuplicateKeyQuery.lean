@@ -1,4 +1,4 @@
-import Belay.Sqlite.FilteredDuplicateKeyEmpty
+import Belay.Sqlite.FilteredDuplicateKeyQuery
 import Belay.Sqlite.Model
 
 set_option doc.verso true
@@ -43,15 +43,13 @@ theorem Script.outputOn_selectOne_noDuplicateKeys
   exact Script.outputOn_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
     columns grouped feeds (FilterResolves.of_none _ _ _ _) groupResolves.toIn
 
-/-- For every script that is one read-only statement and is as in {name}`Script.outputOn_selectOne_noDuplicateKeys`,
-where the key is calm: {name}`Holds` of the script on the database means that no group of the rows of the table in
-scan order, grouped by the key under the collation ({name}`Resolved.groups`), has more than one row. Two rows are in
-one group when their keys compare equal under the collation, and two NULL keys compare equal. An empty table has no
-group. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Holds.iff_selectOne_noDuplicateKeysWhere` with the facts of
-the result column {lit}`1` and {name}`Resolved.keptRows_none`. -/
-theorem Holds.iff_selectOne_noDuplicateKeys
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the stated resolution premises and a calm grouping key, its complete
+first output is one row containing integer one when every key group has at most one row,
+and no rows otherwise.
+NULL keys group together. Proof sketch: specialize {name}`Script.outputOn_noDuplicateKeysWhere`
+to no filter and the literal result column. -/
+theorem Script.outputOn_noDuplicateKeys
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {term : Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat}
     {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
@@ -62,70 +60,22 @@ theorem Holds.iff_selectOne_noDuplicateKeys
     (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
       { current := some 0, aggregates := [.callStar name] } term key collation)
     (keyCalm : key.Calm) :
-    Holds script db isQuery ↔
-      ∀ group ∈ Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
-        (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }), group.length ≤ 1 := by
+    script.outputOn db = some (.rows (if (Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
+      (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })).all
+        (fun group => decide (group.length ≤ 1)) then [[.integer 1]] else [])) := by
   obtain ⟨notCall, noCalls, columns, grouped, feeds⟩ := resultColumn_one_facts runContext.profile.dqsDml
     (tableScope db.raw.catalog reference position table) { current := some 0, aggregates := [.callStar name] } key
-  rw [Holds.iff_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columns grouped feeds (FilterResolves.of_none _ _ _ _)
-    groupResolves.toIn
-    (fun _ h => nomatch h) (Resolved.Expr.calm_literal _) keyCalm, Resolved.keptRows_none]
-
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`: {name}`Empty` of the script on the database
-means that some group of the rows of the table in scan order, grouped by the key under the collation, has more than
-one row: two rows of the table have keys that compare equal under the collation (two NULL keys compare equal). Proof
-sketch: {name}`Empty.iff_selectOne_noDuplicateKeysWhere` with the facts of the
-result column {lit}`1` and {name}`Resolved.keptRows_none`. The source reference has no indexed query. The table reference names no schema: it is not a {lit}`before.t` source. -/
-theorem Empty.iff_selectOne_noDuplicateKeys
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {term : Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat}
-    {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
-      none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
-    (count : normalizeIdentifier name = "count")
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
-      { current := some 0, aggregates := [.callStar name] } term key collation)
-    (keyCalm : key.Calm) :
-    Empty script db isQuery ↔
-      ∃ group ∈ Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
-        (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }), 1 < group.length := by
-  obtain ⟨notCall, noCalls, columns, grouped, feeds⟩ := resultColumn_one_facts runContext.profile.dqsDml
-    (tableScope db.raw.catalog reference position table) { current := some 0, aggregates := [.callStar name] } key
-  rw [Empty.iff_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columns grouped feeds (FilterResolves.of_none _ _ _ _)
-    groupResolves.toIn
-    (fun _ h => nomatch h) (Resolved.Expr.calm_literal _) keyCalm, Resolved.keptRows_none]
-
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`, {name}`Fails` of the script on the database
-does not hold: a calm query of a table that exists neither fails to resolve nor fails to run. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch:
-{name}`Fails.not_selectOne_noDuplicateKeysWhere` with the facts of the result column {lit}`1`. -/
-theorem Fails.not_selectOne_noDuplicateKeys
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {term : Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat}
-    {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
-      none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none, parameters) :: rest)
-    (count : normalizeIdentifier name = "count")
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
-      { current := some 0, aggregates := [.callStar name] } term key collation)
-    (keyCalm : key.Calm) :
-    ¬ Fails script db isQuery := by
-  obtain ⟨notCall, noCalls, columns, grouped, feeds⟩ := resultColumn_one_facts runContext.profile.dqsDml
-    (tableScope db.raw.catalog reference position table) { current := some 0, aggregates := [.callStar name] } key
-  exact Fails.not_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columns grouped feeds (FilterResolves.of_none _ _ _ _)
+  simpa only [Resolved.keptRows_none] using
+    Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls columns grouped feeds (FilterResolves.of_none _ _ _ _)
     groupResolves.toIn
     (fun _ h => nomatch h) (Resolved.Expr.calm_literal _) keyCalm
 
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`: {name}`Holds` of the script on the database
+/-- For every script as in {name}`Script.outputOn_noDuplicateKeys`: {name}`Holds` of the script on the database
 means that no row of the table in scan order has a key that compares as equal, under the collation, to the key of a
 row before it. In words: no two rows of the table have keys that compare as equal under the collation, and two NULL
 keys compare as equal. Rows are compared with the rows before them; the test is symmetric because the comparison of
 a collation is. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Holds.iff_selectOne_noDuplicateKeys` and {name}`Resolved.groups_short_iff_pairwise`
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_noDuplicateKeys` and {name}`Resolved.groups_short_iff_pairwise`
 with {name}`Resolved.sameGroup_single`. -/
 theorem Holds.iff_selectOne_noDuplicateKeys_pairwise
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
@@ -143,14 +93,14 @@ theorem Holds.iff_selectOne_noDuplicateKeys_pairwise
       (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  rw [Holds.iff_selectOne_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
-    Resolved.groups_short_iff_pairwise]
-  simp only [Resolved.sameGroup_single, beq_eq_false_iff_ne]
+  simp [Holds, Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
+    Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+    beq_eq_false_iff_ne]
 
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`: {name}`Empty` of the script on the database
+/-- For every script as in {name}`Script.outputOn_noDuplicateKeys`: {name}`Empty` of the script on the database
 means that some row of the table has a key that compares as equal, under the collation, to the key of a row before
 it. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Empty.iff_selectOne_noDuplicateKeys` and {name}`Resolved.groups_long_iff_repeated` with
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_noDuplicateKeys` and {name}`Resolved.groups_long_iff_repeated` with
 {name}`Resolved.sameGroup_single`. -/
 theorem Empty.iff_selectOne_noDuplicateKeys_repeated
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
@@ -168,8 +118,8 @@ theorem Empty.iff_selectOne_noDuplicateKeys_repeated
       ¬ (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  rw [Empty.iff_selectOne_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
-    Resolved.groups_long_iff_repeated]
-  simp only [Resolved.sameGroup_single, beq_eq_false_iff_ne]
+  simp [Empty, Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
+    Output.hasNoRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+    beq_eq_false_iff_ne]
 
 end Belay.Sqlite

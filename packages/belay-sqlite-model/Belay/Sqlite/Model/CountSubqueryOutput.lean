@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.CountQueryLaws
 import Belay.Sqlite.Model.SelectOneSubqueryOutput
 
@@ -93,53 +94,23 @@ theorem Connection.queryContext_countSubquery_runs (connection : Connection) (pa
     simp only [Connection.queryContext, Resolved.statementContext, List.length_singleton]
     simp [Resolved.subqueryContext]
 
-/-- For every connection, values, condition {lit}`c`, table at a position of the database, condition of the
-subquery and calm statement of {lit}`SELECT 1 WHERE c` with the count query of that table as its one subquery,
-the output of the step has rows exactly when {lit}`c` is true in the context of the values in which subquery 0 is
-the one row with the number of rows of the table for which the condition is true
-({name}`Resolved.countMatching`). Proof sketch: {name}`resolvedStepOutput_selectOne_hasRows` with the results of
-{name}`Connection.queryContext_countSubquery_runs`, which are quiet. -/
-theorem resolvedStepOutput_count_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
+/-- For every calm SELECT 1 statement with a count subquery over an existing table,
+the complete output contains integer one exactly when its condition accepts the count of matching
+rows, and is empty otherwise. The outer condition may read a scalar subquery.
+Proof sketch: substitute the certain count run in the shared SELECT 1 output equation. -/
+theorem resolvedStepOutput_count (index : Nat) (connection : Connection) (parameters : List Value)
     (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr) (name : String)
     (present : connection.state.database.table position = some table)
     (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
       [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name])).hasRows = true ↔
-      Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition table)]) []) = true :=
-  resolvedStepOutput_selectOne_hasRows index connection parameters condition _ _ calm
+    resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
+      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name]) =
+      .rows (if Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
+        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition table)]) [])
+        then [[.integer 1]] else []) := by
+  obtain ⟨fault, value⟩ := connection.queryContext_selectOne parameters condition _ _ calm
     (connection.queryContext_countSubquery_runs parameters _ position table subCondition name present calm)
     (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.count_quiet _)
-
-/-- For every connection, values, condition, table, condition of the subquery and calm statement as in
-{name}`resolvedStepOutput_count_hasRows`, the output of the step has no rows exactly when {lit}`c` is not true in
-that context. Proof sketch: {name}`resolvedStepOutput_selectOne_hasNoRows` with the same results. -/
-theorem resolvedStepOutput_count_hasNoRows (index : Nat) (connection : Connection) (parameters : List Value)
-    (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr) (name : String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name])).hasNoRows = true ↔
-      Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.count (Resolved.countMatching (Resolved.EvalContext.bound parameters) subCondition table)]) []) = false :=
-  resolvedStepOutput_selectOne_hasNoRows index connection parameters condition _ _ calm
-    (connection.queryContext_countSubquery_runs parameters _ position table subCondition name present calm)
-    (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.count_quiet _)
-
-/-- For every connection, values, condition, table, condition of the subquery and calm statement as in
-{name}`resolvedStepOutput_count_hasRows`, the output of the step is no error. Proof sketch:
-{name}`resolvedStepOutput_selectOne_not_isError` with the same results. -/
-theorem resolvedStepOutput_count_not_isError (index : Nat) (connection : Connection) (parameters : List Value)
-    (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr) (name : String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name])).isError = false :=
-  resolvedStepOutput_selectOne_not_isError index connection parameters condition _ _ calm
-    (connection.queryContext_countSubquery_runs parameters _ position table subCondition name present calm)
-    (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.count_quiet _)
+  rw [resolvedStepOutput_selectOne index connection parameters _ _ calm fault, value]
 
 end Belay.Sqlite.Model

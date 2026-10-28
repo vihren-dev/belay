@@ -42,7 +42,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 | [NotExistsQuery](../packages/belay/Belay/Sqlite/NotExistsQuery.lean) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
 | [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
 | [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
-| [FilteredDuplicateKeyEmpty](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyEmpty.lean) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
+| `FilteredDuplicateKeyEmpty` (removed; current owner: [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean)) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
 | [TableInfoQuery](../packages/belay/Belay/Sqlite/TableInfoQuery.lean) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and

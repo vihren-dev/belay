@@ -15,7 +15,7 @@ def customerCountIs (n : Int64) : Script :=
   sql r"SELECT 1 WHERE (SELECT count(*) FROM customers) = $n"
 
 /-- Over every database with a table {lit}`customers` at a position: the count query holds exactly when the
-stored rows of the table number {lit}`n`. Proof sketch: apply {name}`Holds.iff_selectOne_count` to the
+stored rows of the table number {lit}`n`. Proof sketch: apply {name}`Script.outputOn_count` to the
 resolved comparison of the subquery with the parameter; the count of a table without a condition is its
 number of rows ({name}`Resolved.countMatching_none`). -/
 theorem customer_count_is_iff (db : Database) (n : Int64) (position : Nat) (table : CatalogTable)
@@ -27,8 +27,9 @@ theorem customer_count_is_iff (db : Database) (n : Int64) (position : Nat) (tabl
     fun lowest => FilterResolves.of_term (term := .compare .eq (.subquery 0) (.parameter 1))
       (result := (.compare .eq none (.subquery 0) (.parameter 1) .binary, none)) (by simp [namesAlias]) (by
       simp [sql_simp, countShape]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
-    (arguments := rfl) found (FilterResolves.of_none _ _ _ _) mainResolves (by simp [sql_simp]) (by simp)) ?_
+  rw [Holds, Script.outputOn_count (script := (customerCountIs n)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
+    (arguments := rfl) found (FilterResolves.of_none _ _ _ _) mainResolves (by simp [sql_simp]) (by simp)]
+  simp only [Option.any_some, Output.hasRows, apply_ite]
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Resolved.countMatching_none,
     Value.isNull, Comparison.holds, boundValue]
 

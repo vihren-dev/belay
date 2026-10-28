@@ -88,9 +88,12 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     cases column : columnPosition table.columns (name! "email") with
     | none => exact False.elim (missing_email db position table found column holds)
     | some index =>
-      have groups := (Holds.iff_selectOne_noDuplicateKeys (head := rfl) (count := rfl)
+      have groups := holds
+      rw [Holds, Script.outputOn_noDuplicateKeys (script := noDuplicateEmails) (head := rfl) (count := rfl)
         (namedSource := rfl) (current := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
-        (keyCalm := Resolved.Expr.calm_column index)).mp holds
+        (keyCalm := Resolved.Expr.calm_column index)] at groups
+      simp only [Option.any_some, apply_ite, Output.hasRows] at groups
+      simp at groups
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
         found, by decide, by decide, freeName, ?_, rfl, ?_⟩
       · have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl

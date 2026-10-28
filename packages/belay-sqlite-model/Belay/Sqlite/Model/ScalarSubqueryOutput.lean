@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.SimpleResultsLaws
 import Belay.Sqlite.Model.SelectOneRowsOutput
 import Belay.Sqlite.Model.ExistsSubqueryOutput
@@ -100,61 +101,27 @@ theorem Connection.queryContext_scalarSubquery_runs (connection : Connection) (p
     simp only [Connection.queryContext, Resolved.statementContext, List.length_singleton]
     simp [Resolved.subqueryContext, Resolved.SubqueryRun.certainFirst]
 
-/-- For every connection, values, condition {lit}`c` without scalar subquery, table at a position of the database,
-condition and column of the subquery, and calm statement of {lit}`SELECT 1 WHERE c` with the simple query of that table
-and column as its one subquery, the output of the step has rows exactly when {lit}`c` is true in the context of the values
-in which subquery 0 gives the values of the column for the rows for which the condition is true
-({name}`Resolved.scalarRows`). Proof sketch: {name}`resolvedStepOutput_selectOne_rows_hasRows` with the one result of
-{name}`Connection.queryContext_scalarSubquery_runs`, which is quiet. -/
-theorem resolvedStepOutput_scalar_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
+/-- For every calm SELECT 1 statement with a scalar-column subquery over an existing table,
+if the outer condition reads no scalar subquery, the complete output contains integer one when
+the condition accepts the column values of matching rows, and is empty otherwise. Membership
+conditions remain permitted. Proof sketch: substitute the runs up to first-row certainty, which
+the outer condition does not read, in the shared SELECT 1 output equation. -/
+theorem resolvedStepOutput_scalar (index : Nat) (connection : Connection) (parameters : List Value)
     (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr)
     (value : Resolved.Expr) (names : List String)
     (present : connection.state.database.table position = some table)
     (noScalar : condition.any (· matches .subquery _) = false)
     (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
       [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names])).hasRows = true ↔
-      Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
+    resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
+      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]) =
+      .rows (if Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
         [Resolved.SubqueryRun.certain
-          (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition value table)]) []) = true :=
-  resolvedStepOutput_selectOne_rows_hasRows index connection parameters condition _ _ calm noScalar
+          (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition value table)]) [])
+        then [[.integer 1]] else []) := by
+  obtain ⟨fault, same⟩ := connection.queryContext_selectOne_rows parameters condition _ _ calm noScalar
     (connection.queryContext_scalarSubquery_runs parameters _ position table subCondition value names present calm)
     (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.certain_quiet _)
-
-/-- For every connection, values, condition, table, subquery and calm statement as in
-{name}`resolvedStepOutput_scalar_hasRows`, the output of the step has no rows exactly when {lit}`c` is not true in that
-context. Proof sketch: {name}`resolvedStepOutput_selectOne_rows_hasNoRows` with the same result. -/
-theorem resolvedStepOutput_scalar_hasNoRows (index : Nat) (connection : Connection) (parameters : List Value)
-    (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr)
-    (value : Resolved.Expr) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (noScalar : condition.any (· matches .subquery _) = false)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names])).hasNoRows = true ↔
-      Resolved.truthy (condition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.certain
-          (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition value table)]) []) = false :=
-  resolvedStepOutput_selectOne_rows_hasNoRows index connection parameters condition _ _ calm noScalar
-    (connection.queryContext_scalarSubquery_runs parameters _ position table subCondition value names present calm)
-    (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.certain_quiet _)
-
-/-- For every connection, values, condition, table, subquery and calm statement as in
-{name}`resolvedStepOutput_scalar_hasRows`, the output of the step is no error. Proof sketch:
-{name}`resolvedStepOutput_selectOne_rows_not_isError` with the same result. -/
-theorem resolvedStepOutput_scalar_not_isError (index : Nat) (connection : Connection) (parameters : List Value)
-    (condition : Resolved.Expr) (position : Nat) (table : Table) (subCondition : Option Resolved.Expr)
-    (value : Resolved.Expr) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (noScalar : condition.any (· matches .subquery _) = false)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere condition)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names])).isError = false :=
-  resolvedStepOutput_selectOne_rows_not_isError index connection parameters condition _ _ calm noScalar
-    (connection.queryContext_scalarSubquery_runs parameters _ position table subCondition value names present calm)
-    (fun run member => by simp at member; rw [member]; exact Resolved.SubqueryRun.certain_quiet _)
+  rw [resolvedStepOutput_selectOne index connection parameters _ _ calm fault, same]
 
 end Belay.Sqlite.Model

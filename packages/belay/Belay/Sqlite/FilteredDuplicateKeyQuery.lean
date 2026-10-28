@@ -54,15 +54,13 @@ theorem Script.outputOn_selectOne_noDuplicateKeysWhere
       filter term name count position table column columnName affinity key collation whereCondition namedSource current
       arguments found notCall noCalls columnResolves columnGrouped columnFeeds filterResolves groupResolves)
 
-/-- For every script as in {name}`Script.outputOn_selectOne_noDuplicateKeysWhere` that is one read-only statement, where
-{lit}`c`, {lit}`w` and {lit}`k` are calm: {name}`Holds` of the script on the database means that no group of the rows of
-the table that {lit}`WHERE` keeps ({name}`Resolved.keptRows`, in scan order), grouped by the key under the collation
-({name}`Resolved.groups`), has more than one row. Two rows are in one group when their keys compare equal under the
-collation, and two NULL keys compare equal. A row for which the condition is false or NULL is not in any group. A
-table without such a row has no group. Proof sketch: {name}`Script.outputOn_selectOne_noDuplicateKeysWhere` and
-{name}`resolvedStepOutput_notExists_duplicateKeys_hasRows`. -/
-theorem Holds.iff_selectOne_noDuplicateKeysWhere
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the resolution premises of {name}`Script.outputOn_selectOne_noDuplicateKeysWhere`,
+when the resolved expressions satisfy the stated calmness premises, its complete first output is
+one row containing integer one when every key group of rows kept by the filter has at most
+one row, and no rows otherwise. NULL keys group together under the resolved collation.
+Proof sketch: resolve once, then substitute {name}`resolvedStepOutput_notExists_duplicateKeys`. -/
+theorem Script.outputOn_noDuplicateKeysWhere
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {value : Syntax.Expr} {text : String} {filter : Option Syntax.Expr} {term : Syntax.Expr}
     {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
     {column : Resolved.Expr} {columnName : String} {affinity : Option Affinity} {key : Resolved.Expr}
@@ -86,23 +84,21 @@ theorem Holds.iff_selectOne_noDuplicateKeysWhere
       (value.collationIn (tableScope db.raw.catalog reference position table)) term key collation)
     (whereCalm : ∀ condition, whereCondition = some condition → condition.Calm) (columnCalm : column.Calm)
     (keyCalm : key.Calm) :
-    Holds script db isQuery ↔
-      ∀ group ∈ Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
-        (Resolved.keptRows (Resolved.EvalContext.bound parameters) whereCondition
-          (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })), group.length ≤ 1 := by
-  unfold Holds
+    script.outputOn db = some (.rows (if (Resolved.groups (Resolved.EvalContext.bound parameters) [(key, collation)]
+        (Resolved.keptRows (Resolved.EvalContext.bound parameters) whereCondition (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }))).all
+          (fun group => decide (group.length ≤ 1)) then [[.integer 1]] else [])) := by
   rw [Script.outputOn_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
-    columnResolves columnGrouped columnFeeds filterResolves groupResolves, Option.any_some]
-  exact resolvedStepOutput_notExists_duplicateKeys_hasRows 0 position db.raw.connection parameters
+    columnResolves columnGrouped columnFeeds filterResolves groupResolves]
+  exact congrArg some (resolvedStepOutput_notExists_duplicateKeys 0 position db.raw.connection parameters
     { shape := table, rows := db.raw.rows.getD position [] } whereCondition column columnName key collation
     (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_duplicateKeys position _ whereCondition column columnName key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) whereCalm columnCalm keyCalm)
+    (Resolved.Statement.Calm.selectOne_duplicateKeys position _ whereCondition column columnName key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) whereCalm columnCalm keyCalm))
 
-/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeysWhere`: {name}`Holds` of the script on the
+/-- For every script as in {name}`Script.outputOn_noDuplicateKeysWhere`: {name}`Holds` of the script on the
 database means that no row that {lit}`WHERE` keeps has a key that compares as equal, under the collation, to the key
 of a row that {lit}`WHERE` keeps before it in scan order. In words: no two rows for which the condition is true have
 keys that compare as equal under the collation, and two NULL keys compare as equal. Proof sketch:
-{name}`Holds.iff_selectOne_noDuplicateKeysWhere` and {name}`Resolved.groups_short_iff_pairwise` with
+{name}`Script.outputOn_noDuplicateKeysWhere` and {name}`Resolved.groups_short_iff_pairwise` with
 {name}`Resolved.sameGroup_single`. -/
 theorem Holds.iff_selectOne_noDuplicateKeysWhere_pairwise
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
@@ -134,9 +130,9 @@ theorem Holds.iff_selectOne_noDuplicateKeysWhere_pairwise
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  rw [Holds.iff_selectOne_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
+  simp [Holds, Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
     columnResolves columnGrouped columnFeeds filterResolves groupResolves whereCalm columnCalm keyCalm,
-    Resolved.groups_short_iff_pairwise]
-  simp only [Resolved.sameGroup_single, beq_eq_false_iff_ne]
+    Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+    beq_eq_false_iff_ne]
 
 end Belay.Sqlite

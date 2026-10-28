@@ -322,6 +322,7 @@ import Belay.Sqlite.Model.OutputResultsLaws
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.QueryOutputRows
+import Belay.Sqlite.Model.QueryOutputFacts
 import Belay.Sqlite.Model.QueryStatementOutput
 import Belay.Sqlite.Model.QueryOutputCases
 import Belay.Sqlite.Model.SimpleQueryLaws
@@ -342,6 +343,7 @@ import Belay.Sqlite.Model.ExprResolutionLaws
 import Belay.Sqlite.Model.ExprCalmLaws
 import Belay.Sqlite.Model.SubqueryExprResolutionLaws
 import Belay.Sqlite.Model.SubquerySelectResolution
+import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.NoFromQuerySteps
 import Belay.Sqlite.Model.SimpleSubqueryRun
 import Belay.Sqlite.Model.ExistsSubqueryOutput

@@ -36,14 +36,12 @@ theorem Script.outputOn_selectOne_notExists
     (resolveStatement_selectOne_notExists runContext db.raw.connection.resolveState reference subFilter position table
       subCondition namedSource current arguments found resolves)
 
-/-- For every script as in {name}`Script.outputOn_selectOne_notExists` where the condition {lit}`p` resolves to a calm
-condition (it has no fallible call, no clock and no counter read): {lit}`Holds` of the script on the database
-means that the condition is not true for any row of the table (without {lit}`WHERE` in the subquery: the table
-has no row). The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_notExists` and
-{name}`resolvedStepOutput_notExists_hasRows`. -/
-theorem Holds.iff_selectOne_notExists
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the resolution premises of {name}`Script.outputOn_selectOne_notExists`,
+when the resolved expressions satisfy the stated calmness premises, its complete first output is
+one row containing integer one when no source row matches, and no rows otherwise.
+Proof sketch: resolve once, then substitute {name}`resolvedStepOutput_notExists`. -/
+theorem Script.outputOn_notExists
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {subFilter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     {position : Nat} {table : CatalogTable} {subCondition : Option Resolved.Expr}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none
@@ -53,62 +51,12 @@ theorem Holds.iff_selectOne_notExists
     (resolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
       subFilter subCondition { current := some 0 })
     (calm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    Holds script db isQuery ↔
-      ∀ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] },
-        subCondition.all (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = false := by
-  unfold Holds
-  rw [Script.outputOn_selectOne_notExists head namedSource current arguments found resolves, Option.any_some]
-  exact resolvedStepOutput_notExists_hasRows 0 position db.raw.connection parameters
+    script.outputOn db = some (.rows (if !(Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).any (fun row => subCondition.all
+        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)))
+        then [[.integer 1]] else [])) := by
+  rw [Script.outputOn_selectOne_notExists head namedSource current arguments found resolves]
+  exact congrArg some (resolvedStepOutput_notExists 0 position db.raw.connection parameters
     { shape := table, rows := db.raw.rows.getD position [] } subCondition _ _ (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_subquery position _ subCondition ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _)) calm)
-
-/-- For every script as in {name}`Script.outputOn_selectOne_notExists` where the condition {lit}`p` resolves to a calm
-condition (it has no fallible call, no clock and no counter read): {lit}`Empty` of the script on the database
-means that there is a row of the table in scan order (rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table) for which the condition is true, evaluated in the context of the values (without {lit}`WHERE` in
-the subquery: the table has a row). The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_notExists` and
-{name}`resolvedStepOutput_notExists_hasNoRows`. -/
-theorem Empty.iff_selectOne_notExists
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
-    {position : Nat} {table : CatalogTable} {subCondition : Option Resolved.Expr}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none
-      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
-      none false none, parameters) :: rest)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (resolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (calm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    Empty script db isQuery ↔
-      ∃ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] },
-        subCondition.all (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = true := by
-  unfold Empty
-  rw [Script.outputOn_selectOne_notExists head namedSource current arguments found resolves, Option.any_some]
-  exact resolvedStepOutput_notExists_hasNoRows 0 position db.raw.connection parameters
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition _ _ (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_subquery position _ subCondition ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _)) calm)
-
-/-- For every script as in {name}`Holds.iff_selectOne_notExists`, {lit}`Fails` of the script on the database does not
-hold: a calm query of a table that exists neither fails to resolve nor fails to run. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch:
-{name}`Script.outputOn_selectOne_notExists` and {name}`resolvedStepOutput_notExists_not_isError`. -/
-theorem Fails.not_selectOne_notExists
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
-    {position : Nat} {table : CatalogTable} {subCondition : Option Resolved.Expr}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none
-      [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] subFilter [] [] none none none none false none none]
-      none false none, parameters) :: rest)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (resolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (calm : ∀ expression ∈ subCondition.toList, expression.Calm) :
-    ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectOne_notExists head namedSource current arguments found resolves, Option.any_some,
-    resolvedStepOutput_notExists_not_isError 0 position db.raw.connection parameters
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition _ _ (Database.table_of_findTable db.raw _ position table found)
-    (Resolved.Statement.Calm.selectOne_subquery position _ subCondition ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _)) calm)]
-  simp
+    (Resolved.Statement.Calm.selectOne_subquery position _ subCondition ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _)) calm))
 
 end Belay.Sqlite

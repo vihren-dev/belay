@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.NoFromQuerySteps
+import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.SimpleSubqueryRun
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.ExprEvalLaws
@@ -55,61 +55,32 @@ theorem Connection.queryContext_tableSubquery_zero (connection : Connection) (pa
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   exact Resolved.Expr.fault_of_plain _ (Resolved.EvalContext.bound_quiet parameters) row expression (plain expression member)
 
-/-- For every connection, values, table at a position of the database, condition of the subquery, and
-calm statement of {lit}`SELECT 1 WHERE EXISTS (q)` with that simple one-table subquery, the output of
-the step has rows exactly when the condition is true, in the context of the values, for some row of the
-table. Proof sketch: {name}`resolvedStepOutput_noFrom_hasRows`; the value of {lit}`EXISTS` is true when the
-subquery has a row ({name}`Connection.queryContext_tableSubquery_zero`), which is the case exactly when the
-condition keeps a row ({name}`Resolved.Query.Simple.results_ne_nil_iff`). -/
-theorem resolvedStepOutput_exists_hasRows (index position : Nat) (connection : Connection) (parameters : List Value)
+/-- For every calm SELECT 1 statement with a simple EXISTS subquery over an existing table,
+the complete output contains integer one when some source row matches, and is empty otherwise.
+Proof sketch: substitute the subquery run; its result is empty exactly when no row passes its filter. -/
+theorem resolvedStepOutput_exists (index position : Nat) (connection : Connection) (parameters : List Value)
     (table : Table) (condition : Option Resolved.Expr) (columns : List Resolved.Output) (names : List String)
     (present : connection.state.database.table position = some table)
     (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.exists 0))
       [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names])).hasRows = true ↔
-      ∃ row ∈ Resolved.sourceRows table, condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = true := by
+    resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.exists 0))
+      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]) =
+      .rows (if (Resolved.sourceRows table).any (fun row => condition.all
+        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)))
+        then [[.integer 1]] else []) := by
   have run := connection.queryContext_tableSubquery_zero parameters _ position table condition columns names present calm
-  rw [resolvedStepOutput_noFrom_hasRows index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_exists, run]))]
-  simp only [Option.all_some, Resolved.Expr.eval_exists, run, truthy_truth, Bool.not_eq_eq_eq_not,
-    Bool.not_true, List.isEmpty_eq_false_iff]
-  exact (Resolved.Query.simple_isSimple _ _ _ _).results_ne_nil_iff _ _
-
-/-- For every connection, values, table and calm statement as in {name}`resolvedStepOutput_exists_hasRows`, the
-output of the step has no rows exactly when the condition of the subquery is not true for any row of the
-table. Proof sketch: as for {name}`resolvedStepOutput_exists_hasRows`, with
-{name}`resolvedStepOutput_noFrom_hasNoRows` and {name}`Resolved.Query.Simple.results_eq_nil_iff`. -/
-theorem resolvedStepOutput_exists_hasNoRows (index position : Nat) (connection : Connection) (parameters : List Value)
-    (table : Table) (condition : Option Resolved.Expr) (columns : List Resolved.Output) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names])).hasNoRows = true ↔
-      ∀ row ∈ Resolved.sourceRows table, condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = false := by
-  have run := connection.queryContext_tableSubquery_zero parameters _ position table condition columns names present calm
-  rw [resolvedStepOutput_noFrom_hasNoRows index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_exists, run]))]
-  simp only [Option.all_some, Resolved.Expr.eval_exists, run, truthy_truth, Bool.not_eq_eq_eq_not,
-    Bool.not_false, List.isEmpty_iff]
-  exact (Resolved.Query.simple_isSimple _ _ _ _).results_eq_nil_iff _ _
-
-/-- For every connection, values, table and calm statement as in {name}`resolvedStepOutput_exists_hasRows`, the
-output of the step is no error. Proof sketch: {name}`resolvedStepOutput_noFrom_not_isError`, with the fault of the
-subquery from {name}`Connection.queryContext_tableSubquery_zero`. -/
-theorem resolvedStepOutput_exists_not_isError (index position : Nat) (connection : Connection) (parameters : List Value)
-    (table : Table) (condition : Option Resolved.Expr) (columns : List Resolved.Output) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).Calm) :
-    (resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names])).isError = false := by
-  have run := connection.queryContext_tableSubquery_zero parameters _ position table condition columns names present calm
-  exact resolvedStepOutput_noFrom_not_isError index connection parameters _ _ _ _ calm
-    (Resolved.Query.selectOneWhere_faultless _ _ (by rw [Resolved.Expr.fault_exists, run]))
+  rw [resolvedStepOutput_selectOne index connection parameters _ _ calm
+    (by rw [Resolved.Expr.fault_exists, run])]
+  simp only [Resolved.Expr.eval_exists, run, truthy_truth]
+  have empty := (Resolved.Query.simple_isSimple [Resolved.QuerySource.first position] condition columns names).results_eq_nil_iff
+    (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)
+  have same : ((Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names).results
+      (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)).isEmpty =
+      !(Resolved.sourceRows table).any (fun row => condition.all
+        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row))) := by
+    apply Bool.eq_iff_iff.mpr
+    simpa [List.isEmpty_iff, Bool.not_eq_true', List.any_eq_false, Resolved.Query.simple] using empty
+  simp only [same, Bool.not_not]
 
 /-- The expressions of the simple query of the first source of a table are its condition, if any, and
 the expressions of its result column {lit}`1`. Proof sketch: the definitions compute. -/

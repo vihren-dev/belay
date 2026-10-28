@@ -70,6 +70,18 @@ theorem Query.aggregateOf_results (sources : List QuerySource) (filter : Option 
   unfold Query.results
   simp [Query.aggregateOf_uniqueRecords, noLimit, noOffset, stableSort, insertStable]
 
+/-- Every whole-table aggregate query has exactly one possible result: one row with the
+aggregate value of the kept rows, including empty input. Proof sketch: its one record forms
+one complete tie group, so the window has one choice. -/
+theorem Query.aggregateOf_possibleResults (sources : List QuerySource) (filter : Option Expr)
+    (aggregate : Aggregate) (name : String) (context : EvalContext) (rows : List (List Value)) :
+    (Query.aggregateOf sources filter aggregate name).possibleResults context rows =
+      [[[aggregate.eval context (filtered context (Query.aggregateOf sources filter aggregate name) rows)]]] := by
+  unfold Query.possibleResults Query.tieGroupRows Query.sortedRecords
+  rw [Query.aggregateOf_uniqueRecords]
+  simp [Query.aggregateOf, stableSort, insertStable, tieGroups, windowChoices, Query.stop,
+    groupChoices, groupSlice, windowRows, choiceResults, distinctLists, normalForm]
+
 /-- For every whole-table aggregate query, the window binds to the query itself, for any values. Proof sketch:
 {name}`Query.bindWindow_literal`; the query has no window parameter. -/
 theorem Query.aggregateOf_bindWindow (sources : List QuerySource) (filter : Option Expr) (aggregate : Aggregate)
