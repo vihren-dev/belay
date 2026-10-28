@@ -1,6 +1,6 @@
 # Source agreement and expression congruence
 
-Date: 2026-10-26. Status: PROPOSED; ready for implementation assignment review.
+Date: 2026-10-26. Status (2026-10-28): D2 implemented; acceptance pending. D5 remains proposed.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
 Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).
@@ -76,8 +76,10 @@ required congruence replacement.
 
 ## Boundaries that matter
 
-`TwoStateReads` currently owns `readsInitial` and `readsCurrent` beside a
-specialized chain. `ExprAppendLaws` owns `EvalContext.RowFree` and
+The source implementation puts `Query.readsInitial` and `Query.readsCurrent`
+in `Resolution/QueryForm`, below `SourceAgreement`. Its shared core imports
+`Execution` and `PossibleResults` and does not import the replaced endpoints.
+`ExprAppendLaws` owns `EvalContext.RowFree` and
 `ExprContextLaws` owns `SubqueryRun.certainFirst`. Put these definitions below
 the shared proofs that use them. The experimental source core imports
 `Execution` and `PossibleResults`; the expression core imports `ExprEval` and
@@ -102,7 +104,9 @@ a common-connection premise when migrating these clients.
 
 - Recover every removed source helper formula and all five nominated context/
   query endpoints as temporary kernel-checked migration witnesses with original
-  assumptions from `3e2212ed6983`. Universal proofs cover subquery depth and correlated traversal;
+  assumptions from `3e2212ed6983`. The two context formulas are among the fourteen
+  helpers, so there are seventeen distinct source formulas. Universal proofs
+  cover subquery depth and correlated traversal;
   this does not require a separate example at each depth or helper stage.
 - Keep examples for absent versus present tables, unequal shape, a fixed
   pragma independent of both databases, and a database-dependent pragma.
