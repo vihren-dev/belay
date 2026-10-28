@@ -1,6 +1,6 @@
 # Execution profile task status
 
-Date: 2026-10-28. Status: IN PROGRESS; assignment review pending.
+Date: 2026-10-28. Status: IN PROGRESS; assignment reviewed.
 Audience: the implementation team.
 Task: [execution observation profiles](20261028-execution-profiles.task.md).
 Specification: [ADR 0026 D4](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -26,6 +26,10 @@ Fixtures requiring caller migration include `ExecutionEquivalence`,
 `ApplicationRestrictedDomain` and `ApplicationWeakBridges`. Their existing
 execution, migration-pattern and application drivers remain the test owners.
 
-The worker takes this task in a new workspace after assignment review. Pending:
+Assignment commit `1c56167f` passed independent Claude review with zero must
+and zero should findings (`reviews/20261028T122247Z-1c56167f`). The earlier
+wording finding about absence of result choices was fixed and recorded.
+
+The worker takes this task in a new isolated workspace. Pending:
 implementation, review, current-formula checks, Nix acceptance, temporary
 witness retirement, integration and push.
