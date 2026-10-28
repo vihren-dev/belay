@@ -43,8 +43,11 @@ def write_package(folder: Path, name: str, installed: Path, extra: str = "") -> 
 
 
 def toolchain_environment(installed: Path) -> dict[str, str]:
-    """The environment of a Lake process: the installed toolchain and the producer's parser library."""
-    return {"PATH": str(installed / "lean/bin"), "BELAY_PARSER_LIBRARY": os.environ["BELAY_PARSER_LIBRARY"]}
+    """Keep the installed toolchain and the producer's parser library and deployment target for Lake."""
+    environment = {"PATH": str(installed / "lean/bin"), "BELAY_PARSER_LIBRARY": os.environ["BELAY_PARSER_LIBRARY"]}
+    if "MACOSX_DEPLOYMENT_TARGET" in os.environ:
+        environment["MACOSX_DEPLOYMENT_TARGET"] = os.environ["MACOSX_DEPLOYMENT_TARGET"]
+    return environment
 
 
 def lake_build(installed: Path, package: Path, target: str) -> CommandResult:

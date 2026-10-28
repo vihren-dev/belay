@@ -24,6 +24,32 @@ gaps in earlier ADR numbers do not change that request.
   Its two should findings concern the owner-selected ADR number and the
   owner-local location of earlier consumer probes; both are clarified here.
 
+## Installed checker fix (2026-10-29)
+
+The experiment run exposed six failures in the existing SQL-file checker tests.
+Both Nix environments set `MACOSX_DEPLOYMENT_TARGET=14.0`, but
+`tests/sql_file_support.py::toolchain_environment` discarded it. Lake then used
+`99.0`, invalidated the executable trace and tried to rebuild the checker in
+the read-only Nix store.
+
+The owner authorized a small fix with no unnecessary new tests. The helper now
+preserves the deployment target when present. No test cases or Nix
+configuration were added.
+
+Focused Nix validation passed for all seven caller test modules. A temporary
+`PYTEST_ADDOPTS` override selected existing tests, with the declared sources,
+runtime, sandbox and timeouts unchanged:
+
+- `surface`: 24 passed, 354 deselected, in `surface_sql_files_test.py`,
+  `surface_sql_file_root_test.py`, `surface_sql_records_test.py`,
+  `surface_sql_lake_inputs_test.py` and `surface_proof_cost_report_test.py`.
+  Report: `/nix/store/k4bhqv5cxr63nl9z8p14cdy7vyvy2dpm-sqlite-verifier-test-surface-1/junit.xml`.
+- `surfaceS6`: six passed, 59 deselected, in `surface_sql_check_test.py` and
+  `surface_sql_check_roots_test.py`.
+  Report: `/nix/store/s5ypavrppr9ch6njrrf74n8aar93rbz4-sqlite-verifier-test-surfaceS6-1/junit.xml`.
+
+Independent review remains before this supporting fix is complete.
+
 ## Work remaining
 
 The owner selected Lean-only specification artifacts after PIDE startup found
