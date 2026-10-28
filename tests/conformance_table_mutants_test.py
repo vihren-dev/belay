@@ -83,13 +83,16 @@ def test_every_drop_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_drops], [(drop_mutants.MUTANTS, drop_mutants.TARGETS)])
 
 
-def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize(("cases", "table"), [
+    pytest.param(authored_writes, write_mutants, id="write"),
+    pytest.param(authored_row_writes, row_write_mutants, id="row-write"),
+    pytest.param(authored_deletes, delete_mutants, id="delete"),
+])
+def test_every_write_mutant_changes_a_verdict(runtime_root: Path, cases: ModuleType, table: ModuleType) -> None:
     """The authored write cases notice every changed rule of writes with output, of
     row-dependent writes and of DELETE (`conformance.write_mutants`,
     `conformance.row_write_mutants`, `conformance.delete_mutants`), so these rules are tested."""
-    measure_set(runtime_root, [authored_writes, authored_row_writes, authored_deletes],
-                [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
-                 (delete_mutants.MUTANTS, delete_mutants.TARGETS)])
+    measure_set(runtime_root, [cases], [(table.MUTANTS, table.TARGETS)])
 
 
 @pytest.mark.parametrize(("cases", "table"), [

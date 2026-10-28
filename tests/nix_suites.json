@@ -126,11 +126,6 @@
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
     "tests/conformance_query_mutants_test.py",
-    "tests/conformance_query_feature_mutants_test.py",
-    "tests/conformance_query_source_mutants_test.py",
-    "tests/conformance_insert_query_mutants_test.py",
-    "tests/conformance_rename_mutants_test.py",
-    "tests/conformance_column_drop_mutants_test.py",
     "tests/conformance_rebuild_mutants_test.py"
   ],
   "tableMutants": [
@@ -222,5 +217,23 @@
     "tests/test_theorem_dependency_exporter.py",
     "tests/test_theorem_dependency_report.py",
     "tests/test_theorem_dependency_manifest.py"
+  ],
+  "valueMutants": [
+    "tests/conformance_query_value_mutants_test.py"
+  ],
+  "queryFeatureMutants": [
+    "tests/conformance_query_feature_mutants_test.py"
+  ],
+  "querySourceMutants": [
+    "tests/conformance_query_source_mutants_test.py"
+  ],
+  "insertQueryMutants": [
+    "tests/conformance_insert_query_mutants_test.py"
+  ],
+  "renameMutants": [
+    "tests/conformance_rename_mutants_test.py"
+  ],
+  "columnDropMutants": [
+    "tests/conformance_column_drop_mutants_test.py"
   ]
 }
