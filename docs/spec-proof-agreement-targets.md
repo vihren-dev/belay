@@ -1,6 +1,6 @@
 # Source and expression agreement targets
 
-Date: 2026-10-27. Status: PROPOSED; implementation has not started.
+Date: 2026-10-27. Status: D2 implemented; acceptance pending. D5 remains proposed.
 Audience: designers and reviewers.
 Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
 Production baseline reviewed 2026-10-28: `3e2212ed6983`. Reconcile this inventory with the
@@ -13,9 +13,13 @@ consumers are retained evidence, not additional replacement targets.
 
 ## One traversal for both database origins
 
-These fourteen declarations are in namespace `Belay.Sqlite.Model.Resolved`.
-Replace their duplicated reasoning with source agreement: one join argument,
-one fold induction and one induction on arbitrary subquery depth.
+The fourteen baseline declarations below are in namespace
+`Belay.Sqlite.Model.Resolved`. [SourceAgreement.lean][agreement] replaces their
+duplicated reasoning with one join argument, one fold induction and one
+induction on arbitrary subquery depth. The old-owner links preserve the reviewed
+baseline inventory; the two old production modules have been removed.
+[The assigned task status](../plans/20261028-source-agreement.status.md) records
+acceptance and temporary-witness retirement.
 
 | File | Exact declarations |
 | --- | --- |
@@ -76,7 +80,7 @@ Names below have the prefix `Belay.Sqlite.Model.Resolved`.
 
 | Current owner | Exact declarations | Disposition |
 | --- | --- | --- |
-| [TwoStateReads.lean][reads] | `Query.readsInitial`; `Query.readsCurrent` | Move these Boolean predicates below the source agreement/origin adapters; retain their meanings. |
+| [Resolution/QueryForm.lean][queryform] | `Query.readsInitial`; `Query.readsCurrent` | Moved below the source agreement/origin adapters; meanings unchanged. |
 | [ExprAppendLaws.lean][append] | `EvalContext.RowFree` | Move the row-independence proposition below its congruence adapter. |
 | [ExprAppendLaws.lean][append] | `EvalContext.plain_rowFree` | Keep the plain-context evidence available with the predicate. |
 | [ExprContextLaws.lean][context] | `SubqueryRun.certainFirst` | Move this record update below the certainty adapter. |
@@ -158,8 +162,9 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 
 [adr]: adr-0026-semantic-proof-boundaries.md
 [spec]: spec-proof-agreement.md
-[reads]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateReads.lean
-[current]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateCurrentLaws.lean
+[agreement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SourceAgreement.lean
+[reads]: https://github.com/vihren-dev/sqlite-verifier/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateReads.lean
+[current]: https://github.com/vihren-dev/sqlite-verifier/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateCurrentLaws.lean
 [statement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateStatementLaws.lean
 [append]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprAppendLaws.lean
 [context]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
