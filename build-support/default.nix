@@ -12,6 +12,12 @@ let
     root = ../.;
     fileset = pkgs.lib.fileset.unions [ ../tools/public_doc_coverage.py ../tools/public_doc_inventory.py ];
   };
+  dependencyTools = pkgs.lib.fileset.toSource {
+    inherit root;
+    fileset = pkgs.lib.fileset.unions [ (root + /tools/__init__.py)
+      (pkgs.lib.fileset.fileFilter (file: pkgs.lib.hasPrefix "theorem_dependenc" file.name
+        && builtins.any file.hasExt [ "py" "html" "css" "js" "lean" ]) (root + /tools)) ];
+  };
   # One Nix derivation for each Lean package under packages/ (ADR 0010 section 7).
   leanPackage = arguments: import ./lean-package.nix ({ inherit pkgs leanToolchain; } // arguments);
 in rec {
@@ -39,6 +45,10 @@ in rec {
   };
   publicDocumentation = import ./public-documentation.nix {
     inherit pkgs leanToolchain inventoryTools docTools modelPackage;
+  };
+  theoremDependencies = import ./theorem-dependencies.nix {
+    inherit pkgs leanToolchain dependencyTools modelPackage textPackage
+      surfacePackage verifierConformance plausiblePackage;
   };
   conformanceNative = import ./conformance-native.nix { inherit pkgs; };
   conformanceDocs = import ./conformance-docs.nix {

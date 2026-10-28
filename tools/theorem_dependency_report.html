@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Lean theorem dependencies</title>
+<style><!-- style.css --></style>
+<header><h1>Lean theorem dependencies</h1><p id="summary" role="status">Loading compiled declarations…</p>
+<p>Edges record references in current elaborated types and proofs. They do not establish logical necessity.
+Discarded tactic searches, anonymous proofs that do not survive compilation, and rebuild causality are outside this graph.</p></header>
+<main>
+<section aria-labelledby="browse-title"><h2 id="browse-title">Explore a declaration</h2>
+<label>Search exact or displayed names <input id="search" type="search" placeholder="runSqlFrom_notNull" autocomplete="off"></label>
+<label>Module <select id="module-filter"><option value="">All selected modules</option></select></label>
+<p id="search-count" role="status"></p><div id="matches" class="choices"></div><button id="more-search" hidden>Show more matches</button>
+</section>
+<section id="focus" aria-labelledby="selected-title"><h2 id="selected-title">Select a declaration</h2>
+<p id="metadata"></p><p id="cost"></p>
+<div class="controls"><label>Direction <select id="direction"><option value="outgoing">Dependencies</option><option value="incoming">Users</option></select></label>
+<label><input type="checkbox" id="type-edges" checked> Type references</label>
+<label><input type="checkbox" id="body-edges" checked> Proof/value references</label>
+<label><input type="checkbox" id="fold" checked> Fold internal helpers</label></div>
+<p>Folded routes show one shortest path per distinct endpoint and omit paths back to the selected declaration. Clear folding to inspect direct edges, including self references and helper cycles.</p>
+<p id="route-count" role="status"></p><div id="routes"></div><button id="more-routes" hidden>Show more routes</button>
+<label>Find a transitive path to an exact kernel name <input id="target" placeholder="Belay.Sqlite.Model.runSqlFrom_holds"></label>
+<button id="find-path">Find shortest path</button><div id="path-result" role="status"></div>
+<details id="source"><summary>Source at declaration</summary><p id="source-location"></p><pre id="source-text"></pre></details>
+</section>
+<details id="module-view"><summary>Module dependencies</summary><p>Project reference targets by owning module. Imports are a separate build relation.</p><div id="modules"></div></details>
+<details id="candidate-view"><summary>Refactoring candidates</summary><p>Heuristics identify places to inspect. They do not prove equivalence, redundancy, or safe deletion. Counts include private and generated project consumers.</p><div id="candidates"></div></details>
+<details><summary>Coverage and provenance</summary><pre id="coverage"></pre></details>
+<noscript>This report needs JavaScript. Its dependency data is available in the companion JSON export.</noscript>
+</main>
+<script type="application/json" id="graph-data"><!-- graph-data --></script>
+<script><!-- graph.js --></script>
+<script><!-- ui.js --></script>
+<script><!-- views.js --></script>
+</html>
