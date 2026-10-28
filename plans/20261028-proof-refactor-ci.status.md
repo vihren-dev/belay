@@ -423,3 +423,47 @@ log is `/tmp/ci296-122916892875.log`. This result establishes the hosted install
 consumer repair. Scope `test` did not run scheduled checks or mutation suites;
 hosted resolver/query/join mutant acceptance and the final combined gates remain
 pending.
+
+## Hosted final-source test acceptance
+
+PR 297's [Linux check](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40720732197/job/122930600377)
+passed at merge `9c3da650eab70f605912e253570c7fd413863a7f`, containing publication
+head `9eb179dea63084ce30e69406b5cf462f894c4e33` and base `46e5a773`.
+The tested merge has no file differences from the publication head. That head
+adds only records to final source `23a3427b`, including its comparison-import
+correction. Routing selected `infrastructure` for 319 changed paths. The actual
+`just test-full test-nix` phase exited 0 in 1,542.633 seconds; the API-reference
+step also passed.
+
+All 15 Nix suite reports passed: 1,440 tests, with no failures, errors or skips.
+Twelve suites ran fresh; corpora, documentation and parserLibrary reused matching
+Nix results. The model passed 241 tests, surface 380 and surfaceS6 66. The
+remaining twelve suites account for 753 tests.
+
+Separate host reports contain 560 source-check passes and two optional reviewer
+CLI skips, plus 70 Nix-infrastructure passes and one development-shell skip.
+The latter needs `BELAY_PARSER_LIBRARY` and `LEAN_CC`, which the hosted runtime
+does not supply. The local final pipeline runs the development-loop check in
+the configured shell; hosted evidence does not replace that requirement.
+
+The downloaded [case-report artifact](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40720732197/artifacts/12832988203)
+matches GitHub's SHA256
+`4d9223cc6e8b0d8c240028253f2fe9880cd79c4d50fc59130064f1b8c3c96bdb`.
+The parsed evidence is `/tmp/pr297-case-reports-summary.json`; the complete log
+is `/tmp/pr297-122930600377.log`. Scheduled writers and actual hosted mutant
+execution remain outside this result. The mutation steps were skipped.
+
+The first local final-source aggregate test invocation reached its unchanged
+2,700-second deadline during surfaceS6, with no individual test failure.
+Its completed Nix suite outputs remain valid. A serial retry uses the same
+source, configuration and limits, reusing those outputs; no timeout is counted
+as a pass. The remaining final gates continue after that retry.
+
+The coordinator also removed the completed CI-repair, fixture-retirement and
+comparison-correction workspaces. Each had an empty working copy, all commits
+were ancestors of published `tasks/proof-refactor@origin`, and no live process
+used the directory. The acceptance worker confirmed that its inputs and caches
+do not depend on those paths. This brings completed worker cleanup to twelve
+workspaces. The coordinator and active acceptance workspaces remain, as do the
+owner's other workspaces. The audit is
+`/tmp/adr25-26-remaining-workspace-cleanup-audit.json`.
