@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.SingleSourceNameLaws
+import Belay.Sqlite.Model.Resolution.OperandArmsMore
 
 set_option doc.verso true
 
