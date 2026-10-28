@@ -1,10 +1,39 @@
 # Execution-condition task status
 
-Date: 2026-10-26. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-26. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [execution-aware conditions](20261026-preservation-context.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
 Base for design evidence: `6413afe3ff50`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+One induction per executor uses actual clock, counter and parameter inputs and
+covers every reached branch, including halted suffixes.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
 
 ## Preparation
 
@@ -102,14 +131,9 @@ obligation. Existing FK fixtures retain partial FAIL, rollback/saved-snapshot,
 open-transaction and selected mapping cases. Axiom audits include the unified
 generic proofs and INSERT-query bridge. No new suite or runner was added.
 
-Local diagnostics: targeted generic/model caller builds and the full four-package
-`just dev-build` passed (2605 jobs). Seven model/kernel tests passed, including
-the 84 endpoints, old generic formulas and input-boundary checks; 25 FK fixtures
-and 19 source/docs/layer checks passed. After the final proof edit, the existing surface execution driver and five
-model preservation tests passed again (six tests, 23.53 seconds). These results are not Nix
-acceptance evidence. Root is running first-batch acceptance separately; final
-context acceptance and witness retirement remain pending.
-
+Development diagnostics used `just dev-build`, the model preservation owners,
+FK fixtures and source/documentation/layer checks. Acceptance is recorded only
+through the combined Nix results linked above.
 
 The production package diff removes 143 textual Lean lines, including comments
 and blank lines; this is not the goal's non-comment metric. One module and the
@@ -134,8 +158,8 @@ read-only reviews; the local compiler/test diagnostics above supplied execution
 checks. The review records are retained verbatim.
 
 Coordinator integration `5dc38c0a` includes the query-task assignment and the
-reviewed expression work. The complete four-package development build passed
-(2607 jobs), as did 16 documentation/layer source checks. An earlier diagnostic
+reviewed expression work. Development diagnostics used the complete four-package build and
+documentation/layer source checks. An earlier diagnostic
 invocation selected installed-package replay tests against the development tree;
 its layout failures do not test installed artifacts. Those checks remain part
 of Nix acceptance.

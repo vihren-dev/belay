@@ -1,10 +1,45 @@
 # Primitive ownership and surface import task status
 
-Date: 2026-10-28. Status: IN PROGRESS; acceptance and integration pending.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [primitive ownership and imports](20261028-proof-primitive-imports.task.md).
 Specification: [ADR 0026 D6](../docs/adr-0026-semantic-proof-boundaries.md).
 Production baseline: `3e2212ed`; assignment baseline: `3ef94b97`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+The three unchanged primitive proofs have lower owners; explicit surface
+imports retain their complete bodies and public instances. ComparisonLaws stays
+outside executable classifiers.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
+
+Final Nix comparison acceptance compiles and detects all three original mutants,
+including `text_without_case`, under the unchanged limits. Its one test has no
+failure, error or skip; command wall time is 134.852 seconds. JUnit:
+`/nix/store/zv8w1pxdwyc5l7ciwnd2l0d0pqvgsdv5-sqlite-verifier-test-mutants-comparison-boundary-1/junit.xml`.
 
 ## Implementation
 
@@ -91,13 +126,10 @@ This task is not DONE.
 ## Comparison proof placement follow-up
 
 The coordinator audited the changed executable import closure after the first
-combined contract acceptance. At integration `f5dbccc9`, direct compilation of
-the existing comparison mutants passed for `null_equals_null` and
-`integer_as_double`, but failed for `text_without_case`. The moved
-`Collation.compare_eq_of_binary` proof in `Comparison` could no longer close its
-text/collation cases. A compilation error cannot count as a detected mutant.
-This is a local diagnostic, recorded in
-`/tmp/proof-refactor-comparison-mutation-diagnostic/results.json`.
+combined contract acceptance. The existing `text_without_case` mutant invalidated
+the moved collation proof inside `Comparison`, before the harness could observe its changed SQL verdict.
+A compilation error cannot count as a detected mutant. This diagnosis led to
+the proof-owner correction below; its acceptance requires the Nix measurement.
 
 The existing task now requires a foundational proof owner outside the executable
 classifier's import closure and the existing three-mutant Nix measurement.

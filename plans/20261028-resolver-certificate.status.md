@@ -1,11 +1,47 @@
 # Resolver certificate task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [shared resolved-statement certificate](20261028-resolver-certificate.task.md).
 Specification: [ADR 0026 D3](../docs/adr-0026-semantic-proof-boundaries.md).
 Assignment source: `5dc38c0a`, including preservation-context implementation
 `1773d573` and its reviewed handoff `5a0c9b32`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+One certificate replaces three syntax dispatches while retaining unconditional
+after-state equality, arbitrary-limits linkage and conditional
+current/saved-state validity.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
+
+Final Nix resolver acceptance covers all 11 mutants in six groups, with no
+failure, error or skip and unchanged 300-second test limits. JUnit:
+`/nix/store/ph0mnmjkvijlfwijmyk0vbllmmbnfi1j-sqlite-verifier-test-mutants-ci-repair-1/junit.xml`.
+The command completed in 511.442 seconds; each mutant compiled and changed an
+authored target verdict.
 
 ## Assignment audit
 
@@ -26,8 +62,8 @@ No new runner or permanent per-constructor test matrix is assigned.
 
 Assignment commit `969b6d77` passed independent Claude review with zero must and
 zero should findings (`reviews/20261028T130545Z-969b6d77`). The prior review's
-status-heading ambiguity was fixed and recorded. Documentation source checks
-passed. The assigned worker completed its source audit and found no mismatch;
+status-heading ambiguity was fixed and recorded. The assigned worker completed
+its source audit and found no mismatch;
 implementation is released. No implementation acceptance is recorded yet.
 
 Implementation, local original-formula diagnostics and independent review are
@@ -63,30 +99,17 @@ field premises and current/saved catalog meaning in this same owner. No new test
 runner, constructor matrix or suite registration was added.
 
 Local diagnostic logs are under `/tmp/adr26-d3-*`. They do not establish Nix
-acceptance. The core certificate and script/catalog projections compiled in the
-one-thread targeted checks. The full package build and affected fixtures passed
-locally; independent review is recorded below. Final integrated Nix and resolver-mutant
+acceptance. Diagnostic commands covered the core certificate, script/catalog
+projections, full package build and affected fixtures. Independent review is
+recorded below. Final integrated Nix and resolver-mutant
 acceptance remain with the coordinator; this task is not DONE.
 
-## Local diagnostics before review
+## Diagnostic scope before review
 
-`just dev-build` passed model, text, conformance and all 2,609 surface targets
-with two Lean threads. A missing explicit ScriptRunLaws proof import was fixed
-before the successful replay. No executable definitions or prediction paths changed.
-The five existing checks in `admitted_atoms_resolver_facts_test.py`,
-`surface_schema_script_test.py`, `surface_name_trace_test.py` and
-`conformance_trace_test.py` passed against the frozen local artifacts. This includes
-the four original formulas, the certificate/leaf axiom audit, transaction and
-INSERT SELECT schema clients, native SQLite replay, and both trace checks.
-The 16 docs, surface-layer and proof-cost-layer source checks also passed.
-
-The existing dependency exporter loaded all 339 selected project modules in the
-certificate's import closure. Inspection followed 6,935 type/body references
-from the new proof; none names a replaced top-level dispatch. The 803 references
-outside the project selection are compiler/library boundary declarations.
-The executable Resolve closure remains 243 project/compiler modules by the same
-source traversal, with no StatementArms, ResolverCertificate or dispatch owner.
-These are local migration diagnostics, not permanent count thresholds or Nix evidence.
+Development commands included `just dev-build`, the existing admitted-resolver,
+schema/script, name-trace and conformance-trace owners, and source/layer checks.
+A missing explicit ScriptRunLaws proof import was repaired. The final matched
+Nix dependency report supersedes the earlier local closure inspection.
 
 After the review documentation corrections, the change removes 85 textual
 production Lean lines, including the new 85-line certificate owner, moved
@@ -103,9 +126,9 @@ Claude reviewed implementation `01065389` in `20261028T131854Z-01065389`:
 zero must findings and three should findings. The reviewer did not run checks.
 All three are fixed: DropSpec and TriggerDefinitionSpec name the new dispatch
 owner, and both certificate modules now explain their role in module docstrings.
-The corrections change no declaration type or proof body. The final local
-`just dev-build` replay passed all 2,609 targets; the 16 source checks and the
-resolver contract/axiom fixture passed again. Claude reviewed correction
+The corrections change no declaration type or proof body. The follow-up
+diagnostics repeated `just dev-build`, source checks and the
+resolver contract/axiom fixture. Claude reviewed correction
 `027bf6c6` in `20261028T132547Z-027bf6c6`, with zero must and zero should findings.
 The reviewer read the correction and did not run checks. These results remain
 local diagnostics, with integrated Nix and resolver-mutant acceptance pending.
@@ -123,9 +146,9 @@ and push are confirmed. Mark the task DONE only after acceptance and retirement.
 ## Coordinator integration
 
 Reviewed handoff `6cb1cc55` merged with the current coordinator without source
-conflicts. The combined development build passed all 2,609 targets, and the
-16 documentation and layer checks passed as local diagnostics. The coordinator
-checked the complete manifest against source: 872 explicit model modules,
+conflicts. Development diagnostics used the combined build and documentation/
+layer checks. The coordinator checked the complete manifest against source:
+872 explicit model modules,
 exactly one addition (`ResolverCertificate`), unchanged codec registrations and
 all 19 public roots. No formula or proof changed during integration.
 The build log is `/tmp/proof-refactor-resolver-integration-dev.log`.

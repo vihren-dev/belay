@@ -1,10 +1,40 @@
 # Expression congruence task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [shared expression congruence](20261028-expression-congruence.task.md).
 Specification: [ADR 0026 D5](../docs/adr-0026-semantic-proof-boundaries.md).
 Source baseline: `9ead5e38`; original target formulas match `3e2212ed`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+One mutual argument replaces four equality proof paths, retaining
+value/fault/subtype and strengthening both context laws without removing
+independent caller premises.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
 
 ## Assignment
 
@@ -47,8 +77,8 @@ and source-agreement workers. Shared registrations require coordinator sequencin
 - Implementation commit `facc67dc`: independent Claude review found zero must
   and zero should findings (`reviews/20261028T121805Z-facc67dc`). Source is frozen
   for the coordinator's combined acceptance run.
-- Integration `a3dd5a9a`: the complete four-package development build and 19
-  source checks passed as diagnostics. Independent Claude review reported zero
+- Integration `a3dd5a9a`: development diagnostics used the complete four-package
+  build and source checks. Independent Claude review reported zero
   must and zero should findings (`reviews/20261028T124800Z-a3dd5a9a`), but could
   inspect the manifest resolution only partially. The coordinator separately
   checked that its 872 explicit modules exactly match the source, that only the
@@ -67,38 +97,35 @@ and source-agreement workers. Shared registrations require coordinator sequencin
   focused fixtures add maintained code; no size or build-time saving is claimed.
   No implementation acceptance is recorded by the historical experiment.
 
-## Integrated proof-cost diagnostic
+## Final Nix proof-cost sample
 
-At production source `a7eddc9d`, a one-time native Lean 4.34.1 profiler run
-measured nine shared proof owners after integration. Source copies were unchanged;
-source hashes and the selected compiled-artifact hashes were checked before and
-after. The repository and its caches were not modified. This is a local cost
-diagnostic, separate from Nix acceptance and from the source-size goal.
+The one-time sample at `23a3427b` completed in 52.907 seconds. Its immutable
+`measurements.json`, source/artifact hashes and raw traces are in
+`/nix/store/8mzc56z463p8pzcf95ccbzxij6c14a9k-sqlite-verifier-adr26-final-proof-cost-sample`.
+Pinned Lean 4.34.1 ran with one thread and `Elab.async=false`: one control and
+profile warmup, then two measured runs of each. It reported 50 definition-body
+nodes across nine owners. These include definitions and mutual declarations;
+they are not a count of independent proofs.
 
-| Representative body | Internal heartbeats |
-| --- | ---: |
-| `runSqlFrom_holds` | 199,107 |
-| `runScriptAllFrom_holds` | 305,666 |
-| `resolvedStepOutput_query_source` | 313,444 |
-| `resolvedStepOutput_query_isError` | 525,388 |
-| `resolvedStepOutput_selectOne` | 631,459 |
-| `subqueryContext_agrees` | 271,300 |
-| `resolveStatement_certificate` | 1,620,488 |
-| `Expr.evaluate_congr` | 7,229,249 |
-| `observationProfile_eq_iff` | 40,759 |
+| Owner | Representative body | Internal heartbeats | Control file median, seconds |
+| --- | --- | ---: | ---: |
+| RunHolds | `runSqlFrom_holds` | 199,107 | 0.391 |
+| ScriptRunHolds | `runScriptAllFrom_holds` | 305,666 | 0.382 |
+| QueryOutputFacts | `resolvedStepOutput_query` | 408,907 | 0.429 |
+| QueryStatementOutput | `resolvedStepOutput_query_hasRows` | 644,277 | 0.469 |
+| SelectOneOutput | `resolvedStepOutput_selectOne` | 631,459 | 0.360 |
+| SourceAgreement | `subqueryContext_agrees` | 271,298 / 271,300 | 0.543 |
+| ResolveStatementFacts | `resolveStatement_certificate` | 1,620,488 | 0.443 |
+| ExprCongruence | `Expr.evaluate_congr` | 7,229,249 | 4.641 |
+| ExecutionProfile | `observationProfile_transport` | 95,568 | 0.338 |
 
-The run used one thread, `Elab.async=false`, native profiler heartbeats and the
-`Elab.definition.value` trace. Its threshold was `9007199254740991` to suppress
-other profiler nodes. Two profiled repetitions produced identical body counts.
-These are internal heartbeats, not the compiler's budget units; they cover body
-elaboration, not total kernel checking or package build cost.
-After control/profile warmups, the sample order was control/profile/profile/control.
-The sum of nine whole-file medians was 8.085 seconds without profiling and
-8.617 seconds with it: 6.58 percent observed overhead in this small, noisy sample.
-There is no comparable pre-migration measurement and no speedup claim.
-Raw logs, unchanged source copies, options and hashes are in
-`/tmp/adr26-proof-costs-20261028/measurements.json` and its containing directory.
-No collector import, permanent benchmark or measurement gate was added.
+Body heartbeats measure elaboration within the named profiler node. Whole-file
+wall time includes other compiler work; neither is whole-package build cost.
+Two repeated bodies differ by two or four internal heartbeats; all raw samples
+are retained. There is no comparable pre-migration timing baseline or speedup
+claim. The [combined acceptance record](20261028-proof-refactor-ci.status.md)
+records producer build phases separately, with their cached prerequisites.
+No permanent benchmark or measurement gate was added.
 
 ## Final-contract witness retirement
 

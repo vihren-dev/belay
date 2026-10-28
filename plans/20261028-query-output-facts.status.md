@@ -1,10 +1,39 @@
 # Query output task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [generalize query output proofs](20261028-query-output-facts.task.md).
 Specification: [ADR 0026 D1](../docs/adr-0026-semantic-proof-boundaries.md).
 Assignment source: `a3dd5a9a`, after expression-congruence integration.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+Seven model and eight surface complete-output facts replace 45 endpoints; eight
+weaker resolver transports and all independent error/window premises remain.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
 
 ## Assignment audit
 
@@ -28,8 +57,8 @@ Assignment commit `d23ca1e9` passed independent Claude review with zero must and
 zero should findings (`reviews/20261028T124145Z-d23ca1e9`). The earlier assignment
 revision also passed without findings. The worker's source audit checked the
 eleven fixture callers and absent automation references; the reviewer checked
-the governing documents, paths and endpoint counts. Documentation source checks
-passed; no implementation acceptance is implied.
+the governing documents, paths and endpoint counts. Documentation source checks were part of preparation; no implementation
+acceptance is implied.
 
 ## Implementation
 
@@ -92,11 +121,8 @@ repairs. A source comparison checked all 45 original formula headers exactly.
 These diagnostics are not acceptance evidence. The coordinator will run the
 frozen integrated Nix checks, documentation build and verdict before retirement.
 
-The local compiled report at `build/dev/d1-dependencies/dependencies.json`
-selects 20 current owners. All 45 removed names are absent from its declarations,
-external boundaries and type/body references. Five SELECT-1 family proofs
-reference the shared SELECT-1 fact; aggregate references the source equation,
-and pragma references the existing exact simple-row law.
+The final matched Nix dependency report, linked above, supersedes the local
+compiled-report diagnostic. It checks the removed names and shared proof routes.
 
 The historical dependency report is older than `3e2212ed`. Its embedded source
 matches that baseline byte-for-byte for 15 selected owners, including six model
@@ -128,8 +154,7 @@ owner, adds only `QueryOutputFacts` and `SelectOneOutput`, and preserves all
 19 public roots. Its 874 explicit modules exactly match current source, excluding
 the four separately registered codec modules. The surface removes only
 `FilteredDuplicateKeyEmpty` and retains the execution-profile registration.
-The combined development build passed all 2,613 targets, and 19 source checks
-passed as local diagnostics. The build log is
+Development diagnostics used the combined build and source checks. The log is
 `/tmp/proof-refactor-query-integration-dev.log`.
 Integration `a7eddc9d` received independent Claude review
 `20261028T135533Z-a7eddc9d`: zero must and zero should findings. The reviewer

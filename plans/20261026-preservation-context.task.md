@@ -1,6 +1,7 @@
 # Unify preservation runs with execution-aware conditions
 
-Date: 2026-10-26. Status: IN PROGRESS; assigned on 2026-10-28.
+Date: 2026-10-26. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261026-preservation-context.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0025 D3 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-context.status.md).

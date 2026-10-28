@@ -1,10 +1,40 @@
 # Execution profile task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [execution observation profiles](20261028-execution-profiles.task.md).
 Specification: [ADR 0026 D4](../docs/adr-0026-semantic-proof-boundaries.md).
 Assignment source: `5540e15f`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+Four relations use observation profiles and nine structural wrappers are
+removed; full/weak/scoped distinctions and certified automation retain their
+contracts.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
+
+Closing decision `0cd4cbf5` has independent Claude reviews
+`20261028T173427Z-0cd4cbf5`, `20261028T173759Z-0cd4cbf5` and
+`20261028T174057Z-0cd4cbf5`, each with zero must and zero should findings.
+The supplements checked immutable evidence and governing completion clauses
+that the first review omitted. These records are retained under `reviews/`.
 
 ## Assignment audit
 
@@ -112,9 +142,9 @@ resolver work. The only conflict was the execution test owner: it now keeps
 the ten INSERT-SELECT audits from ADR 0025, the fifteen composition audits,
 both profile fixtures, and acceptance of proofs with no axioms. Its docstring
 describes both reached inputs and profile observations.
-The combined development build passed all 2,612 targets; the existing execution
-fixture owner and 19 source checks passed as local diagnostics. The coordinator
-also verified that surface registration adds only `ExecutionProfile`.
+Development diagnostics used the combined build, existing execution fixture
+owner and source checks. The coordinator verified that surface registration
+adds only `ExecutionProfile`.
 Logs are `/tmp/proof-refactor-profiles-integration-dev.log` and
 `/tmp/proof-refactor-profiles-integration-execution.log`. Final combined Nix
 acceptance and migration-witness retirement remain pending.

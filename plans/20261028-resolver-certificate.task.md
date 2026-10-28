@@ -1,6 +1,7 @@
 # Share the resolved-statement certificate
 
-Date: 2026-10-28. Status: IN PROGRESS.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261028-resolver-certificate.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0026 D3](../docs/adr-0026-semantic-proof-boundaries.md),
 [foundation requirements](../docs/spec-proof-foundations.md) and

@@ -10,7 +10,9 @@ Source baseline: PR 295, `e8f46dae`; production `3e2212ed`.
 All local ADR25/26 acceptance items have passed at frozen source `23a3427b`;
 the checked API reference passed in the source-identical hosted build. The
 fixed capability audit retains all 30 groups, including every essential group.
-The nine implementation tasks are preparing their reviewed completion record.
+The nine implementation tasks have completed their substantive acceptance.
+Their reviewed completion records are integrated here; publication of this
+change fulfills their recorded DONE condition.
 
 This CI-repair task remains IN PROGRESS only because the required hosted
 resolver/query/join mutation measurements have not run. PR scopes skipped the
@@ -614,5 +616,11 @@ The final summary is `build/final-23a/acceptance-summary.json`; the host source
 and development-loop XML reports are under `build/final-23a/host-results`.
 Retaining this evidence built no new derivations and changed no tracked source.
 
-All local acceptance work is terminal. Remaining work is the reviewed
-completion-record publication and the externally blocked hosted mutation run.
+All local acceptance work is terminal. The completion records from `54580b0b`
+are integrated without conflicts with the final acceptance evidence. Their
+single task/goal decision is `0cd4cbf5`; three independent Claude reviews have
+zero must and zero should findings. The bounded supplemental reviews checked
+the governing ADR/task completion requirements and cited Nix artifacts.
+No executable source, proof, test or acceptance configuration changed during
+this closing integration. The remaining acceptance item is the externally
+blocked hosted mutation run.

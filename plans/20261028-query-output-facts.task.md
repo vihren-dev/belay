@@ -1,6 +1,7 @@
 # Generalize query output proofs
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation assigned.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261028-query-output-facts.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0026 D1](../docs/adr-0026-semantic-proof-boundaries.md),
 [required behavior](../docs/spec-proof-observations.md) and
