@@ -108,7 +108,7 @@ the 84 endpoints, old generic formulas and input-boundary checks; 25 FK fixtures
 and 19 source/docs/layer checks passed. After the final proof edit, the existing surface execution driver and five
 model preservation tests passed again (six tests, 23.53 seconds). These results are not Nix
 acceptance evidence. Root is running first-batch acceptance separately; final
-context acceptance, independent review and witness retirement remain pending.
+context acceptance and witness retirement remain pending.
 
 
 The production package diff removes 143 textual Lean lines, including comments
@@ -117,3 +117,22 @@ parallel readiness/derived preservation proofs are removed. The two temporary
 frozen-condition helpers add 179 test lines until retirement. No elaboration
 speedup is claimed: targeted/new fixture compilation completes within existing
 timeouts, but no controlled before/after cost measurement was made.
+
+
+## Independent review and integration handoff
+
+Implementation commit: `1773d573bc24108eb033c01de65fe3299ec12288`.
+Independent Claude review `reviews/20261028T124835Z-1773d573` reported zero must
+and zero should findings, but explicitly omitted central surface proofs and
+fixtures. It was treated as incomplete coverage. Supplemental review
+`reviews/20261028T125042Z-1773d573` read all changed production proof diffs,
+the semantic fixture diffs and both frozen-condition helpers in full, with zero
+must and zero should findings. Its remaining partial witness-file coverage was
+closed by `reviews/20261028T125314Z-1773d573`, a bounded review of all three changed
+endpoint fixtures, also with zero must and zero should findings. These were
+read-only reviews; the local compiler/test diagnostics above supplied execution
+checks. The review records are retained verbatim.
+
+Source is ready for coordinator integration. Keep this task IN PROGRESS until
+final combined Nix acceptance and the required migration-witness retirement.
+No source or registration in the isolated acceptance workspace was changed.
