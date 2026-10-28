@@ -111,3 +111,15 @@ files retained their original hashes. Generated API-reference output is an
 additional required final gate; public documentation alone does not supply it.
 Later expression, context, query, resolver and profile changes still require
 their own final combined acceptance.
+
+The coordinator froze all reviewed ADR 0025/0026 implementations at
+`53a346e1899f7221c67faa3c6df379862e16edb8`. Final combined checks are running
+in the same isolated acceptance workspace; the earlier snapshot's reports do
+not establish their outcome. Temporary migration witnesses remain in place.
+
+On 2026-10-28 the coordinator pushed reviewed repair `16ab6ad7` to
+`plans/proof-boundaries`, updating PR 295 and its description. GitHub confirmed
+head `16ab6ad7c4109de6d34ba7c1d5eeb1ae0c463266`. Hosted acceptance is pending.
+This PR contains the report/specifications and CI repairs; the production proof
+refactors remain on the local integration branch for separate publication after
+their final acceptance and witness retirement. No merge is authorized or recorded.
