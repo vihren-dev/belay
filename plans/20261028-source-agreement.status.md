@@ -1,6 +1,6 @@
 # Source agreement task status
 
-Date: 2026-10-28. Status: IN PROGRESS; assignment review pending.
+Date: 2026-10-28. Status: IN PROGRESS; assignment reviewed.
 Audience: the implementation team.
 Task: [shared query source agreement](20261028-source-agreement.task.md).
 Specification: [ADR 0026 D2](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -23,5 +23,8 @@ the acceptance owner. No task implementation or Nix acceptance is recorded yet.
 
 - Assignment: inspected the three current source files, lower read predicates,
   exact target inventory and existing two-state test helper/axiom list.
+- Assignment commit `d3b75dfb`: independent Claude review found zero must and
+  zero should findings (`reviews/20261028T114133Z-d3b75dfb`). The earlier
+  review record covers the draft before its goal link was added.
 - Pending: implementation, independent review, Nix acceptance, temporary
   migration-witness retirement, integration and push.
