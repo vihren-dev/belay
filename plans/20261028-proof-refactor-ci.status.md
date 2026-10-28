@@ -706,3 +706,15 @@ The changed static checks are `test_test_ownership`, `test_ci_scope`,
 checks also apply. The full combined acceptance runs once through the
 coordinator. The CI task remains IN PROGRESS until all scheduled mutant
 suites and the model suite succeed on both hosted platforms.
+
+The source partition audit of `3ba90a61` against `db1c11b1` confirms all six
+arithmetic mutants retain the same five target definitions, and all 17 write
+mutants retain the same 16 target definitions. Edit tuples, targets, guards,
+authored-module unions and native-recorder sources are unchanged; the groups
+have no duplicate or missing mutant. Fourteen moved/retained query functions
+have identical executable ASTs. Only the arithmetic grouping changes there.
+The five focused Nix measurements above supply the execution evidence.
+
+Independent Claude review of `3ba90a61` has zero must and zero should findings
+(`20261028T203525Z-3ba90a61`). Combined coordinator acceptance and subsequent
+hosted validation remain pending; this task stays IN PROGRESS.
