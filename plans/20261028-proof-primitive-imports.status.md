@@ -12,7 +12,7 @@ The owner authorized implementation of ADRs 0025/0026 on 2026-10-28. This task
 has a disjoint edit surface from ADR 0025 foundations. The coordinator released
 the shared model aggregation and manifest for additive registrations.
 
-- `Collation.compare_eq_of_binary` now belongs to `Comparison`.
+- `Collation.compare_eq_of_binary` now belongs to `ComparisonLaws`, outside the executable classifier closure.
 - `Database.tableAt_of_table` now belongs to `Database`, next to `Database.table`.
 - `Database.table_of_findTable` now belongs to `DatabaseLookup`, whose imports
   are `Database` and `Resolution.CatalogSpec`.
@@ -20,8 +20,8 @@ the shared model aggregation and manifest for additive registrations.
 The three declaration statements and proof bodies are identical to the assignment
 baseline. Former owners import the lower provider, and direct consumers use the
 lower imports. `Database.tableAt_of_table` stays separate from the named lookup:
-it needs no resolver proof imports. The three owners' project import closures
-contain 5, 42 and 245 modules respectively, including each owner; none contains
+it needs no resolver proof imports. At the initial D6 integration, the three owners' project import closures
+contained 5, 42 and 245 modules respectively, including each owner; none contained
 `ForeignKeySelfLookup`, `AddColumnFromValid` or `TableSourceLaws`.
 `LiteralData.generatedCells_plain` remains in `AdmittedCellLaws`.
 
@@ -109,3 +109,44 @@ Claude reviewed scope clarification `684e46a2` with zero must and zero should
 findings (`reviews/20261028T151652Z-684e46a2/review.json`). A separate worker is
 assigned the ownership correction. It owns no retirement files and uses no
 Nix build slot until the coordinator releases one.
+
+
+## Comparison placement implementation
+
+The follow-up is in progress in `sqlite-verifier-comparison-proof-boundary`,
+assigned at `40d7233c`. `ComparisonLaws` imports only `Comparison` and owns the
+unchanged collation theorem. `ForeignKeySelfLookup` and `PlainInsertRows` import
+that proof provider directly. The model umbrella and explicit module list each
+add `ComparisonLaws`; the public roots are unchanged. No executable definition,
+mutant, target, test or mathematical contract is edited.
+
+Independent writable package caches were copied from the coordinator workspace
+only after its package sources were confirmed identical. The copies contain no
+symlinks and share no file inodes with their source.
+
+The relocated declaration, its docstring and its complete proof body are
+byte-identical to `40d7233c` (SHA256
+`68a34ac00d4b165bf4883c76dfc8105b13b1799cca4ca84a5106ec55bea1cd0d`).
+Removing that block is the only change to `Comparison`. The two consumers change
+only their provider import. The new owner has 26 lines and six project modules in
+its import closure. The classifier closure has 290 project modules and excludes
+`ComparisonLaws`; both proof consumers include it. These are one-time source
+observations, not new permanent checks or timing claims. The correction adds ten
+physical Lean lines, including module scaffolding and the umbrella import, and
+one explicit build-module registration. No test files change.
+
+Local diagnostics completed: `just dev-build` (two Lean threads), the 19 affected
+source/documentation/layer checks, and direct compilation of all three unchanged
+comparison mutants. `text_without_case` now compiles, as do `null_equals_null`
+and `integer_as_double`. The mutant names, edits and target cases are unchanged.
+Logs are `/tmp/comparison-proof-boundary-dev-build.log`,
+`/tmp/comparison-proof-boundary-source-checks.log` and
+`/tmp/comparison-proof-boundary-mutants/results.json`. These diagnostics are not
+Nix acceptance and do not claim that the mutants change the target verdicts.
+
+The ignored `build/comparison-boundary/selected.nix` selects only
+`test_every_comparison_mutant_changes_a_verdict` from its existing Nix owner,
+retaining its inputs, tools, all three mutants and deadlines. The coordinator
+must point it at the final integrated source for acceptance. No Nix invocation
+was made in this workspace. Independent review and final combined Nix acceptance
+remain pending; the task is not DONE.

@@ -9,7 +9,7 @@ import Belay.Sqlite.Model.QueryLaws
 import Belay.Sqlite.Model.CountSubqueryOutput
 import Belay.Sqlite.Model.Subqueries
 import Belay.Sqlite.Model.SimpleQuerySteps
-import Belay.Sqlite.Model.Comparison
+import Belay.Sqlite.Model.ComparisonLaws
 import Belay.Sqlite.Model.Resolution.CatalogSpec
 
 set_option doc.verso true
