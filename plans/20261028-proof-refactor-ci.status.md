@@ -128,3 +128,96 @@ Hosted run `40702241903` passed Verdict at head `16ab6ad7`. In CI run
 `40702241901`, the Linux API-reference step and function-mutant job also passed.
 The Linux checks and other mutant jobs were still running at this checkpoint;
 the whole hosted result remains pending.
+## Hosted follow-up, 2026-10-28
+
+The repair was pushed as PR 295 head `16ab6ad7`. Hosted Verdict run
+`40702241903` passed. CI run `40702241901` passed the API-reference build,
+function-mutant job and all six resolver-mutant groups. Two later measurements
+failed: query-resolution mutant `no_such_column` could not compile the imported
+`Resolution/OperandArms` proof, and the grouped join measurement exceeded its
+300-second limit (337.49 seconds including cleanup). These are failures, not
+detected mutants. The Linux check job was still running at this checkpoint.
+
+Logs are retained at `/tmp/ci295-122864838415.log` (query) and
+`/tmp/ci295-122864838065.log` (joins). Read-only diagnosis found the operand
+equation imports on the classifier's path through `Resolution/QueryExprs` at
+both production `3e2212ed` and repair `16ab6ad7`. The task now covers that import
+boundary and bounded join measurements with unchanged semantics, mutant edits,
+target mappings and deadlines. The worker assignment follows specification
+review. The already-running integrated proof acceptance remains frozen.
+
+The join measurement combines 22 mutants and 20 distinct target cases from
+the existing join, USING, right-join and merged-name tables (6, 6, 4 and 6
+mutants). At timeout all four workers were compiling classifier dependencies.
+Source inspection supports separate measurements of those tables with the
+same target mappings. Hosted timings remain to be established. The extended
+task's documentation-link diagnostic passed; independent review follows.
+
+Claude reviewed scope amendment `7b651616` with zero must and zero should
+findings (`reviews/20261028T144207Z-7b651616/review.json`). The worker is assigned
+the import-boundary repair and join grouping in this isolated CI workspace.
+Local diagnostics may run with bounded parallelism; Nix acceptance waits for
+the coordinator's currently occupied build slot. No final acceptance is claimed.
+
+## Operand equation imports and join measurements
+
+`Resolution/QueryExprs` now imports `OperandProjection`, the executable owner.
+The equation modules remain unchanged. Their actual proof consumers import them:
+`SingleSourceNameLaws` and `TableInfoLaws` import `OperandArms`;
+`ExprResolutionLaws` and `ResolveReadsBelow` import `OperandArmsMore`.
+All declaration bodies, theorem formulas, attributes and proof bodies are unchanged.
+The classifier's source import closure contains 290 project modules instead of
+292; the two excluded modules are the operand equations. This count establishes
+the import boundary, not a build-time improvement.
+
+The existing join test now has four parameters, one for each existing authored
+case module and mutant table. The join, USING, right-join and merged-name tables
+contain 6, 6, 4 and 6 mutants. They retain all 22 mutant identities and their
+20 distinct target cases. Each measurement still records its targets natively,
+requires unchanged-model agreement, and rejects every surviving mutant. Mutant
+edits, target mappings, the measurement harness and all deadlines are unchanged.
+
+Development diagnostics use `LEAN_NUM_THREADS=2`. The package build covers the
+model, text, conformance and surface libraries. A temporary partition audit checks
+that every mutant occurs once and that each assigned case module contains every
+target. Source checks are `mutant_guards_test.py`, `docs_test.py` and
+`test_lean_categories.py`. The previously uncompilable `no_such_column` mutant
+is also replayed alone through the existing `measure_set`, with the 300-second
+outer deadline and unchanged target. These local diagnostics are not acceptance
+evidence.
+
+Claude reviewed implementation `7da59def` with zero must and zero should findings
+(`reviews/20261028T145306Z-7da59def/review.json`). Nix acceptance remains pending. The ignored expression
+`build/ci-repair/operand-joins.nix` selects the existing query-resolution test from
+`mutants` and the four join parameters from `tableMutants`. It preserves each
+owner's inputs, runtime, environment and deadlines. The coordinator controls the
+Nix slot. The full six-query and 22-join mutant results, checked documentation,
+combined acceptance and subsequent hosted Linux timings remain required.
+
+## Combined integration checkpoint
+
+The coordinator integrated repair `7da59def` and its review record `f298895c`
+with the reviewed proof refactors. Production sources merged without conflicts.
+This status file preserves both the combined acceptance record and the hosted
+repair record. The final acceptance workspace remains frozen at `53a346e1`.
+
+At this checkpoint, GitHub completed the Linux check job in run `40702241901`
+successfully, including its API-reference build. The two mutant-job failures
+above remain. The new import and join repairs still require their selected Nix
+checks and hosted validation before publication can claim acceptance.
+
+The first final `just test-full` invocation reached S6, then expired at the
+unchanged 2,700-second suite-build deadline (exit 124). Completed individual
+tests passed. The unchanged snapshot is retrying with the same limits, reusing
+completed Nix results. Its log is
+`/tmp/proof-refactor-final-test-full-retry.log`. Integration of the later import
+repair does not change the frozen acceptance source or establish acceptance of
+this repair. The integrated `just dev-build` completed for all four packages;
+62 affected source checks passed (`mutant_guards_test.py`, `docs_test.py` and
+`test_lean_categories.py`). These are development diagnostics; independent
+integration review follows, and the selected Nix checks remain pending.
+
+The owner merged PR 295 at 15:00 UTC on 2026-10-28. Fetched main `2c5fff35`
+has the same tree as `16ab6ad7`; it adds the merge commit only. The remaining
+CI repair will use a separate follow-up PR. The production proof refactors
+remain a separate publication. The coordinator did not merge the PR.
