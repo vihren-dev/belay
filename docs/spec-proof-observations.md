@@ -5,7 +5,7 @@ Audience: implementers and reviewers.
 Decision: [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
 Evidence: [query and observation findings](../experiments/proof-boundaries/query-observation-findings.md).
 Targets: [exact declarations, owners and caller migrations](spec-proof-query-observation-targets.md).
-Source reviewed on 2026-10-27 against main `daa15385`. Compiled prototype evidence
+Source reviewed on 2026-10-28 against main `3e2212ed6983`. Compiled prototype evidence
 is historical, against `3fe5caef`; this revision makes no current-main compile claim.
 
 ## Required query behavior
@@ -78,13 +78,22 @@ representations; they are acceptance witnesses, not a permanent second API.
 Use direct rewriting for trivial output-predicate transport. A general theorem
 registry, typeclass hierarchy or new observer DSL is outside this scope.
 
-The new `NotInQuery` equivalences are meaningful consumers, not observation
+The `NotInQuery` equivalences are meaningful consumers, not observation
 wrappers to delete. Preserve both NOT IN/NOT EXISTS and IN/EXISTS claims with
 their key bounds, table presence, rowid-alias and `RowsAliased`, non-TEXT affinity,
 statement resolution and result-column premises. Only the negative form needs
 the inner non-NULL premise; both allow independent collations. The SELECT-step
 bridge retains its SELECT syntax and no-further-execution facts. Mere output
 equality does not establish those facts for an arbitrary write.
+
+Migration observation transport now uses the union of replacement observations
+over every migration branch, at that branch's connection and shifted raw index.
+`ReadCertificate.preservesAt` needs obligations for each reached connection;
+do not add a uniform-end-state premise to this weak preservation claim.
+Certificates find the same named table at possibly different catalog positions.
+Full `ReadCertificate.commutesOn` still needs uniform connections/output counts,
+a constant clock and the admitted-context frame. Its sent-script shortcut
+still excludes INSERT from a query; the general preservation rule does not.
 
 ## Boundaries that matter
 
@@ -94,12 +103,21 @@ owns count values and context facts. Shared definitions and semantic facts must
 be importable below projection consumers, without cycles or copied definitions.
 Reuse current exact-output facts in `SimpleSubqueryRowsOutput` and
 `CertifiedQueryOutputs`; their clean/calm premises do not replace weaker guarantees.
+The latter's `runScriptStep_simpleTable_output_agree` already handles different
+statements, table positions and filters, with the same result columns and
+the same keep decision on every original row. Its append specialization finds tables by name.
+Reuse this generalization and `SimpleTableCalm`; do not reconstruct their proofs.
 
 Execution definitions are in `ExecutionEquivalence`, `ExecutionObservations`
 and `ExecutionViewEquivalence`. Actual frame/composition consumers include
 `MigrationPatternFrames` and `ExecutionViewEquivalenceBind`. The production
 implementation must inspect their formulas, not infer replaceability from names.
 All paths here are module basenames under the model or surface package.
+`DerivedColumnMigration`, `DerivedColumnReads` and `DerivedColumnQueries` replaced
+the production `NormalizedField*` modules. Retain their general expression,
+stored-affinity and filter-agreement premises; lowercase is now a fixture instance.
+The schema/control `Sql.check_send_*` rules are semantic clients with explicit
+state/error premises, not additions to the 45 query endpoint removals.
 
 Count, aggregate and one surface count endpoint have historical compiled prototypes.
 The other five families, including generalized filtered duplicates, remain migration
@@ -123,7 +141,8 @@ No whole-migration line reduction or performance improvement is established yet.
   observations separately, including alternative next connections and an execution
   that fails when the actual execution succeeds.
 - Compile the existing frame, deterministic, bind, migration and public-example
-  consumers after migration. Retain their original mathematical premises.
+  consumers after migration. Retain their original mathematical premises,
+  including named-table moves and preservation across differing migration end states.
 - Audit generic proofs and independently proved instances for the existing
   standard axioms only, without duplicate audits of trivial projections. Compile
   checked documentation and inspect source registrations/exports as well as
@@ -150,6 +169,10 @@ They already distinguish state, raw steps, actual results and possible results.
 Reuse `FilteredDuplicateKeyExamples`/`GlobalSignupInvariant`, `S6NotBlocked`/
 `S6NotBlockedLaw`, and `InsertSelectExecutions` for filtered groups, NULL/collation
 premises, alternative databases and execution failures. Keep their existing drivers.
+Also reuse `CertificateAfterDrop` in `surface_schema_script_test.py`,
+`RebuildKeeps` in `surface_rebuild_test.py`, and the derived-column/affinity cases
+in `surface_derived_column_test.py`. The lowercase fixture chain is shared by the
+existing assertion, migration and application drivers; retain its scoped simulation.
 Add only uncovered premise checks, especially no-error without a clean source
 and output reasoning without a bound-window premise. A witness that uniquely
 protects such a requirement stays until a consumer or focused regression covers

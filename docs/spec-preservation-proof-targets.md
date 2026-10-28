@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Contract: [ADR 0025 D2–D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [API removals and callers](spec-preservation-api-targets.md).
 
-Names were checked against production revision `daa15385`. All declarations
+Names were checked against production revision `3e2212ed6983` on 2026-10-28. All declarations
 below belong to `Belay.Sqlite.Model`. Current owners identify the source to
 change. Future placement is constrained by imports; these lists do not require
 one new module per group. Retained evidence can move without changing its claim.
@@ -15,8 +15,8 @@ one new module per group. Retained evidence can move without changing its claim.
 | Current file | Definitions, fields or facts | Intended boundary |
 | --- | --- | --- |
 | [RowLocalFrame][frame] | `Database.EachTable`; `Effect.Satisfies`; `Effect.satisfies_of_effectDatabase`; `Effect.satisfies_of_database` | General table quantification and success/carried-FAIL preservation must be available without importing `RowLocalAtoms` or key instances. |
-| [AdmittedAtomFrames][atom-frames] | `TableAtom` and fields `empty`, `sublist`, `renamed`; `Database.EachTable.appendEmpty` | Put the shared table contract below `RowLocalAtom`; retain atom-specific frame lemmas/instances above it. |
-| [RowLocalAtoms][atoms] | `RowLocalAtom.empty`, `.sublist`, `.renamed`, `.constraints`; `RowLocalAtom.facts` | Share empty/sublist/rename facts with `TableAtom`, and keep the independent constraint implication. Use inheritance or a small projection; no second frame implementation. |
+| [AdmittedAtomFrames][atom-frames] | `TableAtom` and fields `empty`, `sublist`, `renamed`, `dropped`; `Database.EachTable.appendEmpty` | Put the shared table contract below `RowLocalAtom`; retain atom-specific frame lemmas/instances above it. |
+| [RowLocalAtoms][atoms] | `RowLocalAtom.empty`, `.sublist`, `.renamed`, `.dropped`, `.constraints`; `RowLocalAtom.facts` | Share empty/sublist/rename/drop facts with `TableAtom`, and keep the independent constraint implication. Use inheritance or a small projection; no second frame implementation. |
 | [RowEngineFacts][engine-facts] | `Database.Every`, `Database.Every.setRows` | Expose the catalog/position-dependent update primitive below both table-local and key instances; keep its out-of-range row-list behavior. |
 | [AdmittedPlainWrites][plain] | `checkedWrite_satisfies`, `insertOutcome_satisfies` | Make the general checked-write/insert facts usable by `RowLocalWrites` without the current reverse import. |
 | [RunHoldsStep][step] | `SqlState.Holds`, `Outcome.Holds`, `SqlTransition.Holds` | General state/outcome predicates remain below per-atom run evidence; move only as needed to break specialization imports. |
@@ -49,7 +49,7 @@ to the 84 endpoint deletion count as measured savings.
 | Current file | Target declaration | Intended change |
 | --- | --- | --- |
 | [AdmittedTableAtomStatement][dispatch] | `runStatement_tableAtom` | Own the single complete constructor dispatch for these table-atom families. |
-| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD COLUMN, INSERT-query and write evidence. |
+| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD/DROP COLUMN, INSERT-query and write evidence. |
 | [AdmittedDistinctStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedDistinctStatement.lean) | `runStatement_rowidsDistinct` | Derive from that dispatch using distinct-rowid evidence. |
 
 Retain the independent leaf evidence used by those applications:
@@ -72,7 +72,15 @@ Retain the independent leaf evidence used by those applications:
 - [StatementRewrite](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRewrite.lean):
   `runStatement_rewrite_satisfies`, `runStatement_rewrite_rowLocal`,
   `runStatement_rewrite_tableAtom` supply rename evidence with unchanged rows
-  and equal `blankNames` shapes. The shared table projection includes `renamed`.
+  and equal `blankNames` shapes. `runStatement_rewrite_satisfies` now assumes
+  only outline equality; FK selection equality must come from its caller.
+- [StatementDropColumn](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementDropColumn.lean):
+  `runStatement_dropColumn_satisfies`, `runStatement_dropColumn_eachTable`
+  use the execution guard and the independent `dropped`/`renamed` evidence.
+  The shared `dropped` field requires `CatalogTable.DropsCleanly index` and
+  yields the atom of `Table.dropColumn index`. Retain its distinct supporting
+  facts in `DropColumnFactLaws` and `DropColumnAdmittedLaws`; do not add
+  `Database.Valid`, `RowsShaped` or readiness to the whole-statement formulas.
 - [InsertSelectLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectLaws.lean):
   `runStatement_insertSelect_none_satisfies`; [InsertSelectOutcomeLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectOutcomeLaws.lean):
   `runStatement_insertSelect_some_satisfies` supply the dispatch's `selects`
@@ -138,6 +146,10 @@ Some certificates currently accept readiness that their body does not use;
 do not add it as a necessary premise for an independently unconditional claim.
 No FK schema/row atom, mapping selection or work condition is collapsed merely
 because the run-lifting contract becomes shared.
+Latest FK rename conditions require `renamed.selectedParents =
+database.catalog.selectedParents`; `sameOutline` alone is insufficient.
+DROP COLUMN uses its own execution guard and remains unconditional in those
+conditions. Retain these current meanings in all migrated certificates.
 
 ## Acceptance and test lifetime
 
@@ -147,8 +159,8 @@ and [condition task](../plans/20261026-preservation-context.task.md) for accepta
 retain meaningful premise coverage when dispatch bodies change. The complete
 current-formula adapters, four primitive probes and import/count comparisons remain
 temporary acceptance work. Keep one copy through the final contract change,
-record Nix acceptance against `daa15385`'s claims, then remove redundancy.
-Historical prototypes predate rename and alternative INSERT-query execution;
+record Nix acceptance against `3e2212ed6983`'s claims, then remove redundancy.
+Historical prototypes predate rename, DROP COLUMN and alternative INSERT-query execution;
 their previous successful builds do not validate the changed contracts.
 These inventories are review guides, not permanent CI manifests or promised
 net source/build savings.

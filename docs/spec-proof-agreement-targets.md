@@ -3,7 +3,7 @@
 Date: 2026-10-27. Status: PROPOSED; implementation has not started.
 Audience: designers and reviewers.
 Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
-Production baseline reviewed: `daa15385`. Reconcile this inventory with the
+Production baseline reviewed 2026-10-28: `3e2212ed6983`. Reconcile this inventory with the
 implementation branch before editing. Prototype names do not prescribe the
 production API. This is the target list, not a prescribed implementation order.
 The fourteen source helpers and four expression targets are unchanged from
@@ -103,15 +103,23 @@ not an extra deletion inventory.
 | [TwoStateNotExistsExcept.lean][except] | `Resolved.Query.simple_results_congr` uses rowwise congruence. |
 | [KeysUniqueAddColumn.lean][keys] | `LiteralData.termValue_append`; `LiteralData.keyEqual_append` use `Resolved.Expr.eval_append`. |
 | [RowLocalAddColumnTheorems.lean][rowlocal] | `Table.ChecksHold.appendColumn` uses `Resolved.Expr.eval_append`. |
-| [SimpleQueryAppend.lean][simpleappend] | `Resolved.Query.simple_results_append` uses `Resolved.Expr.eval_append` for filters and result columns. |
-| [CertifiedQueryOutputs.lean][certified] | `runScriptStep_simpleTable_output_append` consumes the simple-query append law; preserve this new current client. |
-| [ReadCertificatePreservation.lean][readcertificate] | `Belay.Sqlite.ReadCertificate.preservesAt` and `.preservesAt_send` retain their read-certificate guarantees downstream. |
+| [SimpleQueryAppend.lean][simpleappend] | `Resolved.Query.filterKeeps_append`, `.simple_results_agree`, `.simple_results_append`; retain the existing common proof and its specialization. |
+| [CertifiedQueryOutputs.lean][certified] | `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; preserve distinct statements/filters and differing table positions where admitted by their formulas. |
+| [ReadCertificatePreservation.lean][readcertificate] | `Belay.Sqlite.ReadCertificate.preservesAt` and `.preservesAt_send`; retain per-branch obligations without requiring all branches to reach one connection. |
+| [DerivedColumnRows.lean][derivedrows] | `assign_derived_append`, `updated_derived_append` use the append congruence for general derived expressions. |
+| [DerivedLookupRows.lean][derivedlookup] | `Resolved.Expr.eval_compare_stored_left`, `.eval_compare_stored_right` use `Expr.eval_append` for probes. |
+| [Resolution/ColumnDropExprLaws.lean][drop-expr] | `Resolved.Expr.evaluate_dropColumn`, `.eval_dropColumn` consume `RowFree`; retain their separate expression-reindexing guarantees. |
 
 Retain `Resolved.Expr.Rowwise`, `Resolved.Expr.Rowwise.fault_none` and
 `Resolved.Expr.Rowwise.calm` in [RowwiseExpr.lean][rowwise], including their
 distinct hypotheses. The same file's `Resolved.Value.and_cases`,
 `Resolved.truthy_isNot_one_of_cases` and `Resolved.Expr.truthy_isNot_one_and`
 are separate truth laws. Expression locality does not replace these facts.
+`evaluate_dropColumn` changes the expression and is outside the four required
+replacements; the fixed-expression prototype does not establish that stronger
+abstraction. Moving `RowFree` must still compile this consumer and its CHECK/key
+proof clients. Derived-column clients replace the removed `NormalizedField`
+family; there is no old migration family to preserve as a compatibility API.
 
 In [ExprContextLaws.lean][context], keep the useful `Resolved.EvalContext.withRuns`,
 `Resolved.EvalContext.withRuns_subqueries`, `Resolved.EvalContext.withRuns_parameters`,
@@ -132,8 +140,11 @@ definitions. Their presence is not a reason to keep a duplicated induction.
 - [surface_assertion_examples_test.py][asserttest] owns two-state assertion and
   purge-frame examples. Keep those applications, including the Rowwise evidence
   in [PurgeFrameQueries.lean][purgefixture] and the NULL/trigger distinctions.
+- [surface_derived_column_test.py](../tests/surface_derived_column_test.py) covers
+  current derived-column clients. Reuse it and existing DROP COLUMN conformance;
+  this update does not require a separate per-expression migration matrix.
 - During migration, kernel-check all removed helper formulas and nominated
-  endpoint formulas with their `daa15385` assumptions. Retire redundant old/new
+  endpoint formulas with their `3e2212ed6983` assumptions. Retire redundant old/new
   equivalence matrices after Nix acceptance of the final contract-changing slice.
   Keep the accepted revision for replay, not a second maintained proof API.
 - Keep focused current checks for absence/shape, pragma dependence, faults,
@@ -162,6 +173,9 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [simpleappend]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQueryAppend.lean
 [certified]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean
 [readcertificate]: ../packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean
+[derivedrows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/DerivedColumnRows.lean
+[derivedlookup]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/DerivedLookupRows.lean
+[drop-expr]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ColumnDropExprLaws.lean
 [twotest]: ../tests/surface_two_state_test.py
 [claimtest]: ../tests/surface_claims_test.py
 [asserttest]: ../tests/surface_assertion_examples_test.py

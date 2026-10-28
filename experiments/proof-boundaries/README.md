@@ -4,10 +4,10 @@ Date: 2026-10-26. Audience: designers and reviewers.
 Task: [experiment and design scope](../../plans/20261026-proof-boundaries-design.task.md).
 Decision: [ADR 0026](../../docs/adr-0026-semantic-proof-boundaries.md).
 
-Rebase note, 2026-10-27: current specifications target `daa15385`. The accepted
+Rebase note, 2026-10-28: current specifications target `3e2212ed`. The accepted
 prototype results below still describe production `3fe5caef`. They do not cover
 the new filtered query endpoints, alternative execution connections or resolver
-constructors. Replay the unchanged experiment at accepted design revision
+constructors or the derived-column generalization. Replay at accepted design revision
 `6aa672be`; current-main compilation is not claimed by this source review.
 
 ## Result

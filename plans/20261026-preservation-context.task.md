@@ -5,7 +5,7 @@ Audience: the implementation team.
 Specification: [ADR 0025 D3 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-context.status.md).
 Targets: [condition, induction and evidence inventory](../docs/spec-preservation-proof-targets.md).
-Baseline reviewed 2026-10-27: production revision `daa15385`.
+Baseline reviewed 2026-10-28: production revision `3e2212ed6983`.
 Present problem: conditions omit the clock, counters and parameters, causing
 parallel readiness-dependent step/run proofs and a repeated surface traversal.
 
@@ -66,12 +66,14 @@ use the existing readiness implication; input dependence does not imply it away.
 - The state support check implies raw statement readiness, while its counter
   knowledge requirement remains additional. Test an example where this
   distinction matters. The two checks must not be treated as equivalent.
-- Re-establish the affected `daa15385` per-atom migration formulas against the final
+- Re-establish the affected `3e2212ed6983` per-atom migration formulas against the final
   condition contracts, sharing temporary witnesses with the API task. Compile
   existing statement/script preservation examples. Audit new generic proofs
   and independently proved invariant evidence under the standard axiom policy.
   The full model and surface packages, checked docs and existing Nix acceptance
   suites pass.
+  Preserve the current FK rename selection premise and the unconditional
+  DROP COLUMN cases; the older rename guard is no longer their contract.
 - Confirm there is one production preservation induction for each executor
   and no retained old-interface traversal. Report net proof changes and any
   material elaboration-cost changes; source reduction alone proves no speedup.

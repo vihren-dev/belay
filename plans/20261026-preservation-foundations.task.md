@@ -5,15 +5,17 @@ Audience: the implementation team.
 Specification: [ADR 0025 D2 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-foundations.status.md).
 Targets: [ownership, primitive and dispatch inventory](../docs/spec-preservation-proof-targets.md).
-Baseline reviewed 2026-10-27: production revision `daa15385`.
+Baseline reviewed 2026-10-28: production revision `3e2212ed6983`.
 Present problem: repeated statement case analyses and backwards proof imports
 prevent use of the general lemmas already in the model.
 
 ## Required behavior
 
 The general effect/database preservation facts are available below the
-invariant instances that use them. `TableAtom` owns the shared empty/sublist/rename
+invariant instances that use them. `TableAtom` owns the shared empty/sublist/rename/drop
 contract. Rename agreement means equal rows and equal `blankNames` shapes.
+The drop field preserves the atom under `Table.dropColumn` when the table's
+shape satisfies `CatalogTable.DropsCleanly`; it is distinct from row deletion.
 Row-local evidence supplies those facts and its constraint fact;
 it does not maintain a second independent implementation of the frame laws.
 
@@ -26,8 +28,8 @@ The table-atom statement theorem owns the full constructor dispatch for both
 the row-local and distinct-rowid families. Both old whole-statement formulas
 remain derivable with precisely their original hypotheses. Their bodies no
 longer duplicate the complete statement match. Atoms still supply the local
-ADD COLUMN, INSERT-query, plain-write and row-engine facts their preservation needs.
-The complete dispatch includes `rewrite` and `insertSelect`. Its independent
+ADD/DROP COLUMN, INSERT-query, plain-write and row-engine facts their preservation needs.
+The complete dispatch includes `rewrite`, `dropColumn` and `insertSelect`. Its independent
 `selects` premise covers INSERT from a query without rules. Keep the existing
 source-failure and upsert evidence, and the rule-bearing write behavior.
 
@@ -37,7 +39,7 @@ premise is added to make the layering easier. Modules stay below 200 lines.
 
 ## Acceptance checks
 
-- Nix compiles exact-formula checks for both `daa15385` whole-statement guarantees,
+- Nix compiles exact-formula checks for both `3e2212ed6983` whole-statement guarantees,
   including arbitrary clock/counters/parameters and all statement constructors.
   These formulas concern the canonical `.effect`; their all-effects lifting in
   `InsertSelectKeeps` must remain available to preservation certificates.
@@ -49,8 +51,9 @@ premise is added to make the layering easier. Modules stay below 200 lines.
   row-list behavior supported by `Database.Every.setRows`; no `RowsShaped`
   premise may be introduced.
 - Existing atom statement/engine examples and theorem suites pass for all
-  affected invariant families, including rename, INSERT-query source failure,
-  success and carried constraint FAIL. Reuse existing rename/INSERT-query tests.
+  affected invariant families, including rename, DROP COLUMN, INSERT-query
+  source failure, success and carried constraint FAIL. Reuse existing semantic
+  examples and native column-drop conformance; do not add a per-atom DROP matrix.
   Existing native conformance behavior is unchanged.
 - Inspect the production import graph: general frame/write modules are below
   the specialized facts, and neither removed whole-statement implementation
@@ -86,8 +89,11 @@ general contracts and proofs to a lower dependency layer as necessary.
 `AdmittedTableAtomStatement`, `RowLocalStatement` and
 `AdmittedDistinctStatement` contain the relevant statement analyses.
 `RowEngineFacts`, `RowLocalFrame`, `KeysUniqueFrame`, `RowLocalWrites` and
-`AdmittedPlainWrites` contain the primitive candidates. `StatementRewrite` and
-`InsertSelectLaws` supply the newer leaf evidence. The historical experiment
+`AdmittedPlainWrites` contain the primitive candidates. `StatementRewrite`,
+`StatementDropColumn` and `InsertSelectLaws` supply the newer leaf evidence.
+Rename execution now checks only `sameOutline`; selected FK parent equality
+is a separate caller premise. DROP COLUMN uses `runsDropColumn` and the
+`dropped`/`renamed` table fields. Preserve these boundaries. The historical experiment
 predates those statement forms; it does not establish current dispatch formulas
 or perform the production module relocation. Recheck the four primitive formulas.
 

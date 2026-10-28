@@ -7,8 +7,8 @@ Base: integration commit `6413afe3ff50` in the isolated workspace
 Specification: [ADR 0025](../../docs/adr-0025-compositional-preservation-proofs.md).
 Acceptance record: [design status](../../plans/20261026-proof-simplification-design.status.md).
 
-Rebase note, 2026-10-27: current specifications target `daa15385`. These
-unchanged prototypes predate RENAME, INSERT SELECT and all-execution preservation.
+Rebase note, 2026-10-28: current specifications target `3e2212ed`. These
+unchanged prototypes predate RENAME, INSERT SELECT, DROP COLUMN and all-execution preservation.
 Their names, formulas and source-span inventory are historical. Replay this
 experiment at accepted design revision `0cadcde9`; do not run it against the
 rebased checkout and treat its result as current acceptance. The live target

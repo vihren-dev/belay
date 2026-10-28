@@ -1,6 +1,6 @@
 # Resolver certificates and ownership of proof primitives
 
-Date: 2026-10-26. Revised: 2026-10-27 against `daa15385`. Status: PROPOSED.
+Date: 2026-10-26. Revised: 2026-10-28 against `3e2212ed`. Status: PROPOSED.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).
 Evidence: [resolver and import findings](../experiments/proof-boundaries/resolver-import-findings.md)
@@ -25,18 +25,24 @@ catalog and write transports assemble existing leaf resolver facts. They
 preserve write preparation failures, rule wrapping and statement kind. Bundling
 must not make every field require the strongest field's assumptions.
 
-The dispatch covers the current `renameTable`, `renameColumn` and `insertSelect`
-syntax cases as well as the older cases. Reuse `RenameOutcome` and its
+The dispatch covers `renameTable`, `renameColumn`, `dropColumn` and `insertSelect`
+as well as the older syntax cases. Reuse `RenameOutcome`, `DropOutcome` and their
 `applyCatalog`/`valid` facts, and `resolveInsertQuery_form`/`resolveInsertQuery_same`.
-Resolved `rewrite` and `insertSelect` retain their catalog actions; their
-`SchemaLink` cases impose no condition. The three CREATE/ADD catalog-action
-facts now belong to `Resolution/ApplyCatalogSpec`, not `ResolveStateSpec`.
+`DropOutcome` retains the droppable-input and supported-output evidence for a
+successful drop, and its separate prepare-error case. Resolved `rewrite`,
+`dropColumn` and `insertSelect` retain their catalog actions; their `SchemaLink`
+cases impose no condition. The three CREATE/ADD catalog-action facts belong to
+`Resolution/ApplyCatalogSpec`.
 
 `resolveStatement` is now the result projection of `resolveStatementTraced`,
 whose run carries the resolver's name trace. Use the existing `statement_arms`
 equations when needed. Preserve the result/trace projection and existing source
 registrations; this task introduces neither a parallel resolver nor a new trace
 certificate. The semantic certificate remains about successful result states.
+Preserve PR #292's dependency boundary: executable `Resolution/Resolve` imports
+`ResolveStatement`, while proof clients import `StatementArms` explicitly.
+Certificate ownership must not pull resolver-equation proofs into the executable
+or mutant import closure.
 
 Replace the three top-level proofs `resolveStatement_after`,
 `resolveStatement_schemaLink` and `resolveStatement_valid`. Migrate consumers to
@@ -65,20 +71,24 @@ state transition and schema linkage, and to leaf transport facts. The
 prototype's imports of files containing old top-level proofs are temporary
 ownership constraints; the production certificate must sit below its consumers.
 
-Relocate the following four existing facts to appropriate foundational modules
+Relocate the following three existing facts to appropriate foundational modules
 and migrate their consumers. Their formulas remain unchanged:
 
 | Fact | Current feature owner |
 | --- | --- |
 | `Collation.compare_eq_of_binary` | `ForeignKeySelfLookup` |
-| `generatedCells_plain` | `NormalizedFieldRows` |
 | `Database.tableAt_of_table` | `AddColumnFromValid` |
 | `Database.table_of_findTable` | `TableSourceLaws` |
 
 The foundational proof layer must not import those feature owners merely to
-obtain these facts. The historical experiment proved all four without the old owners.
+obtain these facts. The historical experiment proved these without the old owners.
 It does not establish one optimal common module for them; use the existing
 domain owners rather than a miscellaneous utility collection.
+
+The fourth historical target is already delivered: `LiteralData.generatedCells_plain`
+now belongs to `AdmittedCellLaws`, with the same no-generated-columns identity.
+Reuse it in `DerivedColumnRows`, `PlainInsertRows` and `CopyInsertFits`; do not
+recreate the deleted `NormalizedFieldRows` owner or its specialized lower-case law.
 
 The bodies of surface `Values`, `Script` and `ValueDisplay` are unchanged from
 the historical narrow-import probes. Revalidate their imports on current source;
@@ -93,12 +103,14 @@ owner and migrated consumers; parallel work must not copy shared definitions
 into separate modules. ADR 0025 has additional preservation ownership changes
 that remain governed by its own specification.
 
-The new surface `ReadCertificate`, `ReadAnalysis`, `ReadCertificatePreservation`
-and `CertifiedQueryCommutation` serve simple-table read and migration claims.
-They do not replace the resolver-state certificate. Retain their separate
-resolution, width, calmness, frame and branch-shape obligations; more general
-expression congruence alone does not remove their no-fallible-call, clock or
-counter restrictions. Compile these downstream consumers after ownership moves.
+Surface `ReadCertificate` and its analysis, preservation and commutation clients
+serve simple-table read and migration claims, not resolver-state certification.
+Retain resolution, width, calmness and frame premises. Named-table obligations
+allow different catalog positions through `ReadCertificate.moved`; preservation
+requires obligations for each migration branch, without a uniform-end-state
+premise. Keep the separate no-INSERT-SELECT premise of `preservesAt_send` and
+the commutation theorem's own branch conditions. Expression congruence alone does
+not remove no-fallible-call, clock or counter restrictions. Recompile these clients.
 
 ## Row-engine decision
 
@@ -116,23 +128,26 @@ There is no requirement that an invariant hold after every micro-operation.
 - Kernel-check the three replaced resolver formulas and the full applied-catalog
   validity formula with their original assumptions as migration witnesses.
   The universal certificate proof covers every syntax constructor; no extra
-  fixture per constructor is required. Retain distinct control, rename, INSERT
-  SELECT, traced-result, write-rule and saved-catalog semantics through existing
+  fixture per constructor is required. Retain distinct control, rename, DROP
+  COLUMN, INSERT SELECT, traced-result, write-rule and saved-catalog semantics through existing
   coverage or focused missing cases.
 - Verify by proof/source dependency inspection that the new dispatch does not
   invoke the replaced top-level proofs, directly or through helper closures.
   Compile all resolver and statement-preservation consumers, including the new
-  failed-step, plain-write and read-only frame proofs. Preserve complete-run
-  quantification and existing actual/alternative-step distinctions.
-- Recompile the four relocated primitive formulas and their consumers. Confirm
+  failed-step, plain-write, read-only, control, setting and execution-effect proofs,
+  and their schema/script rule clients. Preserve complete-run quantification and
+  existing actual/alternative-step distinctions.
+- Recompile the three relocated primitive formulas and their consumers. Confirm
   their foundational owners do not depend on the former feature owners.
+- Inspect the resolver executable/mutant import closure to retain PR #292's
+  exclusion of statement-equation proofs; use the existing affected mutant check.
 - Compile the full affected surface bodies and downstream public clients with
   the narrowed imports. Inspect exports, attributes and notation; stored proof
   references alone cannot establish source-level import sufficiency.
 - Record project import closures with the same scope as the experiment.
   Historical probes at `3fe5caef` measured 580 to 75, 142 and 148 modules.
   Measure the actual current before/after baseline; those counts neither describe
-  `daa15385` nor become permanent thresholds. Build timing is a separate claim.
+  `3e2212ed` nor become permanent thresholds. Build timing is a separate claim.
 - Run existing documentation, proof, Nix and conformance checks at their required
   cadence; all new checks have timeouts and the standard axiom policy.
 - Report production source changes including certificates, transports, caller
@@ -162,7 +177,7 @@ or obligation to port them to the new API.
 
 ## Assignment and coordination
 
-Resolver certification and the four primitive/import changes can be assigned
+Resolver certification and the remaining primitive/import changes can be assigned
 separately. Definition placement is a dependency of each shared proof, not a
 reason to create a global foundation package first. Create implementation task
 and status files shortly before assignment, batching edits for that decision.

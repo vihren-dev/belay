@@ -35,7 +35,8 @@ surface endpoints. The three added filtered duplicate-key observations share
 the generalized grouping family; retain its filter, grouped-column and resolution
 premises. Keep filtered/unfiltered pairwise and unique-lookup results. Historical
 prototypes check count, aggregate and one surface count application; the other
-five families and new filtered cases remain implementation obligations.
+five families and new filtered cases remain implementation obligations. Reuse
+the existing simple-table `_agree`/`_append` output laws and their distinct premises.
 
 The complete output retains possible results, unmodeled cases, error codes and
 error precedence. A no-error result cannot acquire a clean-source or
@@ -68,7 +69,9 @@ and saved transaction catalogs retain their distinct behavior. The applied
 catalog validity consumer retains its formula for control statements too;
 control statements leave the applied catalog unchanged. No stronger common
 premise may be imposed merely to bundle the facts. Include RENAME and INSERT
-SELECT, reuse `RenameOutcome` and traced-resolver equations, and preserve traces.
+SELECT and DROP COLUMN, reusing `RenameOutcome`, `DropOutcome` and traced-resolver
+equations. Preserve traces and the executable/proof import split: script
+resolution imports `ResolveStatement`; proof consumers import `StatementArms`.
 
 ## D4. Use equality of observation profiles
 
@@ -86,6 +89,8 @@ premises. Sequential composition retains its existing continuation obligations.
 Full-state simulation and interface-scoped simulation remain distinct.
 Preserve the new NOT IN/EXISTS equivalences as consumers, with their distinct
 NULL, rowid-alias, affinity and resolution premises.
+Retain read-certificate transport between named tables at different positions
+and across every migration branch, including branches with different end states.
 
 ## D5. Generalize expression congruence, retain separate fault guarantees
 
@@ -99,7 +104,8 @@ and rowwise congruence from this argument. The two context-replacement claims
 can omit their old no-fallible-call premises, as the experiment proves. Other
 caller conditions and SQL admission rules change only if separately justified.
 Keep rowwise fault-freedom and calmness distinct from read locality. A local
-JSON call can fail. This decision covers congruence, not all expression proofs.
+JSON call can fail. Retain `Expr.evaluate_dropColumn` as a distinct transformation
+proof: its two expressions differ, beyond the tested fixed-expression congruence.
 
 ## D6. Put shared primitives below their consumers
 
@@ -107,8 +113,10 @@ This is the bounded import cleanup requested in the owner's investigation of
 codebase modularity and the dependency report. The demonstrated moves define
 its scope; an unmeasured performance benefit is not its justification.
 
-Move the four demonstrated primitive facts to suitable foundational owners.
-Place definitions used by shared proofs below the specialized laws they replace.
+Move the three remaining primitive facts to suitable foundational owners.
+Reuse `LiteralData.generatedCells_plain`, already moved to `AdmittedCellLaws`,
+and the general derived-column laws that replaced `NormalizedField*`.
+Put shared definitions below specialized laws.
 Remove the model umbrella imports from the three demonstrated surface modules:
 `Values`, `Script` and `ValueDisplay`. Their complete unchanged bodies compile
 with narrower imports at the experiment baseline. Public aggregation remains available.
@@ -133,7 +141,7 @@ interface, witnesses and remaining specializations together.
 ## Compatibility, evidence and scope
 
 Test lifetime amended 2026-10-26 with owner approval.
-Source scope reconciled 2026-10-27 with `main` at `daa15385`; accepted prototypes
+Source scope reconciled 2026-10-28 with `main` at `3e2212ed`; accepted prototypes
 remain evidence for `3fe5caef`, not a compile result for the rebased branch.
 
 These decisions change proof interfaces, not SQL execution or supported SQL.
@@ -183,10 +191,9 @@ after migration; the experiment makes no net-saving or speed claim.
   [dispatch, relocation, import and deferred targets](spec-proof-resolver-foundation-targets.md).
 
 The grouped target inventories were added 2026-10-27 at the owner's request
-and rechecked against production revision `daa15385`. They separate required
+and rechecked 2026-10-28 against production revision `3e2212ed`. They separate required
 changes, placement choices, reused evidence and retained or deferred work.
 Reconcile branch drift at assignment and update links when owner files disappear.
 They do not introduce permanent inventory checks or alter test retirement.
 
-These specify outcomes and checks. Create dated implementation task/status files
-only when an implementer is about to take the work. Batch their edits by decision.
+Create dated implementation task/status files only at assignment. Batch edits by decision.

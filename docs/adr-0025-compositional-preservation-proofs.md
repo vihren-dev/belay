@@ -24,8 +24,8 @@ and a second run traversal compensate for that restriction. Surface execution
 then repeats the step analysis and run traversal for derived conditions.
 
 These are current maintenance problems identified in the owner's review.
-Reconciled 2026-10-27 with `main` at `daa15385`. Experiments used `6413afe3ff50`;
-they do not certify the added RENAME and INSERT SELECT execution contracts.
+Reconciled 2026-10-28 with `main` at `3e2212ed`. Experiments used `6413afe3ff50`;
+they do not certify the added RENAME, INSERT SELECT or DROP COLUMN contracts.
 
 ## D1. Guarantees are derivable through generic laws
 
@@ -56,13 +56,14 @@ records and experiment inputs needed to replay the evidence.
 
 The lowest proof layer contains the existing effect/state predicates and
 database update facts needed by multiple invariant families. Table-level
-preservation uses `TableAtom` (empty tables, sublists and renaming).
+preservation uses `TableAtom` (empty tables, sublists, renaming and clean column drops).
 Row-local constraint facts supply that contract plus their constraint
 implication. They do not own a second implementation of the same frame facts.
 
 One general table-atom statement theorem owns the complete dispatch for the
-families it covers, including `rewrite` and `insertSelect`. Row-local atoms and
-distinct rowids supply ADD COLUMN, plain-write, INSERT SELECT and engine facts.
+families it covers, including `rewrite`, `insertSelect` and `dropColumn`.
+Row-local atoms and distinct rowids supply ADD COLUMN, DROP COLUMN, plain-write,
+INSERT SELECT and engine facts. Column drops retain `DropsCleanly` evidence.
 Their existing own-run statement formulas remain derivable
 without readiness or extra admitted-database premises.
 
@@ -107,7 +108,7 @@ the support gate, evaluation, errors, observations or the modeled SQL subset.
 
 Test lifetime amended 2026-10-26 with owner approval.
 
-The replacement must derive each removed endpoint's current `daa15385` claim
+The replacement must derive each removed endpoint's current `3e2212ed` claim
 with the same entry assumptions and all-execution quantifiers. Historical
 own-run prototypes alone do not establish that. Exhaustive checks are temporary
 migration evidence. Keep one copy through the last planned slice that changes
@@ -143,8 +144,9 @@ condition; only its suffix is vacuous.
 Independent atoms remain usable independently. `RowsStoredWide` and
 `RowsAliasedSupported` retain their real width and catalog dependencies.
 The FK schema and row-reference atoms, explicit versus selected mappings, and
-the comparison/work conditions remain distinct. The refactor cannot assume
-that enabled FK enforcement preserves every schema fact.
+the comparison/work conditions remain distinct. Preserve the explicit FK
+`.rewrite` conditions: the executable `sameOutline` guard no longer guarantees
+selected-parent equality. Enabled enforcement does not preserve every schema fact.
 
 All accepted proof closures use only the standard axioms already allowed by
 the model tests: `propext`, `Classical.choice`, and `Quot.sound`. No `sorry`,
@@ -167,8 +169,8 @@ recursion are separate opportunities. This ADR does not authorize those changes.
 
 ## Implementation specifications
 
-Target inventories added and reconciled 2026-10-27 at the owner's request,
-checked against production revision `daa15385`:
+Target inventories added 2026-10-27 and reconciled 2026-10-28 at the owner's
+request, checked against production revision `3e2212ed`:
 
 - [Endpoint, predicate and caller inventory](spec-preservation-api-targets.md):
   84 endpoint removals, duplicated aliases, retained claims and test retirement.

@@ -30,3 +30,8 @@ Reconciled on 2026-10-27 with main `daa15385`: include the `renamed` field and
 `rewrite`/`insertSelect` cases, retaining the independent `selects` premise.
 Historical dispatch experiments predate those cases. Current formula and
 all-execution adapter acceptance remain implementation obligations.
+
+Reconciled again on 2026-10-28 with main `3e2212ed`: both atom contracts now
+include `dropped`, and complete dispatch includes DROP COLUMN. Preserve
+`DropsCleanly`, renaming and the current separate FK rewrite conditions.
+Implementation remains unassigned.

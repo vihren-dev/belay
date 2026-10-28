@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Contract: [ADR 0025 D1/D4](adr-0025-compositional-preservation-proofs.md).
 Companion: [proof and proposition changes](spec-preservation-proof-targets.md).
 
-Names were checked against production revision `daa15385`. Unless qualified
+Names were checked against production revision `3e2212ed6983` on 2026-10-28. Unless qualified
 otherwise, declarations are in `Belay.Sqlite.Model`. Linked files are current
 owners, not mandatory future module boundaries. The tables are a bounded work
 inventory; they do not authorize deleting other declarations with similar names.
@@ -94,6 +94,7 @@ The following are retained boundaries, even where their file also loses wrappers
 | [ScriptRunConstraints][script-constraints] | Retain `Database.AdmittedWith` and generic `runScriptAllFrom_admittedWith`; migrate their proof interface. |
 | [ScriptRunValid][valid] | Retain `Database.valid_iff`, `Database.valid_empty`, `runScriptAllFrom_valid`, `runScriptStep_valid`; preserve the latter's guarantee for every `RunStep.executions` member. |
 | [ForeignKeyRuns][fk-runs] | Retain `Database.ParentSchemasCompatible.rowReferences_iff_selected` and `runStatement_foreignKeyAtoms`; migrate the preservation certificates listed in the companion. |
+| [ForeignKeyStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyStatement.lean), [ForeignKeySelectedStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySelectedStatement.lean) | Preserve `Resolved.Statement.ForeignKeyRowsCondition`, `.ForeignKeySchemaCondition`, `.ForeignKeyAtomsCondition`: rename requires equal `selectedParents`; DROP COLUMN requires no additional condition. |
 | [KeysUniqueLookup](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueLookup.lean) | Retain `Table.KeysUnique.lookup` and `Database.KeysUnique.lookup`; uniqueness lookup is not a run wrapper. |
 
 ## Migrate clients and retire duplicate formula checks
@@ -111,10 +112,17 @@ The following are retained boundaries, even where their file also loses wrappers
 | [ForeignKeyRuns](../tests/surface/ForeignKeyRuns.lean), [ForeignKeySchemaRuns](../tests/surface/ForeignKeySchemaRuns.lean), [ForeignKeyDdlRuns](../tests/surface/ForeignKeyDdlRuns.lean), [ForeignKeyDdlDropRuns](../tests/surface/ForeignKeyDdlDropRuns.lean) | Migrate fixed/selected mapping and reached-run examples; retain their semantic cases where coverage is unique. |
 | [ForeignKeyStatementAxioms](../tests/surface/ForeignKeyStatementAxioms.lean), [nix_suites.json](../tests/nix_suites.json) | Replace retired endpoint audit roots with generic proofs and independent evidence; remove obsolete registrations after final acceptance. |
 
+DROP COLUMN adds a statement case, not new per-atom endpoints to this removal
+set. Its execution guard supplies its preservation premises. For rename, the
+current executor checks `Catalog.sameOutline`, which does not imply equal
+selected parents. Preserve the explicit FK premise instead of restoring the
+older unconditional rename claim. Catalog-preserving `KeepsParentSchema`
+continues to exclude both operations.
+
 These are named starting clients, not a claim that literal search finds every
 reference. Check generated test names, checked doc references, exports and
 imports during implementation. Keep one temporary complete formula witness
-set against `daa15385`, including its stronger surface contracts, through the
+set against `3e2212ed6983`, including its stronger surface contracts, through the
 last affected contract change. Historical experiments do not establish those
 new claims. Then record Nix acceptance and remove redundant active witnesses
 and registrations under ADR 0025 D4. Do not add

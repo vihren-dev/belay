@@ -32,7 +32,7 @@ Prior design baseline: `0cadcde9` (ADR 0025 and its checked experiments).
 - Completed the existing required check recipes. Production implementation and
   implementation task-file creation remain outside this completed design task.
 
-## Evidence
+## Historical experiment evidence, 2026-10-26
 
 Standalone Nix experiment target passed:
 `/nix/store/sr7akfqnx2ry220gsis4v74dnm9y5vnr-proof-boundaries-experiments`.
@@ -41,7 +41,7 @@ surface copies, without Lean warnings. All 70 requested proof-closure audits
 use only the allowed standard axioms. Exact logs, paths and module closures
 are retained in the output. See the [evidence record](../experiments/proof-boundaries/README.md).
 
-## Repository acceptance
+## Historical repository acceptance, 2026-10-26
 
 The required `just test-full`, `just verdict`, `just test-nix` and
 `just test-scheduled-checks` recipes all completed successfully. Unchanged Nix
@@ -155,3 +155,34 @@ preservation targets, all 45 query targets, the five inventories' 231 local
 links and file-size limits. Independent Claude review of `b22163ec` returned
 no must or should findings. Rebase reconciliation is complete; the current
 specifications describe implementation obligations, not a delivered refactor.
+
+## Amendment: current-main reconciliation, 2026-10-28
+
+Fetched origin and rebased the private spec history onto main `3e2212ed`
+(PR #292), preserving the other workspaces and bookmarks. Resolved the single
+suite-registration conflict by retaining `theoremDependencies`, `surfaceChecks`
+and the new `surfaceS6`. The branch has no conflicts; production packages equal main.
+
+Rechecked ADRs 0025/0026 and their inventories against current source. The
+84 preservation and 45 query targets remain. Preservation now includes clean
+column drops and explicit FK rewrite conditions; the rename executor's
+`sameOutline` guard no longer supplies selected-parent equality. Resolver
+certification reuses `DropOutcome` and preserves the executable/proof import
+split of PR #292. Read certificates retain moved table positions and obligations
+for every migration branch. New derived-column and schema-script proofs are
+retained consumers; their generalization is already delivered on main.
+
+Only three primitive moves remain: `LiteralData.generatedCells_plain` already
+lives in `AdmittedCellLaws`. Expression agreement retains the distinct DROP COLUMN
+transformation proof, outside the fixed-expression experiment. Removed live links
+to deleted `NormalizedField*` modules. Historical experiment sources and their
+accepted evidence remain unchanged; current-main prototype acceptance is not claimed.
+All existing task-file edits for this decision are batched in one commit.
+
+The dependency-report Nix suite passed all 27 tests:
+`/nix/store/naqz980nkkjif62hdx0n4nfp2sbhy2hv-sqlite-verifier-test-theoremDependencies-1`.
+Focused report, layer and build-ownership diagnostics passed, as did the
+documentation checks. One-time checks confirmed 84 preservation and 45 query
+names, 284 local links across ten ADR/spec files, and their size limits.
+Independent review follows this commit. These checks do not constitute production
+proof-refactor acceptance.

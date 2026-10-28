@@ -32,3 +32,7 @@ claims follow by membership. `ScriptConditions` now owns the branch-aware
 conditions; INSERT SELECT adapters must transport richer input-dependent
 conditions to the selected upsert. Historical own-run prototypes do not
 constitute acceptance of this updated contract.
+
+Reconciled again on 2026-10-28 with main `3e2212ed`. Preserve the new explicit
+FK `.rewrite` conditions when adapting predicates; execution's `sameOutline`
+guard alone does not imply selected-parent equality. Implementation remains unassigned.

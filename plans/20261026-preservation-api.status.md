@@ -25,3 +25,7 @@ including 18 `runScriptAllFrom_` names. The earlier JSON records the historical
 names only. Implement current all-execution formulas and acceptance checks;
 this branch has made no production refactor.
 Coordinate generic interface edits with the execution-condition task.
+
+Reconciled again on 2026-10-28 with main `3e2212ed`. The 84 names remain;
+their current DROP COLUMN and FK rename premises govern migration acceptance.
+Implementation remains unassigned.

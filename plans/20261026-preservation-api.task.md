@@ -6,8 +6,8 @@ Specification: [ADR 0025 D1 and D4](../docs/adr-0025-compositional-preservation-
 Record: [status](20261026-preservation-api.status.md).
 Targets: [endpoint, predicate and caller inventory](../docs/spec-preservation-api-targets.md).
 Present problem: the owner requested removal of the per-atom endpoint matrix.
-The target inventory identifies 84 specializations at `daa15385`, reviewed
-2026-10-27. The [experiment inventory](../experiments/proof-simplification/inventory.json)
+The target inventory identifies 84 specializations at `3e2212ed6983`, reviewed
+2026-10-28. The [experiment inventory](../experiments/proof-simplification/inventory.json)
 is historical: its 18 surface names now have the prefix `runScriptAllFrom_`.
 
 ## Required behavior
@@ -31,13 +31,17 @@ Model examples, surface callers and checked documentation use the resulting
 API. The conditions remain visible and usable with raw resolved statements.
 The API does not require `Database.Valid` when a smaller independent property
 was sufficient before. General conjunction composition remains available.
+Current FK conditions require selected-parent equality for rename, because
+`sameOutline` does not imply it. DROP COLUMN uses execution checks and adds no
+extra FK atom condition. Preserve these latest formulas rather than recovering
+an obsolete unconditional rename claim from the historical baseline.
 
 ## Acceptance checks
 
 - The old formula suite is restated through generic applications, covering all
   removed endpoints. Anonymous examples or test-local declarations may carry
   the formulas as temporary migration witnesses. Compare their assumptions and
-  conclusions with production revision `daa15385`. The historical experiment
+  conclusions with production revision `3e2212ed6983`. The historical experiment
   remains replayable at its old revision; it does not validate the stronger
   current all-execution formulas.
 - Compile the affected model examples and formula suites in Nix. Audit the
@@ -51,6 +55,8 @@ was sufficient before. General conjunction composition remains available.
   establish historical feasibility; they do not replace complete current
   migration coverage. Preserve canonical-run claims via their membership in
   complete executions without weakening the surface claims to that one run.
+  Reuse current rename and DROP COLUMN evidence; these cases do not enlarge the
+  84-endpoint removal list or require another per-atom test matrix.
 - The model, text package, surface and conformance package build. Public docs
   and API-reference checks pass with no stale declaration references. Existing
   surface `Database.Valid` program guarantees continue to compile.
