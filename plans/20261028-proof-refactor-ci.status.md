@@ -232,8 +232,9 @@ repair record. The final acceptance workspace remains frozen at `53a346e1`.
 
 At this checkpoint, GitHub completed the Linux check job in run `40702241901`
 successfully, including its API-reference build. The two mutant-job failures
-above remain. The new import and join repairs still require their selected Nix
-checks and hosted validation before publication can claim acceptance.
+above occurred on that earlier head. The new import and join repairs have since
+passed their selected Nix checks, as recorded above. Their hosted validation
+and final combined acceptance remain pending.
 
 The first final `just test-full` invocation reached S6, then expired at the
 unchanged 2,700-second suite-build deadline (exit 124). Completed individual
@@ -246,8 +247,8 @@ measurements; final combined package and documentation acceptance remains pendin
 
 PR 295 was merged at 15:00 UTC on 2026-10-28. Fetched main `2c5fff35`
 has the same tree as `16ab6ad7`; it adds the merge commit only. The remaining
-CI repair will use a separate follow-up PR. The production proof refactors
-remain a separate publication. The coordinator did not merge the PR.
+CI repair was published as draft PR 296, as recorded below. The production proof
+refactors remain a separate publication. The coordinator did not merge PR 295.
 
 Independent review of integration `5bdeebf4` found one must and one should:
 the earlier publication checkpoint needed an explicit historical label after
@@ -311,3 +312,12 @@ Reviewed documentation correction `7741beb5` is also integrated. It removes
 stale temporary-fixture descriptions from two test module docstrings and changes
 no test AST body, Lean source or coverage. Its independent review found no
 must or should findings.
+
+Review `20261028T153628Z-14445be0` found zero must and two should findings.
+Both historical-checkpoint phrases are corrected to refer to the subsequent
+Nix acceptance and draft PR publication. Both findings are recorded as fixed.
+
+PR 296's normal pull-request scope runs full tests and the API reference, but
+intentionally skips mutation suites. Their successful job labels therefore do
+not establish hosted mutation acceptance. The existing manual workflow's full
+scope is required to obtain the Linux mutation results on the final source.
