@@ -75,7 +75,8 @@ required. Other development builds shared this host during the run.
 Native repair `15a4bd15` received independent Claude review
 `20261028T114602Z-15a4bd15`: zero must findings and one should finding. The
 finding requested the model-library versus codec module-count distinction
-above; it is fixed. Resolver independent review remains pending. Whole acceptance
+above; it is fixed. Resolver repair `33611eda` received independent Claude review
+`20261028T115235Z-33611eda`: zero must and zero should findings. Whole acceptance
 remains with the coordinator. The Linux hosted result is pending and is separate
 from local Nix checks. PR 295's earlier API-reference and verdict successes do
 not establish acceptance of this repair.
