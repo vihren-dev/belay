@@ -681,3 +681,39 @@ source comparisons, summaries and three macOS job logs under `build/final-23a`.
 The default-fixture and mutant-workload workers are assigned the reviewed
 follow-up in separate workspaces; only one may run focused Nix acceptance at a
 time. The user confirmed that the exited herdr review remains unfinished.
+
+## Oversized-hex default fixture import boundary
+
+The assigned default-fixture slice changes only the generated Lean source in
+`test_oversized_hex_default_prepare_error`: it imports `Lean` for its JSON list
+of strings, instead of the model's `Codec` module. The explicit default,
+INSERT-cell and error-message imports remain. All four SQLite-version/sign
+cases still compare the native prepare phase and exact message. The neighboring
+value-serialization fixture still imports `Codec`. The shared 15-second
+compiler deadline and forbidden-axiom checks are unchanged.
+
+Focused Nix acceptance uses the existing `model` owner, selecting the complete
+`tests/column_default_value_test.py` file through an ignored
+`build/default-fixture/selected.nix` expression. The override changes only the
+pytest file selection and diagnostic derivation name. Runtime, source inputs,
+environment, 300-second test limit and 1,200-second suite limit are unchanged.
+The invocation uses `max-jobs = 1`, `cores = 3` and a 2,700-second outer limit:
+`nix-build build/default-fixture/selected.nix --out-link build/default-fixture/result
+--option sandbox true --option sandbox-fallback false
+--extra-experimental-features 'nix-command flakes'`.
+
+The Nix invocation exited 0 in 10.846 seconds and built only the selected test
+output, reusing existing package/runtime outputs. All six cases passed without
+failures, errors or skips in 8.576 seconds. The four oversized-hex cases took
+0.872, 0.850, 0.860 and 0.913 seconds in version/sign collection order; the two
+neighboring value cases took 2.729 and 2.273 seconds. The immutable report is
+`/nix/store/vw59wlyk072bcdghrcw95y0vasvjqwd9-sqlite-verifier-test-model-default-fixture-1/junit.xml`.
+The invocation log is `/tmp/proof-refactor-default-fixture-nix.log`.
+These Linux measurements do not establish hosted macOS headroom. Independent
+review is pending; the overall CI task remains IN PROGRESS until its hosted
+gates pass.
+
+Independent Claude review `20261028T201736Z-745e944e` of implementation
+`745e944e8b2af517c79b98ae341fe364a74f8d3f` completed with zero must and zero
+should findings. The fixture change is ready for integration. Hosted acceptance
+of the full model suite on both platforms remains pending.
