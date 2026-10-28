@@ -139,7 +139,8 @@ is also replayed alone through the existing `measure_set`, with the 300-second
 outer deadline and unchanged target. These local diagnostics are not acceptance
 evidence.
 
-Independent review and Nix acceptance remain pending. The ignored expression
+Claude reviewed implementation `7da59def` with zero must and zero should findings
+(`reviews/20261028T145306Z-7da59def/review.json`). Nix acceptance remains pending. The ignored expression
 `build/ci-repair/operand-joins.nix` selects the existing query-resolution test from
 `mutants` and the four join parameters from `tableMutants`. It preserves each
 owner's inputs, runtime, environment and deadlines. The coordinator controls the
