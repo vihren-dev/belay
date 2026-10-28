@@ -196,4 +196,4 @@ with no findings. Reconciliation is complete; implementation remains unassigned.
 
 2026-10-28: recorded the owner's [long-term reduction goal](../docs/lean-simplification-goal.md).
 Its fixed baseline, capability accounting, Nix count and milestones govern later work.
-Checks: `tests/docs_test.py`, the goal's Nix source count and independent review.
+Checks: `tests/docs_test.py` passed; Nix count is in the goal; Claude reviewed `b2725083` with no findings.
