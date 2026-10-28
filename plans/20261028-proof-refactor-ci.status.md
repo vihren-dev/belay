@@ -123,3 +123,8 @@ head `16ab6ad7c4109de6d34ba7c1d5eeb1ae0c463266`. Hosted acceptance is pending.
 This PR contains the report/specifications and CI repairs; the production proof
 refactors remain on the local integration branch for separate publication after
 their final acceptance and witness retirement. No merge is authorized or recorded.
+
+Hosted run `40702241903` passed Verdict at head `16ab6ad7`. In CI run
+`40702241901`, the Linux API-reference step and function-mutant job also passed.
+The Linux checks and other mutant jobs were still running at this checkpoint;
+the whole hosted result remains pending.

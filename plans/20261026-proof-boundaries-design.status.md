@@ -208,3 +208,8 @@ shared query definitions and output equations in `QueryOutputFacts`.
 inventories and mathematical requirements are unchanged. This documentation
 correction changes no package or test source; final integrated acceptance is
 recorded separately in the implementation task statuses.
+
+The documentation-link diagnostic passed all three cases. Claude reviewed
+ownership correction `282a6017` with no must or should findings
+(`reviews/20261028T143238Z-282a6017/review.json`). Its source inspection confirmed
+the named declarations and imports in their current owners.
