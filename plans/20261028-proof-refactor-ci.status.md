@@ -658,3 +658,26 @@ one should finding: an import requirement prescribed implementation order.
 The requirement now states the resulting dependency boundary instead.
 The corrected specification at `bcad4b11` passed independent review with zero
 must and zero should findings.
+
+The successful Linux table suite has 13 cases, no failures, errors or skips,
+and takes 2,118.007 seconds. Its four join measurements take 162.928 seconds
+(joins), 190.770 (USING), 123.980 (right joins) and 206.199 (merged columns).
+All 22 mutant identities and 20 target cases are unchanged from the accepted
+repair. Artifact `12843142974` has SHA256
+`95b86120c43f8dbe3d7215c50f5d5f3d4d8fa3cd148791fba354b234a187ea4d`.
+Query resolution logs PASS approximately 104.378 seconds after the previous
+case finishes; this is a timestamp interval, not an individual JUnit timing.
+
+The Linux main check actually runs `just test-full test-nix test-scheduled-checks`
+and exits zero in 1,772.995 seconds. Its 15 full Nix suites pass all 1,440 cases;
+scheduled writers pass all 50. Host reports retain only the two optional
+reviewer-CLI skips and one development-shell skip already covered by configured
+local acceptance. Artifact `12842678651` has SHA256
+`74186f840e445fcda76be361cf2eb587a4a61d32a2b497a60a2b8a1a4b22b5b6`.
+
+The coordinator retained the verified ZIP/XML, exact mutant/target membership,
+source comparisons, summaries and three macOS job logs under `build/final-23a`.
+`audit/hosted-40742662857-retained-evidence.json` records the copied file hashes.
+The default-fixture and mutant-workload workers are assigned the reviewed
+follow-up in separate workspaces; only one may run focused Nix acceptance at a
+time. The user confirmed that the exited herdr review remains unfinished.
