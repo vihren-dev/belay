@@ -198,5 +198,6 @@ They do not introduce permanent inventory checks or alter test retirement.
 
 Assigned: [primitive ownership and surface imports](../plans/20261028-proof-primitive-imports.task.md)
 and [shared source agreement](../plans/20261028-source-agreement.task.md),
-plus [expression congruence](../plans/20261028-expression-congruence.task.md).
+plus [expression congruence](../plans/20261028-expression-congruence.task.md)
+and [execution observation profiles](../plans/20261028-execution-profiles.task.md).
 Create further tasks only at assignment; batch edits by decision.
