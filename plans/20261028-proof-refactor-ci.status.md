@@ -710,7 +710,7 @@ neighboring value cases took 2.729 and 2.273 seconds. The immutable report is
 `/nix/store/vw59wlyk072bcdghrcw95y0vasvjqwd9-sqlite-verifier-test-model-default-fixture-1/junit.xml`.
 The invocation log is `/tmp/proof-refactor-default-fixture-nix.log`.
 These Linux measurements do not establish hosted macOS headroom. Independent
-review is pending; the overall CI task remains IN PROGRESS until its hosted
+review is recorded below; the overall CI task remains IN PROGRESS until its hosted
 gates pass.
 
 Independent Claude review `20261028T201736Z-745e944e` of implementation
