@@ -228,3 +228,36 @@ Independent review of integration `5bdeebf4` found one must and one should:
 the earlier publication checkpoint needed an explicit historical label after
 the PR merge, and a following heading needed a blank line. Both are corrected
 here. These record corrections change no source, contract or test.
+Claude reviewed correction `0f00220c` with zero must and zero should findings
+(`reviews/20261028T151046Z-0f00220c/review.json`). Both integration findings are
+recorded as fixed.
+
+## Final mathematical-contract acceptance
+
+Frozen revision `53a346e1899f7221c67faa3c6df379862e16edb8` passed the full Nix
+suite and native verdict on 2026-10-28. All 7,345 tracked files retained their
+original hashes. This revision contains every final ADR 0025/0026 contract and
+the complete temporary formula witnesses. It predates the later operand-import
+repair and witness retirement.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| `just test-full` | 15 Nix suites, 1,463 cases; no failures, errors or skips | `/nix/store/hhr97zwf0557py4k2iyxnrgzx222ri7n-sqlite-verifier-test-reports` |
+| Source checks | 513 tests and 49 subtests passed | `/tmp/proof-refactor-final-test-full-retry.log` |
+| Public documentation | 5,962 authored declarations across 756 modules; no missing, ordinary or unclassified declarations | `/nix/store/0809qly33djc1bffrai0vpd3xsvkjz4w-sqlite-verifier-public-documentation-1/public-doc-inventory.json` |
+| `just verdict` | 56 corpora; 5,653 AGREE and 2,109 MODEL_UNSUPPORTED, no other outcome | `/nix/store/hi2lacnzjyzr6xxabqcslyfv8mnvar62-sqlite-verifier-verdict` |
+
+The initial full invocation expired at the aggregate limit after 3,183.640
+seconds of whole-command time. The same-source retry passed in 790.075 seconds;
+S6 passed all 66 cases in 666.161 seconds. Verdict passed in 98.577 seconds.
+Logs are `/tmp/proof-refactor-final-test-full.log`,
+`/tmp/proof-refactor-final-test-full-retry.log` and
+`/tmp/proof-refactor-final-verdict.log`.
+
+This acceptance releases the redundant witnesses under ADR 0025 D4 and ADR 0026.
+The retirement worker preserves the three identified unique premise and semantic
+checks. End-of-task Nix configuration, scheduled writers, API reference, matched
+dependency report and affected resolver mutants will run on the later combined
+source. Its import and fixture changes also require their affected acceptance.
+The accepted historical witness revision remains replayable. No final publication
+or completion claim is made by this intermediate acceptance record.
