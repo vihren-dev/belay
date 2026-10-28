@@ -261,3 +261,13 @@ dependency report and affected resolver mutants will run on the later combined
 source. Its import and fixture changes also require their affected acceptance.
 The accepted historical witness revision remains replayable. No final publication
 or completion claim is made by this intermediate acceptance record.
+
+## Witness retirement integration
+
+Reviewed cleanup `e3ae5e92` is integrated at `9335618d`. It retires 26 temporary
+fixtures and their registrations, while retaining the independently quantified
+schema-link and subquery-depth checks and the append fault/subtype check. Its
+package and test sources match the worker's reviewed source exactly. Claude's
+integration review `20261028T152451Z-9335618d` found zero must and zero should
+findings. The separate comparison-proof placement correction remains in progress.
+Final combined Nix acceptance and publication are pending.
