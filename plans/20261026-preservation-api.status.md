@@ -92,3 +92,9 @@ R19 should findings. The follow-up labels the old unassigned notes as historical
 and states that the model suite now compiles the four temporary witnesses.
 The historical experiment imports remain at their recorded revision and are
 explicitly outside the active-source deletion check.
+
+The documentation follow-up `69c431c4` passed its documentation diagnostic and
+independent Claude review with zero must and zero should findings
+(`20261028T115625Z-69c431c4`). Both findings from the implementation review are
+recorded as fixed. The reviewed changes are ready for the root's integrated
+Nix acceptance; the shared migration fixtures remain in place.
