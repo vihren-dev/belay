@@ -1,6 +1,6 @@
 # Expression congruence task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement review and integration pending.
+Date: 2026-10-28. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
 Audience: the implementation team.
 Task: [shared expression congruence](20261028-expression-congruence.task.md).
 Specification: [ADR 0026 D5](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -118,11 +118,8 @@ The same three generic/independent axiom audits remain.
 
 Affected existing check: `surface_claims_test.py`.
 
-The cleanup removes only temporary fixtures and their inputs. A bounded diagnostic
-run checked the six changed Python test owners plus `test_test_ownership.py` and
-`docs_test.py`: 34 cases passed. It used independent copies of the coordinator's
-compiled libraries with `LEAN_NUM_THREADS=2`; it is not Nix acceptance.
-The log is `/tmp/adr25-26-retirement-diagnostics.log`.
-
-Retirement Nix acceptance, independent review, integration and push remain pending.
+Independent Claude review of `ca180788` reported zero must findings and one
+should finding. The finding is fixed: these acceptance records omit local
+diagnostic results, as required by `AGENTS.md`.
+Retirement Nix acceptance, integration and push remain pending.
 No production package, execution semantics or capability changes in this cleanup.
