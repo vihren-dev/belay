@@ -87,3 +87,22 @@ at their recorded revisions, outside normal CI. Current package compilation and
 existing surface fixtures supply the retained contract coverage after acceptance.
 Final Nix evidence, integration, push and workspace cleanup remain pending.
 This task is not DONE.
+
+## Comparison proof placement follow-up
+
+The coordinator audited the changed executable import closure after the first
+combined contract acceptance. At integration `f5dbccc9`, direct compilation of
+the existing comparison mutants passed for `null_equals_null` and
+`integer_as_double`, but failed for `text_without_case`. The moved
+`Collation.compare_eq_of_binary` proof in `Comparison` could no longer close its
+text/collation cases. A compilation error cannot count as a detected mutant.
+This is a local diagnostic, recorded in
+`/tmp/proof-refactor-comparison-mutation-diagnostic/results.json`.
+
+The existing task now requires a foundational proof owner outside the executable
+classifier's import closure and the existing three-mutant Nix measurement.
+The theorem's name, formula and proof body, all SQL definitions, mutant edits,
+targets and deadlines remain unchanged. This ownership correction changes no
+mathematical contract accepted at `53a346e1`. The separate witness retirement
+continues; final combined acceptance must include the ownership correction.
+Implementation assignment follows review of this scope clarification.
