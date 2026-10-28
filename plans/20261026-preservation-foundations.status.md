@@ -99,4 +99,6 @@ Independent Claude review of `50a3d18e` reported no must findings and one
 R2 should finding: the missing-row-list regression's docstring described the
 general law instead of its concrete conjuncts. The follow-up states both
 concrete conjuncts and points to the general `Database.EachTable.setRows` law.
-The follow-up requires its development build and independent review.
+The follow-up `a9002cbd` completed its development build and received zero
+must and zero should findings from Claude (`20261028T112326Z-a9002cbd`).
+Reviewed implementation commits are ready for the root's integrated Nix checks.
