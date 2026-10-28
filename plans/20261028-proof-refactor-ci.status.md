@@ -111,3 +111,37 @@ findings (`reviews/20261028T144207Z-7b651616/review.json`). The worker is assign
 the import-boundary repair and join grouping in this isolated CI workspace.
 Local diagnostics may run with bounded parallelism; Nix acceptance waits for
 the coordinator's currently occupied build slot. No final acceptance is claimed.
+
+## Operand equation imports and join measurements
+
+`Resolution/QueryExprs` now imports `OperandProjection`, the executable owner.
+The equation modules remain unchanged. Their actual proof consumers import them:
+`SingleSourceNameLaws` and `TableInfoLaws` import `OperandArms`;
+`ExprResolutionLaws` and `ResolveReadsBelow` import `OperandArmsMore`.
+All declaration bodies, theorem formulas, attributes and proof bodies are unchanged.
+The classifier's source import closure contains 290 project modules instead of
+292; the two excluded modules are the operand equations. This count establishes
+the import boundary, not a build-time improvement.
+
+The existing join test now has four parameters, one for each existing authored
+case module and mutant table. The join, USING, right-join and merged-name tables
+contain 6, 6, 4 and 6 mutants. They retain all 22 mutant identities and their
+20 distinct target cases. Each measurement still records its targets natively,
+requires unchanged-model agreement, and rejects every surviving mutant. Mutant
+edits, target mappings, the measurement harness and all deadlines are unchanged.
+
+Development diagnostics use `LEAN_NUM_THREADS=2`. The package build covers the
+model, text, conformance and surface libraries. A temporary partition audit checks
+that every mutant occurs once and that each assigned case module contains every
+target. Source checks are `mutant_guards_test.py`, `docs_test.py` and
+`test_lean_categories.py`. The previously uncompilable `no_such_column` mutant
+is also replayed alone through the existing `measure_set`, with the 300-second
+outer deadline and unchanged target. These local diagnostics are not acceptance
+evidence.
+
+Independent review and Nix acceptance remain pending. The ignored expression
+`build/ci-repair/operand-joins.nix` selects the existing query-resolution test from
+`mutants` and the four join parameters from `tableMutants`. It preserves each
+owner's inputs, runtime, environment and deadlines. The coordinator controls the
+Nix slot. The full six-query and 22-join mutant results, checked documentation,
+combined acceptance and subsequent hosted Linux timings remain required.
