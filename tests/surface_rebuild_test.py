@@ -8,10 +8,12 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
 from tests.surface_assertion_examples_test import check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 
-pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
+pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
+              pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
 EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "right": [[10, 1, 100]],
