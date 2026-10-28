@@ -33,6 +33,16 @@ that currently includes the operand equation proofs. The join-mutant measurement
 also exceeds its existing 300-second test deadline. These failures extend this
 task's scope as described below; they do not authorize changed SQL semantics.
 
+Full hosted run `40742662857` at `bbd2eeac` executes the final implementation.
+The Linux resolver, comparison and query-resolution measurements pass, and
+the complete Linux table-mutant suite passes. The general Linux mutant suite
+then reaches its 2,700-second aggregate limit after 21 of 63 tests complete.
+On macOS, the arithmetic and combined write/row-write/delete measurements
+reach their 300-second test limits. The model suite also reports a 15-second
+Lean subprocess timeout in the unsigned oversized-hex default case for SQLite
+3.46.0. Its other sign/version cases pass. These measured workload failures
+extend the acceptance repair to both supported hosted platforms.
+
 ## Required behavior
 
 Unmodified Nix-built dependencies support real Lake consumers in the installed
@@ -72,6 +82,25 @@ measurements if needed, preserving the complete mutant/target mapping, native
 records, unchanged-model agreement and finite deadlines. Reuse the existing
 measurement helper. No new harness or scheduling framework is part of this repair.
 
+Every existing mutant measurement must have exactly one scheduled owner, and
+every mutant, target case, native observation and guard must remain covered.
+The aggregate general-mutant workload must fit its existing suite limit on
+both hosted platforms. Use the existing Nix suite ownership and CI matrix to
+bound the work assigned to each job. Arithmetic and write measurements must
+also fit their unchanged per-test limit, including setup and cleanup. Keep
+the 300-second test, 2,700-second mutant-suite, subprocess and hosted-job
+deadlines unchanged. Do not replace detection with compilation failure, skip
+work, add automatic retries or introduce a scheduler or another runner type.
+
+The oversized-hex default test must compare the same prepare phase and error
+message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
+Lean subprocess limit. Remove dependencies the generated fixture does not
+use before changing its structure. Its result contains only strings; the
+neighboring default-value test serializes model values and has different
+codec requirements. Preserve that neighbor and the shared check helper's
+timeout, compiler invocation and trust assertions. No SQL semantics change
+is authorized.
+
 ## Ownership and acceptance
 
 Own the shared installed-layout helper, directly required build-artifact fixes,
@@ -85,6 +114,12 @@ operand-equation proof consumers, and the join measurement in
 `tests/conformance_table_mutants_test.py`. Query-resolution measurement remains
 in `tests/conformance_query_mutants_test.py`. Keep executable and proof bodies
 unchanged when repairing the import boundary.
+
+The full-run follow-up also owns the affected arithmetic/write measurements,
+`tests/nix_suites.json`, the existing scheduled/mutant inventories, their Nix
+definitions and CI matrix, and existing routing/ownership checks. The separate
+default-fixture work owns only `tests/column_default_value_test.py`. These two
+work surfaces can proceed in isolated workspaces; coordinate Nix execution.
 
 Nix must execute the formerly failing installed-consumer checks through the
 existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
@@ -105,9 +140,19 @@ package compilation, checked documentation and the existing full acceptance
 must cover the explicit proof imports. Use the coordinator's shared acceptance
 slot; no whole mutant suite is run locally.
 
+For the full-run follow-up, existing inventory/routing checks must establish
+complete, non-overlapping ownership. Focused Nix measurements cover each
+changed group and the full sign/version default fixture, with the normal
+runtime inputs and unchanged limits. Retain concrete durations and compare
+them with actual hosted measurements. Successful execution of every scheduled
+mutant suite and the model suite on both hosted platforms is the completion
+gate. A partial log before an aggregate timeout establishes only the named
+completed measurements, not suite success. Reuse existing tests; temporary
+partition and timing audits are acceptance evidence, not new permanent gates.
+
 Apply normal review and check cadence. Full acceptance uses the coordinator's
 build slot; do not run whole mutant suites locally. No new CI service, registry,
-runner or permanent artifact snapshot is required. Update this record with the
+runner implementation or permanent artifact snapshot is required. Update this record with the
 diagnosis, chosen boundary, acceptance evidence and any remaining limitations.
 
 The proof workers own model preservation modules, comparison/lookup lemmas and

@@ -14,11 +14,14 @@ The nine implementation tasks have completed their substantive acceptance.
 Their reviewed completion records are integrated here; publication of this
 change fulfills their recorded DONE condition.
 
-This CI-repair task remains IN PROGRESS only because the required hosted
-resolver/query/join mutation measurements have not run. PR scopes skipped the
-mutation steps. The existing full workflow dispatch returns HTTP 403 for the
-integration credential; the owner has been asked to dispatch it or provide
-Actions write access. No local result substitutes for hosted timing headroom.
+Full workflow `40742662857` now supplies the requested hosted execution at
+published head `bbd2eeac`. Linux's main checks and table-mutant suite pass;
+the resolver and query-resolution measurements also pass before the general
+suite reaches its aggregate limit. macOS exposes two individual mutant
+timeouts and a default-fixture subprocess timeout. This CI task remains
+IN PROGRESS to repair those measured workload failures without weakening
+coverage or limits. The task now states the required follow-up behavior for
+both hosted platforms. No local result substitutes for hosted timing headroom.
 The later sections record final results; earlier sections are historical
 checkpoints.
 
@@ -628,3 +631,24 @@ blocked hosted mutation run.
 The independent review of integration `a8636c41` also has zero must and zero
 should findings (`20261028T174514Z-a8636c41`). The closing changes consist only
 of task, status, goal-ledger and review records; final code remains `23a3427b`.
+
+## Full hosted follow-up, 2026-10-28
+
+Manual run `40742662857` tested `bbd2eeacf082f1f9ed820e3096499d8fb44cd63f`.
+The previous dispatch blocker is superseded by this actual run. Linux check
+`123008079942` and table-mutant job `123008080011` pass. General-mutant job
+`123008080055` finishes 21 of 63 tests, including all six resolver groups,
+comparison and query resolution, before its Nix builder exits 124 at the
+2,700-second suite limit. It produces no successful suite/JUnit artifact.
+
+macOS check `123008079877` reports one failed model case out of 241:
+`test_oversized_hex_default_prepare_error[False-3.46.0]` exceeds its 15-second
+Lean subprocess deadline. The neighboring sign/version cases pass. Table
+job `123008079969` times out the combined write measurement at 300 seconds;
+general-mutant job `123008080251` times out arithmetic at 300 seconds.
+These reports show timeouts, not a surviving mutant or proof/import failure.
+
+The coordinator retained the Linux general-mutant log under
+`build/final-23a/logs/hosted-40742662857-mutants-linux.log`. The repair is split
+between mutant scheduling/grouping and the independent default-fixture import
+boundary. Neither work surface may change production semantics or deadlines.
