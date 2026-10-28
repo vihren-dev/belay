@@ -503,3 +503,23 @@ Configured development-loop checks, scheduled writers, local API reference,
 affected resolver/comparison mutations and the scoped proof-cost sample remain
 in the serial acceptance pipeline. Hosted mutation execution still requires
 the pending full workflow dispatch. Task completion records remain pending.
+
+## Final development-loop and scheduled-writer checks
+
+`just test-nix` exited 0 in 94.726 seconds in the configured development shell.
+All 71 cases passed without failures, errors or skips. The development-loop
+case took 30.529 seconds. It used independent writable copies of the exact
+current Nix package caches, with no shared inodes or symlinks to those caches;
+the source outputs remained immutable. The provenance is
+`build/final-23a/cache-setup.json` in the acceptance workspace. All 7,337 tracked
+source hashes remained unchanged. The result closes the development-shell
+coverage gap in the hosted infrastructure run.
+
+`just test-scheduled-checks` exited 0 in 455.663 seconds. All 50 corpus-writer
+checks passed without failures, errors or skips. The immutable suite report is
+`/nix/store/r444x3c1521gin6g1bqmrx2if8rlfnwy-sqlite-verifier-test-writers-1/junit.xml`;
+the aggregate is
+`/nix/store/b1970pfwpg9ks801732i7x6wrbixxjb4-sqlite-verifier-scheduled-check-reports`.
+Its JUnit suite time is 453.324 seconds. These are writer checks, not mutation
+measurements. Local API-reference generation, affected resolver/comparison
+mutations and the proof-cost sample are the remaining local gates.
