@@ -30,15 +30,16 @@ status-heading ambiguity was fixed and recorded. Documentation source checks
 passed. The assigned worker completed its source audit and found no mismatch;
 implementation is released. No implementation acceptance is recorded yet.
 
-Pending: implementation, independent review, original-formula checks, Nix
-acceptance, temporary witness retirement, integration and push.
+Implementation, local original-formula diagnostics and independent review are
+complete. Pending: integrated Nix acceptance, temporary witness retirement,
+integration and push.
 
-## Implementation in progress
+## Implemented source
 
 The three dispatches are replaced by `resolveStatement_certificate`. Its
 `after`, `link` and `valid` fields keep the original independent assumptions.
 `ResolverCertificate` owns the two shared catalog/write transports; the single
-syntax split remains in `ResolveStatementFacts`. Rename and DROP COLUMN reuse
+syntax split for these three guarantees remains in `ResolveStatementFacts`. Rename and DROP COLUMN reuse
 their existing outcomes, and INSERT SELECT reuses its form and catalog facts.
 Prepare errors, write rules, transaction catalogs and settings keep their formulas.
 
@@ -88,7 +89,8 @@ source traversal, with no StatementArms, ResolverCertificate or dispatch owner.
 These are local migration diagnostics, not permanent count thresholds or Nix evidence.
 
 After the review documentation corrections, the change removes 85 textual
-production Lean lines, including the new 85-line certificate owner, moved definitions and caller/import changes. Every
+production Lean lines, including the new 85-line certificate owner, moved
+definitions and caller/import changes. Every
 changed semantic source module is below 200 lines; the existing Model umbrella
 remains the established exception. The existing Python test owner adds 18 lines,
 including 16 embedded Lean witness lines; standalone Lean fixtures are unchanged.
@@ -103,6 +105,17 @@ All three are fixed: DropSpec and TriggerDefinitionSpec name the new dispatch
 owner, and both certificate modules now explain their role in module docstrings.
 The corrections change no declaration type or proof body. The final local
 `just dev-build` replay passed all 2,609 targets; the 16 source checks and the
-resolver contract/axiom fixture passed again. Review of this correction commit
-follows before handoff. These results remain local diagnostics, with integrated
-Nix and resolver-mutant acceptance pending.
+resolver contract/axiom fixture passed again. Claude reviewed correction
+`027bf6c6` in `20261028T132547Z-027bf6c6`, with zero must and zero should findings.
+The reviewer read the correction and did not run checks. These results remain
+local diagnostics, with integrated Nix and resolver-mutant acceptance pending.
+
+## Frozen implementation handoff
+
+Implementation: `01065389ba958188a5d092b517ed056be9b52849`.
+Documentation corrections: `027bf6c6c846d0b15ac99dbc66698a6554004e41`.
+The final handoff commit adds only this status update and the unchanged review
+record. The coordinator can integrate this source while retaining the four
+migration formulas and all ADR 0025 witnesses. No Nix suite, push, PR or review
+tab was started by this worker. Keep the workspace until integrated acceptance
+and push are confirmed. Mark the task DONE only after acceptance and retirement.
