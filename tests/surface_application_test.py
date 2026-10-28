@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_assertion_examples_test import check_module_chain, lines_after
+from tests.surface_assertion_examples_test import LOWERCASE_LIBRARY, check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 from tests.surface_support import FIXTURES, surface_command
 
@@ -66,7 +66,7 @@ def test_expansion_lookups_agree_and_counter_or_clock_calls_break_the_relation(r
     changes with the index. Pinned SQLite gives the total changes 1 before and 2 after the expansion,
     which are the values the kernel finds. Every theorem uses only logical axioms."""
     stdout = check_module_chain(runtime_root, tmp_path,
-                                (("ApplicationExpansion", 3), ("ApplicationCounterCalls", 5)))
+                                (*LOWERCASE_LIBRARY, ("ApplicationExpansion", 3), ("ApplicationCounterCalls", 5)))
     [evidence] = lines_after(stdout, "EXPANSION-TOTALS:")
     assert isinstance(evidence, dict)
     sqlite = shutil.which("sqlite3")
@@ -93,7 +93,7 @@ def test_missing_trigger_witness_is_checked_by_kernel_and_native_replay(runtime_
     emitted by the S5 path, and pinned SQLite gives the outputs that the model gives. Every theorem uses
     only logical axioms."""
     stdout = check_module_chain(runtime_root, tmp_path,
-                                (("ApplicationExpansion", 3), ("ApplicationMissingTrigger", 8)))
+                                (*LOWERCASE_LIBRARY, ("ApplicationExpansion", 3), ("ApplicationMissingTrigger", 8)))
     reports = {str(report["name"]): report for report in lines_after(stdout, "REPLAY:")
                if isinstance(report, dict)}
     assert set(reports) == {"old", "buggy"}, stdout
@@ -123,7 +123,8 @@ def test_rollback_loses_the_written_email_in_kernel_and_native_replay(runtime_ro
     no relation that holds at the rolled-back context makes the reverse pairing a scoped simulation.
     Pinned SQLite gives the two reads that the kernel gives. Every theorem uses only logical axioms."""
     stdout = check_module_chain(runtime_root, tmp_path, (
-        ("ApplicationExpansion", 3), ("ApplicationMissingTrigger", 8), ("ApplicationRollback", 4)))
+        *LOWERCASE_LIBRARY, ("ApplicationExpansion", 3), ("ApplicationMissingTrigger", 8),
+        ("ApplicationRollback", 4)))
     [report] = [item for item in lines_after(stdout, "REPLAY:") if isinstance(item, dict)]
     assert report["name"] == "rollback"
     sqlite = shutil.which("sqlite3")

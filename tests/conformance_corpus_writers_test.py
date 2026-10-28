@@ -18,6 +18,7 @@ import pytest
 from conformance import (after_error_evidence, authored_after_error, algorithm_evidence, alias_evidence,
                          authored_algorithms, authored_aliases, authored_clock, authored_counters, counter_evidence,
                          authored_foreign_key_atoms, foreign_key_atom_evidence,
+                         authored_table_rebuild_set, table_rebuild_evidence,
                          authored_checks, authored_collations, authored_date_functions, authored_date_modifiers,
                          authored_default_writes, authored_generated,
                          authored_deletes, authored_fromless, authored_indexes, authored_joins, authored_json,
@@ -152,6 +153,21 @@ def test_foreign_key_atoms_corpus_round_trips(tmp_path: Path) -> None:
     assert load(tmp_path / "corpus")[0] == manifest
     with pytest.raises(ValueError, match="already exists"):
         foreign_key_atom_evidence.publish(tmp_path / "corpus")
+
+
+def test_table_rebuild_corpus_round_trips(tmp_path: Path) -> None:
+    """`conformance.table_rebuild_evidence.publish` writes corpus version 55 of version 7 records, which
+    run on after an error and hold the connection counters, for the cases of INSERT from a query, the
+    renames, DROP COLUMN and the rebuild, that reads back unchanged and replays natively, and refuses to
+    replace an existing directory."""
+    assert table_rebuild_evidence.CORPUS.records is authored_table_rebuild_set.records
+    manifest = table_rebuild_evidence.publish(tmp_path / "corpus")
+    assert manifest["nativeVersion"] == 7 and manifest["corpusVersion"] == 55
+    assert manifest["recordedCases"] == len(authored_table_rebuild_set.definitions())
+    assert not authored_table_rebuild_set.NOT_FROZEN & {record["name"] for record in load(tmp_path / "corpus")[1]}
+    assert load(tmp_path / "corpus")[0] == manifest
+    with pytest.raises(ValueError, match="already exists"):
+        table_rebuild_evidence.publish(tmp_path / "corpus")
 
 
 def test_resolution_corpus_round_trips(tmp_path: Path) -> None:

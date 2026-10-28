@@ -12,7 +12,7 @@ set_option maxRecDepth 8192
 set_option exponentiation.threshold 2048
 
 namespace ApplicationCounterCallsFixture
-open Belay.Sqlite Belay.Sqlite.Calls Belay.Sqlite.NormalizedFieldExpansion ApplicationExpansionFixture
+open Belay.Sqlite Belay.Sqlite.Calls LowercaseFixture ApplicationExpansionFixture
 open Belay.Sqlite.Model hiding Database
 
 

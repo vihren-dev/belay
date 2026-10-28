@@ -51,6 +51,6 @@ def PrepareError.raisedByRename : PrepareError → Bool
   | .noSuchView _ | .useDropTable _ | .useDropView _ | .noSuchIndex _ | .tableMayNotBeDropped _
   | .noSuchReferencedTable _ | .foreignKeyMismatch .. | .noSuchTrigger _ | .triggerExists _ | .viewModify _
   | .viewNotIndexed | .viewAddColumn | .renameTargetTaken _ | .viewNotAltered _ | .viewColumnsNotRenamed _
-  | .renameNoSuchColumn _ | .viewTrigger .. | .dependentObject .. => false
+  | .renameNoSuchColumn _ | .viewTrigger .. | .dependentObject .. | .dropColumn _ => false
 
 end Belay.Sqlite.Model

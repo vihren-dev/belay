@@ -51,21 +51,16 @@ def querySlots (bytes : ByteArray) (span : Span) (prefix_ : List Nat) (source : 
   (source.bind (referenceSlot? bytes span (prefix_ ++ [1]))).toList ++
     (joins.zipIdx.filterMap fun (join, index) => referenceSlot? bytes span (prefix_ ++ [2, index, 1]) join.source)
 
-/-- The places of the indexed subqueries, which the statement holds as child {lit}`field`. -/
-def subquerySlots (bytes : ByteArray) (span : Span) (field : Nat) (subqueries : List Syntax.Subquery) : List TableSlot :=
-  subqueries.zipIdx.flatMap fun (subquery, index) => querySlots bytes span [field, index] subquery.source subquery.joins
+/-- The places of the indexed subqueries, which the node at {lit}`path` holds as its children. The
+{lit}`subqueries` field of a statement is child {lit}`field` of the statement, so its path is
+{lit}`[field]`; for the query of an {lit}`INSERT ... SELECT` it is child 8 of the source, child 2 of
+the statement ({name}`Syntax.SelectBody`, with the field order of {lit}`Syntax.Statement.select`). -/
+def subquerySlots (bytes : ByteArray) (span : Span) (path : List Nat) (subqueries : List Syntax.Subquery) : List TableSlot :=
+  subqueries.zipIdx.flatMap fun (subquery, index) => querySlots bytes span (path ++ [index]) subquery.source subquery.joins
 
 /-- The names of the {lit}`WITH` definitions of the subqueries. -/
 def definitionNames (subqueries : List Syntax.Subquery) : List (List UInt8) :=
   subqueries.filterMap fun subquery => subquery.commonTable.map (·.name.folded)
-
-/-- The table that the statement creates or drops, so that a name of an earlier statement of a
-script no longer names the table that the database had at the start. -/
-def replacedTable? : Syntax.Statement → Option Identifier
-  | .createTable name .. | .dropTable name _ => some name
-  | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropView .. | .dropIndex .. | .begin | .commit
-  | .rollback | .insert .. | .insertSelect .. | .update .. | .delete .. | .select .. | .pragma _
-  | .createTrigger .. | .dropTrigger .. => none
 
 /-- The places of a statement, from its syntax and its ranges, without the places whose name a
 {lit}`WITH` definition of the statement names. A statement of another form, and the body of a
@@ -75,21 +70,22 @@ def tableSlotsOf (bytes : ByteArray) (item : Located Syntax.Statement) : List Ta
   let target (path : List Nat) (name : Identifier) := (slotAt? bytes span path name).toList
   let (found, subqueries) : List TableSlot × List Syntax.Subquery := match item.value with
     | .select (source := source) (joins := joins) (subqueries := subqueries) .. =>
-      (querySlots bytes span [] source joins ++ subquerySlots bytes span 8 subqueries, subqueries)
+      (querySlots bytes span [] source joins ++ subquerySlots bytes span [8] subqueries, subqueries)
     | .insert (table := table) (subqueries := subqueries) .. =>
-      (target [0] table ++ subquerySlots bytes span 6 subqueries, subqueries)
+      (target [0] table ++ subquerySlots bytes span [6] subqueries, subqueries)
     | .insertSelect (table := table) (source := body) .. =>
-      (target [0] table ++ querySlots bytes span [2] body.source body.joins, body.subqueries)
+      (target [0] table ++ querySlots bytes span [2] body.source body.joins ++
+        subquerySlots bytes span [2, 8] body.subqueries, body.subqueries)
     | .update (table := table) (subqueries := subqueries) .. =>
-      (target [0] table ++ subquerySlots bytes span 4 subqueries, subqueries)
+      (target [0] table ++ subquerySlots bytes span [4] subqueries, subqueries)
     | .delete (table := table) (subqueries := subqueries) .. =>
-      (target [0] table ++ subquerySlots bytes span 3 subqueries, subqueries)
+      (target [0] table ++ subquerySlots bytes span [3] subqueries, subqueries)
     | .createIndex (table := table) .. => (target [2] table, [])
-    | .addColumn table _ | .renameTable table _ | .renameColumn table .. => (target [0] table, [])
+    | .addColumn table _ | .renameTable table _ | .renameColumn table .. | .dropColumn table .. => (target [0] table, [])
     | .dropTable name _ => (target [0] name, [])
     | .createTrigger (table := table) .. => (target [4] table, [])
     | .createView (query := query) (subqueries := subqueries) .. =>
-      (querySlots bytes span [3] query.source query.joins ++ subquerySlots bytes span 4 subqueries, subqueries)
+      (querySlots bytes span [3] query.source query.joins ++ subquerySlots bytes span [4] subqueries, subqueries)
     | .createTable .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback | .pragma _
     | .dropTrigger .. => ([], [])
   found.filter fun slot => !(definitionNames subqueries).contains slot.name.folded

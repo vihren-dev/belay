@@ -1,0 +1,82 @@
+{
+  "caller": "claude",
+  "commit": "783e8a2c04f15403e3ace455b8b8b36f49609560",
+  "date": "2026-10-27T17:01:32+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/SendStatementsInvariant.lean",
+    "packages/belay/Belay/Sqlite/SqlCommute.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunContinued.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/StatementExecutionLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/TableByName.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261027-schema-script-laws.status.md",
+    "tests/surface/RebuildKeeps.lean",
+    "tests/surface/RebuildKeepsFinish.lean",
+    "tests/surface/RebuildKeepsInvariant.lean",
+    "tests/surface/RebuildKeepsRead.lean",
+    "tests/surface_rebuild_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261027T170132Z-783e8a2c#1",
+      "line": 15,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatement excludes only BEGIN, COMMIT and ROLLBACK, but `isControl = false` also excludes connection-setting statements. Fix: include settings in the exclusions here and in the status file’s generalization analysis."
+    },
+    {
+      "id": "20261027T170132Z-783e8a2c#2",
+      "line": 18,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring identifies `run` as the actual or an alternative run, but the formula constrains only its effect membership and does not tie its counts to that listed execution. Fix: state this weaker guarantee explicitly or strengthen the formula to identify the complete run."
+    },
+    {
+      "id": "20261027T170132Z-783e8a2c#3",
+      "line": 61,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatement claims target-only changes for every upsert, but the formula fixes its rules argument to `none`, excluding trigger and foreign-key effects. Fix: state that the upsert has no rules."
+    },
+    {
+      "id": "20261027T170132Z-783e8a2c#4",
+      "line": 70,
+      "path": "plans/20261027-schema-script-laws.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status still says both universal fixtures are planned and concrete replays are the only evidence, although this commit adds the claim 1 theorem and records it as completed. Fix: mark claim 1 implemented with its theorem reference and leave only claim 2 planned."
+    }
+  ],
+  "id": "20261027T170132Z-783e8a2c",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

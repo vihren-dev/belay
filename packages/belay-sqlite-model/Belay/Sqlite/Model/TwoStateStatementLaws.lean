@@ -15,7 +15,7 @@ source in it ({name}`Resolved.Query.readsInitial`). A statement that is not a qu
 initial database, because the resolver gives sources of the initial origin only to queries. -/
 def Resolved.Statement.readsInitial : Resolved.Statement → Bool
   | .query main inner => main.readsInitial || inner.any Resolved.Query.readsInitial
-  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .drop ..
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .dropColumn .. | .drop ..
   | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _
   | .setting .. => false
 

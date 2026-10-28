@@ -38,4 +38,26 @@ theorem unreadable_continuation_stays_open (rest : Nat → Sql Nat) (post : Nat 
   sql_run
   exact given
 
+/-- error: sql_run cannot start: the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step. -/
+#guard_msgs in
+example (statement : Syntax.Statement) (values : List Value) (post : List Output → ExecutionContext → Prop)
+    (context : ExecutionContext) :
+    (send ⟨[(statement, values)]⟩).check post context := by
+  sql_run
+
+/-- A statement that Lean cannot read, for example a field of a structure, takes the rule from the hypotheses:
+here the resolution is a plain DELETE, so the tactic applies {name}`Sql.check_send_plainDelete` and leaves its
+two outcome goals, which the trivial post closes. -/
+theorem unreadable_statement_takes_the_rule_of_its_resolution (statement : Syntax.Statement)
+    (values : List Value) (context : ExecutionContext) (target : Nat) (filter : Option Resolved.Expr)
+    (after : ResolveState) (table : Table) (valid : context.connection.state.Holds (Database.Valid Profile.pinned))
+    (found : resolveStatement runContext context.connection.resolveState statement =
+      .ok (.delete target filter [] [] none, after))
+    (present : context.connection.state.database.table target = some table)
+    (modeled : ∃ output next others, runScriptStep runContext context.clock context.index context.connection
+      statement values = .continued output next others) :
+    (send ⟨[(statement, values)]⟩).check (fun _ _ => True) context := by
+  sql_run
+  all_goals (intros; trivial)
+
 end S6AutoShapes

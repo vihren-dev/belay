@@ -6,6 +6,7 @@ import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
 
 set_option doc.verso true
 
@@ -72,6 +73,8 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every
       fun table value found added => addColumn target column refuses table value rfl found added
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_eachTable tableAtom.dropped tableAtom.renamed clock counters parameters position index stored every
   | rewrite renamed => exact runStatement_rewrite_tableAtom tableAtom clock counters parameters renamed every
   | drop positions rules =>
     cases rules with

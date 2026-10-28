@@ -102,6 +102,8 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "nondeterministic-error-order": ("CREATE TABLE t(a INTEGER);",
                                      "CREATE TABLE u(a INTEGER, b AS (changes() + count(a)));"),
     "initial-database": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM before.t;"),
+    "alter-drop": ("CREATE TABLE p(a INTEGER PRIMARY KEY, b INTEGER); CREATE TABLE c(x REFERENCES p(a));",
+                   "ALTER TABLE p DROP COLUMN b;"),
     "alter-rename": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER); CREATE VIEW v AS SELECT a FROM t JOIN u USING (a);",
                      "ALTER TABLE t RENAME COLUMN a TO c;"),
 }

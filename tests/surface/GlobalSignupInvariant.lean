@@ -41,7 +41,7 @@ theorem one_live_iff (db : Database) (position emailIx deletedIx : Nat)
       (Resolved.keptRows (Resolved.EvalContext.bound []) (some (liveCondition deletedCell deletedIx))
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })).Pairwise
         fun earlier later => emailCell.collation.compare (later.getD emailIx .null) (earlier.getD emailIx .null) ≠ .eq := by
-  obtain ⟨columnName, affinity, columns⟩ := NormalizedField.resolveColumns_identifier_at runContext.profile.dqsDml
+  obtain ⟨columnName, affinity, columns⟩ := resolveColumns_identifier_at runContext.profile.dqsDml
     { current := some 0, aggregates := [.callStar "count"] } (some position) _ table.columns _ _ (quote := .none) emailColumn
     none "email"
   have filterResolves := FilterResolves.of_term (dqs := runContext.profile.dqsDml)

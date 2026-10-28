@@ -1,7 +1,7 @@
 # Table rebuild: query inserts and ALTER rewrites
 
 Created 2026-10-24. Checked on 2026-10-26 against the code at `4fc773a5` and
-native SQLite 3.51.0; the check changed no requirement. Status: OPEN. The
+native SQLite 3.51.0; the check changed no requirement. Status: DONE (2026-10-27). The
 prerequisites have landed (section "Starting point"). No concurrent alternative
 catalog. Status: [progress](20261024-table-rebuild.status.md).
 Specs: [ADR 0019](../docs/adr-0019-guide-sql.md), D4 and slice 5;

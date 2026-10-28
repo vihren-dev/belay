@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Model
 def Syntax.Statement.readsOnly : Syntax.Statement → Bool
   | .select .. => true
   | .pragma form => form.readsOnly
-  | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .update .. | .delete ..
   | .createTrigger .. | .dropTrigger .. => false
 

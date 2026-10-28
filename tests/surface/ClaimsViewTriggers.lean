@@ -66,7 +66,7 @@ def writeBody (script : Script) : Option Syntax.BodyStatement := do
   match statement with
   | .update table assignments filter _ subqueries => some (.update table assignments filter subqueries)
   | .delete table filter _ subqueries => some (.delete table filter subqueries)
-  | .select .. | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropTable .. | .dropView ..
+  | .select .. | .createTable .. | .createView .. | .createIndex .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
   | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .insertSelect .. | .pragma ..
   | .createTrigger .. | .dropTrigger .. => none
 

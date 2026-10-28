@@ -343,6 +343,38 @@ RECURSIVE keyword, MATERIALIZED hints, INSTEAD OF triggers, TEMP views, the tabl
 view, errors that SQLite finds only when a statement runs a view, uncertain LIMIT membership and fallible source
 bodies. Task-end Nix checks passed on the integration `431cdd16`.
 
+2026-10-27, slice 5 (D4, the table rebuild) in three parts, ready for the end-of-task checks. Part 1: INSERT from a
+query runs with the explicit possible executions and states of the possible write executions task. Part 2: RENAME TO
+and RENAME COLUMN rewrite the names in the catalog, the views, the triggers, the indexes, the CHECK texts and the
+foreign keys of the tables, with the prepare errors of SQLite in its order. Part 3: DROP COLUMN removes the column and
+its cells, keeps the rowids and the order, and refuses a primary key, a UNIQUE column, the last column, a column that
+a key, a CHECK, a generated expression, a foreign key, an index, a view or a trigger still names, with the native
+error text. A failed ALTER keeps the database, and ALTER takes part in snapshots and in rollback. The guide's
+rebuild runs step by step: the unsafe DROP-based rebuild cascades into the children when enforcement is on, the
+corrected rebuild keeps the rows and `PRAGMA foreign_key_check` reports the violations of the new table, a new
+connection starts with enforcement off, and `PRAGMA foreign_keys` has no effect inside a transaction. A rename may now
+make a foreign key that had no parent find one; the proofs of the foreign-key atoms state the equality of the selected
+parents for that step. Preservation proofs cover every new statement and run path, including rollback.
+The Nix-selected tests pass (`/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`) and the
+frozen verdict has no DISAGREE (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`): after part 3,
+186 cases change from MODEL_UNSUPPORTED to AGREE. Remaining restrictions: `legacy_alter_table = ON`, a schema
+name in ALTER TABLE, a DROP COLUMN of any column of a table that a foreign key references, `UPDATE OF` triggers that
+name the dropped column, and a drop whose dependent definitions are of several kinds or have a spelling that the
+catalog does not record.
+
+2026-10-27, judge change of slice 5: corpus-v55 holds the authored native cases of the table rebuild as version 7
+records that run on after an error (162 cases): 60 of INSERT from a query, 51 of renames, 40 of DROP COLUMN and 11 of
+the rebuild. The claim lists the 149 cases that agree. The other 13 are the documented restrictions above and the
+INSERT cases whose source the model does not describe. Two INSERT cases whose source SQLite reads by its index are not
+in the corpus: the model agrees with them only through its second execution, but the judge compares one prediction,
+the model's own execution, and its verdict would be DISAGREE. The same change adds the 186 cases of the corpora v1 to v5 that the
+table rebuild made agree to their claims (v1 28, v2 28, v3 28, v4 51, v5 51), as earlier slices did. The frozen
+verdict has no DISAGREE and no HARNESS_ERROR, and every claimed case is AGREE
+(`/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`, AGREE 5653, MODEL_UNSUPPORTED 2109).
+The Nix-selected tests pass (`/nix/store/06b9qf4nwqi3ghrpkzs3xaasz6vmasnk-sqlite-verifier-test-reports`). A judge
+protocol that accepts a native result matching any possible execution of the model would let the two left-out cases
+in; that change needs its own owner decision.
+
 ## Owner decisions
 
 Decided on 2026-10-22:

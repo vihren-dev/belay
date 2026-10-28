@@ -10,21 +10,25 @@ parent schemas. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The foreign-key pragma selects its four columns without grouping, order or window. -/
-private theorem keyCheck_simple (table : Option Nat) :
+/-- For every table choice, the query of the foreign-key pragma is simple ({name}`Resolved.Query.Simple`): it selects
+its four columns without grouping, order or window. Proof sketch: each field of the structure is a field of the
+generated query, which {name}`pragmaQuery` sets by definition. -/
+theorem keyCheckQuery_simple (table : Option Nat) :
     (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames).Simple :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The foreign-key pragma reads only columns, so no expression fails or reads external state. -/
-private theorem keyCheck_calm (table : Option Nat) : (keyCheckQuery table).Calm := by
+theorem keyCheckQuery_calm (table : Option Nat) : (keyCheckQuery table).Calm := by
   intro expression member
   simp [keyCheckQuery, pragmaQuery, Resolved.Statement.clockExpressions, Resolved.Query.expressions,
     Resolved.Query.keptExpressions, Resolved.QuerySource.expressions, Resolved.Output.scalars,
     Resolved.Output.operands, foreignKeyCheckNames, List.range_succ] at member
   rcases member with rfl | rfl | rfl | rfl <;> exact ⟨rfl, rfl, fun _ => rfl⟩
 
-/-- When the pragma supplies rows, its single source gives those rows without a fault. -/
-private theorem keyCheck_source (context : Resolved.EvalContext) (database : Database)
+/-- For every context, database, table choice and rows: if the pragma supplies the rows, the source of its query gives
+those rows, with four columns and no fault. Proof sketch: unfold the query, the source and the join of its one
+pragma source; the join of one source is the rows of the pragma. -/
+theorem keyCheckQuery_source (context : Resolved.EvalContext) (database : Database)
     (table : Option Nat) (rows : List (List Value))
     (found : (Resolved.PragmaRows.foreignKeyCheck table).rowsOn database = some rows) :
     (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames).source context database =
@@ -44,7 +48,7 @@ theorem resolvedStepOutput_keyCheck_hasNoRows (index : Nat) (connection : Connec
       (Resolved.PragmaRows.foreignKeyCheck table).rowsOn connection.state.database = some [] := by
   let query := pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames
   change (resolvedStepOutput none index connection parameters (.query query [])).hasNoRows = true ↔ _
-  have calm := keyCheck_calm table
+  have calm := keyCheckQuery_calm table
   cases found : (Resolved.PragmaRows.foreignKeyCheck table).rowsOn connection.state.database with
   | none =>
     rw [resolvedStepOutput_query index connection parameters query [] calm.readsClock (calm.firstUnknown _)]
@@ -58,8 +62,8 @@ theorem resolvedStepOutput_keyCheck_hasNoRows (index : Nat) (connection : Connec
     simp only [Resolved.Query.described, Resolved.Query.outputOn, ran]
     split <;> simp [Output.hasNoRows]
   | some rows =>
-    have source := keyCheck_source (connection.queryContext parameters query []) connection.state.database table rows found
-    have empty := resolvedStepOutput_simple_hasNoRows index connection parameters query (keyCheck_simple table)
+    have source := keyCheckQuery_source (connection.queryContext parameters query []) connection.state.database table rows found
+    have empty := resolvedStepOutput_simple_hasNoRows index connection parameters query (keyCheckQuery_simple table)
       { rows, width := 4, fault := .none } calm source rfl
     simpa [query, pragmaQuery, found, List.eq_nil_iff_forall_not_mem] using empty
 
@@ -97,7 +101,7 @@ theorem resolvedStepOutput_keyCheck_empty (index : Nat) (connection : Connection
     let query := pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames
     change (resolvedStepOutput none index connection parameters (.query query [])).hasNoRows = true at empty
     change resolvedStepOutput none index connection parameters (.query query []) = .rows []
-    have calm := keyCheck_calm table
+    have calm := keyCheckQuery_calm table
     rw [resolvedStepOutput_query index connection parameters query [] calm.readsClock (calm.firstUnknown _)] at empty ⊢
     split at empty
     · simp_all only [ite_true]
@@ -114,7 +118,7 @@ theorem resolvedStepOutput_keyCheck_clock (clock : Option Clock) (index : Nat)
     (connection : Connection) (parameters : List Value) (table : Option Nat) :
     resolvedStepOutput clock index connection parameters (keyCheckQuery table) =
       resolvedStepOutput none index connection parameters (keyCheckQuery table) := by
-  simp only [resolvedStepOutput, statementClock, (keyCheck_calm table).readsClock,
+  simp only [resolvedStepOutput, statementClock, (keyCheckQuery_calm table).readsClock,
     Bool.false_eq_true, ite_false]
 
 end Belay.Sqlite.Model

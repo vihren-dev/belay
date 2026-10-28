@@ -5,6 +5,7 @@ import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.InsertSelectLaws
 import Belay.Sqlite.Model.StatementRewrite
+import Belay.Sqlite.Model.StatementDropColumn
 
 set_option doc.verso true
 
@@ -65,7 +66,9 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
       show (effectDatabase _).catalog.Valid limits
       rw [eq]
       exact next
-  | rewrite renamed => exact runStatement_rewrite_satisfies clock counters parameters renamed valid fun _ _ => next
+  | dropColumn position index stored =>
+    exact runStatement_dropColumn_satisfies clock counters parameters position index stored valid fun _ => next
+  | rewrite renamed => exact runStatement_rewrite_satisfies clock counters parameters renamed valid fun _ => next
   | drop positions rules =>
     cases rules with
     | none =>

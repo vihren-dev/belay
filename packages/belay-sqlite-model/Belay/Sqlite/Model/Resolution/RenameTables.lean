@@ -57,11 +57,13 @@ def CatalogTable.renamedTable (old new : Identifier) (table : CatalogTable) : Op
 
 /-- The renamed table after a column rename: the column has its new name, the text of its CHECK constraints
 names the column with it, and its foreign keys that reference the column of the table itself change like
-those of every table. -/
+those of every table. A quoted new name is written into the text of the table and of its indexes, which the
+table notes in {name}`CatalogTable.quotedRename`. -/
 def CatalogTable.renamedColumn (tableName : Identifier) (index : Nat) (old new : Identifier) (quoted : Bool)
     (table : CatalogTable) : Option CatalogTable :=
-  ((table.renameChecks (.column index) (.column quoted) new).map (·.renameColumnAt index new)).map
-    (·.mapForeignKeys (ForeignKey.renameParentColumn tableName old new))
+  (((table.renameChecks (.column index) (.column quoted) new).map (·.renameColumnAt index new)).map
+    (·.mapForeignKeys (ForeignKey.renameParentColumn tableName old new))).map
+    fun renamed => { renamed with quotedRename := renamed.quotedRename || quoted }
 
 /-- The names of the columns of the table, two of which are one name for SQLite when their folds are equal:
 the first column whose name an earlier column already has, which SQLite reports as a duplicate column. -/

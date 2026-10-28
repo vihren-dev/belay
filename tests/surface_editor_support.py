@@ -1,4 +1,4 @@
-"""Helpers for the actual Lean server observations of the SQL name information (editor task, part 2b)."""
+"""Helpers for the actual Lean server observations of the SQL editor information (editor task, parts 2a to 3)."""
 
 from tests.lean_server_support import LeanServer, hover, position
 
@@ -48,3 +48,22 @@ def corrections(server: LeanServer, uri: str, source: str, spelling: str, occurr
                 if edit["range"] == expected:
                     found.append((action["title"], edit["newText"]))
     return sorted(found)
+
+
+def range_of(text: str, spelling: str, token: str, occurrence: int = 0) -> dict[str, object]:
+    """The LSP range of `token`, which starts at the beginning of the `occurrence` of `spelling`."""
+    start = position(text, spelling, occurrence)
+    return {"start": start, "end": {**start, "character": start["character"] + len(token)}}
+
+
+def definitions(server: LeanServer, uri: str, source: str, spelling: str, occurrence: int = 0
+                ) -> list[tuple[str, dict[str, object]]]:
+    """The targets of a go-to-definition request at the occurrence, as (document, range) pairs."""
+    result = server.request("textDocument/definition", {"textDocument": {"uri": uri},
+                                                         "position": position(source, spelling, occurrence)})
+    assert isinstance(result, list), result
+    targets = []
+    for item in result:
+        assert isinstance(item, dict), item
+        targets.append((item.get("targetUri") or item["uri"], item.get("targetSelectionRange") or item["range"]))
+    return targets

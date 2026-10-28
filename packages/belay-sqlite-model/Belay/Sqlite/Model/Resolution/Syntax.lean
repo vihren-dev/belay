@@ -106,6 +106,11 @@ inductive Statement where
   {lit}`no such column: "token"`. {lit}`quoted` is true when the new name is written with a
   quote, which makes SQLite quote it in every stored text that it rewrites. -/
   | renameColumn (table column newName : Identifier) (columnToken : String) (quoted : Bool)
+  /-- {lit}`ALTER TABLE table DROP [COLUMN] column` (ADR 0019, D4). The table is path step 0 and the
+  column step 1. {lit}`columnToken` is the column name as the statement spells it, with its quotes,
+  because SQLite prints that token in {lit}`no such column: "token"` and in the errors of a column that
+  the table cannot lose. -/
+  | dropColumn (table column : Identifier) (columnToken : String)
   /-- {lit}`DROP TABLE [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
   {lit}`IF EXISTS`. -/
   | dropTable (name : Identifier) (ifExists : Bool)

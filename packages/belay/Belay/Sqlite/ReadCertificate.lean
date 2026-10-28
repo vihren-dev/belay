@@ -11,7 +11,8 @@ leave unchanged. A {lit}`ReadCertificate` names the table position and the width
 at columns. It is {lit}`ReadCertificate.Valid` when the filter and the columns read only columns below the
 width and call nothing that can fail, read the clock or read a counter. The {lit}`ReadCertificate.Obligations`
 are the facts about two connections that the migration must give: the statement resolves to the read on both,
-and the table of the second connection is the table of the first with cells appended to each row.
+and the table that a name finds on the second connection is the table that it finds on the first with cells
+appended to each row. The table can sit at another position on the second connection.
 {lit}`ReadCertificate.output_eq` then proves that the step of the statement gives the same output on both. A
 read that reaches beyond the width, such as a {lit}`SELECT *`, fails the resolution obligation on the second
 connection, and no certificate holds for it. The certificates say nothing about writes, triggers or
@@ -63,64 +64,62 @@ structure ReadCertificate.Valid (certificate : ReadCertificate) : Prop where
     expression.Calm
 
 /-- For every valid certificate and result names, the statement of the certificate is calm
-({name}`Resolved.Statement.Calm`). Proof sketch: the expressions that the statement reads are the filter, the
-scalar columns and the operands of aggregate columns; a column that reads below a width is scalar, so it
-has no operands; and the source of a table has no expression. -/
+({name}`Resolved.Statement.Calm`). Proof sketch: a column that reads below a width is scalar, so it has no
+operands ({name}`Resolved.Output.operands_of_readsBelow`), and a one-table read with calm parts is calm
+({name}`Resolved.Statement.simpleTable_calm`). -/
 theorem ReadCertificate.Valid.statement_calm {certificate : ReadCertificate} (valid : certificate.Valid)
-    (names : List String) : (certificate.statement names).Calm := by
-  have scalar : ∀ column ∈ certificate.columns, column.operands = [] := by
-    intro column member
-    have below := valid.columnsBelow column member
-    cases column with
-    | scalar term => rfl
-    | aggregate function => simp [Resolved.Output.readsBelow] at below
-  intro expression member
-  simp only [ReadCertificate.statement, ReadCertificate.query, Resolved.Statement.clockExpressions,
-    Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple,
-    Resolved.QuerySource.first, Resolved.QuerySource.expressions, List.mem_append, List.mem_flatMap,
-    List.flatMap_nil, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false, List.map_nil] at member
-  apply valid.calm
-  simp only [List.mem_append, List.mem_flatMap]
-  rcases member with (member | ⟨source, rfl, member⟩) | (member | member) | member
-  · exact Or.inl member
-  · simp at member
-  · obtain ⟨column, columnMember, member⟩ := member
-    exact Or.inr ⟨column, columnMember, member⟩
-  · obtain ⟨column, columnMember, member⟩ := member
-    rw [scalar column columnMember] at member
-    simp at member
-  · simp at member
+    (names : List String) : (certificate.statement names).Calm :=
+  Resolved.Statement.simpleTable_calm certificate.position certificate.filter certificate.columns names valid.calm
+    fun column member => Resolved.Output.operands_of_readsBelow (valid.columnsBelow column member)
+
+/-- The certificate for the same read of the table at another position: only the position changes. In plain
+words, the table that the read names can sit at another position in the catalog after a migration, for
+example after the drop of an earlier table. -/
+def ReadCertificate.moved (certificate : ReadCertificate) (position : Nat) : ReadCertificate :=
+  { certificate with position }
+
+/-- For every valid certificate and position, the certificate at the position is valid. In plain words,
+validity does not depend on the position of the table. Proof sketch: validity looks only at the filter, the
+columns and the width, which {name}`ReadCertificate.moved` keeps. -/
+theorem ReadCertificate.Valid.moved {certificate : ReadCertificate} (valid : certificate.Valid)
+    (position : Nat) : (certificate.moved position).Valid :=
+  ⟨valid.filterBelow, valid.columnsBelow, valid.calm⟩
 
 /-- The facts that a migration must give for a read, so that the statement keeps its output from the
 original connection to the other connection. In plain words, for a certificate, resolution context and
 statement, with two connections:
 * The statement resolves on the original connection to the statement of the certificate, with some result names.
-* The statement resolves on the other connection to the statement of the certificate, with some result
-  names. This fails for a {lit}`SELECT *` after a column is added, because the new resolution has more columns.
-* The table at the position exists on both connections, the rows that the other connection scans are those of
-  the original connection with cells appended to each row (the cells can depend on the row), and every
-  original row has at least as many cells as the width. -/
+* There is a table name, a position and two tables such that the name finds, on the original connection,
+  the table at the position of the certificate, and on the other connection the second table at the
+  given other position ({name}`Model.Database.tableNamed`). The two positions can differ.
+* The statement resolves on the other connection to the statement of the certificate at the other position,
+  with some result names. This fails for a {lit}`SELECT *` after a column is added, because the new
+  resolution has more columns.
+* The rows that the other connection scans are those of the original connection with cells appended to
+  each row (the cells can depend on the row), and every original row has at least as many cells as the width. -/
 structure ReadCertificate.Obligations (certificate : ReadCertificate) (context : ResolveContext)
     (statement : Syntax.Statement) (original other : Connection) : Prop where
   /-- The statement resolves to the certificate's statement on the original connection. -/
   resolvesOriginal : ∃ names state,
     resolveStatement context original.resolveState statement = .ok (certificate.statement names, state)
-  /-- The statement resolves to the certificate's statement on the other connection. -/
-  resolvesOther : ∃ names state,
-    resolveStatement context other.resolveState statement = .ok (certificate.statement names, state)
-  /-- The two tables are related by appended cells and the original rows are wide enough. -/
-  appended : ∃ (table extended : Table) (extra : List Value → List Value),
-    original.state.database.table certificate.position = some table ∧
-    other.state.database.table certificate.position = some extended ∧
+  /-- A name finds the two tables, the statement resolves to the read of the second table, and the two
+  tables are related by appended cells with original rows wide enough. -/
+  appended : ∃ (name : Identifier) (otherPosition : Nat) (table extended : Table)
+      (extra : List Value → List Value),
+    original.state.database.tableNamed name = some (certificate.position, table) ∧
+    other.state.database.tableNamed name = some (otherPosition, extended) ∧
+    (∃ names state, resolveStatement context other.resolveState statement =
+      .ok ((certificate.moved otherPosition).statement names, state)) ∧
     Resolved.sourceRows extended = (Resolved.sourceRows table).map (fun row => row ++ extra row) ∧
     ∀ row ∈ Resolved.sourceRows table, certificate.width ≤ row.length
 
 /-- For every valid certificate, resolution context, statement, parameters, clocks and statement indexes,
 and every two connections that satisfy the obligations of the certificate: the step of the statement on
 the original connection and the step on the other connection give the same output. In plain words, a
-read that the certificate describes cannot see the cells that the migration appended. The result does
-not say that the two steps end at the same connection. Proof sketch: obtain the two resolutions and the
-tables from the obligations, and apply {name}`runScriptStep_simpleTable_output_append`. -/
+read that the certificate describes cannot see the cells that the migration appended, and cannot see
+that the table moved to another position. The result does not say that the two steps end at the same
+connection. Proof sketch: obtain the two resolutions and the tables from the obligations, and apply
+{name}`runScriptStep_simpleTable_output_append`. -/
 theorem ReadCertificate.output_eq {certificate : ReadCertificate} (valid : certificate.Valid)
     {context : ResolveContext} {statement : Syntax.Statement} {original other : Connection}
     (obligations : certificate.Obligations context statement original other)
@@ -128,12 +127,13 @@ theorem ReadCertificate.output_eq {certificate : ReadCertificate} (valid : certi
     (runScriptStep context clock originalIndex original statement parameters).output =
       (runScriptStep context clock otherIndex other statement parameters).output := by
   obtain ⟨names, state, resolvedOriginal⟩ := obligations.resolvesOriginal
-  obtain ⟨others, otherState, resolvedOther⟩ := obligations.resolvesOther
-  obtain ⟨table, extended, extra, presentOriginal, presentOther, scans, wide⟩ := obligations.appended
+  obtain ⟨name, otherPosition, table, extended, extra, foundOriginal, foundOther, ⟨others, otherState, resolvedOther⟩,
+    scans, wide⟩ := obligations.appended
   exact runScriptStep_simpleTable_output_append context clock originalIndex otherIndex original other statement
-    parameters certificate.position table extended certificate.filter certificate.columns names others
-    certificate.width extra resolvedOriginal resolvedOther presentOriginal presentOther
-    (valid.statement_calm names) scans wide valid.filterBelow valid.columnsBelow
+    parameters name certificate.position otherPosition table extended certificate.filter certificate.columns names
+    others certificate.width extra foundOriginal foundOther resolvedOriginal resolvedOther
+    (valid.statement_calm names) ((valid.moved otherPosition).statement_calm others) scans wide valid.filterBelow
+    valid.columnsBelow
 
 /-- For every certificate, context, statement and two connections that satisfy the obligations of the
 certificate: the statement resolves on the original connection to no INSERT from a query without rules
@@ -153,13 +153,13 @@ theorem ReadCertificate.Obligations.single_original {certificate : ReadCertifica
   rfl
 
 /-- The same for the other connection ({name}`ReadCertificate.Obligations.single_original`). Proof sketch: as
-for the original connection, with the second resolution of the obligations. -/
+for the original connection, with the resolution at the other position from the obligations. -/
 theorem ReadCertificate.Obligations.single_other {certificate : ReadCertificate} {context : ResolveContext}
     {statement : Syntax.Statement} {original other : Connection}
     (obligations : certificate.Obligations context statement original other) :
     ∀ resolved after, resolveStatement context other.resolveState statement = .ok (resolved, after) →
       resolved.fromQuery = false := by
-  obtain ⟨names, state, found⟩ := obligations.resolvesOther
+  obtain ⟨_, _, _, _, _, _, _, ⟨names, state, found⟩, _⟩ := obligations.appended
   intro resolved after again
   rw [found] at again
   obtain ⟨rfl, -⟩ := Prod.mk.inj (Except.ok.inj again)

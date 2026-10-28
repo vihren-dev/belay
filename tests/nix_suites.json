@@ -31,6 +31,8 @@
     "tests/conformance_query_sources_test.py",
     "tests/conformance_insert_queries_test.py",
     "tests/conformance_renames_test.py",
+    "tests/conformance_column_drops_test.py",
+    "tests/conformance_rebuilds_test.py",
     "tests/foreign_key_atoms_native_test.py",
     "tests/add_column_references_test.py",
     "tests/add_column_not_null_default_test.py"
@@ -125,7 +127,9 @@
     "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py",
     "tests/conformance_insert_query_mutants_test.py",
-    "tests/conformance_rename_mutants_test.py"
+    "tests/conformance_rename_mutants_test.py",
+    "tests/conformance_column_drop_mutants_test.py",
+    "tests/conformance_rebuild_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"
@@ -142,13 +146,6 @@
     "tests/surface_views_test.py",
     "tests/surface_schema_claims_test.py",
     "tests/surface_success_test.py",
-    "tests/surface_s6_foundations_test.py",
-    "tests/surface_s6_rules_test.py",
-    "tests/surface_s6_automation_test.py",
-    "tests/surface_s6_auto_editor_test.py",
-    "tests/surface_s6_check_programs_test.py",
-    "tests/surface_s6_check_editor_test.py",
-    "tests/surface_s6_not_blocked_test.py",
     "tests/surface_two_state_test.py",
     "tests/surface_execution_test.py",
     "tests/surface_execution_views_test.py",
@@ -187,18 +184,36 @@
     "tests/surface_replay_test.py",
     "tests/surface_sql_docs_test.py",
     "tests/surface_sql_doc_blocks_test.py",
-    "tests/surface_foreign_key_atoms_test.py"
+    "tests/surface_foreign_key_atoms_test.py",
+    "tests/surface_rebuild_affinity_test.py"
   ],
   "surfaceChecks": [
-    "tests/surface_sql_check_test.py",
-    "tests/surface_sql_check_roots_test.py",
-    "tests/surface_counterexample_test.py",
-    "tests/surface_sampling_test.py",
-    "tests/surface_inference_test.py",
-    "tests/surface_search_test.py",
     "tests/surface_check_command_test.py",
-    "tests/surface_automatic_test.py",
+    "tests/surface_search_test.py",
+    "tests/surface_sampling_test.py",
+    "tests/surface_counterexample_test.py",
+    "tests/surface_inference_test.py",
+    "tests/surface_editor_insert_tables_test.py",
+    "tests/surface_editor_insert_order_test.py",
+    "tests/surface_editor_renames_test.py",
+    "tests/surface_editor_insert_names_test.py",
+    "tests/surface_editor_rebuild_test.py"
+  ],
+  "surfaceS6": [
+    "tests/surface_s6_check_programs_test.py",
+    "tests/surface_s6_automation_test.py",
+    "tests/surface_s6_check_editor_test.py",
+    "tests/surface_s6_not_blocked_test.py",
+    "tests/surface_s6_rules_test.py",
+    "tests/surface_s6_auto_editor_test.py",
+    "tests/surface_s6_foundations_test.py",
     "tests/surface_automatic_editor_test.py",
+    "tests/surface_automatic_test.py",
+    "tests/surface_sql_check_test.py",
+    "tests/surface_derived_column_test.py",
+    "tests/surface_schema_script_test.py",
+    "tests/surface_rebuild_test.py",
+    "tests/surface_sql_check_roots_test.py",
     "tests/surface_automatic_cancel_test.py"
   ]
 }

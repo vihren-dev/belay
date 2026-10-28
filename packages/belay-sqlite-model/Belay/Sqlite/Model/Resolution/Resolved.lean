@@ -91,6 +91,12 @@ inductive Statement where
   resolution computed ({lit}`renameCatalog`). It has the objects of the catalog at the same positions, with
   the new name and the rewritten definitions, so every table keeps its rows, rowids and position. -/
   | rewrite (catalog : Catalog)
+  /-- ALTER TABLE DROP COLUMN (ADR 0019, D4): remove the column at the index from the table at the catalog
+  position and the cell of the column from each of its rows, and store the catalog that resolution computed
+  ({lit}`resolveDropColumn`): the catalog without the column ({lit}`Catalog.dropColumn`), with the views and the
+  triggers as SQLite rewrites them. Every other table keeps its rows, and the table keeps its position, its
+  rowids and the order of its rows. -/
+  | dropColumn (table index : Nat) (catalog : Catalog)
   /-- Start a transaction. -/
   | begin
   /-- Commit the transaction. -/

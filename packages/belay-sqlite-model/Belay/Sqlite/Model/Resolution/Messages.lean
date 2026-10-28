@@ -117,12 +117,17 @@ def PrepareError.message : PrepareError → String
   | .renameNoSuchColumn token => s!"no such column: \"{token}\""
   | .viewTrigger before name =>
     s!"cannot create {if before then "BEFORE" else "AFTER"} trigger on view: {name}"
-  | .dependentObject kind name afterRename error =>
+  | .dropColumn (.view name) => s!"cannot drop column from view \"{name}\""
+  | .dropColumn (.primaryKey column) => s!"cannot drop PRIMARY KEY column: \"{column}\""
+  | .dropColumn (.unique column) => s!"cannot drop UNIQUE column: \"{column}\""
+  | .dropColumn (.lastColumn column) => s!"cannot drop column \"{column}\": no other columns exist"
+  | .dependentObject kind name phase error =>
     let word := match kind with
       | .table => "table"
+      | .index => "index"
       | .view => "view"
       | .trigger => "trigger"
-    s!"error in {word} {name}{if afterRename then " after rename" else ""}: {error.message}"
+    s!"error in {word} {name}{phase.words}: {error.message}"
   | .expression error => error.message
 
 end Belay.Sqlite.Model

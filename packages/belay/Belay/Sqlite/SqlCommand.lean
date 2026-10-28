@@ -40,7 +40,7 @@ the text editor information with the rows of that run ({name}`executedContexts`)
 parameters gets the contexts of a resolution instead ({name}`resolvedContexts`), because the trial
 does not know the values of the parameters that the displayed run binds: the rows are then known
 only before the first statement that can write. The command also logs the order warnings of the
-script: the evidence of the run ({name}`orderEvidenceWarnings`), or the risk of a script with
+script: the evidence of the run and the risk of its {lit}`INSERT ... SELECT` statements ({name}`orderRunWarnings`), or the risk of a script with
 parameters ({name}`orderRiskWarnings`), and the output elaborates with the warnings of {lit}`sql`
 turned off, so no statement warns twice. The attempt is
 a trial: Lean elaborates the database term and the text again for the output, so the trial drops
@@ -63,7 +63,7 @@ def sqlCommandInformation (databaseTerm literal : Syntax) : Term.TermElabM Unit 
         orderRiskWarnings statements)
       else
         let (contexts, outputs) := executedContexts 0 connection statements
-        (contexts, orderEvidenceWarnings statements outputs)
+        (contexts, orderRunWarnings statements outputs)
     emitSqlEditorInfo (.literal literal text) statements (.ofTerm (← getEnv) evaluated.term) contexts
     logOrderWarnings literal text warnings
 

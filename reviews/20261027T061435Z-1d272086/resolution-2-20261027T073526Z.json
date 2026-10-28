@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T07:35:26+00:00",
+  "finding": "20261027T061435Z-1d272086#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "both matches list none, table, view and trigger"
+}

@@ -21,7 +21,7 @@ def definition (script : Script) (columns : Option (List Identifier) := none) : 
         limit, offset, having, distinct, compound, parent := none }
       subqueries }
   | none | some (.createTable ..) | some (.createView ..) | some (.createIndex ..) | some (.addColumn ..)
-  | some (.renameTable ..) | some (.renameColumn ..)
+  | some (.renameTable ..) | some (.renameColumn ..) | some (.dropColumn ..)
   | some (.dropTable ..) | some (.dropView ..) | some (.dropIndex ..) | some .begin | some .commit | some .rollback
   | some (.insert ..) | some (.insertSelect ..) | some (.update ..) | some (.delete ..) | some (.pragma ..)
   | some (.createTrigger ..) | some (.dropTrigger ..) => {query := commonTablePlaceholder}
@@ -39,7 +39,7 @@ def prepareMessage (script : Script) (database : Database) : Option String := do
   match resolveStatement runContext database.raw.connection.resolveState statement with
   | .ok (.prepareError error, _) => some error.message
   | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
-  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
+  | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _)
   | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _) | .ok (.upsert .., _)
   | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => none
 
@@ -60,7 +60,7 @@ def queryRows (script : Script) (database : Database) (clock : Int) (counters : 
   | .ok (.query query subqueries, _) =>
     (query.runOn clock counters parameters database.raw subqueries).map (·.2.rows)
   | .error _ | .ok (.prepareError .., _) | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
-  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.drop .., _) | .ok (.begin, _)
+  | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
   | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.insertSelect .., _) | .ok (.update .., _)
   | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.setting .., _) => none
 

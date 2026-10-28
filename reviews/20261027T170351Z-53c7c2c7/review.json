@@ -1,0 +1,49 @@
+{
+  "caller": "claude",
+  "commit": "53c7c2c79a6aee6c13abfb77173ec61291f138b8",
+  "date": "2026-10-27T17:03:51+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+    "plans/20261027-schema-script-laws.status.md",
+    "reviews/20261027T170132Z-783e8a2c/resolution-1-20261027T170253Z.json",
+    "reviews/20261027T170132Z-783e8a2c/resolution-2-20261027T170254Z.json",
+    "reviews/20261027T170132Z-783e8a2c/resolution-3-20261027T170254Z.json",
+    "reviews/20261027T170132Z-783e8a2c/resolution-4-20261027T170255Z.json",
+    "reviews/20261027T170132Z-783e8a2c/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T170351Z-53c7c2c7#1",
+      "line": 19,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The restatement still identifies the witness as the own run or an alternative run, although the formula constrains only its effect membership and applied counts, so the added qualification contradicts that assertion. Fix: remove the run-membership assertion and state that only the witness's effect must occur in `StatementRun.effects`."
+    }
+  ],
+  "id": "20261027T170351Z-53c7c2c7",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

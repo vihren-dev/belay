@@ -30,7 +30,7 @@ def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlSt
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { state with database := original, snapshot := none }
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .drop .. | .insert .. | .upsert .. | .insertSelect .. | .update ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .rewrite _ | .dropColumn .. | .drop .. | .insert .. | .upsert .. | .insertSelect .. | .update ..
   | .delete ..
   | .prepareError _ | .query .. | .setting .. =>
     state.publish position effect

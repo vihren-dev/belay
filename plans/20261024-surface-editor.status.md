@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1, part 2a and part 2b are accepted; the INSERT SELECT coverage follows the table-rebuild task.
+Created 2026-10-24. Status: DONE (2026-10-27). Part 1, part 2a, part 2b and part 3 are accepted; part 3 covers the statements of the table-rebuild task.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -475,3 +475,123 @@ Part 2b is accepted. Still open: the table-rebuild task adds `Syntax.Statement.i
 arms in `SqlTableSlots`, `SqlStatementContexts`, `SqlOrderWarnings` and `SqlTableOrigins`, without
 editor information for its subqueries and the names of its query. A follow-up of this task covers
 them after that task.
+
+
+## Part 3: the statements of the table-rebuild task (specified 2026-10-27)
+
+- The task file has the new section "Part 3: the statements of the table-rebuild task". It replaces the
+  open point of part 2b ("the table-rebuild task adds `Syntax.Statement.insertSelect` ... A follow-up of this
+  task covers them after that task").
+- Base: `tasks/table-rebuild-judge` (PR #287, top of stack 284), workspace `sqlite-verifier-editor-p3`.
+
+### Part 3, commit 1: table places of the subqueries of INSERT ... SELECT (2026-10-27)
+
+- `subquerySlots` (`SqlTableSlots`) takes the path of the node that holds the subqueries, not a field number. The
+  query of an `INSERT ... SELECT` holds them as child 8 of its source (the field order of `Syntax.Statement.select`),
+  so the path is `[2, 8]`; the five earlier callers pass `[8]` (select), `[6]` (insert), `[4]` (update and create view) and `[3]` (delete). Generalization analysis: a
+  node path covers every statement form and every future query holder with one function; nothing is left specific.
+- Test: `tests/surface_editor_insert_tables_test.py` (real server, suite `surfaceChecks`, which has the most headroom):
+  hovers with the rows known before the first write and none after it, the `property` token, navigation to
+  the `CREATE TABLE` of the target, the source, a subquery source and a subquery join source, and the negative
+  cases (a `WITH` definition that names the table in the query and in a subquery, plain `sql`, an escaped
+  literal). The helpers `range_of` and `definitions` moved from the origins test to
+  `tests/surface_editor_support.py`.
+
+### Part 3, commit 2: the order warning of INSERT ... SELECT (2026-10-27)
+
+- `SqlOrderWarnings`: the clauses test is one function, `clausesLimitWithoutOrder`, for the fields that a `SELECT`
+  statement and the query of an `INSERT ... SELECT` (`Syntax.SelectBody`) share. `limitsWithoutOrder` and
+  `takesRowsByLimit` take both forms, so `sql`, `sql!` and a `#sql` script with parameters give the risk warning for
+  the insert by the existing `orderRiskWarnings`. The risk message says that the inserted rows may depend on the order.
+- A run (`db!`, `#sql` without parameters) gives an `INSERT ... SELECT` no evidence, because the output of an insert
+  is `done` (or `rows` with `RETURNING`, never `oneOf`) and the task keeps the evidence for statement outputs.
+  `orderRunWarnings` adds the risk warning of such a statement to the evidence of the run, so no statement warns twice. Generalization analysis: one clause test for
+  both statement forms; `insertsQueryRows` names the one form that needs the risk warning in a run and is the only
+  place to extend if another form gets it.
+- Open point (not specified, not done): the model also reports alternative executions of a write
+  (`runScriptStep`, third result), which could supply evidence for the insert. The task keeps the syntactic warning.
+- `tests/surface/InsertSelectExecutions.lean` states its unordered `LIMIT` insert on purpose and now turns the
+  warning off for that definition.
+- Test: `tests/surface_editor_insert_order_test.py` (real server, suite `surfaceChecks`): `db!` (`LIMIT`, `OFFSET`,
+  compound; none for `ORDER BY`, no `LIMIT`, no source, `VALUES`), `sql!`, `sql`, `#sql` and `#sql` with a parameter
+  warn once at the statement with the insert message; the option turns it off; the evidence warning of a `SELECT` in
+  `db!` stays.
+
+### Part 3, commit 3: navigation after ALTER TABLE ... RENAME TO (2026-10-27)
+
+- `stepCreatedSlots` (`SqlTableOrigins`, the `db!` record) moves the place of `a` to the name `b` on
+  `ALTER TABLE a RENAME TO b`, so the final table keeps the `CREATE TABLE` that created it, also after several
+  renames. `DROP COLUMN` keeps the places (no change needed; the arm is listed).
+- `sql!` and `#sql` start from a database with origins by table name. `replacedTable?` (a list of names that lose
+  their origin) is replaced by `OriginSources` (`originSource`, `stepOriginSources`): for each name the table of the
+  database at the start whose origin applies, or none. A creation or drop leaves the name without an origin, a rename
+  gives `b` the source of `a` and leaves `a` without one. The old code is deleted. Generalization analysis: the
+  sources are a function of the statement list, so every statement form and every chain of renames and recreations
+  follows one rule; the `db!` places and the `sql!` sources are two views of that one rule with different data
+  (places in the text of the script and tables of the database at the start), so they stay two functions.
+- Test: `tests/surface_editor_renames_test.py` (real server, definition requests, suite `surfaceChecks`): rename and
+  second rename of a database table, a table of the database text renamed once and twice, `DROP COLUMN`, and the
+  negatives (rename then drop the new name and create it again, an old name created again).
+
+### Part 3, refactor after review 3: ROLLBACK in a sql! script (2026-10-27)
+
+Review finding `20261027T151904Z-f6a020a2#1` (must): a `ROLLBACK` restores the catalog, so a rename inside the
+transaction must not leave the new name with the origin of another table. `stepOriginSources` now leaves every name that
+an earlier statement changed without an origin after `ROLLBACK`. This is conservative: a name that a committed or
+rolled-back change touched loses its jump, and a name that no statement changed keeps it. The restoration of the exact
+origins of a rolled-back transaction is not implemented (a `db!` text with `ROLLBACK` has no origins either).
+The renames test adds a transaction that swaps two names and rolls back.
+
+### Part 3, commit 4: the names of the query of INSERT ... SELECT (2026-10-27)
+
+- No source change was needed: `resolveInsertQueryTraced` puts the target column list at path 1 and the query below
+  path 2, and the query of the body has the field order of a `SELECT` statement, so `nameSites` maps its names to the
+  text. The commit adds the missing server fixtures (suite `surfaceChecks`).
+- Test: `tests/surface_editor_insert_names_test.py`: the target column list has the same hover as the list of
+  `INSERT ... VALUES` (equal text for three columns); the names of the query show table, alias, declared type, affinity and
+  collation; the comparison in `WHERE` shows its affinity (hover of the whole comparison); the columns of a `WITH` definition of the statement are derived
+  columns; `variable` token. Corrections at the exact name for a typo in the query, in the target column list, in a
+  subquery, in the target table and in the source table; none for a distant name; the DQS warning for an unknown
+  double-quoted name of the query with the quoted fix, none for a quoted existing column; an ambiguous name only has
+  the error. Seven statements fail in one document, one error each.
+- Documented gaps (the trace's, as in part 2b): `*` expansions of the query (`INSERT INTO t SELECT * FROM s`), names
+  after the first failing name of a statement, names in the body of a stored view, function and collation names.
+  The target column list of an `INSERT ... SELECT` that the resolver rejects before it reaches the list (a view target,
+  a rowid name) gets no column information.
+- Generalization analysis: no new statement.
+
+### Part 3, commit 5: the rebuild script of the guide and DROP COLUMN (2026-10-27)
+
+- Test only: `tests/surface_editor_rebuild_test.py` (real server, suite `surfaceChecks`) runs the guide's rebuild
+  (`CREATE TABLE p_new`, `INSERT INTO p_new SELECT ... FROM p`, `DROP TABLE p`, `ALTER TABLE p_new RENAME TO p`) as a
+  `sql!` script over the parent/child database, as the text of a `db!`, and as a `sql!` over that `db!`. In `sql!` the
+  copy source and the dropped table navigate to the database's `CREATE TABLE p`, the created `p_new` has no target and
+  the final `p` has none and lists only the kept columns. In `db!` the copy shows 0 and 2 rows, and a later `sql!` navigates
+  `p` to the `CREATE TABLE p_new` that made it. `DROP COLUMN` keeps the origin and the later hover lists the kept columns.
+- The fixture of `DROP COLUMN` uses a table that is not the parent of a foreign key: the model restricts that case
+  (the error says so), which is not an editor gap.
+- Documented gap: the column name of `DROP COLUMN` and of `RENAME COLUMN` is in an `ALTER` statement, whose names the
+  trace does not cover (part 2b), so it has no column hover or correction.
+- Generalization analysis: no new statement.
+
+### Part 3, Nix results and acceptance (2026-10-27)
+
+Tree: the commit `review: record the reviews of editor part 3` (code and tests are those of commit 5). `just dev-build` passed
+right before `just test-full`. All commands ran through `heavy.sh` with `max-jobs = 2` and `cores = 2`.
+
+- `just test-full`: passed, 1401 tests, 0 failures, errors or skips,
+  `/nix/store/1n9dyhd5dfq2rvgn1nx9njsk22iawdjw-sqlite-verifier-test-reports`. The new editor tests are in the suite
+  `surfaceChecks` (22 tests, 383 s, limit 1200 s), `/nix/store/95vsh40yq5q4dm71dkhgz9ik6pv9k8z8-sqlite-verifier-test-surfaceChecks-1`;
+  `surface` 377 tests, 709 s, `/nix/store/jp4cm5mv5cm81j1av4mfm2k5kcpla5j1-sqlite-verifier-test-surface-1`;
+  `surfaceS6` 59 tests, 594 s, `/nix/store/r23r7vbpb6dcj7ilqj1rvq4n1pc3sj22-sqlite-verifier-test-surfaceS6-1`.
+- `just verdict`: passed, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. This is the same store
+  path as the verdict of the base, and `report.json` is equal case by case (56 corpora), so no prediction changed.
+- `just test-nix`: 71 passed.
+- `just test-scheduled-checks`: `/nix/store/isndl4aymg4i442a7xhl76a75nmcd1pg-sqlite-verifier-scheduled-check-reports`.
+- Reviews (Codex): `20261027T150936Z-37458be3` (one should, fixed), `20261027T151405Z-812b2d96` (one should, fixed),
+  `20261027T151904Z-f6a020a2` (one must, fixed by the ROLLBACK refactor), `20261027T152054Z-c1dc66f0` (none),
+  `20261027T152348Z-92c6c552` (one should, fixed), `20261027T152602Z-8ffc1abb` (none).
+
+Part 3 is accepted and the editor task is DONE. Open points: an `INSERT ... SELECT` could get evidence from the alternative
+executions of a write (`runScriptStep`), which the task does not ask for; a `ROLLBACK` in a `sql!` script drops the origin
+of every name that an earlier statement changed (conservative).

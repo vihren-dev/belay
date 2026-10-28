@@ -11,6 +11,8 @@ namespace Belay.Sqlite.Model
 
 deriving instance Lean.ToJson for ViewError
 deriving instance Lean.ToJson for DependentKind
+deriving instance Lean.ToJson for DependentPhase
+deriving instance Lean.ToJson for DropColumnError
 deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
@@ -48,9 +50,10 @@ def PrepareError.toJson : PrepareError → Lean.Json
     | .renameNoSuchColumn token => Lean.Json.mkObj [("renameNoSuchColumn", Lean.Json.mkObj [("token", Lean.toJson token)])]
     | .viewTrigger before name =>
       Lean.Json.mkObj [("viewTrigger", Lean.Json.mkObj [("before", Lean.toJson before), ("name", Lean.toJson name)])]
-    | .dependentObject kind name afterRename error =>
+    | .dropColumn error => Lean.Json.mkObj [("dropColumn", Lean.toJson error)]
+    | .dependentObject kind name phase error =>
       Lean.Json.mkObj [("dependentObject", Lean.Json.mkObj [("kind", Lean.toJson kind), ("name", Lean.toJson name),
-        ("afterRename", Lean.toJson afterRename), ("error", error.toJson)])]
+        ("phase", Lean.toJson phase), ("error", error.toJson)])]
     | .expression error => Lean.toJson error
 
 instance : Lean.ToJson PrepareError := ⟨PrepareError.toJson⟩
@@ -131,6 +134,8 @@ deriving instance Lean.ToExpr for ViewError
 deriving instance Lean.ToExpr for CommonTableError
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for DependentKind
+deriving instance Lean.ToExpr for DependentPhase
+deriving instance Lean.ToExpr for DropColumnError
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output

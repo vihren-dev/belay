@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T14:39:06+00:00",
+  "finding": "20261027T142940Z-ffa67eb9#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The moved position is covered by CertificateAfterDrop; the several-end-states example needs the INSERT SELECT branches of the rebuild fixture, which part 2 of this task adds."
+}

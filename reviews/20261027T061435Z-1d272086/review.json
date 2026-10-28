@@ -1,0 +1,64 @@
+{
+  "caller": "claude",
+  "commit": "1d272086200edbade441a7053dd24f4001ec8310",
+  "date": "2026-10-27T06:14:35+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CreateIndexSuccessLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/CatalogObjects.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/CatalogOutline.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Definitions.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Examples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Keys.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameTables.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SpelledNames.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SpelledNamesExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/StatisticsTables.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateIndexCatalog.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateTableCatalog.lean",
+    "plans/20261024-table-rebuild.status.md",
+    "reviews/20261027T055219Z-7b07e0d6/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261027T061435Z-1d272086#1",
+      "line": 63,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateTableCatalog.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "`Catalog.Valid.createTable` now appends `third.withSpelling definitions constraints`, but its plain-words statement is unchanged and does not describe this transformation. Fix: update the docstring to state that the appended table includes the spelling metadata."
+    },
+    {
+      "id": "20261027T061435Z-1d272086#2",
+      "line": 36,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SpelledNamesExamples.lean",
+      "rule": "R5",
+      "severity": "should",
+      "text": "Both new index checks use a catch-all branch that silently accepts future `CatalogEntry` constructors. Fix: explicitly enumerate `none` and the table, view and trigger alternatives in both matches."
+    }
+  ],
+  "id": "20261027T061435Z-1d272086",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

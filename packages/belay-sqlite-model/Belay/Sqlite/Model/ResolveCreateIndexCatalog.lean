@@ -75,6 +75,7 @@ theorem indexKeys_ne_nil {dqs : Bool} {scope : Scope} {columns : List CatalogCol
 
 /-- For every valid catalog, table position, table, name, keys, uniqueness flag and filter: if
 * {name}`Catalog.findTable` finds the table at the position;
+* the index has any value of the spelling flag ({lit}`exactNames`);
 * the name is not reserved;
 * the catalog does not find the name;
 * the keys are not empty;
@@ -87,14 +88,14 @@ index is supported under the longer catalog, because the table keeps its positio
 {name}`Catalog.Valid.append` ends the proof. -/
 theorem Catalog.Valid.createIndex {limits : Limits} {catalog : Catalog} {position : Nat}
     {table : CatalogTable} {name tableName : Identifier} {keys : List IndexKey} {unique : Bool}
-    {filter : Option Resolved.Expr} (valid : catalog.Valid limits)
+    {filter : Option Resolved.Expr} {exactNames : Bool} (valid : catalog.Valid limits)
     (found : catalog.findTable tableName = some (position, table)) (notReserved : reservedName name = false)
     (fresh : catalog.find name = none) (nonempty : keys ≠ [])
     (below : ∀ key ∈ keys, key.term.Below table.columns.length)
     (filtered : ∀ resolved, filter = some resolved → resolved.any (Expr.isColumnFrom table.columns.length) = false) :
-    (catalog.createIndex name { table := position, keys, unique, filter }).Valid limits := by
+    (catalog.createIndex name { table := position, keys, unique, filter, exactNames }).Valid limits := by
   refine valid.append _ (fun _ => fresh) ?_
-  have present := Catalog.tableAt_append_of_some [{ name, entry := .index { table := position, keys, unique, filter } }]
+  have present := Catalog.tableAt_append_of_some [{ name, entry := .index { table := position, keys, unique, filter, exactNames } }]
     (Catalog.tableAt_of_findTable found)
   simp only [CatalogObject.supported, notReserved, present, Bool.not_false, Bool.true_and, Option.any_some]
   exact CatalogIndex.supported_of_below nonempty below filtered

@@ -36,7 +36,7 @@ def Resolved.Statement.RunCondition (database : Database) : Resolved.Statement �
     ((database.catalog.tableAt index.table).any fun table => index.supported table.columns.length) = true
   | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
-  | .createTable .. | .createView .. | .createTrigger .. | .rewrite _ | .begin | .commit | .rollback | .insert .. | .update ..
+  | .createTable .. | .createView .. | .createTrigger .. | .rewrite _ | .dropColumn .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every database and statement: if the statement meets its run condition
@@ -47,7 +47,7 @@ statement has the condition {lean}`True` in the statement theorem. -/
 theorem Resolved.Statement.keysCondition_of_runCondition {database : Database} :
     ∀ {statement : Resolved.Statement}, statement.RunCondition database → statement.KeysCondition database
   | .addColumn .., condition | .drop .., condition => condition
-  | .createTable .., _ | .createView .., _ | .createIndex .., _ | .createTrigger .., _ | .rewrite _, _ | .begin, _ | .commit, _ | .rollback, _
+  | .createTable .., _ | .createView .., _ | .createIndex .., _ | .createTrigger .., _ | .rewrite _, _ | .dropColumn .., _ | .begin, _ | .commit, _ | .rollback, _
   | .insert .., _ | .update .., _ | .upsert .., _ | .insertSelect .., _ | .delete .., _ | .prepareError _, _ | .query .., _
   | .setting _ _, _ => trivial
 
@@ -56,7 +56,7 @@ true for every other statement. For example, a script of CREATE TABLE and writes
 condition. -/
 def Resolved.Statement.unconditioned : Resolved.Statement → Bool
   | .createIndex .. | .addColumn .. | .drop .. => false
-  | .createTable .. | .createView .. | .createTrigger .. | .rewrite _ | .begin | .commit | .rollback | .insert .. | .update ..
+  | .createTable .. | .createView .. | .createTrigger .. | .rewrite _ | .dropColumn .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => true
 
 /-- For every database and statement: if the statement has no run condition

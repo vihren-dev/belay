@@ -4,9 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
 from tests.surface_assertion_examples_test import check_module_chain
 
-pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
+pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
+              pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, in seconds. The fixtures use kernel evaluation of small programs."""
@@ -38,7 +40,9 @@ def test_sql_run_covers_every_statement_rule(runtime_root: Path, tmp_path: Path)
 
 def test_sql_run_refuses_unreadable_programs(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` fails with a message, and keeps the goal, for a raw execution step and for a variable program.
-    After a rule it leaves an unreadable part as a goal and warns. The fixture checks the exact messages."""
+    After a rule it leaves an unreadable part as a goal and warns. A statement that Lean cannot read takes the
+    rule of its resolution from the hypotheses, or fails with a message when none fits. The fixture checks the
+    exact messages."""
     check_module_chain(runtime_root, tmp_path, (("S6AutoShapes", 0),), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
@@ -59,3 +63,14 @@ def test_sql_auto_closes_the_goal_with_one_route_and_offers_its_steps(runtime_ro
     work limit and a goal with a sibling goal show the failure messages and that the goals stay."""
     check_module_chain(runtime_root, tmp_path, (
         ("S6RulesEffects", 3), ("S6RulesQueryPattern", 8), ("S6AutoAuto", 5)), timeout=CHAIN_TIMEOUT_SECONDS)
+
+
+def test_sql_run_proves_the_partial_index_invariant_of_a_signup(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql_run` proves the guide's partial-index invariant (at most one live account has an email, and the
+    global form) for every database with a site of the signup. The statement is a field of the site, so the
+    tactic reads its kind from the hint that closes its resolution. The final database is valid, and the laws
+    of valid databases (`Database.Valid.countMatching_partial_le_one`, `Database.Valid.keptRows_pairwise`) give the
+    unique index. The proofs use only ordinary logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
+        ("S6AutoSignup", 2)), timeout=CHAIN_TIMEOUT_SECONDS)

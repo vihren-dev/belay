@@ -79,6 +79,12 @@ otherwise, and drops the saved catalog in both cases. Proof sketch: both sides a
     resolveStatement context state (.renameColumn table column newName columnToken quoted) =
       state.withCatalog (resolveRenameColumn context state.catalog table column newName columnToken quoted) := rfl
 
+/-- ALTER TABLE DROP COLUMN resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
+@[statement_arms] theorem resolveStatement_dropColumn (context : ResolveContext) (state : ResolveState)
+    (table column : Identifier) (columnToken : String) :
+    resolveStatement context state (.dropColumn table column columnToken) =
+      state.withCatalog (resolveDropColumn context state.catalog table column columnToken) := rfl
+
 /-- DROP TABLE is a write: it checks the foreign keys of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_dropTable (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (ifExists : Bool) :

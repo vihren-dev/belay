@@ -1,7 +1,7 @@
 # Status: query inserts and ALTER table rebuild
 
-Created 2026-10-24. Status: OPEN. The task was checked against the code on
-2026-10-26; stage (a) of part 1 is implemented (see Progress).
+Created 2026-10-24. Status: DONE (2026-10-27). The task was checked against the code on
+2026-10-26; all three parts are implemented (see Progress and the gates sections).
 Task: [task file](20261024-table-rebuild.task.md).
 Specs: ADR19 D4/slice 5, ADR17 S6 and ADR22 preservation contracts.
 
@@ -574,9 +574,326 @@ rebuild proof is separate.
 
 ### Part 2 gates (Nix)
 
-- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8).
-- `just verdict` passes with no DISAGREE. The prediction files differ from the 55-file baseline only in newly supported
-  cases (checked before the last wording change of the out-of-scope message, which changes only the `reason` text of
-  unsupported predictions).
+- `just test-full` passes on the final part-2 tree (after the fixes of units 2.7 and 2.8):
+  `/nix/store/wxpcysk9684lwnsz5ynmwcx9wj6vns5x-sqlite-verifier-test-reports`.
+- `just verdict` passes with no DISAGREE: `/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`
+  (AGREE 5318, MODEL_UNSUPPORTED 2282).
+- Change of the verdict from part 1 (#278, `/nix/store/3lqr3pxr2xk5gbfdmbzwfr8rg1al1dpm-sqlite-verifier-verdict`) to
+  part 2: 106 cases go from MODEL_UNSUPPORTED to AGREE, and nothing else changes (the coordinator's comparison of the two
+  verdicts). The 149 cases that I counted earlier were the prediction files compared with the baseline taken before
+  the task started, so they include the gains of part 1 and were counted before the `legacy_alter_table` scope fix of
+  unit 2.7; the 106 is the figure for part 2.
 - Reviews of the last commits: `20261027T041119Z-f7b3be39` and `20261027T050120Z-e548dbb3` have no findings.
-- Part 2 is complete. Part 3 (DROP COLUMN and the integrated rebuild coverage) starts next.
+- Part 2 is complete (PR #279, bookmark `tasks/table-rebuild-part2` at fa4ec661). Part 3 (DROP COLUMN and the
+  integrated rebuild coverage) starts next.
+
+## Part 3: DROP COLUMN and the integrated rebuild coverage
+
+### Unit 3.1: the DROP COLUMN statement form, still a restriction
+
+- `Syntax.Statement.dropColumn table column columnToken` (path 0 table, path 1 column); the translator maps
+  `ALTER TABLE fullname DROP kwcolumn_opt nm` (`Translation/Renames.lean`, `Statements.lean`); a schema name before the
+  table is still refused. The "not modeled" message now lists ALTER TABLE DROP COLUMN (the golden text in
+  `tests/surface/DbBangErrors.lean` follows; this is a change of an existing expected text, flagged to `main`).
+- The new restriction `alter-drop` (`RestrictionKind.alterDrop`, text, registry, `docs/semantic-subset.md`, conformance
+  example) is what `resolveDropColumn` returns for every input in this unit; `resolveDropColumn_no_success` lets the
+  catalog-level laws (`NamesSpec`, `ResolveStateSpec`, `ResolveStatementValid/Facts/Single`) cover the form. Later units
+  replace the placeholder and these arms.
+- Exhaustive matches over `Syntax.Statement` got a `.dropColumn ..` arm, among them the editor modules of
+  `packages/belay` (`SqlTableSlots` treats the table as path 0 like ADD COLUMN; the others list it with the other ALTER
+  forms). This is the same minimal-arm deviation as in part 2.
+- Tests: `tests/syntax_mapping_test.py` (DROP COLUMN mapping with and without COLUMN, quoted names and tokens; the
+  schema-qualified form is refused); the refusal case that used DROP COLUMN as an unmodeled form is gone.
+- Manual proof repairs in this unit: 0. Total for the task so far: about 122.
+
+### Unit 3.2: facts about the text of a definition
+
+- SQLite keeps the text of a table and of an index, and prints a name of that text as written when the text no longer
+  resolves after DROP COLUMN. The model keeps no text for generated columns, table-level keys, foreign keys and
+  indexes, so the catalog now records the facts that the error spelling needs: `CatalogTable.inlineUnique` (columns
+  with a UNIQUE column constraint, because SQLite refuses to drop only those), `CatalogTable.exactNames` and
+  `CatalogIndex.exactNames` (the text spells every column as declared, with no double quote), and
+  `CatalogTable.quotedRename` (a quoted column rename wrote a quoted name into the text). `Resolution/SpelledNames.lean`
+  computes them at CREATE TABLE (`CatalogTable.withSpelling`) and CREATE INDEX; `blankNames` resets `quotedRename`, so
+  the outline of a table does not change.
+- `statisticsTable` moved to `Resolution/StatisticsTables.lean` to keep `Definitions.lean` under 200 lines.
+- Proof repairs (3 manual): `CatalogTable.supported_withSpelling` (new, by `rfl`) and the three `createTable` validity
+  theorems now speak of the table with its spelling; `Catalog.Valid.createIndex` takes the `exactNames` flag;
+  `CreateIndexSuccessLaws` states the index with its flag. One `#guard` of `Examples.lean` got `inlineUnique := [0]`.
+- Tests: `Resolution/SpelledNamesExamples.lean` (compiled-evaluator `#guard` checks of the facts at CREATE TABLE,
+  CREATE INDEX and the quoted column rename).
+- Manual proof repairs in this unit: 3. Total for the task so far: about 125.
+
+### Units 3.3 to 3.6: the DROP COLUMN model, its laws and the contracts (one commit)
+
+- Statement form `Resolved.Statement.dropColumn table index stored` (kind `.rewrite`; `stored` is the catalog that
+  the resolver computed). `Database.runsDropColumn` holds when `Catalog.droppable` accepts the drop and the stored
+  catalog has the outline of the catalog after the drop (`Catalog.dropColumn`); the step then stores the catalog and
+  removes the cell of every row (`Database.dropColumn`, `Row.dropValue`), keeps the rowids and the table order, and
+  otherwise fails with `ExecutionError.unmodeled` and the input database (the same shape as the rename step).
+- `Catalog.droppable` (Resolution/ColumnDropCatalog, ColumnDropSpec): the column is no PRIMARY KEY, no UNIQUE, no key
+  column, no column of an index definition, no alias of the rowid, not read by a generated column or by a CHECK of
+  another column, not named by a foreign key of the table, and no table has a foreign key to the table (the model
+  restricts this case; see the open items). `CatalogTable.DropsCleanly` is the structure of the table-side facts, and
+  `Catalog.droppable_spec` gives it back. The columns whose constraints the dropped column owns alone (a CHECK that
+  reads only that column, a column-level constraint) are not dependencies: `CatalogTable.checksAfterDrop` removes
+  them, and `CatalogTable.allChecks_dropColumnAt` shows what remains.
+- Laws in new files (all under 200 lines): expression and key rewrite (`ColumnDropExpr*`, `ColumnDropKeys`,
+  `ColumnDropKeyLaws`, `ColumnDropTable`), cells (`DropColumnCellLaws`), per-fact table laws (`DropColumnFactLaws`,
+  `DropColumnKeyLaws`), the transport through the database (`DropColumnDatabaseLaws`: `Database.table_dropColumn`,
+  `runsDropColumn_spec`, `Database.EveryTable.dropColumn`), Admitted and Valid facts for the run
+  (`DropColumnAdmittedLaws`, `DropColumnValidLaws`), and the foreign key part: parent invariance and child positions
+  (`ColumnDropParent*Laws`, `ColumnDropParentChildren`), mapped keys (`ColumnDropParentMapLaws`), link transport
+  (`DropColumnLinkLaws`, `DropColumnReferenceLaws`), and `RowReferencesHold` / `ParentSchemasCompatible` for the run
+  (`DropColumnForeignFacts`). The statement contracts are in `StatementDropColumn`.
+- Contracts: `runStatement_dropColumn_satisfies` (any property that the run keeps; the failing run keeps the
+  database) and `runStatement_dropColumn_eachTable`. The clients (`runStatement_rowidsDistinct` and its siblings,
+  `runStatement_keysUnique`, `runStatement_catalogSupported`, `runStatement_rowReferences`,
+  `runStatement_parentSchemasCompatibleSelected`, `runStatement_foreignKeyAtomsSelected`, the Admitted/ValidAtoms
+  theorems) add one arm each and do not unfold the run. The exception is `literalStep_success_catalog`: its new arm
+  unfolds `literalStep`, `runStatement` and `step`, because that theorem reads the stored catalog of the run itself. `ForeignKeyRowsCondition`,
+  `ForeignKeySchemaCondition` and `ForeignKeyAtomsCondition` are `True` for the new form, with a bullet that says why:
+  the run stores a catalog only when it keeps the outline and the selected parents of the catalog after the drop, and
+  `Catalog.droppable` refuses the columns that a foreign key names.
+- Shared structures changed: `RowLocalAtom` and `TableAtom` gained the field `dropped` (a table that has the atom and
+  loses a column cleanly still has it). Every instance discharges it from the new per-fact laws. This affects the S6
+  automation agent only where it builds a new instance of these structures; told to `main` in the report.
+- The review of unit 3.2 (`20261027T061435Z-1d272086`): one must (the docstring of `Catalog.Valid.createTable` now
+  names the spelling metadata) and one should (the two `#guard` matches list every `CatalogEntry` constructor); both
+  fixed.
+- Placement of the arms in the packages `belay` (`ReadAnalysis`, `DbDiagnostics`): minimal exhaustive-match arms only.
+- Manual proof repairs in this unit: about 30 (new arms in the existing statement theorems and their helpers, and the
+  seven new `dropped` fields). Total for the task so far: about 155.
+
+#### Generalization analysis (owner rule of 2026-10-27)
+
+For each new public statement: the general form chosen, and what stays specific.
+
+- `Catalog.find_mapIdx`: general (any change of the objects that keeps names and kinds); `Catalog.find_dropColumn` is
+  an instance. Other lemmas of `ColumnDropParentLaws` (`parentIndexes_dropColumn_other`, `parentLink_dropColumn`) stay
+  specific to `CatalogObject.dropColumn`: their proofs read the fact that tables and indexes at other positions are
+  unchanged, which a general rewrite statement would need as one more premise per use; no second client exists.
+- `ParentKey.mapChildren`, `ParentLink.mapChildren`, `ForeignKey.mapColumns`, `matchIndex_mapColumns`,
+  `primaryKey_zip_mapColumns`, `Catalog.parentKey_mapColumns`, `Catalog.parentLink_mapColumns`,
+  `ForeignKeyLink.satisfied_mapChildren`, `indexHolds_mapChildren`, `childValues_mapChildren`,
+  `parentFound_mapChildren`: general in the column move (any function on positions; the only premises are the ones
+  the proof reads: the moved cells equal the old cells, and the located parents have the same table and rows in both
+  databases). Only the final instance
+  (`Catalog.parentLink_dropColumn_mapColumns`, `Database.foreignKey_of_drop`) names the dropped column.
+- `Database.EveryTable.dropColumn`: general in the fact (any fact of a position and table, with a premise for the
+  unchanged tables and one for the changed table). `runStatement_dropColumn_satisfies`: general in the property.
+  `runStatement_dropColumn_eachTable`: general in the atom, with the minimal two premises.
+- `Table.*.dropColumn` (one per atom): each states the atom for the table without the column with only the premise the
+  proof uses (for example `RowsStored` and `NotNull` need no clean-drop premise); a joint statement over all atoms
+  would only restate the field `dropped` of `RowLocalAtom` and `TableAtom`, which is the general form for atoms.
+- `Expr.evaluate_dropColumn` and `Expr.eval_dropColumn` (ColumnDropExprLaws): general in the expression and the
+  row, with the premise that the expression does not read the dropped column. `LiteralData.*_dropValue`: general in
+  the key and the row.
+- Stays specific, no general form attempted: `Catalog.droppable_spec` and `CatalogTable.droppable_spec` (they are the
+  definition unfolded), `Catalog.uniqueKeys_free` (two uses only, both on the dropped table).
+
+#### Shared-law changes of part 3 (for the S6 part 3 work and the NOT IN task at merge)
+
+1. `RowLocalAtom` and `TableAtom` gained the field `dropped` (a table that has the atom and loses a column cleanly
+   still has it). A new instance of either structure must discharge it.
+2. `Syntax.Statement.dropColumn` is a new constructor: every exhaustive match over `Syntax.Statement` needs an arm
+   (the editor modules got the minimal arm).
+3. `Resolved.Statement.dropColumn table index stored` is a new constructor: every exhaustive match over
+   `Resolved.Statement` needs an arm (about 25 theorems; see the open point below).
+4. The golden text in `tests/surface/DbBangErrors.lean` changed: the "not modeled" message lists ALTER TABLE DROP
+   COLUMN.
+5. (Unit 3.8) The run of a rename (`Resolved.Statement.rewrite`) stores the new catalog when it has the same
+   outline (`Catalog.sameOutline`), no longer when the foreign keys also select the same parents (`Catalog.keepsOutline`
+   stays for DROP COLUMN). `runStatement_rewrite_satisfies` takes one premise less (`fun same => ...`). The conditions
+   `ForeignKeyRowsCondition` and `ForeignKeySchemaCondition` (and so `ForeignKeyAtomsCondition`) of a rewrite are now
+   `renamed.selectedParents = database.catalog.selectedParents` instead of `True`. S6 part 3 and the NOT IN task must
+   use the new shape at merge; a proof that calls `runStatement_rewrite_satisfies` with two lambda arguments needs one.
+
+#### Open point for a later cleanup task: the cost of a new `Resolved.Statement` constructor
+
+- Theorems that needed a new arm (unit 3.3): `runStatement_rowidsDistinct`, `runStatement_keysUnique`
+  (`KeysCondition`), `runStatement_catalogSupported`, the shaped, distinct and table-atom statement theorems
+  (`AdmittedShapedStatement`, `AdmittedDistinctStatement`, `AdmittedTableAtomStatement`, `RowLocalStatement`),
+  `runStatement_rowReferences` and `ForeignKeyRowsCondition`, `runStatement_parentSchemasCompatibleSelected`,
+  `runStatement_foreignKeyAtomsSelected` and their two conditions (`ForeignKeySelectedStatement`),
+  `literalStep_success_catalog`, `step_extends` (`PreservationLaws`), `ValidAtomsStatement`, `KeysUniqueRunStep`,
+  `AtomsConditionsOfLink`, `FailingConstraintLaws`, `StepCatalogLaws`, `RunHoldsStep`, `SqlLaws`, `SqlAdvance`,
+  `StatementClock`, `StatementOutput`, `StatementSingleton`, `ForeignKeySchemaWrites`, `ForeignKeyCreate`,
+  `ResolveStateSpec`, `ResolveStatementForms`, and the output and message definitions.
+- Sketch of a combinator: every table-local invariant theorem has the same shape for a schema statement: the
+  failing run keeps the database; the succeeding run gives a database that is a function of the input
+  (`step` equations) and must be shown to have the invariant. A per-constructor record
+  `Resolved.Statement.Frames` with the fields (a) `keeps_on_failure` (`step_..._of_not_runs`), (b) `eachTable`
+  (a `RowLocalAtom`/`TableAtom`-parametric law, as `runStatement_dropColumn_eachTable`), (c) `catalog` (the catalog
+  of the success: `applyCatalog`), (d) `rows`-shaped and key facts as properties of the stored database, would let one
+  generic theorem `runStatement_of_frames` derive all `Satisfies` statements for the atoms; a new constructor then
+  supplies one `Frames` value and the 25 theorems stay untouched. The rename and DROP COLUMN steps already have this
+  form (`runStatement_rewrite_satisfies` and `runStatement_dropColumn_satisfies` are the generic part).
+- Estimate: about 250 to 350 lines for the record and the generic theorem, and about 25 one-line arms removed per later
+  constructor; the migration of the existing 25 theorems is a mechanical rewrite of about 1 to 3 lines each.
+
+### Unit 3.7: the DROP COLUMN resolver, native conformance evidence and mutants
+
+- Resolver (`Resolution/DropColumnResolve.lean`, `DropColumnDependents.lean`, `DropColumnOutcome.lean`): the checks
+  follow `sqlite3AlterDropColumn` of SQLite 3.51.0 (table, system table, view, column as the statement writes it, PRIMARY
+  KEY before UNIQUE, last column), then the two schema tests. Pass 1 runs over the catalog as it is and finds a view
+  or trigger that does not resolve; pass 2 runs over the objects of the catalog in schema order, with the positions
+  of the columns before the drop, and finds in order: a table that still names the column (table-level UNIQUE key,
+  CHECK, generated expression, foreign key), an index that reads it, and a view or trigger that no longer resolves in
+  the catalog after the drop. The success is `Resolved.Statement.dropColumn` with `Catalog.dropColumn`; late-resolved
+  views and triggers are resolved again in that catalog, so they keep no stale position and are still validated.
+  `PrepareError` gained `dropColumn` (view, primary key, UNIQUE, last column) and `DependentPhase` (`current`,
+  `afterRename`, `afterDropColumn`) replaced the flag `afterRename`; the JSON key is `phase`.
+- Restrictions that remain (`alter-drop`, narrower; text and conformance example changed): the table is the parent of a
+  foreign key (the model does not move the parent columns of other tables; the docstring of `CatalogObject.allowsDrop`
+  says that this is a model restriction and SQLite allows the drop), a trigger with `UPDATE OF` the column, several
+  kinds of definition that name the column, a definition whose spelling the model does not know (quoted, qualified,
+  other letter case), and a catalog after the drop outside the limits. The restriction text and
+  `docs/semantic-subset.md` name them.
+- Outcome laws: `DropOutcome`, `finishDropColumn_outcome`, `resolveDropColumn_outcome`, `DropOutcome.step`,
+  `.applyCatalog`, `.valid` replace the old `resolveDropColumn_no_success`. The call sites in
+  `ResolveStatementFacts`, `ResolveStatementValid`, `ResolveStatementSingle`, `NamesSpec` and `ResolveStateSpec` use them.
+- Bug found by the native cases and fixed: pass 2 first ran over the catalog after the drop, so an index on a column
+  after the dropped one looked as if it read the dropped column (its positions had moved). Pass 2 now reads the objects
+  of the catalog before the drop; `DropColumnExamples` guards it (`shifted`).
+- Compiled-evaluator `#guard` checks (`Resolution/DropColumnExamples.lean`): error order, spellings, index and table
+  failures, restrictions, successful drops with a populated database (cells, order, rowids, other tables kept), the
+  rejection of a catalog that is not the catalog after the drop (the run fails with the database unchanged).
+- Conformance: `conformance/authored_column_drops.py` (38 cases, version 7 records; setups in
+  `column_drop_setups.py`; the existing `authored_drops.py` is the DROP TABLE module) and
+  `tests/conformance_column_drops_test.py`: the judge's verdict is AGREE for every case except
+  `column-drop-parent-unrelated`, which stays a restriction (a parent column that no key names). The kernel proves the
+  table-only cases. `column-drop-index-reads-column` and its siblings check the `step` phase of the dependent-object
+  errors. The prepare errors (primary key, UNIQUE, last column, view, missing table or column) have phase `prepare`.
+  No case disagrees. Savepoints are not modeled, so no savepoint case is included. The Nix verdict of the part
+  gates (below, when written) covers the corpora with `ALTER TABLE ... DROP COLUMN`.
+- Mutants: `conformance/column_drop_mutants.py` (9 mutants: primary key, UNIQUE and last column checks removed, index
+  that reads the column allowed, CHECK and generated dependencies ignored, rows lost, cell kept, run always
+  rejected), run by name with `tests/conformance_column_drop_mutants_test.py`; all 9 killed. A mutant that needs a view
+  cannot be measured, because the mutant runner replays tables only; views are judged through the predictions.
+- Review of the unit 3.3 to 3.6 commit (`20261027T074345Z-1230d27d`): 10 musts and 1 should, all fixed in the
+  `refactor:` commit (R11: executable tests for the accepted drop with rows and the rejected run; R7: the foreign-key
+  parent rule is named a model restriction; R2: premises added to six docstrings and `{name}` references; R3: proof
+  sketches; R19: this file names `literalStep_success_catalog` as the one client that unfolds the run).
+- Generalization analysis of the new statements: `DropOutcome` is general in the limits, the catalogs and the statement
+  (it is the outcome of any drop resolution; `resolveDropColumn_outcome` is the instance for the resolver).
+  `DropOutcome.step`, `.applyCatalog` and `.valid` take only the premises their proofs use (the outcome, the limits).
+  `finishDropColumn_outcome` stays specific to the drop: it reads the definition of `finishDropColumn`.
+- Manual proof repairs in this unit: 0 beyond mechanical arms (about 10 one-line replacements of the old stub lemma
+  and updated message constructors). Total for the task so far: about 165, none of them a non-mechanical arm.
+
+### Unit 3.8: the rebuild runs, and a rename may make a dangling foreign key find a parent
+
+- Finding: the guide's rebuild (create the new table, copy, drop the old table, rename the new one to the old name)
+  was out of scope. After the DROP TABLE, the foreign keys of the children name a table that does not exist; the rename of
+  the new table to that name makes them find a parent. The run of a rewrite stored the catalog only when every foreign
+  key selected the same parent, so this rename failed as `.unmodeled`, and the predictions of the corrected rebuild were
+  `MODEL_UNSUPPORTED`. The step does not need that test: it replaces the catalog and keeps the rows. Only the proofs of the
+  foreign-key atoms need the same selected parents, as they need `Catalog.CreateKeepsSelection` for a CREATE TABLE.
+- Change: the guard of the rewrite is `Catalog.sameOutline` (new); the foreign-key conditions of a rewrite are the
+  equality of the selected parents (shared-law change 5 above). The row-local, table, key and Valid statement theorems
+  lose an unused argument. The rename resolver is unchanged.
+- Consequence for S6: the rebuild's rename satisfies the weaker guard but not the new condition, so the foreign-key atoms
+  after the rebuild come from the database (what `PRAGMA foreign_key_check` reports), not from a frame law. This is the
+  same situation as for a CREATE TABLE that locates a dangling key; the universal claim is for S6.
+- Cases (`conformance/authored_rebuilds.py`, 11 cases; `tests/conformance_rebuilds_test.py`): the unsafe rebuild with
+  enforcement on (cascade through the implicit DELETE of DROP TABLE), the corrected rebuild with enforcement off and
+  `foreign_key_check` (clean, and with a violation after a parent row is left out), the default connection with
+  enforcement off, `PRAGMA foreign_keys` inside a transaction (no effect, both directions), a rename of the old table first
+  (the foreign keys of the children follow it), a view that blocks the rename, a rollback of the whole rebuild and the
+  rebuild of the child. The recorder fixes the enforcement state at the start of a case through the measured profile
+  (a pragma outside a transaction would change the profile), so the cases say it with the feature `fk-on`. Every case agrees
+  with native SQLite except `rebuild-drop-column-instead`, which stays a restriction (a drop of a column of a parent
+  table). The kernel proves the table-only cases.
+- Mutant: `conformance/rebuild_mutants.py` (`rename_keeps_selected_parents`: the old guard), killed by
+  `tests/conformance_rebuild_mutants_test.py`. The rename mutants of part 2 changed their text to `sameOutline`.
+- Generalization analysis: `Catalog.sameOutline` and `Catalog.sameOutline_eq` are general in the catalogs.
+  `runStatement_rewrite_satisfies` is more general than before (it needs only the outline). The condition for the rewrite
+  states the equality for any renamed catalog; the dangling-to-located case is the instance that it excludes.
+- Manual proof repairs in this unit: 6, all one-line changes of a lambda or a condition. Total for the task so far: about 171.
+
+### Merge of the NOT IN laws task (PR #281, with S6 automation part 2, PR #280)
+
+- Merge commit of `tasks/not-in-subquery-laws` (d92513aa) into the part 3 chain. The only conflict was the module glob
+  list of `packages/belay-sqlite-model/lakefile.toml`; I took the union of both sides (`union_globs.py`, 11 modules
+  added from part 3, none removed).
+- Adaptation to the five shared-law changes (the `dropped` field, `Syntax.Statement.dropColumn`,
+  `Resolved.Statement.dropColumn`, `Catalog.sameOutline` with its changed arities, and the golden text): the model,
+  the NOT IN modules and the S6 tactics needed none. The NOT IN modules build no `RowLocalAtom` or `TableAtom` instance and
+  match no statement type exhaustively. The first `just test-full` on the merged tree (log only) failed 9 tests of the
+  view and claim fixtures (`ClaimsViewCatalog`, `ClaimsCommonTables`, `ViewsSupport`): their matches over
+  `Resolved.Statement` lacked the `dropColumn` arm, and one arm in `ViewsSupport` that unit 3.1 had written as
+  `some (.renameColumn .. | .dropColumn ..)` was a syntax error that no earlier run compiled. Four one-line arms fixed
+  them (repairs: 4, all mechanical; the total is about 175).
+
+## Part 3 gates (Nix)
+
+- `just dev-build` (2545 jobs), then `just test-full` on the same tree (after the fixture arms): 1390 tests pass across the suites (407 of them in the surface suite),
+  `/nix/store/cprl891rws7v6n58nlzg7ar704d9lmb7-sqlite-verifier-test-reports`.
+- `just verdict`: no DISAGREE and no HARNESS_ERROR, `/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`
+  (AGREE 5504, MODEL_UNSUPPORTED 2096). Change from the part 2 verdict
+  (`/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`, AGREE 5318, MODEL_UNSUPPORTED 2282): 186 cases go from
+  MODEL_UNSUPPORTED to AGREE (corpus-v1 28, v2 28, v3 28, v4 51, v5 51) and nothing else changes.
+- Predictions (`/nix/store/4dzghvdn8g8n6k62086i03g9nzzd5w8c-sqlite-verifier-predictions`) against `build/predictions-baseline`
+  (taken before the task): the lines that differ are cases whose old prediction was a restriction; no supported case
+  changed its prediction.
+- Reviews of part 3: 86f55729 (1 must, 1 should, fixed), the refactor 0e19a8a2 (none), e690b7fd (1 must, fixed),
+  26f2cb7b (none), ffa5d786 (none).
+- End-of-task gates: `just test-nix` passes (71 tests of the Nix-requiring suite), and `just test-scheduled-checks` passes:
+  `/nix/store/nh7a5ff9mghhcm8rppafajzdz35xkfw6-sqlite-verifier-scheduled-check-reports`. The mutant tests that the task adds
+  or changes run in the daily CI job.
+- The task is DONE. The authored corpus freeze (corpus numbers, Nix corpus list, evidence writers, lock) remains for the
+  judge PR. The part 3 chain is merged with `tasks/not-in-subquery-laws`.
+
+## Judge PR: freeze of the authored cases (corpus-v55)
+
+Branch `tasks/table-rebuild-judge` on top of `tasks/table-rebuild-part3` (PR #282). The owner must approve this change
+(ADR 0011); the implementation PRs leave the lock unchanged.
+
+- Corpus: `conformance/corpus-v55` (next free number after v54), written by `python -m conformance.table_rebuild_evidence`
+  through `conformance.authored_evidence`. It joins four case modules in `conformance/authored_table_rebuild_set.py`:
+  `authored_insert_queries` (60 cases), `authored_renames` (51), `authored_column_drops` (40) and `authored_rebuilds` (11).
+  All records are native version 7 (run on after an error, with the writer counters). The replay of the writer is
+  deterministic: a second run gives the same shard bytes.
+- Claim: `corpus-v55` in `judge/claims.json` with `DISAGREE` and `HARNESS_ERROR` forbidden and `mustAgree` of the 149 cases
+  that agree (insert 53, rename 47, column drop 39, rebuild 10). The 13 other cases are MODEL_UNSUPPORTED: 7 INSERT
+  cases whose source the model does not describe (compound, GROUP BY, ORDER BY of a failing source, transfer
+  optimization, two-order trigger), `rename-column-check-loose-quote`, `rename-column-view-error`,
+  `rename-column-view-recursive-aggregate`, `rename-table-main-schema`, `column-drop-parent-unrelated` and
+  `rebuild-drop-column-instead`. No existing claim changed; no `mustAgree` list of another corpus changed.
+- Left out of the corpus: `insert-query-index-order` and `insert-query-index-order-keeps-other-rows`. SQLite reads the
+  source by its index, so the rows get other ids than the model's own execution gives. The model agrees through its second
+  execution (kernel test), but the judge compares the one prediction of `runPassFrom`, so the verdict is DISAGREE, which a
+  claimed corpus forbids. A change that lets the judge accept any possible execution is a judge-protocol change and
+  needs an owner decision. The cases stay in `conformance/authored_insert_queries.py` with their kernel proofs and mutants.
+- Lock: `integrity/judge.lock.json` from `just judge-lock` adds `corpus corpus-v55` and the new `judge` hash.
+- Tests: `tests/conformance_corpus_writers_test.py::test_table_rebuild_corpus_round_trips`; the module list of
+  `build-support/tests.nix` has the two new modules.
+- Reviews: 976d26cb (2 should, fixed), c99f828f (1 should, fixed), 743118db (none), 6dab14f3 (none).
+- Gates (Nix): `just dev-build`, then `just test-full` on the same tree: 407 surface tests and the other suites pass,
+  `/nix/store/ckx81jfqla5na9kiqad8fw4djsrd51ij-sqlite-verifier-test-reports` (a first run timed out in the surface
+  suite while three heavy jobs ran at once; the rerun with two passed). `just verdict`: no DISAGREE and no HARNESS_ERROR,
+  `/nix/store/0i6ls6sj7hz6adxw6d7sx864n2gqdcxv-sqlite-verifier-verdict` (AGREE 5653, MODEL_UNSUPPORTED 2109). Against the
+  part 3 verdict (`/nix/store/xbdlap2cy96mkbj05nkjwacx2ph1gcji-sqlite-verifier-verdict`) only `corpus-v55` is new
+  (149 AGREE, 13 MODEL_UNSUPPORTED); every other corpus is unchanged.
+- Owner decisions of 2026-10-27 (through the coordinator).
+  1. The 186 cases of the corpora v1 to v5 that part 3 made agree (v1 28, v2 28, v3 28, v4 51, v5 51) are now in the
+     `mustAgree` lists, as the pragma and compound slices did. The list sizes are v1 64, v2 70, v3 170, v4 726, v5 3024.
+     The cases are those that are AGREE in the part 3 verdict and MODEL_UNSUPPORTED in the part 2 verdict
+     (`/nix/store/8n6csifr50qkrah6l7l13xvxnq2hcv17-sqlite-verifier-verdict`); none was claimed before. The change adds 186 lines to `judge/claims.json` and removes none.
+  2. `insert-query-index-order` and `insert-query-index-order-keeps-other-rows` stay out of the corpus.
+     Follow-up, not done: a judge-protocol change that accepts a native result that matches any possible execution of
+     the model. It needs its own owner decision.
+- Merges: `uoszqptt` (derived-column laws with S6 part 3a, PR #283) and then `tasks/surface-suite-split-3` (the split of
+  the surface tests into the Nix suites `surface`, `surfaceChecks` and `surfaceS6`) were merged without conflicts. The
+  `NormalizedField*` modules stay removed. The new modules of this change are in the module list of
+  `build-support/tests.nix`, which the split did not change.
+- Lock after the claim change: only the `judge` hash changed, to `/nix/store/ldd5xnqzd2k0pd3bigskx5g4j6i64g6y-source`.
+- Reviews of the claim and the lock: `20261027T140349Z-d8acaa23` and `20261027T140434Z-c03298ae`, no findings.
+- Gates (Nix) on the merged tree: `just dev-build`, then `just test-full` on the same tree:
+  `/nix/store/06b9qf4nwqi3ghrpkzs3xaasz6vmasnk-sqlite-verifier-test-reports` (the first run failed in `surfaceS6`: the
+  set-up of `surface_s6_check_programs_test.py` took 392 s, above the 300 s test timeout, while other heavy jobs
+  loaded the machine; the rerun with a free machine passed, 377 surface tests). `just verdict`: no DISAGREE and no
+  HARNESS_ERROR, `/nix/store/8ax1lh1jkkgxw4a0hjj7vrky31lam8kl-sqlite-verifier-verdict`. All 5410 claimed cases are
+  AGREE (v1 71 AGREE of 177, v2 77, v3 177, v4 824, v5 3148; corpus-v55 149 AGREE and 13 MODEL_UNSUPPORTED).
+- Review `20261027T145326Z-fa448e66` of this record: no findings.

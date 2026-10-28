@@ -88,6 +88,18 @@ structure CatalogTable where
   /-- The foreign keys of the {lit}`FOREIGN KEY` table constraints, in written order; omit them
   for none. Those of a column are in {name}`CatalogColumn.foreignKeys`. -/
   foreignKeys : List ForeignKey := []
+  /-- The positions of the columns whose definition has a {lit}`UNIQUE` constraint. SQLite flags such a
+  column, and each column of a {lit}`PRIMARY KEY`, so that it cannot be dropped; a column in a table-level
+  {lit}`UNIQUE (a)` has no flag. The keys themselves are in {name}`CatalogTable.uniqueKeys`. -/
+  inlineUnique : List Nat := []
+  /-- Whether the stored text of the table spells every column name of its table-level keys, foreign keys
+  and generated columns as the column is declared, with no double quote ({lit}`SpelledNames.lean`). SQLite
+  prints the written spelling in the error of a dropped column that these still name, so the model prints
+  the declared name only when this is true. -/
+  exactNames : Bool := true
+  /-- Whether a column rename wrote a quoted name into the text of the table or of its indexes, so that the
+  spelling of the stored text is no longer the declared name. -/
+  quotedRename : Bool := false
   deriving Repr, DecidableEq
 
 /-- Every foreign key of the table in the order in which SQLite creates them: those of each

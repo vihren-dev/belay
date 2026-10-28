@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-27T07:35:25+00:00",
+  "finding": "20261027T061435Z-1d272086#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docstring now names the spelling metadata"
+}

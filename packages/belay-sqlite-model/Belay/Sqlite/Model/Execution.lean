@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Database
+import Belay.Sqlite.Model.DatabaseDropColumn
 import Belay.Sqlite.Model.LiteralData
 import Belay.Sqlite.Model.Resolution.CatalogOutline
 import Belay.Sqlite.Model.Resolution.ReadDefaults
@@ -142,7 +143,9 @@ key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 to the catalog ({name}`Catalog.createTrigger`) with no rows; CREATE VIEW stores an unresolved definition the same way.
 RENAME replaces the catalog by the rewritten catalog of its statement and keeps every row; it fails with
 {lean}`ExecutionError.unmodeled` unless the rewritten catalog is the catalog after a change of names
-({name}`Catalog.keepsOutline`). DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
+({name}`Catalog.sameOutline`). DROP COLUMN stores the catalog of its statement and removes the cell of the column from each
+row of the table ({name}`Database.dropColumn`); it fails with {lean}`ExecutionError.unmodeled` unless
+{name}`Database.runsDropColumn`. DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
 the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.
 CREATE TABLE, VIEW, INDEX or TRIGGER at a position other than the end of the catalog (or over
@@ -199,7 +202,10 @@ def step (clock : Int) (counters : Counters) (parameters : List Value) (statemen
     else .error (.unmodeled, database)
   | .drop positions _ => .ok (database.drop positions)
   | .rewrite renamed =>
-    if database.catalog.keepsOutline renamed then .ok { database with catalog := renamed }
+    if database.catalog.sameOutline renamed then .ok { database with catalog := renamed }
+    else .error (.unmodeled, database)
+  | .dropColumn target index stored =>
+    if database.runsDropColumn target index stored then .ok (database.dropColumn target index stored)
     else .error (.unmodeled, database)
   | .setting .. => .ok database
   | .prepareError error => .error (.prepare error, database)

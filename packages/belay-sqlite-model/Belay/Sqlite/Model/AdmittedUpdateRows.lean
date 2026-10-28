@@ -112,6 +112,20 @@ theorem movedRowid_aliased {alias : Option Nat} {row : Row} {rowid : Int} {posit
   cases same
   simpa using cell
 
+/-- For every aliased row, appending any cells and then applying alias movement
+({name}`movedRowid`) keeps the extended row. Without an alias, the premise imposes nothing.
+Proof sketch: an existing alias position still contains the original integer
+rowid after appending cells, so alias movement writes the same rowid. -/
+theorem movedRowid_append (alias : Option Nat) (row : Row) (extra : List Value)
+    (aliased : row.Aliased alias) :
+    movedRowid alias (row.appendValues extra) = row.appendValues extra := by
+  cases alias with
+  | none => rfl
+  | some position =>
+    have cell := aliased position rfl
+    have below := (List.getElem?_eq_some_iff.mp cell).1
+    simp [movedRowid, Row.appendValues, List.getElem?_append_left below, cell]
+
 /-- For every context, table, assignments, filter and row {lit}`old` of the table that the filter selects:
 if {lit}`old` is aliased, the column of the rowid alias is not generated, and
 {name}`updateMismatch` is false, then {name}`movedRowid` of {name}`assign` of {lit}`old` is aliased.

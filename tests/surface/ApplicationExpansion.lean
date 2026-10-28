@@ -1,4 +1,4 @@
-import Belay
+import LowercaseSimulation
 
 /-! A fixture module of `tests/surface_application_test.py`: lookups across the lowercase-field expansion
 (ADR 0017, S8). The expansion adds a stored lowercase copy of the email, fills it, and creates two
@@ -11,7 +11,7 @@ set_option maxRecDepth 8192
 set_option exponentiation.threshold 2048
 
 namespace ApplicationExpansionFixture
-open Belay.Sqlite Belay.Sqlite.Calls Belay.Sqlite.NormalizedFieldExpansion
+open Belay.Sqlite Belay.Sqlite.Calls LowercaseFixture
 open Belay.Sqlite.Model hiding Database
 
 /-- One customer before the stored column exists. -/
@@ -68,7 +68,7 @@ def sampleTable : Table := (sample.raw.table 0).get (by decide +kernel)
 /-- The sample has a site for the plan. Proof sketch: each field is a closed fact about the parsed
 database, checked by kernel evaluation. -/
 theorem sample_has_site :
-    Nonempty (Site sample.raw plan.tableName plan.idName plan.sourceName plan.storedName) :=
+    Nonempty (LowercaseSite sample.raw plan.tableName plan.idName plan.sourceName plan.storedName) :=
   ⟨{ position := 0, table := sampleTable, id := 0, source := 2
      found := by decide +kernel
      present := (Option.some_get _).symm
