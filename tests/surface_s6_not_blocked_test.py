@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.s6_check_support import CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
 from tests.surface_assertion_examples_test import check_module_chain
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
-              pytest.mark.requires_native("sqlite3")]
+              pytest.mark.requires_native("sqlite3"), pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
 
 NOT_BLOCKED = {"null-blocked": ([], [[1]]), "null-customer": ([], [[None]]), "collations": ([["a"]], [])}
 """The rows that native SQLite gives for `NOT IN` and for `NOT EXISTS`, on each database that refutes their
