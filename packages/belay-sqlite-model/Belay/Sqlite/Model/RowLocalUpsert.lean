@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.KeysUniqueUpsert
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.TableAtomFrames
+import Belay.Sqlite.Model.RowLocalAtoms
 import Belay.Sqlite.Model.RowEngineFacts
 
 set_option doc.verso true

@@ -1,6 +1,10 @@
 """The theorems of the atoms "not null", "types fit" and "checks hold" (ADR 0022, D3, slice 3) have
 their stated formulas and rest only on the standard axioms.
 
+ADR25 also checks the four general write primitives and the row-local statement formula
+without extra shape or readiness assumptions. These migration witnesses remain until the
+last planned API/context change; generic axiom and independent-premise coverage remains.
+
 The statement theorems, the run theorems of `runSqlFrom`, `runSql` and `runScriptFrom`, and the
 corollary for the four constraint atoms are in the root import of the model. The theorems of
 `runScriptFrom` have no hypothesis on the statements of the script (ADR 0022, slice 4, part 3): they
@@ -20,6 +24,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 THEOREMS = [
+    "Database.Every.setRows", "checkedWrite_satisfies", "insertOutcome_satisfies",
+    "runStatement_rowLocal", "Table.notNullAtom", "Table.typesFitAtom", "Table.checksHoldAtom",
     "runStatement_notNull", "runSqlFrom_notNull", "runSql_notNull", "runScriptAllFrom_notNull",
     "runStatement_typesFit", "runSqlFrom_typesFit", "runSql_typesFit", "runScriptAllFrom_typesFit",
     "runStatement_checksHold", "runSqlFrom_checksHold", "runSql_checksHold", "runScriptAllFrom_checksHold",
@@ -33,6 +39,38 @@ STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 CHECKS = """
 import Belay.Sqlite.Model
 open Belay.Sqlite.Model
+
+-- ADR25 migration witnesses: keep through the final API/context contract change.
+example {atom : Table → Prop} {database : Database} (every : database.EachTable atom)
+    {target : Nat} {table : Table} (found : database.table target = some table) {rows : List Row}
+    (stored : atom { table with rows }) : (database.setRows target rows).EachTable atom :=
+  Database.Every.setRows (fact := fun _ _ table => atom table) every found stored
+example {database : Database} (unique : database.KeysUnique) {target : Nat} {table : Table}
+    (found : database.table target = some table) {rows : List Row}
+    (stored : ({ table with rows } : Table).KeysUnique (database.catalog.uniqueKeys target table.shape)) :
+    (database.setRows target rows).KeysUnique :=
+  Database.Every.setRows (fact := fun catalog position table =>
+    table.KeysUnique (catalog.uniqueKeys position table.shape)) unique found stored
+example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
+    (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
+    (keys : List UniqueKey) (result : Table) (shape : result.shape = table.shape) :
+    (checkedWrite database target keys result).Satisfies fun after => after.EachTable atom :=
+  checkedWrite_satisfies every found keys result shape
+    fun passed => rowLocal.constraints keys result (Bool.and_eq_true_iff.mp passed).1
+example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
+    (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
+    (keys : List UniqueKey) (rows : List (List Value)) (result : Table) (shape : result.shape = table.shape) :
+    (insertOutcome database target keys table rows result).Satisfies fun after => after.EachTable atom :=
+  insertOutcome_satisfies every found keys rows result shape
+    fun passed => rowLocal.constraints keys result (Bool.and_eq_true_iff.mp passed).1
+example {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
+    (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
+    (every : database.EachTable atom)
+    (appended : ∀ target column refuses, statement = .addColumn target column refuses → ∀ table value,
+      database.table target = some table → AddedCell table column value →
+        atom (table.appendColumns [(column, value)])) :
+    (runStatement clock counters parameters statement database).effect.Satisfies fun after => after.EachTable atom :=
+  runStatement_rowLocal rowLocal clock counters parameters statement every appended
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.NotNull database) (condition : statement.NotNullCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.NotNull :=

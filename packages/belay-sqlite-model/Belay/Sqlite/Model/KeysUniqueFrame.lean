@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.DatabaseConstraints
-import Belay.Sqlite.Model.DatabaseLaws
+import Belay.Sqlite.Model.RowEngineFacts
 import Belay.Sqlite.Model.Execution
 
 set_option doc.verso true
@@ -73,26 +73,13 @@ theorem Table.KeysUnique.sublist {keys : List UniqueKey} {table other : Table} (
 {name}`Database.KeysUnique`, it has the table at the position, and the table with the rows
 satisfies {name}`Table.KeysUnique` for the unique keys of the position
 ({name}`Catalog.uniqueKeys`), then the database after {name}`Database.setRows` with the rows at
-the position satisfies {name}`Database.KeysUnique`. Proof sketch: the catalog does not change;
-at the position the table has the new rows ({name}`Database.table_setRows`), or, for a position
-past the end of the row lists, the database does not change; at every other position the table
-is the same ({name}`Database.table_setRows_other`). -/
+the position satisfies {name}`Database.KeysUnique`. Proof sketch: apply {name}`Database.Every.setRows` with the fact that uses
+the catalog-selected keys at each position. The general fact covers missing row lists. -/
 theorem Database.KeysUnique.setRows {database : Database} (unique : database.KeysUnique) {target : Nat} {table : Table}
     (found : database.table target = some table) {rows : List Row}
     (stored : ({ table with rows } : Table).KeysUnique (database.catalog.uniqueKeys target table.shape)) :
-    (database.setRows target rows).KeysUnique := by
-  intro position other present
-  by_cases same : position = target
-  · subst same
-    by_cases aligned : position < database.rows.length
-    · rw [Database.table_setRows rows found aligned, Option.some.injEq] at present
-      subst present
-      exact stored
-    · have unchanged : database.setRows position rows = database := by
-        simp only [Database.setRows, List.set_eq_of_length_le (Nat.le_of_not_lt aligned)]
-      rw [unchanged] at present ⊢
-      exact unique position other present
-  · rw [Database.table_setRows_other database rows same] at present
-    exact unique position other present
+    (database.setRows target rows).KeysUnique :=
+  Database.Every.setRows (fact := fun catalog position table =>
+    table.KeysUnique (catalog.uniqueKeys position table.shape)) unique found stored
 
 end Belay.Sqlite.Model

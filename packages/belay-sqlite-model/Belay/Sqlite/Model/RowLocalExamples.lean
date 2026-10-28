@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.RowLocalAtoms
 import Belay.Sqlite.Model.RowLocalAddColumnTheorems
 import Belay.Sqlite.Model.ValidityExamples
 
@@ -102,5 +103,21 @@ def integerText : CatalogColumn :=
 example : strictOne.TypesFit ∧ strictOne.RowsWide ∧ strictDefaultFits integerText = false ∧
     (runStatement 0 {} [] (.addColumn 0 integerText) strictOne).ready = true ∧
     ¬(afterAdd strictOne integerText).TypesFit := by decide +kernel
+
+/-- A table whose row list is absent: the table view reads an empty default list. -/
+def missingRows : Database :=
+  { catalog := [tableT { columns := [plain "a"] }], rows := [] }
+
+/-- The concrete database {name}`missingRows` does not satisfy {name}`Database.RowsShaped`,
+and replacing its rows at position zero with the single row containing NULL preserves NOT NULL.
+The general guarantee is {name}`Database.EachTable.setRows`. Proof sketch: apply that theorem;
+replacement past the row-list end is a no-op. -/
+theorem missingRows_preserved : ¬missingRows.RowsShaped ∧
+    (missingRows.setRows 0 [stored 1 [.null]]).NotNull := by
+  constructor
+  · decide +kernel
+  · exact Database.EachTable.setRows (atom := Table.NotNull) (show missingRows.NotNull from by decide +kernel)
+      (table := { shape := { columns := [plain "a"] }, rows := [] }) rfl
+      (Table.notNullAtom.constraints [] _ (by decide +kernel))
 
 end Belay.Sqlite.Model.RowLocalExamples

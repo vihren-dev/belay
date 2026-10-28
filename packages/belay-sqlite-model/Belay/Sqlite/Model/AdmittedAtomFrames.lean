@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.DatabaseFacts
 import Belay.Sqlite.Model.OutlineDatabaseLaws
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.TableAtomFrames
 import Belay.Sqlite.Model.DropColumnFactLaws
 
 set_option doc.verso true
@@ -10,8 +10,7 @@ set_option doc.verso true
 says a fact of the rows of one table with its catalog entry, so a table whose rows are rows of a
 table that satisfies the atom, with the same part of the entry, satisfies it. "Rowids distinct" also
 needs the rows to be a sublist, because a repeated row would repeat its rowid. {lit}`TableAtom`
-collects the three facts that the statements without a row write use (CREATE, DELETE and RENAME), so one
-argument serves the five atoms; the theorems of the statements stay one for each atom. -/
+supplies the shared empty, sublist, rename and column-drop contract below these instances. -/
 
 namespace Belay.Sqlite.Model
 
@@ -57,30 +56,6 @@ theorem Table.RowsAliased.frame {table other : Table} (aliased : table.RowsAlias
     other.RowsAliased :=
   fun row member => alias ▸ aliased row (rows row member)
 
-/-- A property of a table that behaves like the five table atoms of {lit}`Database.Admitted`: what
-the proofs about statements without a row write need. Four facts:
-* a table without rows has it (CREATE TABLE stores such a table);
-* a table with the same catalog entry as a table that has it, and a sublist of its rows, has it
-  (DELETE stores such a table);
-* a table with the same rows as a table that has it, and a shape that differs only in names
-  ({lit}`CatalogTable.blankNames`), has it (a rename stores such a table);
-* a table that has it and can lose a column cleanly still has it without the column (DROP COLUMN stores such a table).
-
-{lit}`Table.rowidsDistinctAtom` and its four siblings are the instances. -/
-structure TableAtom (atom : Table → Prop) : Prop where
-  /-- A table without rows has the property. -/
-  empty : ∀ table, table.rows = [] → atom table
-  /-- A table with the same entry and a sublist of the rows of a table that has the property has
-  it. -/
-  sublist : ∀ table other, atom table → other.shape = table.shape → other.rows.Sublist table.rows → atom other
-  /-- A table with the same rows and a shape with the same names blanked
-  ({lit}`CatalogTable.blankNames`) as a table that has the property has it. -/
-  renamed : ∀ table other, atom table → other.rows = table.rows →
-    table.shape.blankNames = other.shape.blankNames → atom other
-  /-- A table that can lose a column ({lit}`CatalogTable.DropsCleanly`) and has the property still has it after
-  the drop ({lit}`Table.dropColumn`): a DROP COLUMN stores such a table. -/
-  dropped : ∀ table index, atom table → table.shape.DropsCleanly index → atom (table.dropColumn index)
-
 /-- "Rowids distinct" is a {name}`TableAtom`. Proof sketch: no rows have no rowids to repeat;
 {name}`Table.RowidsDistinct.frame` gives the sublist. -/
 theorem Table.rowidsDistinctAtom : TableAtom Table.RowidsDistinct where
@@ -121,19 +96,5 @@ theorem Table.rowsAliasedAtom : TableAtom Table.RowsAliased where
   sublist _ _ aliased same sub := aliased.frame (fun _ member => sub.subset member) (by rw [same])
   renamed _ _ aliased rows same := aliased.of_blankNames rows same
   dropped _ _ aliased clean := aliased.dropColumn clean.alias
-
-/-- For every atom, database and object whose row lists match its catalog: if the atom is a
-{name}`TableAtom` and every table of the database has it, every table of the database with the
-object and an empty row list appended has it. This is {name}`Database.EachTable.append` for an
-atom that has only the facts of {name}`TableAtom`. Proof sketch: a table of the new database is a table
-of the old one or has no rows ({name}`Database.table_append_cases`). -/
-theorem Database.EachTable.appendEmpty {atom : Table → Prop} (tableAtom : TableAtom atom) {database : Database}
-    (every : database.EachTable atom) (aligned : database.rows.length = database.catalog.length)
-    (object : CatalogObject) :
-    ({ catalog := database.catalog ++ [object], rows := database.rows ++ [[]] } : Database).EachTable atom := by
-  intro position table present
-  rcases Database.table_append_cases aligned object present with old | empty
-  · exact every position table old
-  · exact tableAtom.empty table empty
 
 end Belay.Sqlite.Model

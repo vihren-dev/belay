@@ -10,8 +10,8 @@ import Belay.Sqlite.Model.StatementDropColumn
 
 set_option doc.verso true
 
-/-! The statement skeleton of the four table atoms that need the support check (ADR 0022, D3, slice 4):
-"rowids in range", "rows wide", "rows stored" and "rows aliased". For a {lit}`TableAtom` the
+/-! The shared complete statement dispatch for row-local constraints and the five admitted
+table atoms. Each caller supplies only the independent write, INSERT-query and column-add facts. For a {lit}`TableAtom` the
 statements that write no row, CREATE, DROP and DELETE keep the atom without further facts. ADD COLUMN
 and the three forms that compute a row without rules (INSERT, UPDATE and upsert) need a fact of the
 atom, so the skeleton takes them as hypotheses and each atom gives them. A statement with rules is
