@@ -92,9 +92,30 @@ repairs. A source comparison checked all 45 original formula headers exactly.
 These diagnostics are not acceptance evidence. The coordinator will run the
 frozen integrated Nix checks, documentation build and verdict before retirement.
 
+The local compiled report at `build/dev/d1-dependencies/dependencies.json`
+selects 20 current owners. All 45 removed names are absent from its declarations,
+external boundaries and type/body references. Five SELECT-1 family proofs
+reference the shared SELECT-1 fact; aggregate references the source equation,
+and pragma references the existing exact simple-row law.
+
+The historical dependency report is older than `3e2212ed`. Its embedded source
+matches that baseline byte-for-byte for 15 selected owners, including six model
+families and their six surface counterparts. The comparison is limited to these
+owners: the 18 old model endpoints use separate row/empty/error projection paths;
+the six replacement facts use complete outputs. Duplicate-key source changed,
+and the filtered owner is absent from the historical report. Their guarantees
+come from the captured `3e2212ed` formulas and current compiled checks, with no
+historical graph-reduction claim. The final matched Nix report remains pending.
+
+Implementation `a6bfe314` passed independent Claude review with zero must and
+one should finding (`reviews/20261028T134433Z-a6bfe314`). The finding identified
+a stale current-consumer list in the resolver/foundation inventory. The follow-up
+marks the removed owner and identifies the replacement filtered semantic law;
+frozen inventory names and contracts remain unchanged.
+
 Source-size accounting includes helpers, callers and fixtures; no speedup or
 capability loss is claimed. The coordinator will record the final Nix source
 count with temporary witnesses separated from maintained code.
 
-Pending: independent implementation review, combined Nix
+Pending: follow-up documentation review, combined Nix
 acceptance, temporary witness retirement, integration and push.
