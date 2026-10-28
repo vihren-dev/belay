@@ -43,6 +43,14 @@ Lean subprocess timeout in the unsigned oversized-hex default case for SQLite
 3.46.0. Its other sign/version cases pass. These measured workload failures
 extend the acceptance repair to both supported hosted platforms.
 
+Hosted run `40771508608` at `c9fa3f73` passes the new arithmetic measurements
+but times out in the eight-mutant JSON reading/extraction measurement after
+four value-suite cases pass. The failure reaches the 300-second test limit
+while workers compile and execute classifiers; it is not an aggregate timeout.
+The seven-mutant non-arithmetic number measurement passes in 278.68 seconds,
+leaving only 21.32 seconds of test headroom. The JSON-function, JSON-each/clock
+and date/modifier measurements do not execute after that first failure.
+
 ## Required behavior
 
 Unmodified Nix-built dependencies support real Lake consumers in the installed
@@ -92,6 +100,17 @@ the 300-second test, 2,700-second mutant-suite, subprocess and hosted-job
 deadlines unchanged. Do not replace detection with compilation failure, skip
 work, add automatic retries or introduce a scheduler or another runner type.
 
+The value follow-up must also give JSON reading/extraction and the other number
+rules practical per-test headroom. All eight JSON mutants and seven other number
+mutants retain their exact edits, guards and targets in disjoint measurements.
+The numeric/FROMless and JSON/date/clock workloads have separate static owners:
+splitting the two measured groups otherwise grows the current value owner to
+ten tests, whose individual limits can exceed the unchanged aggregate limit.
+Use the existing inventory, suite helper and CI matrix. The unexecuted tail
+requires focused timing evidence; any further split preserves its existing
+table and guard meanings. No new mutation, oracle, measurement framework or
+production definition is required.
+
 The oversized-hex default test must compare the same prepare phase and error
 message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
 Lean subprocess limit. The generated fixture imports only the dependencies
@@ -121,6 +140,14 @@ definitions and CI matrix, and existing routing/ownership checks. The separate
 default-fixture work owns only `tests/column_default_value_test.py`. These two
 work surfaces can proceed in isolated workspaces; coordinate Nix execution.
 
+The value follow-up owns `tests/conformance_query_value_mutants_test.py`, one
+extracted JSON/date/clock test file, the existing inventories/matrix and their
+documentation. Existing table/guard data in `conformance/` remains unchanged.
+Arithmetic and FROMless measurements retain their accepted contracts. The
+JSON-function tail has six mutants; JSON-each/clock and date/modifier each have
+ten. These are relevant diagnostic surfaces, not permission to alter the
+unaffected model or the already accepted mutant owners.
+
 Nix must execute the formerly failing installed-consumer checks through the
 existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
 replay without rebuilding and preserve the checker test's no-build assertions. Retain
@@ -149,6 +176,15 @@ mutant suite and the model suite on both hosted platforms is the completion
 gate. A partial log before an aggregate timeout establishes only the named
 completed measurements, not suite success. Reuse existing tests; temporary
 partition and timing audits are acceptance evidence, not new permanent gates.
+
+Value follow-up evidence must cover every resulting changed measurement and
+the three previously unexecuted tail measurements, through their actual Nix
+owners. Record individual times, complete mutant/target/guard membership and
+the resulting workload of each owner. Hosted/local timing ratios can inform
+grouping but cannot establish hosted success. Preserve already accepted
+measurements where their source inputs match. The existing ownership/routing
+checks must cover the extra static owner; no new permanent partition test is
+needed. The full hosted completion gate above still applies.
 
 Apply normal review and check cadence. Full acceptance uses the coordinator's
 build slot; do not run whole mutant suites locally. No new CI service, registry,

@@ -842,3 +842,37 @@ frozen acceptance source.
 The CI task remains IN PROGRESS. Fresh hosted checks must execute and pass all
 nine scheduled mutant owners and the model suite on both Linux and macOS.
 The owner's earlier herdr review remains unfinished.
+
+## Value workload exposed by the next hosted run, 2026-10-28
+
+Run `40771508608` tests publication head `c9fa3f73` through merge
+`72df4baee5e635a47ba29711d909f9c885ef15bf`. Its value-mutant job `123109628916`
+passes four cases, then the eight-mutant JSON reading/extraction case reaches
+the unchanged 300-second test limit. Its log reports 304.45 seconds including
+unwind and 1,138.48 seconds for the failed suite. Worker traces show classifier
+builds and execution still active. No named mutant compilation error or
+surviving-mutant result is reported. The remaining three cases do not execute
+because the existing command stops after its first failure.
+
+Both arithmetic groups pass (209.35 and 215.16 seconds). The other-number group
+passes in 278.68 seconds, leaving 21.32 seconds of test headroom. This is new
+hosted evidence for the same finite-workload repair. The existing task now
+covers bounded JSON/other-number measurements and separates numeric/FROMless
+from JSON/date/clock ownership. Exact edits, target mappings, guards, native
+observations and all existing deadlines remain required. The three unexecuted
+tail measurements need focused evidence before the follow-up is accepted.
+
+Read-only designs identify existing semantic boundaries: the three summation
+mutants versus four scalar/text/coalesce mutants, and four JSON value/rendering
+mutants versus four lookup/error mutants. The unexecuted JSON-function table
+has six mutants; JSON-each/clock and date/modifier each contain ten across their
+existing tables. These designs do not establish timing headroom. An isolated
+worker will implement the reviewed follow-up through the current harness.
+
+The current Linux API reference and hosted verdict have passed. Eight mutant
+owners pass fresh execution, including all twelve core measurements in 1,949.09
+seconds. The value owner is the only failed mutant job. Main checks remain
+active. Their final evidence will be retained before another push. Manual
+dispatch for `c9fa3f73` returned HTTP 403; the next manual run must use the next
+repaired publication head. The owner review remains unfinished and this task
+remains IN PROGRESS.
