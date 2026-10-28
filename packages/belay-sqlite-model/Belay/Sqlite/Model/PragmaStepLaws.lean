@@ -117,7 +117,7 @@ the setting and nothing else: the database, the open transaction, the clock assi
 stay (failure law: it never fails; success law: the new connection). Proof sketch: the statement is no
 query and the transition continues, so the output is no error
 ({name}`Output.ofStep_isError_of_noHalt`); the transition keeps the state and
-{name}`resolveStatement_after` gives the settings. -/
+{name}`resolveStatement_certificate` gives the settings. -/
 theorem runScriptStep_setting {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
@@ -128,7 +128,7 @@ theorem runScriptStep_setting {context : ResolveContext}
   obtain ⟨resolved, after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   refine ⟨?_, runScriptStep_others step found rfl, ?_⟩
   · rw [← ofStep]
     exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ (by intro _ _ same; cases same)

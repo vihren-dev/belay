@@ -53,7 +53,7 @@ theorem runScriptStep_failed_frame {context : ResolveContext}
   obtain ⟨resolved', after', value, same, -, -, -, ofStep, -, nextEq, -⟩ := runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   rw [ResolveState.after_of_isControl _ ordinary] at afterEq
   rw [nextEq, advanceRun_ordinary index resolved connection.state _ ordinary]
   have foreignKeys : after.foreignKeys = connection.foreignKeys := by rw [afterEq]; rfl

@@ -28,7 +28,7 @@ connection satisfies {name}`SqlState.Holds` for {name}`Database.AdmittedWith` th
 connection of every complete execution of the script satisfies it. Proof sketch: {name}`runScriptAllFrom_holds_derived` for the conjunction of
 {name}`admitted_statementKeeps` and the statement theorem of the atom; the resolver gives the validity of the
 catalog after the statement ({name}`resolveStatement_appliedValid`) and the link
-({name}`resolveStatement_schemaLink`). -/
+({name}`resolveStatement_certificate`). -/
 theorem runScriptAllFrom_admittedWith {profile : Profile} {atom : Database → Prop}
     {condition : StatementCondition} (keeps : StatementKeeps atom condition)
     (derive : ∀ (value : Int) (counters : Counters) (parameters : List Value)
@@ -45,7 +45,7 @@ theorem runScriptAllFrom_admittedWith {profile : Profile} {atom : Database → P
     (fun _ _ _ _ keep _ _ _ ok _ ready =>
       have applied := resolveStatement_appliedValid context execution same (keep.mono fun _ h => h.1.catalogSupported) ok
       ⟨⟨applied, (Bool.and_eq_true_iff.mp ready).1⟩, derive _ _ _ _ _ keep.1.1 applied
-        (resolveStatement_schemaLink context _ _ _ _ (same ▸ keep.1.1.catalogSupported) ok)
+        ((resolveStatement_certificate context _ _ _ _ ok).link profile.limits (same ▸ keep.1.1.catalogSupported))
         (Bool.and_eq_true_iff.mp ready).1⟩) index script holds
 
 end Belay.Sqlite.Model

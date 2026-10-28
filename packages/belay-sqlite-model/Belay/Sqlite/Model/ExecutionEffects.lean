@@ -40,7 +40,7 @@ theorem runScriptStep_execution_effects {context : ResolveContext} {clock : Opti
     runScriptStep_continued_spec step
   rw [found] at same
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-  have afterEq := resolveStatement_after context _ _ _ _ found
+  have afterEq := (resolveStatement_certificate context _ _ _ _ found).after
   rw [ResolveState.after_of_isControl _ ordinary] at afterEq
   refine ⟨value, fun execution member noError => ?_⟩
   simp only [RunStep.executions, List.mem_cons, List.mem_map] at member
