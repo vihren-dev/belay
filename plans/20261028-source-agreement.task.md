@@ -11,7 +11,8 @@ Source baseline: `81163254`; the affected source formulas equal main `3e2212ed`.
 This task contributes to the [Lean simplification goal](../docs/lean-simplification-goal.md)
 by replacing mirrored proof traversals and retiring redundant migration tests.
 All baseline capabilities remain required, particularly S06 two-state observation
-and M13 proof guarantees; no capability loss or weaker premise is authorized.
+and M13 proof guarantees; no capability loss or weakening of retained guarantees
+is authorized.
 
 ## Required behavior
 
