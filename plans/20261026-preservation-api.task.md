@@ -67,8 +67,9 @@ an obsolete unconditional rename claim from the historical baseline.
 
 Relevant existing suites include `valid_atoms_theorems_test.py`,
 `keys_unique_theorems_test.py`, `admitted_atoms_run_theorems_test.py` and the
-foreign-key theorem suites under `tests/`. The valid-atoms formula suite now runs in the existing `model` Nix suite
-through the foundations task. The other two named formula suites remain host-owned
+foreign-key theorem suites under `tests/`. The valid-atoms formula suite runs in the existing `model` Nix suite and
+compiles the four temporary `PreservationApiWitnesses*.lean` files until the
+execution-condition task's final Nix acceptance. The other two named formula suites remain host-owned
 checks through `just test-source`, using Nix-built libraries. Only lasting checks of current contracts remain registered in the
 existing `model` Nix suite in `tests/nix_suites.json` after retirement, with
 needed helper/fixture inputs. Temporary checks can use the existing Nix harness

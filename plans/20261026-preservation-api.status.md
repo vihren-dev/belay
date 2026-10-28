@@ -14,7 +14,7 @@ rules and records 84 candidate removals. The shared
 [design record](20261026-proof-simplification-design.status.md) holds the Nix
 evidence and independent reviews. It does not certify a completed migration.
 
-## Remaining work
+## Historical preparation, 2026-10-27 through assignment
 
 On 2026-10-27 the owner requested detailed targets. The task now links the
 source-checked endpoint, predicate and caller inventory. Implementation remains
@@ -87,4 +87,8 @@ outside production, and replace the old duplicate matrices. These are source
 size observations, not the goal's scc metric or a claim about build speed.
 No execution semantics or capability was removed.
 
-Independent Claude review is the next gate; its result will be recorded here.
+Independent Claude review of `5c0fdaf5` reported zero must findings and two
+R19 should findings. The follow-up labels the old unassigned notes as historical
+and states that the model suite now compiles the four temporary witnesses.
+The historical experiment imports remain at their recorded revision and are
+explicitly outside the active-source deletion check.
