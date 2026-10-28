@@ -87,10 +87,22 @@ The executable Resolve closure remains 243 project/compiler modules by the same
 source traversal, with no StatementArms, ResolverCertificate or dispatch owner.
 These are local migration diagnostics, not permanent count thresholds or Nix evidence.
 
-The change removes 95 textual production Lean lines, including the new
-80-line certificate owner, moved definitions and caller/import changes. Every
+After the review documentation corrections, the change removes 85 textual
+production Lean lines, including the new 85-line certificate owner, moved definitions and caller/import changes. Every
 changed semantic source module is below 200 lines; the existing Model umbrella
 remains the established exception. The existing Python test owner adds 18 lines,
 including 16 embedded Lean witness lines; standalone Lean fixtures are unchanged.
 These raw line differences do not substitute for the goal's Nix/scc count.
 No capability loss or timing improvement is claimed.
+
+## Independent review corrections
+
+Claude reviewed implementation `01065389` in `20261028T131854Z-01065389`:
+zero must findings and three should findings. The reviewer did not run checks.
+All three are fixed: DropSpec and TriggerDefinitionSpec name the new dispatch
+owner, and both certificate modules now explain their role in module docstrings.
+The corrections change no declaration type or proof body. The final local
+`just dev-build` replay passed all 2,609 targets; the 16 source checks and the
+resolver contract/axiom fixture passed again. Review of this correction commit
+follows before handoff. These results remain local diagnostics, with integrated
+Nix and resolver-mutant acceptance pending.

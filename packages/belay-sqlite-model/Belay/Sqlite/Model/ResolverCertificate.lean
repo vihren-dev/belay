@@ -77,4 +77,9 @@ theorem certificate_withWrite {context : ResolveContext} {state next : ResolveSt
     refine ⟨?_, link, fun execution valid => ⟨facts.valid execution valid.1, valid.2⟩⟩
     rw [state.after_of_isControl ordinary, catalog, facts.after]
 
+/-! {name}`ResolverCertificate` separates the assumptions of state equality,
+schema linkage and validity. {name}`certificate_withCatalog` and
+{name}`certificate_withWrite` transport these facts through the shared resolver
+state attachments, so each syntax arm supplies only its leaf facts. -/
+
 end Belay.Sqlite.Model

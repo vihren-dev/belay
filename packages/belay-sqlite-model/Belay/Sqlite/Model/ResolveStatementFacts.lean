@@ -159,4 +159,9 @@ theorem resolveStatement_certificate (context : ResolveContext) (state next : Re
     exact ⟨same.trans unchanged.symm, control, fun _ _ => resolveSelect_schemaLink _ _ _ _ _ _ found,
       fun _ valid => same ▸ valid⟩
 
+/-! {name}`resolveStatement_certificate` proves state equality, schema linkage and
+execution-mode validity in one syntax dispatch. Script, frame and admission
+proofs use its fields with their separate premises; catalog and write attachments
+share the transports of {name}`ResolverCertificate`. -/
+
 end Belay.Sqlite.Model

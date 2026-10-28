@@ -6,7 +6,7 @@ set_option doc.verso true
 
 /-! The resolution laws of CREATE TRIGGER and DROP TRIGGER (ADR 0018, D5): each changes the
 catalog by one {name}`Belay.Sqlite.Model.CatalogStep`, and the catalog after it is the catalog change
-of its resolved statement. {lit}`NamesSpec.lean` and {lit}`ResolveStateSpec.lean` use them. -/
+of its resolved statement. {lit}`NamesSpec.lean` and {lit}`ResolveStatementFacts.lean` use them. -/
 
 namespace Belay.Sqlite.Model
 
