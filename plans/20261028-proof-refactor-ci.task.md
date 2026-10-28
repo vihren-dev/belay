@@ -34,10 +34,11 @@ library selection, no-rebuild checker guarantee and proof-cost reporting.
 
 Establish why Lake requests the shared-library rebuild before selecting the
 fix. Repair the fixture or producer artifact boundary that the diagnosis
-identifies. Writable fixture-owned build artifacts are acceptable when a real
-consumer build needs them; they must not conceal missing producer artifacts,
-discard freshness checks or require writable Nix outputs. Reuse existing
-installed-package helpers and keep the repair narrow.
+identifies. Unchanged dependency modules and shared libraries must replay without
+compilation or relinking, retaining the existing
+[native-artifact reuse contract](20261024-model-native-artifacts.task.md).
+Making dependencies writable to permit rebuilding is not sufficient. Preserve
+freshness checks, reuse existing helpers and keep the repair narrow.
 
 All existing resolver/control mutants remain measured and must change an
 authored case verdict. The unchanged model still agrees on every case used by
@@ -58,8 +59,8 @@ The relevant existing tests are the SQL-file/root/record/Lake-input suites,
 `conformance/resolve_mutants.py` and `conformance_resolve_mutants_test.py`.
 
 Nix must execute the formerly failing installed-consumer checks through the
-existing `surface` and `surfaceS6` suite owners. Confirm source store artifacts
-remain unchanged and preserve the checker test's no-build assertions. Retain
+existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
+replay without rebuilding and preserve the checker test's no-build assertions. Retain
 one focused regression only if these existing consumers do not cover the cause.
 
 Run the affected resolver mutant check through its existing Nix owner, retaining
