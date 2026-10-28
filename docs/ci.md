@@ -128,9 +128,9 @@ again when a corpus changes, which is in the pull request that changes the
 judge lock. A module missing from its input list fails it with an import error.
 
 Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with its
-own name. Nix runs several targets at the same time, so a target's total time
+own name. The S6 tests that compile a chain of fixture modules have a 600-second limit. Nix runs several targets at the same time, so a target's total time
 depends on the other targets; its 1200-second limit only guards against a hang
-outside a test. The recipes that build test suites stop `nix-build` after 1500
+outside a test. The recipes that build test suites stop `nix-build` after 2700
 seconds, so the suite limit ends first and names the suite.
 `tests/test_recipe_limits.py` checks this order. They run
 `timeout --foreground`, which keeps `nix-build` in the caller's process group, so
