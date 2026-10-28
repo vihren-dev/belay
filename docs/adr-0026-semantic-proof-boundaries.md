@@ -1,6 +1,6 @@
 # ADR 0026: Shared semantic facts for query and execution proofs
 
-Date: 2026-10-26. Status: PROPOSED; historical prototypes checked; current targets source-reviewed.
+Date: 2026-10-26. Status: ACCEPTED for implementation by the owner on 2026-10-28.
 Audience: designers and reviewers.
 Owner request: test the causes of proof duplication, then specify the refactor
 supported by the results.
@@ -196,4 +196,4 @@ changes, placement choices, reused evidence and retained or deferred work.
 Reconcile branch drift at assignment and update links when owner files disappear.
 They do not introduce permanent inventory checks or alter test retirement.
 
-Create dated implementation task/status files only at assignment. Batch edits by decision.
+Assigned: [primitive ownership and surface imports](../plans/20261028-proof-primitive-imports.task.md). Create further tasks only at assignment; batch edits by decision.
