@@ -118,3 +118,5 @@ also verified that surface registration adds only `ExecutionProfile`.
 Logs are `/tmp/proof-refactor-profiles-integration-dev.log` and
 `/tmp/proof-refactor-profiles-integration-execution.log`. Final combined Nix
 acceptance and migration-witness retirement remain pending.
+Integration `a33b8756` received independent Claude review
+`20261028T133834Z-a33b8756`: zero must and zero should findings.

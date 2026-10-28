@@ -90,6 +90,13 @@ acceptance. The log is `/tmp/proof-refactor-batch1-test-full.log`.
 After confirming the old build had stopped and resource checks passed, the
 coordinator retried the same snapshot and limits, reusing completed Nix
 derivations. The retry log is
-`/tmp/proof-refactor-batch1-test-full-retry.log`; its result is pending.
+`/tmp/proof-refactor-batch1-test-full-retry.log`; it completed with exit 0.
+The aggregate report is
+`/nix/store/qvp6k3y3m1f1dr452kjvf3ap8namj9hg-sqlite-verifier-test-reports`:
+15 suites and 1,444 test cases, with no failures, errors or skips. Host source
+checks recorded 513 tests and 49 subtests without failures. Public documentation
+checked 752 modules and 5,960 authored declarations with no missing, ordinary
+or unclassified declarations. Verdict, Nix configuration and scheduled-check
+results for this snapshot remain pending.
 Later expression, context, query, resolver and profile changes still require
 their own final combined acceptance.
