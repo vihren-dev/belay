@@ -54,9 +54,9 @@ theorem Connection.queryContext_selectOne (connection : Connection) (parameters 
     cases found : runs[index]? with
     | none => exact ⟨rfl, rfl, rfl⟩
     | some run => exact quiet run (List.mem_of_getElem? found)
-  · have same := Resolved.Expr.evaluate_withSubqueries
+  · have same := (Resolved.Expr.evaluate_withSubqueries
       (connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries) []
-      (fun index _ => (runs[index]?).getD { rows := [], fault := .none }) agree condition plain
+      (fun index _ => (runs[index]?).getD { rows := [], fault := .none }) agree condition).1
     have shape : ({ connection.queryContext parameters (Resolved.Query.selectOneWhere condition) subqueries with
         subqueries := fun index _ => (runs[index]?).getD { rows := [], fault := .none } } : Resolved.EvalContext) =
         (Resolved.EvalContext.bound parameters).withRuns runs := by
