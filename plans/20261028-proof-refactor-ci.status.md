@@ -467,3 +467,39 @@ do not depend on those paths. This brings completed worker cleanup to twelve
 workspaces. The coordinator and active acceptance workspaces remain, as do the
 owner's other workspaces. The audit is
 `/tmp/adr25-26-remaining-workspace-cleanup-audit.json`.
+
+## Final-source tests, conformance and dependency inspection
+
+The unchanged local full-test retry exited 0 in 752.403 seconds. Its aggregate
+Nix output is
+`/nix/store/6wkw19ik1ldb4zh09g7glinyl1pdksfw-sqlite-verifier-test-reports`:
+15 suites, 1,440 tests, no failures, errors or skips. The final source checks
+also passed all 562 cases without skips. The retry reused completed derivations;
+the surfaceS6 suite ran fresh and passed all 66 cases in 628.517 seconds.
+
+Final-source `just verdict` exited 0 in 97.982 seconds. Across 56 corpora it
+reported 5,653 agreements and 2,109 explicitly unsupported cases, with no other
+outcomes. Its immutable result is
+`/nix/store/mq2zhrhhdmbr27fnnxjnd64nkx8iywmj-sqlite-verifier-verdict`.
+
+The matched theorem-dependency report completed in 16.232 seconds at
+`/nix/store/vi1d8p2dwnyg6fjb6gm6isjan4s7sygz-sqlite-verifier-theorem-dependencies`.
+Inspection checked all 1,169 selected and loaded modules, the final-source
+hashes, manifest and compiled-artifact hashes, and the 13 Plausible source/artifact
+pairs in their separate immutable dependency output. All 155 targeted replaced
+names are absent: 84 ADR25 endpoints, 45 query endpoints, 14 origin helpers,
+three resolver dispatch proofs and nine relation wrappers. All 64 inspected
+body-reference routes reach the intended shared facts; the four prohibited
+reverse routes and specified executable/lower-owner imports are absent.
+
+The compiled project import closures, including each root, contain 77 modules
+for Values, 154 for Script, 159 for ValueDisplay, 290 for Classify and 240 for
+Resolve. These are dependency observations, not proof-strength or speed claims.
+The accepted formula witnesses at `53a346e` supply the separate migration
+evidence. The one-time inspection result is
+`/tmp/adr25-26-final-dependency-inspection.json`; no permanent graph gate was added.
+
+Configured development-loop checks, scheduled writers, local API reference,
+affected resolver/comparison mutations and the scoped proof-cost sample remain
+in the serial acceptance pipeline. Hosted mutation execution still requires
+the pending full workflow dispatch. Task completion records remain pending.
