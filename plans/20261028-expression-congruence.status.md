@@ -1,6 +1,6 @@
 # Expression congruence task status
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation awaits review and Nix acceptance.
+Date: 2026-10-28. Status: IN PROGRESS; implementation reviewed, Nix acceptance pending.
 Audience: the implementation team.
 Task: [shared expression congruence](20261028-expression-congruence.task.md).
 Specification: [ADR 0026 D5](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -44,7 +44,10 @@ and source-agreement workers. Shared registrations require coordinator sequencin
 - Development commands: `just dev-build` and the existing claims test owner.
   These are diagnostics; acceptance requires the coordinator's combined Nix
   package, public documentation, consumer, conformance and full-suite checks.
-- Pending: independent review, Nix acceptance and net source measurement,
+- Implementation commit `facc67dc`: independent Claude review found zero must
+  and zero should findings (`reviews/20261028T121805Z-facc67dc`). Source is frozen
+  for the coordinator's combined acceptance run.
+- Pending: Nix acceptance and net source measurement,
   temporary witness retirement, integration and push. The shared contract and
   focused fixtures add maintained code; no size or build-time saving is claimed.
   No implementation acceptance is recorded by the historical experiment.
