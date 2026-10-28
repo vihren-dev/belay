@@ -338,3 +338,39 @@ measurement. The final source count uses the fixed goal baseline and counter.
 The implementation will be published as a draft while these checks run, with
 the existing manual CI workflow supplying hosted mutation results. Draft
 publication does not mark the implementation tasks complete.
+
+## Draft implementation publication and final source count
+
+The coordinator pushed publication head
+`9eb179dea63084ce30e69406b5cf462f894c4e33` to `tasks/proof-refactor` and opened
+draft PR [297](https://github.com/vihren-dev/sqlite-verifier/pull/297), stacked
+on CI repair PR 296. The publication commit adds only the freeze and review
+record to final code/test source `23a3427b`. Both PRs remain drafts while their
+remaining acceptance runs proceed.
+
+A fresh standalone Nix count of `23a3427b` uses the fixed baseline's exact
+scc 3.7.0 executable and 31 historical exclusions. It counts 87,018 maintained
+Lean code lines: 70,876 in packages, 15,919 in tests and 223 elsewhere. Compared
+with the fixed 88,030-line baseline, packages decrease by 1,323 lines and tests
+increase by 311, for a net reduction of 1,012 lines. The derivation retains the
+revision, file hashes, counter hash and totals at
+`/nix/store/3136rk4i9jjkxf40fmm4lfdndyjw7qaf-lean-simplification-final-20261028`.
+This count establishes source size only; the final capability audit remains
+pending. The long-term 45,000-line objective remains open.
+
+The final full Nix acceptance run is in progress in its frozen workspace.
+Its public-documentation producer has passed for all 5,962 authored declarations
+across 757 modules, with no missing, ordinary or unclassified declarations:
+`/nix/store/3w2lzcyr2w0gf65chzmqyvlb3j70f3sh-sqlite-verifier-public-documentation-1/public-doc-inventory.json`.
+
+Hosted PR 296 run `40716887931` passed its Linux API-reference step and is running
+its checks; Verdict run `40716887801` passed. PR 297 run `40720732197` is building
+its reference and Verdict run `40720732192` is in progress at this checkpoint.
+Both PR runs skip the actual mutation-suite steps, so their green mutation job
+labels supply no mutation acceptance.
+
+Dispatching the existing full CI workflow on `tasks/proof-refactor` failed with
+HTTP 403, `Resource not accessible by integration`. The coordinator asked the
+owner to start that workflow or provide Actions write access. No workflow,
+permission or test scope was changed to bypass this restriction. Local final
+acceptance continues independently; hosted mutation acceptance remains pending.
