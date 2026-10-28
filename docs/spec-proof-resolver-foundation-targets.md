@@ -1,12 +1,14 @@
 # Resolver and foundation change targets
 
-Date: 2026-10-27. Revised: 2026-10-28. Status: PROPOSED; one primitive move is delivered.
+Date: 2026-10-27. Revised: 2026-10-28. Status: D3 in progress;
+D6 implemented with final acceptance pending; D7 remains deferred.
 Audience: designers and reviewers.
 Contract: [resolver and foundation specification](spec-proof-foundations.md).
 Decisions: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).
 Evidence: [resolver/import findings](../experiments/proof-boundaries/resolver-import-findings.md), [deferred row-engine findings](../experiments/proof-boundaries/row-engine-findings.md).
 
-Source review: `3e2212ed`; compiled experiments/measurements: historical `3fe5caef`.
+This inventory records the pre-refactor targets. Source review: `3e2212ed`;
+compiled experiments/measurements: historical `3fe5caef`.
 Model names have prefix `Belay.Sqlite.Model`; surface names, `Belay.Sqlite`.
 Fixed changes are distinguished from placement choices, reused facts and compile checks.
 Check branch drift at assignment; this is not a permanent inventory gate.

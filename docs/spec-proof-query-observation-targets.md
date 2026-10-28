@@ -1,10 +1,11 @@
 # Query and observation change targets
 
-Date: 2026-10-27. Revised: 2026-10-28. Status: PROPOSED; implementation has not started.
+Date: 2026-10-27. Revised: 2026-10-28. Status: D1 and D4 implementation in progress.
 Audience: designers and reviewers.
 Contract: [query and observation specification](spec-proof-observations.md),
 implementing [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
-Source-reviewed baseline: main `3e2212ed6983`. Historical compiled experiments use
+This inventory records the pre-refactor targets. Source-reviewed baseline:
+main `3e2212ed6983`. Historical compiled experiments use
 `3fe5caef`; this inventory makes no current-main compile claim. Counts are authored declarations, not net savings.
 
 Model namespace: `Belay.Sqlite.Model`; surface namespace: `Belay.Sqlite`.

@@ -55,6 +55,10 @@ and source-agreement workers. Shared registrations require coordinator sequencin
   two D5 modules were added, and that all 19 public roots are unchanged.
   This integration is later than the first frozen Nix acceptance snapshot;
   D5's Nix acceptance remains pending.
+- The coordinator reconciled the specification status headers on 2026-10-28.
+  The agreement documents now record D2 and D5 as implemented with final
+  acceptance pending. Their semantic requirements and baseline targets remain
+  unchanged; other proof specifications distinguish active and deferred work.
 - Pending: Nix acceptance and net source measurement,
   temporary witness retirement and push. The shared contract and
   focused fixtures add maintained code; no size or build-time saving is claimed.
