@@ -70,6 +70,12 @@ The required diagnostic build is `just dev-build`. Affected source checks are
 `tests/docs_test.py`. These local checks do not supply acceptance evidence.
 Current Nix acceptance is pending.
 
+Implementation commit `2adf12a3` has independent Claude review with zero must and
+zero should findings, recorded in
+[review 20261028T112837Z](../reviews/20261028T112837Z-2adf12a3/review.json).
+The review did not run checks. The coordinator receives this reviewed source for
+combined acceptance; no standalone Nix acceptance result is claimed.
+
 The coordinator will combine the independently reviewed implementation with
 ADR 0025 and the separately owned acceptance repair, then run the required
 Nix package, surface, checked documentation, full-suite, verdict, Nix-source and
@@ -79,5 +85,5 @@ No active duplicate proof witness, baseline/narrow source copy, import-count
 check or new test framework was added. Historical experiments remain replayable
 at their recorded revisions, outside normal CI. Current package compilation and
 existing surface fixtures supply the retained contract coverage after acceptance.
-Independent review, final Nix evidence, integration, push and workspace cleanup
-remain pending. This task is not DONE.
+Final Nix evidence, integration, push and workspace cleanup remain pending.
+This task is not DONE.
