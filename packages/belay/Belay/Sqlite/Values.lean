@@ -1,4 +1,8 @@
-import Belay.Sqlite.Model
+import Belay.Sqlite.Model.Comparison
+import Belay.Sqlite.Model.Declarations
+import Belay.Sqlite.Model.StoreValue
+import Belay.Sqlite.Model.StoreValueLaws
+import Belay.Sqlite.Model.Truth
 
 set_option doc.verso true
 

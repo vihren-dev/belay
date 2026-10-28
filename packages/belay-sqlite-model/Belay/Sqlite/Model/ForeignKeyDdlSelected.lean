@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.ForeignKeyDdlConditions
 
 set_option doc.verso true

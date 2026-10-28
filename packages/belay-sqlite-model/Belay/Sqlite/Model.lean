@@ -10,6 +10,7 @@ import Belay.Sqlite.Model.StoreValueLaws
 import Belay.Sqlite.Model.Resolution.ReadDefaultLaws
 import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.DatabaseFacts
+import Belay.Sqlite.Model.DatabaseLookup
 import Belay.Sqlite.Model.DatabaseDropColumn
 import Belay.Sqlite.Model.DropColumnAdmittedLaws
 import Belay.Sqlite.Model.DropColumnCellLaws

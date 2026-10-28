@@ -1,5 +1,6 @@
 import Lean.PrettyPrinter.Delaborator.Basic
-import Belay.Sqlite.Model
+import Belay.Sqlite.Model.Declarations
+import Belay.Sqlite.Model.OutputRepr
 
 set_option doc.verso true
 

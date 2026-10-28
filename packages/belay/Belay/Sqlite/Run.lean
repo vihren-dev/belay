@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.ScriptRunAppend
 import Belay.Sqlite.Script
 import Belay.Sqlite.Database
 

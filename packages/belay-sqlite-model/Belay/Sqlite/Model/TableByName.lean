@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.TableSourceLaws
+import Belay.Sqlite.Model.DatabaseLookup
 import Belay.Sqlite.Model.ForeignKeyDropFrame
 import Belay.Sqlite.Model.CatalogValidDrop
 import Belay.Sqlite.Model.DatabaseLaws
