@@ -1,7 +1,6 @@
 """The used Valid helpers preserve every execution with their stated entry assumptions.
 
 The empty database and the equivalence with admitted constraint atoms keep their contracts.
-The former per-atom run matrix now lives once in the temporary ADR25 migration fixtures.
 """
 
 from pathlib import Path
