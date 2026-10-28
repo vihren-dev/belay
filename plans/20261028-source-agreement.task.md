@@ -1,6 +1,7 @@
 # Share query source agreement proofs
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation assigned.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261028-source-agreement.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0026 D2](../docs/adr-0026-semantic-proof-boundaries.md),
 [agreement requirements](../docs/spec-proof-agreement.md) and

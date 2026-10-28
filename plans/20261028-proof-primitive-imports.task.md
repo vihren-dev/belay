@@ -1,6 +1,7 @@
 # Lower shared proof primitives and narrow surface imports
 
-Date: 2026-10-28. Status: IN PROGRESS; implementation assigned.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261028-proof-primitive-imports.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0026 D6](../docs/adr-0026-semantic-proof-boundaries.md),
 [foundation requirements](../docs/spec-proof-foundations.md) and

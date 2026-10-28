@@ -1,10 +1,33 @@
 # Preservation API task status
 
-Date: 2026-10-26. Status: IN PROGRESS; implementation accepted, retirement acceptance and integration pending.
+Date: 2026-10-26. Status: DONE on publication of this reviewed completion record.
 Audience: the implementation team.
 Task: [API replacement](20261026-preservation-api.task.md).
 Specification: [ADR 0025](../docs/adr-0025-compositional-preservation-proofs.md).
 Base for design evidence: `6413afe3ff50`.
+
+## Completion record
+
+Final implementation source is `23a3427b`, published as `9eb179de` in [PR
+297](https://github.com/vihren-dev/sqlite-verifier/pull/297). The [combined
+acceptance record](20261028-proof-refactor-ci.status.md) owns the final Nix
+reports and source identities.
+
+All 84 specialized endpoints and six wrapper modules are removed; generic
+applications retain the original raw and all-execution claims.
+
+Original-formula witnesses passed Nix at `53a346e1` before redundant copies
+were retired. Final `23a3427b` passed the full suites, verdict, configured Nix
+checks, scheduled writers, public documentation and API reference. Final
+dependency inspection and the [Nix cost sample](20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+complete the shared measurements. The [goal ledger](../docs/lean-simplification-goal.md#milestones-and-decisions)
+records 87,018 maintained Lean lines and all 30 fixed capability groups retained.
+
+The implementation and retirement are published. Integration and publication of
+this reviewed closing record complete this task. The separate CI task still
+awaits hosted mutation measurements. Record checks: `tests/docs_test.py` and
+independent `just review`. Following sections preserve historical checkpoints;
+their pending notes are superseded by this completion record.
 
 ## Preparation
 
@@ -93,8 +116,7 @@ and states that the model suite now compiles the four temporary witnesses.
 The historical experiment imports remain at their recorded revision and are
 explicitly outside the active-source deletion check.
 
-The documentation follow-up `69c431c4` passed its documentation diagnostic and
-independent Claude review with zero must and zero should findings
+The documentation follow-up `69c431c4` received independent Claude review with zero must and zero should findings
 (`20261028T115625Z-69c431c4`). Both findings from the implementation review are
 recorded as fixed. The reviewed changes are ready for the root's integrated
 Nix acceptance; the shared migration fixtures remain in place.
