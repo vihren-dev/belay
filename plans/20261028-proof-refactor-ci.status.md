@@ -794,3 +794,51 @@ writable copies of the four immutable package caches recorded in
 `build/final-23a/cache-setup.json`, with one Nix worker slot. The required checks
 are `just test-full`, `just verdict`, `just test-nix` and
 `just test-scheduled-checks`. Their results and hosted validation remain pending.
+
+## Combined follow-up acceptance, 2026-10-28
+
+All four assigned gates passed once at frozen source
+`d61d7990fa29a60b1625eea9d24087acf0516d70` in the reused default-import workspace.
+Each command ran through `direnv exec .` with `max-jobs = 1`, `cores = 3` and
+`LEAN_NUM_THREADS=2`. All existing recipe, suite and test limits remained in
+force. The run used independent writable copies of the four accepted immutable
+package caches; each copy had no symlinks or shared inodes with its source.
+
+`just test-full` exited zero on its first invocation in 2,105.477 seconds.
+All 15 Nix suites passed 1,440 cases, with no failures, errors or skips.
+The configured source checks passed 563 cases in 118.098 seconds, with no skips.
+The combined report is
+`/nix/store/s8p03pilyrr2f14lc56klb7z6n5fpi40-sqlite-verifier-test-reports`.
+Four suites ran again: model (241 cases, 353.675 seconds), surface (380,
+666.238), surfaceChecks (22, 338.691) and surfaceS6 (66, 619.910). The other
+eleven suites reused matching immutable results. The surface report inputs
+include the build-support definitions; their captured sources differ only in
+`build-support/tests.nix`. Package producers and checked documentation reused
+their accepted outputs.
+
+`just verdict` exited zero in 1.400 seconds and reused
+`/nix/store/mq2zhrhhdmbr27fnnxjnd64nkx8iywmj-sqlite-verifier-verdict`.
+Its 56 corpora retain 5,653 agreements and 2,109 explicitly unsupported cases,
+with no other outcomes. `just test-nix` exited zero in 95.247 seconds: all 71
+cases passed without failures, errors or skips. The development-loop check ran
+normally in 30.010 seconds. The checks include rendered Nix commands, source
+identities, test ownership and infrastructure routing.
+
+`just test-scheduled-checks` exited zero in 1.267 seconds and reused
+`/nix/store/b1970pfwpg9ks801732i7x6wrbixxjb4-sqlite-verifier-scheduled-check-reports`.
+Its writers report retains all 50 passing cases, with no failures, errors or
+skips. No whole mutant suite, API reference or dependency report was rebuilt
+for this local acceptance.
+
+All 7,352 tracked files retained their original hashes throughout the run.
+The source manifest SHA256 is
+`900757ee2755eb73fbaa3edf80351c46a5abaa58b5031cdc5a2f1b50a3fd0f4f`.
+The coordinator retained 23 verified evidence files under `build/final-d61d`,
+including `acceptance-summary.json`, exact commands and terminal results,
+logs, both host XML reports and cache/source provenance. Five indirect Nix
+roots retain the named outputs. No new implementation change followed the
+frozen acceptance source.
+
+The CI task remains IN PROGRESS. Fresh hosted checks must execute and pass all
+nine scheduled mutant owners and the model suite on both Linux and macOS.
+The owner's earlier herdr review remains unfinished.
