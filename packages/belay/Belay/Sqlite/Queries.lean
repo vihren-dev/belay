@@ -1,3 +1,6 @@
+import Belay.Sqlite.Model.QueryOutputs
+import Belay.Sqlite.Model.ResolveStatementSingle
+import Belay.Sqlite.Model.TwoStateQuery
 import Lean.Elab.Tactic.Basic
 import Belay.Sqlite.Run
 

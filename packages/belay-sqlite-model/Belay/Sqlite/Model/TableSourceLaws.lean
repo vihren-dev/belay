@@ -1,25 +1,13 @@
 import Belay.Sqlite.Model.QueryJoinLaws
-import Belay.Sqlite.Model.Resolution.CatalogSpec
+import Belay.Sqlite.Model.DatabaseLookup
 
 set_option doc.verso true
 
-/-! The source rows of a query over one table (ADR 0017, S4): the table that the catalog
-finds for a name is the table of the database at the same position, and a query whose only source
-is that table reads the rows of the table in scan order (rowid order, or primary-key order for a
+/-! The source rows of a query over one table (ADR 0017, S4): a query whose only source
+is that table reads its rows in scan order (rowid order, or primary-key order for a
 {lit}`WITHOUT ROWID` table), with no fault. -/
 
 namespace Belay.Sqlite.Model
-
-/-- For every database, name, position and catalog table that the lookup of the catalog finds, the
-database has the table at that position: the catalog table with the stored rows of the position.
-Proof sketch: {name}`Catalog.findTable_some` gives the object of the catalog at the position, which
-is a table; unfold {name}`Database.table` and {name}`Catalog.tableAt`. -/
-theorem Database.table_of_findTable (database : Database) (name : Identifier) (position : Nat) (shape : CatalogTable)
-    (found : database.catalog.findTable name = some (position, shape)) :
-    database.table position = some { shape, rows := database.rows.getD position [] } := by
-  obtain ⟨⟨objectName, objectEntry⟩, atPosition, entry, -⟩ := Catalog.findTable_some _ _ _ _ found
-  cases entry
-  simp [Database.table, Catalog.tableAt, atPosition]
 
 /-- For every evaluation context, query whose only source is the table at a position as an inner
 join without a condition ({name}`Resolved.QuerySource.first`), and database that has the table at

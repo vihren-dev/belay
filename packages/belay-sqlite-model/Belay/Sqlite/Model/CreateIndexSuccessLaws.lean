@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.PrepareErrorOutput
-import Belay.Sqlite.Model.TableSourceLaws
+import Belay.Sqlite.Model.DatabaseLookup
 
 set_option doc.verso true
 

@@ -2,7 +2,7 @@ import Belay.Sqlite.Model.DerivedColumnBackfill
 import Belay.Sqlite.Model.CatalogAddColumnSearch
 import Belay.Sqlite.Model.CatalogTriggerSearch
 import Belay.Sqlite.Model.ResolveCreateIndexCatalog
-import Belay.Sqlite.Model.TableSourceLaws
+import Belay.Sqlite.Model.DatabaseLookup
 
 set_option doc.verso true
 

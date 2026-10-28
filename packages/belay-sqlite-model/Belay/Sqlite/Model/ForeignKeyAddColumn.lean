@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.ForeignKeyAddColumnDatabase
 import Belay.Sqlite.Model.RowLocalAddColumn
 

@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.ResolveAddColumnCatalog
 import Belay.Sqlite.Model.RowLocalAddColumn
 import Belay.Sqlite.Model.KeysUniqueAddColumn
@@ -61,15 +62,6 @@ theorem Catalog.Valid.uniqueKeys_readsBelow {limits : Limits} {catalog : Catalog
       simp only [CatalogObject.supported, entry, Bool.and_eq_true, Bool.and_eq_true] at supported
       rw [(by simpa using same.1 : found.table = position), present] at supported
       exact CatalogIndex.uniqueKey_readsBelow (by simpa using supported.2)
-
-/-- For every database and position of a table in it, the catalog has that table's entry at the position
-({name}`Catalog.tableAt`). Proof sketch: {name}`Database.table` maps the entry of the catalog. -/
-theorem Database.tableAt_of_table {database : Database} {target : Nat} {table : Table}
-    (present : database.table target = some table) : database.catalog.tableAt target = some table.shape := by
-  unfold Database.table at present
-  cases found : database.catalog.tableAt target with
-  | none => simp [found] at present
-  | some shape => simp [found] at present; rw [← present]
 
 /-- For every database whose catalog is valid and target, the database meets
 {name}`Database.ChecksReadBelowAt`: if the target holds a table, each CHECK constraint of the table reads
