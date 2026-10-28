@@ -656,3 +656,5 @@ boundary. Neither work surface may change production semantics or deadlines.
 Independent review of follow-up specification `af674848` has zero must and
 one should finding: an import requirement prescribed implementation order.
 The requirement now states the resulting dependency boundary instead.
+The corrected specification at `bcad4b11` passed independent review with zero
+must and zero should findings.
