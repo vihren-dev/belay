@@ -1,6 +1,6 @@
 # Execution profile task status
 
-Date: 2026-10-28. Status: IN PROGRESS; assignment reviewed.
+Date: 2026-10-28. Status: IN PROGRESS; implementation reviewed, Nix acceptance pending.
 Audience: the implementation team.
 Task: [execution observation profiles](20261028-execution-profiles.task.md).
 Specification: [ADR 0026 D4](../docs/adr-0026-semantic-proof-boundaries.md).
@@ -59,7 +59,7 @@ retirement waits for the coordinator's Nix acceptance.
 Local diagnostic commands include targeted Lake builds with one thread, the
 source documentation/category/layer tests, and the affected surface test owners.
 These diagnose changes only. The complete development build has run after the final
-production changes. Implementation review, Nix acceptance, witness retirement,
+production changes. Nix acceptance, witness retirement,
 integration and push remain pending.
 
 The NOT-IN diagnostic found a real automation regression: ordinary reflexivity on
@@ -85,6 +85,16 @@ Diagnostic commands run before the implementation commit:
 
 These local runs are diagnostics. The coordinator owns complete Nix acceptance
 and its record; no Nix acceptance is claimed for this implementation yet.
+
+Implementation commit `19e8e4c7` passed independent Claude review with zero must
+and zero should findings (`reviews/20261028T133016Z-19e8e4c7`). Sources are at rest.
+Retirement removes only `tests/surface/ExecutionProfileMigration.lean` and its
+four-audit entry and temporary-witness sentence in `tests/surface_execution_test.py`.
+The permanent `ExecutionProfileBranches`, existing `ExecutionEquivalence` and
+`ExecutionViewChoices` cases retain alternate end states/errors and independent
+actual/possible observations. Existing view/frame and application fixtures retain
+weak/full and scoped/full distinctions. The S6 program owner retains the alias
+proof and independently checked printed suggestion.
 
 Source-size diagnostic with the baseline counter, relative to the assignment
 parent: changed production files contain 32 fewer code lines; tests add 90.
