@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.BackfillUpdateResolution
 import Belay.Sqlite.Model.SimpleStatementResolution
 import Belay.Sqlite.Model.Resolution.SyntaxReindexLaws

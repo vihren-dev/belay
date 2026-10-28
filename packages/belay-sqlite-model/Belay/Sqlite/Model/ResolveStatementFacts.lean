@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.ResolveStatementLink
 import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.ResolveStatementPragmaLink

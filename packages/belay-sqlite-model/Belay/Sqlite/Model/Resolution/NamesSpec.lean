@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.RenameSpec
 import Belay.Sqlite.Model.Resolution.DropColumnOutcome
 import Belay.Sqlite.Model.Resolution.DropSpec

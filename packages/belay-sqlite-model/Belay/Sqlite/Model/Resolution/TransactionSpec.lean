@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.Resolve
 
 set_option doc.verso true

@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
 import Belay.Sqlite.Model.ReadOnlyFrame
 
