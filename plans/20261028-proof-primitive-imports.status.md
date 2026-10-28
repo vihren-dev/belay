@@ -159,3 +159,6 @@ exactly. The theorem and executable definitions retain their original bodies;
 the change is proof ownership and its imports. This record omits local diagnostic
 results in accordance with the repository evidence policy. Final combined Nix
 acceptance, the comparison measurement, publication and workspace cleanup remain.
+Integration `23a3427b` received independent Claude review with zero must and zero
+should findings (`reviews/20261028T154339Z-23a3427b/review.json`). The reviewer
+confirmed the exact package-source match with `0a65f381`.

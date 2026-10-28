@@ -321,3 +321,20 @@ PR 296's normal pull-request scope runs full tests and the API reference, but
 intentionally skips mutation suites. Their successful job labels therefore do
 not establish hosted mutation acceptance. The existing manual workflow's full
 scope is required to obtain the Linux mutation results on the final source.
+
+## Final delivered-source acceptance
+
+The coordinator freezes code and test source at
+`23a3427b4d3cb071d81dae248ff870ccaa55de0c`. This includes the accepted mathematical
+contracts, retired fixtures, CI import/join repairs and corrected comparison
+proof ownership. The source differs from the earlier witness snapshot and
+requires the final combined checks. The latest integration review has zero
+must and zero should findings.
+
+Remaining gates are full tests and verdict, Nix configuration/development-loop
+checks, scheduled writers, checked API reference, a matched theorem-dependency
+report, the six resolver-mutant groups and the existing comparison-mutant
+measurement. The final source count uses the fixed goal baseline and counter.
+The implementation will be published as a draft while these checks run, with
+the existing manual CI workflow supplying hosted mutation results. Draft
+publication does not mark the implementation tasks complete.
