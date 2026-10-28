@@ -97,7 +97,8 @@ still excludes INSERT from a query; the general preservation rule does not.
 
 ## Boundaries that matter
 
-`QueryStatementOutput` combines the foundational equation with its old
+`QueryOutputFacts` owns the foundational output equations and shared query
+definitions. `QueryStatementOutput` consumes them for generic row and error
 projections. `SimpleQuerySteps` owns bound-context facts; `CountSubqueryOutput`
 owns count values and context facts. Shared definitions and semantic facts must
 be importable below projection consumers, without cycles or copied definitions.

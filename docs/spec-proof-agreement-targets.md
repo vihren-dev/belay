@@ -81,9 +81,9 @@ Names below have the prefix `Belay.Sqlite.Model.Resolved`.
 | Current owner | Exact declarations | Disposition |
 | --- | --- | --- |
 | [Resolution/QueryForm.lean][queryform] | `Query.readsInitial`; `Query.readsCurrent` | Moved below the source agreement/origin adapters; meanings unchanged. |
-| [ExprAppendLaws.lean][append] | `EvalContext.RowFree` | Move the row-independence proposition below its congruence adapter. |
-| [ExprAppendLaws.lean][append] | `EvalContext.plain_rowFree` | Keep the plain-context evidence available with the predicate. |
-| [ExprContextLaws.lean][context] | `SubqueryRun.certainFirst` | Move this record update below the certainty adapter. |
+| [EvalContextLaws.lean][evalcontext] | `EvalContext.RowFree` | Moved below its congruence adapter; meaning unchanged. |
+| [EvalContextLaws.lean][evalcontext] | `EvalContext.plain_rowFree` | Plain-context evidence remains with the predicate. |
+| [EvalContextLaws.lean][evalcontext] | `SubqueryRun.certainFirst` | Moved below the certainty adapter; record update unchanged. |
 
 `Source.isInitial` and `Source.readsCurrent` already live in
 [Resolution/QueryForm.lean][queryform]. Retain them there unless another concrete
@@ -126,7 +126,7 @@ abstraction. Moving `RowFree` must still compile this consumer and its CHECK/key
 proof clients. Derived-column clients replace the removed `NormalizedField`
 family; there is no old migration family to preserve as a compatibility API.
 
-In [ExprContextLaws.lean][context], keep the useful `Resolved.EvalContext.withRuns`,
+In [EvalContextLaws.lean][evalcontext], keep the useful `Resolved.EvalContext.withRuns`,
 `Resolved.EvalContext.withRuns_subqueries`, `Resolved.EvalContext.withRuns_parameters`,
 and the `Resolved.SubqueryRun.certainFirst_rows`, `Resolved.SubqueryRun.certainFirst_fault`,
 `Resolved.SubqueryRun.certainFirst_rowsCertain`, `Resolved.SubqueryRun.certainFirst_firstCertain` projection laws with
@@ -168,6 +168,7 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [statement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateStatementLaws.lean
 [append]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprAppendLaws.lean
 [context]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
+[evalcontext]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/EvalContextLaws.lean
 [rowwise]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowwiseExpr.lean
 [queryform]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryForm.lean
 [twostate]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateQuery.lean

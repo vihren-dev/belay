@@ -79,9 +79,10 @@ required congruence replacement.
 The source implementation puts `Query.readsInitial` and `Query.readsCurrent`
 in `Resolution/QueryForm`, below `SourceAgreement`. Its shared core imports
 `Execution` and `PossibleResults` and does not import the replaced endpoints.
-`ExprAppendLaws` owns `EvalContext.RowFree` and
-`ExprContextLaws` owns `SubqueryRun.certainFirst`. Put these definitions below
-the shared proofs that use them. The experimental source core imports
+`EvalContextLaws` owns `EvalContext.RowFree`, its plain-context evidence,
+`EvalContext.withRuns` and `SubqueryRun.certainFirst`, below the shared proofs
+that use them. `ExprAppendLaws` and `ExprContextLaws` consume these definitions.
+The experimental source core imports
 `Execution` and `PossibleResults`; the expression core imports `ExprEval` and
 `Resolution.ExprAny`. They do not call the endpoints they replace.
 
