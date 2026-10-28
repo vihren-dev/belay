@@ -59,7 +59,8 @@ Relevant model files: `QueryResults.lean`, `QueryRun.lean`,
 all permitted execution branches. SELECT-internal rules must integrate with
 those semantics rather than introduce a competing execution model.
 
-The consumer experiments in `../belay-ux-test/QueryProgramSketch.lean` and
+The owner-local consumer experiments, outside this repository, in
+`../belay-ux-test/QueryProgramSketch.lean` and
 `SelectTableProperty.lean` establish feasibility of pure composition and a simple
 table bridge. They are local prototypes, not upstream acceptance evidence.
 In particular, pure `Query.results` properties alone do not establish successful

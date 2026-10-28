@@ -2,7 +2,10 @@
 
 Created 2026-10-28. Status: IN PROGRESS.
 Audience: team. Task: [required outcome](20261028-select-automation-spec.task.md).
-ADR 0027 is reserved for this work; the ADR has not yet been written or accepted.
+The owner explicitly requested number ADR 27 for this work. The
+[ADR draft](../docs/adr-0027-compositional-select-proofs.md) and
+[acceptance draft](../docs/select-automation-acceptance.md) are not yet accepted;
+gaps in earlier ADR numbers do not change that request.
 
 ## Current state
 
@@ -15,10 +18,31 @@ ADR 0027 is reserved for this work; the ADR has not yet been written or accepted
   projection rule; broader execution adapters remain absent there.
 - The disk-space gate blocked work at 8.37 GiB free. A fresh resource check now
   passes. No cleanup was performed by this task.
-- Development shell initialization is being verified. No specification checks
+- Development shell initialization passed: Lake reports Lean 4.34.1. No specification checks
   or implementation acceptance cases have passed yet.
+- Planning commit `1783df21` received independent review with no must findings.
+  Its two should findings concern the owner-selected ADR number and the
+  owner-local location of earlier consumer probes; both are clarified here.
 
 ## Work remaining
+
+The owner selected Lean-only specification artifacts after PIDE startup found
+no compatible HOL heap. The unchecked Isabelle files were removed; no Isabelle
+build or PDF is required. The Lean fixtures and written semantic review cover
+are the target-specific formal specification artifacts for this task.
+
+The isolated `select-experiments` workspace contains bounded fixtures in the
+existing surface test harness. Its Nix runtime build completed at
+`/nix/store/jh9zgilri7ckdrssni872wjrjsbadx7h-sqlite-verifier-test-surface`.
+This is build evidence only, not evidence that the new experiments passed.
+The host Python lacks pytest-timeout; tests use the Nix suite's declared Python,
+which includes it. No dependency was installed or test timeout removed.
+
+Source review found that a `Run` observation is not equivalent to arbitrary
+branch-universal programs, that `.may` faults require readiness checks, and
+that three subquery certainty conditions are distinct. The ADR now specifies
+these boundaries explicitly. A 22-case automatic acceptance matrix and
+constructor-level semantic coverage are proposed, not claimed as implemented.
 
 Experiments and source inventory; ADR and acceptance contract; formal review
 views; owner decisions; focused Nix validation, independent review and the
