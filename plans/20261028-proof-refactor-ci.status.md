@@ -678,9 +678,10 @@ local acceptance. Artifact `12842678651` has SHA256
 The coordinator retained the verified ZIP/XML, exact mutant/target membership,
 source comparisons, summaries and three macOS job logs under `build/final-23a`.
 `audit/hosted-40742662857-retained-evidence.json` records the copied file hashes.
-The default-fixture and mutant-workload workers are assigned the reviewed
-follow-up in separate workspaces; only one may run focused Nix acceptance at a
-time. The user confirmed that the exited herdr review remains unfinished.
+The default-fixture and mutant-workload workers were assigned the reviewed
+follow-up in separate workspaces; both slices are recorded below. Only one
+worker ran focused Nix acceptance at a time. The user confirmed that the exited
+herdr review remains unfinished.
 
 ## Oversized-hex default fixture import boundary
 
@@ -777,3 +778,19 @@ The five focused Nix measurements above supply the execution evidence.
 Independent Claude review of `3ba90a61` has zero must and zero should findings
 (`20261028T203525Z-3ba90a61`). Combined coordinator acceptance and subsequent
 hosted validation remain pending; this task stays IN PROGRESS.
+
+## Combined follow-up review, 2026-10-28
+
+The coordinator integrated both reviewed slices at `cfcde78c`. The only merge
+conflict was in appended status records; both records were retained. All
+production files under `packages/` remain identical to the accepted ADR25/26
+source `23a3427b`. Independent Claude review `20261028T203808Z-cfcde78c` has
+zero must and one should finding: the assignment paragraph used present tense
+after both workers had finished. The paragraph now uses past tense.
+
+This status and review record freezes the combined source for one acceptance
+run in the existing default-import workspace. That run will use independent
+writable copies of the four immutable package caches recorded in
+`build/final-23a/cache-setup.json`, with one Nix worker slot. The required checks
+are `just test-full`, `just verdict`, `just test-nix` and
+`just test-scheduled-checks`. Their results and hosted validation remain pending.
