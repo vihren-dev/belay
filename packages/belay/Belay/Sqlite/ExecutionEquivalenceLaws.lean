@@ -5,28 +5,10 @@ set_option doc.verso true
 
 namespace Belay.Sqlite
 
-/-- Every program has its own complete observations at every fixed context.
-Proof sketch: reflexivity of equality and each branch proposition. -/
-theorem Sql.EquivAt.refl {α : Type} (program : Sql α) (state : ExecutionContext) :
-    program.EquivAt program state := ⟨rfl, fun _ => Iff.rfl⟩
-
-/-- Fixed-context equivalence is symmetric: both complete observations compare equally
-in either direction. Proof sketch: reverse equality and each branch equivalence. -/
-theorem Sql.EquivAt.symm {α : Type} {first second : Sql α} {state : ExecutionContext}
-    (same : first.EquivAt second state) : second.EquivAt first state :=
-  ⟨same.actual.symm, fun result => (same.branches result).symm⟩
-
-/-- At one shared context, two complete equivalences compose transitively.
-Proof sketch: compose actual equality and each branch equivalence. -/
-theorem Sql.EquivAt.trans {α : Type} {first second third : Sql α} {state : ExecutionContext}
-    (one : first.EquivAt second state) (two : second.EquivAt third state) :
-    first.EquivAt third state :=
-  ⟨one.actual.trans two.actual, fun result => (one.branches result).trans (two.branches result)⟩
-
 /-- Every program is completely equivalent to itself at all contexts.
 Proof sketch: apply fixed-context reflexivity at each context. -/
 theorem Sql.Equiv.refl {α : Type} (program : Sql α) : program.Equiv program :=
-  fun state => .refl program state
+  fun _ => rfl
 
 /-- Unrestricted complete equivalence is symmetric.
 Proof sketch: reverse the fixed-context relation at each context. -/
@@ -53,9 +35,9 @@ theorem Sql.EquivAt.check_iff {α : Type} {first second : Sql α} {state : Execu
     first.check post state ↔ second.check post state := by
   constructor
   · intro checked result branch
-    exact checked result ((same.branches result).mpr branch)
+    exact checked result (((observationProfile_id_eq_iff.mp same).2 result).mpr branch)
   · intro checked result branch
-    exact checked result ((same.branches result).mp branch)
+    exact checked result (((observationProfile_id_eq_iff.mp same).2 result).mp branch)
 
 /-- Every unrestricted comparison can be used on any chosen domain. No fact is
 required outside that domain. Proof sketch: specialize the unrestricted relation. -/

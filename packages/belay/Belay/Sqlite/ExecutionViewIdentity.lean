@@ -9,11 +9,7 @@ return value and trace. Proof sketch: identity projection leaves every trace unc
 theorem Sql.View.identity_observation_iff {α : Type} (first second : Sql α)
     (state : ExecutionContext) :
     (identity first).ObservationEquivAt (identity second) state ↔ first.ObservationEquivAt second state := by
-  constructor <;> intro same <;> constructor
-  · simpa [observation, project_identity, SqlRun.observation] using same.actual
-  · simpa [observation, project_identity, SqlRun.observation] using same.branches
-  · simpa [observation, project_identity, SqlRun.observation] using same.actual
-  · simpa [observation, project_identity, SqlRun.observation] using same.branches
+  simp only [ObservationEquivAt, Sql.ObservationEquivAt, observationProfile, observation, project_identity, SqlRun.observation]
 
 /-- At a shared context, identity full observations determine the exact complete run,
 including its raw trace and connection. Proof sketch: the returned value, connection and
@@ -48,25 +44,12 @@ theorem Sql.View.identity_equiv_iff {α : Type} (first second : Sql α) (state :
     (identity first).EquivAt (identity second) state ↔ first.EquivAt second state := by
   constructor
   · intro same
-    refine ⟨(identity_full_eq_iff first second state _ _).mp same.actual, ?_⟩
-    intro result
-    constructor
-    · intro branch
-      obtain ⟨other, matched, equal⟩ := (same.branches _).mp ⟨result, branch, rfl⟩
-      cases (identity_full_eq_iff second first state _ _).mp equal
-      exact matched
-    · intro branch
-      obtain ⟨other, matched, equal⟩ := (same.branches _).mpr ⟨result, branch, rfl⟩
-      cases (identity_full_eq_iff first second state _ _).mp equal
-      exact matched
+    exact observationProfile_transport same (Sql.Branch.actual first _ _ _)
+      (Sql.Branch.actual second _ _ _) (fun one two _ _ equal =>
+        (identity_full_eq_iff first second state one two).mp equal)
   · intro same
-    constructor
-    · exact (identity_full_eq_iff first second state _ _).mpr same.actual
-    · intro observation
-      constructor
-      · rintro ⟨result, branch, seen⟩
-        exact ⟨result, (same.branches result).mp branch, by simpa [fullObservation, finish_identity] using seen⟩
-      · rintro ⟨result, branch, seen⟩
-        exact ⟨result, (same.branches result).mpr branch, by simpa [fullObservation, finish_identity] using seen⟩
+    exact observationProfile_transport same (Sql.Branch.actual first _ _ _)
+      (Sql.Branch.actual second _ _ _) (fun one two _ _ equal =>
+        (identity_full_eq_iff first second state one two).mpr equal)
 
 end Belay.Sqlite

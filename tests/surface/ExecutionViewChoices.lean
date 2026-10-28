@@ -74,11 +74,11 @@ theorem equal_branch_observations : ∀ observation,
       exact ⟨other, matched, equal.trans (second.symm.trans seen)⟩
 
 /-- Equal branch sets alone do not establish projected comparison: actual raw runs
-return different values. Proof sketch: the actual-equality field would equate 1 and 2. -/
+return different values. Proof sketch: the actual-observation equality would equate 1 and 2. -/
 theorem actual_agreement_is_required :
     ¬ (Sql.View.quiet (choices false)).ObservationEquivAt (Sql.View.quiet (choices true)) initial := by
   intro same
-  have value := congrArg Prod.fst same.actual
+  have value := congrArg Prod.fst (observationProfile_actual same)
   have impossible : (some 1 : Option Nat) = some 2 := value
   cases impossible
 

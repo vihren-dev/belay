@@ -44,6 +44,7 @@ Proof sketch: classify both raw branch sets; the migration's extra success outpu
 theorem one_preserves : Migration.PreservesOn one connected one := by
   intro state entry
   have connection : state.connection = initial.connection := entry.1
+  apply observationProfile_eq_iff.mpr
   constructor
   · cases state with
     | mk clock index current outputs => cases connection; rfl

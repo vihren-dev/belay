@@ -43,7 +43,7 @@ theorem TranslatesOn.compose {μ ν α : Type} {first : Sql μ} {second : Sql ν
   intro state entry
   have successful := (Sql.succeedsFrom_bind_iff first (fun _ => second) _ _ _).mp entry.2
   exact (one state ⟨entry.1, successful.1⟩).trans
-    ((tails state entry).trans (after_compose first second replacement state).symm.observation)
+    ((tails state entry).trans (Sql.View.EquivAt.observation (after_compose first second replacement state).symm))
 
 /-- Preservation composes under the same raw reached-domain premise as translation.
 The original success domain is that of the combined migration, not of a fresh reset.

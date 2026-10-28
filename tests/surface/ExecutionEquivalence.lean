@@ -77,7 +77,7 @@ theorem other_branch_absent : ¬ failsOffset.Branch daily.clock 0 initial.connec
 theorem failed_traces_distinguish : ¬ failsRandom.EquivAt failsOffset initial := by
   intro same
   apply other_branch_absent
-  apply (same.branches randomOutcome).mp
+  apply ((observationProfile_id_eq_iff.mp same).2 randomOutcome).mp
   exact random_branch
 
 /-- A deterministic done step followed by pure has one complete branch. -/
@@ -104,6 +104,7 @@ theorem same_observations : foreignOn.ObservationEquivAt foreignOff initial := b
       result = foreignOn.runFrom daily.clock 0 initial.connection := unit_step_branch (by rfl) result
   have off (result) : foreignOff.Branch daily.clock 0 initial.connection result ↔
       result = foreignOff.runFrom daily.clock 0 initial.connection := unit_step_branch (by rfl) result
+  apply observationProfile_eq_iff.mpr
   constructor
   · rfl
   · intro observation
@@ -115,7 +116,7 @@ theorem same_observations : foreignOn.ObservationEquivAt foreignOff initial := b
 /-- Full equivalence retains the pragma setting even though all weaker observations agree. -/
 theorem settings_distinguish : ¬ foreignOn.EquivAt foreignOff initial := by
   intro same
-  have setting := congrArg (fun result : SqlRun Unit => result.connection.foreignKeys) same.actual
+  have setting := congrArg (fun result : SqlRun Unit => result.connection.foreignKeys) (observationProfile_actual same)
   contradiction
 
 /-- A shared continuation reads the omitted setting, refuting unrestricted weaker bind congruence. -/
@@ -123,7 +124,7 @@ theorem observations_do_not_compose :
     ¬ (foreignOn.bind fun _ => single (sql r"PRAGMA foreign_keys")).ObservationEquivAt
       (foreignOff.bind fun _ => single (sql r"PRAGMA foreign_keys")) initial := by
   intro same
-  have value := congrArg Prod.fst same.actual
+  have value := congrArg Prod.fst (observationProfile_actual same)
   have different : ((foreignOn.bind fun _ => single (sql r"PRAGMA foreign_keys")).runFrom
       daily.clock 0 initial.connection).value ≠
       ((foreignOff.bind fun _ => single (sql r"PRAGMA foreign_keys")).runFrom

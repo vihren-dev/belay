@@ -6,8 +6,8 @@ import Belay.Sqlite.ScopedAgreement
 set_option doc.verso true
 
 /-! Programs with one branch (ADR 0017, S8). A branch can choose among the concrete results of a
-statement whose rows have no promised order ({name}`Belay.Sqlite.Model.Output.oneOf`). A program whose steps give no such
-output has exactly one branch, its actual run. The check is a computation, so a proof for a concrete
+statement whose rows have no promised order ({name}`Belay.Sqlite.Model.Output.oneOf`). A program whose
+steps have no further executions and give no such output has exactly one branch, its actual run. The check is a computation, so a proof for a concrete
 program can use {lit}`decide +kernel` or {lit}`rfl` for it. Equivalence of two such programs at a
 context then reduces to equality of their actual runs. -/
 
@@ -35,8 +35,8 @@ def Sql.hasOneBranch {α : Type} (clock : Option Clock) : Sql α → Nat → Con
 
 /-- For every program that has one branch from a context, a result is a branch of the program exactly
 when it is the actual run. Proof sketch: induction on the program. A pure program and a stopped step
-have only their own result. After a continued step, the output is not a choice between results, so the
-only permitted output is the actual one, and the claim for the rest applies. -/
+have only their own result. A continued step has no further executions and its output is not a choice
+between results, so the only permitted output is the actual one, and the claim for the rest applies. -/
 theorem Sql.branch_iff_actual {α : Type} (program : Sql α) :
     ∀ (clock : Option Clock) (index : Nat) (connection : Connection) (result : SqlRun α),
       program.hasOneBranch clock index connection = true →
@@ -70,16 +70,16 @@ theorem Sql.branch_iff_actual {α : Type} (program : Sql α) :
         exact ⟨output, _, .inl rfl, (Sql.Branch.actual (rest output) clock (index + 1) next), rfl⟩
 
 /-- Two programs that each have one branch at a context are equivalent there when their actual runs
-are equal. Both sides have the same single result, so the actual runs and the branch sets agree. -/
+are equal. Proof sketch: both sides have the same single result, so the actual runs and the branch
+sets agree. -/
 theorem Sql.EquivAt.of_one_branch {α : Type} {first second : Sql α} {state : ExecutionContext}
     (leftOne : first.hasOneBranch state.clock state.index state.connection = true)
     (rightOne : second.hasOneBranch state.clock state.index state.connection = true)
     (same : first.runFrom state.clock state.index state.connection =
       second.runFrom state.clock state.index state.connection) :
     first.EquivAt second state :=
-  ⟨same, fun result => by
-    rw [Sql.branch_iff_actual first _ _ _ result leftOne, Sql.branch_iff_actual second _ _ _ result rightOne,
-      same]⟩
+  observationProfile_of_singletons (fun result => Sql.branch_iff_actual first _ _ _ result leftOne)
+    (fun result => Sql.branch_iff_actual second _ _ _ result rightOne) same
 
 /-- Two programs that each have one branch at a context have equal views there when the projected
 actual observations are equal. Proof sketch: each side realizes exactly its projected actual
@@ -91,14 +91,8 @@ theorem Sql.View.EquivAt.of_one_branch {α : Type} {first second : Sql α}
     (same : left.fullObservation state (first.runFrom state.clock state.index state.connection) =
       right.fullObservation state (second.runFrom state.clock state.index state.connection)) :
     left.EquivAt right state :=
-  ⟨same, fun observation => by
-    constructor
-    · rintro ⟨result, branch, rfl⟩
-      rw [Sql.branch_iff_actual first _ _ _ result leftOne] at branch
-      exact ⟨_, Sql.Branch.actual second _ _ _, by rw [branch, ← same]⟩
-    · rintro ⟨result, branch, rfl⟩
-      rw [Sql.branch_iff_actual second _ _ _ result rightOne] at branch
-      exact ⟨_, Sql.Branch.actual first _ _ _, by rw [branch, same]⟩⟩
+  observationProfile_of_singletons (fun result => Sql.branch_iff_actual first _ _ _ result leftOne)
+    (fun result => Sql.branch_iff_actual second _ _ _ result rightOne) same
 
 /-- Two programs that each have one branch at two contexts agree under a relation when their actual
 runs agree. The one branch of each program is its actual run, so the forward and the backward cover
@@ -149,13 +143,7 @@ theorem Sql.View.ObservationEquivAt.of_one_branch {α : Type} {first second : Sq
     (same : left.observation (first.runFrom state.clock state.index state.connection) =
       right.observation (second.runFrom state.clock state.index state.connection)) :
     left.ObservationEquivAt right state :=
-  ⟨same, fun observation => by
-    constructor
-    · rintro ⟨result, branch, rfl⟩
-      rw [Sql.branch_iff_actual first _ _ _ result leftOne] at branch
-      exact ⟨_, Sql.Branch.actual second _ _ _, by rw [branch, ← same]⟩
-    · rintro ⟨result, branch, rfl⟩
-      rw [Sql.branch_iff_actual second _ _ _ result rightOne] at branch
-      exact ⟨_, Sql.Branch.actual first _ _ _, by rw [branch, same]⟩⟩
+  observationProfile_of_singletons (fun result => Sql.branch_iff_actual first _ _ _ result leftOne)
+    (fun result => Sql.branch_iff_actual second _ _ _ result rightOne) same
 
 end Belay.Sqlite

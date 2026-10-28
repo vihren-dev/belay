@@ -52,7 +52,7 @@ theorem no_full_simulation :
     ¬ Simulation plan.migration (fun state => state = initial) counterPairing := by
   intro simulation
   have claim := simulation.commutes .setEmail () initial ⟨rfl, by decide +kernel⟩
-  have counters := congrArg (fun observed => observed.2.connection.state.counters) claim.actual
+  have counters := congrArg (fun observed => observed.2.connection.state.counters) (observationProfile_actual claim)
   have different :
       ((Migration.before (counterPairing.old.run .setEmail ()) plan.migration).runFrom initial.clock
         initial.index initial.connection).connection.state.counters ≠

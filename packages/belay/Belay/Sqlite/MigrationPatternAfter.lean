@@ -112,6 +112,7 @@ theorem translatesAt_of_observations {μ α : Type} (migration : Sql μ) (origin
         ∃ result, replacement.Branch state.clock (state.index + first.outputs.length) first.connection result ∧
           result.observation = observation) :
     (Sql.View.identity original).ObservationEquivAt (afterView migration replacement) state := by
+  apply observationProfile_eq_iff.mpr
   constructor
   · rw [afterView_observation_actual migration replacement state success, ← actual]
     simp [Sql.View.observation, Sql.View.project_identity, SqlRun.observation]

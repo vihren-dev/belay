@@ -1,4 +1,5 @@
 import Belay.Sqlite.ExecutionSuccess
+import Belay.Sqlite.ExecutionProfile
 
 set_option doc.verso true
 
@@ -8,14 +9,11 @@ namespace Belay.Sqlite
 at this context. Outcomes include return values, errors, stopping reasons, partial traces,
 and every connection field. The context's existing trace is shared by both programs.
 Use this primitive for a single starting state; it has no unrestricted bind rule. -/
-structure Sql.EquivAt {α : Type} (first second : Sql α) (state : ExecutionContext) : Prop where
-  /-- The actual interpreter returns the same complete result for both programs. -/
-  actual : first.runFrom state.clock state.index state.connection =
-    second.runFrom state.clock state.index state.connection
-  /-- Every result is a branch of the first program exactly when it is a branch of the
-  second. Failed and unmodeled branches remain observations. -/
-  branches : ∀ result, first.Branch state.clock state.index state.connection result ↔
-    second.Branch state.clock state.index state.connection result
+def Sql.EquivAt {α : Type} (first second : Sql α) (state : ExecutionContext) : Prop :=
+  observationProfile (first.runFrom state.clock state.index state.connection)
+    (first.Branch state.clock state.index state.connection) id =
+  observationProfile (second.runFrom state.clock state.index state.connection)
+    (second.Branch state.clock state.index state.connection) id
 
 /-- Complete execution equivalence at every context satisfying the supplied predicate.
 Contexts outside that domain impose nothing; an empty domain makes this true.

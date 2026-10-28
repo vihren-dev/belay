@@ -23,7 +23,7 @@ both annotated executions reduce to the same migration followed by that pure val
 theorem commutes_pure_application {μ α : Type} (migration : Sql μ) (value : α)
     (pre : ExecutionContext → Prop) : CommutesOn migration pre (.pure value) := by
   intro state _
-  exact Sql.View.EquivAt.refl _ state
+  exact rfl
 
 /-- Full commutation composes across result-dependent application binds when every
 returning original application branch reaches the next pattern's domain on its raw
@@ -46,14 +46,14 @@ theorem CommutesAsOn.bind {μ α β : Type} {migration : Sql μ}
     (other := fun value => after migration (other value))
     (later := fun value => beforeView (next value) migration)
     (last := fun value => afterView migration (other value))
-    (fun state _ => Sql.View.EquivAt.refl _ state) tails reaches
+    (fun _ _ => rfl) tails reaches
   have movePrefix := Sql.View.EquivOn.bind
     (left := beforeView application migration) (right := afterView migration replacement)
     (pre := Domain migration pre) (post := fun _ _ => True)
     (next := other) (other := other)
     (later := fun value => Sql.View.identity (other value))
     (last := fun value => Sql.View.identity (other value))
-    prefixes (fun _ state _ => Sql.View.EquivAt.refl _ state)
+    prefixes (fun _ _ _ => rfl)
     (fun _ _ _ _ _ _ => True.intro)
   intro state entry
   exact (before_bind migration application next state).trans

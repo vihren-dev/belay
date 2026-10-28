@@ -71,14 +71,16 @@ observer DSL or new executor induction.
 | Migration relation construction | `MigrationPatternAfter`, `MigrationPatternQuiet`, `MigrationPatternLaws`, `MigrationApplicationLaws`. |
 | Automation | `CounterexampleActual`, `CheckProof`. |
 
-`CounterexampleActual.refuteByActualRun?` currently projects an `actual` field
-from a proof of each relation. Migrate it to obtain actual-observation equality
+At assignment, `CounterexampleActual.refuteByActualRun?` projected an `actual`
+field from a proof of each relation. Migrate it to obtain actual-observation equality
 from the new representation. Preserve kernel-certified refutation for all four
 relation forms, dependency exclusions and the current limit: actual-run
 refutation does not find a difference solely in permitted branches.
-`CheckProof.tryProof` quotes `Sql.EquivAt.refl`; remove that obsolete tactic
-alternative and its checked reference. Ordinary `rfl` is already attempted.
-Preserve successful proof suggestions and their independent certification.
+At assignment, `CheckProof.tryProof` quoted `Sql.EquivAt.refl`; remove that obsolete tactic
+alternative and its checked reference. Preserve ordinary reflexivity, successful
+proof suggestions and their independent certification. The new equality representation
+must retain counterexample outcomes at the existing checking budgets: eager reflexivity
+must not consume the budget by executing different SQL programs before refutation.
 
 Keep `ExecutionBranches`, `ExecutionBranchLaws`, `ExecutionViewProjection` and
 `ScopedAgreement` semantics unchanged. Retain `ScopedAt.of_one_branch` as
@@ -86,6 +88,14 @@ independent relation-based simulation. Keep certificate, derived-column and
 schema/control bridge formulas listed in the inventory; migration obligations
 remain per branch and permit different table positions. Request coordination
 before any newly necessary edit outside this source boundary.
+
+The implementation audit also includes the formula-preserving caller repair in
+`MigrationPatternComposition` and `MigrationPatternFrames`. Reversed and
+composed equalities need explicit applications of their observation and frame laws. Additional actual-observation projections in the existing
+fixtures `DerivedColumnExamples`, `MigrationExpansionCounter`,
+`ApplicationCounterCalls`, `S6RulesNegativeClock`, `RebuildAffinity` and
+`ApplicationMissingTrigger` must use the profile projection. Their scoped
+simulation projections and all semantic assertions remain unchanged.
 
 ADR 0025 owns preservation conditions, `ScriptSuccess`, `SendStatementsBranches`,
 the model singleton consumer, `InsertSelectExecutions.lean` and its count entry
@@ -109,8 +119,9 @@ files. Executable SQL, conformance inputs and judge claims remain unchanged.
   symmetry and transitivity need no replacement test matrix.
 - Run the existing `surface_s6_check_programs_test.py` owner for full, weak and
   view refutations, migration weak-view claims, native replay and printed-proof
-  certification. Preserve its trust/dependency exclusions. Add only missing
-  coverage specific to the changed representation.
+  certification. Preserve its trust/dependency exclusions. Add the missing named-view
+  reflexivity case to this owner's existing fixture and printed-proof checks. The
+  existing NOT-IN checker owner retains its budgets and expected counterexamples.
 - Nix compiles complete affected packages, checked documentation and all real
   bind/frame/migration/certificate/NOT-IN clients. Keep their mathematical
   assumptions. Audit the generic profile proofs and independent evidence with
