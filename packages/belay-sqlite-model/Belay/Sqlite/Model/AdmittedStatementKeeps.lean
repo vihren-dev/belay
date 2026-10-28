@@ -4,16 +4,13 @@ import Belay.Sqlite.Model.AdmittedDistinctStatement
 import Belay.Sqlite.Model.AdmittedRangeWideStatements
 import Belay.Sqlite.Model.AdmittedShapedStatement
 import Belay.Sqlite.Model.AdmittedStoredAliasedStatements
-import Belay.Sqlite.Model.RunHoldsReady
+import Belay.Sqlite.Model.RunHolds
 
 set_option doc.verso true
 
-/-! The statement theorems of the seven atoms of {lit}`Database.Admitted` in the form of
-{lit}`StatementKeepsReady` (ADR 0022, D3, slice 4), the form that the run theorems use. The property is
-the atom and the atoms that its theorem lists (decision 2 of the status file): "rows stored" lists "rows
-wide", and "rows aliased" lists "catalog supported", whose condition (the catalog after the statement is
-valid) is the condition of both. The atoms "rows shaped", "rowids distinct", "rowids in range" and "rows wide"
-have no condition. The last theorem is the conjunction of all seven atoms. -/
+/-! Independent preservation certificates for the admitted atoms. Catalog validity, row shape
+and distinct rowids need no readiness premise. Range, width, stored form and row aliases use
+the raw statement readiness condition. The combined certificate preserves all seven fields. -/
 
 namespace Belay.Sqlite.Model
 
@@ -32,83 +29,94 @@ abbrev Database.RowsAliasedSupported (limits : Limits) (database : Database) : P
   database.RowsAliased ∧ database.CatalogSupported limits
 
 /-- The condition of "catalog supported" for a statement on a database and limits: the catalog after the
-statement ({name}`Resolved.Statement.applyCatalog`) is valid under the limits. For a statement that is not
-CREATE, ADD COLUMN or DROP it is the catalog of the database. -/
+statement ({name}`Resolved.Statement.applyCatalog`) is valid under the limits. Statements that
+leave the catalog unchanged require validity of the input catalog. -/
 abbrev Resolved.Statement.AppliedValid (limits : Limits) (statement : Resolved.Statement) (database : Database) : Prop :=
   (statement.applyCatalog database.catalog).Valid limits
 
-/-- The statement theorem of "catalog supported" in the form of {name}`StatementKeepsReady`. For every
-limits: the property is {name}`Database.CatalogSupported`, and the condition is
-{name}`Resolved.Statement.AppliedValid`. Proof sketch: {name}`runStatement_catalogSupported`. -/
+/-- For every limits and evaluator inputs, a database with a valid catalog and a valid applied
+catalog keeps catalog validity on every effect in {name}`StatementKeeps`, without readiness. Proof sketch: lift {name}`runStatement_catalogSupported` to all effects. -/
 theorem catalogSupported_statementKeeps (limits : Limits) :
-    StatementKeepsReady (Database.CatalogSupported limits) (Resolved.Statement.AppliedValid limits) :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ valid applied _ =>
+    StatementKeeps (Database.CatalogSupported limits) (fun _ _ _ => Resolved.Statement.AppliedValid limits) :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ valid applied =>
     runStatement_catalogSupported limits clock counters parameters statement valid applied)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
-/-- The statement theorem of "rows shaped" in the form of {name}`StatementKeepsReady`, with no condition.
-Proof sketch: {name}`runStatement_rowsShaped`. -/
-theorem rowsShaped_statementKeeps : StatementKeepsReady Database.RowsShaped fun _ _ => True :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ shaped _ _ => runStatement_rowsShaped clock counters parameters statement shaped)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+/-- For every evaluator input, a database with shaped rows keeps that property on every effect
+in {name}`StatementKeeps`, independently of readiness and other atoms.
+Proof sketch: lift {name}`runStatement_rowsShaped` to all effects. -/
+theorem rowsShaped_statementKeeps : StatementKeeps Database.RowsShaped fun _ _ _ _ _ => True :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ shaped _ =>
+    runStatement_rowsShaped clock counters parameters statement shaped)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
-/-- The statement theorem of "rowids distinct" in the form of {name}`StatementKeepsReady`, with no condition.
-Proof sketch: {name}`runStatement_rowidsDistinct`. -/
-theorem rowidsDistinct_statementKeeps : StatementKeepsReady Database.RowidsDistinct fun _ _ => True :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ distinct _ _ =>
+/-- For every evaluator input, a database with distinct rowids keeps that property on every
+effect in {name}`StatementKeeps`, independently of readiness and other atoms.
+Proof sketch: lift {name}`runStatement_rowidsDistinct` to all effects. -/
+theorem rowidsDistinct_statementKeeps : StatementKeeps Database.RowidsDistinct fun _ _ _ _ _ => True :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ distinct _ =>
     runStatement_rowidsDistinct clock counters parameters statement distinct)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
-/-- The statement theorem of "rowids in range" in the form of {name}`StatementKeepsReady`, with no condition.
-Proof sketch: {name}`runStatement_rowidsInRange`. -/
-theorem rowidsInRange_statementKeeps : StatementKeepsReady Database.RowidsInRange fun _ _ => True :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ inRange _ ready =>
+/-- For every evaluator input, a database with rowids in range keeps that property on every
+effect in {name}`StatementKeeps` when the raw statement run is ready. Proof sketch: lift {name}`runStatement_rowidsInRange`, transporting readiness to each selected upsert. -/
+theorem rowidsInRange_statementKeeps :
+    StatementKeeps Database.RowidsInRange fun clock counters parameters statement database =>
+      (runStatement clock counters parameters statement database).ready = true :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ inRange ready =>
     runStatement_rowidsInRange clock counters parameters statement inRange ready)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ ready met => ready met)
 
-/-- The statement theorem of "rows wide" in the form of {name}`StatementKeepsReady`, with no condition.
-Proof sketch: {name}`runStatement_rowsWide`. -/
-theorem rowsWide_statementKeeps : StatementKeepsReady Database.RowsWide fun _ _ => True :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ wide _ ready => runStatement_rowsWide clock counters parameters statement wide ready)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+/-- For every evaluator input, a database with wide rows keeps that property on every effect
+in {name}`StatementKeeps` when the raw statement run is ready.
+Proof sketch: lift {name}`runStatement_rowsWide`, transporting readiness to each selected upsert. -/
+theorem rowsWide_statementKeeps :
+    StatementKeeps Database.RowsWide fun clock counters parameters statement database =>
+      (runStatement clock counters parameters statement database).ready = true :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ wide ready =>
+    runStatement_rowsWide clock counters parameters statement wide ready)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ ready met => ready met)
 
-/-- The statement theorem of "rows stored" in the form of {name}`StatementKeepsReady`, with no condition. The
-property is "rows stored" and "rows wide", the atom that its theorem lists. Proof sketch:
-{name}`runStatement_rowsStored` and {name}`runStatement_rowsWide`. -/
-theorem rowsStored_statementKeeps : StatementKeepsReady Database.RowsStoredWide fun _ _ => True :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ holds _ ready database kept =>
+/-- For every evaluator input, a database with stored and wide rows keeps both properties on
+every effect in {name}`StatementKeeps` when the raw statement run is ready.
+Proof sketch: combine the two independent statement facts and transport readiness to selected upserts. -/
+theorem rowsStored_statementKeeps :
+    StatementKeeps Database.RowsStoredWide fun clock counters parameters statement database =>
+      (runStatement clock counters parameters statement database).ready = true :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds ready database kept =>
     ⟨runStatement_rowsStored clock counters parameters statement holds.1 holds.2 ready database kept,
       runStatement_rowsWide clock counters parameters statement holds.2 ready database kept⟩)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ ready met => ready met)
 
-/-- The statement theorem of "rows aliased" in the form of {name}`StatementKeepsReady`. For every limits: the
-property is "rows aliased" and "the catalog is valid under the limits", the atom that its theorem lists,
-and the condition is {name}`Resolved.Statement.AppliedValid`. Proof sketch: {name}`runStatement_rowsAliased`
-and {name}`runStatement_catalogSupported`. -/
+/-- For every limits and evaluator inputs, a database with aliased rows and a valid catalog
+keeps both properties on every effect in {name}`StatementKeeps` when the applied catalog is
+valid and the raw statement run is ready. Proof sketch: combine the row-alias and catalog facts;
+the INSERT-query bridge transports readiness to selected upserts. -/
 theorem rowsAliased_statementKeeps (limits : Limits) :
-    StatementKeepsReady (Database.RowsAliasedSupported limits) (Resolved.Statement.AppliedValid limits) :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ holds applied ready database kept =>
-    ⟨runStatement_rowsAliased limits clock counters parameters statement holds.1 holds.2 ready database kept,
-      runStatement_catalogSupported limits clock counters parameters statement holds.2 applied database kept⟩)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    StatementKeeps (Database.RowsAliasedSupported limits) fun clock counters parameters statement database =>
+      statement.AppliedValid limits database ∧ (runStatement clock counters parameters statement database).ready = true :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met database kept =>
+    ⟨runStatement_rowsAliased limits clock counters parameters statement holds.1 holds.2 met.2 database kept,
+      runStatement_catalogSupported limits clock counters parameters statement holds.2 met.1 database kept⟩)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ ready met => ⟨met.1, ready met.2⟩)
 
-/-- The statement theorem of all seven atoms together, in the form of {name}`StatementKeepsReady`. For every
-profile: the property is {name}`Database.Admitted` under the profile, and the condition is
-{name}`Resolved.Statement.AppliedValid` for the limits of the profile. Proof sketch: the seven statement
-theorems for the fields of the structure. -/
+/-- For every profile and evaluator inputs, an admitted database stays admitted on every effect
+in {name}`StatementKeeps` when the applied catalog is valid and the raw statement run is ready. Proof sketch: prove the seven fields independently, then lift to
+all effects using the INSERT-query readiness implication. -/
 theorem admitted_statementKeeps (profile : Profile) :
-    StatementKeepsReady (Database.Admitted profile) (Resolved.Statement.AppliedValid profile.limits) :=
-  StatementKeepsReady.ofOwnRun (fun clock counters parameters statement _ admitted applied ready database kept =>
+    StatementKeeps (Database.Admitted profile) fun clock counters parameters statement database =>
+      statement.AppliedValid profile.limits database ∧ (runStatement clock counters parameters statement database).ready = true :=
+  StatementKeeps.ofOwnRun (fun clock counters parameters statement _ admitted met database kept =>
     ⟨runStatement_catalogSupported profile.limits clock counters parameters statement admitted.catalogSupported
-        applied database kept,
+        met.1 database kept,
       runStatement_rowsShaped clock counters parameters statement admitted.rowsShaped database kept,
       runStatement_rowidsDistinct clock counters parameters statement admitted.rowidsDistinct database kept,
-      runStatement_rowidsInRange clock counters parameters statement admitted.rowidsInRange ready database kept,
-      runStatement_rowsWide clock counters parameters statement admitted.rowsWide ready database kept,
-      runStatement_rowsStored clock counters parameters statement admitted.rowsStored admitted.rowsWide ready
+      runStatement_rowidsInRange clock counters parameters statement admitted.rowidsInRange met.2 database kept,
+      runStatement_rowsWide clock counters parameters statement admitted.rowsWide met.2 database kept,
+      runStatement_rowsStored clock counters parameters statement admitted.rowsStored admitted.rowsWide met.2
         database kept,
       runStatement_rowsAliased profile.limits clock counters parameters statement admitted.rowsAliased
-        admitted.catalogSupported ready database kept⟩)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+        admitted.catalogSupported met.2 database kept⟩)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ ready met => ⟨met.1, ready met.2⟩)
 
 end Belay.Sqlite.Model

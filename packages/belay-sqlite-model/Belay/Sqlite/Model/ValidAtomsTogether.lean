@@ -48,13 +48,13 @@ any other reason requires nothing. Proof sketch: {name}`Effect.satisfies_and` of
 {name}`runStatement_notNull`, {name}`runStatement_typesFit`, {name}`runStatement_checksHold` and
 {name}`runStatement_keysUnique`. -/
 theorem constraintAtoms_statementKeeps :
-    StatementKeeps Database.ConstraintAtoms fun statement database => statement.AtomsCondition database :=
+    StatementKeeps Database.ConstraintAtoms fun _ _ _ statement database => statement.AtomsCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ atoms condition =>
     Effect.satisfies_and (runStatement_notNull clock counters parameters statement atoms.1 condition.2.1)
       (runStatement_typesFit clock counters parameters statement atoms.2.1 condition.2.2.1)
       (runStatement_checksHold clock counters parameters statement atoms.2.2.1 condition.2.2.2)
       (runStatement_keysUnique clock counters parameters statement atoms.2.2.2
         (Resolved.Statement.keysCondition_of_runCondition condition.1)))
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model

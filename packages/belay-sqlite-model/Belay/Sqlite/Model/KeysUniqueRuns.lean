@@ -18,10 +18,10 @@ the database that an error with {name}`ExecutionError.constraintFail` carries, s
 with any other reason requires nothing. Proof sketch: {name}`runStatement_keysUnique` with
 {name}`Resolved.Statement.keysCondition_of_runCondition`. -/
 theorem keysUnique_statementKeeps :
-    StatementKeeps Database.KeysUnique fun statement database => statement.RunCondition database :=
+    StatementKeeps Database.KeysUnique fun _ _ _ statement database => statement.RunCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ unique condition =>
     runStatement_keysUnique clock counters parameters statement unique
       (Resolved.Statement.keysCondition_of_runCondition condition))
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model

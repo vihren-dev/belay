@@ -73,10 +73,104 @@ theorem some_execution_fails :
 /-- The copy without a limit succeeds in every execution. -/
 theorem copy_succeeds : copy.SucceedsFrom none 0 start.connection := by decide +kernel
 
+/-- The parsed copy step, reused to inspect every reached connection. -/
+def copyStatement : Syntax.Statement := (sql r"INSERT INTO t(name) SELECT x FROM s WHERE x > 0").statements[0].1
+
+/-- A later query reads a clock, one counter and one bound parameter. -/
+def inputStatement : Syntax.Statement :=
+  (sql r"SELECT CURRENT_TIMESTAMP, total_changes(), ?1" (Value.integer 42)).statements[0].1
+
+/-- At position seven the supplied clock gives 17, independently of the connection's clock. -/
+def inputClock : Option Clock := some fun index => index + 10
+
+/-- The actual two copy executions, starting at a nonzero position. -/
+def copied : RunStep := runScriptStep runContext inputClock 6 start.connection copyStatement []
+
+/-- The copy has no extra obligation. The later query requires the selected inputs and either
+of the two reached row orders. The full counter record differs from this visible view. -/
+def nextInputs : StatementCondition := fun value counters parameters statement database =>
+  if statement.fromQuery then True else
+    value = 17 ∧ counters = { totalChanges := some 2 } ∧ parameters = [.integer 42] ∧
+      (database.rowsAt 2).map (·.values.getD 1 .null) ∈
+        [[.integer 20, .integer 10], [.integer 10, .integer 20]]
+
+/-- Both real branches supply their own database and counters to the later condition.
+Proof sketch: compute both reached states, then use each resolution and clock equation. -/
+theorem reached_inputs : ∀ execution ∈ copied.executions,
+    ScriptStepCondition nextInputs runContext inputClock 7 execution.next inputStatement [.integer 42] := by
+  have facts : ∀ execution ∈ copied.executions,
+      execution.next.resolveState = start.connection.resolveState ∧
+      execution.next.state.counters = { changes := some 2, totalChanges := some 2, lastInsertRowid := some 2 } ∧
+      (execution.next.state.database.rowsAt 2).map (·.values.getD 1 .null) ∈
+        [[.integer 20, .integer 10], [.integer 10, .integer 20]] := by decide +kernel
+  intro execution member resolved after value found selected _
+  obtain ⟨same, counters, rows⟩ := facts execution member
+  rw [same] at found
+  change Except.ok _ = Except.ok (resolved, after) at found
+  cases found
+  change some 17 = some value at selected
+  cases selected
+  exact ⟨rfl, by rw [counters]; rfl, rfl, rows⟩
+
+/-- The common predicate follows each branch's later obligation, with no support premise added
+at the script entry. Proof sketch: the copy resolves to INSERT SELECT, and each of its next states
+meets {name}`reached_inputs`; both suffixes are empty. -/
+theorem branch_conditions : ScriptConditionsWith Model.Database.RowsShaped nextInputs runContext inputClock 6
+    start.connection [(copyStatement, []), (inputStatement, [.integer 42])] := by
+  refine ⟨?_, ?_⟩
+  · intro _ resolved after _ found _ _
+    change Except.ok _ = Except.ok (resolved, after) at found
+    cases found
+    trivial
+  · intro execution member
+    refine ⟨fun _ => reached_inputs execution member, ?_⟩
+    split
+    · trivial
+    · exact fun _ _ => trivial
+
+/-- The shared all-execution preservation law handles a divergent INSERT SELECT and each later
+input-dependent obligation. Proof sketch: specialize rows-shape evidence and apply {name}`branch_conditions`. -/
+theorem branch_preservation : ∀ run ∈ runScriptAllFrom runContext inputClock 6 start.connection
+    [(copyStatement, []), (inputStatement, [.integer 42])], run.connection.state.Holds Model.Database.RowsShaped :=
+  runScriptAllFrom_holds (condition := nextInputs)
+    (fun clock counters parameters statement database holds _ =>
+      rowsShaped_statementKeeps clock counters parameters statement database holds trivial)
+    runContext inputClock 6 _ ⟨sample.valid.admitted.rowsShaped, fun _ impossible => nomatch impossible⟩ branch_conditions
+
+/-- Checking only the canonical branch's row order cannot discharge the later obligations.
+Proof sketch: select the other actual execution and specialize its query obligation. -/
+theorem other_branch_required : ¬ ScriptConditionsWith (fun _ => True)
+    (fun _ _ _ statement database => statement.fromQuery = true ∨
+      ((database.rowsAt 2).map (·.values.getD 1 .null)).head? = some (.integer 20))
+    runContext inputClock 6 start.connection [(copyStatement, []), (inputStatement, [.integer 42])] := by
+  intro met
+  have later := met.2
+  change ∀ execution ∈ [_, _], _ at later
+  have alternative := later _ (List.mem_cons_of_mem _ (List.mem_singleton_self _))
+  have required := alternative.1 ⟨trivial, fun _ _ => trivial⟩ _ _ 17 rfl rfl rfl
+  change false = true ∨ some (Value.integer 10) = some (.integer 20) at required
+  simp at required
+
+/-- A missing selected clock ends execution; even a false condition is unnecessary at that step
+and throughout its suffix. Proof sketch: resolution selects a clock-reading query, which has no clock value. -/
+theorem missing_clock_ends_obligations : ScriptConditionsWith (fun _ => True)
+    (fun _ _ _ _ _ => False) runContext none 7 start.connection
+    [(inputStatement, [.integer 42]), (copyStatement, [])] := by
+  refine ⟨?_, trivial⟩
+  intro _ resolved after value found selected _
+  change Except.ok _ = Except.ok (resolved, after) at found
+  cases found
+  contradiction
+
 #print axioms every_execution_has_both_values
 #print axioms first_row_claim_fails
 #print axioms first_row_is_a_value
 #print axioms some_execution_fails
 #print axioms copy_succeeds
+#print axioms reached_inputs
+#print axioms branch_conditions
+#print axioms branch_preservation
+#print axioms other_branch_required
+#print axioms missing_clock_ends_obligations
 
 end InsertSelectExecutionExamples

@@ -21,8 +21,8 @@ abbrev Database.AdmittedWith (profile : Profile) (property : Database → Prop) 
 
 /-- The run theorem of {name}`runScriptAllFrom` for an atom of slices 2 and 3, for every statement theorem and
 every way to give its condition. For every profile, atom and condition: if the statement theorem holds
-({name}`StatementKeeps`), and an admitted database gives the condition for every statement whose catalog after
-it is valid and that meets {name}`Resolved.Statement.SchemaLink`, then for every context in execution mode with
+({name}`StatementKeeps`), and for every clock, counters and parameters an admitted database gives the condition for each statement whose applied
+catalog is valid, whose raw run is ready, and that meets {name}`Resolved.Statement.SchemaLink`, then for every context in execution mode with
 the limits of the profile, clock, index, connection and statements with their values: if the state of the
 connection satisfies {name}`SqlState.Holds` for {name}`Database.AdmittedWith` the atom, the state of the
 connection of every complete execution of the script satisfies it. Proof sketch: {name}`runScriptAllFrom_holds_derived` for the conjunction of
@@ -30,19 +30,22 @@ connection of every complete execution of the script satisfies it. Proof sketch:
 catalog after the statement ({name}`resolveStatement_appliedValid`) and the link
 ({name}`resolveStatement_schemaLink`). -/
 theorem runScriptAllFrom_admittedWith {profile : Profile} {atom : Database → Prop}
-    {condition : Resolved.Statement → Database → Prop} (keeps : StatementKeeps atom condition)
-    (derive : ∀ (database : Database) (statement : Resolved.Statement), database.Admitted profile →
+    {condition : StatementCondition} (keeps : StatementKeeps atom condition)
+    (derive : ∀ (value : Int) (counters : Counters) (parameters : List Value)
+      (database : Database) (statement : Resolved.Statement), database.Admitted profile →
       statement.AppliedValid profile.limits database → statement.SchemaLink database.catalog →
-        condition statement database)
+        (runStatement value counters parameters statement database).ready = true →
+        condition value counters parameters statement database)
     (context : ResolveContext) (clock : Option Clock) (index : Nat) {connection : Connection}
     (script : List (Syntax.Statement × List Value)) (execution : context.mode = .execution)
     (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.AdmittedWith profile atom)) :
     ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds (Database.AdmittedWith profile atom) :=
-  runScriptAllFrom_holds_derived ((admitted_statementKeeps profile).and keeps.toReady) context clock
-    (fun _ _ _ _ keep ok =>
+  runScriptAllFrom_holds_derived ((admitted_statementKeeps profile).and keeps) context clock
+    (fun _ _ _ _ keep _ _ _ ok _ ready =>
       have applied := resolveStatement_appliedValid context execution same (keep.mono fun _ h => h.1.catalogSupported) ok
-      ⟨applied, derive _ _ keep.1.1 applied
-        (resolveStatement_schemaLink context _ _ _ _ (same ▸ keep.1.1.catalogSupported) ok)⟩) index script holds
+      ⟨⟨applied, (Bool.and_eq_true_iff.mp ready).1⟩, derive _ _ _ _ _ keep.1.1 applied
+        (resolveStatement_schemaLink context _ _ _ _ (same ▸ keep.1.1.catalogSupported) ok)
+        (Bool.and_eq_true_iff.mp ready).1⟩) index script holds
 
 end Belay.Sqlite.Model

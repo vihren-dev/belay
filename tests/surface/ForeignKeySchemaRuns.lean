@@ -30,7 +30,7 @@ theorem cascadeRollbackCompatible : (runSql cascadeRollback matching.raw).Holds
   apply Belay.Sqlite.Model.runSql_holds (Belay.Sqlite.Model.parentSchemasCompatibleKeeps _) _ (by decide +kernel)
   exact RunConditionsWith.of_unconditioned
     (unconditioned := fun statement => decide statement.KeepsParentSchema)
-    (fun _ _ accepted => of_decide_eq_true accepted) _ _ _ (by decide +kernel)
+    (fun _ _ _ _ _ accepted => of_decide_eq_true accepted) _ _ _ (by decide +kernel)
 
 example : (match runSql cascadeRollback matching.raw with
   | .success database => database == matching.raw

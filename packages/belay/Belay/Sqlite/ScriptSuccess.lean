@@ -53,7 +53,7 @@ continuations require the same remaining script. The direction from success to t
 the condition ({name}`Sql.allOk_of_succeedsFrom_send`). -/
 theorem Sql.succeedsFrom_sendStatements (statements : List (Syntax.Statement × List Value)) :
     ∀ (clock : Option Clock) (index : Nat) (connection : Connection),
-      ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
+      ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) runContext clock index connection statements →
       ((sendStatements statements).SucceedsFrom clock index connection ↔
         (runScriptFrom runContext clock index connection statements).outputs.allOk = true) := by
   induction statements with

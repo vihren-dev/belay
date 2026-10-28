@@ -14,9 +14,9 @@ namespace Belay.Sqlite.Model
 does not inspect stored rows. Proof sketch: specialize the statement theorem. -/
 theorem parentSchemasCompatibleKeeps (mapping : ForeignKeyMapping) :
     StatementKeeps (Database.ParentSchemasCompatible mapping)
-      (fun statement _ => statement.KeepsParentSchema) :=
+      (fun _ _ _ statement _ => statement.KeepsParentSchema) :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met =>
     runStatement_parentSchemasCompatible mapping clock counters parameters statement holds met)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model

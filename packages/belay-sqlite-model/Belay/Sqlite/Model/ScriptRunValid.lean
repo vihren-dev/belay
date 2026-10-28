@@ -46,7 +46,7 @@ theorem runScriptAllFrom_valid {profile : Profile} (context : ResolveContext) (c
     ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds (Database.Valid profile) :=
   fun run member =>
     (runScriptAllFrom_admittedWith constraintAtoms_statementKeeps
-      (fun _ statement admitted applied link => statement.atomsCondition_of_link admitted applied link)
+      (fun _ _ _ _ statement admitted applied link _ => statement.atomsCondition_of_link admitted applied link)
       context clock index script execution same
       (holds.mono fun _ valid => Database.valid_iff.mp valid) run member).mono fun _ atoms => Database.valid_iff.mpr atoms
 

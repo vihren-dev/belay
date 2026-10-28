@@ -12,9 +12,9 @@ Proof sketch: specialize the statement row-reference theorem; the condition supp
 reached statement's input facts. -/
 theorem rowReferences_statementKeeps (profile : Profile) :
     StatementKeeps (fun database => database.RowReferencesHold database.catalog.foreignKeyMapping)
-      (fun statement database => statement.ForeignKeyRowsCondition profile database) :=
+      (fun _ _ _ statement database => statement.ForeignKeyRowsCondition profile database) :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ holds met => runStatement_rowReferences clock counters parameters statement holds met)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For any supplied mapping compatible with a database's parent schemas, row truth
 under that mapping is equivalent to row truth under the catalog-selected mapping. Empty
@@ -37,7 +37,7 @@ Proof sketch: compatibility identifies the supplied and selected comparisons; ap
 individual row and schema laws, then transport the row fact back through compatibility. -/
 theorem foreignKeyAtoms_statementKeeps (profile : Profile) (mapping : ForeignKeyMapping) :
     StatementKeeps (fun database => database.ParentSchemasCompatible mapping ∧ database.RowReferencesHold mapping)
-      (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :=
+      (fun _ _ _ statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition profile database) :=
   StatementKeeps.ofOwnRun (by
   intro clock counters parameters statement database holds condition result kept
   have schema := runStatement_parentSchemasCompatible mapping clock counters parameters statement holds.1
@@ -45,7 +45,7 @@ theorem foreignKeyAtoms_statementKeeps (profile : Profile) (mapping : ForeignKey
   have rows := runStatement_rowReferences clock counters parameters statement
     (holds.1.rowReferences_iff_selected.mp holds.2) condition.2 result kept
   exact ⟨schema, schema.rowReferences_iff_selected.mpr rows⟩)
-    (fun _ _ _ _ _ _ _ _ _ h => h)
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 /-- For any supplied mapping, clock, counters, parameters and input satisfying both FK
 atoms, a statement that keeps the catalog and meets the row condition preserves both atoms in success and partial

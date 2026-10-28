@@ -19,10 +19,10 @@ connection by the induction hypothesis. -/
 theorem ScriptConditionsWith.of_not_insertSelect (context : ResolveContext) (clock : Option Clock) :
     ∀ (index : Nat) (connection : Connection) (script : List (Syntax.Statement × List Value)),
       (∀ entry ∈ script, entry.1.isInsertSelect = false) →
-        ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) context clock index connection script
+        ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) context clock index connection script
   | _, _, [], _ => trivial
   | index, connection, (statement, parameters) :: rest, notQuery => by
-    refine ⟨fun resolved after found =>
+    refine ⟨fun _ resolved after _ found _ _ =>
       resolveStatement_single context connection.resolveState after statement resolved
         (notQuery _ (List.mem_cons_self ..)) found, ?_⟩
     cases step : runScriptStep context clock index connection statement parameters with

@@ -307,7 +307,8 @@ in {
   };
   model = suite "model" {
     # Temporary ADR25 formulas remain through the final execution-condition acceptance.
-    inputs = modelInputs ++ map (index: root + "/tests/surface/PreservationApiWitnesses${toString index}.lean") [ 1 2 3 4 ];
+    inputs = modelInputs ++ map (index: root + "/tests/surface/PreservationApiWitnesses${toString index}.lean") [ 1 2 3 4 ]
+      ++ [ (root + /tests/surface/PreservationContextRaw.lean) (root + /tests/surface/PreservationContextSurface.lean) ];
     runtime = conformance;
     tools = modelTools;
   };
