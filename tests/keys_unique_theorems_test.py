@@ -1,7 +1,7 @@
 """The unique-key statement contract and lookup fact use only standard axioms.
 
 The statement requires only uniqueness and its local condition. The lookup fact bounds
-matching rows by one. Retired run formulas are covered by the shared ADR25 migration fixtures.
+matching rows by one.
 """
 
 from pathlib import Path

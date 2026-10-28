@@ -124,3 +124,9 @@ proof branch. Package and test sources match that reviewed retirement exactly;
 the other integration changes are documentation and review records only.
 Retirement Nix acceptance and push remain pending.
 No production package, execution semantics or capability changes in this cleanup.
+
+The post-retirement description audit removes stale claims about temporary
+fixtures from `admitted_atoms_run_theorems_test.py` and `keys_unique_theorems_test.py`.
+The test bodies and coverage stay unchanged. Checks for this comment-only follow-up
+are Python syntax/body comparison and `tests/docs_test.py`. Independent Claude
+review of `7e6d2d31` reported zero must and zero should findings.

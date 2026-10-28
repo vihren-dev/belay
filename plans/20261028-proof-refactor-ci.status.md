@@ -179,22 +179,49 @@ contain 6, 6, 4 and 6 mutants. They retain all 22 mutant identities and their
 requires unchanged-model agreement, and rejects every surviving mutant. Mutant
 edits, target mappings, the measurement harness and all deadlines are unchanged.
 
-Development diagnostics use `LEAN_NUM_THREADS=2`. The package build covers the
-model, text, conformance and surface libraries. A temporary partition audit checks
-that every mutant occurs once and that each assigned case module contains every
-target. Source checks are `mutant_guards_test.py`, `docs_test.py` and
-`test_lean_categories.py`. The previously uncompilable `no_such_column` mutant
-is also replayed alone through the existing `measure_set`, with the 300-second
-outer deadline and unchanged target. These local diagnostics are not acceptance
-evidence.
-
 Claude reviewed implementation `7da59def` with zero must and zero should findings
-(`reviews/20261028T145306Z-7da59def/review.json`). Nix acceptance remains pending. The ignored expression
+(`reviews/20261028T145306Z-7da59def/review.json`). The ignored expression
 `build/ci-repair/operand-joins.nix` selects the existing query-resolution test from
 `mutants` and the four join parameters from `tableMutants`. It preserves each
-owner's inputs, runtime, environment and deadlines. The coordinator controls the
-Nix slot. The full six-query and 22-join mutant results, checked documentation,
-combined acceptance and subsequent hosted Linux timings remain required.
+owner's inputs, runtime, environment and deadlines.
+
+## Scoped Nix acceptance of the hosted follow-up
+
+Both scoped Nix invocations completed with exit 0 against frozen source
+`f298895c38574c55ce09d9952ada5ad3b1cbfa2b`. They ran sequentially with
+`max-jobs = 1`, `cores = 3` and the hardened sandbox. The test deadline remains
+300 seconds, the suite deadline 2,700 seconds, and the outer build deadline
+3,000 seconds. JUnit reports contain no failures, errors or skips.
+
+| Existing measurement | Mutants detected | JUnit test time, seconds |
+| --- | --- | --- |
+| Query resolution | 6 | 105.755 |
+| Joins | 6 | 103.005 |
+| USING | 6 | 137.376 |
+| Right joins | 4 | 92.686 |
+| Merged names | 6 | 141.775 |
+
+The query report is
+`/nix/store/nqvfmakynapyis9sgf068wbgcc8ai6hd-sqlite-verifier-test-mutants-operand-joins-1/junit.xml`:
+one test, 105.947 seconds for the suite. The join report is
+`/nix/store/mgy88i300bxja0dnw243khaf4g13n31z-sqlite-verifier-test-tableMutants-operand-joins-1/junit.xml`:
+four tests, 475.032 seconds for the suite. Invocation logs are
+`/tmp/proof-refactor-ci-query-resolution-nix.log` and
+`/tmp/proof-refactor-ci-joins-nix.log`.
+
+The query selection retains `no_such_column`, `no_such_table`,
+`no_misuse_of_aggregate`, `no_aggregate_in_group_by`,
+`no_order_by_out_of_range` and `no_group_by_out_of_range`. The join parameters
+select each unchanged table once: `join_mutants`, `using_mutants`,
+`right_mutants` and `merged_mutants`. The complete mutant/target mappings in
+those five source files remain identical to `16ab6ad7`. Every selected target
+agrees with the unchanged model, and every mutant builds and changes a verdict.
+
+PR 295 was merged at `16ab6ad7`; these reviewed changes are a separate CI repair
+for publication against main. Checked documentation and combined full acceptance
+of the changed imports will run with the final post-retirement implementation.
+Those gates and the subsequent hosted Linux result remain pending. These scoped
+Nix timings do not establish hosted headroom or a build-speed improvement.
 
 ## Combined integration checkpoint
 
@@ -214,10 +241,8 @@ tests passed. The unchanged snapshot is retrying with the same limits, reusing
 completed Nix results. Its log is
 `/tmp/proof-refactor-final-test-full-retry.log`. Integration of the later import
 repair does not change the frozen acceptance source or establish acceptance of
-this repair. The integrated `just dev-build` completed for all four packages;
-62 affected source checks passed (`mutant_guards_test.py`, `docs_test.py` and
-`test_lean_categories.py`). These are development diagnostics; independent
-integration review follows, and the selected Nix checks remain pending.
+this repair. The later scoped Nix results above accept the selected mutant
+measurements; final combined package and documentation acceptance remains pending.
 
 PR 295 was merged at 15:00 UTC on 2026-10-28. Fetched main `2c5fff35`
 has the same tree as `16ab6ad7`; it adds the merge commit only. The remaining
@@ -271,3 +296,18 @@ package and test sources match the worker's reviewed source exactly. Claude's
 integration review `20261028T152451Z-9335618d` found zero must and zero should
 findings. The separate comparison-proof placement correction remains in progress.
 Final combined Nix acceptance and publication are pending.
+
+## Follow-up publication checkpoint
+
+At 15:31 UTC on 2026-10-28, the coordinator pushed CI-only head `46e5a773` to
+`fix/proof-refactor-ci` and opened draft PR
+[296](https://github.com/vihren-dev/sqlite-verifier/pull/296) against main
+`2c5fff35`. This starts hosted validation while combined proof acceptance is
+prepared. The draft does not claim completed combined or hosted acceptance.
+The production proof refactors remain local and will be published separately.
+No PR merge was performed by the coordinator.
+
+Reviewed documentation correction `7741beb5` is also integrated. It removes
+stale temporary-fixture descriptions from two test module docstrings and changes
+no test AST body, Lean source or coverage. Its independent review found no
+must or should findings.
