@@ -1,0 +1,52 @@
+{
+  "caller": "codex",
+  "commit": "4b0ede63906d533a8740817ad7a03f8bffe327f6",
+  "date": "2026-10-28T12:02:45+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261026-preservation-context.status.md",
+    "plans/20261026-preservation-context.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261028T120245Z-4b0ede63#1",
+      "line": 24,
+      "path": "plans/20261026-preservation-context.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The commit renames \"Remaining work\" to \"Design reconciliation history\", but the open instructions on lines 24-27 (\"Implement the new production interface…\") stay under it, so current to-do text reads as history. Fix: move lines 24-27 under \"Implementation assignment\" or \"Pending\", or mark them as the original plan."
+    },
+    {
+      "id": "20261028T120245Z-4b0ede63#2",
+      "line": 9,
+      "path": "plans/20261026-preservation-context.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task's top mixes assignment-history text (\"The API worker checked…\", \"Assignment source\") into the header fields, and the same claims appear again in the status file. Fix: keep only the assignment date and source commit in the task header, and leave the worker narrative in the status file."
+    }
+  ],
+  "id": "20261028T120245Z-4b0ede63",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -51,6 +51,10 @@ migration set. Keep them through final Nix acceptance, then retire redundancy
 with their registrations. Foundation/API tasks still await integrated Nix
 acceptance; this assignment does not mark them complete.
 
+Assignment commit `a0fba5a0` passed independent Claude review with zero must and
+zero should findings (`reviews/20261028T120718Z-a0fba5a0`). Two documentation
+findings from the earlier draft were fixed and recorded.
+
 Pending: condition implementation, independent review, current-formula and
 focused semantic checks, full Nix acceptance, witness retirement, integration
-and push. Assignment review is pending.
+and push.
