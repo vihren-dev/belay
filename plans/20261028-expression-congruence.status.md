@@ -47,7 +47,15 @@ and source-agreement workers. Shared registrations require coordinator sequencin
 - Implementation commit `facc67dc`: independent Claude review found zero must
   and zero should findings (`reviews/20261028T121805Z-facc67dc`). Source is frozen
   for the coordinator's combined acceptance run.
+- Integration `a3dd5a9a`: the complete four-package development build and 19
+  source checks passed as diagnostics. Independent Claude review reported zero
+  must and zero should findings (`reviews/20261028T124800Z-a3dd5a9a`), but could
+  inspect the manifest resolution only partially. The coordinator separately
+  checked that its 872 explicit modules exactly match the source, that only the
+  two D5 modules were added, and that all 19 public roots are unchanged.
+  This integration is later than the first frozen Nix acceptance snapshot;
+  D5's Nix acceptance remains pending.
 - Pending: Nix acceptance and net source measurement,
-  temporary witness retirement, integration and push. The shared contract and
+  temporary witness retirement and push. The shared contract and
   focused fixtures add maintained code; no size or build-time saving is claimed.
   No implementation acceptance is recorded by the historical experiment.
