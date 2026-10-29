@@ -20,6 +20,26 @@ inconsistent premise must not be the only way a positive theorem can hold.
 Use the existing surface/Nix test harness, proof-axiom checks and finite budgets.
 Implementation acceptance is separate from the feasibility experiments.
 
+Completion has three parts, per ADR 0027 D3 and "Scope and supersession":
+
+1. Decomposition rules exist for every family of the matrix, and each
+   positive case is proved, with a hint or manually where automation is not
+   yet required.
+2. `sql_auto` closes the core set A01, A02, A03, A04, A08, A10, A13 and A14
+   without a whole-query hint. The other automatic cases are later slices,
+   each with its own task.
+3. The required column of the [retirement inventory](select-automation-retirement.md)
+   is empty: every required file is deleted, every candidate is deleted or
+   recorded with its reason, and every retired claim is derived by an
+   acceptance case or a retained rule with the same entry assumptions.
+
+Retirement is per family. When a family's decomposition rules exist and its
+cases pass, its replaced code is deleted in the same slice, with its callers
+migrated. Retirement does not wait for automatic closure. Temporary migration
+witnesses (old-formula equivalences, `Holds`/`Empty`/`Fails` bridges) follow the
+ADR 0025 D4 test lifetime: keep one copy through the last slice that changes
+their contract, record Nix acceptance, then delete them.
+
 ## Public claims and automation
 
 For each applicable case, prove a standard `Sql.check` claim at an explicit
@@ -58,8 +78,12 @@ functions in the [source map](select-automation-source-map.md). `sql_run` handle
 
 ## Automatic acceptance matrix
 
-Each positive entry is required at feature completion. Listed assumptions are
-examples of the relevant facts; fixtures must state their exact formal versions.
+Each positive entry is required as a proved decomposition at feature
+completion. Automatic closure is required at completion for the core set
+named in "Meaning of completion" and in later slices for the rest. Listed
+assumptions are examples of the relevant facts; fixtures must state their
+exact formal versions. The "Required contrast" column also receives the
+negative examples of the retired query-form theorems.
 
 | ID | Query family and positive property | Required contrast |
 | --- | --- | --- |

@@ -164,6 +164,22 @@ Amendment `88749d42` received independent Claude review
 Remaining: owner review of the complete cover. No production automation is
 implemented here. No full or scheduled check is running.
 
+## Retirement instructions (2026-10-29)
+
+The owner found that the specification was purely additive: it named what to
+reuse but not what to remove. The owner decided on 2026-10-29: keep `Holds`,
+`Empty` and `Fails` as abbreviations over the D2 predicates; retire the ADR 0026
+D1 characterizations; retire the per-family resolution-shape laws where the ADR
+0026 D3 certificate replaces them; stage automatic closure with a core set.
+
+Applied: ADR 0027 gains "Scope and supersession", the D2 claim-vocabulary
+paragraph, the D3 staging paragraph and a completion rule that includes an
+empty required column of the new
+[retirement inventory](../docs/select-automation-retirement.md). The acceptance
+contract makes retirement per family and applies the ADR 0025 D4 test lifetime
+to migration witnesses. The task file records the owner decisions. Checks:
+`tests/docs_test.py` and `just review`. No Lean source changes.
+
 ## Open design axes
 
 The revised proposal fixes the successful-result bridge domain, entry goal forms,
