@@ -1,29 +1,38 @@
 # Proof refactor acceptance repair status
 
-Date: 2026-10-28. Status: IN PROGRESS.
+Date: 2026-10-28. Status: DONE (2026-10-29).
 Audience: the implementation team.
 Task: [restore acceptance checks](20261028-proof-refactor-ci.task.md).
 Source baseline: PR 295, `e8f46dae`; production `3e2212ed`.
 
 ## Current acceptance state
 
-All local ADR25/26 acceptance items have passed at frozen source `23a3427b`;
-the checked API reference passed in the source-identical hosted build. The
-fixed capability audit retains all 30 groups, including every essential group.
-The nine implementation tasks have completed their substantive acceptance.
-Their reviewed completion records are integrated here; publication of this
-change fulfills their recorded DONE condition.
+The nine ADR25/26 implementation tasks and this CI repair are complete. All
+local combined gates passed at `3b129692`; published `f842ea7b` adds only their
+status record. Linux [CI run 40868406435](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40868406435)
+and [Verdict run 40868406530](https://github.com/vihren-dev/sqlite-verifier/actions/runs/40868406530)
+succeeded at that published head. Linux passed 1,427 ordinary Nix cases,
+98 mutant measurements across all twelve owners, and 50 writer cases. The
+model's 228 cases and the checked API reference passed. Verdict confirms
+5,653 agreements and 2,109 explicitly unsupported cases across 56 corpora.
 
-Full workflow `40742662857` now supplies the requested hosted execution at
-published head `bbd2eeac`. Linux's main checks and table-mutant suite pass;
-the resolver and query-resolution measurements also pass before the general
-suite reaches its aggregate limit. macOS exposes two individual mutant
-timeouts and a default-fixture subprocess timeout. This CI task remains
-IN PROGRESS to repair those measured workload failures without weakening
-coverage or limits. The task now states the required follow-up behavior for
-both hosted platforms. No local result substitutes for hosted timing headroom.
-The later sections record final results; earlier sections are historical
-checkpoints.
+The hosted source checks passed 511 cases and 50 subtests, with two optional
+reviewer-CLI checks skipped; configured checks passed 70 with the development
+loop skipped. Recorded local acceptance covers those checks: 513 source cases
+and 50 subtests, and all 71 configured checks, passed without skips. Ordinary
+Nix, mutant and writer reports have no failures, errors or skips.
+
+On 2026-10-29 the owner accepted the current repair and review, elected to
+merge, and declared this goal finished. macOS acceptance is deferred and
+unverified: its PR jobs skipped execution. This explicit completion decision
+supersedes the historical both-platform and further owner-review closure gates.
+Publication and the three completed-worker cleanups are complete; evidence
+remains in `build/final-combined-20261029/` and the retained repair bundles.
+
+The fixed capability audit retains all 30 groups, including every essential
+group. The separate long-term 45,000-line goal remains active: the accepted
+count is 87,018 maintained Lean lines. Earlier sections below are historical
+checkpoints; the final closure record supersedes their pending-work statements.
 
 ## Native replay diagnosis and repair
 
@@ -1481,3 +1490,30 @@ guard; recording and publication remain possible.
 
 The CI task remains IN PROGRESS pending publication, current-source Linux and
 macOS hosted acceptance, current repair review and completed-worker cleanup.
+
+## Owner-accepted closure and base reconciliation, 2026-10-29
+
+The owner stated: “I'll merge. We'll fix any issues if they arise. We can
+consider the goal finished.” This closes the CI repair with the current review
+accepted and macOS explicitly deferred, not passed. The original nine proof
+tasks stay complete; this decision does not complete the separate 45,000-line
+goal or claim that either PR has merged.
+
+The rebased PR 296 base `5538fbde8fa96e01c81ad7424b2f4812b59ec24d` has exactly
+the same tracked tree as its old head
+`46e5a7738c6c131eda4cde89d019a7b86d5729db`. A two-parent merge with accepted
+head `f842ea7b` conflicted only in this task and status pair. Restoring their
+published contents made the merged tree byte-identical to `f842ea7b` before
+these completion-record edits. The accepted implementation, tests and
+configuration are preserved; no acceptance rerun is claimed for the history
+reconciliation.
+
+Current hosted evidence is retained in
+`build/final-combined-20261029/hosted-pr-40868406435/`: all 107 file hashes in
+`retained-sha256.json` were verified, including the complete Linux logs,
+reports and artifact identities. The Verdict archive is retained separately
+under `hosted-verdict-40868406530/`. Combined local acceptance and source
+integrity remain in `acceptance-summary.json` and `source-integrity.json`.
+`cleanup-result.json` records removal of the three completed retired-names,
+core-grouping and JSON/date workspaces after their commits were published;
+the coordinator retains their evidence and independent Nix GC roots.

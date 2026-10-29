@@ -1,10 +1,20 @@
 # Restore acceptance checks needed by the proof refactor
 
-Date: 2026-10-28. Status: IN PROGRESS.
+Date: 2026-10-28. Status: DONE (2026-10-29).
 Audience: the implementation team.
 Record: [status](20261028-proof-refactor-ci.status.md).
 Baseline: PR [295](https://github.com/vihren-dev/sqlite-verifier/pull/295),
 commit `e8f46dae`, production packages equal main `3e2212ed`.
+
+## Completion decision, 2026-10-29
+
+The owner accepted completion after the local and Linux acceptance passed:
+“I'll merge. We'll fix any issues if they arise. We can consider the goal
+finished.” This accepts the current repair review and defers macOS validation.
+For closing this task, that explicit decision supersedes the both-platform
+acceptance and further owner-review gates recorded below. macOS remains
+unverified; it is not recorded as passed. The earlier requirements and failure
+history are retained as the implementation and acceptance record.
 
 ## Present failures
 
