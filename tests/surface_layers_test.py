@@ -10,9 +10,9 @@ from the import lines of every Lean package and from the Nix build.
    the libraries in the model's `lakefile.toml`), Plausible, `Init`, `Std` and `Lean`, and the
    checker also Lake; the text package
    imports only its own modules, the model's roots and Lean's libraries.
-4. The conformance runtime contains the text package's program but not the surface: in
-   `build-support/`, only the surface's own derivation and the `surface` test suite name the
-   surface, and the runtime's derivation names the text package.
+4. The conformance runtime contains the text package's program but not the surface.
+   Surface build references belong to its derivation, test suites, or standalone dependency
+   report; the runtime's derivation names the text package.
 5. The translation program does not import the model's umbrella root, even indirectly,
    so its syntax translation does not depend on that root's proof and example imports.
 6. Only the SQL-file checker (ADR 0017, S7) imports Lake, and no module of the surface imports
@@ -133,7 +133,7 @@ def test_imports_are_own_modules_model_roots_and_lean(package: Path) -> None:
 
 
 SURFACE_SUITE = "tests.nix"
-"""The Nix file of the test suites, whose `surface` suite builds its runtime root from the
+"""The Nix file of the test suites, whose surface suites build their runtime roots from the
 surface package; any line of it may name the surface."""
 SURFACE_BUILD_LINES = frozenset({
     "sources.nix: surface = let folder = root + /packages/belay; in fs.toSource {",
@@ -144,20 +144,23 @@ SURFACE_BUILD_LINES = frozenset({
     'default.nix: requires."packages/belay/.lake/packages/plausible" = plausiblePackage;',
     'default.nix: "packages/belay/.lake/packages/plausible" ];',
     "default.nix: inherit leanPackages surfacePackage textPackage;",
+    "default.nix: surfacePackage verifierConformance plausiblePackage;",
+    "theorem-dependencies.nix: surfacePackage, verifierConformance, plausiblePackage }:",
+    "theorem-dependencies.nix: belay = surfacePackage;",
 })
 """The other lines of `build-support/` that may name the surface: its sources, its derivation,
-and the argument that passes it to the test suites."""
+and the arguments that pass it to the test suites and standalone dependency report."""
 
 
-def test_only_the_surface_build_and_its_suite_name_the_surface() -> None:
-    """Rule 4: in `build-support/`, only the lines of `SURFACE_BUILD_LINES` and the test suites'
-    file name the surface, so the conformance runtime does not contain it; the runtime's
-    derivation copies the text package's program."""
+def test_surface_build_references_stay_out_of_conformance_runtime() -> None:
+    """Rule 4: only registered build and report consumers name the surface; the conformance
+    runtime names no surface package and copies the text package's program."""
     lines = [f"{path.name}: {line.strip()}" for path in sorted((ROOT / "build-support").glob("*.nix"))
              for line in path.read_text().splitlines() if SURFACE_NAMES.search(line)]
     assert [line for line in lines if not line.startswith(SURFACE_SUITE + ": ") and line not in SURFACE_BUILD_LINES] == []
     assert "default.nix: surfacePackage = let" in lines
     runtime = (ROOT / "build-support/default.nix").read_text().split("conformanceRuntime = ", 1)[1].split("'';", 1)[0]
+    assert not SURFACE_NAMES.search(runtime)
     assert "${textPackage}/.lake/build/bin/belay-sqlite-translate" in runtime
 
 

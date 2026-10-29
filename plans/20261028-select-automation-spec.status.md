@@ -164,6 +164,18 @@ Amendment `88749d42` received independent Claude review
 Remaining: owner review of the complete cover. No production automation is
 implemented here. No full or scheduled check is running.
 
+## GitHub review
+
+The owner moved the remaining review to [PR 299](https://github.com/vihren-dev/sqlite-verifier/pull/299).
+Publication exposed a conflict with main `2c5fff35`. The merge retains both
+the SELECT experiment registration and main's `theoremDependencies` suite.
+ADR 27 and the task now link main's Lean simplification goal; no production
+Lean source or proposed acceptance case changed. The Nix reports above describe
+the pre-merge revisions. Current-head CI remains responsible for integration
+validation; the full local suite remains deferred.
+The merge passed 11 focused ownership, documentation-link and Lean-category
+process checks. These checks do not replace the recorded Nix proof evidence.
+
 ## Open design axes
 
 The revised proposal fixes the successful-result bridge domain, entry goal forms,

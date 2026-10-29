@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-28T09:23:28+00:00",
+  "finding": "20261028T092200Z-3023b981#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Distinguished the unchanged required replacements from newly listed retained DROP COLUMN and derived-column consumers."
+}

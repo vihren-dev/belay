@@ -4,6 +4,11 @@ Date: 2026-10-22. Status: ACCEPTED on 2026-10-22 (owner decision in the design d
 ADR 0017's slice S2).
 Implementation: slice by slice (D4), each with its own task file, as local commits.
 Audience: designers and reviewers.
+Design follow-up, 2026-10-26: [proposed ADR 0025](adr-0025-compositional-preservation-proofs.md)
+replaces the requirement for separately named preservation endpoints with
+derivable guarantees through generic laws. Its experiments and tasks are ready
+for implementation review. The code and historical delivery records below
+still describe the existing API until that refactor is implemented.
 Related: [ADR 0012](adr-0012-query-semantics.md) (decision 5, the admitted databases),
 [ADR 0016](adr-0016-model-and-surface.md) (the layer rules),
 [ADR 0017](adr-0017-user-surface.md) (the user surface, D3 and D5),

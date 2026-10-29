@@ -185,11 +185,12 @@ weakening certification, exclusions, replay or command-level cancellation.
 
 ## Consequences and validation
 
-The rule library grows around the current evaluator; some fused functions need
-characterization lemmas rather than evaluator refactors. The first implementation
-can be incremental, but completion requires the entire acceptance matrix, not
-only the motivating projection. Model-semantic changes discovered during proof
-work require their own explicit specification and conformance evidence.
+The rules extend the current evaluator, using characterization lemmas for fused
+functions. Completion requires the entire acceptance matrix. The
+[Lean simplification goal](lean-simplification-goal.md) calls for replacing
+duplicated query proofs with general rules while retaining every capability.
+Net savings must be measured on the completed implementation. Model-semantic
+changes require their own specification and conformance evidence.
 
 The accompanying acceptance contract names positive, negative and residual cases.
 Retained experiments test feasibility and current boundaries, not the existence

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-28T09:23:28+00:00",
+  "finding": "20261028T092200Z-3023b981#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Made the four-move statement explicitly historical at daa15385; the Oct 28 amendment records the later delivered fourth move."
+}
