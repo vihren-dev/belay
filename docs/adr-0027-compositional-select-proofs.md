@@ -219,8 +219,7 @@ On adoption, this ADR supersedes:
   examples become the "required contrast" column.
 - ADR 0026 D1, the per-family complete-output characterizations completed in
   PR 297. A phase decomposition replaces a per-family characterization. ADR
-  0026 D2 to D6 are unaffected, and D3 is a dependency: the resolver certificate
-  is the general replacement of the per-family resolution-shape laws.
+  0026 D2 to D6 are unaffected.
 - The `Query.Simple` predicate and its laws. `Simple` is a phase decomposition
   of one shape; its laws become the `filter` and `project` rules.
 
@@ -228,9 +227,9 @@ The mathematical claims of the superseded code remain obligations, as in ADR
 0025 D4: the acceptance cases and the retained phase rules must derive each
 retired claim with the same entry assumptions. Historical task and status
 records keep their original wording. The per-family resolution-shape laws are
-retired only where the ADR 0026 D3 certificate proves the same shape fact for a
-symbolic catalog; a law that the certificate cannot replace stays, with a
-recorded reason.
+not superseded: the ADR 0026 D3 certificate takes successful resolution as a
+premise and does not give the resolution equation. They stay, except a law
+whose every consumer is retired, which the status file records.
 
 ## Consequences and validation
 

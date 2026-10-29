@@ -171,6 +171,12 @@ reuse but not what to remove. The owner decided on 2026-10-29: keep `Holds`,
 `Empty` and `Fails` as abbreviations over the D2 predicates; retire the ADR 0026
 D1 characterizations; retire the per-family resolution-shape laws where the ADR
 0026 D3 certificate replaces them; stage automatic closure with a core set.
+Review `20261029T112539Z-23586cde` found two must findings: the general
+source-output equation was both required and retained, and the D3 certificate
+assumes resolution, so it cannot replace a resolution-shape law. Both fixed:
+the equation is retained with `QueryOutputFacts`, and resolution-shape laws are
+retained unless every consumer is retired. This reverses the third owner
+decision on technical grounds.
 
 Applied: ADR 0027 gains "Scope and supersession", the D2 claim-vocabulary
 paragraph, the D3 staging paragraph and a completion rule that includes an

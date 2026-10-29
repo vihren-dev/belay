@@ -59,9 +59,9 @@ per-family characterization. Reconcile the exact names at assignment from
 | Owner (PR 297) | Status |
 | --- | --- |
 | The SELECT-1 output fact in `SelectOneOutput` and its five consumer families (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Required |
-| The general source-output equation and the aggregate output fact | Required, after the `source` and `aggregate` phase rules exist |
-| The moved context and source definitions in `QueryOutputFacts` (`Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`) | Retained: the execution bridge of D5 uses them |
-| The eight resolver-only transports | Candidate: see "Resolution-shape laws" |
+| The aggregate output fact | Required, after the `aggregate` phase rule exists |
+| The general source-output equation and the moved context and source definitions in `QueryOutputFacts` (`Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`) | Retained: the execution bridge of D5 uses them |
+| The eight resolver-only transports | Retained: see "Resolution-shape laws" |
 | The eight surface complete-output equations | Required, with the surface forms above |
 
 ## Model per-family output laws
@@ -84,16 +84,16 @@ per-family characterization. Reconcile the exact names at assignment from
 
 ## Resolution-shape laws
 
-Each file states that one syntactic shape resolves to one `Query` value. The
-ADR 0026 D3 resolver certificate is the general replacement. Retirement is
-conditional: a file is deleted when the certificate proves the same shape fact
-for a symbolic catalog. A file that the certificate cannot replace stays, and
-the status file records why.
+Each file states that one syntactic shape resolves to one `Query` value for a
+symbolic catalog. No general replacement exists: the ADR 0026 D3 certificate
+takes successful resolution as a premise and gives state equality, schema
+linkage and validity, not the resolution equation. These laws stay. A file is
+deleted only when every consumer is a retired form and no acceptance case
+needs its equation; the status file records each such deletion.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution` | 1,629 | Candidate, conditional on ADR 0026 D3 |
-| `FromSourceResolution` | 96 | Candidate: may be a general source law |
+| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `FromSourceResolution` | 1,725 | Retained, unless every consumer is retired |
 | `BackfillStatementResolution` | 103 | Retained: migration |
 
 ## Examples and fixtures

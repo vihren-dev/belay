@@ -33,8 +33,10 @@ users, so replaced code is deleted. The ADR names what it supersedes, a
 retirement inventory names each replaced file, and the acceptance contract makes
 an empty required column part of completion. Owner decisions of 2026-10-29:
 `Holds`, `Empty` and `Fails` stay as abbreviations; ADR 0026 D1 characterizations
-are retired; per-family resolution-shape laws are retired where the ADR 0026 D3
-certificate replaces them; automatic closure is staged with a core set.
+are retired; automatic closure is staged with a core set. The owner also chose
+to retire resolution-shape laws where the ADR 0026 D3 certificate replaces
+them; review found that the certificate assumes resolution and gives no
+resolution equation, so those laws are retained.
 
 ## Evidence and acceptance
 
