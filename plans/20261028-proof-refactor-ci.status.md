@@ -1283,8 +1283,9 @@ guards, target mappings, authored supplier modules and selected native
 definitions. It checks disjoint complete unions for each split and identical
 captured inputs for moved query resolution. Conformance tables, native replay,
 shared measurement code, deadline inputs and the unaffected resolver/rebuild
-test files retain their baseline bytes. The audit is retained as
-`core-followup-partition-audit.json` and `.md`; it adds no permanent test or runner.
+test files retain their baseline bytes. The audit is retained outside the repository
+at `/tmp/core-followup-partition-audit.json` and
+`/tmp/core-followup-partition-audit.md`; it adds no permanent test or runner.
 The final query test SHA256 is
 `2c3684ee2f029bd2410c3b4b9d0631bb293441de0e6d25e10adbd5ebd7523bb8`;
 the moved resolution test SHA256 is
@@ -1321,5 +1322,10 @@ Combined acceptance and the final current-head Linux/macOS run remain the
 coordinator's gates. This CI task remains IN PROGRESS.
 
 The existing ownership, workflow, documentation, bounded-command, platform
-flake-target and report-link checks cover the routing change. Independent
-commit review and coordinator acceptance remain pending at this checkpoint.
+flake-target and report-link checks cover the routing change.
+
+Independent Claude review `20261029T102731Z-a45b782f` reported zero must and
+one should finding. The should finding requested the actual location of the
+external partition audit; the paths above now identify both files. The code,
+workflow and inventory review has no findings. Coordinator acceptance and
+fresh hosted execution remain pending; the source and Nix evidence are unchanged.
