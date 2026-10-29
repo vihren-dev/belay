@@ -1181,3 +1181,37 @@ independent Claude review `20261029T100405Z-19060888` with zero must and zero
 should findings. The two retained tests are Nix-accepted; the full combined
 model and both-platform hosted acceptance remain pending. This retirement
 does not complete the wider CI repair task.
+
+## JSON/date workload follow-up, 2026-10-29
+
+Manual run `40841195886` at `b2f5e6b0` finished macOS job `123337721453` with
+six passes, one failure and one unrun measurement. The date-function group
+exceeded the unchanged 300-second pytest limit (305.65 seconds with cleanup),
+waiting for two classifier builds. No semantic assertion failure was reported.
+The modifier group did not run. JSON values passed in 278.49 seconds and
+lookup/errors in 241.77 seconds; the other four groups passed in 193–218
+seconds. The 1,661.38-second suite duration does not exhaust the aggregate
+2,700-second limit.
+
+The complete log and parsed evidence are retained in
+`build/final-b621/hosted-manual-40841195886/macos/jsonDateMutants.log` and
+`jsonDateMutants-failure.json`. Log SHA-256 is
+`bd3887fa3a622bd569191f1526ccb56248ddab28bec46d21aaebc54aa86312ca`.
+The failed derivation produced no out-link or JUnit artifact. Earlier Linux
+passes remain diagnostic evidence: date functions and modifiers took 235.09
+and 235.526 seconds respectively, so the unrun modifier tail also needs
+focused validation of the final groups.
+
+The task now extends the combined JSON/date file into separate JSON and
+date/clock owners, with semantic groups that preserve all thirty-four exact
+mutants and their native targets. The previously retained contingency is only
+a design input; its projected timings are not acceptance. Source membership
+and routing audits remain one-time evidence or existing checks, with no new
+permanent framework. Independent review precedes implementation. The core
+worker retains the heavy Nix slot and shared routing-file ownership until
+handoff; the numeric/value and pending table groups remain outside scope.
+
+The reviewed historical-name retirement `c9077346` is integrated. Its ten
+retained evidence hashes were verified after copying to coordinator
+`build/retired-names/`, and the focused Nix output has a coordinator GC root.
+The full combined and hosted checks still remain pending.

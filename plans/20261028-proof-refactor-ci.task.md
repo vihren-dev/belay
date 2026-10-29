@@ -67,6 +67,15 @@ starts a separate compiler with the same broad model and resolution-codec
 imports. The Linux owner passes all thirteen historical-name cases. These
 cases certify completed ADR 0008 vocabulary cleanup, not current SQL behavior.
 
+The same run's macOS JSON/date owner passes six measurements, then the five
+date-function mutants exceed the 300-second test limit (305.65 seconds with
+cleanup). The date-modifier measurement remains unrun. JSON values pass in
+278.49 seconds and lookup/errors in 241.77 seconds; JSON functions, validation,
+`json_each` and clock pass in 193–218 seconds. The date failure waits for
+classifier builds, with no semantic assertion failure. Its complete suite
+time is 1,661.38 seconds, below the aggregate limit. These observations require
+further bounded measurements and separate ownership for JSON and date/clock.
+
 ## Required behavior
 
 Unmodified Nix-built dependencies support real Lake consumers in the installed
@@ -147,6 +156,19 @@ only the obsolete module-docstring claim and the source scanner's exemption
 for this historical-name matrix. Do not replace it with another name matrix,
 import-text test or permanent audit. No production code or deadline changes.
 
+The JSON/date follow-up gives the JSON reading and date-function measurements
+practical per-test headroom and covers the unrun date-modifier tail. Its
+thirty-four mutants retain their exact edits, target/guard maps and native
+case suppliers. Refine groups at their existing semantic boundaries: JSON
+conversion/rendering and path/error rules, date inputs/results, and date
+modifier arithmetic/order/keywords. Focused timing evidence determines the
+final groups. Setup, baseline agreement and cleanup remain inside each limit.
+JSON and date/clock have separate static owners through the existing inventory
+and CI matrix, so their expanded measurements also fit the aggregate budget.
+Keep accepted JSON-function, validation, `json_each` and clock measurement
+contracts unchanged; their static owner or file may change. No mutation table,
+production code, native oracle, harness, deadline or retry policy changes.
+
 The oversized-hex default test must compare the same prepare phase and error
 message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
 Lean subprocess limit. The generated fixture imports only the dependencies
@@ -176,9 +198,11 @@ definitions and CI matrix, and existing routing/ownership checks. The separate
 default-fixture work owns only `tests/column_default_value_test.py`. These two
 work surfaces can proceed in isolated workspaces; coordinate Nix execution.
 
-The value follow-up owns `tests/conformance_query_value_mutants_test.py`, one
-extracted JSON/date/clock test file, the existing inventories/matrix and their
-documentation. Existing table/guard data in `conformance/` remains unchanged.
+The value follow-up owns `tests/conformance_query_value_mutants_test.py`, the
+extracted `tests/conformance_json_date_mutants_test.py`, the existing
+inventories/matrix and their documentation. The later JSON/date follow-up
+splits that combined file and owner as described below. Existing table/guard
+data in `conformance/` remains unchanged.
 Arithmetic and FROMless measurements retain their accepted contracts. The
 JSON-function tail has six mutants; JSON-each/clock and date/modifier each have
 ten. These are relevant diagnostic surfaces, not permission to alter the
@@ -203,6 +227,15 @@ pass the remaining catalog/row-shape and codec tests, and the existing source
 suite must pass the cleanup checks. With no other changes the model owner
 collects 228 cases after retirement. The current hosted model owner must pass
 on both platforms; historical passes do not establish the new source's result.
+
+The JSON/date follow-up owns the existing combined test file, its narrowly
+extracted JSON and date/clock measurements, and the existing ownership
+inventories, CI matrix and documentation. Keep `json_mutants`,
+`json_function_mutants`, `json_each_mutants`, `clock_mutants`,
+`date_function_mutants` and `date_modifier_mutants` unchanged. Coordinate the
+shared inventories with the core follow-up worker; isolated test-file work can
+proceed independently. The pending table owner and numeric value/core measurements
+are outside this follow-up's scope.
 
 Nix must execute the formerly failing installed-consumer checks through the
 existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
@@ -251,6 +284,16 @@ are diagnostic evidence where an edited test file changes the Nix source;
 they are not cache hits for the new file. Use the existing routing checks and
 one-time membership audit, with no new permanent partition gate. Successful
 current hosted execution on both platforms remains required.
+
+JSON/date acceptance covers every resulting changed or moved measurement,
+including the previously unrun modifier rules, through focused existing Nix
+owners. Retain exact thirty-four-mutant membership, edits, guards, target maps
+and selected native cases in a one-time audit. Record the static owner budgets,
+individual durations and any local resource settings that differ from hosted
+execution. Timings from earlier groups can inform partitioning but do not
+establish new-source or hosted acceptance. Use the existing routing checks;
+no permanent partition test or replacement harness is required. Both current
+hosted platforms must pass the complete resulting scheduled owners.
 
 Apply normal review and check cadence. Full acceptance uses the coordinator's
 build slot; do not run whole mutant suites locally. No new CI service, registry,
