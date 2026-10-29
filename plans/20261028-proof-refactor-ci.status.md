@@ -1088,3 +1088,10 @@ The owner explicitly approved the old `c9fa3f73` review snapshot after tab 5
 closed without comments. That approval is recorded in
 `build/final-b621/owner-review-c9fa3f73.json`. The repair snapshot in tab 6
 remains open. The task remains IN PROGRESS, and neither PR has been merged.
+
+Independent Claude review of the task extension `e78d33c6` reports zero must
+and one should finding (`20261029T093454Z-e78d33c6#1`). The task now explicitly
+says to split the existing comparison/evaluation measurements further at
+boundaries inside their tables. This corrects the ambiguous wording without
+changing scope. The existing `docs_test.py` check covers this documentation
+change; the clarification receives its own independent review before assignment.

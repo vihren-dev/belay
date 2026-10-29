@@ -120,8 +120,9 @@ table and guard meanings. No new mutation, oracle, measurement framework or
 production definition is required.
 
 The core follow-up gives the three comparison mutants and seven evaluation
-mutants practical per-test headroom on both platforms. Use their existing
-semantic boundaries, retaining every exact edit, target and guard. The four
+mutants practical per-test headroom on both platforms. Split the existing
+measurements further at semantic boundaries inside their current tables,
+retaining every exact edit, target and guard. The four
 unrun tail measurements require focused timing evidence; further grouping may
 be needed for their existing query-resolution, key/alias, conflict and rebuild
 rules. Preserve the unchanged model's agreement and the existing native case
