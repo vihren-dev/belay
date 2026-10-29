@@ -121,13 +121,17 @@ corpora and frozen evidence before it was stopped at the resource gate:
 
 Free space fell below the required 10 GiB. The full-check process was stopped;
 after its temporary files were released, 8.22 GiB remained. No failing assertion
-caused this stop. Targeted cleanup approval is pending for the packaged runtime,
+caused this stop. Targeted cleanup approval was requested for the packaged runtime,
 Rust build cache and four local Lake build directories listed in the owner question.
+On the next owner resume, the gate passed with 17.24 GiB free. The requested
+cleanup is no longer needed, and this task did not delete those artifacts.
+`just test-full` has restarted with the previously approved sandbox exception.
 
 The task-created experiment workspace was confirmed empty after integration and
 removed. Five diagnostic files were preserved in `build/deployment-target-research`;
 `build/select-automation-tests` retains the successful Nix report as a GC root.
-No other workspace or cache was removed. No checks remain running.
+No other workspace or cache was removed by this task. The full check is running;
+the scheduled check will follow it.
 
 Remaining: finish `just test-full` and `just test-scheduled-checks`, then owner
 review of the complete cover. No production automation is implemented here.
