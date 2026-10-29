@@ -235,5 +235,8 @@
   ],
   "columnDropMutants": [
     "tests/conformance_column_drop_mutants_test.py"
+  ],
+  "jsonDateMutants": [
+    "tests/conformance_json_date_mutants_test.py"
   ]
 }

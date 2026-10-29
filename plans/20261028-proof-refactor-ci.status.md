@@ -915,3 +915,83 @@ and parsed totals are retained in
 The workflow still fails on the value-mutant timeout. macOS remains untested
 by this PR run, and the owner review remains unfinished. The CI task remains
 IN PROGRESS.
+
+## Value measurements and separate ownership, 2026-10-29
+
+The seven other-number mutants are split into summation (three), text parsing
+(two), and coalesce (two). The eight JSON reading/extraction mutants are
+split into values/rendering (four) and lookup/errors (four), using their
+existing source/guard metadata. Exact mutations, guards, target dictionaries
+and authored-case suppliers remain unchanged. Numeric/FROMless measurements
+stay in `valueMutants`; `tests/conformance_json_date_mutants_test.py`
+belongs to `jsonDateMutants`. The existing inventories and CI matrix name ten mutant
+owners. No build-support, production, conformance or shared-helper code changes.
+
+The three original tail measurements passed focused Nix in 166.404 seconds
+(JSON functions), 151.477 seconds (JSON-each/clock) and 224.013 seconds
+(date functions/modifiers), with a total of 542.074 seconds. The diagnostic
+report is `/nix/store/xgs7a6yw42iamq3y5rnvwmbk8h9v4bvy-sqlite-verifier-test-value-followup-tail-1/junit.xml`.
+These costs leave limited margin given the slower hosted arithmetic samples.
+That comparison is calibration, not a hosted acceptance result. The final
+partitions use existing boundaries: JSON Functions/Valid (three each),
+JSON-each/clock (six/four), and date functions/modifiers (five each).
+
+The refreshed one-time audit retains all 41 mutants across the five changed
+families, their exact target/guard maps and selected authored definitions,
+without duplicate or missing entries. Arithmetic, FROMless and the number-table
+helper retain identical executable bodies and inputs. Their whole-file
+Nix source identity changes with the extraction; earlier arithmetic/FROMless
+results are unchanged-body evidence, not cache hits for this new source.
+The final owners have six numeric and eight JSON/date/clock measurements.
+The sums of their individual 300-second budgets are 1,800 and 2,400 seconds,
+respectively, within the existing 2,700-second suite limit.
+
+The first number partition passed in 105.23 seconds for summation and 157.90
+seconds for scalar/text. Its report is
+`/nix/store/q2a0s23mn6w1l8j0q7z7av18n8vwvzab-sqlite-verifier-test-value-followup-numbers-1/junit.xml`.
+The scalar/text cost motivated its final two-way split. This is diagnostic
+evidence from the preceding test-file source; all three final parameters
+were measured again against the final selector and file.
+
+Final focused Nix results cover all eleven resulting measurements and all
+41 affected mutants. Each report has zero failures, errors or skips:
+
+- Other numbers (3/2/2 mutants): 106.812, 144.332, 115.772 seconds; suite 367.095 seconds.
+  Report: `/nix/store/d48ynbgyf4j072js7a2b122vb3ss2563-sqlite-verifier-test-value-followup-numbers-1/junit.xml`.
+- JSON reading (4/4): 138.650, 132.455 seconds; suite 271.286 seconds.
+  Report: `/nix/store/w16wjjhha092y80qscliqhkcnmch11n1-sqlite-verifier-test-value-followup-json-1/junit.xml`.
+- JSON functions/validation (3/3): 128.830, 126.586 seconds; suite 255.609 seconds.
+  Report: `/nix/store/6wli4f01hwhkyxgymcgwxskqbzvjsl62-sqlite-verifier-test-value-followup-functions-1/junit.xml`.
+- JSON-each/clock (6/4): 125.193, 124.010 seconds; suite 249.392 seconds.
+  Report: `/nix/store/716c4irhpqg1hpv54sr21qh4n5wlijn1-sqlite-verifier-test-value-followup-each-clock-1/junit.xml`.
+- Date functions/modifiers (5/5): 145.756, 146.114 seconds; suite 292.036 seconds.
+  Report: `/nix/store/9yn2kkha02gh6lzzx24yyy5bcy2lsnc3-sqlite-verifier-test-value-followup-dates-1/junit.xml`.
+
+The final number source is
+`/nix/store/xgqgxwg0anh79dxyfl8zwf3yh1i7yjn8-source`;
+the shared JSON/date/clock source is
+`/nix/store/iigyqn8g9giz0d9x3l3w27dg12wcski2-source`.
+Every file in these filtered source snapshots matches the final workspace.
+The temporary evidence summary is `/tmp/value-followup-acceptance.json`;
+the independent exact partition audit is `/tmp/value-followup-partition-audit.json`.
+
+The temporary selectors derive from the
+existing scheduled owners and run with `--max-jobs 1 --cores 3` and
+`LEAN_NUM_THREADS=2`. They keep native/runtime dependencies, harness and
+all existing test, compiler, suite and subprocess limits. The resource cap
+is an explicit difference from normal hosted execution; these results do
+not claim exact CI-owner cache reuse or establish hosted timing headroom.
+
+The attempted workspace-local `build-dir` override was rejected by the Nix
+daemon as a restricted setting. The first run used default temporary storage;
+subsequent commands omit the ignored option. Resource checks and boundary
+observations kept default storage above the required free-space threshold.
+No global configuration, permissions or unrelated temporary files changed.
+
+The affected existing checks are `test_test_ownership.py`,
+`test_ci_workflow.py`, `test_nix_test_targets.py`, `test_test_reports.py` and
+`docs_test.py`. They cover ownership, the matrix, bounded Nix commands,
+two-platform flake targets, report links and documentation. No permanent
+partition gate or new measurement framework was added. The coordinator
+runs combined acceptance after integration. All hosted mutant owners and the
+model suite must still pass on both platforms; this CI task stays IN PROGRESS.
