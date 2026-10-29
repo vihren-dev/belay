@@ -234,10 +234,17 @@ fixtures use was checked to exist on main `187ea510` (for example
 `Query.simple_isSimple`, `Query.Simple.results_eq`,
 `resolvedStepOutput_simpleTable_rows`, `Script.outputOn_query`,
 `Script.query_outputs`, `Sql.check_stopped`). The fixtures were not changed.
-They are not compiled on the new baseline yet: the resource gate
-(`tools/check_resources.py`, 10 GiB) refuses the development shell at
-9.94 GiB free, so `just dev-build`, pytest and `just review` cannot run until
-the owner approves a cleanup. Links were checked with a local script only.
+After the owner freed disk space (the 10 GiB gate had refused the shell at
+9.94 GiB free), `just dev-build` passed as a diagnostic, and a sandboxed
+`nix-build` of `tests.surfaceS6` with `PYTEST_ADDOPTS="-k select_"` ran the
+four fixtures on the merged source: 4 passed, 66 deselected, in 7.82 seconds,
+axiom counts 7, 8, 3 and 5 unchanged. Report:
+`/nix/store/kgdc6q9vcgyp1r4vrnk80fyiwfgnagi1-sqlite-verifier-test-surfaceS6-1/junit.xml`.
+`tests/docs_test.py` passed (3 tests). Review `20261029T145241Z-546b0915` of
+the merge found no must findings and one should finding: the surface-form
+table said every file proves a complete-output equation, but
+`UniqueLookupQuery.lean` has only a `Holds` claim and `SampleQueryHints.lean`
+has hint functions. Fixed in the next commit.
 
 ## Open design axes
 
