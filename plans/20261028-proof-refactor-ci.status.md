@@ -1345,3 +1345,8 @@ follow-up. This corrects the ownership description without changing scope.
 The existing documentation checks cover that edit; it receives independent
 review. The JSON/date worker now owns the shared routing files and local Nix
 slot. Combined and both-platform acceptance still remain pending.
+
+Task-path correction `ea80f976` passed independent Claude review
+`20261029T103547Z-ea80f976` with zero must and zero should findings. It changes
+only the ownership description and integration record; the accepted core
+measurement source and Nix inputs remain unchanged.
