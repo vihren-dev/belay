@@ -985,8 +985,8 @@ not claim exact CI-owner cache reuse or establish hosted timing headroom.
 
 The attempted workspace-local `build-dir` override was rejected by the Nix
 daemon as a restricted setting. The first run used default temporary storage;
-subsequent commands omit the ignored option. Resource checks and boundary
-observations kept default storage above the required free-space threshold.
+subsequent commands omit the ignored option. The normal resource guards passed
+at run boundaries, and all focused runs completed using default temporary storage.
 No global configuration, permissions or unrelated temporary files changed.
 
 The affected existing checks are `test_test_ownership.py`,
@@ -1002,3 +1002,44 @@ findings (`20261029T075742Z-4ee25f4f`). Both are fixed: the owner count now
 explicitly describes the changed state, and the scratch evidence paths are
 identified as temporary. The substantive audit summary and immutable report
 paths remain in this status. Production code and measured inputs are unchanged.
+
+## Combined value-repair acceptance, 2026-10-29
+
+All four acceptance commands ran once and passed at frozen source
+`b621785b28577f71e3fc88c1147654be7380db41`, with the existing limits.
+`just test-full` completed in 125.392 seconds and reused all fifteen exact Nix
+suite outputs in
+`/nix/store/s8p03pilyrr2f14lc56klb7z6n5fpi40-sqlite-verifier-test-reports`:
+1,440 passing cases, with no failures, errors or skips. The accompanying host
+source checks reran and produced 563 passing JUnit cases. These host results
+are supplementary checks, not additional Nix acceptance cases.
+
+`just verdict` completed in 1.388 seconds and reused the accepted verdict
+output named above: 56 corpora, 5,653 agreements and 2,109 explicitly
+unsupported cases, with no other outcomes. `just test-nix` completed in
+94.195 seconds: all 71 infrastructure cases passed, including the development
+loop in 29.686 seconds, with no failures, errors or skips.
+`just test-scheduled-checks` completed in 1.271 seconds and reused the accepted
+scheduled-check output named above, with all fifty writer cases passing.
+
+The source retained all 7,359 tracked hashes. The source-manifest SHA256 is
+`ffeea8585b94a3ba9afc30d0a7f9dc5e32e94d65fe65bac1b9efa7473d8ca495`.
+Package, toolchain and Nix sources remain identical to the accepted proof
+refactor for the reused outputs. Development-loop caches are independent
+writable copies of immutable package outputs. No package producer, API
+reference, dependency report or whole mutant suite was rebuilt.
+
+The coordinator retained and hash-verified 21 evidence files under
+`build/final-b621/`, including exact commands and terminal results, logs,
+host XML, cache provenance and before/after source manifests. Five indirect
+Nix roots retain the named outputs. The focused mutant evidence is retained
+separately under `build/value-followup-20261029/`: twenty verified files and
+seven rooted Nix outputs, including the superseded diagnostic measurements.
+The eleven final focused measurements retain the explicit two-thread resource
+difference from hosted execution documented above.
+
+The reviewed repair is ready for publication. This task remains IN PROGRESS
+until all ten scheduled mutant owners and the model suite execute and pass
+on both Linux and macOS at the repaired publication head. PR runs skip actual
+macOS execution, so a successful manual or scheduled run is still required.
+Both stacked PRs remain drafts, and the owner's herdr review remains unfinished.
