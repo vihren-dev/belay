@@ -1369,3 +1369,16 @@ CI repair remains IN PROGRESS pending combined checks, current-head hosted
 acceptance on both platforms, publication and review. The 45,000-line goal
 remains outstanding. Documentation-link checks cover the metadata edits as
 local diagnostics; independent review follows this commit.
+
+Header refresh `41703e4e` passed independent Claude review
+`20261029T104658Z-41703e4e` with zero must and zero should findings. The three
+documentation-link diagnostics passed locally. No proof source changed.
+
+The coordinator also verified all eight files in the retained
+`build/final-combined-preflight/sha256.json` manifest. Its bounded Nix
+evaluation and collection identify four changed ordinary outputs (model,
+surface, surfaceChecks and surfaceS6), with eleven ordinary outputs unchanged.
+The expected ordinary count after retirement is 1,427. The current worker
+snapshot routes 98 mutant measurements to twelve owners. These are preflight
+identities and collection counts, not acceptance results; final integration
+and the four normal gates remain pending.
