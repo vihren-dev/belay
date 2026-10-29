@@ -48,7 +48,8 @@ runtime, sandbox and timeouts unchanged:
   `surface_sql_check_roots_test.py`.
   Report: `/nix/store/s5ypavrppr9ch6njrrf74n8aar93rbz4-sqlite-verifier-test-surfaceS6-1/junit.xml`.
 
-Independent review remains before this supporting fix is complete.
+Fix status: DONE in commit `8a2b159a`. Independent Claude review
+`20261029T074907Z-8a2b159a` returned no findings.
 
 ## Work remaining
 
