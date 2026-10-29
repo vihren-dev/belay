@@ -12,6 +12,8 @@ example is a proof that selecting a NOT NULL customer column never returns NULL
 on any valid database of the given schema, including a database with no rows.
 The scope includes properties of collections, not only this example or unary
 row predicates. No production tactic is implemented by this task.
+The design follows the [Lean simplification goal](../docs/lean-simplification-goal.md):
+general rules should replace duplicated query proofs without capability loss.
 
 The design explains how proved rules for source acquisition, expressions,
 filtering, grouping, aggregation, projection, distinctness, sorting, slicing,
