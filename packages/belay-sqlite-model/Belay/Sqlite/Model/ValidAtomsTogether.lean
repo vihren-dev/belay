@@ -4,11 +4,9 @@ import Belay.Sqlite.Model.KeysUniqueRuns
 
 set_option doc.verso true
 
-/-! The four constraint atoms of {lit}`Database.Valid` together (ADR 0022, D3, slice 3): the
-statement theorem and the run theorems for the conjunction of "not null", "types fit", "checks hold"
-and "keys unique", when each reached statement meets all their conditions. The theorems are the
-instances of {lit}`RunHolds` for the conjunction, whose statement theorem is the four statement theorems.
-The run theorem for {lit}`runScriptFrom` is in {lit}`ScriptRunConstraints`. -/
+/-! The conjunction of NOT NULL, type, CHECK and unique-key invariants, with their
+combined statement condition and preservation evidence. Generic run laws lift that evidence;
+{lit}`ScriptRunConstraints` derives surface conditions from admission and resolution. -/
 
 namespace Belay.Sqlite.Model
 
@@ -40,15 +38,6 @@ theorem Resolved.Statement.atomsCondition_of_unconditioned {database : Database}
   intro statement unconditioned
   cases statement <;> first | exact ⟨trivial, trivial, trivial, trivial⟩ | exact nomatch unconditioned
 
-/-- For every four properties of an effect: if the effect satisfies each of them
-({name}`Effect.Satisfies`), it satisfies their conjunction. Proof sketch: a database that a run keeps
-from the effect has each property. -/
-theorem Effect.satisfies_and {first second third fourth : Database → Prop} {effect : Effect}
-    (one : effect.Satisfies first) (two : effect.Satisfies second) (three : effect.Satisfies third)
-    (four : effect.Satisfies fourth) : effect.Satisfies fun database => first database ∧ second database ∧
-      third database ∧ fourth database :=
-  fun database kept => ⟨one database kept, two database kept, three database kept, four database kept⟩
-
 /-- The statement theorem of the four atoms together, in the form of {name}`StatementKeeps`, for the
 condition {name}`Resolved.Statement.AtomsCondition`. For every clock value, counters, parameter list,
 resolved statement and database: if the database satisfies {name}`Database.ConstraintAtoms` and the
@@ -59,42 +48,13 @@ any other reason requires nothing. Proof sketch: {name}`Effect.satisfies_and` of
 {name}`runStatement_notNull`, {name}`runStatement_typesFit`, {name}`runStatement_checksHold` and
 {name}`runStatement_keysUnique`. -/
 theorem constraintAtoms_statementKeeps :
-    StatementKeeps Database.ConstraintAtoms fun statement database => statement.AtomsCondition database :=
+    StatementKeeps Database.ConstraintAtoms fun _ _ _ statement database => statement.AtomsCondition database :=
   StatementKeeps.ofOwnRun (fun clock counters parameters statement _ atoms condition =>
     Effect.satisfies_and (runStatement_notNull clock counters parameters statement atoms.1 condition.2.1)
       (runStatement_typesFit clock counters parameters statement atoms.2.1 condition.2.2.1)
       (runStatement_checksHold clock counters parameters statement atoms.2.2.1 condition.2.2.2)
       (runStatement_keysUnique clock counters parameters statement atoms.2.2.2
         (Resolved.Statement.keysCondition_of_runCondition condition.1)))
-    (fun _ _ _ _ _ _ _ _ _ h => h)
-
-/-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
-the conditions of the four atoms ({name}`Resolved.Statement.AtomsCondition`) on the database of the
-state before it ({name}`RunConditionsWith`). The empty script requires nothing, and a halt requires
-nothing of the rest of the script. -/
-abbrev AtomsRunConditions (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Prop :=
-  RunConditionsWith (fun statement database => statement.AtomsCondition database) position script state
-
-/-- The run theorem of the four atoms for {name}`runSqlFrom`. For every position, script and state:
-if the state satisfies {name}`SqlState.Holds` for {name}`Database.ConstraintAtoms` (its database,
-and its snapshot when a transaction is open) and the script meets {name}`AtomsRunConditions` from the
-position and the state, the outcome of {name}`runSqlFrom` satisfies {name}`Outcome.Holds` for
-{name}`Database.ConstraintAtoms`. Proof sketch: {name}`runSqlFrom_holds` for
-{name}`constraintAtoms_statementKeeps`. -/
-theorem runSqlFrom_constraintAtoms (position : Nat) (script : List (Resolved.Statement × List Value))
-    {state : SqlState} (holds : state.Holds Database.ConstraintAtoms)
-    (conditions : AtomsRunConditions position script state) :
-    (runSqlFrom position script state).Holds Database.ConstraintAtoms :=
-  runSqlFrom_holds constraintAtoms_statementKeeps position script holds conditions
-
-/-- The run theorem of the four atoms for {name}`runSql`. For every script and database: if the
-database satisfies {name}`Database.ConstraintAtoms` and the script meets {name}`AtomsRunConditions`
-from position 0 and the state of the database outside a transaction, the outcome of {name}`runSql`
-satisfies {name}`Outcome.Holds` for {name}`Database.ConstraintAtoms`. Proof sketch:
-{name}`runSql_holds` for {name}`constraintAtoms_statementKeeps`. -/
-theorem runSql_constraintAtoms (script : List (Resolved.Statement × List Value)) {database : Database}
-    (holds : database.ConstraintAtoms) (conditions : AtomsRunConditions 0 script { database }) :
-    (runSql script database).Holds Database.ConstraintAtoms :=
-  runSql_holds constraintAtoms_statementKeeps script holds conditions
+    (fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => h)
 
 end Belay.Sqlite.Model

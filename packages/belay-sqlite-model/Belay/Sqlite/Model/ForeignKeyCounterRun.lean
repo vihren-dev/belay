@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.ForeignKeyCounter
 import Belay.Sqlite.Model.ForeignKeyWrites
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.EffectSatisfies
 
 set_option doc.verso true
 

@@ -98,12 +98,12 @@ theorem Database.KeysUnique.drop {database : Database} (unique : database.KeysUn
 ({lean}`(none : Option Resolved.WriteRules)`) and database: if the database satisfies
 {name}`Database.KeysUnique` and its catalog meets the condition of DROP at the positions
 ({name}`Catalog.DropCondition`), the effect of {name}`runStatement` satisfies
-{name}`Effect.KeysUnique`. Proof sketch: the effect is the database after
+{name}`Effect.Satisfies` for {name}`Database.KeysUnique`. Proof sketch: the effect is the database after
 {name}`Database.drop` ({name}`Database.KeysUnique.drop`). -/
 theorem runStatement_drop_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (positions : List Nat)
     {database : Database} (unique : database.KeysUnique) (condition : database.catalog.DropCondition positions) :
-    (runStatement clock counters parameters (.drop positions none) database).effect.KeysUnique := by
+    (runStatement clock counters parameters (.drop positions none) database).effect.Satisfies Database.KeysUnique := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys, step]
-  exact Effect.keysUnique_of_effectDatabase (unique.drop condition)
+  exact Effect.satisfies_of_effectDatabase (unique.drop condition)
 
 end Belay.Sqlite.Model

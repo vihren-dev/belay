@@ -1,4 +1,3 @@
-import Belay.Sqlite.Model.ScriptRunAdmittedRows
 import Belay.Sqlite.Model.ScriptRunConstraints
 import Belay.Sqlite.Model.ScriptRunSingleton
 
@@ -37,15 +36,18 @@ statements with their values: if the state of the connection satisfies {name}`Sq
 {name}`Database.Valid` (its database, and its snapshot when a transaction is open), the state of the
 connection of every complete execution of the script ({lit}`run.connection.state`) satisfies it. It has no hypothesis on the
 statements of the script: a CREATE INDEX, an ADD COLUMN, a DROP, a write that cascades, a trigger and a ROLLBACK all keep the
-database valid. Proof sketch: {name}`runScriptAllFrom_constraintAtoms`, with {name}`Database.valid_iff` for the
-start state and the end state. -/
+database valid. Proof sketch: apply {name}`runScriptAllFrom_admittedWith` to
+{name}`constraintAtoms_statementKeeps`, derive its conditions from admission and the resolver link,
+and use {name}`Database.valid_iff` for the start state and the end state. -/
 theorem runScriptAllFrom_valid {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
     {connection : Connection} (script : List (Syntax.Statement × List Value))
     (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
     (holds : connection.state.Holds (Database.Valid profile)) :
     ∀ run ∈ runScriptAllFrom context clock index connection script, run.connection.state.Holds (Database.Valid profile) :=
   fun run member =>
-    (runScriptAllFrom_constraintAtoms context clock index script execution same
+    (runScriptAllFrom_admittedWith constraintAtoms_statementKeeps
+      (fun _ _ _ _ statement admitted applied link _ => statement.atomsCondition_of_link admitted applied link)
+      context clock index script execution same
       (holds.mono fun _ valid => Database.valid_iff.mp valid) run member).mono fun _ atoms => Database.valid_iff.mpr atoms
 
 /-- The corollary of the run theorems for one statement ({name}`runScriptStep`).

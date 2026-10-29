@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.SimpleTableRowsOutput
 import Belay.Sqlite.Model.TableInfoResolution
 import Belay.Sqlite.Model.SelectOneResolution
 import Belay.Sqlite.Model.QueryJoinLaws
@@ -43,55 +44,25 @@ theorem Resolved.Statement.Calm.selectOne_pragma (pragma : Resolved.PragmaRows) 
   · exact calm expression member
   · exact literal
 
-/-- For every connection, values, width, rows of a pragma, condition, columns and names, and calm statement of the simple
-query of the pragma source with those rows, the output of the step has rows exactly when the condition is true for some
-row of the pragma, evaluated in the context of the values ({name}`Resolved.EvalContext.bound`). Without a condition, it has
-rows exactly when the pragma has a row. Proof sketch: {name}`resolvedStepOutput_simple_hasRows` with the source rows of
-{name}`Resolved.Query.source_pragma_fixed`. -/
-theorem resolvedStepOutput_simplePragma_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
+/-- For every calm simple query over fixed pragma rows, the complete output is the normal
+form of the projected rows whose condition is true. Each scalar column reads its row; an aggregate
+column reads that single row, as in the existing simple-query semantics.
+Proof sketch: use the fixed pragma source and the exact simple-query result equation. -/
+theorem resolvedStepOutput_simplePragma (index : Nat) (connection : Connection) (parameters : List Value)
     (width : Nat) (rows : List (List Value)) (condition : Option Resolved.Expr) (columns : List Resolved.Output)
     (names : List String)
     (calm : (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition
       columns names) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition columns names) [])).hasRows = true ↔
-      ∃ row ∈ rows, condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = true := by
-  rw [resolvedStepOutput_simple_hasRows index connection parameters _ (Resolved.Query.simple_isSimple _ _ _ _)
-    { rows, width, fault := .none } calm
-    (Resolved.Query.source_pragma_fixed _ _ _ width rows rfl) rfl,
-    Connection.queryContext_of_calm connection parameters _ calm]
+    resolvedStepOutput none index connection parameters
+      (.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition columns names) []) =
+      .rows (Resolved.normalForm ((rows.filter fun row => condition.all
+        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row))).map
+          fun row => columns.map fun
+            | .scalar expression => expression.eval (Resolved.EvalContext.bound parameters) row
+            | .aggregate aggregate => aggregate.eval (Resolved.EvalContext.bound parameters) [row])) := by
+  rw [resolvedStepOutput_simple_rows none index connection parameters _ (Resolved.Query.simple_isSimple _ _ _ _)
+    { rows, width, fault := .none } calm (fun _ => Resolved.Query.source_pragma_fixed _ _ _ width rows rfl) rfl,
+    Resolved.Query.Simple.results_eq (Resolved.Query.simple_isSimple _ _ _ _)]
   rfl
-
-/-- For every connection, values, pragma rows and calm statement as in {name}`resolvedStepOutput_simplePragma_hasRows`,
-the output of the step has no rows exactly when the condition is not true for any row of the pragma. Proof sketch:
-{name}`resolvedStepOutput_simple_hasNoRows` with the source rows of {name}`Resolved.Query.source_pragma_fixed`. -/
-theorem resolvedStepOutput_simplePragma_hasNoRows (index : Nat) (connection : Connection) (parameters : List Value)
-    (width : Nat) (rows : List (List Value)) (condition : Option Resolved.Expr) (columns : List Resolved.Output)
-    (names : List String)
-    (calm : (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition
-      columns names) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition columns names) [])).hasNoRows = true ↔
-      ∀ row ∈ rows, condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = false := by
-  rw [resolvedStepOutput_simple_hasNoRows index connection parameters _ (Resolved.Query.simple_isSimple _ _ _ _)
-    { rows, width, fault := .none } calm
-    (Resolved.Query.source_pragma_fixed _ _ _ width rows rfl) rfl,
-    Connection.queryContext_of_calm connection parameters _ calm]
-  rfl
-
-/-- For every connection, values, pragma rows and calm statement as in {name}`resolvedStepOutput_simplePragma_hasRows`,
-the output of the step is no error. Proof sketch: {name}`resolvedStepOutput_simple_not_isError` with the source rows of
-{name}`Resolved.Query.source_pragma_fixed`. -/
-theorem resolvedStepOutput_simplePragma_not_isError (index : Nat) (connection : Connection) (parameters : List Value)
-    (width : Nat) (rows : List (List Value)) (condition : Option Resolved.Expr) (columns : List Resolved.Output)
-    (names : List String)
-    (calm : (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition
-      columns names) []).Calm) :
-    (resolvedStepOutput none index connection parameters
-      (.query (Resolved.Query.simple [Resolved.QuerySource.pragma (.fixed width rows)] condition columns names) [])).isError = false :=
-  resolvedStepOutput_simple_not_isError index connection parameters _ (Resolved.Query.simple_isSimple _ _ _ _)
-    { rows, width, fault := .none } calm (Resolved.Query.source_pragma_fixed _ _ _ width rows rfl)
 
 end Belay.Sqlite.Model

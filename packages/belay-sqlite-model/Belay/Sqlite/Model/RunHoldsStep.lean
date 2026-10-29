@@ -1,5 +1,6 @@
-import Belay.Sqlite.Model.RowLocalFrame
-import Belay.Sqlite.Model.StatementStep
+import Belay.Sqlite.Model.EffectSatisfies
+import Belay.Sqlite.Model.SqlAdvance
+import Belay.Sqlite.Model.SqlCounted
 
 set_option doc.verso true
 

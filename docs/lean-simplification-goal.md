@@ -142,6 +142,47 @@ allowed; measure its completed result. Source reduction implies no speedup.
 | Milestone | Packages | Tests | Other | Total | Capability status and decisions |
 | --- | ---: | ---: | ---: | ---: | --- |
 | Baseline `ad5684bb`, 2026-10-28 | 72,199 | 15,608 | 223 | 88,030 | 30/30 by baseline definition; all essential groups present; no approved losses. Nix source count above. |
+| ADR25/26 `23a3427b`, 2026-10-28 | 70,876 | 15,919 | 223 | 87,018 | Net -1,012 lines; 30/30 retained. Unknown: none. Lost: none. All essential groups retained; no approved losses. |
+
+The ADR25/26 count uses the same Nix-pinned scc 3.7.0 executable and the same
+31 byte-identical historical exclusions as the baseline. Its revision, counter
+hash, 1,458 tracked Lean file hashes and totals are retained in
+`/nix/store/3136rk4i9jjkxf40fmm4lfdndyjw7qaf-lean-simplification-final-20261028`.
+The maintained count includes 1,427 files: 1,176 package files, 249 test files
+and two other files. Packages decrease by 1,323 lines, tests increase by 311,
+and other code is unchanged. No maintained implementation was transferred to
+embedded templates or an excluded location; the transferred-code adjustment
+is zero. The 1,012-line reduction is about 1.15%; 42,018 more lines must be
+removed to reach the goal. The goal remains ACTIVE.
+
+The final audit retains **S01–S17 and M01–M13: 30/30**. Unknown and lost groups
+are empty. Essential S01, S02, S03, S04 and S06 all remain; no loss is approved.
+The [combined acceptance record](../plans/20261028-proof-refactor-ci.status.md)
+records final Nix full-suite, verdict, configured Nix, scheduled, documentation,
+API-reference and affected-mutant acceptance. Its matched dependency report
+verifies the shared proof routes and removed names. The separate CI task still
+awaits hosted mutation measurements; it does not change this capability score.
+The original-formula witnesses passed Nix at `53a346e1` before their redundant
+copies were retired. Current unique arbitrary-limits, arbitrary-depth and
+append value/fault/subtype checks remain. Passing tests alone does not establish
+unchanged mathematical strength.
+
+The fixed-group audit uses the following source and mathematical evidence,
+matched to the final passing acceptance owners:
+
+| Fixed groups | Retention evidence beyond test counts |
+| --- | --- |
+| S01, S12–S14, S16–S17 | SQL translation, SQL-file/freshness, cost collection, editor and checked-doc behavior keep their executable definitions. Import and native-artifact registration changes retain public instances and installed consumers. [Primitive ownership](../plans/20261028-proof-primitive-imports.status.md) and the combined Nix record cover those boundaries. |
+| S02–S03, S07, S11, M01–M05, M11–M13 | The 84 original endpoint formulas and raw/surface generic formulas retain independent atoms, saved databases, actual inputs and every execution branch. Resolver fields retain their separate premises. [Preservation](../plans/20261026-preservation-context.status.md) and [resolver certification](../plans/20261028-resolver-certificate.status.md) record the accepted witnesses and lasting clients; statement/row-engine semantics are unchanged. |
+| S04, S10, M06–M10 | The 45 output and 17 source formulas remain derivable; four expression proof paths share reasoning and the context laws strengthen. Complete outputs, weaker resolver transports, arbitrary depth, faults and JSON subtype remain. [Query outputs](../plans/20261028-query-output-facts.status.md), [source agreement](../plans/20261028-source-agreement.status.md) and [expression congruence](../plans/20261028-expression-congruence.status.md) record the exact boundaries; query/expression evaluators are unchanged. |
+| S06, S08, S15 | Universal formula equivalences preserve all four execution relations, actual versus permitted results, branch end states and full versus scoped simulation. [Profile acceptance](../plans/20261028-execution-profiles.status.md) retains independent singleton, bind and frame premises and the migration/application clients. |
+| S05, S09 | Profile proof closing and actual-run refutation changed. The existing program, NOT-IN, alias and printed-proof cases preserve promised outcomes at their unchanged budgets and kernel certification. [Profile acceptance](../plans/20261028-execution-profiles.status.md) records this scope; retention does not assert identical search heuristics. |
+
+The [one-time Nix cost sample](../plans/20261028-expression-congruence.status.md#final-nix-proof-cost-sample)
+records nine final owners and 50 definition-body nodes. It separates body
+elaboration from whole-file time; there is no comparable pre-migration timing
+baseline or build-speed claim. This milestone closes when its reviewed records
+are integrated and published with the task completion records.
 
 ADRs and assigned tasks link here and state their expected contribution and
 capability effects. Create implementation task/status files only at assignment.

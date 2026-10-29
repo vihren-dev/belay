@@ -1,11 +1,7 @@
-"""The theorems of the atom "keys unique" (ADR 0022, D3, slice 2) have their stated formulas and
-rest only on the standard axioms.
+"""The unique-key statement contract and lookup fact use only standard axioms.
 
-The statement theorem `runStatement_keysUnique`, the run theorems `runSqlFrom_keysUnique`,
-`runSql_keysUnique` and `runScriptAllFrom_keysUnique`, and the lookup lemma
-`Database.KeysUnique.lookup` are in the root import of the model. The check file restates each
-formula, so a change that weakens a formula fails here, and it refuses `sorryAx`,
-`ofReduceBool` and `_native` in the `#print axioms` output (`compile_checks`).
+The statement requires only uniqueness and its local condition. The lookup fact bounds
+matching rows by one.
 """
 
 from pathlib import Path
@@ -17,8 +13,10 @@ from tests.shared_table_shape_test import compile_checks
 pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
-THEOREMS = ["runStatement_keysUnique", "runSqlFrom_keysUnique", "runSql_keysUnique",
-            "runScriptAllFrom_keysUnique", "Database.KeysUnique.lookup"]
+THEOREMS = [
+    "runStatement_keysUnique",
+    "Database.KeysUnique.lookup",
+]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 """The axioms of Lean's logic that a proof of the model may use; any other axiom, such as
@@ -29,22 +27,8 @@ import Belay.Sqlite.Model
 open Belay.Sqlite.Model
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (unique : database.KeysUnique) (condition : statement.KeysCondition database) :
-    (runStatement clock counters parameters statement database).effect.KeysUnique :=
+    (runStatement clock counters parameters statement database).effect.Satisfies Database.KeysUnique :=
   runStatement_keysUnique clock counters parameters statement unique condition
-example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
-    (unique : state.KeysUnique) (conditions : RunConditions position script state) :
-    (runSqlFrom position script state).KeysUnique :=
-  runSqlFrom_keysUnique position script unique conditions
-example (script : List (Resolved.Statement × List Value)) {database : Database} (unique : database.KeysUnique)
-    (conditions : RunConditions 0 script { database }) : (runSql script database).KeysUnique :=
-  runSql_keysUnique script unique conditions
-example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    {connection : Connection} (script : List (Syntax.Statement × List Value))
-    (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.AdmittedWith profile Database.KeysUnique)) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds (Database.AdmittedWith profile Database.KeysUnique) :=
-  runScriptAllFrom_keysUnique context clock index script execution same holds
 example {database : Database} (unique : database.KeysUnique) {position : Nat} {table : Table}
     (found : database.table position = some table) {key : UniqueKey}
     (member : key ∈ database.catalog.uniqueKeys position table.shape) (probe : Row) :

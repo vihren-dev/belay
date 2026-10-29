@@ -1,9 +1,9 @@
-import Belay.Sqlite.Model.TwoStateCurrentLaws
+import Belay.Sqlite.Model.SourceAgreement
 import Belay.Sqlite.Model.QueryStepOutput
 
 set_option doc.verso true
 
-/-! The laws of {lit}`TwoStateReads.lean` and {lit}`TwoStateCurrentLaws.lean` lifted from the
+/-! Source agreement ({lit}`SourceAgreement.lean`) lifted from the
 query to the statement and to its output (ADR 0017, S6): the run, the results that SQLite may
 give and the output of a resolved statement do not depend on the initial database when the statement
 has no source in it. A statement that is not a query ignores the initial database. -/
@@ -30,44 +30,42 @@ theorem Resolved.Statement.readsInitial_query {query : Resolved.Query} {subqueri
 
 /-- For every query, clock value, counters, values, database, subqueries and two optional initial
 databases, a query and subqueries with no source in the initial database run the same whichever
-initial database is given ({name}`Resolved.Query.runOn`). Proof sketch: rewrite the statement's context
-and the source rows with the laws of {lit}`TwoStateReads.lean`. -/
+initial database is given ({name}`Resolved.Query.runOn`). Proof sketch: apply {name}`Resolved.Query.runOn_agrees`
+with the initial-origin agreement adapter. -/
 theorem Resolved.Query.runOn_initial_irrelevant (query : Resolved.Query) (clock : Int) (counters : Counters)
     (parameters : List Value) (database : Database) (subqueries : List Resolved.Query) (first second : Option Database)
     (own : query.readsInitial = false) (nested : ∀ other ∈ subqueries, other.readsInitial = false) :
     query.runOn clock counters parameters database subqueries first =
-      query.runOn clock counters parameters database subqueries second := by
-  unfold Resolved.Query.runOn
-  simp only [Resolved.statementContext_initial_irrelevant clock counters parameters database subqueries first second nested,
-    Resolved.Query.source_initial_irrelevant (query := query) (database := database) (first := first)
-      (second := second) (own := own)]
+      query.runOn clock counters parameters database subqueries second :=
+  Resolved.Query.runOn_agrees query clock counters parameters database database subqueries first second
+    (Resolved.Query.Agrees.of_noInitial database first second query own)
+    (fun other member => Resolved.Query.Agrees.of_noInitial database first second other (nested other member))
 
 /-- As {name}`Resolved.Query.runOn_initial_irrelevant`, for the results that SQLite may give
-({name}`Resolved.Query.possibleOn`). Proof sketch: the context of the statement and the source rows are the same
-by the laws of {lit}`TwoStateReads.lean`, and the rest of the result does not mention the initial database. -/
+({name}`Resolved.Query.possibleOn`). Proof sketch: apply
+{name}`Resolved.Query.possibleOn_agrees` with the initial-origin agreement adapter. -/
 theorem Resolved.Query.possibleOn_initial_irrelevant (query : Resolved.Query) (clock : Int) (counters : Counters)
     (parameters : List Value) (database : Database) (subqueries : List Resolved.Query) (first second : Option Database)
     (own : query.readsInitial = false) (nested : ∀ other ∈ subqueries, other.readsInitial = false) :
     query.possibleOn clock counters parameters database subqueries first =
-      query.possibleOn clock counters parameters database subqueries second := by
-  unfold Resolved.Query.possibleOn
-  simp only [Resolved.statementContext_initial_irrelevant clock counters parameters database subqueries first second nested,
-    Resolved.Query.source_initial_irrelevant (query := query) (database := database) (first := first)
-      (second := second) (own := own)]
+      query.possibleOn clock counters parameters database subqueries second :=
+  Resolved.Query.possibleOn_agrees query clock counters parameters database database subqueries first second
+    (Resolved.Query.Agrees.of_noInitial database first second query own)
+    (fun other member => Resolved.Query.Agrees.of_noInitial database first second other (nested other member))
 
 /-- For every query, clock value, counters, values, two databases, subqueries and optional initial database,
 a query and subqueries with no current table and no pragma source give the same results that SQLite may
 give whichever current database is given. In plain words: the rows of {lit}`before.t` do not
-change when the current database changes. -/
+change when the current database changes. Proof sketch: apply
+{name}`Resolved.Query.possibleOn_agrees` with the current-origin agreement adapter. -/
 theorem Resolved.Query.possibleOn_current_irrelevant (query : Resolved.Query) (clock : Int) (counters : Counters)
     (parameters : List Value) (first second : Database) (subqueries : List Resolved.Query) (initial : Option Database)
     (own : query.readsCurrent = false) (nested : ∀ other ∈ subqueries, other.readsCurrent = false) :
     query.possibleOn clock counters parameters first subqueries initial =
-      query.possibleOn clock counters parameters second subqueries initial := by
-  unfold Resolved.Query.possibleOn
-  simp only [Resolved.statementContext_current_irrelevant clock counters parameters first second subqueries initial nested,
-    Resolved.Query.source_current_irrelevant (query := query) (first := first) (second := second)
-      (initial := initial) (own := own)]
+      query.possibleOn clock counters parameters second subqueries initial :=
+  Resolved.Query.possibleOn_agrees query clock counters parameters first second subqueries initial initial
+    (Resolved.Query.Agrees.of_noCurrent first second initial query own)
+    (fun other member => Resolved.Query.Agrees.of_noCurrent first second initial other (nested other member))
 
 /-- For every clock value, counters, values, statement, database and two optional initial databases,
 a statement with no source in the initial database has the same run whichever initial database is given

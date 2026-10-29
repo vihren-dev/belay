@@ -3,25 +3,11 @@ import Belay.Sqlite.Model.RunHolds
 
 set_option doc.verso true
 
-/-! The invariant of a run and the condition of a statement in a run for the atom "keys unique"
-(ADR 0022, D3, slice 2): the database of the connection state, and its snapshot when a transaction
-is open, satisfy {lit}`Database.KeysUnique`, and so does each database of an outcome. The steps are
-the theorems of {lit}`RunHoldsStep` and {lit}`RunHolds` for the property
-{lit}`Database.KeysUnique`. -/
+/-! Run conditions for unique keys. CREATE INDEX, ADD COLUMN and DROP need the stated
+catalog conditions; other constructors require nothing. Generic state and outcome invariants
+use {lit}`SqlState.Holds Database.KeysUnique` and {lit}`Outcome.Holds Database.KeysUnique`. -/
 
 namespace Belay.Sqlite.Model
-
-/-- For the given state of a run: the database of the state satisfies
-{name}`Database.KeysUnique`, and the snapshot satisfies it when the state has one. A state
-without a snapshot requires nothing of the snapshot. -/
-abbrev SqlState.KeysUnique (state : SqlState) : Prop := state.Holds Database.KeysUnique
-
-/-- For the given outcome of a run, each database of it satisfies {name}`Database.KeysUnique`:
-
-* the database of a success;
-* the database of a failure;
-* the persisted and the visible database of a pending outcome. -/
-abbrev Outcome.KeysUnique (outcome : Outcome) : Prop := outcome.Holds Database.KeysUnique
 
 /-- For the given database, the condition of a statement that a run reaches on the database
 before it (owner decision of 2026-10-23 in the keys-unique status file):

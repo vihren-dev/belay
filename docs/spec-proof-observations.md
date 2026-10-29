@@ -1,6 +1,10 @@
 # Query outputs and execution observation proofs
 
-Date: 2026-10-26. Status: PROPOSED; ready for implementation assignment review.
+Date: 2026-10-26. Status (2026-10-29): D1 and D4 implementation complete.
+The [D1 completion record](../plans/20261028-query-output-facts.status.md) and
+[D4 completion record](../plans/20261028-execution-profiles.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
 Evidence: [query and observation findings](../experiments/proof-boundaries/query-observation-findings.md).
@@ -97,7 +101,8 @@ still excludes INSERT from a query; the general preservation rule does not.
 
 ## Boundaries that matter
 
-`QueryStatementOutput` combines the foundational equation with its old
+`QueryOutputFacts` owns the foundational output equations and shared query
+definitions. `QueryStatementOutput` consumes them for generic row and error
 projections. `SimpleQuerySteps` owns bound-context facts; `CountSubqueryOutput`
 owns count values and context facts. Shared definitions and semantic facts must
 be importable below projection consumers, without cycles or copied definitions.

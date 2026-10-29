@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The catalog after the resolution of CREATE TABLE, CREATE INDEX and ALTER TABLE ADD COLUMN: it is the
 catalog function of the resolved statement ({name}`Belay.Sqlite.Model.Resolved.Statement.applyCatalog`),
-which is not transaction control. {lit}`ResolveStateSpec.lean` uses these laws for the state after every
+which is not transaction control. {lit}`ResolveStatementFacts.lean` uses these laws for the state after every
 statement. -/
 
 namespace Belay.Sqlite.Model

@@ -51,10 +51,11 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     assert result.returncode == 0, result.diagnostic()
     scripts = json.loads(result.stdout)
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
-    assert set(scripts) == set(ownership) == {'model', 'coverageStatements', 'coverageFeatures', 'frozen', 'corpora', 'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
-                                               'documentation', 'theoremDependencies', 'mutants', 'tableMutants', 'functionMutants', 'surface',
-                                               'surfaceChecks', 'surfaceS6', 'writers'}
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
+    assert set(scripts) == set(ownership) == mutant_suites | {
+        'model', 'coverageStatements', 'coverageFeatures', 'frozen', 'corpora', 'harness',
+        'sample', 'upstream', 'parserLibrary', 'packages', 'documentation', 'theoremDependencies',
+        'surface', 'surfaceChecks', 'surfaceS6', 'writers'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))

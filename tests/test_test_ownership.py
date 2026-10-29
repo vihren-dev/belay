@@ -30,7 +30,7 @@ def test_host_collection_retains_source_owned_conformance_checks() -> None:
 
 
 def test_each_delegated_file_belongs_to_one_suite() -> None:
-    """A file in two suites would run twice and rerun when either suite's inputs change."""
+    """Every mutant file has one scheduled owner; duplicate owners rerun the same tests."""
     suites = json.loads((ROOT / "tests/nix_suites.json").read_text())
     owners: dict[str, list[str]] = {}
     for suite, files in suites.items():
@@ -38,6 +38,9 @@ def test_each_delegated_file_belongs_to_one_suite() -> None:
             owners.setdefault(name, []).append(suite)
     shared = {name: names for name, names in owners.items() if len(names) > 1}
     assert not shared, f"Test files listed in more than one Nix suite: {shared}"
+    mutants = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
+    assert {file for suite in mutants for file in suites[suite]} == {
+        str(path.relative_to(ROOT)) for path in (ROOT / "tests").glob("conformance_*mutants_test.py")}
 
 
 @pytest.mark.requires_native("just")

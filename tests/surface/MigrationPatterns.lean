@@ -45,7 +45,7 @@ theorem moved_failure_not_hidden : ¬ Migration.CommutesAt migration (fun _ => T
     have outputs := congrArg (fun observed => observed.2.outputs.length) equal
     have impossible : (3 : Nat) = 2 := outputs
     cases impossible
-  exact unequal same.actual
+  exact unequal (observationProfile_actual same)
 
 /-- A migration that already fails at the original context lies outside the convenient
 domain. This is a vacuous comparison, not a proof that either program succeeds. -/
@@ -71,7 +71,7 @@ theorem counters_remain_visible :
     ¬ (Sql.View.quiet one).EquivAt (Sql.View.quiet write) initial := by
   dsimp only
   intro same
-  have count := congrArg (fun observed => observed.2.connection.state.counters.totalChanges) same.actual
+  have count := congrArg (fun observed => observed.2.connection.state.counters.totalChanges) (observationProfile_actual same)
   have impossible : (some 0 : Option Nat) = some 1 := count
   cases impossible
 

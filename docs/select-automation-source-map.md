@@ -1,6 +1,7 @@
 # SELECT proof automation: source map
 
-Date: 2026-10-28. Source baseline: `3e2212ed`.
+Date: 2026-10-28; reconciled 2026-10-29. Source baseline: main `187ea510`,
+after ADR 0025 and ADR 0026.
 Audience: designers and reviewers. This inventory supports
 [ADR 0027](adr-0027-compositional-select-proofs.md) and its
 [acceptance contract](select-automation-acceptance.md).
@@ -61,7 +62,7 @@ special-case theorem elsewhere can help prove them.
 | Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas] | Parameter/error and tie-boundary rules, not only a representative list slice |
 | Alternatives | `Query.normalResult_mem`, `possibleResults_ne_nil`, `possibleResults_length` in [PossibleResultsLaws][possible-laws] | Transfer of arbitrary predicates to every permitted result |
 | Output construction | `Output.ofResults_listed`, `Output.listed_iff` in [OutputResultsLaws][output-laws] | Successful-result predicates and their nonempty-alternative bridges |
-| Execution | `resolvedStepOutput_query` and `Query.described` in [QueryStatementOutput][statement-output]; `Sql.check_query_select` in [ReadStepRule][read-rule] | General phase-to-execution adapters retaining actual readiness and context |
+| Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `resolvedStepOutput_selectOne` in [SelectOneOutput][select-one-output] (ADR 0026 D1, to be replaced); `Sql.check_query_select` in [ReadStepRule][read-rule] | General phase-to-execution adapters retaining actual readiness and context |
 
 The pure pipeline already exists: [QueryEval][query-eval] supplies filtering,
 grouping, aggregates and sorting; [QueryResults][query-results] supplies records,
@@ -127,7 +128,8 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [possible-lemmas]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsLemmas.lean
 [possible-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsLaws.lean
 [output-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/OutputResultsLaws.lean
-[statement-output]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryStatementOutput.lean
+[output-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean
+[select-one-output]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneOutput.lean
 [read-rule]: ../packages/belay/Belay/Sqlite/ReadStepRule.lean
 [query-eval]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryEval.lean
 [query-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lean

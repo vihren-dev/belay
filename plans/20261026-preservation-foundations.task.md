@@ -1,6 +1,7 @@
 # Consolidate preservation foundations and table-atom dispatch
 
-Date: 2026-10-26. Status: READY; implementation has not started.
+Date: 2026-10-26. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261026-preservation-foundations.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0025 D2 and D4](../docs/adr-0025-compositional-preservation-proofs.md).
 Record: [status](20261026-preservation-foundations.status.md).
@@ -81,15 +82,15 @@ Record retirement in the existing status file and use existing suites only.
 
 ## Relevant code and design constraints
 
-`AdmittedAtomFrames` imports `RowLocalFrame`, which imports `RowLocalAtoms`.
-`AdmittedPlainWrites` imports `RowLocalWrites`. Simply importing the general
-modules back into those older files creates cycles. Relocate their existing
-general contracts and proofs to a lower dependency layer as necessary.
+At assignment, `AdmittedAtomFrames` imported `RowLocalFrame`, which imported
+`RowLocalAtoms`, and `AdmittedPlainWrites` imported `RowLocalWrites`. Adding the
+reverse imports would create cycles. The implementation moves these general
+contracts to `EffectSatisfies`, `TableAtomFrames` and `TableAtomWrites`.
 
 `AdmittedTableAtomStatement`, `RowLocalStatement` and
 `AdmittedDistinctStatement` contain the relevant statement analyses.
-`RowEngineFacts`, `RowLocalFrame`, `KeysUniqueFrame`, `RowLocalWrites` and
-`AdmittedPlainWrites` contain the primitive candidates. `StatementRewrite`,
+`RowEngineFacts`, `TableAtomFrames`, `KeysUniqueFrame`, `RowLocalWrites` and
+`TableAtomWrites` contain the remaining primitive owners and consumers. `StatementRewrite`,
 `StatementDropColumn` and `InsertSelectLaws` supply the newer leaf evidence.
 Rename execution now checks only `sameOutline`; selected FK parent equality
 is a separate caller premise. DROP COLUMN uses `runsDropColumn` and the

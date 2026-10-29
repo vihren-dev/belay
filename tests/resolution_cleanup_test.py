@@ -28,9 +28,6 @@ REPLACED_NAMES = re.compile(r"DeclaredType|maximumColumns|\.sqlite351|\.sqlite34
 RECORDS = ("reports", "plans", "reviews", "docs", "build", ".lake", "conformance/corpus")
 """Historical records and outputs, which keep the names they had."""
 
-ABSENCE_CHECKS = ("tests/shared_table_shape_test.py",)
-"""Tests that name the replaced names to check that the compiler refuses them."""
-
 
 def sources(*suffixes: str) -> list[Path]:
     """Every source file with the suffixes, outside historical records and this test."""
@@ -38,8 +35,7 @@ def sources(*suffixes: str) -> list[Path]:
     for suffix in suffixes:
         for path in ROOT.rglob(f"*{suffix}"):
             relative = path.relative_to(ROOT).as_posix()
-            if (not relative.startswith(RECORDS) and "/.lake/" not in relative and path != Path(__file__)
-                    and relative not in ABSENCE_CHECKS):
+            if not relative.startswith(RECORDS) and "/.lake/" not in relative and path != Path(__file__):
                 found.append(path)
     return found
 

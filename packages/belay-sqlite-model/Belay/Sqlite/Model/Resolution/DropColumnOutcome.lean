@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The resolution laws of ALTER TABLE DROP COLUMN: a successful resolution is a prepare error that keeps the
 catalog, or the drop with the catalog after it, which the model can run and the limits allow.
-{lit}`NamesSpec.lean` and {lit}`ResolveStateSpec.lean` use them for every statement. -/
+{lit}`NamesSpec.lean` and {lit}`ResolveStatementFacts.lean` use them for every statement. -/
 
 namespace Belay.Sqlite.Model
 

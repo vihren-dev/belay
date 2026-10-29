@@ -333,31 +333,15 @@ in {
     runtime = conformance;
     tools = modelTools;
   };
-  mutants = suite "mutants" {
-    inputs = mutantInputs;
-    runtime = conformance;
-    tools = modelTools;
-    timeout = mutantSuiteTimeoutSeconds;
-  };
-  # The mutants of writes, joins and table forms; a mutant suite apart from "mutants", which runs
-  # on its own CI runner.
-  tableMutants = suite "tableMutants" {
-    inputs = mutantInputs;
-    runtime = conformance;
-    tools = modelTools;
-    timeout = mutantSuiteTimeoutSeconds;
-  };
-  # The mutants of the SQL functions of ADR 0015; a mutant suite on its own CI runner.
-  functionMutants = suite "functionMutants" {
-    inputs = mutantInputs;
-    runtime = conformance;
-    tools = modelTools;
-    timeout = mutantSuiteTimeoutSeconds;
-  };
   # The round trips of the corpus writers of the authored cases; a scheduled suite.
   writers = suite "writers" {
     inputs = modelInputs;
     runtime = conformance;
     tools = modelTools;
   };
-}
+} // pkgs.lib.genAttrs mutantSuites (name: suite name {
+  inputs = mutantInputs;
+  runtime = conformance;
+  tools = modelTools;
+  timeout = mutantSuiteTimeoutSeconds;
+})

@@ -1,5 +1,14 @@
 [
   "mutants",
+  "queryMutants",
+  "valueMutants",
+  "jsonMutants",
+  "dateClockMutants",
+  "queryFeatureMutants",
+  "querySourceMutants",
+  "insertQueryMutants",
+  "renameMutants",
+  "columnDropMutants",
   "tableMutants",
   "functionMutants"
 ]

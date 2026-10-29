@@ -80,12 +80,12 @@ The `full` scope builds them through `just test-scheduled-checks`, except the mu
 `tests/nix_mutant_suites.json`: the CI job `mutants` runs each of those on its own runner with
 `just test-mutants SUITE`, in parallel with the check job, for the `full` scope only, because
 together they need more time than the check job has left. A mutant suite's limit is 2700
-seconds, since it runs alone on its runner; each test keeps its limit of 300 seconds. The
-scheduled suites are:
-`scheduledTests.mutants`, `scheduledTests.tableMutants` (writes, joins and table forms) and
-`scheduledTests.functionMutants` (the SQL functions of ADR 0015), the mutants of the model, each
-built as a changed copy of the Lean packages, where every mutant must change the verdict of
-an authored model case; and `scheduledTests.writers`, the round trips of the corpus writers.
+seconds, since it runs alone on its runner; each test keeps its limit of 300 seconds. The mutant owners in
+`tests/nix_mutant_suites.json` cover resolution/rebuild rules, query evaluation/key/conflict rules,
+numeric/FROMless values, JSON, date/clock, query features,
+query sources, INSERT queries, rename, column drop, tables and functions. Each builds
+changed copies of the Lean packages, and every mutant must change an authored case verdict.
+The other scheduled owner, `scheduledTests.writers`, checks corpus-writer round trips.
 Each mutant copy rebuilds the model modules that depend on its change, so the suite grows
 with each slice of the model and does not fit the time of a pull request. The `full` scope and the
 `mutants` job run these suites, so main pushes,

@@ -135,12 +135,13 @@ def test_aggregate_laws_describe_values_and_prefix_overflow(runtime_root: Path, 
 
 def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_path: Path) -> None:
     """`QueryCases` preserves prepare errors for each advertised form and refuses all three claims
-    for unmodeled output; the bridge and unique-lookup theorem use no unchecked evaluation axiom."""
+    for unmodeled output. Complete outputs keep unbound-window errors, possible source faults and
+    tied LIMIT alternatives; generic laws and independent evidence use only ordinary logical axioms."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsQueryCases.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 7, result.stdout
+    assert len(reports) == 10, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
 
 
@@ -170,3 +171,14 @@ def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_p
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCommonTables.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_expression_congruence_preserves_observations(runtime_root: Path, tmp_path: Path) -> None:
+    """ExprCongruence and its context/append laws keep faults, subtype and distinct
+    certainty observations under their independent locality and row-width premises."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExpressionCongruence.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
+    assert len(reports) == 3, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

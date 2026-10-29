@@ -1,4 +1,5 @@
 import Belay
+import Belay.Sqlite.Model.QueryWindowExamples
 
 /-! Shared error and unmodeled laws for all query forms. The free-database theorem uses the
 prepare-error contract; kernel examples cover missing tables and columns in each form.
@@ -69,6 +70,55 @@ example : ¬ Holds (sql r"SELECT CURRENT_TIMESTAMP") sample ∧
   apply Script.not_claims_of_unmodeled (reason := clockUnmodeled)
   decide +kernel
 
+/-- LIMIT with a NULL parameter has no bound window, but still reports datatype mismatch. -/
+example : QueryWindowExamples.windowed.bindWindow [.null] = none ∧
+    resolvedStepOutput none 0 { state := { database := QueryWindowExamples.database } } [.null]
+      (.query QueryWindowExamples.windowed []) = .error ExecutionError.datatypeMismatch.primaryCode := by
+  constructor
+  · decide +kernel
+  · rw [resolvedStepOutput_query_source 0 _ _ _ []
+      { rows := Resolved.sourceRows Resolved.QueryExamples.table, width := 2, fault := .none }
+      (by decide +kernel) (by decide +kernel) (by rfl)]
+    decide +kernel
+
+/-- A LIMIT with no ordering keeps every possible first row in the complete output. -/
+example : resolvedStepOutput none 0 { state := { database := QueryWindowExamples.database } } []
+    (.query { Resolved.QueryExamples.plain with limit := some 1 } []) =
+      .oneOf [[[.text [97]]], [[.text [98]]], [[.text [99]]], [[.text [100]]]] := by
+  rw [resolvedStepOutput_query_source 0 _ _ _ []
+    { rows := Resolved.sourceRows Resolved.QueryExamples.table, width := 2, fault := .none }
+    (by decide +kernel) (by decide +kernel) (by rfl)]
+  decide +kernel
+
+/-- A malformed JSON source has a possible source fault even when its expressions are calm. -/
+def malformedSource : Resolved.Query := Resolved.Query.simple
+  [{ kind := .inner, source := .each (.literal (.text [98, 97, 100])) none, condition := none }]
+  none [.scalar (.literal (.integer 1))] ["1"]
+
+/-- The source support gate returns unmodeled output rather than an execution error. -/
+example : resolvedStepOutput none 0 { state := { database := .ofTables [] } } [] (.query malformedSource []) = .unmodeled unmodeledHere := by
+  rw [resolvedStepOutput_query_source 0 _ _ _ []
+    { rows := [], width := Resolved.eachWidth, fault := .may }
+    (by decide +kernel) (by decide +kernel) (by
+      simp [malformedSource, Resolved.Query.source, Resolved.QuerySource.join, Resolved.Query.simple,
+        List.foldlM, Resolved.Expr.eval, Resolved.Expr.evaluate, Json.eachRows, Resolved.joinRow]
+      decide +kernel)]
+  decide +kernel
+
+/-- The independent no-error law remains usable with this possible source fault. -/
+example : (resolvedStepOutput none 0 { state := { database := .ofTables [] } } [] (.query malformedSource [])).isError = false := by
+  apply resolvedStepOutput_simple_not_isError_of_faultless 0 _ _ _ []
+    (Resolved.Query.simple_isSimple _ _ _ _) { rows := [], width := Resolved.eachWidth, fault := .may }
+  · simp [sql_simp, Resolved.Statement.Calm, Resolved.Statement.clockExpressions,
+      Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple,
+      Resolved.QuerySource.expressions, Resolved.Output.operands, Resolved.Output.scalars]
+  · simp [Resolved.Query.source, Resolved.QuerySource.join, Resolved.Query.simple,
+      List.foldlM, Resolved.Expr.eval, Resolved.Expr.evaluate, Json.eachRows, Resolved.joinRow]
+    decide +kernel
+  · simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple,
+      Resolved.QuerySource.expressions, Resolved.Output.operands, Resolved.Output.scalars,
+      Resolved.Expr.evaluate]
+
 #print axioms Script.outputOn_eq_step
 #print axioms Holds.iff_step
 #print axioms Empty.iff_step
@@ -76,3 +126,6 @@ example : ¬ Holds (sql r"SELECT CURRENT_TIMESTAMP") sample ∧
 #print axioms prepare_error_has_no_rows
 #print axioms Script.not_claims_query_of_undescribed
 #print axioms Holds.selectOne_count_unique_lookup
+#print axioms resolvedStepOutput_query_source
+#print axioms resolvedStepOutput_selectOne
+#print axioms Resolved.Query.aggregateOf_possibleResults

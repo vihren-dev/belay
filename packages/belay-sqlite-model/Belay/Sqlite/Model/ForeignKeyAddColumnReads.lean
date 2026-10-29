@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.ForeignKeyAddColumnLink
 import Belay.Sqlite.Model.ForeignKeyAddColumnPairs
-import Belay.Sqlite.Model.AddColumnFromValid
+import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.ForeignKeyUpdateCoverage
 
 set_option doc.verso true

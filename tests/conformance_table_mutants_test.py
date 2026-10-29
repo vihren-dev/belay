@@ -10,12 +10,13 @@ their own suite, `tableMutants`. The cases are the authored cases of
 `authored_without_rowid`, `authored_collations`, `authored_checks`, `authored_generated`,
 `authored_strict`, `authored_drops`, `authored_after_error` and `authored_counters`, recorded natively with their
 outputs. Each test builds one base copy for its mutants with `measure_set`, and each mutant copy classifies the
-case that the mutant names as its target. The writes and the joins are separate measurements of
-at most 22 mutants, so that each test stays far within its limit of 300 seconds while the
-other Nix suite of mutants runs at the same time.
+case that the mutant names as its target. The combined 22-mutant join measurement exceeded
+its 300-second hosted limit in PR 295. Each existing join table is now one measurement,
+retaining all 22 mutants and their 20 distinct target cases under the same deadlines.
 """
 
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -82,22 +83,29 @@ def test_every_drop_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_drops], [(drop_mutants.MUTANTS, drop_mutants.TARGETS)])
 
 
-def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize(("cases", "table"), [
+    pytest.param(authored_writes, write_mutants, id="write"),
+    pytest.param(authored_row_writes, row_write_mutants, id="row-write"),
+    pytest.param(authored_deletes, delete_mutants, id="delete"),
+])
+def test_every_write_mutant_changes_a_verdict(runtime_root: Path, cases: ModuleType, table: ModuleType) -> None:
     """The authored write cases notice every changed rule of writes with output, of
     row-dependent writes and of DELETE (`conformance.write_mutants`,
     `conformance.row_write_mutants`, `conformance.delete_mutants`), so these rules are tested."""
-    measure_set(runtime_root, [authored_writes, authored_row_writes, authored_deletes],
-                [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
-                 (delete_mutants.MUTANTS, delete_mutants.TARGETS)])
+    measure_set(runtime_root, [cases], [(table.MUTANTS, table.TARGETS)])
 
 
-def test_every_join_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize(("cases", "table"), [
+    pytest.param(authored_joins, join_mutants, id="joins"),
+    pytest.param(authored_using, using_mutants, id="using"),
+    pytest.param(authored_right, right_mutants, id="right"),
+    pytest.param(authored_merged, merged_mutants, id="merged"),
+])
+def test_every_join_mutant_changes_a_verdict(runtime_root: Path, cases: ModuleType, table: ModuleType) -> None:
     """The authored join cases notice every changed rule of joins (`conformance.join_mutants`,
     `conformance.using_mutants`, `conformance.right_mutants`, `conformance.merged_mutants`), so
     these rules are tested."""
-    measure_set(runtime_root, [authored_joins, authored_using, authored_right, authored_merged],
-                [(join_mutants.MUTANTS, join_mutants.TARGETS), (using_mutants.MUTANTS, using_mutants.TARGETS),
-                 (right_mutants.MUTANTS, right_mutants.TARGETS), (merged_mutants.MUTANTS, merged_mutants.TARGETS)])
+    measure_set(runtime_root, [cases], [(table.MUTANTS, table.TARGETS)])
 
 
 def test_every_after_error_mutant_changes_a_verdict(runtime_root: Path) -> None:

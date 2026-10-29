@@ -9,7 +9,9 @@ gaps in earlier ADR numbers do not change that request.
 
 ## Current state
 
-- Baseline: main `3e2212ed6983f36144b7fc5bdce9b263f939e50f`, Lean 4.34.1.
+- Baseline: main `187ea510` (PR 297, ADR 0025 and ADR 0026), Lean 4.34.1.
+  The experiments and Nix reports below were made on the earlier main
+  `3e2212ed`; see "Integration of main after PR 297".
 - Source inspection found existing SQL weakest preconditions, `mvcgen`
   integration, `sql_run`, `sql_auto`, and expression simplification. The SELECT
   rule leaves model-coverage and universal selected-output obligations.
@@ -205,6 +207,37 @@ not-yet-integrated output-fact owners from this branch's current definitions.
 The retirement requirements and the owner's staging decisions are unchanged.
 Correction `a5d0b0b1` passed documentation-link checks and independent review
 `20261029T124036Z-a5d0b0b1` with no findings.
+
+## Integration of main after PR 297 (2026-10-29)
+
+PR 297 merged ADR 0025 and ADR 0026 into main `187ea510`. The branch already
+carried owner merge commits, so a rebase onto main produced conflicts in ten
+commits; the operation was restored and main was integrated by a merge commit
+instead. The merge had no conflicts.
+
+Specification reconciliation in the same merge commit:
+
+- ADR 0027: the intro and the supersession section name the D1 owners as they
+  exist on main (`resolvedStepOutput_selectOne`, the per-family output files,
+  the surface `Script.outputOn_<form>` equations); `QueryOutputFacts` stays as
+  the D5 execution bridge. The interim "not in this branch" wording is removed.
+- Retirement inventory: `FilteredDuplicateKeyEmpty.lean` (deleted by PR 297)
+  is dropped; `SelectOneOutput` and `QueryOutputFacts` are named with their
+  current content; line counts are from `187ea510`; the measurement section
+  links the Lean simplification goal, which main now has.
+- Source map: the execution row points to `QueryOutputFacts.lean` and
+  `SelectOneOutput.lean` instead of `QueryStatementOutput.lean`.
+- Task file: baseline updated.
+
+Experiments: every identifier that the four `tests/surface/SelectAutomation*`
+fixtures use was checked to exist on main `187ea510` (for example
+`Query.simple_isSimple`, `Query.Simple.results_eq`,
+`resolvedStepOutput_simpleTable_rows`, `Script.outputOn_query`,
+`Script.query_outputs`, `Sql.check_stopped`). The fixtures were not changed.
+They are not compiled on the new baseline yet: the resource gate
+(`tools/check_resources.py`, 10 GiB) refuses the development shell at
+9.94 GiB free, so `just dev-build`, pytest and `just review` cannot run until
+the owner approves a cleanup. Links were checked with a local script only.
 
 ## Open design axes
 

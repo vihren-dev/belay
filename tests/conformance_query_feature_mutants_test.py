@@ -2,9 +2,8 @@
 REFERENCES, trigger, possible result, parameter, compound and pragma mutant tables changes the verdict
 of an authored case (ADR 0018 and ADR 0019).
 
-These tests are the second half of the mutant tests of `tests/conformance_query_mutants_test.py`,
-which describes the measurement and the time limit. They are in a separate file so that each file
-stays short; they run in the same Nix suite, `mutants`.
+These measurements use `tests/mutant_sets.py` and run in the `queryFeatureMutants` Nix suite.
+A separate owner bounds the aggregate workload after the general hosted suite timed out.
 """
 
 from pathlib import Path

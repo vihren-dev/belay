@@ -13,7 +13,7 @@ open Belay.Sqlite.Model hiding Database
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id` at a position: no customer has
 the id exactly when the condition {lit}`id = ?1` is false for every row. Proof sketch: apply
-{name}`Holds.iff_selectOne_notExists` to the resolved condition. -/
+{name}`Script.outputOn_notExists` to the resolved condition. -/
 theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : Nat) (table : CatalogTable)
     (cell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -28,14 +28,13 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
-    ?_) ?_
-  · simp [sql_simp, equalsParameter]
-  · simp
+  rw [Holds, Script.outputOn_notExists (script := (noCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
+    (by simp [sql_simp, equalsParameter])]
+  simp [Output.hasRows]
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id`: exactly one customer has the id
 exactly when the condition {lit}`id = ?1` is true for one row of the table. Proof sketch: apply
-{name}`Holds.iff_selectOne_count` to the resolved conditions. -/
+{name}`Script.outputOn_count` to the resolved conditions. -/
 theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col : Nat) (table : CatalogTable)
     (cell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -55,8 +54,9 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp])) ?_
+  rw [Holds, Script.outputOn_count (script := (exactlyOneCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp])]
+  simp only [Option.any_some, Output.hasRows, apply_ite]
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   exact ⟨fun h => by exact_mod_cast h, fun h => by exact_mod_cast h⟩
 

@@ -23,18 +23,20 @@ theorem Sql.View.EquivOn.bind {α β : Type} {first second : Sql α}
   have reverse : ∀ beforeRun, second.Branch state.clock state.index state.connection beforeRun →
       ∀ value, beforeRun.value = some value → (last value).EquivAt (later value) (state.finish beforeRun) := by
     intro two after value returned
-    obtain ⟨one, before, equal⟩ := (same.branches _).mpr ⟨two, after, rfl⟩
+    obtain ⟨one, before, equal⟩ := ((observationProfile_eq_iff.mp same).2 _).mpr ⟨two, after, rfl⟩
     have values := congrArg Prod.fst equal
     obtain ⟨_, connections, steps⟩ := (fullObservation_eq_iff _ _ _ _ _).mp equal
-    have compared := (forward one before value (values.trans returned)).symm.with_outputs (state.outputs ++ two.outputs)
+    have compared := EquivAt.with_outputs (forward one before value (values.trans returned)).symm
+      (state.outputs ++ two.outputs)
     simpa only [ExecutionContext.finish, connections, steps] using compared
+  apply observationProfile_eq_iff.mpr
   constructor
   · rw [Sql.runFrom_bind, Sql.runFrom_bind]
     let one := first.runFrom state.clock state.index state.connection
     let two := second.runFrom state.clock state.index state.connection
     have before : first.Branch state.clock state.index state.connection one := Sql.Branch.actual first _ _ _
     have after : second.Branch state.clock state.index state.connection two := Sql.Branch.actual second _ _ _
-    have equal : left.fullObservation state one = right.fullObservation state two := same.actual
+    have equal : left.fullObservation state one = right.fullObservation state two := (observationProfile_actual same)
     have values := congrArg Prod.fst equal
     obtain ⟨_, connections, steps⟩ := (fullObservation_eq_iff _ _ _ _ _).mp equal
     change (left.bind next later).fullObservation state (one.andThen _) =
@@ -52,14 +54,14 @@ theorem Sql.View.EquivOn.bind {α β : Type} {first second : Sql α}
           ((next value).runFrom state.clock (state.index + one.outputs.length) one.connection) =
         (last value).fullObservation (state.finish one)
           ((other value).runFrom state.clock (state.index + two.outputs.length) two.connection)
-      simpa only [ExecutionContext.finish, connections, steps] using (forward one before value returned).actual
+      simpa only [ExecutionContext.finish, connections, steps] using (observationProfile_actual (forward one before value returned))
   · intro observed
     constructor
     · rintro ⟨result, branch, seen⟩
       obtain ⟨matched, permitted, equal⟩ := same.bind_branch next other later last forward branch
       exact ⟨matched, permitted, equal.trans seen⟩
     · rintro ⟨result, branch, seen⟩
-      obtain ⟨matched, permitted, equal⟩ := same.symm.bind_branch other next last later reverse branch
+      obtain ⟨matched, permitted, equal⟩ := EquivAt.bind_branch same.symm other next last later reverse branch
       exact ⟨matched, permitted, equal.trans seen⟩
 
 /-- Unrestricted full projected comparisons compose with value-dependent continuation

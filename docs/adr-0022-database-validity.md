@@ -247,6 +247,12 @@ restriction and keeps its current result, and SQLite fails at the commit. The pr
 the status file of the task. The native cases of the part are in `conformance/corpus-v54`, which
 `judge/claims.json` claims in the separate judge change (the lock of that change is the owner's to approve).
 
+API amendment, 2026-10-28 ([ADR 0025](adr-0025-compositional-preservation-proofs.md)):
+the per-atom endpoint names in the historical slice records below are removed.
+Generic run laws take independent invariant evidence and preserve the same premises,
+including support-independent constraint atoms and every complete surface execution.
+`runScriptAllFrom_admittedWith` and the used Valid helpers remain.
+
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
 with a condition only for ADD COLUMN (`Database.AddColumnCondition`) and DROP
@@ -283,7 +289,7 @@ key, and is in a table that is not `WITHOUT ROWID`. A key may name a column twic
 (`PRIMARY KEY(a, a)`); the model does not restrict it, and the facts of slice 2 hold for such keys. So
 the CHECK condition of slice 3 is a fact of every admitted database, and it is no longer a gap.
 The resolver keeps `Catalog.Valid` for CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and
-DROP (`resolveStatement_valid`, `resolve_valid`, with the catalog that BEGIN saves for ROLLBACK). The
+DROP (the validity field of `resolveStatement_certificate`, `resolve_valid`, with the catalog that BEGIN saves for ROLLBACK). The
 resolved DROP meets `Catalog.DropClosed`, from which `Catalog.DropCondition` follows. An admitted
 database meets `Database.AddColumnCondition`, `Database.RowsWideAt` and `Database.ChecksReadBelowAt`,
 and the resolved ADD COLUMN meets `strictDefaultFits`. A CREATE INDEX with no key terms is a prepare
@@ -303,7 +309,7 @@ theorems of "rowids in range", "rows wide", "rows stored" and "rows aliased" ass
 and "rows aliased" lists "catalog supported". The theorems of `runScriptFrom` have no hypothesis on the
 statements of the script. The resolver facts of part 1 give the conditions: `Resolved.Statement.SchemaLink`
 (ADD COLUMN: the default fits the strict type; DROP: `Catalog.DropClosed`) is a fact of every successful
-resolution against a valid catalog (`resolveStatement_schemaLink`, with `state.catalog.Valid limits`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
+resolution against a valid catalog (the schema-link field of `resolveStatement_certificate`, with `state.catalog.Valid limits`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
 existing trigger resolves to a DROP of no object. The `runScriptFrom` theorems of the constraint atoms assume
 `Database.AdmittedWith profile atom` (admitted, with the atom), a context in execution mode, and the limits
 of the context equal to those of the profile; `Database.ConstraintAtoms` together give the corollary

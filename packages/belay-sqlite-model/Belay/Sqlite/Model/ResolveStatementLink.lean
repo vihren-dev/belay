@@ -1,12 +1,10 @@
 import Belay.Sqlite.Model.ResolveStatementForms
-import Belay.Sqlite.Model.ResolveStatementValid
 
 set_option doc.verso true
 
-/-! The link of every resolved statement to the catalog (ADR 0022, D3, slice 4): for a valid resolution
-state in execution mode, every statement that {lit}`resolveStatement` resolves meets
-{lit}`Resolved.Statement.SchemaLink` on the catalog of the state. An ADD COLUMN has a default that fits the
-strict type of its column, and a DROP has positions that meet {lit}`Catalog.DropClosed`. -/
+/-! Leaf schema-link facts and their transport through write rules.
+ADD COLUMN requires a strict default that fits; DROP requires closure of its positions.
+Each leaf keeps its own catalog-validity premises. -/
 
 namespace Belay.Sqlite.Model
 

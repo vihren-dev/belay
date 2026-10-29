@@ -1,4 +1,6 @@
-import Belay.Sqlite.Model
+import Belay.Sqlite.Model.Declarations
+import Belay.Sqlite.Model.Resolution.Syntax
+import Belay.Sqlite.Model.SqlAdvance
 
 set_option doc.verso true
 

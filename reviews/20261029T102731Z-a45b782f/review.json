@@ -1,0 +1,50 @@
+{
+  "caller": "codex",
+  "commit": "a45b782f8e8e1a6eb2ce1c32d6dce1498bc64da6",
+  "date": "2026-10-29T10:27:31+00:00",
+  "exit": 0,
+  "files": [
+    ".github/workflows/ci.yml",
+    "docs/ci.md",
+    "plans/20261028-proof-refactor-ci.status.md",
+    "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_resolution_mutants_test.py",
+    "tests/nix_mutant_suites.json",
+    "tests/nix_scheduled_suites.json",
+    "tests/nix_suites.json"
+  ],
+  "findings": [
+    {
+      "id": "20261029T102731Z-a45b782f#1",
+      "line": 1305,
+      "path": "plans/20261028-proof-refactor-ci.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status says the partition audit is \"retained as `core-followup-partition-audit.json` and `.md`\". The repository has no such files, and the commit does not add them. Fix: give the real path or location of the audit, or say that the files are outside the repository."
+    }
+  ],
+  "id": "20261029T102731Z-a45b782f",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

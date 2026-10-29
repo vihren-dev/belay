@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.ScriptRunResolved
 
 set_option doc.verso true
@@ -17,14 +18,14 @@ state and state: if the statement resolves against the connection's resolution s
 resolution state {lit}`after`, and {name}`advance` with the values continues with the state, then the connection with the state
 and the settings of {lit}`after` has the resolution state {lit}`after`. Proof sketch: the
 transition keeps the state in agreement with the resolution ({name}`advance_agrees`,
-{name}`resolveStatement_after`), and {name}`Connection.resolveState_of_agrees` applies. -/
+{name}`resolveStatement_certificate`), and {name}`Connection.resolveState_of_agrees` applies. -/
 theorem Connection.resolveState_after_next {context : ResolveContext} {index : Nat} {connection : Connection}
     {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState} {state : SqlState}
     (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after))
     {parameters : List Value} (advanced : advance index resolved parameters connection.state = .next state) :
     ({ state, foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers } : Connection).resolveState = after := by
   have agrees := advance_agrees (state := connection.resolveState) ⟨rfl, rfl⟩ advanced
-  rw [← resolveStatement_after context _ _ statement resolved ok] at agrees
+  rw [← (resolveStatement_certificate context _ _ statement resolved ok).after] at agrees
   exact Connection.resolveState_of_agrees agrees
 
 /-- The agreement of the two runs (ADR 0017, D3). For every context, optional clock, script of
@@ -50,7 +51,7 @@ assignment and the run without a clock ({name}`ClockFits.scriptClock`), so the t
 connection's resolution state and runs at the assignment's clock value ({name}`ClockFits.head`);
 a step that continues keeps the states in agreement ({name}`advance_agrees`) and the clock
 assignment ({name}`advance_clock`), so the next statement resolves against the state that
-{name}`resolveFrom` gives ({name}`resolveStatement_after`) and the rest fits
+{name}`resolveFrom` gives ({name}`resolveStatement_certificate`) and the rest fits
 ({name}`ClockFits.tail`). -/
 theorem runScriptFrom_agrees (context : ResolveContext) (clock : Option Clock) :
     ∀ (script : List (Syntax.Statement × List Value)) (index : Nat) (connection : Connection)

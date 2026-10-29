@@ -7,6 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
+from tests.surface_support import FIXTURES, surface_command
 from tests.two_state_support import HEADER, INT, NATIVE_SECONDS, example, expectation, gather, lean, native, setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
@@ -79,11 +80,12 @@ PUBLIC_THEOREMS = [
     "Belay.Sqlite.Model.observeTwoState_initial_irrelevant", "Belay.Sqlite.Model.resolveTwoState_ordinary",
     "Belay.Sqlite.Model.resolvedStepOutput_initial_irrelevant", "Belay.Sqlite.Model.possibleOutput_initial_irrelevant",
     "Belay.Sqlite.Model.Resolved.Query.possibleOn_current_irrelevant",
-    "Belay.Sqlite.Model.Resolved.Query.source_initial_irrelevant",
-    "Belay.Sqlite.Model.Resolved.Query.source_current_irrelevant",
-    "Belay.Sqlite.Model.Resolved.subqueryContext_initial_irrelevant",
+    "Belay.Sqlite.Model.Resolved.Query.possibleOn_agrees",
+    "Belay.Sqlite.Model.Resolved.subqueryContext_agrees",
+    "Belay.Sqlite.Model.Resolved.Query.Agrees.of_noInitial",
+    "Belay.Sqlite.Model.Resolved.Query.Agrees.of_noCurrent",
     "Belay.Sqlite.Script.observeTwoState_ordinary", "Belay.Sqlite.Script.observeTwoState_single"]
-"""The theorems that state the conservative extension and the independence of the two origins."""
+"""The observation guarantees, generic source proof and independent origin adapters."""
 FORBIDDEN_AXIOM_TERMS = ("sorryAx", "ofReduceBool", "_native")
 """The axioms and kernel extensions that a proof of these theorems must not use."""
 
@@ -97,3 +99,11 @@ def test_two_state_theorems_use_no_forbidden_axioms(runtime_root: Path, tmp_path
     assert result.stdout.count("depends on axioms") + result.stdout.count("does not depend on any axioms") == \
         len(PUBLIC_THEOREMS), result.stdout
     assert all(term not in result.stdout for term in FORBIDDEN_AXIOM_TERMS), result.stdout
+
+
+def test_source_agreement_contract(runtime_root: Path, tmp_path: Path) -> None:
+    """SourceAgreement keeps absence, shape and pragma observations, and its context law
+    accepts arbitrary nesting depth independently of the query-list length."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SourceAgreement.lean", tmp_path),
+                         cwd=tmp_path, timeout=600)
+    assert result.returncode == 0, result.diagnostic()

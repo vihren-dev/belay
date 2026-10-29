@@ -37,6 +37,13 @@ labelled_sql "lean-continuation-false" in
 labelled_sql "equiv-proved" in
 #sql_check Sql.Equiv (send bump) (send bump)
 
+/-- A named view checks that profile proof search unfolds aliases without executing SQL. -/
+def bumpView : Sql.View (send bump) := Sql.View.identity (send bump)
+
+labelled_sql "profile-alias-proved" in
+#sql_check ∀ state : ExecutionContext,
+  bumpView.ObservationEquivAt (Sql.View.identity (send bump)) state
+
 set_option sql.checkBudget 400000 in
 labelled_sql "equiv-false" in
 #sql_check Sql.Equiv (send bump) (send bumpTwice) with (db := sample)

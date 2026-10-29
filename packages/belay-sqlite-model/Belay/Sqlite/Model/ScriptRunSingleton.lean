@@ -51,7 +51,7 @@ statements; the step has no further execution ({name}`runScriptStep_others`), so
 start from its one connection. -/
 theorem runScriptAllFrom_eq (context : ResolveContext) (clock : Option Clock) :
     ∀ (index : Nat) (connection : Connection) (script : List (Syntax.Statement × List Value)),
-      ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) context clock index connection script →
+      ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) context clock index connection script →
         runScriptAllFrom context clock index connection script = [runScriptFrom context clock index connection script]
   | _, _, [], _ => by simp [runScriptFrom, runScriptAllFrom, runScriptAllWith]
   | index, connection, (statement, parameters) :: rest, single => by
@@ -61,8 +61,8 @@ theorem runScriptAllFrom_eq (context : ResolveContext) (clock : Option Clock) :
     | continued output next others =>
       simp only [ScriptConditionsWith, step] at single
       obtain ⟨found, later⟩ := single
-      obtain ⟨resolved, after, _, resolution, _⟩ := runScriptStep_execution_runs step
-      obtain rfl := runScriptStep_others step resolution (found resolved after resolution)
+      obtain ⟨resolved, after, value, resolution, selected, ready, _⟩ := runScriptStep_execution_runs step
+      obtain rfl := runScriptStep_others step resolution (found ⟨trivial, fun _ _ => trivial⟩ resolved after value resolution selected ready)
       have := runScriptAllFrom_eq context clock (index + 1) next rest (later { output, next } (by simp [RunStep.executions]))
       simp only [runScriptAllFrom] at this
       simp [runScriptAllWith, step, RunStep.executions, this]
@@ -90,14 +90,14 @@ theorem ScriptConditionsWith.single_step {context : ResolveContext} {clock : Opt
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
     {rest : List (Syntax.Statement × List Value)} {output : Output} {next : Connection}
     {others : List StatementExecution}
-    (single : ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) context clock index connection
+    (single : ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) context clock index connection
       ((statement, parameters) :: rest))
     (step : runScriptStep context clock index connection statement parameters = .continued output next others) :
-    others = [] ∧ ScriptConditionsWith (fun resolved _ => resolved.fromQuery = false) context clock (index + 1) next rest := by
+    others = [] ∧ ScriptConditionsWith (fun _ => True) (fun _ _ _ resolved _ => resolved.fromQuery = false) context clock (index + 1) next rest := by
   simp only [ScriptConditionsWith, step] at single
   obtain ⟨found, later⟩ := single
-  obtain ⟨resolved, after, _, resolution, _⟩ := runScriptStep_execution_runs step
-  obtain rfl := runScriptStep_others step resolution (found resolved after resolution)
+  obtain ⟨resolved, after, value, resolution, selected, ready, _⟩ := runScriptStep_execution_runs step
+  obtain rfl := runScriptStep_others step resolution (found ⟨trivial, fun _ _ => trivial⟩ resolved after value resolution selected ready)
   exact ⟨rfl, later { output, next } (by simp [RunStep.executions])⟩
 
 end Belay.Sqlite.Model

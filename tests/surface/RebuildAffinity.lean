@@ -87,7 +87,8 @@ theorem rebuild_not_preserved :
     ¬ Migration.QueryPreserves (send zipRebuild) zipRows (fun _ => True) := by
   intro claim
   have same := congrArg Prod.fst
-    (claim addresses True.intro environment ⟨rfl, rfl, rfl, rfl⟩ ⟨True.intro, by decide +kernel⟩).actual
+    (observationProfile_actual
+      (claim addresses True.intro environment ⟨rfl, rfl, rfl, rfl⟩ ⟨True.intro, by decide +kernel⟩))
   change ((send zipRows).runFrom (ExecutionContext.initial addresses environment).clock
       (ExecutionContext.initial addresses environment).index (ExecutionContext.initial addresses environment).connection).value =
     ((Migration.after (send zipRebuild) (send zipRows)).runFrom (ExecutionContext.initial addresses environment).clock
