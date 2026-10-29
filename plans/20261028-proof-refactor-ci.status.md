@@ -1437,3 +1437,47 @@ Claude review `20261029T110433Z-43191898` with zero must and zero should
 findings. All focused build and review processes are terminal. The coordinator
 can integrate this reviewed slice for combined acceptance; this record does
 not mark the wider CI task DONE.
+## Combined repair acceptance, 2026-10-29
+
+The coordinator integrated reviewed JSON/date tip `3b129692`, retained all
+twenty-seven evidence files at `build/json-date-followup/`, and verified their
+hashes and all seven measured source hashes. All eleven immutable JUnit cases
+pass with no failures, errors or skips. Six accepted outputs have independent
+coordinator GC roots. The core, retirement and JSON/date repairs are now in
+one reviewed source tree; their worker workspaces await publication and cleanup.
+
+All four final commands ran once, serially, at `3b129692` with
+`max-jobs = 1`, `cores = 3` and `LEAN_NUM_THREADS=2`. All returned zero:
+
+| Command | Seconds | Result |
+| --- | ---: | --- |
+| `just test-full` | 2117.756 | 1,427 ordinary Nix cases; 513 source cases and 50 subtests |
+| `just verdict` | 1.968 | 5,653 agreements and 2,109 explicitly unsupported cases in 56 corpora |
+| `just test-nix` | 71.284 | 71 configured checks, including the normal local build loop |
+| `just test-scheduled-checks` | 1.092 | 50 writer cases from the unchanged accepted output |
+
+The ordinary Nix report has no failures, errors or skips. Four suites executed
+fresh: model 228 cases in 345.129 seconds, surface 380 in 674.596,
+surfaceChecks 22 in 343.668, and surfaceS6 66 in 626.782. The other eleven
+ordinary suites reuse exact accepted outputs for 731 cases. The source and
+configured host reports also have no failures, errors or skips; the local
+build-loop check took 5.445 seconds. Verdict and writers reuse their unchanged
+accepted outputs. These local results do not establish hosted timing headroom.
+
+The current fifteen ordinary, twelve mutant, writer and seven non-test output
+identities match the frozen preflight exactly, including the six specification
+header updates. All 7,372 tracked file hashes stayed unchanged through the
+four commands. Reports, command logs, identity checks and the source manifest
+are retained at `build/final-combined-20261029/`, with sixteen file hashes in
+`sha256.json` and five coordinator GC roots. The summary is
+`build/final-combined-20261029/acceptance-summary.json`; its SHA256 is
+`12ec477735c63a23a6be1a66a5210ec1e701030ee3daaf3426c2e3c8fc87a36d`.
+
+At entry to the final cached writer command, direnv reported `/tmp` at 9.89 GiB,
+below the 10 GiB development-space guard. The command returned zero and reused
+the existing writer output. No subsequent local build or automatic temporary
+or store cleanup ran. Further expensive local work requires satisfying the
+guard; recording and publication remain possible.
+
+The CI task remains IN PROGRESS pending publication, current-source Linux and
+macOS hosted acceptance, current repair review and completed-worker cleanup.
