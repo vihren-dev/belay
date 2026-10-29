@@ -51,10 +51,13 @@ matrix.
 
 ## ADR 0026 D1 owners
 
-ADR 0026 D1 replaced 45 endpoints with seven model and eight surface
-complete-output facts. ADR 0027 supersedes D1: a phase decomposition replaces a
+The ADR 0026 D1 implementation in PR 297 replaces 45 endpoints with seven model
+and eight surface complete-output facts. That implementation and the owner names
+below are not in this branch yet. Here, `Query.described` and
+`resolvedStepOutput_query` still live in `QueryStatementOutput.lean`.
+ADR 0027 supersedes D1 after integration: a phase decomposition replaces a
 per-family characterization. Reconcile the exact names at assignment from
-`plans/20261028-query-output-facts.status.md`.
+PR 297's `plans/20261028-query-output-facts.status.md`.
 
 | Owner (PR 297) | Status |
 | --- | --- |

@@ -199,6 +199,10 @@ The ADR's link to ADR 0026 now resolves locally after the main merge.
 The Nix reports above describe pre-merge revisions; current-head CI supplies
 integration validation. The full local suite remains deferred.
 The combined remote-update merge passed all three documentation-link checks.
+Review `20261029T123759Z-df2246bb` found no must findings and two wording
+findings. Both are corrected: the ADR and inventory distinguish PR 297's
+not-yet-integrated output-fact owners from this branch's current definitions.
+The retirement requirements and the owner's staging decisions are unchanged.
 
 ## Open design axes
 
