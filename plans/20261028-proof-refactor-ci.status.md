@@ -1100,3 +1100,33 @@ The clarification commit `92c9ee4f` passed independent Claude review
 `20261029T094201Z-92c9ee4f` with zero must and zero should findings. The focused
 documentation check passed before that commit. The core task is ready for an
 isolated implementation worker; no core grouping code has changed yet.
+
+## Historical-name fixture retirement, 2026-10-29
+
+Manual run `40841195886` at `b2f5e6b0` finished the macOS model owner with
+239 passes and two failures among 241 cases. The failures are the
+`TableProperties` and `IndexDefinition` parameters of
+`shared_table_shape_test::test_replaced_model_names_absent`: Lean returns no
+output before the unchanged 10-second subprocess limits (10.067 and 10.127
+seconds including cleanup). This establishes a fixture deadline failure, not
+an unexpected declaration. The log does not isolate time spent in imports.
+All four oversized-hex sign/version cases and both retained shape/codec tests
+passed. Full acceptance, configured Nix checks and writers did not finish.
+
+The complete log and case results are retained under
+`build/final-b621/hosted-manual-40841195886/macos/` as `main.log`,
+`main-results.json` and `main-model-case-results.json`. Log SHA-256 is
+`ea0e1fb97cf598efd90330f255dfddf71e7c20c06e287924731f9a820647594e`.
+The failed model derivation produced no JUnit artifact. Linux's digest-verified
+`case-reports-x86_64-linux.zip` contains `nix-tests-full/model/junit.xml`:
+all thirteen old-name cases pass, taking 13.227 seconds in total.
+
+The matrix repeats broad imports in thirteen compiler processes to certify
+the absence of names removed by ADR 0008. The ADR's cleanup conditions and
+the completed resolution-switch task retain the existing source guards; they
+do not require this historical compiler matrix indefinitely. The CI task now
+explicitly retires the matrix and its scanner exemption while preserving the
+catalog/row-shape, codec and source-architecture contracts. This applies the
+owner's lean-suite direction without changing the no-alias rule or SQL
+semantics. The expected model count is 228. No implementation has started;
+independent task review precedes isolated worker assignment.

@@ -59,6 +59,14 @@ classifier build; it does not identify the mutant or a semantic assertion
 failure. The combined evaluation group has seven mutants. Query resolution,
 keys/aliases, UPSERT/conflict algorithms and rebuild measurements remain unrun.
 
+The same manual run's macOS model owner executes all 241 cases: 239 pass and
+two historical-name rejection cases (`TableProperties`, `IndexDefinition`)
+reach their 10-second Lean subprocess limits with blank output. The other
+eleven names, catalog/row-shape checks and row codec checks pass. Each name
+starts a separate compiler with the same broad model and resolution-codec
+imports. The Linux owner passes all thirteen historical-name cases. These
+cases certify completed ADR 0008 vocabulary cleanup, not current SQL behavior.
+
 ## Required behavior
 
 Unmodified Nix-built dependencies support real Lake consumers in the installed
@@ -131,6 +139,14 @@ must also fit their static owner's aggregate limit; use the existing ownership
 mechanism when a split requires another owner. No test/harness framework,
 production change, larger limit or automatic retry is part of this follow-up.
 
+Retire the thirteen `test_replaced_model_names_absent` cases as completed
+ADR 0008 migration scaffolding. The no-alias rule and existing source cleanup
+checks remain in force. Preserve `test_whole_shape_conformance`, the row codec
+golden/corrupt-input checks, `compile_checks` and its callers unchanged. Remove
+only the obsolete module-docstring claim and the source scanner's exemption
+for this historical-name matrix. Do not replace it with another name matrix,
+import-text test or permanent audit. No production code or deadline changes.
+
 The oversized-hex default test must compare the same prepare phase and error
 message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
 Lean subprocess limit. The generated fixture imports only the dependencies
@@ -177,6 +193,16 @@ The resolver and rebuild files keep their accepted measurement bodies and may
 change static ownership only. The rebuild tail still needs a timing result.
 Do not change the other accepted owners or the pending JSON/date/table work
 without further evidence and a recorded task extension.
+
+The historical-name retirement owns only that matrix and docstring in
+`tests/shared_table_shape_test.py` and its obsolete `ABSENCE_CHECKS` exemption
+in `tests/resolution_cleanup_test.py`. Keep the latter's frontend architecture
+and replaced-name source checks. Retain the old source revision and Linux
+thirteen-case Nix result as migration evidence. The existing model owner must
+pass the remaining catalog/row-shape and codec tests, and the existing source
+suite must pass the cleanup checks. With no other changes the model owner
+collects 228 cases after retirement. The current hosted model owner must pass
+on both platforms; historical passes do not establish the new source's result.
 
 Nix must execute the formerly failing installed-consumer checks through the
 existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
