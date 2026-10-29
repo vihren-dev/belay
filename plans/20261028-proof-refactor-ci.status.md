@@ -1145,7 +1145,7 @@ extension. It removes all thirteen `test_replaced_model_names_absent` cases,
 the obsolete module sentence and the `ABSENCE_CHECKS` scanner exemption.
 The shape and codec test bodies, `compile_checks`, its callers and the source
 architecture guards remain unchanged. The task remains IN PROGRESS pending
-independent review and combined hosted acceptance.
+combined hosted acceptance.
 
 The one-time compiled audit uses
 `/nix/store/vi1d8p2dwnyg6fjb6gm6isjan4s7sygz-sqlite-verifier-theorem-dependencies/dependencies.json`.
@@ -1175,3 +1175,9 @@ environment and deadlines. Package producers are reused. The command, log,
 selection and JUnit evidence are retained in `build/retired-names/`.
 An initial permission-review timeout occurred before the command started;
 the permitted launch retry executed this single measurement successfully.
+
+Implementation commit `190608886e5b22dbed2a081a61d6975629faaf7b` passed
+independent Claude review `20261029T100405Z-19060888` with zero must and zero
+should findings. The two retained tests are Nix-accepted; the full combined
+model and both-platform hosted acceptance remain pending. This retirement
+does not complete the wider CI repair task.
