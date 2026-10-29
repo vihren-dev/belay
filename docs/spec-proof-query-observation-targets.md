@@ -1,6 +1,11 @@
 # Query and observation change targets
 
-Date: 2026-10-27. Revised: 2026-10-28. Status: D1 and D4 implementation in progress.
+Date: 2026-10-27. Revised: 2026-10-28.
+Status (2026-10-29): D1 and D4 implementation complete.
+The [D1 completion record](../plans/20261028-query-output-facts.status.md) and
+[D4 completion record](../plans/20261028-execution-profiles.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: designers and reviewers.
 Contract: [query and observation specification](spec-proof-observations.md),
 implementing [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).

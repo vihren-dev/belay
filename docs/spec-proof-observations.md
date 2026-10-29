@@ -1,6 +1,10 @@
 # Query outputs and execution observation proofs
 
-Date: 2026-10-26. Status (2026-10-28): D1 and D4 implementation in progress.
+Date: 2026-10-26. Status (2026-10-29): D1 and D4 implementation complete.
+The [D1 completion record](../plans/20261028-query-output-facts.status.md) and
+[D4 completion record](../plans/20261028-execution-profiles.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
 Evidence: [query and observation findings](../experiments/proof-boundaries/query-observation-findings.md).

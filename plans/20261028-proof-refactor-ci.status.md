@@ -1350,3 +1350,22 @@ Task-path correction `ea80f976` passed independent Claude review
 `20261029T103547Z-ea80f976` with zero must and zero should findings. It changes
 only the ownership description and integration record; the accepted core
 measurement source and Nix inputs remain unchanged.
+
+## Proof completion metadata, 2026-10-29
+
+A bounded source and evidence audit at `d4d5af85` found no substantive gap in
+the nine completed ADR25/26 proof tasks. Their eighteen task/status records
+match published `c9fa3f73`. All 1,458 tracked Lean paths and hashes match the
+accepted Nix count: 87,018 maintained lines, a reduction of 1,012 from 88,030.
+The accepted dependency report, nine proof-cost owner sources and three unique
+premise boundaries remain unchanged. The existing 30/30 capability result
+still applies; this audit performs no new build, count or profile.
+
+The audit is retained at `build/final-core-preflight/audit.md`, with its
+machine-readable source checks in `source-evidence-recheck.json` beside it.
+Six specification headers now link to the completed proof-task records while
+retaining their assignment-baseline inventories and D7 deferral. The separate
+CI repair remains IN PROGRESS pending combined checks, current-head hosted
+acceptance on both platforms, publication and review. The 45,000-line goal
+remains outstanding. Documentation-link checks cover the metadata edits as
+local diagnostics; independent review follows this commit.

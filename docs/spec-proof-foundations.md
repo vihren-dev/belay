@@ -1,8 +1,12 @@
 # Resolver certificates and ownership of proof primitives
 
 Date: 2026-10-26. Revised: 2026-10-28 against `3e2212ed`.
-Status (2026-10-28): D3 in progress; D6 implemented with final acceptance pending;
-D7 remains deferred. The source descriptions below record the assignment baseline.
+Status (2026-10-29): D3 and D6 implementation complete; D7 remains deferred.
+The [D3 completion record](../plans/20261028-resolver-certificate.status.md) and
+[D6 completion record](../plans/20261028-proof-primitive-imports.status.md) record
+proof acceptance and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
+The source descriptions below record the assignment baseline.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).
 Evidence: [resolver and import findings](../experiments/proof-boundaries/resolver-import-findings.md)

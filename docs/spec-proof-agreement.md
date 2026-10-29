@@ -1,6 +1,10 @@
 # Source agreement and expression congruence
 
-Date: 2026-10-26. Status (2026-10-28): D2 and D5 implemented; final acceptance pending.
+Date: 2026-10-26. Status (2026-10-29): D2 and D5 implementation complete.
+The [D2 completion record](../plans/20261028-source-agreement.status.md) and
+[D5 completion record](../plans/20261028-expression-congruence.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: implementers and reviewers.
 Decision: [ADR 0026 D2 and D5](adr-0026-semantic-proof-boundaries.md).
 Evidence: [source and expression findings](../experiments/proof-boundaries/source-expression-findings.md).

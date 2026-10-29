@@ -1,7 +1,11 @@
 # Resolver and foundation change targets
 
-Date: 2026-10-27. Revised: 2026-10-28. Status: D3 in progress;
-D6 implemented with final acceptance pending; D7 remains deferred.
+Date: 2026-10-27. Revised: 2026-10-28.
+Status (2026-10-29): D3 and D6 implementation complete; D7 remains deferred.
+The [D3 completion record](../plans/20261028-resolver-certificate.status.md) and
+[D6 completion record](../plans/20261028-proof-primitive-imports.status.md) record
+proof acceptance and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: designers and reviewers.
 Contract: [resolver and foundation specification](spec-proof-foundations.md).
 Decisions: [ADR 0026 D3, D6 and D7](adr-0026-semantic-proof-boundaries.md).

@@ -1,6 +1,10 @@
 # Source and expression agreement targets
 
-Date: 2026-10-27. Status (2026-10-28): D2 and D5 implemented; final acceptance pending.
+Date: 2026-10-27. Status (2026-10-29): D2 and D5 implementation complete.
+The [D2 completion record](../plans/20261028-source-agreement.status.md) and
+[D5 completion record](../plans/20261028-expression-congruence.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: designers and reviewers.
 Scope: [ADR 0026 D2 and D5][adr] and [agreement specification][spec].
 Production baseline reviewed 2026-10-28: `3e2212ed6983`. Reconcile this inventory with the
