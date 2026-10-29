@@ -125,8 +125,11 @@
   ],
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
-    "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_resolution_mutants_test.py",
     "tests/conformance_rebuild_mutants_test.py"
+  ],
+  "queryMutants": [
+    "tests/conformance_query_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"

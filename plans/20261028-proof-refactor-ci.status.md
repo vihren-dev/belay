@@ -1244,3 +1244,82 @@ There are no live jobs or pollers from this run. Its complete failure set is
 covered by the reviewed core, historical-name and JSON/date follow-ups.
 The CI task remains IN PROGRESS pending those repairs' combined and hosted
 acceptance on the updated source.
+
+## Bounded core measurements, 2026-10-29
+
+Implementation follows reviewed task `fd343a1f`, rebased onto coordinator `26e23e78`.
+All seven frozen edited-file hashes and all five focused Nix derivation
+identities stayed unchanged across that rebase; its additional changes are
+outside the mutant inputs. Comparison uses the existing NULL/operator guard separately from
+integer/text representation guards (one and two mutants). Evaluation separates
+its three aggregate rules from four ordering/window rules. The existing key and
+alias tables become separate five-mutant measurements; UPSERT and conflict
+algorithms become separate seven- and ten-mutant measurements.
+
+Focused Nix diagnosis first executed the four previously unrun measurements:
+query resolution 131.996 seconds, keys/aliases 165.648, UPSERT/algorithms
+175.327 and rebuild 99.773. All four passed in 572.954 seconds at
+`/nix/store/yhv80a62wrmngqglc81skc5nxpfvwwmc-sqlite-verifier-test-core-followup-tails-1/junit.xml`.
+This report uses the original test file captured before these grouping edits.
+It supplies the retained rebuild result and the evidence for further splits;
+changed and moved measurements receive their own final-source checks below.
+The exact-head hosted comparison ratio, 284.33/188.49, puts the earlier hosted
+194.54-second key group near 293 seconds and the 218.56-second conflict group
+above 300 seconds if those workloads scale similarly. This is calibration for
+grouping, not evidence that either workload passed or failed on macOS.
+
+The query-resolution measurement moves to
+`tests/conformance_query_resolution_mutants_test.py`. Its direct path-prefix
+filter selects the same six mutants and native cases. The existing `mutants`
+owner now contains six resolver measurements, query resolution and rebuild;
+`queryMutants` contains the eight comparison/evaluation/key/conflict measurements.
+Both owners therefore have 2,400 seconds of summed per-test limits under the
+unchanged 2,700-second aggregate limit. This static budget is not hosted timing
+acceptance. The existing inventories and CI matrix own every file exactly once;
+other owners, the Nix suite helper and all deadline definitions are unchanged.
+
+The one-time independent partition audit retains all 43 exact mutation edits,
+guards, target mappings, authored supplier modules and selected native
+definitions. It checks disjoint complete unions for each split and identical
+captured inputs for moved query resolution. Conformance tables, native replay,
+shared measurement code, deadline inputs and the unaffected resolver/rebuild
+test files retain their baseline bytes. The audit is retained as
+`core-followup-partition-audit.json` and `.md`; it adds no permanent test or runner.
+The final query test SHA256 is
+`2c3684ee2f029bd2410c3b4b9d0631bb293441de0e6d25e10adbd5ebd7523bb8`;
+the moved resolution test SHA256 is
+`b891d40f17c01c51aa264b83312993a48e7907ac5b682bf4bc2b757f9829b2cd`.
+
+All nine final-source focused cases pass with zero errors, failures or skips.
+
+| Focused measurement | Case seconds | Command seconds |
+| --- | --- | --- |
+| comparison | 139.154, 148.356 | 290.136 |
+| evaluation | 105.884, 108.803 | 217.146 |
+| keys | 119.327, 123.641 | 245.389 |
+| conflicts | 107.998, 152.105 | 262.540 |
+| resolution | 126.755 | 129.097 |
+
+Their immutable JUnit reports are:
+
+- `/nix/store/vhpz3abk9349m6w3fwy62p8cnpgbb0wv-sqlite-verifier-test-core-followup-comparison-1/junit.xml`
+- `/nix/store/x4f0vqaxykbyyhylk8qk1kal23bsdzwx-sqlite-verifier-test-core-followup-evaluation-1/junit.xml`
+- `/nix/store/7n1r64fcad8xjj444dmg36il7da4crx1-sqlite-verifier-test-core-followup-keys-1/junit.xml`
+- `/nix/store/90vnh6gsdqypsdv1ip012l3rp2z66yl5-sqlite-verifier-test-core-followup-conflicts-1/junit.xml`
+- `/nix/store/2i4ssmnyqhvqn1cg3d5p1c4fkrqp92cp-sqlite-verifier-test-core-followup-resolution-1/junit.xml`
+
+Each final measurement uses its actual scheduled owner with only a focused
+pytest selection and the recorded `LEAN_NUM_THREADS=2` override. Commands use
+Nix `--max-jobs 1 --cores 3`, sandboxing and the existing outer, suite, test and
+compiler deadlines. The local Lean thread setting differs from hosted execution;
+these outputs are not exact CI-owner cache hits or proof of hosted headroom.
+No production, conformance, oracle, compiler invocation or measurement helper
+changed. Source hashes, full commands, terminal logs and JUnit outputs accompany
+the partition audit.
+
+Combined acceptance and the final current-head Linux/macOS run remain the
+coordinator's gates. This CI task remains IN PROGRESS.
+
+The existing ownership, workflow, documentation, bounded-command, platform
+flake-target and report-link checks cover the routing change. Independent
+commit review and coordinator acceptance remain pending at this checkpoint.

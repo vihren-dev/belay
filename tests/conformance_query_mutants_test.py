@@ -1,14 +1,16 @@
 """Query, key, alias and conflict mutants detect changed model rules through authored cases.
 
 Each measurement records its targets with native SQLite, requires the base model to agree,
-and checks that every mutant changes a verdict. The general Nix owner also contains resolver
-and rebuild measurements. Other mutant files have separate scheduled owners because the
-combined general suite exceeded its 2,700-second hosted limit. The ownership inventory is
+and checks that every mutant changes a verdict. The query owner is separate from query
+resolution, resolver and rebuild measurements because the combined suite exceeded its 2,700-second
+hosted limit. Comparison and evaluation use semantic groups because comparison approached
+the unchanged 300-second test limit and evaluation exceeded it. The ownership inventory is
 `tests/nix_suites.json`; all owners retain the same harness and deadlines.
 """
 
 from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -21,10 +23,13 @@ from tests.mutant_sets import Mutants, Targets, measure_set
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
+AGGREGATE_GUARDS = {"rule:Aggregate.eval", "rule:extremum", "rule:queryGroups"}
+"""Aggregate evaluation is measured separately from ordering and windowing."""
+
 
 def query_mutant_table(selected: Callable[[str], bool]) -> tuple[Mutants, Targets]:
     """The query mutants of `conformance.query_mutants` whose edited model file satisfies
-    `selected`, with their targets: three measurements, each within the time limit."""
+    `selected`, with their original target mappings."""
     mutants = {name: mutant for name, mutant in query_mutants.MUTANTS.items()
                if selected(source_edits(mutant)[0][0])}
     return mutants, {name: query_mutants.TARGETS[name] for name in mutants}
@@ -35,38 +40,45 @@ def is_resolution_file(path: str) -> bool:
     return path.startswith(query_mutants.SQLITE + "Resolution/")
 
 
-def test_every_comparison_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize("null_operator", [True, False], ids=["null-operator", "representations"])
+def test_every_comparison_mutant_changes_a_verdict(runtime_root: Path, null_operator: bool) -> None:
     """The authored query cases notice every changed rule of the comparison of two values
     (the mutants of `conformance.query_mutants` in `Comparison.lean`)."""
-    measure_set(runtime_root, [authored_queries],
-                [query_mutant_table(lambda path: path == query_mutants.COMPARISON)])
+    mutants, targets = query_mutant_table(lambda path: path == query_mutants.COMPARISON)
+    selected = {name: mutant for name, mutant in mutants.items()
+                if (query_mutants.GUARDS[name] == "rule:Comparison.apply") == null_operator}
+    measure_set(runtime_root, [authored_queries], [(selected, {name: targets[name] for name in selected})])
 
 
-def test_every_query_evaluation_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize("aggregates", [True, False], ids=["aggregates", "ordering-and-window"])
+def test_every_query_evaluation_mutant_changes_a_verdict(runtime_root: Path, aggregates: bool) -> None:
     """The authored query cases notice every changed rule of ordering, aggregates, `LIMIT` and
     `OFFSET` (the mutants of `conformance.query_mutants` in `QueryEval.lean` and
     `QueryResults.lean`)."""
-    measure_set(runtime_root, [authored_queries],
-                [query_mutant_table(lambda path: path != query_mutants.COMPARISON and not is_resolution_file(path))])
+    mutants, targets = query_mutant_table(
+        lambda path: path != query_mutants.COMPARISON and not is_resolution_file(path))
+    selected = {name: mutant for name, mutant in mutants.items()
+                if (query_mutants.GUARDS[name] in AGGREGATE_GUARDS) == aggregates}
+    measure_set(runtime_root, [authored_queries], [(selected, {name: targets[name] for name in selected})])
 
 
-def test_every_query_resolution_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query cases notice every removed prepare error of the resolution of
-    queries (the mutants of `conformance.query_mutants` in the `Resolution` folder of the
-    model)."""
-    measure_set(runtime_root, [authored_queries], [query_mutant_table(is_resolution_file)])
-
-
-def test_every_key_and_alias_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize(("cases", "table"), [
+    pytest.param(authored_keys, key_mutants, id="keys"),
+    pytest.param(authored_aliases, alias_mutants, id="aliases"),
+])
+def test_every_key_and_alias_mutant_changes_a_verdict(
+        runtime_root: Path, cases: ModuleType, table: ModuleType) -> None:
     """The authored key and rowid alias cases notice every changed rule of unique key values and
     rowid aliases (`conformance.key_mutants`, `conformance.alias_mutants`)."""
-    measure_set(runtime_root, [authored_keys, authored_aliases],
-                [(key_mutants.MUTANTS, key_mutants.TARGETS), (alias_mutants.MUTANTS, alias_mutants.TARGETS)])
+    measure_set(runtime_root, [cases], [(table.MUTANTS, table.TARGETS)])
 
 
-def test_every_upsert_and_algorithm_mutant_changes_a_verdict(runtime_root: Path) -> None:
+@pytest.mark.parametrize(("cases", "table"), [
+    pytest.param(authored_upserts, upsert_mutants, id="upsert"),
+    pytest.param(authored_algorithms, algorithm_mutants, id="algorithms"),
+])
+def test_every_upsert_and_algorithm_mutant_changes_a_verdict(
+        runtime_root: Path, cases: ModuleType, table: ModuleType) -> None:
     """The authored UPSERT and conflict algorithm cases notice every changed rule of conflict
     handling (`conformance.upsert_mutants`, `conformance.algorithm_mutants`)."""
-    measure_set(runtime_root, [authored_upserts, authored_algorithms],
-                [(upsert_mutants.MUTANTS, upsert_mutants.TARGETS),
-                 (algorithm_mutants.MUTANTS, algorithm_mutants.TARGETS)])
+    measure_set(runtime_root, [cases], [(table.MUTANTS, table.TARGETS)])

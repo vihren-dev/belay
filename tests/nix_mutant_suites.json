@@ -1,5 +1,6 @@
 [
   "mutants",
+  "queryMutants",
   "valueMutants",
   "jsonDateMutants",
   "queryFeatureMutants",
