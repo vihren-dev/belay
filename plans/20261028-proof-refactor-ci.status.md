@@ -1130,3 +1130,10 @@ catalog/row-shape, codec and source-architecture contracts. This applies the
 owner's lean-suite direction without changing the no-alias rule or SQL
 semantics. The expected model count is 228. No implementation has started;
 independent task review precedes isolated worker assignment.
+
+Task extension `4ba8dbda` passed independent Claude review
+`20261029T094557Z-4ba8dbda` with zero must and zero should findings. The reviewer
+checked the thirteen parameters and retained ADR 0008 source guards. The root
+also verified the retained main/core job log hashes and the 241 model case
+records. The retirement is ready for isolated implementation; core-mutant
+timing work has the local Nix execution slot first.
