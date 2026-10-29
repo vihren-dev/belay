@@ -1095,3 +1095,8 @@ says to split the existing comparison/evaluation measurements further at
 boundaries inside their tables. This corrects the ambiguous wording without
 changing scope. The existing `docs_test.py` check covers this documentation
 change; the clarification receives its own independent review before assignment.
+
+The clarification commit `92c9ee4f` passed independent Claude review
+`20261029T094201Z-92c9ee4f` with zero must and zero should findings. The focused
+documentation check passed before that commit. The core task is ready for an
+isolated implementation worker; no core grouping code has changed yet.
