@@ -101,9 +101,21 @@ views. Review finding 1 was rejected with a clarification that model windows
 mean LIMIT/OFFSET, not SQL OVER. Finding 2 was fixed by removing numeric rule
 priorities and explaining the shared registry's imported-library purpose.
 
-Remaining: independent review of this integrated revision, required full/verdict
-and task-end checks, then owner review of the complete cover. No production
-automation is implemented here.
+Integrated revision `2dab0fe0` received independent Claude review
+`20261029T080752Z-2dab0fe0` with no findings. The conformance verdict passed:
+`/nix/store/ycpq2vi5qagfavihhv7pr4p4m0piq0wj-sqlite-verifier-verdict`, with
+5,653 agreements, 2,109 unsupported observations and no other result classes.
+The Nix documentation check covered all 6,065 authored declarations:
+`/nix/store/qf8fll0jxlnls4v1djqznhg3z6ry2hk4-sqlite-verifier-public-documentation-1`.
+
+`just test-nix` completed its host process checks. This records the required
+workflow check, not additional proof or conformance acceptance evidence.
+An initial `just test-full` run stopped because the host sandbox denied `ps`
+to the existing process-cleanup test. The owner approved the unsandboxed rerun;
+its source checks passed and its Nix suites are running.
+
+Remaining: finish `just test-full` and `just test-scheduled-checks`, then owner
+review of the complete cover. No production automation is implemented here.
 
 ## Open design axes
 
