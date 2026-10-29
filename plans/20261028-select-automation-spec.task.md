@@ -1,0 +1,86 @@
+# Compositional SELECT automation: specification and experiments
+
+Created 2026-10-28. Status: IN PROGRESS.
+Audience: team. Status: [checkpoint](20261028-select-automation-spec.status.md).
+
+## Required outcome
+
+ADR 0027 and its accompanying specification prepare reasonably general SELECT
+proof automation for implementation. The owner requests experiments and the
+resolution of unclear design points before implementation. The motivating
+example is a proof that selecting a NOT NULL customer column never returns NULL
+on any valid database of the given schema, including a database with no rows.
+The scope includes properties of collections, not only this example or unary
+row predicates. No production tactic is implemented by this task.
+The design follows the [Lean simplification goal](../docs/lean-simplification-goal.md):
+general rules should replace duplicated query proofs without capability loss.
+
+The design explains how proved rules for source acquisition, expressions,
+filtering, grouping, aggregation, projection, distinctness, sorting, slicing,
+compound queries and nested queries compose. It specifies how automation uses
+those rules through the existing SQL program and tactic interfaces. It preserves
+SQL errors, unsupported observations, nondeterminism, parameters and execution
+context. It distinguishes semantic coverage, automatic discharge and honest
+residual obligations; it does not promise decision of arbitrary Lean goals.
+
+The artifacts state observable success and failure behavior, the public claim
+forms, the rule-extension mechanism, execution bridges, budgets and proof trust.
+They identify which model forms are supported now and which require separate
+model work. All material choices and experimental limits are visible for owner
+review. The accompanying acceptance cases must expose vacuity and unsound
+shortcuts, as well as successful proofs on abstract databases.
+
+The artifacts also instruct the implementer what to remove. The project has no
+users, so replaced code is deleted. The ADR names what it supersedes, a
+retirement inventory names each replaced file, and the acceptance contract makes
+an empty required column part of completion. Owner decisions of 2026-10-29:
+`Holds`, `Empty` and `Fails` stay as abbreviations; ADR 0026 D1 characterizations
+are retired; automatic closure is staged with a core set. The owner also chose
+to retire resolution-shape laws where the ADR 0026 D3 certificate replaces
+them; review found that the certificate assumes resolution and gives no
+resolution equation, so those laws are retained.
+
+## Evidence and acceptance
+
+Bounded Lean experiments exercise current automation and proof rules, including
+the initial example and representative collection, aggregate, join, nested-query
+and alternative-result cases. Experiments distinguish existing behavior from
+proposed behavior. False claims and unsupported cases cannot count as successes.
+Use the existing surface harness and Nix evidence paths where possible. Native
+SQLite is an oracle only when an experiment concerns model conformance.
+
+A small formal specification and semantic review cover make the trust and
+completion contract reviewable. The formalization must identify assumptions and
+avoid claiming that an abstract contract proves concrete tactic conformance.
+All experiment processes have explicit timeouts. Each coherent commit gets
+focused checks and independent review. The specification boundary requires
+the focused Nix experiment checks and `just verdict`; task-end checks are
+`just test-nix` and `just test-scheduled-checks`. On 2026-10-29 the owner chose
+focused Nix evidence for this specification-only task and deferred the full
+suite. A deferred full suite is not a passing result. This exception does not
+change the implementation acceptance matrix or the repository's general cadence.
+Only Nix results are acceptance evidence under the repository rules. There are
+no model-prediction changes or new mutant tables in this specification task.
+Required checks that cannot run remain findings.
+
+## Existing code and constraints
+
+Source baseline: main commit `187ea510`, which includes ADR 0025 and ADR 0026
+(PR 297). The original baseline `3e2212ed` predated them; the branch was
+reconciled on 2026-10-29.
+Relevant surface files: `ExecutionWP.lean`, `ExecutionWPLaws.lean`,
+`ExecutionSpecifications.lean`, `ReadStepRule.lean`, `SqlRun.lean`,
+`SqlRunGoals.lean`, `AutoSearch.lean`, `SqlSimpLaws.lean`, `CheckAutoProof.lean`.
+Relevant model files: `QueryResults.lean`, `QueryRun.lean`,
+`QueryFunctions.lean`, `Subqueries.lean`, `PossibleResults.lean`, and the
+`Simple*` output laws. Existing rules already handle SQL program sequencing and
+all permitted execution branches. SELECT-internal rules must integrate with
+those semantics rather than introduce a competing execution model.
+
+The owner-local consumer experiments, outside this repository, in
+`../belay-ux-test/QueryProgramSketch.lean` and
+`SelectTableProperty.lean` establish feasibility of pure composition and a simple
+table bridge. They are local prototypes, not upstream acceptance evidence.
+In particular, pure `Query.results` properties alone do not establish successful
+execution or cover all possible outputs. A false precondition can make a triple
+vacuously true; tests must distinguish that from a usable schema-based theorem.
