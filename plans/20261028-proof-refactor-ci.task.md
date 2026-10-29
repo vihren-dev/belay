@@ -188,8 +188,9 @@ The relevant existing tests are the SQL-file/root/record/Lake-input suites,
 `conformance/resolve_mutants.py` and `conformance_resolve_mutants_test.py`.
 The extended scope includes `Resolution/QueryExprs`, direct imports needed by
 operand-equation proof consumers, and the join measurement in
-`tests/conformance_table_mutants_test.py`. Query-resolution measurement remains
-in `tests/conformance_query_mutants_test.py`. Keep executable and proof bodies
+`tests/conformance_table_mutants_test.py`. The core follow-up moves
+query-resolution measurement to
+`tests/conformance_query_resolution_mutants_test.py`. Keep executable and proof bodies
 unchanged when repairing the import boundary.
 
 The full-run follow-up also owns the affected arithmetic/write measurements,

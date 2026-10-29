@@ -1335,3 +1335,13 @@ six indirect Nix roots in the ignored `build/core-followup/` directory. The
 coordinator can retain that directory at the same relative path before this
 worker workspace is retired. The source, diagnostics and final measurements
 are identified separately in `core-followup-results.json`.
+
+The coordinator integrated reviewed core tip `522cd4d4`, retained the bundle
+at `build/core-followup/`, verified its sixteen file hashes and all seven
+measured source hashes, and checked the nine passing JUnit cases directly.
+Six accepted Nix outputs now have coordinator GC roots. The task's earlier
+query-resolution path now names the extracted file authorized by the core
+follow-up. This corrects the ownership description without changing scope.
+The existing documentation checks cover that edit; it receives independent
+review. The JSON/date worker now owns the shared routing files and local Nix
+slot. Combined and both-platform acceptance still remain pending.
