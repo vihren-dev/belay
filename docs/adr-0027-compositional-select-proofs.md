@@ -216,9 +216,10 @@ On adoption, this ADR supersedes:
   `UniqueLookupQuery` and their may-fail and shared-case companions). Each is a
   whole-query lemma. Their claims become acceptance cases and their negative
   examples become the "required contrast" column.
-- ADR 0026 D1, the per-family complete-output characterizations completed in
-  PR 297. A phase decomposition replaces a per-family characterization. ADR
-  0026 D2 to D6 are unaffected.
+- ADR 0026 D1, the per-family complete-output characterizations from PR 297.
+  That implementation is not in this branch; this supersession applies after
+  it is integrated. A phase decomposition replaces a per-family
+  characterization. ADR 0026 D2 to D6 are unaffected.
 - The `Query.Simple` predicate and its laws. `Simple` is a phase decomposition
   of one shape; its laws become the `filter` and `project` rules.
 
