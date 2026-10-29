@@ -1043,3 +1043,48 @@ until all ten scheduled mutant owners and the model suite execute and pass
 on both Linux and macOS at the repaired publication head. PR runs skip actual
 macOS execution, so a successful manual or scheduled run is still required.
 Both stacked PRs remain drafts, and the owner's herdr review remains unfinished.
+
+## Hosted core workload follow-up, 2026-10-29
+
+The reviewed value repair and local acceptance record were published as
+`b2f5e6b09c24a23ad46df96309f8e9068371eb16`. Manual CI run `40841195886`
+executes both platforms at that exact source. All eleven Linux jobs pass:
+91 fresh mutant measurements across ten owners and 1,440 ordinary Nix cases
+(1,340 fresh, 100 cached), without failures, errors or skips in those reports.
+All 241 model cases execute, including the four oversized-hex cases. Fifty
+writer cases execute and pass. The host checks separately retain two optional
+CLI skips and one configured-shell development-loop skip; the full local
+acceptance covers that development loop. Checked API generation passes.
+The coordinator verified the 75 retained evidence-file hashes under
+`build/final-b621/hosted-manual-40841195886/linux/`.
+
+Fresh Verdict run `40840671741` also passes at the published head. Its verified
+artifact `12883970044` retains 56 corpora, 5,653 agreements and 2,109 explicitly
+unsupported cases, with no other outcomes. The artifact SHA256 is
+`1f829bc43121613721370061931d1f922293ba88f98a97878296a03231b647ab`.
+The complete log, ZIP, parsed report and metadata are retained under
+`build/final-b621/hosted-verdict-40840671741-*`.
+
+The macOS core job `123337721407` fails in
+`test_every_query_evaluation_mutant_changes_a_verdict` at the unchanged
+300-second test limit, reporting 303.16 seconds including cleanup. Its stack
+waits in `resolve_mutants.verdicts` for `lake build VerifierConformance.Classify`;
+the log does not identify the outstanding mutant or show a semantic assertion
+failure. Six resolver groups pass. Comparison passes in 284.33 seconds.
+The suite stops with seven passes, one failure and four unrun measurements,
+after 1,449.54 seconds. A failed Nix derivation produces no report out-link,
+so there is no JUnit artifact; the complete job log and structured failure
+record are retained under `build/final-b621/hosted-manual-40841195886/macos/`.
+The log SHA256 is
+`b1f10bdf937e806d27d8d285d4899c7f23f404662ce1b44a439a932fb6e1a65b`.
+
+The existing task now covers bounded comparison/evaluation groups, focused
+evidence for the four unrun tail measurements, and static owner budgets. Exact
+mutations, native cases, guards, all limits and the current harness remain
+required. Implementation has not started. The other macOS jobs continue;
+their results can establish unchanged-owner acceptance independently.
+
+The owner explicitly approved the old `c9fa3f73` review snapshot after tab 5
+closed without comments. That approval is recorded in
+`build/final-b621/owner-review-c9fa3f73.json`. The repair snapshot in tab 6
+remains open. The task remains IN PROGRESS, and neither PR has been merged.

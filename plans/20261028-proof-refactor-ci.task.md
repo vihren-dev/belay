@@ -51,6 +51,14 @@ The seven-mutant non-arithmetic number measurement passes in 278.68 seconds,
 leaving only 21.32 seconds of test headroom. The JSON-function, JSON-each/clock
 and date/modifier measurements do not execute after that first failure.
 
+Manual run `40841195886` at `b2f5e6b0` passes every Linux mutant owner and the
+Linux main check. Its macOS core owner passes all six resolver measurements,
+then comparison passes in 284.33 seconds and query evaluation reaches the
+300-second limit (303.16 seconds with cleanup). The stack waits for a mutant
+classifier build; it does not identify the mutant or a semantic assertion
+failure. The combined evaluation group has seven mutants. Query resolution,
+keys/aliases, UPSERT/conflict algorithms and rebuild measurements remain unrun.
+
 ## Required behavior
 
 Unmodified Nix-built dependencies support real Lake consumers in the installed
@@ -111,6 +119,17 @@ requires focused timing evidence; any further split preserves its existing
 table and guard meanings. No new mutation, oracle, measurement framework or
 production definition is required.
 
+The core follow-up gives the three comparison mutants and seven evaluation
+mutants practical per-test headroom on both platforms. Use their existing
+semantic boundaries, retaining every exact edit, target and guard. The four
+unrun tail measurements require focused timing evidence; further grouping may
+be needed for their existing query-resolution, key/alias, conflict and rebuild
+rules. Preserve the unchanged model's agreement and the existing native case
+suppliers. Base setup and cleanup count toward each limit. Additional groups
+must also fit their static owner's aggregate limit; use the existing ownership
+mechanism when a split requires another owner. No test/harness framework,
+production change, larger limit or automatic retry is part of this follow-up.
+
 The oversized-hex default test must compare the same prepare phase and error
 message for both signs and SQLite 3.51.0/3.46.0 within the existing 15-second
 Lean subprocess limit. The generated fixture imports only the dependencies
@@ -147,6 +166,16 @@ Arithmetic and FROMless measurements retain their accepted contracts. The
 JSON-function tail has six mutants; JSON-each/clock and date/modifier each have
 ten. These are relevant diagnostic surfaces, not permission to alter the
 unaffected model or the already accepted mutant owners.
+
+The core follow-up owns `tests/conformance_query_mutants_test.py`, narrowly
+extracted files for its existing measurements if needed, and the existing
+inventories, matrix and documentation. Its tables are `query_mutants`,
+`key_mutants`, `alias_mutants`, `upsert_mutants` and `algorithm_mutants` under
+`conformance/`; their entries, target maps and guard meanings stay unchanged.
+The resolver and rebuild files keep their accepted measurement bodies and may
+change static ownership only. The rebuild tail still needs a timing result.
+Do not change the other accepted owners or the pending JSON/date/table work
+without further evidence and a recorded task extension.
 
 Nix must execute the formerly failing installed-consumer checks through the
 existing `surface` and `surfaceS6` suite owners. Confirm dependency native artifacts
@@ -185,6 +214,16 @@ grouping but cannot establish hosted success. Preserve already accepted
 measurements where their source inputs match. The existing ownership/routing
 checks must cover the extra static owner; no new permanent partition test is
 needed. The full hosted completion gate above still applies.
+
+Core follow-up acceptance covers every resulting comparison/evaluation group
+and all four previously unrun tail measurements through focused existing Nix
+owners. Retain exact identities, target/guard maps, native case suppliers and
+their disjoint union. Record each duration, total owner workload and any local
+resource settings that differ from hosted execution. The earlier Linux passes
+are diagnostic evidence where an edited test file changes the Nix source;
+they are not cache hits for the new file. Use the existing routing checks and
+one-time membership audit, with no new permanent partition gate. Successful
+current hosted execution on both platforms remains required.
 
 Apply normal review and check cadence. Full acceptance uses the coordinator's
 build slot; do not run whole mutant suites locally. No new CI service, registry,
