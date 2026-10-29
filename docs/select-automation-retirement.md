@@ -23,12 +23,19 @@ counts are from main `187ea510` and are for orientation only.
 
 ## Surface query forms (ADR 0017 S4)
 
-Each file proves a `Script.outputOn_<form>` complete-output equation (ADR 0026
-D1) and the `Holds`, `Empty` and `Fails` claims of one syntactic shape over
-every database. The shape is a whole-query lemma, which D3 says automation must
-not need. Their claims become the "required contrast" column of the acceptance
-matrix. Line counts are the current ones after PR 297; the fourteen files total
-1,242 lines.
+Each form file is about one syntactic shape over every database and holds one
+or more of: a `Script.outputOn_<form>` complete-output equation (ADR 0026 D1),
+`Holds`, `Empty` or `Fails` claim theorems, or schema-hint functions.
+`CountQuery`, `AggregateQuery`, `ColumnQuery`, `ExistsQuery` and
+`NotExistsQuery` hold only output equations; `SelectOneFrom`, `SelectNoFrom`,
+`DuplicateKeyQuery` and `FilteredDuplicateKeyQuery` hold both; `UniqueLookupQuery`
+holds one `Holds` claim; `ExistsMayFail` and `SelectOneMayFail` hold the
+`Script.not_claims_*` negative claims; `QueryCases` holds the `*.iff_step`
+case splits and the prepare-error output equation; `SampleQueryHints` holds
+the hint functions. The shape is a whole-query lemma,
+which D3 says automation must not need. The equations and claims become the
+"required contrast" column of the acceptance matrix. Line counts are the
+current ones after PR 297; the fourteen files total 1,242 lines.
 
 | File under `packages/belay/Belay/Sqlite/` | Acceptance cover | Status |
 | --- | --- | --- |
