@@ -125,13 +125,30 @@ caused this stop. Targeted cleanup approval was requested for the packaged runti
 Rust build cache and four local Lake build directories listed in the owner question.
 On the next owner resume, the gate passed with 17.24 GiB free. The requested
 cleanup is no longer needed, and this task did not delete those artifacts.
-`just test-full` has restarted with the previously approved sandbox exception.
+The resumed `just test-full` passed its host source checks and reached the final
+`surfaceChecks` suite. It then exceeded the existing 2700-second Nix recipe
+deadline (exit 124), with no assertion failure observed. The surface suite had
+reported 376 passes and two Linux-only skips. The parser-library suite had one
+Linux-only sanitizer skip. The aggregate full-check result remains incomplete.
+
+After temporary files were released, the resource gate passed again. A retry
+found that several completed, unrooted Nix outputs had disappeared, including
+the surface and corpora reports, so it started rebuilding them. The cause of
+their removal is not established; those deleted reports are not retained
+acceptance evidence. The protected SELECT experiment report remains available.
+The owner asked about faster development-test commands. The retry was stopped
+before another complete rebuild; no resource policy or timeout was changed.
 
 The task-created experiment workspace was confirmed empty after integration and
 removed. Five diagnostic files were preserved in `build/deployment-target-research`;
 `build/select-automation-tests` retains the successful Nix report as a GC root.
-No other workspace or cache was removed by this task. The full check is running;
-the scheduled check will follow it.
+No other workspace or cache was removed by this task. No full or scheduled
+check is currently running. Existing `dev-build` and `dev-verdict` recipes give
+incremental local feedback; `test-cases` selects tests on an existing runtime.
+Surface fixtures cannot yet use the local checkout directly: they expect a
+runtime-local Lean executable and co-located native libraries, while Lake
+keeps dependency libraries in their package directories. There is no `dev-test`
+recipe. A local adapter must also retain the configured pytest timeout support.
 
 Remaining: finish `just test-full` and `just test-scheduled-checks`, then owner
 review of the complete cover. No production automation is implemented here.
