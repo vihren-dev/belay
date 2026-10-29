@@ -142,16 +142,25 @@ before another complete rebuild; no resource policy or timeout was changed.
 The task-created experiment workspace was confirmed empty after integration and
 removed. Five diagnostic files were preserved in `build/deployment-target-research`;
 `build/select-automation-tests` retains the successful Nix report as a GC root.
-No other workspace or cache was removed by this task. No full or scheduled
-check is currently running. Existing `dev-build` and `dev-verdict` recipes give
+No other workspace or cache was removed by this task. Existing `dev-build`
+and `dev-verdict` recipes give
 incremental local feedback; `test-cases` selects tests on an existing runtime.
 Surface fixtures cannot yet use the local checkout directly: they expect a
 runtime-local Lean executable and co-located native libraries, while Lake
 keeps dependency libraries in their package directories. There is no `dev-test`
 recipe. A local adapter must also retain the configured pytest timeout support.
 
-Remaining: finish `just test-full` and `just test-scheduled-checks`, then owner
-review of the complete cover. No production automation is implemented here.
+On 2026-10-29 the owner selected focused Nix evidence and deferred the full
+suite for this specification-only task. The task's validation requirement now
+records that exception; the incomplete full run is not reported as passing.
+`just test-scheduled-checks` passed: 50 writer tests, no failures, errors or skips,
+36.011 seconds. Report:
+`/nix/store/93f486vgr58hk2q5cd7axa1gmrprh5g1-sqlite-verifier-test-writers-1/junit.xml`.
+The normal `build/nix-tests-scheduled` root retains that report. No mutant suite
+ran. The task-only validation amendment passed the three documentation-link
+process checks; these are not additional Nix proof evidence.
+Remaining: owner review of the complete cover. No production automation is
+implemented here. No full or scheduled check is running.
 
 ## Open design axes
 
