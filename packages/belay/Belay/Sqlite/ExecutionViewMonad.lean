@@ -60,12 +60,8 @@ theorem Sql.View.equiv_of_program_eq {α : Type} {first second : Sql α}
   subst second
   have observed result branch : left.fullObservation state result = right.fullObservation state result :=
     (fullObservation_eq_iff _ _ _ _ _).mpr ⟨Prod.ext rfl (projections result branch), rfl, rfl⟩
-  refine ⟨observed _ (Sql.Branch.actual first _ _ _), ?_⟩
-  intro seen
-  constructor
-  · rintro ⟨result, branch, equal⟩
-    exact ⟨result, branch, (observed result branch).symm.trans equal⟩
-  · rintro ⟨result, branch, equal⟩
-    exact ⟨result, branch, (observed result branch).trans equal⟩
+  exact observationProfile_transport (show first.EquivAt first state from rfl)
+    (Sql.Branch.actual first _ _ _) (Sql.Branch.actual first _ _ _)
+    (fun one two branch _ equal => by cases equal; exact observed one branch)
 
 end Belay.Sqlite

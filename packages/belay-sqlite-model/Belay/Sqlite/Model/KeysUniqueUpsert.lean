@@ -119,7 +119,7 @@ end LiteralData
 algorithm without foreign key rules and trigger programs ({lean}`(none : Option Resolved.WriteRules)`),
 and database: if the database satisfies {name}`Database.KeysUnique`, the database of the effect of
 {name}`runStatement` satisfies it too, on success and on every error, which is more than
-{name}`Effect.KeysUnique` asks. It assumes nothing about the support check. Proof sketch: the
+{name}`Effect.Satisfies` for {name}`Database.KeysUnique` asks. It assumes nothing about the support check. Proof sketch: the
 statement stores the table of {name}`LiteralData.upsertSummary` at the target, which satisfies
 the atom ({name}`LiteralData.upsertSummary_keysUnique`), with {name}`Database.KeysUnique.setRows`. -/
 theorem runStatement_upsert_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)

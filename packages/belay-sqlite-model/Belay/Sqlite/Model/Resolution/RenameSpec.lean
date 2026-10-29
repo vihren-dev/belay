@@ -8,7 +8,7 @@ set_option doc.verso true
 /-! The resolution laws of ALTER TABLE RENAME TO and RENAME COLUMN: a successful resolution is a prepare error
 that keeps the catalog, or the rewrite of the catalog by {lit}`renameCatalog`, whose catalog is supported. The
 catalog change of each is one {name}`Belay.Sqlite.Model.CatalogStep`, and the catalog after it is the catalog
-change of its resolved statement. {lit}`NamesSpec.lean` and {lit}`ResolveStateSpec.lean` use them for every
+change of its resolved statement. {lit}`NamesSpec.lean` and {lit}`ResolveStatementFacts.lean` use them for every
 statement. -/
 
 namespace Belay.Sqlite.Model

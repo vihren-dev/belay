@@ -1,3 +1,5 @@
+import Belay.Sqlite.Model.DatabaseConstraintChecks
+import Belay.Sqlite.Model.ForeignKeyFacts
 import Belay.Sqlite.Values
 
 set_option doc.verso true

@@ -1,10 +1,16 @@
 # Query and observation change targets
 
-Date: 2026-10-27. Revised: 2026-10-28. Status: PROPOSED; implementation has not started.
+Date: 2026-10-27. Revised: 2026-10-28.
+Status (2026-10-29): D1 and D4 implementation complete.
+The [D1 completion record](../plans/20261028-query-output-facts.status.md) and
+[D4 completion record](../plans/20261028-execution-profiles.status.md) record
+proof acceptance, retirement and publication. The separate
+[CI repair](../plans/20261028-proof-refactor-ci.status.md) remains in progress.
 Audience: designers and reviewers.
 Contract: [query and observation specification](spec-proof-observations.md),
 implementing [ADR 0026 D1 and D4](adr-0026-semantic-proof-boundaries.md).
-Source-reviewed baseline: main `3e2212ed6983`. Historical compiled experiments use
+This inventory records the pre-refactor targets. Source-reviewed baseline:
+main `3e2212ed6983`. Historical compiled experiments use
 `3fe5caef`; this inventory makes no current-main compile claim. Counts are authored declarations, not net savings.
 
 Model namespace: `Belay.Sqlite.Model`; surface namespace: `Belay.Sqlite`.
@@ -41,7 +47,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 | [NotExistsQuery](../packages/belay/Belay/Sqlite/NotExistsQuery.lean) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
 | [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
 | [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
-| [FilteredDuplicateKeyEmpty](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyEmpty.lean) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
+| `FilteredDuplicateKeyEmpty` (removed; current owner: [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean)) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
 | [TableInfoQuery](../packages/belay/Belay/Sqlite/TableInfoQuery.lean) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and
@@ -60,7 +66,7 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 
 | Current owner | Exact definitions and facts to reuse below their consumers |
 | --- | --- |
-| [QueryStatementOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryStatementOutput.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
+| [QueryOutputFacts](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
 | [SimpleQuerySteps](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_calm`, `Resolved.Statement.Calm.faultless_nil` |
 | [SelectOneSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryOutput.lean) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
 | [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
@@ -162,6 +168,7 @@ collations are independent. Only NOT IN requires non-NULL inner cells. Reuse
 | [ExecutionEquivalenceBind](../packages/belay/Belay/Sqlite/ExecutionEquivalenceBind.lean) | `Sql.EquivOn.bind`, `Sql.Equiv.bind`, `Sql.Equiv.bind_right`, `Sql.Equiv.bind_left`, `Sql.Equiv.map`, `send_append_equiv` |
 | [ExecutionViewBindFrames](../packages/belay/Belay/Sqlite/ExecutionViewBindFrames.lean), [ExecutionViewEquivalenceBind](../packages/belay/Belay/Sqlite/ExecutionViewEquivalenceBind.lean) | `Sql.View.EquivAt.bind_branch`, `Sql.View.EquivOn.bind`, `Sql.View.Equiv.bind` |
 | [ExecutionViewObservationBind](../packages/belay/Belay/Sqlite/ExecutionViewObservationBind.lean) | `Sql.View.observation_bind_return_eq`, `Sql.View.observation_bind_branch`, `Sql.View.ObservationEquivOn.bind_same` |
+| [CounterexampleActual](../packages/belay/Belay/Sqlite/CounterexampleActual.lean), [CheckProof](../packages/belay/Belay/Sqlite/CheckProof.lean) | Migrate `refuteByActualRun?` from relation-field projection to profile equality; remove the quoted `Sql.EquivAt.refl` tactic alternative and retain ordinary reflexivity and proof certification. |
 | [MigrationPatternFrames](../packages/belay/Belay/Sqlite/MigrationPatternFrames.lean) | `TranslatesAt.commutes_of_frames`, `TranslatesOn.commutes_of_frames`; retain connection/step frames |
 | [ReadCertificate](../packages/belay/Belay/Sqlite/ReadCertificate.lean), [ReadCertificatePreservation](../packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean) | Retain `ReadCertificate.moved`, `ReadCertificate.Valid.moved`, `ReadCertificate.Obligations`, `ReadCertificate.output_eq`, `ReadCertificate.preservesAt`, `ReadCertificate.preservesAt_send`: named tables can move, and general preservation requires obligations at every branch without a uniform-end-state premise |
 | [CertifiedQueryCommutation](../packages/belay/Belay/Sqlite/CertifiedQueryCommutation.lean) | Retain `ReadCertificate.step_keeps`, `sendStatements_single_keeps`, `ReadCertificate.commutesOn`, `ReadCertificate.commutesOn_send`: full commutation keeps uniform connection/count, constant-clock and admitted-context premises; sent shortcuts exclude INSERT from a query |
@@ -169,6 +176,7 @@ collations are independent. Only NOT IN requires non-NULL inner cells. Reuse
 | [SchemaStepRules](../packages/belay/Belay/Sqlite/SchemaStepRules.lean), [ControlStepRules](../packages/belay/Belay/Sqlite/ControlStepRules.lean) | Retain `Sql.check_send_createTable`, `Sql.check_send_dropPlain`, `Sql.check_send_rewrite`, `Sql.check_send_setting`, `Sql.check_send_begin`, `Sql.check_send_commit` with their connection/error premises; not query endpoint deletions |
 | [surface_claims_test.py](../tests/surface_claims_test.py) | Existing `ClaimsCount`, `ClaimsExists`, `ClaimsIn`, `ClaimsDuplicateKeys`, `ClaimsTableInfo`, `ClaimsSum`, `ClaimsUniqueLookup` fixtures use the new query facts |
 | [surface_execution_test.py](../tests/surface_execution_test.py), [surface_migration_patterns_test.py](../tests/surface_migration_patterns_test.py) | Existing `ExecutionEquivalence`, `ExecutionComposition`, `ExecutionViewComparisons`, `ExecutionViewChoices` protect branches, state, raw steps and actual choices |
+| [surface_s6_check_programs_test.py](../tests/surface_s6_check_programs_test.py) | Preserve full, weak and view actual-run refutations, migration weak-view claims, native replay and independently certified printed proofs after the relation representation changes. |
 | [surface_assertion_examples_test.py](../tests/surface_assertion_examples_test.py) | `FilteredDuplicateKeyExamples`, `GlobalSignupInvariant`: filtered/NULL/collated groups and the generic application |
 | [surface_s6_not_blocked_test.py](../tests/surface_s6_not_blocked_test.py) | `S6NotBlocked`, `S6NotBlockedLaw`: equivalence premises and NULL/collation counterexamples |
 | [InsertSelectExecutions](../tests/surface/InsertSelectExecutions.lean) | Existing execution driver: alternative next databases and failures despite actual success |

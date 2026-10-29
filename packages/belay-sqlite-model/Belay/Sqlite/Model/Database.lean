@@ -39,6 +39,15 @@ structure Database where
 def Database.table (database : Database) (position : Nat) : Option Table :=
   (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
 
+/-- For every database and position of a table in it, the catalog has that table's entry at the position
+({name}`Catalog.tableAt`). Proof sketch: {name}`Database.table` maps the entry of the catalog. -/
+theorem Database.tableAt_of_table {database : Database} {target : Nat} {table : Table}
+    (present : database.table target = some table) : database.catalog.tableAt target = some table.shape := by
+  unfold Database.table at present
+  cases found : database.catalog.tableAt target with
+  | none => simp [found] at present
+  | some shape => simp [found] at present; rw [← present]
+
 /-- A database with the named tables at positions 0, 1, … in order, each with its
 entry and rows: {lean}`Database.ofTables [(name! "t", { shape := { columns := [] }, rows := [] })]`
 has one empty table without columns. Use {lit}`Catalog.emptyDatabase` for a catalog with

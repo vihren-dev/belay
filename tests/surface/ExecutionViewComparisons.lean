@@ -50,6 +50,7 @@ even with a prior error trace. Proof sketch: all branches have the same value an
 new observation; actual branch membership supplies the converse witness. -/
 theorem weak_extra_step :
     (Sql.View.identity (.pure 7 : Sql Nat)).ObservationEquivAt (Sql.View.quiet one) initial := by
+  apply observationProfile_eq_iff.mpr
   constructor
   · rfl
   · intro observation
@@ -66,7 +67,7 @@ Proof sketch: equal full actual observations would imply the computed unequal in
 theorem not_full_extra_step :
     ¬ (Sql.View.identity (.pure 7 : Sql Nat)).EquivAt (Sql.View.quiet one) initial := by
   intro same
-  have index := congrArg (fun observed => observed.2.index) same.actual
+  have index := congrArg (fun observed => observed.2.index) (observationProfile_actual same)
   have impossible : (0 : Nat) = 1 := index
   cases impossible
 
@@ -74,7 +75,7 @@ theorem not_full_extra_step :
 Proof sketch: equality of complete actual runs would equate their unequal traces. -/
 theorem not_ordinary_extra_step : ¬ (.pure 7 : Sql Nat).EquivAt one initial := by
   intro same
-  have outputs := congrArg (fun result => result.outputs.length) same.actual
+  have outputs := congrArg (fun result => result.outputs.length) (observationProfile_actual same)
   have impossible : (0 : Nat) = 1 := outputs
   cases impossible
 
@@ -92,12 +93,6 @@ theorem identity_bridges {α : Type} (first second : Sql α) (state : ExecutionC
 #print axioms not_full_extra_step
 #print axioms not_ordinary_extra_step
 #print axioms identity_bridges
-#print axioms Sql.View.ObservationEquivAt.refl
-#print axioms Sql.View.ObservationEquivAt.symm
-#print axioms Sql.View.ObservationEquivAt.trans
-#print axioms Sql.View.EquivAt.refl
-#print axioms Sql.View.EquivAt.symm
-#print axioms Sql.View.EquivAt.trans
 #print axioms Sql.View.observation_eq_of_full
 #print axioms Sql.View.EquivAt.observation
 #print axioms Sql.View.identity_full_eq_iff

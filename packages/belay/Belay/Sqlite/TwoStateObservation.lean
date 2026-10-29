@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.TwoStateQuery
 import Belay.Sqlite.Run
 
 set_option doc.verso true

@@ -72,6 +72,7 @@ theorem clock_weak_preservation : Migration.Domain clockWrite (fun _ => True) in
     Migration.PreservesAt clockWrite (fun _ => True) one initial := by
   refine ⟨⟨True.intro, by decide +kernel⟩, ?_⟩
   intro _
+  apply observationProfile_eq_iff.mpr
   constructor
   · rfl
   · intro observed
@@ -87,7 +88,7 @@ stored rows from actual full equality and reduce the unequal dates. -/
 theorem clock_blocks_full_commutation : ¬ Migration.CommutesAt clockWrite (fun _ => True) one initial := by
   intro same
   have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0)
-    (same clock_weak_preservation.1).actual
+    (observationProfile_actual (same clock_weak_preservation.1))
   have different :
       ((Migration.before one clockWrite).runFrom initial.clock initial.index initial.connection).connection.state.database.rowsAt 0 ≠
       ((Migration.after clockWrite one).runFrom initial.clock initial.index initial.connection).connection.state.database.rowsAt 0 := by
@@ -101,7 +102,7 @@ theorem snapshot_blocks_full :
     ¬ (Sql.View.quiet one).EquivAt (Sql.View.quiet begin) initial := by
   dsimp only
   intro same
-  have snapshots := congrArg (fun observed => observed.2.connection.state.snapshot.isSome) same.actual
+  have snapshots := congrArg (fun observed => observed.2.connection.state.snapshot.isSome) (observationProfile_actual same)
   have impossible : false = true := snapshots
   cases impossible
 

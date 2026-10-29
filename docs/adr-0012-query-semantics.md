@@ -486,6 +486,11 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
    Amended 2026-10-26: the theorems of `runScriptFrom` named in the two paragraphs above are now
    `runScriptAllFrom_X` and state the invariant for every complete execution of the script (ADR 0022,
    amendment of 2026-10-26); their assumptions did not change.
+   Amended 2026-10-28 ([ADR 0025](adr-0025-compositional-preservation-proofs.md)):
+   the named per-atom run wrappers in these historical records are removed. Generic
+   run laws applied to retained invariant evidence derive the same current formulas.
+   `runScriptAllFrom_admittedWith`, `runScriptAllFrom_valid` and `runScriptStep_valid`
+   remain; surface guarantees cover every complete execution.
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.

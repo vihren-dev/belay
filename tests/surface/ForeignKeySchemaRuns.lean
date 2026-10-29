@@ -27,10 +27,10 @@ def cascadeRollback : List (Model.Resolved.Statement × List Value) :=
 /-- Every outcome database retains the schema atom by the public run theorem. -/
 theorem cascadeRollbackCompatible : (runSql cascadeRollback matching.raw).Holds
     (fun database => database.ParentSchemasCompatible matching.raw.catalog.foreignKeyMapping) := by
-  apply Belay.Sqlite.Model.runSql_parentSchemasCompatible _ _ (by decide +kernel)
+  apply Belay.Sqlite.Model.runSql_holds (Belay.Sqlite.Model.parentSchemasCompatibleKeeps _) _ (by decide +kernel)
   exact RunConditionsWith.of_unconditioned
     (unconditioned := fun statement => decide statement.KeepsParentSchema)
-    (fun _ _ accepted => of_decide_eq_true accepted) _ _ _ (by decide +kernel)
+    (fun _ _ _ _ _ accepted => of_decide_eq_true accepted) _ _ _ (by decide +kernel)
 
 example : (match runSql cascadeRollback matching.raw with
   | .success database => database == matching.raw
@@ -56,7 +56,4 @@ example : badSnapshot.database.ParentSchemasCompatible matching.raw.catalog.fore
 #print axioms Belay.Sqlite.Model.rowsKeys_parentSchemasCompatible
 #print axioms Belay.Sqlite.Model.runStatement_parentSchemasCompatible
 #print axioms Belay.Sqlite.Model.parentSchemasCompatibleKeeps
-#print axioms Belay.Sqlite.Model.runSqlFrom_parentSchemasCompatible
-#print axioms Belay.Sqlite.Model.runSql_parentSchemasCompatible
-#print axioms Belay.Sqlite.Model.runScriptAllFrom_parentSchemasCompatible
 #print axioms cascadeRollbackCompatible

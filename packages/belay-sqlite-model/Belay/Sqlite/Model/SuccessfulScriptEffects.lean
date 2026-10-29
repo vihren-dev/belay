@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.ScriptRunIndex
 import Belay.Sqlite.Model.ScriptRunSingleton
 import Belay.Sqlite.Model.SqlStateLaws
 import Belay.Sqlite.Model.Resolution.StatementCatalog
-import Belay.Sqlite.Model.Resolution.ResolveStateSpec
+import Belay.Sqlite.Model.ResolveStatementFacts
 
 set_option doc.verso true
 
@@ -104,7 +104,7 @@ theorem runScriptStep_effect {context : ResolveContext} {clock : Option Clock} {
   obtain ⟨database, effect, transition⟩ := successful_output_effect value parameters index
     resolved connection.state _ ordinary noError noStop
   refine ⟨value, database, timed, effect, ?_⟩
-  rw [advanced, transition, resolveStatement_after context connection.resolveState after statement resolved found,
+  rw [advanced, transition, (resolveStatement_certificate context connection.resolveState after statement resolved found).after,
     ResolveState.after_of_isControl connection.resolveState ordinary]
   rfl
 

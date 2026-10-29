@@ -30,6 +30,7 @@ import Belay.Sqlite.ExecutionStep
 import Belay.Sqlite.ExecutionWPLaws
 import Belay.Sqlite.ExecutionSuccess
 import Belay.Sqlite.ExecutionFresh
+import Belay.Sqlite.ExecutionProfile
 import Belay.Sqlite.ExecutionEquivalence
 import Belay.Sqlite.ExecutionEquivalenceLaws
 import Belay.Sqlite.ExecutionEquivalenceBind
@@ -128,7 +129,6 @@ import Belay.Sqlite.CountQuery
 import Belay.Sqlite.ColumnQuery
 import Belay.Sqlite.TableInfoQuery
 import Belay.Sqlite.FilteredDuplicateKeyQuery
-import Belay.Sqlite.FilteredDuplicateKeyEmpty
 import Belay.Sqlite.DuplicateKeyQuery
 import Belay.Sqlite.AggregateQuery
 import Belay.Sqlite.UniqueLookupQuery

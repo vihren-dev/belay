@@ -19,12 +19,12 @@ the complete dispatch over statement constructors. The general proof machinery
 exists, but some general lemmas import earlier specializations. Reusing them
 from those specializations would create import cycles.
 
-`StatementKeeps` quantifies over the clock, counters and parameters, while its
-condition can mention only the statement and database. `StatementKeepsReady`
+In that baseline, `StatementKeeps` quantifies over the clock, counters and parameters,
+while its condition can mention only the statement and database. `StatementKeepsReady`
 and a second run traversal compensate for that restriction. Surface execution
 then repeats the step analysis and run traversal for derived conditions.
 
-These are current maintenance problems identified in the owner's review.
+These were maintenance problems in the baseline reviewed by the owner.
 Reconciled 2026-10-28 with `main` at `3e2212ed`. Experiments used `6413afe3ff50`;
 they do not certify the added RENAME, INSERT SELECT or DROP COLUMN contracts.
 
@@ -101,6 +101,13 @@ follow by membership; explicit and resolver-derived conditions share that proof.
 Execution mode and matching limits remain explicit. Use the selected
 `statementClock` and visible counters. State readiness adds counter knowledge
 to raw statement readiness; use that implication only in its proved direction.
+
+The implementation uses `StatementCondition` and `ScriptStepCondition` for the
+actual evaluator inputs. `ScriptConditionsWith` guards each reached obligation
+by the state invariant, so a resolver-derived obligation can use it without a
+second preservation induction. Resolution, clock and state-readiness failures
+impose no head condition. `RunConditionsWith.with_ready` derives raw readiness
+from supported raw execution; it preserves the original condition too.
 
 These changes affect proof interfaces. They do not change executable stepping,
 the support gate, evaluation, errors, observations or the modeled SQL subset.

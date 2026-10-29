@@ -1,16 +1,16 @@
-import Belay.Sqlite.Model.Resolution.ResolveStateSpec
+import Belay.Sqlite.Model.ResolveStatementFacts
 
 set_option doc.verso true
 
 /-! The resolution state after a script: the fold of {name}`Belay.Sqlite.Model.ResolveState.after`
-over its resolved statements, from {name}`Belay.Sqlite.Model.resolveStatement_after`.
+over its resolved statements, from {name}`Belay.Sqlite.Model.resolveStatement_certificate`.
 {lit}`CatalogAgreement` uses it for the catalog of a script. -/
 
 namespace Belay.Sqlite.Model
 
 /-- For every context, script, index and state with a successful resolution, the final
 state is the fold of {name}`ResolveState.after` over the resolved statements. Proof
-sketch: induction on the script with {name}`resolveStatement_after`. -/
+sketch: induction on the script with {name}`resolveStatement_certificate`. -/
 theorem resolveFrom_after (context : ResolveContext) :
     ∀ (script : List Syntax.Statement) (index : Nat) (state final : ResolveState)
       (resolved : List Resolved.Statement),
@@ -30,7 +30,7 @@ theorem resolveFrom_after (context : ResolveContext) :
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        have head := resolveStatement_after context state next statement head headOk
+        have head := (resolveStatement_certificate context state next statement head headOk).after
         have tail := resolveFrom_after context rest (index + 1) next later.2 later.1 restOk
         rw [List.foldl_cons, ← head]
         exact tail

@@ -143,7 +143,7 @@ which {name}`summed_outputs` separates. -/
 theorem summed_lookup_not_translated :
     ¬ Migration.TranslatesAt (send sumMigration) (fun _ => True) (send sumBefore) (send sumAfter) summedInitial := by
   intro claim
-  have same := congrArg Prod.fst (claim summed_domain).actual
+  have same := congrArg Prod.fst (observationProfile_actual (claim summed_domain))
   change ((send sumBefore).runFrom summedInitial.clock summedInitial.index summedInitial.connection).value =
     ((Migration.after (send sumMigration) (send sumAfter)).runFrom summedInitial.clock summedInitial.index
       summedInitial.connection).value at same

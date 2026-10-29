@@ -1,36 +1,54 @@
 import Belay.Sqlite.Model.ScriptRun
+import Belay.Sqlite.Model.RunHolds
 
 set_option doc.verso true
 
-/-! The conditions that a script puts on the statements that its run reaches (ADR 0022, D3; ADR 0019,
-D4, amended 2026-10-25). A statement can have several possible executions, and a later statement runs
-from the connection of the execution that reached it, so the condition of the rest of the script is
-asked for the connection of each execution. -/
+/-! Conditions follow every reached execution, with its selected clock, visible counters and
+parameters. An invariant guard admits obligations derived from the current state. -/
 
 namespace Belay.Sqlite.Model
 
-/-- For the given condition of statements on a database, context, clock, index, connection and
-statements with their values, each statement that {name}`runScriptFrom` resolves meets the
-condition on the database of the connection before it:
+/-- For the given surface step, each successful resolution with a selected clock and a supported
+state run meets the condition on its actual evaluator inputs. A failed resolution, missing clock
+or failed support gate requires nothing. Use a condition that ignores unused inputs. -/
+def ScriptStepCondition (condition : StatementCondition) (context : ResolveContext) (clock : Option Clock)
+    (index : Nat) (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) : Prop :=
+  ∀ resolved after value,
+    resolveStatement context connection.resolveState statement = .ok (resolved, after) →
+    statementClock clock index resolved = some value →
+    (connection.state.statementRun value parameters resolved).ready = true →
+    condition value (connection.state.counters.view resolved.counterReads) parameters resolved connection.state.database
 
-* the empty list requires nothing;
-* a list with a first statement requires, for each resolved statement and state that
-  {name}`resolveStatement` gives for the first statement over the connection, the condition of
-  the resolved statement on the database of the connection; and, when
-  {name}`runScriptStep` continues, the conditions of the rest from the next index and the
-  connection of each execution of the statement ({name}`RunStep.executions`). A statement at which
-  the run ends requires nothing of the rest, and a statement that does not resolve requires no
-  condition. -/
-def ScriptConditionsWith (condition : Resolved.Statement → Database → Prop) (context : ResolveContext)
-    (clock : Option Clock) (index : Nat) (connection : Connection) :
+/-- For the given invariant and execution condition, each reached step meets its condition when
+its current database and snapshot have the invariant. The rest is required for every continuing
+execution's next connection. Empty scripts and suffixes after ended steps require nothing.
+A state without the invariant requires no head condition; its continuing suffix is still checked. -/
+def ScriptConditionsWith (property : Database → Prop) (condition : StatementCondition)
+    (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection) :
     List (Syntax.Statement × List Value) → Prop
   | [] => True
   | (statement, parameters) :: rest =>
-    (∀ resolved after, resolveStatement context connection.resolveState statement = .ok (resolved, after) →
-      condition resolved connection.state.database) ∧
+    (connection.state.Holds property → ScriptStepCondition condition context clock index connection statement parameters) ∧
       match runScriptStep context clock index connection statement parameters with
       | .ended _ => True
       | stepped@(.continued ..) =>
-        ∀ execution ∈ stepped.executions, ScriptConditionsWith condition context clock (index + 1) execution.next rest
+        ∀ execution ∈ stepped.executions,
+          ScriptConditionsWith property condition context clock (index + 1) execution.next rest
+
+/-- If every step on every state with the invariant meets its execution condition, every script
+meets the guarded reached conditions from every index and connection. This constructs obligations;
+it assumes no preservation theorem. Proof sketch: supply the head implication and follow all next connections. -/
+theorem ScriptConditionsWith.of_invariant {property : Database → Prop} {condition : StatementCondition}
+    (context : ResolveContext) (clock : Option Clock)
+    (derive : ∀ index connection statement parameters, connection.state.Holds property →
+      ScriptStepCondition condition context clock index connection statement parameters) :
+    ∀ index connection script, ScriptConditionsWith property condition context clock index connection script
+  | _, _, [] => trivial
+  | index, connection, (statement, parameters) :: rest => by
+    refine ⟨derive index connection statement parameters, ?_⟩
+    cases runScriptStep context clock index connection statement parameters with
+    | ended _ => trivial
+    | continued output next others =>
+      exact fun execution _ => ScriptConditionsWith.of_invariant context clock derive (index + 1) execution.next rest
 
 end Belay.Sqlite.Model

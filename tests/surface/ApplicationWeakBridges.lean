@@ -45,7 +45,7 @@ stored rows differ; the kernel evaluates both actual runs. -/
 theorem weak_translation_is_not_a_simulation : ¬ Simulation clockWrite atDaily readPairing := by
   intro simulation
   have same := simulation.commutes () () startDaily ⟨rfl, by decide +kernel⟩
-  have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0) same.actual
+  have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0) (observationProfile_actual same)
   have different :
       ((Migration.before (readPairing.old.run () ()) clockWrite).runFrom startDaily.clock startDaily.index
         startDaily.connection).connection.state.database.rowsAt 0 ≠

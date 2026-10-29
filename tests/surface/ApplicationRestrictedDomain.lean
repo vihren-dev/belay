@@ -92,7 +92,7 @@ theorem two_reads_do_not_commute :
       (twoReads.interp readPairing.new) start := by
   intro same
   have rows := congrArg (fun observed => observed.2.connection.state.database.rowsAt 0)
-    (same migration_succeeds_at_start).actual
+    (observationProfile_actual (same migration_succeeds_at_start))
   have different :
       ((Migration.before (twoReads.interp readPairing.old) clockWrite).runFrom start.clock start.index
         start.connection).connection.state.database.rowsAt 0 ≠

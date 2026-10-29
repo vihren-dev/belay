@@ -5,15 +5,15 @@ import Belay.Sqlite.ExecutionViewEquivalence
 set_option doc.verso true
 
 /-! Refute an equivalence claim by the runs that differ. The equivalence relations between programs
-are structures, and each has a field {lit}`actual` that says the actual runs agree. A false claim at a
+are equalities of profiles, whose first components are their actual observations. A false claim at a
 concrete context can have actual runs that differ, and a decision procedure shows the difference. A claim
 whose actual runs agree and whose branches differ is not refuted here. -/
 
 namespace Belay.Sqlite.Check
 open Lean Meta
 
-/-- The equivalence relations between two programs at a context. Each has a field {lit}`actual` that
-compares the actual runs of the programs. The two programs are the second and third explicit arguments,
+/-- The equivalence relations between two programs at a context. Each compares profiles whose first components
+observe the actual runs of the programs. The two programs are the second and third explicit arguments,
 and the context is the last. -/
 def programRelationNames : Array Name :=
   #[``Sql.EquivAt, ``Sql.ObservationEquivAt, ``Sql.View.EquivAt, ``Sql.View.ObservationEquivAt]
@@ -58,9 +58,9 @@ def refuteByActualRun? (claimed : Expr) (excluded : Array Name := #[]) (excluded
     MetaM (Option Expr) := do
   let proposition ← instantiateMVars (← inferType claimed)
   unless programRelationNames.any proposition.getAppFn.isConstOf do return none
-  let actual ← mkProjection claimed `actual
+  let actual ← mkAppM ``observationProfile_actual #[claimed]
   let some (_, left, right) := (← inferType actual).eq?
-    | throwError "the field actual of this relation is no equality"
+    | throwError "Cannot compare actual observations for this SQL relation; supply an explicit proof"
   let different ← refuteDifference excluded excludedLocals actualRunNesting left right
   return some (mkApp different actual)
 

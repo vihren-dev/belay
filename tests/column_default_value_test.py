@@ -100,7 +100,7 @@ def test_oversized_hex_default_prepare_error(version: str, negated: bool, tmp_pa
     expression = f'.numeric "{token}"'
     if negated:
         expression = f".negate ({expression})"
-    source = f'''import Belay.Sqlite.Model.Codec
+    source = f'''import Lean
 import Belay.Sqlite.Model.Resolution.InsertCells
 import Belay.Sqlite.Model.Resolution.ReadDefaults
 import Belay.Sqlite.Model.Resolution.Messages

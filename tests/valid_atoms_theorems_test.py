@@ -1,16 +1,11 @@
-"""The theorems of the atoms "not null", "types fit" and "checks hold" (ADR 0022, D3, slice 3) have
-their stated formulas and rest only on the standard axioms.
+"""Independent NOT NULL, type and CHECK contracts use only standard axioms.
 
-The statement theorems, the run theorems of `runSqlFrom`, `runSql` and `runScriptFrom`, and the
-corollary for the four constraint atoms are in the root import of the model. The theorems of
-`runScriptFrom` have no hypothesis on the statements of the script (ADR 0022, slice 4, part 3): they
-assume `Database.AdmittedWith profile atom`, a context in execution mode with the limits of the
-profile, and the resolver gives the conditions. The check file restates
-each formula, so a change that weakens a formula fails here, and it refuses `sorryAx`,
-`ofReduceBool` and `_native` in the `#print axioms` output (`compile_checks`).
+Whole-statement contracts, independent-premise checks and generic proof audits protect
+support-independent atoms, actual evaluator inputs, halted suffixes and counter knowledge.
 """
 
 from pathlib import Path
+import re
 
 import pytest
 
@@ -20,10 +15,25 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 THEOREMS = [
-    "runStatement_notNull", "runSqlFrom_notNull", "runSql_notNull", "runScriptAllFrom_notNull",
-    "runStatement_typesFit", "runSqlFrom_typesFit", "runSql_typesFit", "runScriptAllFrom_typesFit",
-    "runStatement_checksHold", "runSqlFrom_checksHold", "runSql_checksHold", "runScriptAllFrom_checksHold",
-    "runSqlFrom_constraintAtoms", "runSql_constraintAtoms", "runScriptAllFrom_constraintAtoms",
+    "Database.Every.setRows",
+    "checkedWrite_satisfies",
+    "insertOutcome_satisfies",
+    "runStatement_rowLocal",
+    "Table.notNullAtom",
+    "Table.typesFitAtom",
+    "Table.checksHoldAtom",
+    "runStatement_notNull",
+    "runStatement_typesFit",
+    "runStatement_checksHold",
+    "StatementKeeps.ofOwnRun",
+    "StatementKeeps.and",
+    "RunConditionsWith.with_ready",
+    "ScriptConditionsWith.of_invariant",
+    "runScriptAllFrom_holds_derived",
+    "runScriptFrom_holds",
+    "runSqlFrom_holds",
+    "runScriptAllFrom_holds",
+    "runScriptAllFrom_admittedWith",
 ]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -33,84 +43,65 @@ STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 CHECKS = """
 import Belay.Sqlite.Model
 open Belay.Sqlite.Model
+
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.NotNull database) (condition : statement.NotNullCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.NotNull :=
   runStatement_notNull clock counters parameters statement holds condition
-example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
-    (holds : state.Holds Database.NotNull) (conditions : NotNullRunConditions position script state) :
-    (runSqlFrom position script state).Holds Database.NotNull :=
-  runSqlFrom_notNull position script holds conditions
-example (script : List (Resolved.Statement × List Value)) {database : Database} (holds : Database.NotNull database)
-    (conditions : NotNullRunConditions 0 script { database }) : (runSql script database).Holds Database.NotNull :=
-  runSql_notNull script holds conditions
-example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    {connection : Connection} (script : List (Syntax.Statement × List Value))
-    (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.AdmittedWith profile Database.NotNull)) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds (Database.AdmittedWith profile Database.NotNull) :=
-  runScriptAllFrom_notNull context clock index script execution same holds
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.TypesFit database) (condition : statement.TypesFitCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.TypesFit :=
   runStatement_typesFit clock counters parameters statement holds condition
-example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
-    (holds : state.Holds Database.TypesFit) (conditions : TypesFitRunConditions position script state) :
-    (runSqlFrom position script state).Holds Database.TypesFit :=
-  runSqlFrom_typesFit position script holds conditions
-example (script : List (Resolved.Statement × List Value)) {database : Database} (holds : Database.TypesFit database)
-    (conditions : TypesFitRunConditions 0 script { database }) : (runSql script database).Holds Database.TypesFit :=
-  runSql_typesFit script holds conditions
-example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    {connection : Connection} (script : List (Syntax.Statement × List Value))
-    (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.AdmittedWith profile Database.TypesFit)) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds (Database.AdmittedWith profile Database.TypesFit) :=
-  runScriptAllFrom_typesFit context clock index script execution same holds
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     {database : Database} (holds : Database.ChecksHold database) (condition : statement.ChecksHoldCondition database) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.ChecksHold :=
   runStatement_checksHold clock counters parameters statement holds condition
-example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
-    (holds : state.Holds Database.ChecksHold) (conditions : ChecksHoldRunConditions position script state) :
-    (runSqlFrom position script state).Holds Database.ChecksHold :=
-  runSqlFrom_checksHold position script holds conditions
-example (script : List (Resolved.Statement × List Value)) {database : Database} (holds : Database.ChecksHold database)
-    (conditions : ChecksHoldRunConditions 0 script { database }) : (runSql script database).Holds Database.ChecksHold :=
-  runSql_checksHold script holds conditions
-example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    {connection : Connection} (script : List (Syntax.Statement × List Value))
-    (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.AdmittedWith profile Database.ChecksHold)) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds (Database.AdmittedWith profile Database.ChecksHold) :=
-  runScriptAllFrom_checksHold context clock index script execution same holds
-example (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
-    (holds : state.Holds Database.ConstraintAtoms) (conditions : AtomsRunConditions position script state) :
-    (runSqlFrom position script state).Holds Database.ConstraintAtoms :=
-  runSqlFrom_constraintAtoms position script holds conditions
-example (script : List (Resolved.Statement × List Value)) {database : Database}
-    (holds : database.ConstraintAtoms) (conditions : AtomsRunConditions 0 script { database }) :
-    (runSql script database).Holds Database.ConstraintAtoms :=
-  runSql_constraintAtoms script holds conditions
-example {profile : Profile} (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    {connection : Connection} (script : List (Syntax.Statement × List Value))
-    (execution : context.mode = .execution) (same : context.profile.limits = profile.limits)
-    (holds : connection.state.Holds (Database.AdmittedWith profile Database.ConstraintAtoms)) :
-    ∀ run ∈ runScriptAllFrom context clock index connection script,
-      run.connection.state.Holds (Database.AdmittedWith profile Database.ConstraintAtoms) :=
-  runScriptAllFrom_constraintAtoms context clock index script execution same holds
+
+-- Lasting boundary checks: actual input selection, halted suffixes and counter knowledge.
+def inputRead : Resolved.Statement := .query
+  { sources := [], filter := none, aggregate := false, groupBy := [],
+    columns := [.scalar (.counter .changes), .scalar (.parameter 1)],
+    names := ["changes", "parameter"], orderBy := [], offset := 0, limit := none } []
+def inputState : SqlState where
+  database := {}
+  clock := fun index => index + 10
+  counters := { changes := some 7, totalChanges := some 9, lastInsertRowid := some 11 }
+def exactInputs : StatementCondition := fun clock counters parameters _ _ =>
+  clock = 17 ∧ counters = { changes := some 7 } ∧ parameters = [.integer 42]
+example : RunConditionsWith exactInputs 7 [(inputRead, [.integer 42])] inputState :=
+  ⟨⟨rfl, rfl, rfl⟩, trivial⟩
+example : (runSqlFrom 7 [(inputRead, [.integer 42])] inputState).Holds Database.RowsShaped :=
+  runSqlFrom_holds (condition := exactInputs)
+    (fun clock counters parameters statement database holds _ =>
+      rowsShaped_statementKeeps clock counters parameters statement database holds trivial)
+    7 _ ⟨by decide +kernel, fun _ impossible => nomatch impossible⟩ ⟨⟨rfl, rfl, rfl⟩, trivial⟩
+-- Rollback without a transaction halts before BEGIN, whose hypothetical condition is false.
+example : RunConditionsWith (fun _ _ _ statement _ => statement = .rollback)
+    4 [(.rollback, []), (.begin, [])] { database := {} } := ⟨rfl, trivial⟩
+-- A raw query can be ready while the state refuses an unknown counter read.
+example : (runStatement 0 {} [] inputRead {}).ready = true ∧
+    (({ database := {} } : SqlState).statementRun 0 [] inputRead).ready = false := ⟨rfl, rfl⟩
+example {property : Database → Prop} {condition : StatementCondition}
+    (keeps : StatementKeeps property condition) (position : Nat)
+    (script : List (Resolved.Statement × List Value)) {state : SqlState}
+    (holds : state.Holds property) (met : RunConditionsWith condition position script state) :
+    (runSqlFrom position script state).Holds property := runSqlFrom_holds keeps position script holds met
+example {property : Database → Prop} {condition : StatementCondition}
+    (keeps : StatementKeeps property (fun clock counters parameters statement database =>
+      condition clock counters parameters statement database ∧
+      (runStatement clock counters parameters statement database).ready = true))
+    (position : Nat) (script : List (Resolved.Statement × List Value)) {state : SqlState}
+    (holds : state.Holds property) (met : RunConditionsWith condition position script state)
+    (supported : supportedSqlFrom position script state = true) : (runSqlFrom position script state).Holds property :=
+  runSqlFrom_holds keeps position script holds (RunConditionsWith.with_ready position script state met supported)
 """ + "".join(f"#print axioms {name}\n" for name in THEOREMS)
 
 
 def test_valid_atoms_theorems(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
-    """Each theorem of the three atoms and of their corollary compiles with its formula and uses only
-    propext, choice and quotients."""
+    """Independent atom contracts and general preservation evidence use only standard axioms."""
     output = compile_checks(CHECKS, tmp_path, lean_sysroot, lean_libraries)
-    reports = [line for line in output.splitlines() if "depends on axioms" in line]
+    reports = re.findall(r"depends on axioms: \[([^]]*)\]|does not depend on any axioms", output)
     assert len(reports) == len(THEOREMS), output
     for report in reports:
-        axioms = report.split("[", 1)[1].rstrip("]").split(", ")
-        assert set(axioms) <= STANDARD_AXIOMS, report
+        assert set(filter(None, map(str.strip, report.split(",")))) <= STANDARD_AXIOMS, report
+

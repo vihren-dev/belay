@@ -44,17 +44,23 @@ def proveWith (proposition : Expr) (tactic : Syntax) (excluded : Array Name := #
   let proof ← certify proposition (← instantiateMVars goal) excluded excludedLocals
   return { proof, tactic }
 
-/-- Try the existing logical, SQL simp-set and kernel-decision primitives, and the equivalence of a
-program with itself ({name}`Sql.Equiv.refl` and {name}`Sql.EquivAt.refl`). This is a bounded attempt. Failed automation supplies no evidence for P. -/
+/-- Try logical, SQL simp-set and kernel-decision primitives, and the equivalence of a
+program with itself ({name}`Sql.Equiv.refl`). Profile equality first compares its arguments
+by congruence, so reflexivity does not execute different SQL programs. This is a bounded
+attempt. Failed automation supplies no evidence for the proposition. -/
 def tryProof (proposition : Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM (Option Proven) := do
+  let profile ← forallTelescopeReducing proposition fun _ conclusion => do
+    let conclusion ← withTransparency .default <| whnf conclusion
+    pure (conclusion.eq?.any fun (_, left, _) => left.isAppOf ``observationProfile)
+  let reflexivity ← if profile then `(tactic| (change _ = _; congr; done)) else `(tactic| rfl)
+  let triviality ← if profile then `(tactic| with_reducible trivial) else `(tactic| trivial)
   let tactic ← `(tactic| (intros; first
-    | rfl
-    | trivial
+    | $reflexivity:tactic
+    | $triviality:tactic
     | (simp [sql_simp]; done)
     | decide +kernel
-    | exact Sql.Equiv.refl _
-    | exact Sql.EquivAt.refl _ _))
+    | exact Sql.Equiv.refl _))
   attempt (proveWith proposition tactic excluded excludedLocals)
 
 end Belay.Sqlite.Check

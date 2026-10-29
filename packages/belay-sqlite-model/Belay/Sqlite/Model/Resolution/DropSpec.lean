@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The resolution laws of DROP TABLE, DROP VIEW and DROP INDEX: each changes the catalog
 by one {name}`Belay.Sqlite.Model.CatalogStep`, and the catalog after it is the catalog change of its resolved
-statement. {lit}`NamesSpec.lean` and {lit}`ResolveStateSpec.lean` use them for every
+statement. {lit}`NamesSpec.lean` and {lit}`ResolveStatementFacts.lean` use them for every
 statement. -/
 
 namespace Belay.Sqlite.Model

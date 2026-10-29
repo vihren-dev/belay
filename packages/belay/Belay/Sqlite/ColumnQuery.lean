@@ -54,15 +54,13 @@ theorem Script.outputOn_selectOne_column
       position table subCondition mainCondition expression affinity notCall noAggregate namedSource current arguments found operand valuePlain
       subResolves mainResolves plain)
 
-/-- For every script that is one read-only statement and is as in {name}`Script.outputOn_selectOne_column`, where {lit}`c`, {lit}`p`
-and {lit}`e` resolve to calm expressions (no fallible call, no clock read and no counter read) and {lit}`c` reads no scalar
-subquery: {name}`Holds` of the script on the database means that {lit}`c` is true in the context of the values in which the
-subquery has one row for each row of the table in scan order for which {lit}`p` is true, with the value of {lit}`e` for the
-row ({name}`Resolved.scalarRows`), and no fault. The formula requires nothing of the rows when {lit}`c` ignores the subquery.
-The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_column` and {name}`resolvedStepOutput_scalar_hasRows`. -/
-theorem Holds.iff_selectOne_column
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+/-- For every script with the resolution premises of {name}`Script.outputOn_selectOne_column`,
+when the resolved expressions satisfy the stated calmness premises, its complete first output is
+one row containing integer one when its condition on the filtered column values is true,
+and no rows otherwise.
+The outer condition excludes scalar subqueries but permits membership. Proof sketch: resolve once, then substitute {name}`resolvedStepOutput_scalar`. -/
+theorem Script.outputOn_column
+    {script : Script} {db : Database} {reference : Syntax.TableReference}
     {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
     {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {value : Syntax.Expr}
@@ -85,88 +83,13 @@ theorem Holds.iff_selectOne_column
     (noScalar : mainCondition.any (· matches .subquery _) = false)
     (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
     (valueCalm : expression.Calm) :
-    Holds script db isQuery ↔
-      Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.certain (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition expression
-          { shape := table, rows := db.raw.rows.getD position [] })]) []) = true := by
-  unfold Holds
-  rw [Script.outputOn_selectOne_column head notCall noAggregate namedSource current arguments found operand valuePlain subResolves mainResolves mainCalm.1, Option.any_some]
-  exact resolvedStepOutput_scalar_hasRows 0 db.raw.connection parameters mainCondition position
+    script.outputOn db = some (.rows (if Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
+        [Resolved.SubqueryRun.certain
+          (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition expression { shape := table, rows := db.raw.rows.getD position [] })]) [])
+        then [[.integer 1]] else [])) := by
+  rw [Script.outputOn_selectOne_column head notCall noAggregate namedSource current arguments found operand valuePlain subResolves mainResolves mainCalm.1]
+  exact congrArg some (resolvedStepOutput_scalar 0 db.raw.connection parameters mainCondition position
     { shape := table, rows := db.raw.rows.getD position [] } subCondition expression _ (Database.table_of_findTable db.raw _ position table found) noScalar
-    (Resolved.Statement.Calm.selectOne_scalar position _ subCondition expression _ mainCalm subCalm valueCalm)
-
-/-- For every script as in {name}`Holds.iff_selectOne_column`: {name}`Empty` of the script on the database means that {lit}`c` is
-not true in the same context. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne_column` and
-{name}`resolvedStepOutput_scalar_hasNoRows`. -/
-theorem Empty.iff_selectOne_column
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
-    {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
-    {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {value : Syntax.Expr}
-    {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
-      [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none none] none false none, parameters) :: rest)
-    (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
-      { current := some 0 } false value = .ok (expression, affinity))
-    (valuePlain : expression.any Resolved.Expr.isFallibleCall = false)
-    (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (mainResolves : ∀ lowest : Option Nat,
-      FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
-        { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest
-          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
-    (noScalar : mainCondition.any (· matches .subquery _) = false)
-    (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
-    (valueCalm : expression.Calm) :
-    Empty script db isQuery ↔
-      Resolved.truthy (mainCondition.eval ((Resolved.EvalContext.bound parameters).withRuns
-        [Resolved.SubqueryRun.certain (Resolved.scalarRows (Resolved.EvalContext.bound parameters) subCondition expression
-          { shape := table, rows := db.raw.rows.getD position [] })]) []) = false := by
-  unfold Empty
-  rw [Script.outputOn_selectOne_column head notCall noAggregate namedSource current arguments found operand valuePlain subResolves mainResolves mainCalm.1, Option.any_some]
-  exact resolvedStepOutput_scalar_hasNoRows 0 db.raw.connection parameters mainCondition position
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition expression _ (Database.table_of_findTable db.raw _ position table found) noScalar
-    (Resolved.Statement.Calm.selectOne_scalar position _ subCondition expression _ mainCalm subCalm valueCalm)
-
-/-- For every script as in {name}`Holds.iff_selectOne_column`, {name}`Fails` of the script on the database does not hold: a calm
-query of a table that exists neither fails to resolve nor fails to run. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch:
-{name}`Script.outputOn_selectOne_column` and {name}`resolvedStepOutput_scalar_not_isError`. -/
-theorem Fails.not_selectOne_column
-    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
-    {subFilter : Option Syntax.Expr} {mainFilter : Syntax.Expr} {parameters : List Value}
-    {rest : List (Syntax.Statement × List Value)} {position : Nat} {table : CatalogTable}
-    {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {value : Syntax.Expr}
-    {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
-      [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none none] none false none, parameters) :: rest)
-    (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
-    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
-    (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
-      { current := some 0 } false value = .ok (expression, affinity))
-    (valuePlain : expression.any Resolved.Expr.isFallibleCall = false)
-    (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
-      subFilter subCondition { current := some 0 })
-    (mainResolves : ∀ lowest : Option Nat,
-      FilterResolves runContext.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
-        { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope db.raw.catalog reference position table)) lowest
-          (value.originType (tableScope db.raw.catalog reference position table) { current := some 0 })] })
-    (noScalar : mainCondition.any (· matches .subquery _) = false)
-    (mainCalm : mainCondition.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm)
-    (valueCalm : expression.Calm) :
-    ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectOne_column head notCall noAggregate namedSource current arguments found operand valuePlain subResolves mainResolves mainCalm.1, Option.any_some,
-    resolvedStepOutput_scalar_not_isError 0 db.raw.connection parameters mainCondition position
-    { shape := table, rows := db.raw.rows.getD position [] } subCondition expression _ (Database.table_of_findTable db.raw _ position table found) noScalar
-    (Resolved.Statement.Calm.selectOne_scalar position _ subCondition expression _ mainCalm subCalm valueCalm)]
-  simp
+    (Resolved.Statement.Calm.selectOne_scalar position _ subCondition expression _ mainCalm subCalm valueCalm))
 
 end Belay.Sqlite

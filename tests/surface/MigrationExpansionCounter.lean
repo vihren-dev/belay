@@ -92,7 +92,7 @@ theorem not_full_commutation :
     ¬ Migration.CommutesAt (send expansion) (fun _ => True) (send updateEmail) initial := by
   intro claim
   have same := congrArg (fun observed => observed.2.connection.state.counters)
-    (claim original_domain).actual
+    (observationProfile_actual (claim original_domain))
   change beforeRun.connection.state.counters = afterRun.connection.state.counters at same
   rw [different_totals.1, different_totals.2] at same
   cases same

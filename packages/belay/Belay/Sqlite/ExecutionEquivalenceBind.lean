@@ -17,14 +17,15 @@ theorem Sql.EquivOn.bind {α β : Type} {first second : Sql α} {left right : α
     Sql.EquivOn pre (first.bind left) (second.bind right) := by
   intro state entry
   have same := beforeSame state entry
+  apply observationProfile_id_eq_iff.mpr
   constructor
-  · rw [Sql.runFrom_bind, Sql.runFrom_bind, ← same.actual]
+  · rw [Sql.runFrom_bind, Sql.runFrom_bind, ← (observationProfile_id_eq_iff.mp same).1]
     unfold SqlRun.andThen
     split
     · rfl
     · rename_i value returned
       have reached := reaches state entry _ (Sql.Branch.actual first _ _ _) value returned
-      have following := (tails value _ reached).actual
+      have following := (observationProfile_id_eq_iff.mp (tails value _ reached)).1
       dsimp only [ExecutionContext.finish] at following
       dsimp only
       rw [following]
@@ -32,16 +33,16 @@ theorem Sql.EquivOn.bind {α β : Type} {first second : Sql α} {left right : α
     rw [Sql.branch_bind_iff, Sql.branch_bind_iff]
     constructor
     · rintro ⟨before, branch, later⟩
-      refine ⟨before, (same.branches before).mp branch, ?_⟩
+      refine ⟨before, ((observationProfile_id_eq_iff.mp same).2 before).mp branch, ?_⟩
       cases returned : before.value with
       | none => simpa [returned] using later
       | some value =>
         simp only [returned] at later ⊢
         obtain ⟨after, continuation, rfl⟩ := later
         have following := tails value _ (reaches state entry before branch value returned)
-        exact ⟨after, (following.branches after).mp continuation, rfl⟩
+        exact ⟨after, ((observationProfile_id_eq_iff.mp following).2 after).mp continuation, rfl⟩
     · rintro ⟨before, branch, later⟩
-      have original := (same.branches before).mpr branch
+      have original := ((observationProfile_id_eq_iff.mp same).2 before).mpr branch
       refine ⟨before, original, ?_⟩
       cases returned : before.value with
       | none => simpa [returned] using later
@@ -49,7 +50,7 @@ theorem Sql.EquivOn.bind {α β : Type} {first second : Sql α} {left right : α
         simp only [returned] at later ⊢
         obtain ⟨after, continuation, rfl⟩ := later
         have following := tails value _ (reaches state entry before original value returned)
-        exact ⟨after, (following.branches after).mpr continuation, rfl⟩
+        exact ⟨after, ((observationProfile_id_eq_iff.mp following).2 after).mpr continuation, rfl⟩
 
 /-- Completely equivalent prefixes and pointwise completely equivalent continuations
 give completely equivalent binds. Continuations may inspect their returned values.

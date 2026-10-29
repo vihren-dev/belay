@@ -47,9 +47,28 @@ example : smallLedger.raw.catalog.findTable (name! "ledger") = some smallTable :
 example : emptyLedger.raw.catalog.findTable (name! "ledger") = some emptyTable := by decide +kernel
 example : textLedger.raw.catalog.findTable (name! "ledger") = some textLedgerTable := by decide +kernel
 
+/-- Over every database with the ledger and cents column, SUM gives its overflow error or its
+computed aggregate value. This exposes the returned value, including NULL for empty input.
+Proof sketch: resolve the column, use the complete aggregate output, and its singleton result. -/
+theorem sum_of_cents_output (db : Database) (position index : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
+    (column : columnPosition table.columns (name! "cents") = some index) :
+    (sql r"SELECT sum(cents) FROM ledger").outputOn db = some
+      (if (Resolved.Aggregate.sum (.column index)).fails (Resolved.EvalContext.bound [])
+          (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }) then
+        .error ExecutionError.integerOverflow.primaryCode
+      else .rows [[(Resolved.Aggregate.sum (.column index)).eval (Resolved.EvalContext.bound [])
+        (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })]]) := by
+  rw [Script.outputOn_aggregate (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "ledger", alias := none }) (build := .sum) (name := "sum")
+    (resolved := .column index) (condition := none) (aggregate := .sum (.column index)) rfl rfl found
+    (resolveOperand_identifier_table column) rfl (.inl ⟨rfl, rfl⟩) rfl (by simp)
+    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])]
+  simp [Resolved.Query.aggregateOf_possibleResults, Resolved.Query.aggregateOf_filtered,
+    Output.ofResults_singleton, List.filter_eq_self.2 (fun _ _ => rfl)]
+
 /-- Over every database that has a table `ledger` with a column `cents` at position `index`, `SELECT sum(cents) FROM
 ledger` fails exactly when the aggregate `sum` of that column fails over the rows of the table in scan order: when an
-integer sum leaves the 64-bit range and no REAL value follows. Proof sketch: `Fails.iff_selectAggregate` with the
+integer sum leaves the 64-bit range and no REAL value follows. Proof sketch: `sum_of_cents_output` with the
 resolution of the column (`resolveOperand_identifier_table`) and no condition. -/
 theorem sum_of_cents_overflows (db : Database) (position index : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
@@ -57,11 +76,8 @@ theorem sum_of_cents_overflows (db : Database) (position index : Nat) (table : C
     Fails (sql r"SELECT sum(cents) FROM ledger") db ↔
       (Resolved.Aggregate.sum (.column index)).fails (Resolved.EvalContext.bound [])
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }) = true := by
-  refine Iff.trans (Fails.iff_selectAggregate (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "ledger", alias := none }) (build := .sum) (name := "sum")
-    (resolved := .column index) (condition := none) (aggregate := .sum (.column index)) rfl rfl found
-    (resolveOperand_identifier_table column) rfl (.inl ⟨rfl, rfl⟩) rfl (by simp)
-    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])) ?_
-  simp [List.filter_eq_self.2 (fun _ _ => rfl)]
+  rw [Fails, sum_of_cents_output db position index table found column]
+  split <;> simp_all [Output.isError]
 
 /-- Over every database as in `sum_of_cents_overflows`, the query returns a row exactly when the aggregate does not
 fail, also for a table without a row (the sum is NULL). -/
@@ -71,11 +87,8 @@ theorem sum_of_cents_returns_a_row (db : Database) (position index : Nat) (table
     Holds (sql r"SELECT sum(cents) FROM ledger") db ↔
       (Resolved.Aggregate.sum (.column index)).fails (Resolved.EvalContext.bound [])
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }) = false := by
-  refine Iff.trans (Holds.iff_selectAggregate (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "ledger", alias := none }) (build := .sum) (name := "sum")
-    (resolved := .column index) (condition := none) (aggregate := .sum (.column index)) rfl rfl found
-    (resolveOperand_identifier_table column) rfl (.inl ⟨rfl, rfl⟩) rfl (by simp)
-    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])) ?_
-  simp [List.filter_eq_self.2 (fun _ _ => rfl)]
+  rw [Holds, sum_of_cents_output db position index table found column]
+  split <;> simp_all [Output.hasRows]
 
 -- Two rows of 2 to the power 62: the query fails, and both sides agree.
 example : Fails (sql r"SELECT sum(cents) FROM ledger") bigLedger :=
@@ -100,15 +113,13 @@ example : Fails (sql r"SELECT sum(cents) FROM ledger") textLedger :=
 set_option doc.verso true
 
 /-- Over every database with the ledger and cents column, SUM is never empty: a safe sum returns one row and an
-overflow fails. Proof sketch: resolve the column and apply {name}`Empty.not_selectAggregate`. -/
+overflow fails. Proof sketch: resolve the column and apply {name}`sum_of_cents_output`. -/
 theorem sum_of_cents_is_never_empty (db : Database) (position index : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
     (column : columnPosition table.columns (name! "cents") = some index) :
-    ¬ Empty (sql r"SELECT sum(cents) FROM ledger") db :=
-  Empty.not_selectAggregate (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "ledger", alias := none }) (build := .sum) (name := "sum")
-    (resolved := .column index) (condition := none) (aggregate := .sum (.column index)) rfl rfl found
-    (resolveOperand_identifier_table column) rfl (.inl ⟨rfl, rfl⟩) rfl (by simp)
-    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])
+    ¬ Empty (sql r"SELECT sum(cents) FROM ledger") db := by
+  rw [Belay.Sqlite.Empty, sum_of_cents_output db position index table found column]
+  split <;> simp_all [Output.hasNoRows]
 
 example : ¬ Holds (sql r"SELECT sum(cents) FROM ledger") bigLedger := by
   rw [sum_of_cents_returns_a_row bigLedger bigTable.1 1 bigTable.2 (by decide +kernel) (by decide +kernel)]
@@ -122,3 +133,11 @@ example : ¬ Empty (sql r"SELECT sum(cents) FROM ledger") bigLedger :=
   sum_of_cents_is_never_empty bigLedger bigTable.1 1 bigTable.2 (by decide +kernel) (by decide +kernel)
 example : ¬ Empty (sql r"SELECT sum(cents) FROM ledger") emptyLedger :=
   sum_of_cents_is_never_empty emptyLedger emptyTable.1 1 emptyTable.2 (by decide +kernel) (by decide +kernel)
+
+-- The value contract gives 30 for the two small rows and NULL for the empty input.
+example : (sql r"SELECT sum(cents) FROM ledger").outputOn smallLedger = some (.rows [[.integer 30]]) := by
+  rw [sum_of_cents_output smallLedger smallTable.1 1 smallTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+example : (sql r"SELECT sum(cents) FROM ledger").outputOn emptyLedger = some (.rows [[.null]]) := by
+  rw [sum_of_cents_output emptyLedger emptyTable.1 1 emptyTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel

@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.ForeignKeyStatement
 import Belay.Sqlite.Model.DropColumnForeignFacts
 

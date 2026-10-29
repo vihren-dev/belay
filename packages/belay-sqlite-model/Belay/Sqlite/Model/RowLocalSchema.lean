@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.KeysUniqueDrop
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.TableAtomFrames
+import Belay.Sqlite.Model.RowLocalAtoms
 import Belay.Sqlite.Model.StatementStep
 
 set_option doc.verso true
@@ -9,7 +10,7 @@ stated for every {lit}`RowLocalAtom`, for CREATE TABLE, CREATE INDEX, CREATE TRI
 and DROP without the row engine. The four CREATE forms append one object and an empty row list, so every kept
 table is a table of the database or has no rows. A drop keeps its tables whole, with their rows
 and entries, so it keeps every such atom for every database, without a condition: the atoms read
-no index and no position. {lit}`RowLocalSchemaTheorems` states them for each atom. -/
+no index and no position. {lit}`ValidAtomsStatement` states them for each atom. -/
 
 namespace Belay.Sqlite.Model
 
@@ -27,7 +28,7 @@ theorem Database.EachTable.drop {atom : Table → Prop} {database : Database} (e
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. The new table has no rows. Proof
-sketch: {name}`Database.EachTable.append`; every error keeps the database. -/
+sketch: {name}`Database.EachTable.appendEmpty`; every error keeps the database. -/
 theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable) {database : Database}
     (every : database.EachTable atom) :
@@ -37,7 +38,7 @@ theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : Ro
   split
   · rename_i fits
     simp only [Bool.and_eq_true, beq_iff_eq] at fits
-    exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
+    exact Effect.satisfies_of_effectDatabase (every.appendEmpty rowLocal.toTableAtom fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
 /-- For every atom, clock value, counters, parameter list, CREATE VIEW and database: if the atom is a
@@ -45,7 +46,7 @@ theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : Ro
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. A view has no rows. Proof sketch:
-{name}`Database.EachTable.append`; every error keeps the database. -/
+{name}`Database.EachTable.appendEmpty`; every error keeps the database. -/
 theorem runStatement_createView_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (view : CatalogView) {database : Database}
     (every : database.EachTable atom) :
@@ -55,7 +56,7 @@ theorem runStatement_createView_rowLocal {atom : Table → Prop} (rowLocal : Row
   split
   · rename_i fits
     simp only [Bool.and_eq_true, beq_iff_eq] at fits
-    exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
+    exact Effect.satisfies_of_effectDatabase (every.appendEmpty rowLocal.toTableAtom fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
 /-- For every atom, clock value, counters, parameter list, CREATE TRIGGER and database: if the atom is a
@@ -63,7 +64,7 @@ theorem runStatement_createView_rowLocal {atom : Table → Prop} (rowLocal : Row
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. A trigger has no rows. Proof sketch:
-{name}`Database.EachTable.append`; every error keeps the database. -/
+{name}`Database.EachTable.appendEmpty`; every error keeps the database. -/
 theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger) {database : Database}
     (every : database.EachTable atom) :
@@ -73,7 +74,7 @@ theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : 
   split
   · rename_i fits
     simp only [Bool.and_eq_true, beq_iff_eq] at fits
-    exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
+    exact Effect.satisfies_of_effectDatabase (every.appendEmpty rowLocal.toTableAtom fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
 /-- For every atom, clock value, counters, parameter list, CREATE INDEX and database: if the atom is a
@@ -81,7 +82,7 @@ theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : 
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. An index has no rows and changes no table. Proof sketch:
-{name}`Database.EachTable.append`; every error keeps the database. -/
+{name}`Database.EachTable.appendEmpty`; every error keeps the database. -/
 theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex) {database : Database}
     (every : database.EachTable atom) :
@@ -95,7 +96,7 @@ theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : Ro
     · exact Effect.satisfies_of_database every rfl
     · split
       · exact Effect.satisfies_of_database every rfl
-      · exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
+      · exact Effect.satisfies_of_effectDatabase (every.appendEmpty rowLocal.toTableAtom fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
 /-- For every atom, clock value, counters, parameter list, DROP without foreign key rules and trigger

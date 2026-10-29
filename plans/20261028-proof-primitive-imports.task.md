@@ -1,6 +1,7 @@
 # Lower shared proof primitives and narrow surface imports
 
-Date: 2026-10-28. Status: READY for immediate assignment.
+Date: 2026-10-28. Status: DONE on publication of this reviewed completion record.
+Completion: [final acceptance record](20261028-proof-primitive-imports.status.md#completion-record).
 Audience: the implementation team.
 Specification: [ADR 0026 D6](../docs/adr-0026-semantic-proof-boundaries.md),
 [foundation requirements](../docs/spec-proof-foundations.md) and
@@ -31,6 +32,15 @@ bodies, checked documentation, exports, instances and registrations remain
 unchanged. Downstream clients that relied on the umbrella get explicit provider
 imports. Public umbrella entry points remain available. No executable SQL,
 resolution, theorem formula, judge input or corpus changes are permitted.
+
+Executable comparison must remain compilable under the existing comparison
+mutants. A proof of its unchanged behavior belongs outside the executable
+classifier's import closure when mutation invalidates that proof. Keep the moved
+collation theorem in a small foundational proof owner, with its exact name,
+formula and proof body, and give its real proof consumers the required import.
+The current placement in `Comparison` makes `text_without_case` fail to compile
+the theorem, before the harness can observe the changed SQL verdict. Repair that
+placement without changing the mutant, its target or the theorem's claim.
 
 ## Ownership and relevant code
 
@@ -71,9 +81,16 @@ them. Ask for coordination before any newly required overlapping edit.
   with the same scope as the historical experiment. Report net source changes
   including new owners, caller imports and test changes. These are one-time
   observations, not permanent thresholds or claims of faster builds.
+- Run the existing comparison-mutant measurement in
+  `tests/conformance_query_mutants_test.py` through its Nix owner. All three
+  original mutants must compile and change their target verdicts; the unchanged
+  model must agree on the original targets. Preserve the measurement harness,
+  mappings and finite deadlines. Confirm that the executable classifier does
+  not import the moved collation proof, while its proof consumers still compile.
+  Existing tests supply this regression coverage; add no new permanent suite.
 - Apply the repository's per-edit, per-commit, end-of-slice and end-of-task check
   cadence. Commands have configured timeouts. Full Nix suites use the coordinator's
-  shared build slot. No affected mutant table or runtime semantics is changed.
+  shared build slot. Mutant definitions and runtime semantics are unchanged.
 
 Use existing package, documentation and surface Nix suite owners. Keep only
 checks of distinct repository contracts. Duplicate formula probes and baseline/

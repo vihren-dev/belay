@@ -39,7 +39,7 @@ def partialWrite : Resolved.Statement :=
 theorem partialPreserves : (runSql [(partialWrite, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) := by
-  apply runSql_foreignKeyAtoms Profile.pinned _ _ (by decide +kernel)
+  apply runSql_holds (foreignKeyAtoms_statementKeeps Profile.pinned _) _ (by decide +kernel)
   exact ⟨⟨by trivial, outside⟩, by trivial⟩
 
 /-- The run really fails and retains the first inserted row, so the theorem is nonvacuous. -/
@@ -55,7 +55,7 @@ def transaction : SqlState :=
 theorem rollbackPreserves : (runSqlFrom 4 [(.rollback, [])] transaction).Holds
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) := by
-  apply runSqlFrom_foreignKeyAtoms Profile.pinned _ 4 _
+  apply runSqlFrom_holds (foreignKeyAtoms_statementKeeps Profile.pinned _) 4 _
   · constructor
     · decide +kernel
     · intro snapshot same
@@ -83,10 +83,12 @@ def connection : Connection := { state := {database := input.raw} }
 
 /-- Successful resolution supplies the plain INSERT condition; the script has no later statement. -/
 theorem scriptConditions : ScriptConditionsWith
-    (fun statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition Profile.pinned database)
+    (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
+      result.RowReferencesHold input.raw.catalog.foreignKeyMapping)
+    (fun _ _ _ statement database => statement.KeepsParentSchema ∧ statement.ForeignKeyRowsCondition Profile.pinned database)
     runContext none 0 connection script.statements := by
   constructor
-  · intro resolved after equal
+  · intro _ resolved after _ equal _ _
     change Except.ok (.upsert 2 [[.value (.integer 2)]] [] [] none [] none, connection.resolveState) = .ok (resolved, after) at equal
     cases equal
     exact ⟨by trivial, outside⟩
@@ -97,7 +99,7 @@ theorem scriptPreserves : ∀ run ∈ runScriptAllFrom runContext none 0 connect
     run.connection.state.Holds
     (fun result => result.ParentSchemasCompatible input.raw.catalog.foreignKeyMapping ∧
       result.RowReferencesHold input.raw.catalog.foreignKeyMapping) := by
-  apply runScriptAllFrom_foreignKeyAtoms Profile.pinned _ runContext none 0 _
+  apply runScriptAllFrom_holds (foreignKeyAtoms_statementKeeps Profile.pinned _) runContext none 0 _
   · exact ⟨by decide +kernel, fun _ same => nomatch same⟩
   · exact scriptConditions
 

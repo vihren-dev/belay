@@ -2,7 +2,7 @@ import Belay.Sqlite.Model.ExprAppendLaws
 import Belay.Sqlite.Model.KeysUniqueAddColumn
 import Belay.Sqlite.Model.Resolution.AddColumn
 import Belay.Sqlite.Model.Resolution.ReadDefaultLaws
-import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.TableAtomFrames
 import Belay.Sqlite.Model.StatementStep
 
 set_option doc.verso true

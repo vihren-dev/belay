@@ -158,4 +158,13 @@ structure Query where
 def Query.readsTable (position : Nat) (query : Query) : Bool :=
   query.sources.any (·.source == .table position)
 
+/-- Whether a query has a source in the initial database ({name}`Source.isInitial`). The
+subqueries of a statement are separate queries; {lit}`Statement.readsInitial` collects them. -/
+def Query.readsInitial (query : Query) : Bool :=
+  query.sources.any (·.source.isInitial)
+
+/-- Whether a query has a source in the current database ({name}`Source.readsCurrent`). -/
+def Query.readsCurrent (query : Query) : Bool :=
+  query.sources.any (·.source.readsCurrent)
+
 end Belay.Sqlite.Model.Resolved

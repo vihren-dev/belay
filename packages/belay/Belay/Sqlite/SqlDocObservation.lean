@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.OutputTable
 import Belay.Sqlite.Run
 
 set_option doc.verso true

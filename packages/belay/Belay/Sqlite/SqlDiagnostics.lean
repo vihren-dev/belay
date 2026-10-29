@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Resolution.ErrorNames
 import Belay.Sqlite.Run
 import Belay.Sqlite.Translation
 

@@ -27,7 +27,7 @@ example : shop.raw.catalog.findTable (name! "invoices") = some invoices := by de
 at position `col`: the query holds exactly when some stored row has a value in that column that is equal to
 `x` under the comparison that `IN` uses (the affinity of the column, and its collation). Proof sketch: the
 script resolves with the lemmas and `sql_simp` (the column `id` resolves to the cell `col` of the table, the main
-condition to an `IN` of a parameter with the affinity and the collation of that column); `Holds.iff_selectOne_column`
+condition to an `IN` of a parameter with the affinity and the collation of that column); `Script.outputOn_column`
 turns the claim into the truth of `IN` over the values of the column, `Resolved.truthy_inValue_eq_true` turns that into
 a statement about one candidate, and the membership of a row in the scan order is the membership in the stored rows
 (`Table.scanRows_perm`). -/
@@ -65,10 +65,11 @@ theorem x_is_an_invoice_id (db : Database) (x : Int64) (position col : Nat) (tab
     ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
-  refine Iff.trans (Holds.iff_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  rw [Holds, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
     (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
     mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp)
-    (by simp [sql_simp])) ?_
+    (by simp [sql_simp])]
+  simp only [Option.any_some, Output.hasRows, apply_ite]
   rw [Syntax.Expr.columnCollation_identifier_table column]
   simp [sql_simp, Resolved.SubqueryRun.certain]
   rw [Resolved.truthy_inValue_eq_true]
@@ -100,7 +101,7 @@ set_option doc.verso true
 
 /-- Over every database with the invoices table and id column, IN is empty exactly when its resolved membership
 test is not true, and it never fails. Proof sketch: resolve the parameter and column with their comparison affinity
-and collation, then apply {name}`Empty.iff_selectOne_column` and {name}`Fails.not_selectOne_column`. -/
+and collation, then apply {name}`Script.outputOn_column`. -/
 theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position col : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
     (column : columnPosition table.columns (name! "id") = some col) :
@@ -135,14 +136,17 @@ theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position 
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
   constructor
-  · refine Iff.trans (Empty.iff_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  · rw [Belay.Sqlite.Empty, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])) ?_
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])]
+    simp only [Option.any_some, Output.hasNoRows, apply_ite]
     rw [Syntax.Expr.columnCollation_identifier_table column]
-    rfl
-  · exact Fails.not_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+    simp
+  · exact (by
+    rw [Fails, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])]
+    simp [Output.isError, apply_ite])
 
 example (x : Int64) (isFive : x = 5) : Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
   (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel)

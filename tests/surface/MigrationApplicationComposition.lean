@@ -13,6 +13,7 @@ branch sets and reduce their identical actual runs and projected observations. -
 theorem one_commutes : Migration.CommutesOn one connected one := by
   intro state entry
   have connection : state.connection = initial.connection := entry.1
+  apply observationProfile_eq_iff.mpr
   constructor
   · cases state with
     | mk clock index current outputs => cases connection; rfl
