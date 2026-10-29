@@ -1222,3 +1222,25 @@ could not complete its direct table count; the coordinator independently
 imported all six existing tables and confirmed counts 8, 6, 6, 4, 5 and 5.
 The reviewed scope is ready for isolated test-file implementation. Shared
 routing-file edits wait for an explicit handoff from the core worker.
+
+## Completed manual CI run, 2026-10-29
+
+Run `40841195886` at published head `b2f5e6b0` is terminal. All eleven Linux
+jobs passed as recorded above. The final macOS table owner passed all fifteen
+measurements in 2,407.613 seconds; its complete command step, including
+preparation, took 2,903 seconds. Table source remains unchanged. Across the
+ten macOS mutant owners, eight passed and two failed: 84 measurements passed,
+two timed out and five did not run, among 91 collected measurements. The
+separate main job has the two historical-name timeouts among 241 model cases;
+API reference generation and all four oversized-hex cases passed.
+
+All eleven macOS logs and ten artifact ZIP digests are retained in
+`build/final-b621/hosted-manual-40841195886/macos/`. The coordinator verified
+all 55 entries of `retained-sha256.json`. Final `summary.json` SHA-256 is
+`9a05ef0a5cea80b9072c5582fdb51fa037b24313d5ada4d1d0227046c6f2f273`;
+the manifest SHA-256 is
+`cfdb8dd615ce33469821df0651b4e7db726d070abcea360caadffb55f371b3d2`.
+There are no live jobs or pollers from this run. Its complete failure set is
+covered by the reviewed core, historical-name and JSON/date follow-ups.
+The CI task remains IN PROGRESS pending those repairs' combined and hosted
+acceptance on the updated source.
