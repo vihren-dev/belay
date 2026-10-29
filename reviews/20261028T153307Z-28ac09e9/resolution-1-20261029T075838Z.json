@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-29T07:58:38+00:00",
+  "finding": "20261028T153307Z-28ac09e9#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The model window phase is LIMIT/OFFSET binding and slicing (QueryWindow.bindWindow and PossibleResults.windowRows/windowChoices), not SQL OVER functions. The acceptance contract now states that distinction explicitly."
+}
