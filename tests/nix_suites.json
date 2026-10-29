@@ -214,6 +214,7 @@
     "tests/surface_schema_script_test.py",
     "tests/surface_rebuild_test.py",
     "tests/surface_sql_check_roots_test.py",
-    "tests/surface_automatic_cancel_test.py"
+    "tests/surface_automatic_cancel_test.py",
+    "tests/surface_select_automation_test.py"
   ]
 }

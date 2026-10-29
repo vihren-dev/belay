@@ -18,8 +18,11 @@ gaps in earlier ADR numbers do not change that request.
   projection rule; broader execution adapters remain absent there.
 - The disk-space gate blocked work at 8.37 GiB free. A fresh resource check now
   passes. No cleanup was performed by this task.
-- Development shell initialization passed: Lake reports Lean 4.34.1. No specification checks
-  or implementation acceptance cases have passed yet.
+- Development shell initialization passed: Lake reports Lean 4.34.1.
+- Four retained SELECT experiment tests passed in the complete Nix `surfaceS6`
+  suite: 69 tests, no failures, errors or skips, 699.816 seconds.
+  Report: `/nix/store/kqiwv5v55hh5g0zg1pr70b4rby9zv8hx-sqlite-verifier-test-surfaceS6-1/junit.xml`.
+  These are feasibility checks, not acceptance of the proposed automation.
 - Planning commit `1783df21` received independent review with no must findings.
   Its two should findings concern the owner-selected ADR number and the
   owner-local location of earlier consumer probes; both are clarified here.
@@ -58,12 +61,33 @@ no compatible HOL heap. The unchecked Isabelle files were removed; no Isabelle
 build or PDF is required. The Lean fixtures and written semantic review cover
 are the target-specific formal specification artifacts for this task.
 
-The isolated `select-experiments` workspace contains bounded fixtures in the
-existing surface test harness. Its Nix runtime build completed at
+The checked fixtures are integrated from the isolated `select-experiments`
+workspace into the primary working change. They use the existing surface test
+harness and the Nix runtime at
 `/nix/store/jh9zgilri7ckdrssni872wjrjsbadx7h-sqlite-verifier-test-surface`.
-This is build evidence only, not evidence that the new experiments passed.
-The host Python lacks pytest-timeout; tests use the Nix suite's declared Python,
-which includes it. No dependency was installed or test timeout removed.
+The Nix suite's declared Python includes pytest-timeout. No dependency was
+installed or test timeout removed.
+
+The experiment baseline is the pinned Lean 4.34.1 runtime and unchanged model
+source `3e2212ed`. Each module has a 60-second process limit; each test has a
+180-second limit. The schema and execution fixtures set recursion depth 8192.
+They inherit Lean's finite heartbeat default and disable background SQL checking.
+The four successful checks establish:
+
+- `SelectAutomationCore`: universal collection cardinality and WHERE properties,
+  with concrete duplicate, empty aggregate and alternative-result boundaries.
+- `SelectAutomationSchema`: a universal NOT NULL projection theorem with explicit
+  resolution, presence and calmness premises. Empty and populated instances
+  discharge every premise. Existing `sql_auto [db.notNull]` fails first.
+- `SelectAutomationSources`: nested-source certainty, ordering, NULL extension
+  in joins and fault boundaries on concrete evaluator inputs.
+- `SelectAutomationExecution`: branch-universal success, the raw output wrapper,
+  SQL/preparation errors, continuing context, vacuity and unsupported stops.
+
+The harness checked 23 named axiom reports (7 + 3 + 5 + 8), allowing only
+`propext`, `Classical.choice` and `Quot.sound`, with no `sorryAx`.
+Nix test times were 1.778, 3.845, 3.515 and 2.298 seconds respectively; these
+include harness and elaboration work and are not tactic-cost measurements.
 
 Source review found that a `Run` observation is not equivalent to arbitrary
 branch-universal programs, that `.may` faults require readiness checks, and
@@ -71,13 +95,21 @@ that three subquery certainty conditions are distinct. The ADR now specifies
 these boundaries explicitly. A 22-case automatic acceptance matrix and
 constructor-level semantic coverage are proposed, not claimed as implemented.
 
-Experiments and source inventory; ADR and acceptance contract; formal review
-views; owner decisions; focused Nix validation, independent review and the
-required task-boundary checks. No production automation is implemented here.
+The source map identifies existing constructors, laws and semantic traps. The
+review cover links the checked Lean statements to whole execution and evaluator
+views. Review finding 1 was rejected with a clarification that model windows
+mean LIMIT/OFFSET, not SQL OVER. Finding 2 was fixed by removing numeric rule
+priorities and explaining the shared registry's imported-library purpose.
+
+Remaining: independent review of this integrated revision, required full/verdict
+and task-end checks, then owner review of the complete cover. No production
+automation is implemented here.
 
 ## Open design axes
 
-Claim syntax and success conditions; general versus automatically discharged
-fragments; operator and expression coverage; schema-fact acquisition; source
-contexts and correlated queries; output alternatives and row order; trusted
-proof boundaries; rule selection, user hints, failure diagnostics and budgets.
+The revised proposal fixes the successful-result bridge domain, entry goal forms,
+rule matching and ordering, local/global registration, replay meaning and reuse
+of current public budgets. The owner review concerns these proposed interfaces
+and the stated automatic coverage, not unresolved implementation prerequisites.
+The new procedure's performance and the A01-A22/B01-B11 acceptance results can
+only be established during implementation; this specification does not claim them.

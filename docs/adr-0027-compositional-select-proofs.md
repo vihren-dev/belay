@@ -1,7 +1,8 @@
 # ADR 0027: Compositional SELECT proofs
 
-Date: 2026-10-28. Status: DRAFT; owner review and experiments are pending.
+Date: 2026-10-28; revised 2026-10-29. Status: DRAFT; experiments checked, owner review pending.
 Audience: designers and reviewers. Number 27 was explicitly requested by the owner.
+Evidence: [semantic review cover](select-automation-review.md), [source map](select-automation-source-map.md).
 Related: [ADR 0017](adr-0017-user-surface.md),
 [ADR 0018](adr-0018-surface-sql.md), [ADR 0022](adr-0022-database-validity.md).
 Acceptance contract: [SELECT automation](select-automation-acceptance.md).
@@ -69,8 +70,9 @@ only `.ok rows` and applies Q to those rows. `single` retains its existing
 These predicates describe the outputs of that run. Equivalence with a
 branch-universal success claim applies to one SELECT observation with a
 context-independent row-list predicate and explicit statement/context premises.
-For arbitrary programs, retain the one-way implication from `Sql.check` to the
-actual-run property. A continuation can differ across choices. Context-sensitive
+For arbitrary programs, use `Sql.check_actual` to obtain the actual returned
+value and its postcondition; outputs alone give no reverse implication.
+A continuation can differ across choices. Context-sensitive
 posts must also handle the raw `.oneOf` trace, not only concrete `.rows` traces.
 
 Row properties use positional `List Value` at the primitive boundary. A cell
@@ -155,9 +157,9 @@ forward or pull a postcondition backward. No fixed direction is public behavior.
 The tactic must not search concrete database samples to prove a universal claim.
 
 Users can pass proved lemmas as hints and apply all rules manually. A named
-scoped rule attribute identifies decomposition rules by phase and conclusion
-shape, with deterministic priority and declaration-name tie-breaking. Its proposed
-concrete contract is specified in the acceptance document. Registered
+phase-tagged rule attribute groups decomposition rules. Explicit hints run in
+supplied order, then registered theorems in qualified declaration-name order.
+Its matching and registration contract is specified in the acceptance document. Registered
 rules are Lean theorems, not trusted executable certificates. Cyclic rules or
 unhelpful hints cannot evade budgets. Registration does not automatically add a
 lemma to global simp or grind sets. Existing hint syntax remains usable; theorem
@@ -174,7 +176,8 @@ sibling goals. Budget exhaustion is not falsehood and produces no proof claim.
 
 Use the existing SQL work budget, cancellation and recursion controls. Nested
 phase searches share the caller's budget rather than replenish it. Successful
-automation offers explicit steps that elaborate again without the search. Every
+automation offers explicit steps that elaborate again without the top-level
+`sql_auto` route search; explicit tactics can still select phase rules. Every
 route produces an ordinary Lean proof checked under the current dependency
 policy; no `sorry`, new axiom or native decision bypass is introduced.
 The background checker reuses this search for the new claim shapes without

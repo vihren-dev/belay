@@ -37,6 +37,25 @@ are the only possible values, or that stored data equals a concrete example.
 Also prove it with generic table/column-presence premises rather than exact
 catalog equality, to keep the public rule applicable to other catalogs.
 
+For a script `s` with exactly one syntactic SELECT, a proof
+`one : s.statements.length = 1`, fixed `db` and `env`, and context-independent `Q`,
+the proposed successful-result bridge is:
+
+```lean
+(db.run (query s one) env).returnsResult Q ↔
+  (query s one).check (fun result _ => match result with
+    | .ok rows => Q rows | .error _ => False) (ExecutionContext.initial db env)
+```
+
+The implementation proves the nonemptiness of generated alternatives. A `send`
+bridge has its own statement; this equivalence does not cover arbitrary programs.
+`returnsRows P` specializes `Q` to `fun rows => ∀ row ∈ rows, P row`.
+`sql_select` introduces leading universal binders and implications and handles
+these conveniences, `Q (query.results context rows)`, universal predicates over
+`query.possibleResults context rows`, and `Q (phase arguments)` for the phase
+functions in the [source map](select-automation-source-map.md). `sql_run` handles
+`Sql.check` and triples and delegates their SELECT obligations to that procedure.
+
 ## Automatic acceptance matrix
 
 Each positive entry is required at feature completion. Listed assumptions are
@@ -105,22 +124,25 @@ later requires updating its rule coverage explicitly.
 Proposed extension syntax (not yet implemented):
 
 ```lean
-attribute [local sql_select_rule filter 100] my_filter_rule
+attribute [local sql_select_rule filter] my_filter_rule
 -- A proved rule about filtering, not a proof of the whole query:
 -- ∀ rows, AllRows P rows → AllRows Q (rows.filter test)
 example ... := by sql_select [my_filter_rule, schema_fact]
 ```
 
-The attribute accepts a phase and optional natural-number priority (default 100).
-Higher priorities run first; equal priorities use qualified declaration names.
+The attribute accepts one phase. Explicit hints run in supplied order, then
+registered rules run in qualified declaration-name order; there is no priority option.
 Supported phase names are `source`, `expression`, `filter`, `group`, `aggregate`,
 `having`, `project`, `distinct`, `order`, `window`, `compound`, `subquery` and
-`execution`. The example's AllRows is the ordinary universal membership
+`execution`. Here, `window` means LIMIT/OFFSET and tie-boundary selection;
+SQL window functions using OVER remain unsupported. The example's AllRows is the ordinary universal membership
 predicate, not a required new public type. Registration accepts proved theorem
-declarations whose conclusion matches a supported semantic phase goal. Premises
-become goals; the registry does not assert them. Ill-shaped rules get a registration
-diagnostic. Local registration ends with its section; explicit global registration
-persists through imports. Namespace names alone do not create local registration.
+declarations. The phase is a routing tag; ordinary Lean theorem application matches
+the conclusion to the current goal and retains all premises as goals. Reject
+non-theorem declarations; skip inapplicable proved rules without changing the goal.
+Built-in and imported rule libraries use this same registry. Local registration
+ends with its section; ordinary global registration persists through imports,
+so a library can supply reusable rules. Namespace names alone do not create local registration.
 No scoped-namespace activation mechanism is required in addition to local/global
 registration. Direct hints can supply applicable lemmas without registration.
 
@@ -149,12 +171,18 @@ route for model executions that skip those expressions.
 
 ## Performance and evidence
 
-Set finite Lean heartbeat and recursion limits per fixture and wall-clock limits
-per test process. Record representative successful, residual and exhausted cases
-using existing proof-cost support; do not add a separate measurement framework.
-The experiment report must select a reproducible baseline before implementation
-acceptance limits are fixed. Exact limits remain an open measured decision in
-this draft, not an invitation to raise them until a proof passes.
+Retain the current public resource controls: standalone tactics use the caller's
+Lean heartbeat and recursion limits; command checking uses `sql.checkBudget`
+(currently 100000) and `sql.checkRecursionLimit` (currently 4000).
+`Check.remainingUnits` and `withinBudget` retain finite search when the outer
+heartbeat setting is zero; `sql.checkBudget = 0` still disables checking.
+Nested SELECT phases share the remaining allowance.
+No new budget option or performance threshold is required by this feature.
+Use finite existing limits and process timeouts in fixtures. Record successful,
+residual and exhausted cases with existing proof-cost support; the current
+experiments are a feasibility baseline, not measurements of the future procedure.
+Replacement proofs must elaborate under the same imports and hints without
+`sql_auto`; explicit tactics such as `sql_run` can still perform rule selection.
 
 Each case identifies whether it tests a theorem, tactic integration or the
 existing model. Native SQLite comparisons are needed only where a new claim
