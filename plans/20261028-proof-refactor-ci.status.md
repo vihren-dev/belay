@@ -924,7 +924,7 @@ split into values/rendering (four) and lookup/errors (four), using their
 existing source/guard metadata. Exact mutations, guards, target dictionaries
 and authored-case suppliers remain unchanged. Numeric/FROMless measurements
 stay in `valueMutants`; `tests/conformance_json_date_mutants_test.py`
-belongs to `jsonDateMutants`. The existing inventories and CI matrix name ten mutant
+belongs to `jsonDateMutants`. The inventories and CI matrix now name ten mutant
 owners. No build-support, production, conformance or shared-helper code changes.
 
 The three original tail measurements passed focused Nix in 166.404 seconds
@@ -972,8 +972,9 @@ The final number source is
 the shared JSON/date/clock source is
 `/nix/store/iigyqn8g9giz0d9x3l3w27dg12wcski2-source`.
 Every file in these filtered source snapshots matches the final workspace.
-The temporary evidence summary is `/tmp/value-followup-acceptance.json`;
-the independent exact partition audit is `/tmp/value-followup-partition-audit.json`.
+The temporary working files `/tmp/value-followup-acceptance.json` and
+`/tmp/value-followup-partition-audit.json` are not durable records. The
+partition results and immutable Nix report paths are summarized above.
 
 The temporary selectors derive from the
 existing scheduled owners and run with `--max-jobs 1 --cores 3` and
@@ -995,3 +996,9 @@ two-platform flake targets, report links and documentation. No permanent
 partition gate or new measurement framework was added. The coordinator
 runs combined acceptance after integration. All hosted mutant owners and the
 model suite must still pass on both platforms; this CI task stays IN PROGRESS.
+
+Independent Claude review of `4ee25f4f` found zero must and two should
+findings (`20261029T075742Z-4ee25f4f`). Both are fixed: the owner count now
+explicitly describes the changed state, and the scratch evidence paths are
+identified as temporary. The substantive audit summary and immutable report
+paths remain in this status. Production code and measured inputs are unchanged.
