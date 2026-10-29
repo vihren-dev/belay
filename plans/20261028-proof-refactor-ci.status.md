@@ -891,3 +891,27 @@ build has started for the value follow-up. Existing hosted main checks can
 continue independently; all nine mutant jobs are terminal and their logs,
 artifact identities and hashes are retained under
 `build/final-d61d/hosted-mutants-40771508608/`.
+
+## Review access restored, 2026-10-29
+
+At the owner's request, the previously blocked review of `3933edbd` was retried.
+Claude authenticated and completed the review successfully, with zero must or
+should findings. Record: `20261029T071121Z-3933edbd`. The reviewer checked the
+plan against the current test file; hosted timing evidence remains in the
+retained CI logs. The authentication blocker is cleared. Value-workload
+implementation has not started.
+
+The previous main Linux job `123109629015` also completed successfully. Its
+verified reports contain 1,440 passing Nix tests across fifteen suites, with
+1,340 fresh executions and 100 cached results, and no failures or skips. The
+model's four oversized-hex cases all pass. The source checks have two
+missing-CLI skips, and the hosted infrastructure checks skip the development
+loop because its shell configuration is incomplete; the earlier local full
+acceptance includes that check. Checked API documentation and all fifty
+scheduled writer tests pass. Full logs, artifact metadata, verified ZIP files
+and parsed totals are retained in
+`build/final-d61d/hosted-checks-40771508608/`.
+
+The workflow still fails on the value-mutant timeout. macOS remains untested
+by this PR run, and the owner review remains unfinished. The CI task remains
+IN PROGRESS.
