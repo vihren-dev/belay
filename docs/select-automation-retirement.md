@@ -1,6 +1,7 @@
 # SELECT proof automation: retirement inventory
 
-Date: 2026-10-29. Status: DRAFT; owner decisions of 2026-10-29 applied.
+Date: 2026-10-29. Status: DRAFT; owner decisions of 2026-10-29 applied;
+reconciled to main `187ea510` after PR 297.
 Audience: designers and reviewers. Governing proposal:
 [ADR 0027](adr-0027-compositional-select-proofs.md), section "Scope and
 supersession". Completion rule: [acceptance contract](select-automation-acceptance.md),
@@ -8,7 +9,7 @@ section "Meaning of completion".
 
 This inventory names the code that the phase rules of ADR 0027 replace. The
 project has no users: replaced code is deleted, not kept behind an alias. Line
-counts are from the baseline `3e2212ed` and are for orientation only.
+counts are from main `187ea510` and are for orientation only.
 
 ## How to read the inventory
 
@@ -20,59 +21,53 @@ counts are from the baseline `3e2212ed` and are for orientation only.
   a law that is general and not tied to one query form.
 - **Retained**: not in scope. Listed so that the boundary is explicit.
 
-The baseline predates [PR 297](https://github.com/vihren-dev/sqlite-verifier/pull/297),
-which completed ADR 0026 D1. Reconcile at assignment: the names in "ADR 0026
-D1 owners" below come from that pull request, and a file that PR 297 deleted or
-renamed is reconciled to its replacement, not restored.
-
 ## Surface query forms (ADR 0017 S4)
 
-Each file proves `Holds`, `Empty` and `Fails` for one syntactic shape over every
-database. The shape is a whole-query lemma, which D3 says automation must not
-need. Their claims become the "required contrast" column of the acceptance
-matrix.
+Each file proves a `Script.outputOn_<form>` complete-output equation (ADR 0026
+D1) and the `Holds`, `Empty` and `Fails` claims of one syntactic shape over
+every database. The shape is a whole-query lemma, which D3 says automation must
+not need. Their claims become the "required contrast" column of the acceptance
+matrix. Line counts are the current ones after PR 297; the fourteen files total
+1,242 lines.
 
-| File under `packages/belay/Belay/Sqlite/` | Lines | Acceptance cover | Status |
-| --- | --- | --- | --- |
-| `CountQuery.lean` | 135 | A08 | Required |
-| `AggregateQuery.lean` | 159 | A08, A09 | Required |
-| `ColumnQuery.lean` | 172 | A19 | Required |
-| `SelectOneFrom.lean` | 136 | A01, A02 | Required |
-| `SelectNoFrom.lean` | 94 | A20 | Required |
-| `ExistsQuery.lean`, `NotExistsQuery.lean` | 227 | A18 | Required |
-| `DuplicateKeyQuery.lean`, `FilteredDuplicateKeyQuery.lean`, `FilteredDuplicateKeyEmpty.lean` | 412 | A07, A10 | Required |
-| `UniqueLookupQuery.lean` | 56 | A05 | Required |
-| `ExistsMayFail.lean`, `SelectOneMayFail.lean` | 113 | B05 | Required |
-| `QueryCases.lean` | 135 | B01, B11 | Required |
-| `SampleQueryHints.lean` | 66 | D6 hints | Required |
-| `TableInfoQuery.lean` | 117 | A20 (pragma rows) | Candidate: the metadata fixtures `ClaimsTableInfo*.lean` may need it |
-| `NotInQuery.lean` | 150 | ADR 0026 D4 consumer | Retained: an `EquivAt` law, not a claim form |
-| `Queries.lean`, `QueryLaws.lean`, `QuerySuccess.lean`, `QueryBridge.lean` | 375 | D2 | Retained: the claim layer. `Holds`, `Empty` and `Fails` are redefined as abbreviations, see ADR 0027 D2 |
+| File under `packages/belay/Belay/Sqlite/` | Acceptance cover | Status |
+| --- | --- | --- |
+| `CountQuery.lean` | A08 | Required |
+| `AggregateQuery.lean` | A08, A09 | Required |
+| `ColumnQuery.lean` | A19 | Required |
+| `SelectOneFrom.lean` | A01, A02 | Required |
+| `SelectNoFrom.lean` | A20 | Required |
+| `ExistsQuery.lean`, `NotExistsQuery.lean` | A18 | Required |
+| `DuplicateKeyQuery.lean`, `FilteredDuplicateKeyQuery.lean` | A07, A10 | Required |
+| `UniqueLookupQuery.lean` | A05 | Required |
+| `ExistsMayFail.lean`, `SelectOneMayFail.lean` | B05 | Required |
+| `QueryCases.lean` | B01, B11 | Required |
+| `SampleQueryHints.lean` | D6 hints | Required |
+| `TableInfoQuery.lean` (66) | A20 (pragma rows) | Candidate: the metadata fixtures `ClaimsTableInfo*.lean` may need it |
+| `NotInQuery.lean` (150) | ADR 0026 D4 consumer | Retained: an `EquivAt` law, not a claim form |
+| `Queries.lean`, `QueryLaws.lean`, `QuerySuccess.lean`, `QueryBridge.lean` (378) | D2 | Retained: the claim layer. `Holds`, `Empty` and `Fails` are redefined as abbreviations, see ADR 0027 D2 |
 
 ## ADR 0026 D1 owners
 
-The ADR 0026 D1 implementation in PR 297 replaces 45 endpoints with seven model
-and eight surface complete-output facts. That implementation and the owner names
-below are not in this branch yet. Here, `Query.described` and
-`resolvedStepOutput_query` still live in `QueryStatementOutput.lean`.
-ADR 0027 supersedes D1 after integration: a phase decomposition replaces a
-per-family characterization. Reconcile the exact names at assignment from
-PR 297's `plans/20261028-query-output-facts.status.md`.
+[PR 297](https://github.com/vihren-dev/sqlite-verifier/pull/297) completed
+ADR 0026 D1 on main. ADR 0027 supersedes D1: a phase decomposition replaces a
+per-family characterization. The owners are named as they exist on main.
 
-| Owner (PR 297) | Status |
+| Owner on main | Status |
 | --- | --- |
-| The SELECT-1 output fact in `SelectOneOutput` and its five consumer families (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Required |
-| The aggregate output fact | Required, after the `aggregate` phase rule exists |
-| The general source-output equation and the moved context and source definitions in `QueryOutputFacts` (`Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`) | Retained: the execution bridge of D5 uses them |
-| The eight resolver-only transports | Retained: see "Resolution-shape laws" |
-| The eight surface complete-output equations | Required, with the surface forms above |
+| `resolvedStepOutput_selectOne` in `SelectOneOutput.lean` (35) and the per-family output files below that apply it (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Required |
+| `AggregateQueryOutput.lean` | Required, after the `aggregate` phase rule exists |
+| `QueryOutputFacts.lean` (98): `Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`, `Connection.runOn_of_found`, `normalForm_eq_nil` | Retained: the execution bridge of D5 uses them |
+| `QueryStatementOutput.lean`: `Fault.ne_must_iff_none`, `resolvedStepOutput_query_hasRows`, `_hasNoRows`, `_isError` | Retained: generic observation laws |
+| The resolver-only transports (`*Resolution.lean`) | Retained: see "Resolution-shape laws" |
+| The surface `Script.outputOn_<form>` equations in the files of the table above | Required, with the surface forms above |
 
 ## Model per-family output laws
 
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
-| `CountSubqueryOutput`, `AggregateQueryOutput`, `ExistsSubqueryOutput`, `NotExistsSubqueryOutput`, `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SelectNoFromOutput`, `DuplicateKeyOutput`, `SimpleTableOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `QueryMayFailOutput`, `SubqueryMayFailOutput` | 1,540 | Required |
-| `TableInfoOutput` | 97 | Candidate, with `TableInfoQuery.lean` |
+| `CountSubqueryOutput`, `AggregateQueryOutput`, `ExistsSubqueryOutput`, `NotExistsSubqueryOutput`, `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SelectNoFromOutput`, `DuplicateKeyOutput`, `SimpleTableOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `QueryMayFailOutput`, `SubqueryMayFailOutput`, `SelectOneOutput` | 1,347 | Required |
+| `TableInfoOutput` | 68 | Candidate, with `TableInfoQuery.lean` |
 | `QueryStatementOutput`, `QueryStepOutput`, `QueryOutputOn`, `QueryOutputRows`, `QueryOutputCases`, `Output`, `StatementOutput`, `OneTableStatementOutput`, `NonQueryOutput`, `PrepareErrorOutput`, `PossibleOutput` | — | Retained: generic observation and execution laws |
 | `TwoStateNotExistsExceptOutput` | 86 | Retained: two-state observation |
 
@@ -80,7 +75,7 @@ PR 297's `plans/20261028-query-output-facts.status.md`.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountQueryLaws`, `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 608 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted |
+| `CountQueryLaws`, `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 620 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted |
 | `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQueryFaults`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 609 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
 | `InSubqueryColumnLaw`, `InSubqueryEqualityLink`, `InSubqueryEvaluate`, `InSubqueryFilterLaw`, `InSubqueryQueryInLaw`, `InSubqueryQueryLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryRowidAlias` | 863 | Candidate: `NotInQuery.lean` and the ADR 0026 D4 equivalences consume part of them. Keep what those consumers need; the rest becomes the `subquery` rule |
 | `SelectStepKeeps` | 133 | Retained: ADR 0025 preservation |
@@ -96,7 +91,7 @@ needs its equation; the status file records each such deletion.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `FromSourceResolution` | 1,725 | Retained, unless every consumer is retired |
+| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `FromSourceResolution` | 1,647 | Retained, unless every consumer is retired |
 | `BackfillStatementResolution` | 103 | Retained: migration |
 
 ## Examples and fixtures
@@ -125,4 +120,5 @@ needs its equation; the status file records each such deletion.
 
 Record in the status file, once at completion: lines deleted by this inventory,
 lines added by the rule library and tactic, and the net change in maintained
-Lean lines. Before/after counts are one-time acceptance work, not a CI check.
+Lean lines, against the [Lean simplification goal](lean-simplification-goal.md).
+Before/after counts are one-time acceptance work, not a CI check.

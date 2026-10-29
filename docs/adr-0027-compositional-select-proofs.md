@@ -1,6 +1,7 @@
 # ADR 0027: Compositional SELECT proofs
 
-Date: 2026-10-28; revised 2026-10-29. Status: DRAFT; experiments checked, owner review pending.
+Date: 2026-10-28; revised 2026-10-29 after the integration of ADR 0025 and ADR 0026.
+Status: DRAFT; experiments checked, owner review pending.
 Audience: designers and reviewers. Number 27 was explicitly requested by the owner.
 Evidence: [semantic review cover](select-automation-review.md), [source map](select-automation-source-map.md).
 Related: [ADR 0017](adr-0017-user-surface.md),
@@ -19,7 +20,7 @@ motivating NOT NULL projection. This ADR interprets that as general proof rules
 over the existing model and a specified automatic fragment. It does not require
 new SQLite semantics or decision of arbitrary Lean propositions.
 
-At source `3e2212ed`, Belay already has `Sql.check`, a predicate transformer,
+At main `187ea510`, after ADR 0025 and ADR 0026, Belay already has `Sql.check`, a predicate transformer,
 `Std.Do` triples, `mvcgen` specifications, and sequencing rules. `sql_run` traverses
 programs. For SELECT it applies `Sql.check_query_select`, `check_single_select`
 or `check_send_select`, leaving model-coverage and selected-output obligations.
@@ -33,6 +34,14 @@ HAVING, projection and sort-key evaluation. `Query.results` selects one result;
 `Query.possibleResults` and execution branches describe permitted alternatives.
 Faults and coverage are separate from pure result computation. A theorem about
 `Query.results` alone is not a theorem about successful SQL execution.
+
+ADR 0026 D1 is complete on main: `QueryOutputFacts` owns `Query.described`,
+`resolvedStepOutput_query` and the general source-output equation
+`resolvedStepOutput_query_source`; `SelectOneOutput` owns the SELECT-1 fact
+`resolvedStepOutput_selectOne`; each surface query form derives one
+`Script.outputOn_<form>` equation from them. These are per-family
+characterizations of the complete output, which the phase rules of this ADR
+replace; the generic facts in `QueryOutputFacts` are the execution bridge of D5.
 
 ## D1. One semantic foundation, arbitrary postconditions
 
@@ -216,10 +225,12 @@ On adoption, this ADR supersedes:
   `UniqueLookupQuery` and their may-fail and shared-case companions). Each is a
   whole-query lemma. Their claims become acceptance cases and their negative
   examples become the "required contrast" column.
-- ADR 0026 D1, the per-family complete-output characterizations from PR 297.
-  That implementation is not in this branch; this supersession applies after
-  it is integrated. A phase decomposition replaces a per-family
-  characterization. ADR 0026 D2 to D6 are unaffected.
+- ADR 0026 D1, the per-family complete-output characterizations on main
+  since PR 297: `resolvedStepOutput_selectOne`, the per-family model output
+  files that apply it, and the eight surface `Script.outputOn_<form>`
+  equations. A phase decomposition replaces a per-family characterization.
+  The generic facts of `QueryOutputFacts` stay. ADR 0026 D2 to D6 are
+  unaffected.
 - The `Query.Simple` predicate and its laws. `Simple` is a phase decomposition
   of one shape; its laws become the `filter` and `project` rules.
 

@@ -65,7 +65,9 @@ Required checks that cannot run remain findings.
 
 ## Existing code and constraints
 
-Source baseline: main commit `3e2212ed6983f36144b7fc5bdce9b263f939e50f`.
+Source baseline: main commit `187ea510`, which includes ADR 0025 and ADR 0026
+(PR 297). The original baseline `3e2212ed` predated them; the branch was
+reconciled on 2026-10-29.
 Relevant surface files: `ExecutionWP.lean`, `ExecutionWPLaws.lean`,
 `ExecutionSpecifications.lean`, `ReadStepRule.lean`, `SqlRun.lean`,
 `SqlRunGoals.lean`, `AutoSearch.lean`, `SqlSimpLaws.lean`, `CheckAutoProof.lean`.
