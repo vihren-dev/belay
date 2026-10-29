@@ -159,6 +159,8 @@ records that exception; the incomplete full run is not reported as passing.
 The normal `build/nix-tests-scheduled` root retains that report. No mutant suite
 ran. The task-only validation amendment passed the three documentation-link
 process checks; these are not additional Nix proof evidence.
+Amendment `88749d42` received independent Claude review
+`20261029T100954Z-88749d42` with no findings.
 Remaining: owner review of the complete cover. No production automation is
 implemented here. No full or scheduled check is running.
 
