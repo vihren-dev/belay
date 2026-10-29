@@ -62,7 +62,7 @@ build or PDF is required. The Lean fixtures and written semantic review cover
 are the target-specific formal specification artifacts for this task.
 
 The checked fixtures are integrated from the isolated `select-experiments`
-workspace into the primary working change. They use the existing surface test
+workspace into primary commit `2dab0fe0`. They use the existing surface test
 harness and the Nix runtime at
 `/nix/store/jh9zgilri7ckdrssni872wjrjsbadx7h-sqlite-verifier-test-surface`.
 The Nix suite's declared Python includes pytest-timeout. No dependency was
@@ -112,7 +112,22 @@ The Nix documentation check covered all 6,065 authored declarations:
 workflow check, not additional proof or conformance acceptance evidence.
 An initial `just test-full` run stopped because the host sandbox denied `ps`
 to the existing process-cleanup test. The owner approved the unsandboxed rerun;
-its source checks passed and its Nix suites are running.
+its source checks passed. The Nix run then passed feature coverage, locked
+corpora and frozen evidence before it was stopped at the resource gate:
+
+- Feature coverage: `/nix/store/0rdmc0nw1v5h7z4mah41wr3vxqzzj8bx-sqlite-verifier-test-coverageFeatures-1/junit.xml`.
+- Locked corpora: `/nix/store/ryzyg15qhyybj50frshpz35zc902rwiv-sqlite-verifier-test-corpora-1/junit.xml`.
+- Frozen evidence: `/nix/store/897f3fb9n76gj3yim5hsw585lzk4dk7i-sqlite-verifier-test-frozen-1/junit.xml`.
+
+Free space fell below the required 10 GiB. The full-check process was stopped;
+after its temporary files were released, 8.22 GiB remained. No failing assertion
+caused this stop. Targeted cleanup approval is pending for the packaged runtime,
+Rust build cache and four local Lake build directories listed in the owner question.
+
+The task-created experiment workspace was confirmed empty after integration and
+removed. Five diagnostic files were preserved in `build/deployment-target-research`;
+`build/select-automation-tests` retains the successful Nix report as a GC root.
+No other workspace or cache was removed. No checks remain running.
 
 Remaining: finish `just test-full` and `just test-scheduled-checks`, then owner
 review of the complete cover. No production automation is implemented here.
