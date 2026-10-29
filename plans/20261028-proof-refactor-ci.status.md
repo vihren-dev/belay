@@ -1382,3 +1382,52 @@ The expected ordinary count after retirement is 1,427. The current worker
 snapshot routes 98 mutant measurements to twelve owners. These are preflight
 identities and collection counts, not acceptance results; final integration
 and the four normal gates remain pending.
+
+## JSON/date implementation, 2026-10-29
+
+After the reviewed core handoff, the combined JSON/date test file is replaced
+by `conformance_json_mutants_test.py` and
+`conformance_date_clock_mutants_test.py`. The existing inventories and CI
+matrix assign them to `jsonMutants` and `dateClockMutants`. JSON conversion,
+rendering and lookup/errors have 2/2/4 mutants. JSON functions, validation and
+`json_each` retain their 3/3/6-mutant measurements. Clock retains four mutants;
+date inputs/results split 3/2, and modifier arithmetic/order versus keywords
+split 2/3. The owners have six and five measurements. Their summed 300-second
+test limits are 1,800 and 1,500 seconds, below the unchanged 2,700-second suite
+limit. The mutation tables, native suppliers, measurement helper, production
+packages and build definitions are unchanged by this follow-up.
+
+Two independent one-time capture audits preserve all 34 exact edits, guard and
+target maps, supplier identities and 29 selected native case definitions from
+`acb00829`, with no missing or duplicate mutant. The JSON-function body is
+unchanged. The audit files, source hashes, commands, logs and JUnit copies are
+retained in `build/json-date-followup/`; `acceptance-summary.json` records all
+six immutable Nix outputs and their derivations. These are acceptance records,
+not permanent tests. Existing affected source checks are
+`test_test_ownership.py`, `test_ci_workflow.py`, `test_nix_test_targets.py`,
+`test_test_reports.py` and `docs_test.py`.
+
+All eleven focused Nix cases pass with zero failures, errors or skips:
+
+| Measurement | Case durations (seconds) | Immutable output under `/nix/store/` |
+| --- | --- | --- |
+| JSON conversion/rendering/lookup-errors | 123.977 / 122.761 / 131.133 | `fak4mxavl5ccr22k681cp9m1zwbmavbm-sqlite-verifier-test-jsonMutants-focused-reading-1` |
+| JSON functions/validation | 128.190 / 127.299 | `cwqighj38pq5ssazqcwpamhf7gl4qdfq-sqlite-verifier-test-jsonMutants-focused-functions-1` |
+| JSON each | 129.976 | `qbkpf2fkx060ding3cmlqb2kxxz4344q-sqlite-verifier-test-jsonMutants-focused-each-1` |
+| Clock | 125.422 | `szr6l3hc9r94l52gg9www9zkylid4g5i-sqlite-verifier-test-dateClockMutants-focused-clock-1` |
+| Date inputs/results | 127.400 / 120.029 | `z2093vawzh3gmywjn2zzjpjfm1k93w7r-sqlite-verifier-test-dateClockMutants-focused-functions-1` |
+| Modifier arithmetic-order/keywords | 118.920 / 123.810 | `zqgxpk1g8hc43v0qbjc8kjqbybp22kw1-sqlite-verifier-test-dateClockMutants-focused-modifiers-1` |
+
+The six bounded commands take 1,392.768 seconds in total. Summed case times
+are 763.336 seconds for JSON and 615.581 seconds for date/clock. Each focused
+selection uses its actual static owner's source/runtime inputs, native/base
+agreement checks and unchanged deadlines. Runs are serial with Nix
+`max-jobs = 1`, `cores = 3` and `LEAN_NUM_THREADS=2`; the local machine exposes
+eight CPUs to the existing mutation scheduler. These local timings do not
+establish hosted performance or whole-owner completion.
+
+The measured source is `d028406e495c18ea1fea79bc6a59f016263581e6`. Rebasing onto
+reviewed metadata tip `1912e10e` preserves every measured source hash and all
+six focused Nix derivations; no test is rebuilt or rerun for that rebase.
+The wider task remains IN PROGRESS: combined acceptance and the full hosted
+model/mutant owners on both platforms remain pending.

@@ -82,7 +82,7 @@ The `full` scope builds them through `just test-scheduled-checks`, except the mu
 together they need more time than the check job has left. A mutant suite's limit is 2700
 seconds, since it runs alone on its runner; each test keeps its limit of 300 seconds. The mutant owners in
 `tests/nix_mutant_suites.json` cover resolution/rebuild rules, query evaluation/key/conflict rules,
-numeric/FROMless values, JSON/date/clock, query features,
+numeric/FROMless values, JSON, date/clock, query features,
 query sources, INSERT queries, rename, column drop, tables and functions. Each builds
 changed copies of the Lean packages, and every mutant must change an authored case verdict.
 The other scheduled owner, `scheduledTests.writers`, checks corpus-writer round trips.

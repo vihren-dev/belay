@@ -239,7 +239,10 @@
   "columnDropMutants": [
     "tests/conformance_column_drop_mutants_test.py"
   ],
-  "jsonDateMutants": [
-    "tests/conformance_json_date_mutants_test.py"
+  "jsonMutants": [
+    "tests/conformance_json_mutants_test.py"
+  ],
+  "dateClockMutants": [
+    "tests/conformance_date_clock_mutants_test.py"
   ]
 }
