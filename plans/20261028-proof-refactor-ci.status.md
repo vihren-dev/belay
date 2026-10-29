@@ -1215,3 +1215,10 @@ The reviewed historical-name retirement `c9077346` is integrated. Its ten
 retained evidence hashes were verified after copying to coordinator
 `build/retired-names/`, and the focused Nix output has a coordinator GC root.
 The full combined and hosted checks still remain pending.
+
+JSON/date task extension `d01d047f` passed independent Claude review
+`20261029T100940Z-d01d047f` with zero must and zero should findings. The reviewer
+could not complete its direct table count; the coordinator independently
+imported all six existing tables and confirmed counts 8, 6, 6, 4, 5 and 5.
+The reviewed scope is ready for isolated test-file implementation. Shared
+routing-file edits wait for an explicit handoff from the core worker.
