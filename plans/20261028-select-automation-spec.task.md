@@ -42,10 +42,14 @@ completion contract reviewable. The formalization must identify assumptions and
 avoid claiming that an abstract contract proves concrete tactic conformance.
 All experiment processes have explicit timeouts. Each coherent commit gets
 focused checks and independent review. The specification boundary requires
-`just test-full` and `just verdict`; task-end checks are `just test-nix` and
-`just test-scheduled-checks`. Only Nix results are acceptance evidence under the
-repository rules. There are no model-prediction changes or new mutant tables in
-this specification task. Required checks that cannot run remain findings.
+the focused Nix experiment checks and `just verdict`; task-end checks are
+`just test-nix` and `just test-scheduled-checks`. On 2026-10-29 the owner chose
+focused Nix evidence for this specification-only task and deferred the full
+suite. A deferred full suite is not a passing result. This exception does not
+change the implementation acceptance matrix or the repository's general cadence.
+Only Nix results are acceptance evidence under the repository rules. There are
+no model-prediction changes or new mutant tables in this specification task.
+Required checks that cannot run remain findings.
 
 ## Existing code and constraints
 
