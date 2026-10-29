@@ -164,19 +164,41 @@ Amendment `88749d42` received independent Claude review
 Remaining: owner review of the complete cover. No production automation is
 implemented here. No full or scheduled check is running.
 
+## Retirement instructions (2026-10-29)
+
+The owner found that the specification was purely additive: it named what to
+reuse but not what to remove. The owner decided on 2026-10-29: keep `Holds`,
+`Empty` and `Fails` as abbreviations over the D2 predicates; retire the ADR 0026
+D1 characterizations; retire the per-family resolution-shape laws where the ADR
+0026 D3 certificate replaces them; stage automatic closure with a core set.
+Review `20261029T112539Z-23586cde` found two must findings: the general
+source-output equation was both required and retained, and the D3 certificate
+assumes resolution, so it cannot replace a resolution-shape law. Both fixed:
+the equation is retained with `QueryOutputFacts`, and resolution-shape laws are
+retained unless every consumer is retired. This reverses the third owner
+decision on technical grounds.
+
+Applied: ADR 0027 gains "Scope and supersession", the D2 claim-vocabulary
+paragraph, the D3 staging paragraph and a completion rule that includes an
+empty required column of the new
+[retirement inventory](../docs/select-automation-retirement.md). The acceptance
+contract makes retirement per family and applies the ADR 0025 D4 test lifetime
+to migration witnesses. The task file records the owner decisions. Checks:
+`tests/docs_test.py` and `just review`. No Lean source changes.
+
 ## GitHub review
 
 The owner moved the remaining review to [PR 299](https://github.com/vihren-dev/sqlite-verifier/pull/299).
-Publication exposed a conflict with main `2c5fff35`. The merge retains both
-the SELECT experiment registration and main's `theoremDependencies` suite.
-ADR 27 and the task now link main's Lean simplification goal; no production
-Lean source or proposed acceptance case changed. The Nix reports above describe
-the pre-merge revisions. Current-head CI remains responsible for integration
-validation; the full local suite remains deferred.
-The merge passed 11 focused ownership, documentation-link and Lean-category
-process checks. These checks do not replace the recorded Nix proof evidence.
-Merge `cdd3e645` received independent Claude review
-`20261029T122617Z-cdd3e645` with no findings.
+Merge `cdd3e645` integrates main `2c5fff35`, preserving the SELECT experiment
+registration and main's `theoremDependencies` suite. It passed 11 focused
+ownership, documentation-link and Lean-category process checks and independent
+review `20261029T122617Z-cdd3e645` with no findings.
+The owner's remote updates through `d702bea8` are retained, including the
+claim abbreviations, staged automatic closure and retirement inventory.
+The ADR's link to ADR 0026 now resolves locally after the main merge.
+The Nix reports above describe pre-merge revisions; current-head CI supplies
+integration validation. The full local suite remains deferred.
+The combined remote-update merge passed all three documentation-link checks.
 
 ## Open design axes
 

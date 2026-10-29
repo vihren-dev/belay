@@ -4,8 +4,10 @@ Date: 2026-10-28; revised 2026-10-29. Status: DRAFT; experiments checked, owner 
 Audience: designers and reviewers. Number 27 was explicitly requested by the owner.
 Evidence: [semantic review cover](select-automation-review.md), [source map](select-automation-source-map.md).
 Related: [ADR 0017](adr-0017-user-surface.md),
-[ADR 0018](adr-0018-surface-sql.md), [ADR 0022](adr-0022-database-validity.md).
+[ADR 0018](adr-0018-surface-sql.md), [ADR 0022](adr-0022-database-validity.md),
+[ADR 0026](adr-0026-semantic-proof-boundaries.md).
 Acceptance contract: [SELECT automation](select-automation-acceptance.md).
+Retirement inventory: [replaced code](select-automation-retirement.md).
 Investigation: [task](../plans/20261028-select-automation-spec.task.md).
 
 ## Intent and current boundary
@@ -80,6 +82,16 @@ existence claim is distinct from `row[i]? ≠ some .null`, which also admits a
 missing cell. The motivating acceptance theorem establishes existence and
 non-nullness. Generated named-row types are not required by this feature.
 
+The ADR 0017 S2 names `Holds`, `Empty` and `Fails` remain, as the owner decided
+on 2026-10-29. Each becomes an abbreviation of the observation predicates of this
+decision: `Holds` and `Empty` of the successful-result predicate, `Fails` of the
+matching error observation. Each has the same truth value as its current
+definition on every query script and database; the implementation proves that
+equivalence as a migration witness, then deletes the old definitions. The
+decidable instances and the `check_query` argument are kept. Their consumers in
+the claims driver, assertions, explanations and migration patterns change no
+statement. There is one claim vocabulary, not two.
+
 ## D3. General decomposition, bounded automatic closure
 
 Every SELECT form that the current model describes has a public semantic
@@ -92,6 +104,11 @@ count as decomposition. The operator inventory and tests identify each route.
 The automatic acceptance cases define a separate promise: with their documented
 schema and data hypotheses, `sql_auto` closes them without a supplied theorem
 of the whole query. Every operator family has a representative automatic case.
+The promise is staged, as the owner decided on 2026-10-29. Decomposition rules
+are required for every family. Automatic closure is required first for the
+core set A01 to A04, A08, A10, A13 and A14; the remaining automatic cases are
+later slices. Retirement of a family's replaced code follows its decomposition
+rules and acceptance cases, not its automatic closure.
 This does not promise closure for arbitrary predicates or expression programs.
 An unsolved arithmetic, Lean user-function or collection fact remains an explicit
 obligation. An unsupported model form remains a model restriction. Neither is
@@ -183,14 +200,47 @@ policy; no `sorry`, new axiom or native decision bypass is introduced.
 The background checker reuses this search for the new claim shapes without
 weakening certification, exclusions, replay or command-level cancellation.
 
+## Scope and supersession
+
+The project has no users. The phase rules replace the per-form proof layer, and
+replaced code is deleted; there are no compatibility aliases. The
+[retirement inventory](select-automation-retirement.md) names each file as
+required, candidate or retained, and the implementer migrates every caller
+before a deletion.
+
+On adoption, this ADR supersedes:
+
+- The ADR 0017 S4 query-form theorems (`CountQuery`, `AggregateQuery`,
+  `ColumnQuery`, `SelectOneFrom`, `SelectNoFrom`, `ExistsQuery`,
+  `NotExistsQuery`, `DuplicateKeyQuery`, `FilteredDuplicateKeyQuery`,
+  `UniqueLookupQuery` and their may-fail and shared-case companions). Each is a
+  whole-query lemma. Their claims become acceptance cases and their negative
+  examples become the "required contrast" column.
+- ADR 0026 D1, the per-family complete-output characterizations completed in
+  PR 297. A phase decomposition replaces a per-family characterization. ADR
+  0026 D2 to D6 are unaffected.
+- The `Query.Simple` predicate and its laws. `Simple` is a phase decomposition
+  of one shape; its laws become the `filter` and `project` rules.
+
+The mathematical claims of the superseded code remain obligations, as in ADR
+0025 D4: the acceptance cases and the retained phase rules must derive each
+retired claim with the same entry assumptions. Historical task and status
+records keep their original wording. The per-family resolution-shape laws are
+not superseded: the ADR 0026 D3 certificate takes successful resolution as a
+premise and does not give the resolution equation. They stay, except a law
+whose every consumer is retired, which the status file records.
+
 ## Consequences and validation
 
-The rules extend the current evaluator, using characterization lemmas for fused
-functions. Completion requires the entire acceptance matrix. The
-[Lean simplification goal](lean-simplification-goal.md) calls for replacing
-duplicated query proofs with general rules while retaining every capability.
-Net savings must be measured on the completed implementation. Model-semantic
-changes require their own specification and conformance evidence.
+The rule library replaces the per-form layer around the current evaluator; some
+fused functions need characterization lemmas rather than evaluator refactors.
+The first implementation can be incremental. Completion requires decomposition
+rules for every family, automatic closure of the core set of D3, and an empty
+required column of the retirement inventory. Model-semantic changes discovered
+during proof work require their own explicit specification and conformance
+evidence. The status file records the net line change at completion.
+This follows the [Lean simplification goal](lean-simplification-goal.md):
+replace duplicated proofs with general rules while preserving capabilities.
 
 The accompanying acceptance contract names positive, negative and residual cases.
 Retained experiments test feasibility and current boundaries, not the existence
