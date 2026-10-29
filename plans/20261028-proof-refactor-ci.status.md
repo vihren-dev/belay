@@ -1137,3 +1137,41 @@ checked the thirteen parameters and retained ADR 0008 source guards. The root
 also verified the retained main/core job log hashes and the 241 model case
 records. The retirement is ready for isolated implementation; core-mutant
 timing work has the local Nix execution slot first.
+
+## Historical-name retirement implementation, 2026-10-29
+
+The isolated retirement workspace starts at `ab85cb93`, after the reviewed task
+extension. It removes all thirteen `test_replaced_model_names_absent` cases,
+the obsolete module sentence and the `ABSENCE_CHECKS` scanner exemption.
+The shape and codec test bodies, `compile_checks`, its callers and the source
+architecture guards remain unchanged. The task remains IN PROGRESS pending
+independent review and combined hosted acceptance.
+
+The one-time compiled audit uses
+`/nix/store/vi1d8p2dwnyg6fjb6gm6isjan4s7sygz-sqlite-verifier-theorem-dependencies/dependencies.json`.
+Its SHA-256 is `805ea146835f7a915f01795523df2697f02783b6430cd4b9c9f705fd8edb2437`.
+Coverage is complete for 1,169 of 1,169 selected library modules. All thirteen
+fully qualified names from the retired matrix are absent. The `packages/`,
+`lean-toolchain` and `nix/` source diff from the report's accepted `23a3427b`
+revision is empty. This audit reuses the accepted compiled output; it builds
+no replacement matrix and creates no permanent gate.
+
+The original fixture remains at `b2f5e6b0`. Hosted Linux run `40841195886`
+artifact `12884517187` contains thirteen passing rejection cases (13.227
+seconds) in `nix-tests-full/model/junit.xml`. The ZIP digest was verified as
+`6953d84c64a8693829896ca05738de222b08b1f2430e26039012acbb0d2b75ce`.
+The one-time audit and original JUnit are in ignored `build/retired-names/`.
+The affected source checks are `resolution_cleanup_test.py` and `docs_test.py`;
+the focused Nix selection retains the existing model owner's inputs,
+environment and deadlines for the two remaining `shared_table_shape_test.py`
+cases. Full model acceptance should collect 228 cases.
+
+Focused Nix acceptance passes both retained cases through the model owner:
+`/nix/store/q9hzf92zx32cgkb259zl7ds5pal60hrm-sqlite-verifier-test-model-retained-shape-codec-1`.
+Its JUnit reports two passes, zero failures/errors/skips and 1.55 seconds;
+the bounded command takes 4.826 seconds. The selection changes only the
+pytest file list and output name, preserving source inputs, runtime,
+environment and deadlines. Package producers are reused. The command, log,
+selection and JUnit evidence are retained in `build/retired-names/`.
+An initial permission-review timeout occurred before the command started;
+the permitted launch retry executed this single measurement successfully.

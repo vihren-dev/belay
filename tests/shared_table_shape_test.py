@@ -3,7 +3,7 @@
 `Belay.Sqlite.Model.Database` stores the catalog beside the rows, and `Belay.Sqlite.Model.Conforms`
 requires that catalog to be the given one under the profile and the rows to have one
 list per catalog object, with none at an index (`Model.lean`). The codec transports rows
-and values (`Codec.lean`). The replaced model types of ADR 0008 must not exist.
+and values (`Codec.lean`).
 """
 
 import json
@@ -127,16 +127,3 @@ def checkGolden : IO Unit := do
 #eval checkGolden
 """
     assert "ROW_CODEC_OK" in compile_checks(source, tmp_path, lean_sysroot, lean_libraries)
-
-
-@pytest.mark.parametrize("name", ["Schema", "TableSchema", "TableShape", "TableProperties", "IndexDefinition",
-                                  "DeclaredType", "Column", "maximumColumns", "ExecutionProfile", "Statement",
-                                  "supportedColumns", "GeneratedInputs", "Table.properties"])
-def test_replaced_model_names_absent(name: str, tmp_path: Path, lean_sysroot: Path,
-                                     lean_libraries: tuple[Path, Path]) -> None:
-    """The compiler rejects each model name that ADR 0008 replaced; no compatibility alias exists."""
-    source = tmp_path / "ReplacedName.lean"
-    source.write_text(f"import Belay.Sqlite.Model\nimport Belay.Sqlite.Model.Codec.Resolution\n#check Belay.Sqlite.Model.{name}\n")
-    result = run_command([str(lean_sysroot / "bin/lean"), str(source)], cwd=tmp_path,
-        timeout=10, environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, lean_libraries))})
-    assert result.returncode != 0 and "error(lean.unknownIdentifier)" in result.stdout, result.diagnostic()
