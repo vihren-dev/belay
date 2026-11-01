@@ -25,7 +25,7 @@ MODEL_PACKAGE_DIRECTORY = Path("packages/belay-sqlite-model")
 PUBLIC_PAGE_ROOTS = frozenset({"Belay"})
 """Our library page roots; Lean library pages remain outside the correction scope."""
 
-SOURCE_REPOSITORY = "https://github.com/vihren-dev/sqlite-verifier"
+SOURCE_REPOSITORY = "https://github.com/vihren-dev/belay"
 """Source links identify the public repository and the caller's checked commit."""
 SOURCE_REVISION_PLACEHOLDER = "SOURCE-REVISION"
 """The commit in base-build source links; not hexadecimal, so it cannot be a commit hash."""
