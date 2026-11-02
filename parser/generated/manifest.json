@@ -1,0 +1,22 @@
+{
+  "flags": [
+    "-O1",
+    "-std=c99",
+    "-fPIC",
+    "-fvisibility=hidden",
+    "-DSQLITE_OS_OTHER=1",
+    "-DSQLITE_THREADSAFE=0"
+  ],
+  "grammars": [
+    {
+      "folder": "7c0495821ae35f29",
+      "prefix": "Syntax_7c0495821ae35f29",
+      "sources": "upstream"
+    },
+    {
+      "folder": "191f4283d9f99a43",
+      "prefix": "Syntax_191f4283d9f99a43",
+      "sources": "upstream-3.46.0"
+    }
+  ]
+}

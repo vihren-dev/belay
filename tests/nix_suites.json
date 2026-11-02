@@ -114,6 +114,9 @@
   "parserLibrary": [
     "tests/parser_library_test.py"
   ],
+  "parserSources": [
+    "tests/parser_generated_test.py"
+  ],
   "corpora": [
     "tests/conformance_locked_corpora_test.py"
   ],

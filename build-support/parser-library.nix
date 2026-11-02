@@ -87,6 +87,42 @@ let
         -I${grammars.${identity}} -I"$src/${directory}" -I"$src/parser" "$src/parser/$unit.c" -o "$out/$unit.o"
     done
   '';
+  # The compile flags that every build of the committed C shares (ADR 0023, D2 and D3). The Lake
+  # build of the text package reads them from the manifest; the C library headers of
+  # parser/c-headers declare what these two SQLite options leave in the code.
+  compileFlags = [ "-O1" "-std=c99" "-fPIC" "-fvisibility=hidden" "-DSQLITE_OS_OTHER=1" "-DSQLITE_THREADSAFE=0" ];
+  manifest = {
+    flags = compileFlags;
+    grammars = map (identity: {
+      prefix = prefix identity;
+      folder = short identity;
+      sources = (releaseOfGrammar identity).sources;
+    }) identities;
+  };
+  # The tree that is committed as parser/generated (ADR 0023, D1): the C files that the compile
+  # needs and that a generator writes, one folder for each grammar, and the manifest. `just
+  # parser-sources` writes this tree into the checkout, and the `parserSources` suite compares it.
+  generated = pkgs.runCommand "sqlite-verifier-parser-generated" {
+    src = source steps;
+    nativeBuildInputs = [ pkgs.python3 ];
+  } ''
+    cd "$src"
+    mkdir -p "$out"
+    python3 -m parser.library_steps sources --table ${builtins.toFile "dialects.json" (builtins.toJSON table)} \
+      ${lib.concatMapStringsSep " " (release: "--release ${releases.${release.version}}/release.json") table.releases} \
+      ${lib.concatMapStringsSep " " (identity: "--grammar ${grammars.${identity}}/grammar.json") identities} \
+      --output "$out"
+    ${lib.concatMapStringsSep "\n" (identity: ''
+      mkdir -p "$out/${short identity}"
+      for name in syntax.c syntax.h parse.h token_map.inc token_names.inc; do
+        # Lemon wrote the store path of the grammar derivation into its #line directives and
+        # comments; the committed copy must not depend on that path.
+        sed 's|${grammars.${identity}}/||g' ${grammars.${identity}}/$name > "$out/${short identity}/$name"
+      done
+    '') identities}
+    python3 -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1])), indent=2))' \
+      ${builtins.toFile "manifest.json" (builtins.toJSON manifest)} > "$out/manifest.json"
+  '';
   # Link all grammars with the API; the export check runs unless sanitizer runtimes add symbols.
   library = { name, flags, exportCheck }: let objects = map (grammarObjects flags) identities; in
     pkgs.runCommandCC name {
@@ -123,7 +159,7 @@ let
   '';
   driver = root + /tests/parser_library_driver.c;
 in {
-  inherit releases grammars inputs;
+  inherit releases grammars inputs generated;
   library = normal;
   # The runtime root of the parserLibrary test suite: the library, the driver, the
   # inputs and, on Linux, the sanitized build.

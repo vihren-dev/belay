@@ -73,6 +73,9 @@ derivations as `checks.<system>`:
   grammars, and, on Linux, the sanitizer job over every parser test input and
   corpus text. Its runtime root holds the built library and inputs, so a model,
   harness or documentation change reuses the result.
+- `tests.parserSources`: the committed generated C under `parser/generated/` against a fresh
+  generation from the vendored SQLite sources, byte for byte. A failure names each file that
+  differs; `just parser-sources` writes the files again.
 
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
 with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`).

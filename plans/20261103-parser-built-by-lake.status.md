@@ -15,3 +15,19 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
 ## Progress
 
 - 2026-11-03: task specified; ADR 0023 accepted by the owner.
+- 2026-11-03, slice 1 (committed generated C): `parserLibrary.generated` in
+  `build-support/parser-library.nix` builds the tree of `parser/generated/` (one folder per grammar
+  named by the 16 digits of the symbol prefix, `library_grammars.inc`, `library_metadata.inc`,
+  `manifest.json` with prefix, folder, release source folder and compile flags). Lemon writes the
+  store path of the grammar derivation into `#line` directives; the tree removes that path, so the
+  committed files do not depend on a store hash or a platform. `just parser-sources` writes the tree
+  into the checkout. The suite `parserSources` (`tests/parser_generated_test.py`, entry in
+  `tests/nix_suites.json`, definition in `build-support/tests.nix`) compares the tree with the
+  committed files. Compile flags in the manifest: `-O1 -std=c99 -fPIC -fvisibility=hidden` and the two
+  SQLite options of D2 (kept in the manifest so that Lake and Nix read one copy).
+- One-byte failure record (D5, 2026-11-03): one byte of `parser/generated/7c0495821ae35f29/token_names.inc`
+  changed (byte 101, replaced by `x`); `nix-build build-support/default.nix -A tests.parserSources`
+  failed with exit 1 and the message `parser/generated differs from the generation (run `just
+  parser-sources`)` followed by `7c0495821ae35f29/token_names.inc: the committed bytes differ from the
+  generation`. The byte was restored; the suite passes (2 tests) on the commit. Log:
+  `build/agent-logs/ps-suite-onebyte.log`.

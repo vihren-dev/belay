@@ -97,6 +97,13 @@ restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
+# Write the generated C of the parser library into parser/generated with Nix (ADR 0023, D1); run it after a change to parser/dialects.json, a vendored release or a generator, and commit the result.
+parser-sources:
+    mkdir -p build
+    timeout --foreground 900 nix-build build-support/default.nix -A parserLibrary.generated --out-link build/parser-generated --extra-experimental-features 'nix-command flakes'
+    rm -rf parser/generated
+    cp -R --no-preserve=mode,ownership build/parser-generated/. parser/generated
+
 # Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break.
 dev-build: _dev-shell-warning
     cd packages/belay-sqlite-model && lake build Belay.Sqlite.Model Belay.Sqlite.Model.Codec
