@@ -39,6 +39,11 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   the report. Production collection and deployment remain outside this task.
 - Completion-record review `20261102T083353Z-77163b2d`: no findings.
   The temporary notes workspace was removed after its report joined the main line.
+- Owner follow-up on 2026-11-02: publish the experiments and an observability ADR
+  in the same PR. [ADR 0028](../docs/adr-0028-development-observability.md) is
+  PROPOSED. It uses the captured results to specify continuous collection,
+  ClickHouse delivery, history migration, retention and explicit limits.
+  This adds a design proposal; production implementation has not started.
 
 ## References
 
