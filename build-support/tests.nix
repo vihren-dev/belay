@@ -9,6 +9,9 @@
 }:
 let
   fs = pkgs.lib.fileset;
+  # The C of the parser library at `parser/` of the surface root: Lake replays the text package
+  # there, and its lakefile reaches the C by `../../parser` (ADR 0023, D2).
+  parserSources = (import ./sources.nix { inherit (pkgs) lib; inherit root; }).parser;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
   ];
@@ -51,6 +54,7 @@ let
     ln -s ${surfacePackage} "$out/packages/belay"
     ln -s ${textPackage} "$out/packages/belay-sqlite-text"
     ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
+    ln -s ${parserSources} "$out/parser"
   '';
   # The layer test reads the Lean files and lakefiles of every package and the Nix build.
   packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")
@@ -210,10 +214,10 @@ let
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
-    environment.BELAY_PARSER_LIBRARY = surfacePackage.BELAY_PARSER_LIBRARY;
     # The real Lean server reads the UTC zone file when its watchdog starts.
     environment.TZDIR = "${pkgs.tzdata}/share/zoneinfo";
-    tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
+    # The link test reads the dynamic dependencies and the symbols of the Lake outputs.
+    tools = [ native.sqlite ] ++ (if pkgs.stdenv.hostPlatform.isLinux then [ pkgs.glibc.bin pkgs.binutils ] else [ pkgs.cctools ]);
   };
 in {
   sample = suite "sample" {

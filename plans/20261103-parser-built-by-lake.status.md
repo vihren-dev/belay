@@ -31,3 +31,16 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
   parser-sources`)` followed by `7c0495821ae35f29/token_names.inc: the committed bytes differ from the
   generation`. The byte was restored; the suite passes (2 tests) on the commit. Log:
   `build/agent-logs/ps-suite-onebyte.log`.
+
+## Slice 1 checks (Nix)
+
+- `just test-full` on the slice-1 tree: test reports `/nix/store/nphbipyfkf0z9h3xqxa0kfw6sw7nix5z-sqlite-verifier-test-reports`; suite `parserSources` output `/nix/store/khrd6dnp0l654rcc8pcasi4awxvgrkca-sqlite-verifier-test-parserSources-1` (2 passed).
+- The verdict of slice 1 is covered by the verdict of slice 2 (the working copy moved on before `just verdict` ran).
+
+## Slice 2: Lake compiles the parser library
+
+- Lake compiles the C of `parser/` in `packages/belay-sqlite-text/lakefile.lean` (`extern_lib parserLibrary`), with the headers of `parser/c-headers`; `BELAY_PARSER_LIBRARY` no longer exists in the lakefiles, the Nix builds and the tests.
+- The Nix workspaces get `parser/` through `extraSources`; `build-support/sources.nix` has the component `parser`; `tests/test_source_identity.py` covers it, including a derivation-level test.
+- `textPackage` builds with `withoutSystemCompiler`: the PATH of Lake has no `cc`, `gcc` or `c++`, and `clang` is the one of the Lean toolchain. Output `/nix/store/b04g7k4rlm1j94qaxkfabniqkx4jz0vb-belay-sqlite-text-0.1.0`.
+- New test `tests/surface_parser_link_test.py`: no program or library depends on a parser library; the objects call only the ten declared C functions.
+- Still to do in slice 2: dev-build, test-full, verdict, predictions comparison with `/nix/store/y8q8nsgwz1nnq5xw3g4x8qnhb5wcj78p-sqlite-verifier-predictions`.

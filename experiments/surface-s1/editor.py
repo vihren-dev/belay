@@ -8,8 +8,7 @@ extension starts the same server and shows the same diagnostics.
 
 Run from the repository root: `python3 experiments/surface-s1/editor.py PACKAGE FILE`, where
 PACKAGE is a built, writable copy of `packages/belay` and FILE a Lean file in it. The
-environment needs `lake` on the path and `BELAY_PARSER_LIBRARY`, as `packages/belay/README.md`
-says.
+environment needs `lake` on the path, as `packages/belay/README.md` says.
 """
 
 import json

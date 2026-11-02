@@ -7,12 +7,11 @@ syntax that `sql r"..."` gives), and reads SQL text with the text package below 
 `packages/belay-sqlite-text`.
 
 The text package calls the SQLite parser library while a file elaborates, so the modules of
-both packages are precompiled and linked with the library. Lake reads the library's folder from
-the environment variable `BELAY_PARSER_LIBRARY`:
+both packages are precompiled and linked with the library. Lake compiles the library's C code
+with the text package, so a build needs only the pinned Lean:
 
 ```sh
-nix-build build-support/default.nix -A parserLibrary.library --out-link build/parser-library
-BELAY_PARSER_LIBRARY=$PWD/build/parser-library lake build Belay Belay:shared
+lake build Belay Belay:shared
 ```
 
 Lake loads the precompiled modules for `lake build`, `lake lean FILE` and the editor's server.

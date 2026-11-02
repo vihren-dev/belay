@@ -88,12 +88,14 @@ in rec {
     source = sources.text;
     # The shared libraries are what Lake loads for a file that imports the translation.
     # The program translates the conformance harness's SQL texts.
-    targets = [ "BelaySqliteText" "BelaySqliteText:shared" "parserShim:shared" "belay-sqlite-translate" ];
+    targets = [ "BelaySqliteText" "BelaySqliteText:shared" "parserLibrary:shared" "belay-sqlite-translate" ];
     requires."packages/belay-sqlite-model" = modelPackage;
     # The translation's precompiled modules call the model's compiled code.
     sharedRequires = [ "packages/belay-sqlite-model" ];
     executables = true;
-    environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
+    extraSources.parser = sources.parser;
+    # Lake compiles the parser's C with the Lean toolchain; the build has no other C compiler.
+    withoutSystemCompiler = true;
   };
   # Sampling belongs to the surface; the model and conformance runner do not require it.
   plausiblePackage = import ./plausible.nix { inherit pkgs leanToolchain; };
@@ -123,7 +125,7 @@ in rec {
     requires."packages/belay/.lake/packages/plausible" = plausiblePackage;
     sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text"
       "packages/belay/.lake/packages/plausible" ];
-    environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
+    extraSources.parser = sources.parser;
   }).overrideAttrs (_: {
     # Nix supplies this exact source; Lake must use the local output without cloning it.
     postPatch = ''
@@ -134,7 +136,7 @@ in rec {
     '';
   });
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
-  parserLibrary = import ./parser-library.nix { inherit pkgs root; };
+  parserLibrary = import ./parser-library.nix { inherit pkgs leanToolchain root; };
   verifierConformance = leanPackage {
     pname = "sqlite-verifier-conformance-package";
     directory = "packages/verifier-conformance";

@@ -11,13 +11,11 @@ run elaborates a whole fixture, and each case is a separate test.
 from dataclasses import dataclass
 from pathlib import Path
 import re
-import shutil
-import sys
 
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, SUFFIX, surface_command
+from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -134,22 +132,3 @@ def test_mutating_a_passing_case_makes_it_fail(runtime_root: Path, tmp_path: Pat
     assert old in body
     mutated = elaborate(runtime_root, tmp_path / "mutated", header + body.replace(old, new), "Mutated")
     assert [text.splitlines()[0] for _, _, text in mutated] == ["SQL result mismatch"], mutated
-
-
-@pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")
-def test_missing_parser_library_is_not_an_expected_failure(runtime_root: Path, tmp_path: Path) -> None:
-    """Without the parser library, `lean` stops with the loader's error before it checks any block,
-    also for a block with `+error` that expects a syntax error: an unavailable library is no SQL failure."""
-    library = tmp_path / f"libbelaySqliteText_BelaySqliteText{SUFFIX}"
-    shutil.copy(runtime_root / f"packages/belay/.lake/build/lib/libbelaySqliteText_BelaySqliteText{SUFFIX}", library)
-    library.chmod(0o755)
-    (tmp_path / "empty").mkdir()
-    patch = run_command(["patchelf", "--set-rpath", str(tmp_path / "empty"), str(library)], cwd=tmp_path, timeout=30)
-    assert patch.returncode == 0, patch.diagnostic()
-    header, body = case_text("SqlDocCasesFailures", "syntax-error-is-an-expected-failure")
-    source = tmp_path / "Syntax.lean"
-    source.write_text(header + body)
-    result = run_command(surface_command(runtime_root, source, tmp_path, library), cwd=tmp_path, timeout=60)
-    assert result.returncode == 1, result.diagnostic()
-    assert "error loading library, libsqlite-verifier-parser.so: cannot open shared object file" in \
-        result.stdout + result.stderr, result.diagnostic()

@@ -1,4 +1,7 @@
-"""Real Nix fileset identities include each declared input and ignore generated trees."""
+"""Real Nix fileset identities include each declared input and ignore generated trees.
+
+The `parser` component holds the C that Lake compiles into the text package (ADR 0023): the
+committed generated C, the C library headers, the library's files and each release's sqlite3.c."""
 
 import json
 from pathlib import Path
@@ -12,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"model", "surface", "text", *PACKAGES.values()}
+COMPONENTS: set[str] = {"model", "surface", "text", "parser", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
@@ -20,6 +23,8 @@ DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
     "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
+    "parser/generated/7c0495821ae35f29/syntax.c": {"parser"}, "parser/generated/library_metadata.inc": {"parser"},
+    "parser/c-headers/string.h": {"parser"}, "parser/c-headers/stdio.h": {"parser"},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
     "packages/public-doc-tools/PublicDocSyntax.lean": {"docTools"},
@@ -31,6 +36,9 @@ FIXED: dict[str, set[str]] = {
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
     **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain")},
     **{f"packages/belay-sqlite-text/{name}": {"text"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
+    **{f"parser/{name}": {"parser"} for name in (
+        "library.c", "library.h", "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c",
+        "library_grammar.c", "upstream/sqlite3.c", "upstream/sqlite3.h")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
@@ -40,16 +48,10 @@ PARENTS: tuple[str, ...] = (".", "parser", "belay/sqlite", "tests", "tools",
            *(f"packages/{folder}" for folder in PACKAGES),
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
-PARSER_LIBRARY_INPUTS: dict[str, str] = {
-    "parser/dialects.json": json.dumps({"releases": [{"version": "3.51.0", "sources": "upstream"}],
-                                        "dialects": [{"version": "3.51.0", "grammarOptions": [], "grammar": "0" * 64}]}),
-    **{f"parser/{name}": f"declared input {name}\n" for name in (
-        "library_steps.py", "grammar_sources.py", "dialect_table.py", "library_metadata.py", "generate.py",
-        "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c", "library_grammar.c",
-        "library.c", "library.h", "upstream/lempar.c", "upstream/sqlite3.c", "upstream/sqlite3.h")},
-}
-"""The files that `build-support/parser-library.nix` reads when Nix evaluates the conformance
-runtime's parser library: a one-release dialect table and placeholders, since nothing is built."""
+PARSER_MANIFEST: str = json.dumps({"flags": [], "grammars": [
+    {"prefix": "Syntax_0", "folder": "0", "sources": "upstream"}]})
+"""The manifest in `parser/generated` that `build-support/sources.nix` reads to select the release
+folders of the parser component: one grammar that uses the release folder `parser/upstream`."""
 
 
 def identities(root: Path) -> dict[str, str]:
@@ -79,10 +81,7 @@ def identity_baseline(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, d
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"declared input {name}\n")
-    for name, text in PARSER_LIBRARY_INPUTS.items():
-        path = root / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+    (root / "parser/generated/manifest.json").write_text(PARSER_MANIFEST)
     return root, identities(root)
 
 
@@ -182,3 +181,43 @@ def test_model_change_reaches_the_conformance_runtime(
     model.write_bytes(model.read_bytes()+b'\nmodel change\n')
     changed = derivations()
     assert all(changed[name] != before[name] for name in before)
+
+
+def test_manifest_selects_release_folders(identity_tree: tuple[Path, dict[str, str]]) -> None:
+    """A release folder named in `parser/generated/manifest.json` is part of the parser component and
+    another release folder is not: `build-support/sources.nix` selects sqlite3.c and sqlite3.h by the manifest."""
+    root, baseline = identity_tree
+    for name in ("sqlite3.c", "sqlite3.h"):
+        other = root / "parser/other" / name
+        other.parent.mkdir(parents=True, exist_ok=True)
+        other.write_text("a release that no grammar uses")
+    assert identities(root) == baseline
+    (root / "parser/generated/manifest.json").write_text(json.dumps({"flags": [], "grammars": [
+        {"prefix": "Syntax_0", "folder": "0", "sources": "other"}]}))
+    observed = identities(root)
+    assert {name for name in COMPONENTS if observed[name] != baseline[name]} == {"parser"}
+
+
+def test_parser_change_rebuilds_only_the_packages_that_compile_it(tmp_path: Path) -> None:
+    """A change under `parser/generated` changes the derivations of `textPackage` and `surfacePackage`
+    of `build-support/default.nix`, which compile the parser with Lake, and not `modelPackage`."""
+    root = tmp_path / "repository"
+    shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(*IGNORED, "reviews"), symlinks=True)
+
+    def drv_paths() -> dict[str, str]:
+        """The derivation paths of the three packages for the copy of the repository."""
+        names = ("modelPackage", "textPackage", "surfacePackage")
+        body = " ".join(f"{name} = (set.{name}).drvPath;" for name in names)
+        expression = (f"let set = import {json.dumps(str(root / 'build-support/default.nix'))} "
+                      f"{{ root = /. + {json.dumps(str(root))}; }}; in {{ {body} }}")
+        result = run_command(["nix", "eval", "--offline", "--impure", "--json", "--extra-experimental-features",
+                              "nix-command flakes", "--expr", expression], cwd=ROOT, timeout=120)
+        if result.returncode:
+            raise ValueError(result.diagnostic())
+        return json.loads(result.stdout)
+
+    before = drv_paths()
+    target = next((root / "parser/generated").glob("*/token_names.inc"))
+    target.write_text(target.read_text() + "\n")
+    after = drv_paths()
+    assert {name for name in before if before[name] != after[name]} == {"textPackage", "surfacePackage"}

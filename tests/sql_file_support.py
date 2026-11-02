@@ -2,10 +2,10 @@
 
 The surface runtime root holds installed packages. Lake resolves a path requirement relative to
 the requiring package, so the fixture mirrors the installed sibling layout with real directories
-and linked entries, and gives Lake the parser library that the producer's build used."""
+and linked entries. The text package's lakefile reaches the parser's C at `../../parser`, so the
+mirror links `parser` too."""
 
 import json
-import os
 from pathlib import Path
 
 from tests.runtime_support import CommandResult, run_command
@@ -27,6 +27,7 @@ def installed_layout(runtime_root: Path, tmp_path: Path) -> Path:
         folder.mkdir()
         for entry in package.iterdir():
             (folder / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
+    (installed / "parser").symlink_to(runtime_root / "parser", target_is_directory=True)
     return installed
 
 
@@ -43,8 +44,8 @@ def write_package(folder: Path, name: str, installed: Path, extra: str = "") -> 
 
 
 def toolchain_environment(installed: Path) -> dict[str, str]:
-    """The environment of a Lake process: the installed toolchain and the producer's parser library."""
-    return {"PATH": str(installed / "lean/bin"), "BELAY_PARSER_LIBRARY": os.environ["BELAY_PARSER_LIBRARY"]}
+    """The environment of a Lake process: the installed toolchain and nothing else; Lake compiles the parser itself."""
+    return {"PATH": str(installed / "lean/bin")}
 
 
 def lake_build(installed: Path, package: Path, target: str) -> CommandResult:

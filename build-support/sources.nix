@@ -33,10 +33,26 @@ in {
   };
   # The text package below the surface (ADR 0016, D2, amended): its Lean files with its
   # lakefile.lean, and the C shim that its precompiled modules link with the parser library.
+  # The parser's C is `parser` below.
   text = let folder = root + /packages/belay-sqlite-text; in fs.toSource {
     root = folder;
     fileset = fs.unions [ (extensions [ "lean" ] folder) (folder + "/lake-manifest.json") (folder + "/lean-toolchain")
       (folder + "/c/parser_shim.c") ];
+  };
+  # The C of the parser library that Lake compiles into the text package (ADR 0023, D2), with the
+  # layout of `parser/` in the repository: the committed generated C, the C library headers, the
+  # library's own files and the sqlite3.c and sqlite3.h of each release that the manifest names.
+  # The text package, and each package that replays it, finds this folder at `../../parser`.
+  parser = let
+    folder = root + /parser;
+    manifest = builtins.fromJSON (builtins.readFile (folder + /generated/manifest.json));
+  in fs.toSource {
+    root = folder;
+    fileset = fs.unions ([ (folder + /generated) (folder + /c-headers) ]
+      ++ map (name: folder + "/${name}") [ "library.c" "library.h" "runtime.h" "tokenizer.c" "library_prefix.h"
+        "library_tokenizer.c" "library_grammar.c" ]
+      ++ builtins.concatMap (grammar: map (name: folder + "/${grammar.sources}/${name}") [ "sqlite3.c" "sqlite3.h" ])
+        manifest.grammars);
   };
   verifierConformance = package "verifier-conformance";
   docTools = package "public-doc-tools";

@@ -107,7 +107,7 @@ parser-sources:
 # Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break.
 dev-build: _dev-shell-warning
     cd packages/belay-sqlite-model && lake build Belay.Sqlite.Model Belay.Sqlite.Model.Codec
-    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserShim:shared belay-sqlite-translate
+    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserLibrary:shared belay-sqlite-translate
     cd packages/verifier-conformance && lake build VerifierConformance conformance-runner
     cd packages/belay && lake build Belay Belay:shared
 

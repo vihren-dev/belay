@@ -9,3 +9,9 @@
 #define SQLITE_API static
 #define SQLITE_EXTERN
 #include "tokenizer.c"
+
+/* SQLITE_OS_OTHER leaves the operating system layer to the application. The tokenizer never opens
+** SQLite's library, so these two functions have nothing to set up or release; defining them keeps
+** the compile free of warnings about functions that are declared but not defined. */
+SQLITE_API int sqlite3_os_init(void){ return SQLITE_OK; }
+SQLITE_API int sqlite3_os_end(void){ return SQLITE_OK; }
