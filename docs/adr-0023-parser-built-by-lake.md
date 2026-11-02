@@ -300,11 +300,13 @@ it as a starting point and searches again.
 - **Tests that go.** The two tests of a missing parser library (fact 9), the `library`
   parameter of `module_setup` and `surface_command` in `tests/surface_support.py`, and
   `pkgs.patchelf` in the tools of the surface suites if nothing else there uses it.
-- **Stale text.** The messages of `grammarAdvice` in
-  `packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean` and of
-  `packages/belay-sqlite-text/TranslationProgram.lean` tell the user to rebuild the parser
-  library; they say instead that a new dialect goes into `parser/dialects.json` and
-  `just parser-sources`, and name no ADR. The comments and documents that say that Nix builds
+- **Stale text.** The message `grammarAdvice` in
+  `packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean` tells the user to rebuild the parser
+  library; it says instead that a new dialect goes into `parser/dialects.json` and
+  `just parser-sources`, and names no ADR. The message of an unusable parse document in
+  `packages/belay-sqlite-text/TranslationProgram.lean` tells the user to rebuild the conformance
+  runtime with Nix; it says instead to rebuild the translation program with Lake.
+  The comments and documents that say that Nix builds
   the parser library or that the program links it by a store path change too:
   `conformance/progress.py`, the comment of `textPackage` in `build-support/default.nix`,
   `build-support/README.md`, `docs/sqlite-parser.md`, `docs/ci.md` (it also lists the suite
