@@ -44,6 +44,7 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   PROPOSED. It uses the captured results to specify continuous collection,
   ClickHouse delivery, history migration, retention and explicit limits.
   This adds a design proposal; production implementation has not started.
+- ADR review `20261102T234641Z-8d3d10c8`: no findings.
 
 ## References
 
@@ -62,3 +63,12 @@ abrupt exit, both coverage cores, subprocess coverage and real review round-trip
 The expanded target also checks Lean/Lake extraction, existing proof-cost and
 dependency readers, metadata extraction and the plugin with repository tests.
 The experiment does not add a collector to production tests or CI.
+
+Before the PR, `just test-scheduled-checks` passed all 50 writer checks at
+`/nix/store/b1970pfwpg9ks801732i7x6wrbixxjb4-sqlite-verifier-scheduled-check-reports`.
+The suite report is
+`/nix/store/r444x3c1521gin6g1bqmrx2if8rlfnwy-sqlite-verifier-test-writers-1/junit.xml`.
+The required host Nix integration check `just test-nix` also completed: 71 passed.
+Its cold run first needed the conformance runtime, then exceeded the recipe's
+600-second limit after the local build-loop test passed. The warm rerun passed
+in 204 seconds. These host checks are not conformance verdict evidence.
