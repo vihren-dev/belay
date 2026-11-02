@@ -1,6 +1,6 @@
 # Observability extraction experiment status
 
-Status: OPEN. Created 2026-11-02. Audience: the team.
+Status: DONE, 2026-11-02. Created 2026-11-02. Audience: the team.
 
 Task: [observability extraction](20261102-observability-extraction.task.md).
 Workspace: `/home/codex/work/sqlite-verifier-observability` (`observability-experiments`).
@@ -32,7 +32,11 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
 - The report and captured summaries are in `experiments/observability/README.md`
   and `results.json`. Host-daemon observations are labelled separately there.
   The report distinguishes measured mechanisms from production integration work.
-- Final independent review remains pending.
+- Implementation review `20261102T083255Z-b5d4340f` found no must findings and
+  one should finding about inconsistent completion labels. The task, status and
+  report now agree that the experiments are complete.
+- All required extraction questions have measured results or explicit limits in
+  the report. Production collection and deployment remain outside this task.
 
 ## References
 

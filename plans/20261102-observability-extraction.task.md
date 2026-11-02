@@ -1,6 +1,9 @@
 # Observability extraction experiments
 
-Status: OPEN. Created 2026-11-02. Audience: the team.
+Status: DONE, 2026-11-02. Created 2026-11-02. Audience: the team.
+
+Result: [experiment report](../experiments/observability/README.md), with
+[captured summaries](../experiments/observability/results.json).
 
 ## Purpose
 
