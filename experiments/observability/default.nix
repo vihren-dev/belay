@@ -8,6 +8,15 @@ let
     fileset = pkgs.lib.fileset.unions [
       (pkgs.lib.fileset.fileFilter (file: file.hasExt "py" || file.hasExt "lean" || file.hasExt "toml") ./.)
       ../../tools ../../reviews ../../docs/review-checklist.md
+      ../../conftest.py ../../pytest.ini ../../tests/__init__.py
+      ../../tests/runtime_fixtures.py ../../tests/runtime_support.py
+      ../../tests/test_review_log.py ../../tests/test_test_reports.py
+      (pkgs.lib.fileset.fileFilter (file: file.hasExt "py") ../../conformance)
+      (pkgs.lib.fileset.fileFilter (file: file.hasExt "py") ../../belay)
+      ../../conformance/cases
+      (pkgs.lib.fileset.fileFilter
+        (file: file.hasExt "lean" && (pkgs.lib.hasPrefix "ProofCost" file.name || file.name == "SqlSourceRecord.lean"))
+        ../../packages/belay/Belay/Sqlite)
     ];
   };
   python = pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-cov ps.coverage ]);
@@ -17,6 +26,6 @@ in {
     nativeBuildInputs = [ python build.leanToolchain pkgs.coreutils ];
   } ''
     export HOME="$TMPDIR"
-    timeout 180 python3 ${source}/experiments/observability/run.py --root ${source} --output "$out"
+    timeout 240 python3 ${source}/experiments/observability/run.py --root ${source} --output "$out"
   '';
 }

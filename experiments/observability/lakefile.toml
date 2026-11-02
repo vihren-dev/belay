@@ -1,0 +1,12 @@
+name = "observability-probe"
+version = "0.1.0"
+defaultTargets = ["Probe"]
+
+[[lean_lib]]
+name = "ProbeModel"
+
+[[lean_lib]]
+name = "Probe"
+
+[[lean_lib]]
+name = "ProbeUnused"

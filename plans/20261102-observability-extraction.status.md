@@ -22,7 +22,17 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   contexts and misattributes a fixture line. The documented `core = ctrace`
   setting gives correct parent-process contexts. Child execution is collected
   but has no parent test context. Keep that limit explicit.
-- Lean/Lake, Nix-daemon probes and the final recommendation remain pending.
+- Python/review implementation review `20261102T081521Z-3d7ee1f0`: no findings.
+- Expanded sandboxed probes passed at
+  `/nix/store/k4c23pmf0mmyrm3lv1kp8qps5137zhng-belay-observability-probes`.
+  They cover Lean diagnostics, imports, native profiles, Lake invalidation,
+  existing declaration exports and opt-in proof costs, CI envelope fixtures and
+  semantic metadata. Ten existing review/report tests pass with the event plugin;
+  their completion events agree with JUnit.
+- The report and captured summaries are in `experiments/observability/README.md`
+  and `results.json`. Host-daemon observations are labelled separately there.
+  The report distinguishes measured mechanisms from production integration work.
+- Final independent review remains pending.
 
 ## References
 
@@ -38,4 +48,6 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
 `nix-build experiments/observability/default.nix -A probes` passed (sandbox enabled,
 sandbox fallback disabled). This checks controlled pytest outcomes, selection,
 abrupt exit, both coverage cores, subprocess coverage and real review round-trip.
+The expanded target also checks Lean/Lake extraction, existing proof-cost and
+dependency readers, metadata extraction and the plugin with repository tests.
 The experiment does not add a collector to production tests or CI.

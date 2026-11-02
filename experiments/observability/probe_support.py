@@ -14,7 +14,7 @@ def write_json(path: Path, value: object) -> None:
 
 
 def run(directory: Path, label: str, command: Sequence[str], *, cwd: Path,
-        environment: Mapping[str, str] | None = None, expected: int = 0,
+        environment: Mapping[str, str] | None = None, expected: int | None = 0,
         timeout: int = 60) -> subprocess.CompletedProcess[str]:
     """Save exit status, wall time and streams, then check the expected outcome."""
     started = time.monotonic()
@@ -25,5 +25,6 @@ def run(directory: Path, label: str, command: Sequence[str], *, cwd: Path,
     write_json(directory / f"{label}.command.json", {
         "command": list(command), "cwd": str(cwd), "exit": result.returncode,
         "elapsed_seconds": time.monotonic() - started})
-    assert result.returncode == expected, (label, result.returncode, result.stdout[-3000:], result.stderr[-3000:])
+    assert expected is None or result.returncode == expected, (
+        label, result.returncode, result.stdout[-3000:], result.stderr[-3000:])
     return result

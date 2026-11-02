@@ -4,13 +4,17 @@ import json
 import os
 from pathlib import Path
 import time
+import uuid
 
 import pytest
+
+RUN_ID = str(uuid.uuid4())
+"""Identify actual pytest execution; a cached event file retains its original ID."""
 
 
 def emit(kind: str, **fields: object) -> None:
     """Close each JSONL write so completed events survive an abrupt process exit."""
-    event = {"kind": kind, "observed_ns": time.time_ns(), **fields}
+    event = {"kind": kind, "run_id": RUN_ID, "observed_ns": time.time_ns(), **fields}
     with Path(os.environ["PROBE_EVENTS"]).open("a") as stream:
         stream.write(json.dumps(event) + "\n")
 
