@@ -1,7 +1,9 @@
 # ADR 0023: Lake builds the parser library from committed C sources
 
-Date: 2026-10-23. Status: PROPOSED. Revised 2026-11-02 to match the repository of that day.
-Implementation: one task file and one pull request, after the owner accepts this ADR.
+Date: 2026-10-23. Status: ACCEPTED by the owner on 2026-11-03. Revised 2026-11-02 to match the
+repository of that day.
+Implementation: one task file and one pull request:
+[`plans/20261103-parser-built-by-lake.task.md`](../plans/20261103-parser-built-by-lake.task.md).
 Audience: designers and reviewers.
 Related: [ADR 0007](adr-0007-parser-library.md) (the parser library and its tests),
 [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (Lake builds, one Nix derivation per
