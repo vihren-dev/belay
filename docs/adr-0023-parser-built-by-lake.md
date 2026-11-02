@@ -224,9 +224,11 @@ Under the wrapper of fact 12, the same compile behaves as follows. Lake passes `
 script adds `--sysroot` and `-nostdinc` itself, and Lake's own arguments follow: the `-I` of
 Lean's include folder, the flags of the Nix build, the two options of fact 6 and `-isystem` with
 the path of `parser/c-headers/`. Thus a unit sees the same header search list as in the
-unwrapped compile: the compiler's headers of the toolchain, then `parser/c-headers/`, then
-the folders of `-I`, and no host header. A file in `parser/c-headers/` must not have the name
-of a header in the toolchain's `include/clang`, because that header wins in both compiles. The
+unwrapped compile: the folders of `-I` first (Lean's include folder, which has `lean/` and
+`clang/` and no C library header), then the `-isystem` folders in order (the compiler's headers
+of the toolchain, then `parser/c-headers/`), and no host header. A file in `parser/c-headers/`
+must not have the name of a header in the toolchain's `include/clang`, because that header is
+found first in both compiles. The
 lakefile gives the path as an absolute path, because it must not depend on the folder in
 which Lake runs the compiler. The script does not read the other arguments, so the compile
 needs no change of it. If a Lean upgrade changes the toolchain's flags, the script and this
@@ -246,8 +248,12 @@ builds use finished outputs or other packages, and need nothing. `lean-package.n
 text package's dependents pass the same set. A git require with `subDir` gets the whole
 repository, so the paths are there too.
 
-The `extern_lib` gets a name for what it now holds, for example `parserLibrary`. The target
-lists of the Nix build and of ADR 0020's D2 change with it.
+The `extern_lib` is renamed from `parserShim` (static library `belayParserShim`) to a name for
+what it now holds, for example `parserLibrary` (owner decision 4). The rename is in the same
+pull request, and D4 lists the places that name the old one. `c/parser_shim.c` includes
+`parser/library.h` directly, so the Nix `include/` output of the parser library is not needed
+and goes. The Nix-built shared library `libsqlite-verifier-parser` stays, for the driver of the
+`parserLibrary` suite.
 
 ### D3. One copy of the C for all builds
 
@@ -256,40 +262,80 @@ the outputs of the generation. They use the headers and the options of D2. The l
 Lean's `clang` from the pinned toolchain, as Lake does. The sanitized build keeps its own
 compiler and adds its sanitizer flags. The manifest of D1 holds the compile flags, and the
 lakefile and `parser-library.nix` read them from it. The `parserLibrary` suite then checks the
-C that Lake compiles into the text package, as Lake compiles it. A new Nix check compares the committed files with a fresh generation,
-byte for byte, and names each file that differs.
+C that Lake compiles into the text package, as Lake compiles it. The sanitizer flags stay in Nix only. A new Nix check compares the committed files with a
+fresh generation, byte for byte, and names each file that differs. It is a small suite of its
+own (owner decision 6): a new entry in `tests/nix_suites.json` and its limits in
+`build-support/tests.nix`.
 
 The Nix build of the text package is the judge's subject (ADR 0011). Its translation program
 now contains the parser that Lake compiled from the committed files. The check of this section
 ties those files to the vendored sources and their hashes.
 
-### D4. Nothing sets `BELAY_PARSER_LIBRARY`
+### D4. Nothing sets `BELAY_PARSER_LIBRARY`, and the files that change with it
 
-The variable goes away from every place of fact 9: `build-support/default.nix` (text and
-surface packages), `build-support/tests.nix` (`surfaceSuite`), `tests/sql_file_support.py`
-(`toolchain_environment`), `shell.nix`, the lakefile and README of the text package, the
-README and the lakefile docstring of `belay`, and the docstring of
-`experiments/surface-s1/editor.py`. The `justfile` recipe `_dev-shell-warning` and
-`tests/dev_loop_test.py` find out whether the shell is loaded from another variable that
-`shell.nix` sets. On Linux `LEAN_CC` would do, but macOS has none, so `shell.nix` sets a
-marker for both. ADR 0020 (fact 5, D1 and D6) gets a dated amendment in the same change. The
-two tests of a missing parser library (fact 9) go, because no separate library can be
-missing. A search of the repository for the name finds it only in `reviews/`, `plans/` and
-dated history.
+The variable goes away, and the dev shell is found by another variable: `shell.nix` sets
+`BELAY_DEV_SHELL=1` (owner decision 3), because macOS has no `LEAN_CC` to test. This is the
+list of the files that the change touches, as checked on 2026-11-02. The implementation takes
+it as a starting point and searches again.
+
+- **The variable (fact 9).** `build-support/default.nix`, `build-support/tests.nix`
+  (`surfaceSuite`), `tests/sql_file_support.py` (`toolchain_environment`), `shell.nix`, the
+  lakefile and README of the text package, the README and the lakefile docstring of `belay`,
+  `experiments/surface-s1/editor.py`. The `environment` parameter of
+  `build-support/lean-package.nix` has no other user, so it goes; the parameter for extra
+  source paths (D2) takes its place.
+- **Shell detection.** The `justfile` recipe `_dev-shell-warning`, `tests/dev_loop_test.py`
+  and ADR 0020, D6 use `BELAY_DEV_SHELL`.
+- **The rename of the `extern_lib` (D2).** The target lists in the `justfile` (`dev-build`)
+  and `build-support/default.nix` (`textPackage`); `tests/surface_support.py`, which loads
+  `libbelayParserShim` by its file name; the target table of ADR 0020, D2.
+- **Source sets.** `build-support/sources.nix` (`text` names `c/parser_shim.c` only; it gains
+  the committed C, the headers and the manifest through the extra source paths) and
+  `tests/test_source_identity.py` (`PARSER_LIBRARY_INPUTS` and the components of the text
+  package: a change under `parser/generated/` changes the identity of the text package).
+- **Test runtimes (fact 8).** `surfaceRoot` in `build-support/tests.nix` and
+  `installed_layout` in `tests/sql_file_support.py` get the parser files. The lakefile reaches
+  `parser/` by a path relative to the package folder; the implementation checks that this
+  also works for a git require with `subDir`.
+- **Tests that go.** The two tests of a missing parser library (fact 9), the `library`
+  parameter of `module_setup` and `surface_command` in `tests/surface_support.py`, and
+  `pkgs.patchelf` in the tools of the surface suites if nothing else there uses it.
+- **Stale text.** The messages of `grammarAdvice` in
+  `packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean` and of
+  `packages/belay-sqlite-text/TranslationProgram.lean` tell the user to rebuild the parser
+  library; they say instead that a new dialect goes into `parser/dialects.json` and
+  `just parser-sources`, and name no ADR. The comments and documents that say that Nix builds
+  the parser library or that the program links it by a store path change too:
+  `conformance/progress.py`, the comment of `textPackage` in `build-support/default.nix`,
+  `build-support/README.md`, `docs/sqlite-parser.md`, `docs/ci.md` (it also lists the suite
+  of D3), the comment of the `justfile` recipe that builds the conformance runtime, and
+  `sqlite-migration-verifier-team-guide.md`.
+- **The shell.** `shell.nix` imports `build-support/lean-toolchain.nix` and not all of
+  `build-support/default.nix`, because it no longer needs the parser library. `.envrc` stops
+  watching `parser` and `build-support/*.nix` for it, and its comment changes.
+- **Amendments of ADRs, as work of the implementation.** ADR 0007 (a Lake build compiles the
+  library into the text package; the Nix shared library stays for the Nix suite), ADR 0010
+  (extra source paths; a Lake build needs no Nix), ADR 0016 (the text on the program that
+  links the library, and "Deferred" with owner decision 2), ADR 0020 (fact 5, D1, D2's target
+  table and D6). ADR 0017, D2, is amended with this revision.
+- **The judge.** `integrity/judge.lock.json` and `judge/claims.json` do not change. The
+  byte-identical predictions of D5 are the evidence that the behavior is the same.
 
 ### D5. Tests
 
 - **The Nix builds without the variable.** The text package, the surface and the conformance
   runtime build with no `BELAY_PARSER_LIBRARY` in any environment.
-- **The generation check of D3.** It passes on the commit. A change of one byte in a committed
-  file makes it fail with that file's name; the task records this once.
+- **The generation check of D3**, in its own small Nix suite. It passes on the commit. A
+  change of one byte in a committed file makes it fail with that file's name; the task records
+  this once.
 - **The `parserLibrary` suite** passes on the library compiled from the committed files.
-- **No parser library at run time.** A test reads the dynamic dependencies (`ldd` or
+- **No parser library at run time.** A test, in the Nix suite that has the Lake output of the
+  text package and the surface (owner decision 6), reads the dynamic dependencies (`ldd` or
   `otool -L`) of every program and shared library that contains the parser (fact 11):
   `belay-sqlite-translate`, `belay-sql-check`, and the shared libraries of the text package and
   of the surface. It checks that none is a parser library. The change that adds a program
   or shared library with the parser adds it to this list. This tests our link configuration.
-- **The C library functions.** A test lists the undefined symbols of each object that the
+- **The C library functions.** A test, in the same suite, lists the undefined symbols of each object that the
   text package compiles from the C of D1. Each symbol that is not defined by another object of
   the library must be in a committed list: the ten functions of fact 6. The list has a comment
   that says why each function is safe to declare in `parser/c-headers/`. This tests our headers:
@@ -301,7 +347,7 @@ dated history.
   workload on 2026-11-02, not only the v1 to v5 of the trial in fact 5) are byte-identical to
   those of trunk.
 - **The local loop under the `LEAN_CC` wrapper.** The test of ADR 0020, D6
-  (`tests/dev_loop_test.py`), passes in the shell of `shell.nix` without the variable, on
+  (`tests/dev_loop_test.py`), passes in the shell of `shell.nix`, which it finds by `BELAY_DEV_SHELL`, on
   Linux with the wrapper of fact 12. It runs `just dev-build` from a clean `.lake` of the text
   package, so that Lake compiles the C units through the wrapper with `-isystem
   parser/c-headers`, and it checks that the compile gives no warning about a missing header
@@ -383,6 +429,9 @@ would need its own check, and the compile time does not need it (fact 4).
   comes with the release.
 - User documentation for installing the surface.
 - Platforms other than Linux x86_64 and macOS on Apple Silicon.
+- Follow-ups, separate from this change: the history notes in the README of
+  `experiments/surface-s1`, and the move of the C into the text package at the split of the
+  repository (owner decision 2).
 
 ## Owner decisions
 
@@ -402,6 +451,16 @@ would need its own check, and the compile time does not need it (fact 4).
      without its history, because Lake clones each git dependency in full
      (`Lake/Util/Git.lean`).
    - The parser does not get a repository of its own (see "Alternatives considered").
+
+3. **The shell variable.** Decided by the owner on 2026-11-02: `shell.nix` sets
+   `BELAY_DEV_SHELL=1`, and the recipe, the test and ADR 0020, D6 use it to find the shell.
+4. **The name of the `extern_lib`.** Decided by the owner on 2026-11-02: it is renamed from
+   `parserShim` to a name for what it holds, in the same pull request (D2).
+5. **The scope.** Decided by the owner on 2026-11-02: the files in the list of D4 are part of
+   this ADR's pull request.
+6. **Where the checks run.** Decided by the owner on 2026-11-02: the symbol test and the
+   `ldd` or `otool -L` test of D5 run in the Nix suite that has the Lake output of the text
+   package and the surface. The generation check of D3 has its own small Nix suite.
 
 ## Sources
 
