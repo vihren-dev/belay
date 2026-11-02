@@ -12,7 +12,17 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
 - Inspected the current collection points named in the task. The base contains
   the theorem-dependency exporter; reuse it rather than creating another exporter.
 - Defined bounded experiments and the owner's supported-interface constraint.
-- Experiment results, acceptance checks and extraction recommendations are pending.
+- Specification review `20261102T080918Z-438f3719` had one should finding, rejected:
+  R18 explicitly permits the owner's request as present-problem evidence.
+- Sandboxed Python/review probes passed at
+  `/nix/store/2r9z63n4m0v6pywnxz0ypjlg3k3qwy82-belay-observability-probes`.
+  Public pytest hooks retain starts and completed phase events across abrupt exit;
+  JUnit does not survive that exit. Review JSONL round-trip preserves statistics.
+- The default Python 3.14 coverage core warns that it does not support dynamic
+  contexts and misattributes a fixture line. The documented `core = ctrace`
+  setting gives correct parent-process contexts. Child execution is collected
+  but has no parent test context. Keep that limit explicit.
+- Lean/Lake, Nix-daemon probes and the final recommendation remain pending.
 
 ## References
 
@@ -25,4 +35,7 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
 
 ## Checks
 
-No implementation changes or experiment claims yet. Specification review pending.
+`nix-build experiments/observability/default.nix -A probes` passed (sandbox enabled,
+sandbox fallback disabled). This checks controlled pytest outcomes, selection,
+abrupt exit, both coverage cores, subprocess coverage and real review round-trip.
+The experiment does not add a collector to production tests or CI.
