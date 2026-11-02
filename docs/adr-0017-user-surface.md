@@ -194,6 +194,11 @@ release of the surface (ADR 0016, "Deferred"). Task:
 [`plans/20261021-sql-text-package.task.md`](../plans/20261021-sql-text-package.task.md).
 Amended again 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the CLI was
 removed with the verifier product, so the translation program translates for the harness only.
+Amended 2026-11-02 ([ADR 0023](adr-0023-parser-built-by-lake.md), owner decision 1): Lake builds
+the parser library before the first release of the surface, so a Lean user needs no Nix and no
+`BELAY_PARSER_LIBRARY` for it. The sentence above about installing the surface with its
+native library now covers the rest of that work only: the repository, the tags and the
+install path of the first release.
 
 ### D3. S2: concrete databases
 
