@@ -1,9 +1,10 @@
 # SQLite syntax boundary
 
 The surface and the conformance harness parse SQL with SQLite's own grammar and
-tokenizer, compiled into one shared library: `libsqlite-verifier-parser.so`
-(`.dylib` on macOS). Nix builds it as `parserLibrary.library` in
-`build-support/default.nix`. No database is opened and no SQL is executed,
+tokenizer, compiled from C that Lake builds into the text package's programs and
+shared libraries. The Nix derivation `parserLibrary.library` in
+`build-support/default.nix` builds the same C as `libsqlite-verifier-parser.so`
+(`.dylib` on macOS) for the tests of the library only. No database is opened and no SQL is executed,
 prepared, or schema-resolved.
 
 The text package (`packages/belay-sqlite-text`) is the only caller of the

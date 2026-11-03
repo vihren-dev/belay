@@ -1,0 +1,61 @@
+{
+  "caller": "claude",
+  "commit": "a1be098863edbc1214cc50b2f8e8e90b63eaad15",
+  "date": "2026-11-03T00:43:27+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/README.md",
+    "docs/sqlite-parser.md",
+    "plans/20261103-parser-built-by-lake.status.md",
+    "reviews/20261103T003827Z-68b5db89/resolution-1-20261103T004207Z.json",
+    "reviews/20261103T003827Z-68b5db89/resolution-2-20261103T004207Z.json",
+    "reviews/20261103T003827Z-68b5db89/resolution-3-20261103T004208Z.json",
+    "reviews/20261103T003827Z-68b5db89/resolution-4-20261103T004208Z.json",
+    "reviews/20261103T003827Z-68b5db89/review.json",
+    "tests/surface_parser_link_test.py",
+    "tests/test_source_identity.py",
+    "tests/test_source_identity_derivations.py"
+  ],
+  "findings": [
+    {
+      "id": "20261103T004327Z-a1be0988#1",
+      "line": 12,
+      "path": "tests/test_source_identity_derivations.py",
+      "rule": "R4",
+      "severity": "should",
+      "text": "Moving the test leaves CI selection unchanged, so a pull request changing only this file skips `test-nix` and never runs it. Fix: add the new path to `INFRASTRUCTURE_FILES` in `tests/ci_scope.py`."
+    },
+    {
+      "id": "20261103T004327Z-a1be0988#2",
+      "line": 11,
+      "path": "docs/sqlite-parser.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The new Lake linkage description contradicts the opening paragraph, which still says the surface and harness use the Nix-built `libsqlite-verifier-parser` shared library. Fix: describe Lake linkage in the opening and identify the Nix-built library as a test artifact."
+    }
+  ],
+  "id": "20261103T004327Z-a1be0988",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
