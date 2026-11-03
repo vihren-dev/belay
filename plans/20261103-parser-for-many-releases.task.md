@@ -106,7 +106,7 @@ CI.
   files may change only by prefix, and its tokenizer must behave as today.
 - **No compatibility paths** for the old `sources` field or the upstream folders.
 - **Generated files and review.** Keep the commit that adds generated C free of other
-  changes, so that `just review` can be told to skip `parser/generated/`.
+  changes. It gets the normal `just review`; `just review` has no way to skip files.
 
 ## Slices
 
