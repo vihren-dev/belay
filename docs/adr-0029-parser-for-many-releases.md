@@ -1,6 +1,6 @@
 # ADR 0029: A parser library for many SQLite releases
 
-Date: 2026-11-03. Status: PROPOSED.
+Date: 2026-11-03. Status: ACCEPTED (2026-11-03, owner decisions below).
 Audience: designers and reviewers.
 Related: [ADR 0007](adr-0007-parser-library.md) (the parser library: one library for all
 grammars), [ADR 0023](adr-0023-parser-built-by-lake.md) (Lake compiles committed generated C),
@@ -19,8 +19,8 @@ This ADR keeps the parser's behavior: the exact grammar and tokenizer of each re
 changes how the library gets and shares its C code:
 
 - A generator cuts the tokenizer out of each release's `sqlite3.c`. The cut is committed with
-  the generated parser, and a check proves that it compiles to the same machine code as the
-  full amalgamation.
+  the generated parser, and a step of the generation proves that it compiles to the same
+  machine code as the full amalgamation.
 - Nix reads the SQLite sources from the official release archives by their hashes. The
   repository keeps the hashes, not the sources.
 - A parser and a tokenizer each get an identity from what they compile, so releases share
@@ -102,8 +102,8 @@ with `fetchurl` and these hashes, and takes `parse.y`, `lemon.c`, `lempar.c`, `s
 their `sha256.json`; the archive hashes take their place. Their README text about the
 origin of the files moves to `docs/sqlite-parser.md`.
 
-Only the generation reads the archives: `just parser-sources` and the generation check. The
-Lake build and the Nix library compile the committed files of D2.
+Only the generation reads the archives: `just parser-sources`. The Lake build, the Nix library
+and every test compile the committed files of D2, so no check run fetches an archive.
 
 ### D2. The tokenizer is cut out of `sqlite3.c` and committed
 
@@ -115,12 +115,15 @@ it. The generator takes these parts by name, with the file markers of the amalga
 (`Begin file tokenize.c`), not by running the preprocessor, so the file has no platform's
 choices in it. The list of names is part of the generator.
 
-The **slice check** compiles, for each tokenizer, the cut file and the full `sqlite3.c` of
-its release with the flags of the manifest and the wrapper of `parser/tokenizer.c`. It
+The **slice check** is a step of the generation, not a test suite: the generation fails when
+it fails. It compiles, for each tokenizer, the cut file and the full `sqlite3.c` of its release
+with the wrapper of `parser/tokenizer.c`, with the flags of the manifest but at `-O0`. It
 requires the same machine code for `sqlite3GetToken`, `keywordCode` and the wrapper's
-functions, and the same bytes for each table. A release whose tokenizer needs a definition
-that the list does not name fails this check or the compile, and the fix is a new name in the
-list.
+functions, and the same bytes for each table. The check compiles at `-O0` because at the
+manifest's `-O1` the compiler inlines a static function that has one caller: `keywordCode`
+has two callers in `sqlite3.c` and one in the cut, so its machine code would differ while its
+text is the same. A release whose tokenizer needs a definition that the list does not name
+fails this check or the compile, and the fix is a new name in the list.
 
 `parser/library_tokenizer.c` includes the cut file in place of `sqlite3.c`. `sqlite3.h` is not
 compiled; the cut file has the few declarations that it needs.
@@ -131,8 +134,7 @@ compiled; the cut file has the few declarations that it needs.
   (`syntax.c`, `syntax.h`, `token_names.inc`), generated with one fixed symbol prefix. The
   committed files are then generated again with the prefix of that identity
   (`Syntax_` and its first 16 hexadecimal digits), so that several parsers can be linked into
-  one library. The fixed prefix keeps the identity free of itself; the generation check
-  compares the committed files with this second output.
+  one library. The fixed prefix keeps the identity free of itself.
 - The **tokenizer identity** is the SHA-256 of the cut file of D2, which contains the token
   numbers. The cut file keeps SQLite's own linkage: its definitions are `static` or
   `SQLITE_PRIVATE` (which SQLite defines as `static` in the amalgamation), and
@@ -163,9 +165,14 @@ metadata instead of naming them.
 
 ### D5. Tests
 
-- **The generation check** (the `parserSources` suite of ADR 0023) compares the committed
-  parsers, tokenizers and manifest with a fresh generation from the archives.
-- **The slice check of D2** runs in the same suite, for each tokenizer.
+The generation runs once, with `just parser-sources`, and its result is committed (owner
+decision 3). No check run generates again:
+
+- **No generation check.** The `parserSources` suite of ADR 0023, which compares the committed
+  files with a fresh generation, is removed; this amends ADR 0023, D3. Its manifest test, which
+  reads only the committed files, moves to the `parserLibrary` suite.
+- **The slice check of D2** runs once in the generation, for each tokenizer. The status file of
+  the task records its output and the Nix output of the generation.
 - **One case for each change of syntax.** `tests/parser_inputs.py` gets a case for each change
   of fact 5 and each change of fact 6 that changes what is accepted or how text is split into
   tokens. A table gives, for each release of the dialect table, the expected status of each
@@ -188,10 +195,16 @@ metadata instead of naming them.
 - The Lake build compiles about six parsers and six small tokenizers instead of two full
   amalgamations.
 - The generation needs the archives: about 18 MB per release, 440 MB for the 24 releases,
-  from the Nix store or from sqlite.org. The suites that generate (`parserSources`) fetch them
-  once per machine and cache; the Lake build and the other suites do not need them.
+  from the Nix store or from sqlite.org. Only `just parser-sources` fetches them; no check run
+  needs them.
 - The trust in the tokenizer moves from "the whole release file, hash-checked" to "a cut of
-  it, which compiles to the same code as the whole file". The slice check is the evidence.
+  it, which compiles to the same code as the whole file". The slice check of the one
+  generation is the evidence.
+- No check ties the committed generated C to the archives and the generators after the
+  generation. A later change of a generator, or an edit of `parser/generated/`, is not found
+  until the next `just parser-sources`. Such a check would not be a defense against tampering
+  either (ADR 0011): its reference values are not in a protected file. The tests of D5 check
+  what the committed C accepts.
 - A user can select any release of the table for parsing. The model's semantics stay those
   of 3.51.0; the translation reports what it does not support, as today.
 - The split of the surface into its own repository (ADR 0023, owner decision 2) moves the
@@ -222,12 +235,14 @@ fact 6), which is the scaling that this ADR tests.
 
 ## Owner decisions
 
-1. **The window.** OPEN. Options: (a) the 23 releases from 2024-11-03 to 2026-11-03 and
+1. **The window.** DECIDED (a), 2026-11-03. Options: (a) the 23 releases from 2024-11-03 to 2026-11-03 and
    3.46.0, fixed in this ADR; (b) the same, and a rule that a new release joins the table when
    it appears; (c) only the latest patch of each minor release. Recommendation: (a). A rule
    for later releases needs a decision on who adds them and when, which the first public
    release can make.
-2. **Native agreement of the new releases' parsers.** OPEN. Options: (a) the cases of D5
+2. **Native agreement of the new releases' parsers.** DECIDED (a), 2026-11-03: light tests
+   only; the semantic model will test the parsers when it supports more releases, and this
+   ADR's releases are a test of the design. Options: (a) the cases of D5
    only; (b) also a scheduled suite that compares each release's acceptance of the parser test
    inputs with native SQLite of that release (`sqlite3_prepare` on an empty database, syntax
    errors only), which needs a native build of each release. Option (b) uses native SQLite as
@@ -238,13 +253,16 @@ fact 6), which is the scaling that this ADR tests.
    and by the slice check; and today's library has no native comparison for its two
    releases either. If a case of D5 or a corpus finds a difference, (b) becomes the test for
    it.
-3. **Where the generation check runs.** OPEN. Options: (a) in every check run, as today;
-   (b) only in the `full` CI scope and in the scheduled runs. A change under `parser/` selects
+3. **Where the generation check runs.** DECIDED (c), 2026-11-03: the generation runs once and
+   its result is committed; a light check during that generation is allowed when it needs
+   little code, and no check run generates again (D5). Options: (a) in every check run, as
+   today; (b) only in the `full` CI scope and in the scheduled runs; (c) in no check run. A change under `parser/` selects
    `full` today (`tests/ci_scope.py`); a change of `build-support/parser-library.nix`, which
    writes the manifest and runs the generation, selects only `infrastructure`, so (b) adds
    that file to the files that select `full`. Recommendation: (b): the check fetches 440 MB of
    archives on a runner without a warm store, and only a change of the generation's inputs
    (`parser/`, `build-support/parser-library.nix`, the pinned toolchain) can make it fail.
+   Before the decision the recommendation was (b).
 
 ## Sources
 
