@@ -81,7 +81,7 @@ in rec {
   scheduledCheckReports = pkgs.linkFarm "sqlite-verifier-scheduled-check-reports"
     (pkgs.lib.removeAttrs scheduledTests mutantSuites);
   # The binding of the parser library and the translation of SQL text, below the surface
-  # (ADR 0016, D2, amended).
+  # (ADR 0016, D2, amended). Lake compiles the parser's C from `parser/` (ADR 0023).
   textPackage = leanPackage {
     pname = "belay-sqlite-text";
     directory = "packages/belay-sqlite-text";

@@ -29,7 +29,7 @@ def Release.default : Release :=
 
 /-- What a user can do when the parser library has no grammar for a release. -/
 def grammarAdvice : String :=
-  "; select SQLite 3.51.0 or 3.46.0, or rebuild the parser library with a dialect of this release"
+  "; select SQLite 3.51.0 or 3.46.0, or add a dialect of this release to parser/dialects.json and run `just parser-sources`"
 
 /-- The grammar options among the compile options, as sorted macro names without repeats.
 {lit}`PRAGMA compile_options` reports {lit}`SQLITE_OMIT_TRIGGER` as {lit}`OMIT_TRIGGER`, and a

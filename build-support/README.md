@@ -40,8 +40,10 @@ named anchors and raw/decoded HTML IDs remain valid targets.
 [ADR 0007](../docs/adr-0007-parser-library.md) decides. Nix owns all parser
 build reuse; there is no separate local builder or content-stamp cache. The
 release derivations verify upstream checksums; `parser/generate.py` verifies
-token agreement and transforms the grammar before Nix compiles and links the C
-sources. Nix reads
+token agreement and transforms the grammar. The C that Lemon and the generator
+write is committed under `parser/generated/` (`parserLibrary.generated`, written
+by `just parser-sources` and compared by the suite `tests.parserSources`); Nix
+compiles the committed files with Lean's `clang`. Nix reads
 `parser/dialects.json` and makes one derivation for each release
 (`parserLibrary.releases`), one for each distinct grammar identity
 (`parserLibrary.grammars`) and one that links `parserLibrary.library`, so a new

@@ -95,6 +95,10 @@ the conformance runner. The installed runtime and the conformance runtime contai
 program and the parser library that the program links; they still do not contain the surface. The
 kernel gate contains neither. The D2 test checks these rules.
 
+Amended 2026-11-03 ([ADR 0023](adr-0023-parser-built-by-lake.md)): the translation program and the shared libraries of the
+text package contain the parser library, which Lake compiles from `parser/`. No program links
+a separate parser library.
+
 Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier packages,
 the CLI, the installed runtime and the kernel gate were removed. The rules that name them now
 hold for what remains: nothing below the surface imports it (the model, the text package and the
@@ -142,6 +146,12 @@ and not before.
 | Lean's module system (private declarations, `@[expose]`) | A surface user depends on a model helper that must stay internal, or the documentation inventory's cost of public helpers is measured |
 | An engine interface in `Belay`: the parts of the surface that are the same for every engine (scripts, programs, queries as propositions, triples, equivalence), with each engine as an instance | The model of a second engine (PostgreSQL or MariaDB) exists, so that the shared parts come from two real engines |
 | A separate repository for the surface (the guide's `vihren-dev/belay-sqlite`) | The first release of the surface |
+
+Amended 2026-11-03 ([ADR 0023](adr-0023-parser-built-by-lake.md), owner decision 2): at the split of the surface into its
+own repository, the files that Lake compiles for the parser move into the text package
+there: the generated C of `parser/generated/`, `parser/c-headers/`, the C files of `parser/`
+and each release's `sqlite3.c` and `sqlite3.h`. The generators, Lemon, the grammar files and the
+corpora stay in this repository.
 
 ## Order
 

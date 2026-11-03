@@ -68,6 +68,14 @@ A separate parser process is not part of this decision. It can be added later
 as a wrapper over the library. The triggers for that work are listed under
 "When to revisit".
 
+Amended 2026-11-03 ([ADR 0023](adr-0023-parser-built-by-lake.md)): the C that Lemon and the generator write is committed
+under `parser/generated/`, and the Lake build of the text package compiles it with
+the library's own C into the static library `belayParserLibrary`. The translation
+program and the shared libraries of the text package and the surface contain the
+library; no program loads a separate parser library. Nix writes the committed files
+(`just parser-sources`) and still links the shared library `libsqlite-verifier-parser`
+from them, for the driver of the `parserLibrary` test suite.
+
 ### All supported grammars in the same library
 
 The grammar of a SQLite build depends on its release and on some of its

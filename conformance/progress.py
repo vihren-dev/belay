@@ -17,7 +17,7 @@ VERDICTS = ("AGREE", "DISAGREE", "MODEL_UNSUPPORTED", "HARNESS_ERROR")
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_FILES = (PROGRAM, ".lake/build/bin/conformance-runner")
 """The translation program and the compiled model, which a progress report binds by digest. The
-program links the parser library by its path in the Nix store."""
+program contains the parser library, which Lake compiles into it."""
 
 
 def digest(path: Path) -> str:

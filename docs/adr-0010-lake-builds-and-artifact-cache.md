@@ -231,6 +231,12 @@ and its outputs are in the cache that the tests use:
    once in the same way. Consumers link executables
    from the C objects of the packages they import, which only the consuming
    build makes. The installed runtime keeps its layout.)
+   (Amended 2026-11-03, [ADR 0023](adr-0023-parser-built-by-lake.md): a lakefile that reaches files outside its
+   package folder by a relative path gets them in the package's Nix derivation through
+   the `extraSources` parameter of `build-support/lean-package.nix`, at the same path in
+   the workspace, and each package that replays it gets the same files. The text package
+   compiles the parser's C from `parser/` in this way, so a Lake build of the text package
+   or the surface needs no Nix.)
 2. **Cases.** A verification case has the layout of a user's project, so the
    tests use the input format that users use. A case folder contains the
    project configuration file of the command line tool, `belay.toml`, and a

@@ -21,7 +21,7 @@ def answerLine (metadata : Json) (line : String) : IO Json := do
       match decodeParse grammar request.sql.size (← ParserLibrary.parse grammar request.sql) with
       | .ok result => return answer request result
       | .error message => return errorAnswer (s!"the parser library's parse document is not usable: {message}; " ++
-          "rebuild the conformance runtime with its parser library (nix-build build-support/default.nix -A conformance)")
+          "rebuild the translation program with Lake (lake build belay-sqlite-translate in packages/belay-sqlite-text)")
 
 /-- Answer each line until the end of standard input, and write each answer at once, so that the
 harness can read it before it sends the next request. A failure of one request does not stop the
