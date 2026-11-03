@@ -50,8 +50,11 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   dedicated metadata columns and source-snapshot/dirty fields are withdrawn.
   Coverage, dependency/proof/mutation data, fixed retention and automatic reports
   are deferred. Detailed tables remain open for the owner's continued review.
-  This documentation-only revision uses link and diff checks plus independent
-  specification review; the existing Nix evidence below is unchanged.
+  This documentation-only revision uses link and diff checks; the existing Nix
+  evidence below is unchanged.
+- Review attempt `20261103T104419Z-7ecac007` stopped at the reviewer's rate limit
+  without a completed review. The owner instructed us on 2026-11-03 to skip the
+  automated reviewer for this revision and will review it personally.
 
 ## References
 
