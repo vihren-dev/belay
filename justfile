@@ -31,7 +31,7 @@ build: resources conformance-build
 test-cases *args:
     python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" "$@"
 
-# Build the conformance runtime: the toolchain, the model, the conformance runner and the parser library.
+# Build the conformance runtime: the toolchain, the model, the conformance runner and the translation program, which contains the parser library.
 conformance-build:
     mkdir -p build
     timeout --foreground 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
@@ -123,7 +123,7 @@ dev-verdict *corpora: _dev-shell-warning
 
 # Warn when the shell of shell.nix, which has the pinned Lean toolchain, is not loaded.
 _dev-shell-warning:
-    @[ -n "${BELAY_PARSER_LIBRARY:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
+    @[ -n "${BELAY_DEV_SHELL:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
 
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:

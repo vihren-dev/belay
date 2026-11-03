@@ -206,6 +206,7 @@ let
                (root + /tests/lean_server_support.py) (root + /tests/surface_editor_support.py)
                (root + /tests/proof_cost_support.py)
                (root + /tests/sql_file_support.py)
+               (root + /tests/parser_object_symbols.py)
                (root + /tests/s6_check_support.py)
                (root + /tests/surface_automatic_editor_test.py)
                (root + /tests/shared_table_shape_test.py)

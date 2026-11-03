@@ -1,14 +1,13 @@
 # The development shell that .envrc loads: the packages of nix/dev-shell.nix, which the
-# flake dev shell also has, plus the pinned Lean toolchain and the parser library of the Nix
-# builds, so that a local `lake build` (just dev-build) uses the same Lean and links the same
-# parser.
+# flake dev shell also has, plus the pinned Lean toolchain of the Nix builds, so that a local
+# `lake build` (just dev-build) uses the same Lean. The text package's lakefile compiles the
+# parser library's C with that toolchain.
 { system ? builtins.currentSystem }:
 let
   pkgs = import ./build-support/locked-nixpkgs.nix { inherit system; };
   native = import ./nix/sqlite.nix { inherit pkgs; };
-  # The same derivations, and so the same store paths, as the Nix builds use.
-  build = import ./build-support/default.nix { inherit system pkgs native; };
-  leanToolchain = build.leanToolchain;
+  # The same derivation, and so the same store path, as the Nix builds use.
+  leanToolchain = import ./build-support/lean-toolchain.nix { inherit pkgs; };
   shell = import ./nix/dev-shell.nix { inherit pkgs native system; };
   linux = pkgs.stdenv.hostPlatform.isLinux;
   # Lake compiles and links with the toolchain's bundled clang. That clang links for the
@@ -34,6 +33,6 @@ let
 in
 pkgs.mkShell ({
   packages = shell.packages ++ [ leanToolchain ];
-  # The text package's lakefile reads it when Lake loads the package, as its Nix build does.
-  BELAY_PARSER_LIBRARY = "${build.parserLibrary.library}";
+  # The recipes of the local build loop and its test find the shell by this variable.
+  BELAY_DEV_SHELL = "1";
 } // shell.environment // pkgs.lib.optionalAttrs linux { LEAN_CC = "${leanCc}"; })

@@ -43,4 +43,29 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
 - The Nix workspaces get `parser/` through `extraSources`; `build-support/sources.nix` has the component `parser`; `tests/test_source_identity.py` covers it, including a derivation-level test.
 - `textPackage` builds with `withoutSystemCompiler`: the PATH of Lake has no `cc`, `gcc` or `c++`, and `clang` is the one of the Lean toolchain. Output `/nix/store/b04g7k4rlm1j94qaxkfabniqkx4jz0vb-belay-sqlite-text-0.1.0`.
 - New test `tests/surface_parser_link_test.py`: no program or library depends on a parser library; the objects call only the ten declared C functions.
-- Still to do in slice 2: dev-build, test-full, verdict, predictions comparison with `/nix/store/y8q8nsgwz1nnq5xw3g4x8qnhb5wcj78p-sqlite-verifier-predictions`.
+
+## Slice 2 checks (Nix)
+
+- `just test-full` on the slice-2 tree: test reports `/nix/store/pc0d752pw72ypm78h3y4f640j0mivws9-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/3z1dl2rs0zvll4wnrv1vl86vqwnqcdal-sqlite-verifier-verdict` (every claimed corpus as claimed).
+- Predictions: `/nix/store/8cpzncq4dixkfx35gaax3p3axxlqq0wz-sqlite-verifier-predictions` is byte-identical
+  (`diff -r`, no output) to trunk's `/nix/store/y8q8nsgwz1nnq5xw3g4x8qnhb5wcj78p-sqlite-verifier-predictions`
+  (main `5cdbc536`): all 55 claimed corpora and the synthetic workload.
+- Reviews of slice 2: the findings of `68b5db89`, `a1be0988` and `fafe0294` are resolved; `4556416a` has none.
+
+## Slice 3: the shell, the dev loop, stale text and ADR amendments
+
+- 2026-11-03: the work moved from a subagent to the main session (owner request).
+- `shell.nix` imports only `build-support/lean-toolchain.nix` and sets `BELAY_DEV_SHELL=1`; `.envrc`
+  watches only the files of the shell's packages and the toolchain; `_dev-shell-warning` tests
+  `BELAY_DEV_SHELL`.
+- `tests/dev_loop_test.py` finds the shell by `BELAY_DEV_SHELL`, builds from a clean
+  `.lake/build` of the text package, finds no missing-header or implicit-declaration message, checks
+  the objects' calls with `tests/parser_object_symbols.py` (shared with the Nix link test), and
+  prints the metadata with `lake lean`. Local run (not evidence): 1 passed.
+- Stale text (D4): `grammarAdvice`, the `TranslationProgram.lean` message, `conformance/progress.py`,
+  the `textPackage` comment, `build-support/README.md`, the `conformance-build` comment and the team
+  guide. Amendments dated 2026-11-03 in ADRs 0007, 0010, 0016 and 0020.
+- Tests of the commits: `tests/dev_loop_test.py`, `tests/test_ci_scope.py`, `tests/test_nix_test_targets.py`,
+  `tests/test_test_ownership.py`, `tests/docs_test.py`, `tests/test_source_identity.py`,
+  `tests/test_source_identity_derivations.py`.
