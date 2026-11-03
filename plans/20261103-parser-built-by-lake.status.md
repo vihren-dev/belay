@@ -39,7 +39,7 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
 
 ## Slice 2: Lake compiles the parser library
 
-- Lake compiles the C of `parser/` in `packages/belay-sqlite-text/lakefile.lean` (`extern_lib parserLibrary`), with the headers of `parser/c-headers`; `BELAY_PARSER_LIBRARY` no longer exists in the lakefiles, the Nix builds and the tests.
+- Lake compiles the C of `parser/` in `packages/belay-sqlite-text/lakefile.lean` (`extern_lib parserLibrary`), with the headers of `parser/c-headers`; `BELAY_PARSER_LIBRARY` no longer exists in the lakefiles, the Nix builds and the surface tests. The dev loop (`shell.nix`, `tests/dev_loop_test.py`) still uses it until slice 3.
 - The Nix workspaces get `parser/` through `extraSources`; `build-support/sources.nix` has the component `parser`; `tests/test_source_identity.py` covers it, including a derivation-level test.
 - `textPackage` builds with `withoutSystemCompiler`: the PATH of Lake has no `cc`, `gcc` or `c++`, and `clang` is the one of the Lean toolchain. Output `/nix/store/b04g7k4rlm1j94qaxkfabniqkx4jz0vb-belay-sqlite-text-0.1.0`.
 - New test `tests/surface_parser_link_test.py`: no program or library depends on a parser library; the objects call only the ten declared C functions.

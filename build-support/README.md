@@ -47,8 +47,8 @@ sources. Nix reads
 (`parserLibrary.grammars`) and one that links `parserLibrary.library`, so a new
 release or grammar builds only its own derivations. `parser/library_steps.py`
 does the checks between the Lemon and compiler steps. The test suite
-`tests.parserLibrary` checks the library. The translation program of `conformance`
-links it by its path in the Nix store. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
+`tests.parserLibrary` checks the library. Lake compiles the library's C code in the text package, so the translation
+program of `conformance` contains the parser. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
 
 `parserLibrary.grammars` retains each grammar's Lemon outputs and generated
 parser. Each Lean package under `packages/` has its own `lakefile.toml` and its

@@ -45,6 +45,15 @@ def run_tool(*command: str) -> str:
     return result.stdout
 
 
+def dependencies(path: Path) -> str:
+    """The dependencies of a file. `otool -L` also prints the file name and, for a library, its own
+    install name, so on macOS these lines are left out."""
+    if not DARWIN:
+        return run_tool("ldd", str(path))
+    lines = run_tool("otool", "-L", str(path)).splitlines()[1:]
+    return "\n".join(line for line in lines if Path(line.split()[0]).name != path.name)
+
+
 def program_files(runtime_root: Path) -> list[Path]:
     """Each program and shared library of the text package and the surface that contains the parser."""
     text, surface = (runtime_root / f"packages/{name}/.lake/build" for name in ("belay-sqlite-text", "belay"))
@@ -61,7 +70,7 @@ def test_no_program_or_library_depends_on_a_parser_library(runtime_root: Path) -
     assert len(files) > 4, files
     for path in files:
         assert path.is_file(), f"{path} is missing; add a program or shared library of the parser to this list"
-        listing = run_tool("otool", "-L", str(path)) if DARWIN else run_tool("ldd", str(path))
+        listing = dependencies(path)
         assert "parser" not in listing.lower(), f"{path} depends on a parser library:\n{listing}"
 
 
