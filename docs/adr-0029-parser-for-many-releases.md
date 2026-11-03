@@ -186,8 +186,8 @@ decision 3). No check run generates again:
   of fact 5 and each change of fact 6 that changes what is accepted or how text is split into
   tokens. A table gives, for each release of the dialect table, the expected status of each
   case, and the `parserLibrary` suite checks it for every release. For example, the `RAISE`
-  case is rejected by 3.46.0 and accepted from 3.47.1, and the trigger case with a schema
-  name is accepted from 3.52.0. The table is derived from the release in which each change
+  case is rejected by 3.46.0 and accepted from 3.47.1, and the trigger case with an alias
+  after the target table is accepted from 3.52.0. The table is derived from the release in which each change
   came, so a new release needs one line.
 - **Every grammar parses every input.** The `parserLibrary` suite runs its inputs, and the
   sanitizer job, with every grammar of the library, as today for two.
