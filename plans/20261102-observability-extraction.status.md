@@ -45,6 +45,13 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   ClickHouse delivery, history migration, retention and explicit limits.
   This adds a design proposal; production implementation has not started.
 - ADR review `20261102T234641Z-8d3d10c8`: no findings.
+- Owner revision on 2026-11-03: ADR 0028 now proposes an MVP for review history
+  and local/CI test events. Invocation metadata is optional JSON, including `{}`;
+  dedicated metadata columns and source-snapshot/dirty fields are withdrawn.
+  Coverage, dependency/proof/mutation data, fixed retention and automatic reports
+  are deferred. Detailed tables remain open for the owner's continued review.
+  This documentation-only revision uses link and diff checks plus independent
+  specification review; the existing Nix evidence below is unchanged.
 
 ## References
 

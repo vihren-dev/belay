@@ -1,254 +1,166 @@
-# ADR 0028: Continuous development observability
+# ADR 0028: Continuous development observability MVP
 
 Date: 2026-11-02. Status: PROPOSED. Implementation has not started.
+Changed 2026-11-03 at the owner's request: narrow the proposal to an MVP,
+use optional JSON invocation metadata and leave the remaining schema open.
+This replaces the broader collection, retention and reporting proposal of
+2026-11-02. The owner will continue reviewing the tables one by one.
 Audience: designers and reviewers.
 Owner request: retain review statistics outside the repository and continuously
-measure test-suite growth, overlap and unnecessary execution, locally and in CI.
-The owner requested extraction experiments and requires ordinary tool interfaces
-rather than compiler patches, private protocols or elaborate interception.
-Storage proposal: one self-hosted ClickHouse server, as discussed with the owner.
+record test executions and durations, locally and in CI. The longer-term questions
+are suite growth, overlap and unnecessary execution. The owner requires ordinary
+tool interfaces and a schema that grows only when an actual need arises.
 Evidence: [experiment report](../experiments/observability/README.md) and
 [captured summaries](../experiments/observability/results.json).
 Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md),
 [ADR 0011](adr-0011-product-trust-and-development-integrity.md), and
 [ADR 0020](adr-0020-local-build-loop.md).
 
-## Problem and measured limits
+## Problem and measured basis
 
-Review history grows in `reviews/`; removing it without preserving findings,
-resolutions and checklist versions would lose the evidence used to improve the
-review process. The experiment round-tripped 3,580 records, about 3.2 MB of JSONL,
-without changing the statistics. Existing records lack duration and model version.
+Review history grows in `reviews/`. We need to stop that accumulation while
+preserving the findings, resolutions and checklist versions used by the existing
+statistics. The experiment round-tripped 3,580 records, about 3.2 MB of JSONL,
+without changing the statistics.
 
-The owner suspects overlapping tests and runs after unrelated changes. The
-experiments establish extraction mechanisms, not the amount of wasted work:
+Public pytest hooks expose test identities, selection, starts, phase durations
+and outcomes. Ten existing tooling tests produced completion events that agreed
+with JUnit. An abrupt exit retained partial events but produced no JUnit file.
+Cached Nix results retained the original execution ID; fresh and reused builds
+returned the same build JSON. Our framed records survived in failed-build logs.
+These observations support a small collector and importer.
 
-| Observation | Consequence |
-| --- | --- |
-| Public pytest hooks expose collection, selection, starts and phase results; ten existing tooling tests agree with JUnit. | Use a small explicit plugin for every configured pytest run. |
-| An abrupt process exit preserves partial events but produces no JUnit file. | Keep incomplete attempts; absence of a result is not a pass. |
-| Python contexts work with `core = ctrace` on the measured pin; subprocess lines lack the parent test context. | Use periodic parent-process coverage and retain unattributed execution. |
-| Lean exposes diagnostics, module imports and elaboration profiles. Existing exporters expose proof dependencies and optional proof-body costs. | Retain these signals with their measured meaning. They are not runtime path coverage. |
-| Lake reuses an unchanged build but invalidates on an imported module change, including an unused declaration. | Measure conservative build dependencies before proposing narrower checks. |
-| Fresh and reused Nix builds return the same build JSON; cached events retain their original execution ID. | Separate invocations from executions. |
-| Failed Nix outputs can exist without being valid store paths; framed test records survive in build logs. | Recover our log records; do not scan failed output directories. |
+The experiments did not test ClickHouse installation or ingestion, live CI
+collection, distributed pytest workers or retry plugins. The MVP still needs
+those integrations that its scope uses. Broader experiment recommendations are
+possible extensions, not additional MVP requirements.
 
-CI identities were tested with fixture environment variables, not a live Actions
-job. The probes did not measure production overhead, distributed pytest workers,
-retry plugins, macOS, ClickHouse ingestion or deployment reliability. The decisions
-below specify that remaining integration work; they do not claim it is implemented.
+## D1. Collect reviews and test executions
 
-## D1. Store observations independently of builds
+The MVP captures existing review and resolution records, plus pytest execution
+events with test identities, durations and outcomes. Collection runs continuously
+in local development and CI through the configured pytest environment and project
+entry points. Keep JUnit for existing consumers. Use pytest's documented hooks
+and the existing review commands; do not build a general tracing framework.
 
-Use one ClickHouse database for structured development observations. Producers
-write versioned JSONL bundles first. A small importer validates and inserts them
-in batches through ClickHouse's documented HTTP interface. No message broker,
-custom ingestion service or general tracing platform is required initially.
+Retain starts and available phase results so failures and partial runs remain
+visible. Use the existing JSONL/log approach for failed Nix test builds. The probe
+forwards events after pytest returns; killing the entire builder before that can
+lose records. The MVP must state this limit rather than claim complete capture.
+It does not promise observation of arbitrary commands outside the configured
+entry points or semantic cases hidden inside a Python test's loop.
 
-Local commands write to a per-user spool outside the checkout, with separate
-files for concurrent processes. A local uploader sends completed bundles when
-the configured server is reachable. CI retains the same bundles as Actions
-artifacts, including after test failure. An importer on the ClickHouse host pulls
-those artifacts with read credentials; hosted runners do not need access to the
-private database. Both routes use the same schema and import code.
+Python coverage, dependency snapshots, Lean diagnostics/profiles/proof costs,
+mutation results and requirement links are deferred. They are not prerequisites
+for the MVP. Keep their experimental findings for a later decision driven by a
+specific analytical question. Test selection and removal remain unchanged.
 
-Nix builders write files and framed log records only. They receive no database
-address, uploader credential or network dependency. CI/local invocation IDs and
-timestamps stay outside derivation inputs. Actual execution IDs are generated
-inside the process that runs the tests, so cached outputs preserve their origin.
+## D2. Start with an intentionally incomplete schema
 
-Transport is retryable and at least once. Assign each observation a stable ID
-before its first write; retry the same ID and payload. Reject a conflicting
-payload for an existing ID. Preserve a bundle until insertion is confirmed;
-an ambiguous response is retried. Published queries must deduplicate by logical
-ID before counting, including before background merges have run. A
-`ReplacingMergeTree` table alone does not guarantee duplicate-free query results;
-use a view with explicit query-time deduplication. Do not build additive
-materialized aggregates directly from retryable inserts.
+Invocation metadata is a generic JSON object named `metadata`. An empty object
+`{}` is valid. There are no required metadata keys initially. The earlier list of
+command, revision, selection, selection reason, CI identifiers and environment
+columns is withdrawn; these can become optional metadata keys when needed.
+Do not populate them merely because the producer can obtain them.
 
-Telemetry failure leaves test/build exit codes unchanged. Report collection and
-upload failures separately. A deployment must set a spool byte limit; when full,
-stop recording new telemetry and report the gap instead of deleting unacknowledged
-records silently. Missing or malformed bundles remain visibly incomplete. Closing
-an append preserves events across the measured process exit, not a machine failure.
+Keep only the identity and lifecycle fields needed to link observations and
+interpret execution results as dedicated fields. Their exact definitions, and
+the remaining tables, stay open for the owner's table-by-table review. This ADR
+does not approve the earlier full table layout or prescribe ClickHouse DDL.
 
-## D2. Keep identity, scope and completeness in every analysis
+Add a metadata key when a concrete query needs it. Add or promote a dedicated
+column when querying or validating that data warrants it. Older records can lack
+the new key; absence means unknown, not a default value inferred after the fact.
+No backfill or general schema-migration framework is required for optional keys.
+Metadata must not contain credentials or a complete environment dump.
 
-Every bundle has schema and producer versions, repository identity, observation
-time, producer origin and a completeness state. Use these logical records; the
-implementation can choose tables without changing their meaning:
+A separate `source_snapshot_id` and `dirty` field are not required for this
+jj-based MVP. If source identity is later collected, the full working-copy
+commit ID captured by jj before the command can be optional metadata. A jj change
+ID does not identify immutable contents. Files can still change during a local
+run, and ignored/generated files or runtime artifacts are not identified by that
+commit alone; an extra snapshot hash would not solve those execution boundaries.
 
-| Record | Required identity and meaning |
-| --- | --- |
-| Invocation | UUID; actual checked-out commit and jj change ID when available; dirty/source snapshot identity; command/selection; CI run, attempt, job and platform or local origin; start/end and outer elapsed time. |
-| Test execution | Execution UUID, producer version, test inventory and runtime/build identities. One real pytest session, not one retrieval of its reports. |
-| Test attempt and events | Execution, pytest node ID including parameters, attempt ordinal and worker identity where applicable; ordered event IDs, setup/call/teardown times, outcomes, skip/xfail information and incomplete state. |
-| Invocation references | Invocation to artifact/execution references. Repeated retrieval adds a reference, not another test execution. |
-| Review event | Stable record ID, original review/finding IDs, commit, reviewer, checklist versions, finding and resolution payloads; duration/model identity only when supplied by the producer. |
-| Snapshot | Content identity, source/runtime/tool versions, measured scope and completeness; dependency edges, coverage memberships or semantic links. |
+An invocation requests work; an execution actually runs tests. Preserve this
+semantic distinction without requiring a particular table arrangement. Missing
+metadata limits comparisons: for example, we cannot assume two durations came
+from comparable environments when those environments were not recorded.
 
-Use an explicit allowlist for CI/environment metadata. Credentials and a complete
-environment dump are never part of an observation.
+## D3. Deliver files to one ClickHouse database
 
-Record timestamps for correlation and monotonic elapsed time for durations. Keep
-CI and local runs separate by default, and compare timings within platform,
-runner class, toolchain, execution mode and instrumentation mode. Store both
-invocation source identity and the source identity that produced a cached artifact.
-A mutable jj change ID is not a content identity. A partial inventory is not the
-full suite; a renamed node ID is a new identity unless an explicit mapping exists.
+Use one self-hosted ClickHouse server. Producers write JSONL files, and a small
+import command inserts batches through its documented HTTP interface. Local
+files outside the checkout and CI artifacts provide buffering and replay. Use
+simple scheduled import invocations for continuing collection. Hosted CI can
+publish artifacts for the ClickHouse host to retrieve, so it need not reach the
+private database. No custom ingestion service or message broker is required.
 
-First seeing an execution ID does not establish that the current machine ran it:
-it may arrive from a binary cache. Store attribution as observed execution,
-reused known execution, or unknown, with the evidence for the label. Nix build
-JSON alone supplies no exact local-build/substitution timeline. Parse documented
-JSON with an explicit version check; Nix's new CLI remains experimental upstream.
+Nix builders write files and our framed log records only. Keep uploader credentials
+and network access outside builders. Invocation IDs and timestamps must not enter
+derivation inputs and invalidate caches. Generate execution identity when the
+tests actually run, and preserve it when their artifact is retrieved.
 
-The initial pytest integration supports ordinary single-process runs. It must
-detect unsupported worker/retry configurations and report incomplete attribution,
-not merge attempts under one key. Supporting such configurations requires a
-separate integration test. Pytest cannot identify semantic cases hidden in loops;
-case-level counts are available only where an existing harness emits case IDs.
+Keep these correctness requirements in the MVP:
 
-## D3. Collect inexpensive records continuously
+- Reimporting the same observations must not double-count them. Preserve stable
+  observation identities across replay and make published queries deduplicate
+  before counting; background table merges alone are insufficient.
+- Retrieving cached test results must not count as another execution. First seeing
+  an execution ID is not proof that the current machine ran it.
+- Missing completion must not become a passing result. Keep available partial
+  results and report collection failures without inventing a termination cause.
+- Collection or upload failure must not change the test/build result. Keep files
+  for retry until import is confirmed, and report delivery failures separately.
 
-| Signal | Collection point and cadence |
-| --- | --- |
-| Review findings and resolutions | Existing review commands, every invocation; add elapsed time and reported model version prospectively. |
-| Pytest inventory, selection and phase results | Documented hooks in local and CI pytest configuration, every run, with JUnit retained for ordinary tooling. |
-| Invocation and selection context | Existing recipes/CI router, every configured invocation; explicit requested, scheduled or scope-rule reason, otherwise unknown. |
-| Nix artifacts and dependencies | Documented derivation/store queries when an artifact identity is first observed; record references on every invocation. |
-| Lean diagnostics and dependencies | Existing compilation/report commands; refresh snapshots when source/artifact/tool identities change. Reuse the theorem exporter. |
-| Existing proof costs | Import existing fresh reports when available, once per artifact identity. Preserve heartbeat unit, scheme and stale status. |
-| Semantic and mutant links | Export existing tags/target mappings when inputs change; export observed mutant results from already scheduled mutation runs. |
+The MVP implementation must choose a working server version, endpoint and access
+configuration. This ADR does not require a full deployment framework, dashboards,
+fixed retention periods, daily aggregates or a catalogue of weekly reports.
+Measure storage growth before choosing retention policies; do not enable automatic
+expiry merely to fill in the previously proposed retention table.
 
-Explicit pytest configuration covers direct pytest use in the configured
-environment as well as recipes. Ordinary Lean/build timing covers commands routed
-through the project entry points. Arbitrary external commands are outside the
-collection boundary and must not be represented as observed runs.
+## D4. Move review history with a narrow migration check
 
-Start and completion events distinguish deselection, runtime skips, setup errors,
-ordinary failures and incomplete attempts. Retain collection errors and the outer
-process exit too. Forward our framed events to Nix builder logs and recover them
-through `nix log` after failure. The probe forwards after pytest returns; full
-builder cancellation can still lose those records. Report that limit until a
-bounded streaming integration is verified. Never inspect private daemon events.
+Preserve existing review/resolution payloads, original IDs and checklist versions.
+Preserve the reader's ordering: date, review before resolution at the same second,
+then original record path. Historical fields not present in the records stay
+unknown. Additional duration or model metadata is deferred until needed.
 
-The mutation probe only exported five static target/guard mappings. Source
-inspection found `conformance.resolve_mutants.measure` already returns `killed`
-and case-level changed verdicts for the cases it executes. Retain that result and
-the selected-case set at `tests.mutant_sets.measure_set`; it is not an all-pairs
-test/mutant matrix. Unexecuted pairs remain unknown. The 17 sampled authored JSON
-cases had no requirement tags; do not manufacture requirement coverage from them.
+Export the tracked records and import them into ClickHouse. Verify record content
+and counts, and reproduce existing `review-stats` output before stopping repository
+writes. Retain the original export outside the checkout for recovery. Then update
+writers, readers, CI record checks, command documentation and `AGENTS.md` together;
+remove the tracked archive from the current tree while preserving old commits.
+Keep the historical import reader for replay, not a second ongoing writer.
 
-## D4. Use coverage as periodic, bounded evidence
+Resolution commands must still validate their referenced finding. If that record
+is unavailable, report that validation cannot finish. Missing database access
+must not silently drop a review or produce an empty successful statistics report.
+The current instruction to commit review records applies until implementation
+replaces it. Updating this proposed ADR does not change the current workflow.
 
-Collect Python line membership by test with pytest-cov contexts on one weekly
-representative full run and on explicit requests. Use the documented `ctrace`
-core for the measured Python 3.14 pin. Preserve empty/shared contexts and mark
-subprocess lines unattributed. Record included tests, files, source hashes,
-configuration and tool versions; compare overlap only within compatible snapshots.
-Keep this instrumentation mode separate from ordinary timing trends.
+## MVP acceptance and deferred work
 
-Use Lean module/declaration dependencies for impact exploration. Use native Lean
-profiles on request for elaboration-cost investigations. Keep the existing proof
-cost collector opt-in; do not broaden its compiler interception for observability.
-Its heartbeats exclude statement elaboration and kernel checking. Importing a
-compiled theorem or rereading its costs is not a new proof-checking execution.
+The MVP succeeds when we can query historical reviews and actual test executions
+from local development and CI, including test durations and outcomes, without
+accumulating new review records in the repository.
 
-Do not add Lean source rewriting, compiler instrumentation, subprocess context
-monkey-patching or private Nix protocol parsing. No experiment established a
-supported per-test Lean runtime coverage collector. No coverage percentage,
-shared footprint or dependency graph authorizes skipping or deleting tests.
-Future test selection needs a separate decision and validation against full runs;
-the current required checks and judge remain unchanged.
+Verify that outcome with a local run, a CI run, review-history import with matching
+statistics, and replay of the same import. Include failed and interrupted test
+runs, collection/upload failure, and reuse of a cached test artifact to check the
+four correctness requirements in D3. An invocation with `metadata: {}` must work.
+Use bounded integration checks for our collector and importer, rather than a broad
+acceptance matrix for deferred features.
 
-## D5. Move review history without losing its meaning
+Detailed table definitions remain under discussion. Retention schedules,
+automatic aggregates/reports, advanced delivery mechanisms and the additional
+signals in the experiment report require a concrete need before entering scope.
+The MVP supplies execution history; it does not establish test redundancy or a
+safe mechanism for skipping Lean tests. Local observations remain development
+telemetry, not the trusted conformance evidence of ADR 0011 or a replacement for
+the Nix checks of ADR 0020.
 
-Keep checklist definitions and their versions in the repository. Preserve full
-review and resolution payloads in ClickHouse, including original IDs and the
-existing deterministic ordering: date, review before resolution at the same
-second, then original record path. Historical duration and model fields stay
-unknown. New record IDs must be safe under concurrent workspaces.
+## References
 
-Before switching writers, export all tracked records, verify count/content
-identity and existing `review-stats` output against the imported data, and restore
-a backup to verify recovery. Then switch review writers/readers and update
-`AGENTS.md`, CI record checks and command documentation together. New history goes
-to the spool/database; remove the tracked archive from the current tree after
-verification. Preserve old commits. Keep the historical import reader for replay,
-not a second ongoing repository writer.
-
-Resolution commands must still validate the referenced finding. They can use a
-cached record plus local pending events when offline; if the finding is unavailable,
-report that validation cannot finish. Database unavailability must not silently
-drop a review or turn missing history into an empty successful statistics report.
-
-This ADR is proposed. Until its implementation replaces the workflow, the current
-`AGENTS.md` requirement to commit review records still applies.
-
-## D6. Retain enough history for continuing decisions
-
-Proposed initial retention is one year for detailed execution/invocation records,
-90 days for coverage/dependency snapshot payloads, and two years for daily trend
-summaries. Retain review history without an automatic expiry. Keep small snapshot
-identities and expiry markers as long as referencing records. On-demand native
-profiles remain ordinary diagnostic artifacts; they are not routinely imported.
-Expired detail means unavailable, not zero coverage. Compute summaries from
-deduplicated records before deleting detail and state their sample counts.
-
-These are initial policy choices, not measured storage requirements. Measure
-compressed bytes per record/snapshot, daily volume, ingestion lag and spool size
-during the first two weeks. Forecast retained size from measured daily volumes
-and retention, with separate headroom for merges and backups. Back up the database
-to a different failure domain and verify restore before removing repository history.
-Deployment must select the server version, endpoint, credentials, disk budget and
-backup destination. None of these was tested by the extraction experiments.
-
-Publish a weekly SQL-based report, with links to the underlying observations:
-
-- Suite growth: collected and selected counts, new/removed identities, run
-  frequency, failures and incomplete attempts.
-- Cost: total observed test time, invocation wall time, comparable per-test
-  duration distributions and retry cost when attribution is supported. Summed
-  test time is not CI wall time when work runs concurrently.
-- Potential waste: repeated executions of unchanged inputs, broad dependency
-  invalidation and Python footprint overlap. Label these candidates, not proof
-  that tests are redundant. Preserve unique failures and mutant detections.
-- Review process: findings and resolutions by checklist version, acceptance and
-  rejection rates, unresolved age and duration where known. Include review/rule
-  opportunities so a rule with no findings is not mistaken for an unused rule.
-- Collection health: missing bundles, upload lag, rejected schemas, duplicate
-  deliveries, incomplete coverage, retained bytes and expired detail.
-
-Local observations help explain development cost. They do not become the trusted
-conformance evidence of ADR 0011 or replace Nix checks under ADR 0020. The database
-is an analysis store, not a source of correctness verdicts or a new merge gate.
-
-## Acceptance of the later implementation
-
-End-to-end checks must exercise local and CI bundle collection, offline replay,
-duplicate delivery, conflicting IDs, concurrent producers and database recovery.
-Replaying a cached Nix artifact must add no fresh test executions. Failure and
-termination fixtures must retain partial records without inventing completion;
-unsupported attribution must remain explicit. Review import and restored data
-must reproduce existing statistics, including resolution ordering ties.
-
-Reuse the experimental fixtures for correct Python contexts and Lean data scope.
-Verify weekly queries with known duplicates, expired snapshots and partial
-inventories. Measure collection overhead on representative project runs before
-enabling it by default; record the measured budget and result in the implementation
-task. Test ingestion against the chosen ClickHouse version and CI artifact path.
-This ADR does not prescribe SQL DDL, a dashboard framework or deployment steps.
-
-## Alternatives and references
-
-Keeping review history in Git does not address the owner's accumulation problem.
-JUnit alone loses the measured abrupt-exit case and selection history. Always-on
-coverage adds unmeasured cost and still does not cover Lean paths. A custom compiler
-or daemon integration violates the owner's maintenance constraint. A larger
-telemetry platform is unnecessary for the measured extraction points.
-
-Tool-interface references are collected in the experiment report. Storage choices
-use ClickHouse's documented [HTTP interface](https://clickhouse.com/docs/interfaces/http),
-[ReplacingMergeTree semantics](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree)
-and [backup/restore facilities](https://clickhouse.com/docs/operations/backup).
+The experiment report links the extraction interfaces and records their limits.
+ClickHouse documents its [HTTP interface](https://clickhouse.com/docs/interfaces/http)
+and [ReplacingMergeTree deduplication semantics](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree).
