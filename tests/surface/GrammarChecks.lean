@@ -24,7 +24,7 @@ def metadata : Json := Json.mkObj [
 /-- Whether the release selects no grammar, with an error that ends with the advice. -/
 def refused (release : Release) : Bool :=
   match selectGrammar metadata release with
-  | .error message => message.endsWith grammarAdvice
+  | .error message => message.endsWith (grammarAdvice metadata)
   | .ok _ => false
 
 #guard (selectGrammar metadata { version := "3.51.0", sourceId := "build" }).toOption == some "a"
@@ -40,3 +40,4 @@ def build (compileOptions : List String) : Release :=
 #guard refused { version := "3.45.0", sourceId := "build" }
 #guard refused { version := "3.51.0", sourceId := "other" }
 #guard refused (build ["OMIT_TRIGGER"])
+#guard (grammarAdvice metadata).startsWith "; select SQLite 3.51.0 or 3.46.0, or add"

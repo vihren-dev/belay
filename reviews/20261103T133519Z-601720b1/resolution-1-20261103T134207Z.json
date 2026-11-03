@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-03T13:42:07+00:00",
+  "finding": "20261103T133519Z-601720b1#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The owner decided (ADR 0029, decision 3) that the generation runs once with light manual checks and no regular tests. The negative check was run once by hand and recorded in the status file: without NDEBUG the slice check reports .text.keywordCode and .text.sqlite3ParserFallback as different."
+}

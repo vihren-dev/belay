@@ -73,8 +73,13 @@ repository's own code (`parser/grammar_sources.py`, `parser/dialect_table.py`,
 5. **The generated parsers.** The six parsers are: 3.46.0 and 3.46.1; 3.47.0 to 3.48.0;
    3.49.0 to 3.49.2; 3.50.0 to 3.51.3; 3.52.0 to 3.53.4; 3.54.0 and 3.54.1. The grammar
    changes are: 3.47.0 accepts an expression as the second argument of `RAISE`; 3.49.0 adds
-   the token `COMMENT`; 3.52.0 accepts a schema name before the table in the `INSERT`,
-   `UPDATE` and `DELETE` of a trigger (`xfullname`, 409 to 412 productions). The template
+   the token `COMMENT`; 3.52.0 adds `ALTER TABLE ... ADD [CONSTRAINT name] CHECK (...)`,
+   `ALTER TABLE ... DROP CONSTRAINT`, `ALTER TABLE ... ALTER COLUMN ... DROP NOT NULL` and
+   `... SET NOT NULL`, and accepts an alias after the table of the `INSERT`, `UPDATE` and
+   `DELETE` of a trigger (`xfullname`); the default dialect goes from 409 to 412
+   productions. (Amended 2026-11-03: the first text named only the trigger change, as a
+   schema name, which the earlier grammars also accept. 3.47.0 also adds `WITHIN GROUP`, but
+   only under `SQLITE_ENABLE_ORDERED_SET_AGGREGATES`, which no default dialect has.) The template
    `lempar.c` changed in 3.50.0, 3.52.0 and 3.54.0, and so did the parser that Lemon writes.
 6. **The tokenizers.** The tokenizer sources change in 3.49.0 (comments become `TK_COMMENT`),
    3.50.3 (the window lookahead skips comments), 3.51.0 (`sqlite3GetToken` returns `i64`) and

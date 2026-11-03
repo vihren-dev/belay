@@ -28,7 +28,7 @@ def generate(preprocessed: str, grammar: str, header: str, native: str, target: 
         '%include {#include "runtime.h"\n#define YYNOERRORRECOVERY 1}',
         f"%name {name}", "%start_symbol input", "%token_prefix P_", "%token_type {int}",
         "%default_type {int}", "%extra_argument {Context *ctx}",
-        "%stack_size 0", "%realloc realloc", "%free free",
+        "%stack_size 0", "%realloc syntax_stack_realloc", "%free syntax_stack_free",
         "%syntax_error {if(!ctx->error) ctx->error = 1;}",
         "%parse_failure {if(!ctx->error) ctx->error = 1;}",
         "%stack_overflow {ctx->error = 2;}",

@@ -13,15 +13,13 @@ import sys
 
 import pytest
 
-from tests.parser_inputs import INVALID, OVERSIZED, RAISE_EXPRESSION, UNICODE_SPANS, VALID
+from tests.parser_inputs import INVALID, OVERSIZED, RELEASES, SYNTAX_CHANGES, UNICODE_SPANS, VALID
 from tests.parser_library_inputs import read_records, write_records
 from tests.parser_library_support import Build, Result, default_dialects, metadata, parse_all, parsed_status
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser]
 API_VERSION = 1
 """The API version of `parser/library.h`."""
-RAISE_ACCEPTED = {"3.51.0": True, "3.46.0": False}
-"""Whether each release accepts an expression in RAISE, which SQLite 3.47 added."""
 UNKNOWN_GRAMMAR = "0" * 64
 """A grammar identity that no library contains."""
 GENERATED = Path(__file__).resolve().parents[1] / "parser" / "generated"
@@ -53,27 +51,30 @@ def build(runtime_root: Path) -> Build:
 
 
 def test_metadata_has_a_grammar_for_each_dialect(build: Build, tmp_path: Path) -> None:
-    """`metadata` gives the API version, both releases, and a listed grammar for each dialect."""
+    """`metadata` gives the API version, each release of `RELEASES`, and a listed grammar for
+    each dialect."""
     document = metadata(build, tmp_path)
     assert document["api"] == API_VERSION
     grammars = document["grammars"]
     assert isinstance(grammars, list)
-    assert set(default_dialects(document)) == set(RAISE_ACCEPTED)
+    assert set(default_dialects(document)) == set(RELEASES)
     assert set(default_dialects(document).values()) == {grammar["grammar"] for grammar in grammars}
     assert all(grammar["productions"] > 0 and grammar["tokens"] > 0 for grammar in grammars)
 
 
 def test_one_process_parses_with_each_grammar(build: Build, tmp_path: Path) -> None:
-    """One process parses the RAISE case with every grammar, and each release gives its own result.
-    An unknown grammar identity gives result code 1 and no document."""
+    """One process parses each case of `SYNTAX_CHANGES` with the grammar of every release, and
+    each release accepts exactly the cases that the table says. An unknown grammar identity
+    gives result code 1 and no document."""
     dialects = default_dialects(metadata(build, tmp_path))
     inputs = tmp_path / "inputs"
-    write_records(inputs, [RAISE_EXPRESSION])
-    versions = sorted(dialects)
-    results = parse_all(build, inputs, [dialects[version] for version in versions] + [UNKNOWN_GRAMMAR], tmp_path)
-    for version, [result] in zip(versions, results):
-        assert parsed_status(result) == ("PARSED" if RAISE_ACCEPTED[version] else "INPUT_ERROR"), (version, result)
-    assert results[-1] == [Result(1, b"")]
+    write_records(inputs, [change.sql for change in SYNTAX_CHANGES])
+    results = parse_all(build, inputs, [dialects[version] for version in RELEASES] + [UNKNOWN_GRAMMAR], tmp_path)
+    for version, outputs in zip(RELEASES, results):
+        found = {change.name: parsed_status(result) for change, result in zip(SYNTAX_CHANGES, outputs, strict=True)}
+        assert found == {change.name: "PARSED" if change.accepts(version) else "INPUT_ERROR"
+                         for change in SYNTAX_CHANGES}, version
+    assert results[-1] == [Result(1, b"")] * len(SYNTAX_CHANGES)
 
 
 def checked_document(result: Result, grammar: str, sql: bytes) -> dict[str, object]:

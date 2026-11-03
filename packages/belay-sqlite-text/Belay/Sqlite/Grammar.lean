@@ -27,9 +27,6 @@ structure Release where
 def Release.default : Release :=
   { version := "3.51.0", sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b" }
 
-/-- What a user can do when the parser library has no grammar for a release. -/
-def grammarAdvice : String :=
-  "; select SQLite 3.51.0 or 3.46.0, or add a dialect of this release to parser/dialects.json and run `just parser-sources`"
 
 /-- The grammar options among the compile options, as sorted macro names without repeats.
 {lit}`PRAGMA compile_options` reports {lit}`SQLITE_OMIT_TRIGGER` as {lit}`OMIT_TRIGGER`, and a
@@ -59,9 +56,23 @@ def findGrammar (metadata : Json) (release : Release) : Except String String := 
     | throw s!"the parser library has no dialect of SQLite {release.version} with the grammar options {options}"
   dialect.getObjValAs? String "grammar"
 
+/-- What a user can do when the parser library has no grammar for a release: select one of the
+releases that the library's metadata document lists, or build a dialect of the release. For
+example, a library with the releases {lit}`3.51.0` and {lit}`3.46.0` gives
+{lit}`; select SQLite 3.51.0 or 3.46.0, or add ...`. -/
+def grammarAdvice (metadata : Json) : String :=
+  let versions := match metadata.getObjValAs? (Array Json) "releases" with
+    | .ok releases => releases.toList.filterMap fun (entry : Json) => (entry.getObjValAs? String "version").toOption
+    | .error _ => []
+  let choice := match versions.reverse with
+    | [] => "a release of the parser library"
+    | [only] => only
+    | last :: earlier => ", ".intercalate earlier.reverse ++ " or " ++ last
+  s!"; select SQLite {choice}, or add a dialect of this release to parser/dialects.json and run `just parser-sources`"
+
 /-- The grammar identity of the release's dialect ({name}`findGrammar`); an error also says what
-the user can do. -/
+the user can do ({name}`grammarAdvice`). -/
 def selectGrammar (metadata : Json) (release : Release) : Except String String :=
-  (findGrammar metadata release).mapError (· ++ grammarAdvice)
+  (findGrammar metadata release).mapError (· ++ grammarAdvice metadata)
 
 end Belay.Sqlite

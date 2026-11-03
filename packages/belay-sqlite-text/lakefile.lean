@@ -55,7 +55,8 @@ structure ParserManifest where
 def ParserManifest.prefixOf (parts : Array ParserPart) (folder : String) : Except String String :=
   match parts.find? (·.folder == folder) with
   | some part => .ok part.prefix
-  | none => .error s!"parser/generated/manifest.json names no parser or tokenizer folder {folder}"
+  | none => .error (s!"parser/generated/manifest.json names no parser or tokenizer folder {folder}; " ++
+      "restore parser/generated from version control, or run `just parser-sources` on Linux")
 
 /-- The folder {lit}`parser` of the repository, relative to the package folder, so that it also
 works for a package that Lake fetches from git with a sub-directory. -/

@@ -61,7 +61,7 @@ The test suite of this task is D5 of the ADR:
   of facts 5 and 6 that changes what is accepted or how text is split into tokens, and a table
   of the release where each change came. The `parserLibrary` suite checks each case's status
   with each release's dialect: for example the `RAISE` case with an expression is rejected by
-  3.46.0 and accepted from 3.47.1, and the trigger case with a schema name before the table is
+  3.46.0 and accepted from 3.47.1, and the trigger case with an alias after the table is
   accepted from 3.52.0.
 - **Every grammar parses every input**: the `parserLibrary` suite and its sanitizer job run
   with every grammar of the library.

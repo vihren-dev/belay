@@ -65,8 +65,11 @@ Double-quoted tokens are recognized syntactically; the selected execution
 profile governs subsequent expression resolution. Both profiles now use
 library-default DQS. The translator rejects double-quoted expression fallback
 as `UNSUPPORTED` while admitting supported quoted identifiers that resolve to
-schema columns. The second grammar selects SQLite 3.46.0 syntax; it does not
-select a migration framework.
+schema columns. The library has a grammar for each release in
+`parser/dialects.json`: 3.46.0 and each release from 3.47.1 to 3.54.1. The model and
+its execution profiles use 3.51.0 and 3.46.0; a grammar of another release
+parses its syntax and does not give it a model. A grammar does not select a
+migration framework.
 
 The semantic translator must inspect all commands and existing-schema objects,
 admit only its modeled forms, and report parsed unsupported forms as

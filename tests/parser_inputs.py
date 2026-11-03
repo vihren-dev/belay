@@ -4,6 +4,8 @@ The parser library checks (`tests/parser_library_test.py`) parse them with each 
 library and check the status and the spans of each document.
 """
 
+from dataclasses import dataclass
+
 VALID = (
     ('empty', b''),
     ('line_comment', b'-- only a comment'),
@@ -49,13 +51,69 @@ INVALID = (
 
 OVERSIZED = b" " * (1024 * 1024 + 1)
 """One byte more than the parser's input limit: the result is RESOURCE_LIMIT."""
-RAISE_EXPRESSION = b"CREATE TRIGGER tr BEFORE INSERT ON t BEGIN SELECT RAISE(FAIL, 1+2); END;"
-"""An expression in RAISE: SQLite 3.47 added it, so 3.51.0 accepts it and 3.46.0 rejects it."""
+RELEASES = ("3.46.0", "3.47.1", "3.47.2", "3.48.0", "3.49.0", "3.49.1", "3.49.2", "3.50.0", "3.50.1",
+            "3.50.2", "3.50.3", "3.50.4", "3.51.0", "3.51.1", "3.51.2", "3.51.3", "3.52.0", "3.53.0",
+            "3.53.1", "3.53.2", "3.53.3", "3.53.4", "3.54.0", "3.54.1")
+"""The releases that the parser library must have, each with its default dialect."""
+
+
+def release_number(version: str) -> tuple[int, ...]:
+    """The version as numbers, for comparing releases."""
+    return tuple(int(part) for part in version.split("."))
+
+
+@dataclass(frozen=True)
+class SyntaxChange:
+    """A text that one release accepts and another rejects, from the release notes and the
+    upstream source changes, with the releases that accept it.
+
+    `accepted` lists ranges `(first, end)`: each release from `first` up to but not including
+    `end` accepts the text; `None` as `end` means all later releases.
+    """
+
+    name: str
+    sql: bytes
+    accepted: tuple[tuple[str, str | None], ...]
+
+    def accepts(self, version: str) -> bool:
+        """Whether release `version` accepts the text."""
+        number = release_number(version)
+        return any(release_number(first) <= number and (end is None or number < release_number(end))
+                   for first, end in self.accepted)
+
+
+SYNTAX_CHANGES = (
+    # 3.47.0 accepts an expression as the second argument of RAISE.
+    SyntaxChange("raise_expression",
+                 b"CREATE TRIGGER tr BEFORE INSERT ON t BEGIN SELECT RAISE(FAIL, 1+2); END;",
+                 (("3.47.0", None),)),
+    # 3.49.0 gives comments the token COMMENT, and the lookahead after OVER, WINDOW and FILTER
+    # skips only spaces until 3.50.3, so a comment after OVER makes OVER a name.
+    SyntaxChange("comment_after_over", b"SELECT count(*) OVER /* c */ (ORDER BY 1) FROM t;",
+                 (("3.0.0", "3.49.0"), ("3.50.3", None))),
+    # 3.52.0 accepts new forms of ALTER TABLE for constraints.
+    SyntaxChange("alter_add_check", b"ALTER TABLE t ADD CHECK (x > 0);", (("3.52.0", None),)),
+    SyntaxChange("alter_add_named_check", b"ALTER TABLE t ADD CONSTRAINT c CHECK (x > 0);",
+                 (("3.52.0", None),)),
+    SyntaxChange("alter_drop_constraint", b"ALTER TABLE t DROP CONSTRAINT c;", (("3.52.0", None),)),
+    SyntaxChange("alter_drop_not_null", b"ALTER TABLE t ALTER COLUMN x DROP NOT NULL;",
+                 (("3.52.0", None),)),
+    SyntaxChange("alter_set_not_null", b"ALTER TABLE t ALTER COLUMN x SET NOT NULL;",
+                 (("3.52.0", None),)),
+    # 3.52.0 accepts an alias after the table of an INSERT, UPDATE or DELETE in a trigger.
+    SyntaxChange("trigger_table_alias",
+                 b"CREATE TRIGGER tr AFTER INSERT ON t BEGIN DELETE FROM main.u AS x WHERE x.a = 1; END;",
+                 (("3.52.0", None),)),
+)
+"""One case for each change of syntax between the releases of `RELEASES`. The other changes of
+the grammar and the tokenizer in these releases change no status of a default dialect: the
+token numbers, the parser template, the integer types of the tokenizer, and the ordered-set
+aggregates of 3.47.0, which only `SQLITE_ENABLE_ORDERED_SET_AGGREGATES` builds."""
 UNICODE_SPANS = 'CREATE TABLE "café"("💡" TEXT);'.encode()
 """Quoted names with multi-byte characters, for exact byte spans."""
 
 
 def all_inputs() -> list[bytes]:
     """Return every input of the parser tests once, in a fixed order."""
-    inputs = [sql for _, sql in VALID + INVALID] + [OVERSIZED, RAISE_EXPRESSION, UNICODE_SPANS]
+    inputs = [sql for _, sql in VALID + INVALID] + [OVERSIZED, UNICODE_SPANS] + [change.sql for change in SYNTAX_CHANGES]
     return list(dict.fromkeys(inputs))
