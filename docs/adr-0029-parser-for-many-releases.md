@@ -134,8 +134,12 @@ compiled; the cut file has the few declarations that it needs.
   one library. The fixed prefix keeps the identity free of itself; the generation check
   compares the committed files with this second output.
 - The **tokenizer identity** is the SHA-256 of the cut file of D2, which contains the token
-  numbers. The cut file has no prefix; `parser/library_prefix.h` makes its symbols internal
-  to its unit, as it does today for the whole `sqlite3.c`.
+  numbers. The cut file keeps SQLite's own linkage: its definitions are `static` or
+  `SQLITE_PRIVATE` (which SQLite defines as `static` in the amalgamation), and
+  `parser/library_tokenizer.c` defines `SQLITE_API` as `static` before it includes the file, as
+  it does today for the whole `sqlite3.c`. So the symbols of two tokenizers do not collide;
+  `parser/library_prefix.h` renames only the wrapper's functions. The slice check compares
+  the objects' symbol tables too, so a cut that loses a `static` fails it.
 - The **grammar identity** of a dialect, which the metadata and the Lean selection use, is the
   SHA-256 of the format name, its parser identity, its tokenizer identity and its grammar
   options. Its form for the Lean side does not change: one string for each dialect.
