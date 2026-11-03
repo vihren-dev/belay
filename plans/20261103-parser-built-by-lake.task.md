@@ -1,6 +1,6 @@
 # Lake builds the parser library from committed C sources
 
-Date: 2026-11-03. Status: OPEN.
+Date: 2026-11-03. Status: DONE (2026-11-03).
 Audience: the implementation team.
 Specification: [ADR 0023](../docs/adr-0023-parser-built-by-lake.md), accepted by the owner on
 2026-11-03, with its owner decisions 1 to 6.

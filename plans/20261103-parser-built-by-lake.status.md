@@ -1,6 +1,6 @@
 # Lake builds the parser library: task status
 
-Date: 2026-11-03. Status: OPEN.
+Date: 2026-11-03. Status: DONE (2026-11-03).
 Audience: the implementation team.
 Task: [Lake builds the parser library](20261103-parser-built-by-lake.task.md).
 Specification: [ADR 0023](../docs/adr-0023-parser-built-by-lake.md).
@@ -77,3 +77,9 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
   `/nix/store/bm4lfd3ys7a1nckbl99vsn3q8j88hl8g-sqlite-verifier-predictions` are byte-identical to trunk's.
 - Reviews: `92f127b4` has no findings; the one finding of `f7561cb3` (the status named the ADR amendments one
   commit early) is rejected with that reason.
+
+## End of the task (Nix)
+
+- `just test-nix`: 86 passed (log `build/agent-logs/final-testnix.log`).
+- `just test-scheduled-checks`: `/nix/store/2hwsz2s7rq7cd0ys7kyd7m4zbpvmnjbx-sqlite-verifier-scheduled-check-reports`.
+- The task is DONE. The owner checks the build on macOS.
