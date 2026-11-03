@@ -69,3 +69,11 @@ Relevant files: `packages/belay-sqlite-text/lakefile.lean`, `packages/belay-sqli
 - Tests of the commits: `tests/dev_loop_test.py`, `tests/test_ci_scope.py`, `tests/test_nix_test_targets.py`,
   `tests/test_test_ownership.py`, `tests/docs_test.py`, `tests/test_source_identity.py`,
   `tests/test_source_identity_derivations.py`.
+
+## Slice 3 checks (Nix)
+
+- `just dev-build` passed; then `just test-full`: test reports `/nix/store/n8jmb7h6yyilv4x8x3h7r3i33d86k6r4-sqlite-verifier-test-reports`.
+- `just verdict`: `/nix/store/19gzjajw2kmaadjrdvgll67il2hnx54w-sqlite-verifier-verdict`; predictions
+  `/nix/store/bm4lfd3ys7a1nckbl99vsn3q8j88hl8g-sqlite-verifier-predictions` are byte-identical to trunk's.
+- Reviews: `92f127b4` has no findings; the one finding of `f7561cb3` (the status named the ADR amendments one
+  commit early) is rejected with that reason.
