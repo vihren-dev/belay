@@ -118,8 +118,12 @@ choices in it. The list of names is part of the generator.
 The **slice check** is a step of the generation, not a test suite: the generation fails when
 it fails. It compiles, for each tokenizer, the cut file and the full `sqlite3.c` of its release
 with the wrapper of `parser/tokenizer.c`, with the flags of the manifest but at `-O0`. It
-requires the same machine code for `sqlite3GetToken`, `keywordCode` and the wrapper's
-functions, and the same bytes for each table. The check compiles at `-O0` because at the
+requires that each function of the cut object, and each function of the wrapper, has the same
+machine code as the function of the same name in the full object, and that each table has
+the same bytes. At `-O0` the helpers that `-O1` inlines are functions of their own, such as
+`getToken`, `analyzeWindowKeyword`, `analyzeOverKeyword`, `analyzeFilterKeyword` and
+`sqlite3ParserFallback`, so the rule "each function of the cut object" compares them too, and
+no list of names can miss one. The check compiles at `-O0` because at the
 manifest's `-O1` the compiler inlines a static function that has one caller: `keywordCode`
 has two callers in `sqlite3.c` and one in the cut, so its machine code would differ while its
 text is the same. A release whose tokenizer needs a definition that the list does not name
