@@ -50,3 +50,12 @@ Specification: [ADR 0029](../docs/adr-0029-parser-for-many-releases.md).
   - Tests run: `tests/parser_inputs.py` cases through the Nix `tests.parserLibrary` (5 passed,
     with the sanitizers over all 9 grammars); `just dev-build`; the unit tests of slice 1 and
     `tests/test_parser_library_inputs.py`.
+- 2026-11-03, review of 4223f8e7: R19 must (D5 example still named a schema name) and R11
+  should (advice checked only with the old releases) fixed in d3742138, whose review has no
+  findings.
+- 2026-11-03, end of slices 1 and 2, on 4223f8e7: `just test-full` passed (380 passed in the
+  surface suite; reports `/nix/store/yzzxrwb0zqn9l33x4115lshsm5h1afdk-sqlite-verifier-test-reports`).
+  `just verdict` passed: `/nix/store/f4dif73ki1545dnfdqd01gpbnlv653vz-sqlite-verifier-verdict`;
+  predictions `/nix/store/cs4khimy1nn9zijkdd1cxjag4ld42mmq-sqlite-verifier-predictions` are
+  byte-identical (`diff -r`, no output) to trunk's
+  `/nix/store/y8q8nsgwz1nnq5xw3g4x8qnhb5wcj78p-sqlite-verifier-predictions`.
