@@ -20,7 +20,7 @@ JsonValue = str | int | list["JsonValue"] | dict[str, "JsonValue"]
 
 @dataclass(frozen=True)
 class ReleaseRecord:
-    """What the metadata says about one release; each release derivation writes one."""
+    """What the metadata says about one release, from its release step."""
 
     version: str
     source_id: str

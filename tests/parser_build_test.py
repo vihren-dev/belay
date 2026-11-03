@@ -1,8 +1,6 @@
-"""The grammar adapter preserves syntax and rejects mismatched upstream tokens."""
+"""The grammar adapter of `parser/generate.py` preserves syntax and rejects mismatched tokens."""
 
 from pathlib import Path
-import subprocess
-import sys
 
 import pytest
 
@@ -21,8 +19,7 @@ def test_generator_preserves_rules_and_rejects_mismatched_tokens(tmp_path: Path)
     assert "%left PLUS." in result and "ctx->root = A;" in result
     assert 'expr(A) ::= ID(v0) PLUS(v1) ID(v2). [PLUS]' in result
     assert 'branch(ctx, "expr", 3, (int[]){v0,v1,v2})' in result
-    assert (tmp_path / "token_map.inc").read_text() == "case 1: return P_ID;\ncase 2: return P_PLUS;"
-    assert (tmp_path / "token_names.inc").read_text() == 'case TK_ID: return "ID";\ncase TK_PLUS: return "PLUS";'
+    assert (tmp_path / "token_map.inc").read_text() == "case TK_ID: return P_ID;\ncase TK_PLUS: return P_PLUS;\n"
     for actual, native in ((header, header.replace("PLUS 2", "PLUS 3")), ("", "")):
         rejected = tmp_path / "rejected.y"
         with pytest.raises(ValueError, match="token inventories differ"):
@@ -37,10 +34,3 @@ def test_generator_uses_the_given_lemon_prefix(tmp_path: Path) -> None:
     header = "#define TK_ID 1\n"
     generate("", "input ::= ID.\n", header, header, tmp_path / "library.y", "Syntax_0123")
     assert "%name Syntax_0123\n" in (tmp_path / "library.y").read_text()
-
-
-def test_generator_command_requires_a_lemon_prefix(tmp_path: Path) -> None:
-    """`parser/generate.py` has no default prefix: two grammars with one prefix cannot link."""
-    result = subprocess.run([sys.executable, "parser/generate.py", "upstream", str(tmp_path)],
-                            cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)
-    assert result.returncode == 2 and "--name" in result.stderr

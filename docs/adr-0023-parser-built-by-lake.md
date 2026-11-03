@@ -273,6 +273,12 @@ The Nix build of the text package is the judge's subject (ADR 0011). Its transla
 now contains the parser that Lake compiled from the committed files. The check of this section
 ties those files to the vendored sources and their hashes.
 
+Amendment, 2026-11-03 ([ADR 0029](adr-0029-parser-for-many-releases.md), D5 and owner
+decision 3): the check that compares the committed files with a fresh generation, the
+`parserSources` suite, is removed. The generation runs once, with `just parser-sources`, from
+the official release archives, and its result is committed; no check run generates again. The
+manifest test of that suite is now in the `parserLibrary` suite.
+
 ### D4. Nothing sets `BELAY_PARSER_LIBRARY`, and the files that change with it
 
 The variable goes away, and the dev shell is found by another variable: `shell.nix` sets

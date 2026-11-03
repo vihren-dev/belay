@@ -39,21 +39,19 @@ named anchors and raw/decoded HTML IDs remain valid targets.
 `parserLibrary` builds the in-process SQLite parser library, as
 [ADR 0007](../docs/adr-0007-parser-library.md) decides. Nix owns all parser
 build reuse; there is no separate local builder or content-stamp cache. The
-release derivations verify upstream checksums; `parser/generate.py` verifies
-token agreement and transforms the grammar. The C that Lemon and the generator
-write is committed under `parser/generated/` (`parserLibrary.generated`, written
-by `just parser-sources` and compared by the suite `tests.parserSources`); Nix
-compiles the committed files with Lean's `clang`. Nix reads
-`parser/dialects.json` and makes one derivation for each release
-(`parserLibrary.releases`), one for each distinct grammar identity
-(`parserLibrary.grammars`) and one that links `parserLibrary.library`, so a new
-release or grammar builds only its own derivations. `parser/library_steps.py`
-does the checks between the Lemon and compiler steps. The test suite
+release derivations (`parserLibrary.releases`) fetch each release's archives by
+the hashes of `parser/dialects.json` and run `parser/release_step.py`: it cuts the
+tokenizer out of `sqlite3.c`, checks the cut with `parser/slice_check.py`,
+transforms the grammar with `parser/generate.py` and computes the identities.
+`parserLibrary.generated` writes the tree that is committed under
+`parser/generated/`; `just parser-sources` runs the generation once, and no check
+run generates again (ADR 0029). Nix compiles the committed files with Lean's
+`clang` into `parserLibrary.library`. `parser/library_steps.py` writes the tree
+and checks the library's exports. The test suite
 `tests.parserLibrary` checks the library. Lake compiles the library's C code in the text package, so the translation
 program of `conformance` contains the parser. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
 
-`parserLibrary.grammars` retains each grammar's Lemon outputs and generated
-parser. Each Lean package under `packages/` has its own `lakefile.toml` and its
+Each Lean package under `packages/` has its own `lakefile.toml` and its
 own derivation (`lean-package.nix`), which builds it once, in a copy of the
 repository layout that holds the outputs of the packages it requires. Lake
 replays those outputs and compiles only the package's own modules; the output

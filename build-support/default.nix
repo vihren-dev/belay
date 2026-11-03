@@ -57,7 +57,6 @@ in rec {
   allTests = import ./tests.nix {
     inherit pkgs leanToolchain native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
-    parserGenerated = parserLibrary.generated;
     inherit leanPackages surfacePackage textPackage;
   };
   # Suites that only main pushes and scheduled runs build (`just test-scheduled`), so that the CI

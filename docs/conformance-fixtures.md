@@ -76,6 +76,9 @@ vendored alongside it. These references do not imply that the entirety of
 | `lang_altertable.html#alter_table_add_column` | ADD appends columns; unrestricted additions do not rewrite stored table content. No upstream requirement ID for these specific sentences was located in this bounded import. |
 | `limits.html#max_column` | The documented default column maximum is 2000; checked against the selected engine. |
 
-Source, amalgamation, and documentation archive URLs/hashes are recorded in
-`parser/upstream/README.md`; each retained fixture/document file is bound by
+The source and amalgamation archive hashes of 3.51.0 are recorded in
+`parser/dialects.json`. The documentation snapshot is
+`https://sqlite.org/2025/sqlite-doc-3510000.zip`, with SHA-256
+`e3e34071547273ce029586460d33e2536ec46f7faa8afe0a6e99753933151976`. Each
+retained fixture/document file is bound by
 `conformance/upstream/sha256.json`. Original public-domain notices are retained.

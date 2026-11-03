@@ -37,7 +37,6 @@ def expression(root: Path) -> str:
     return f'''{PRELUDE} {import_file("tests.nix")} {{
       inherit pkgs; inherit (builds) leanToolchain conformance modelPackage leanPackages surfacePackage textPackage;
       parserLibrary = builds.parserLibrary.testRoot;
-      parserGenerated = builds.parserLibrary.generated;
       root = /. + {nix_string(root)};
     }}'''
 
@@ -55,7 +54,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
     assert set(scripts) == set(ownership) == mutant_suites | {
         'model', 'coverageStatements', 'coverageFeatures', 'frozen', 'corpora', 'harness',
-        'sample', 'upstream', 'parserLibrary', 'parserSources', 'packages', 'documentation', 'theoremDependencies',
+        'sample', 'upstream', 'parserLibrary', 'packages', 'documentation', 'theoremDependencies',
         'surface', 'surfaceChecks', 'surfaceS6', 'writers'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
@@ -71,12 +70,11 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
 
 @pytest.fixture
 def source_tree(tmp_path: Path) -> Path:
-    """Copy only small potential test inputs; no store outputs, vendored parsers or build trees."""
+    """Copy only small potential test inputs, with the committed parser C; no store outputs or build trees."""
     for name in ('pytest.ini', 'conftest.py', 'LICENSE'):
         shutil.copy2(ROOT / name, tmp_path / name)
-    for name in ('tests', 'belay', 'conformance', 'docs', 'packages', 'reports', 'nix', 'build-support', 'tools'):
-        shutil.copytree(ROOT / name, tmp_path / name,
-                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
+    for name in ('tests', 'belay', 'conformance', 'docs', 'packages', 'reports', 'nix', 'build-support', 'tools', 'parser'):
+        shutil.copytree(ROOT / name, tmp_path / name, ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
     return tmp_path
 
 

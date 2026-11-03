@@ -1,5 +1,6 @@
-/* Reuse exact SQLite tokenizer and its contextual window-keyword lookahead. */
-#include "sqlite3.c"
+/* Reuse exact SQLite tokenizer and its contextual window-keyword lookahead, cut out of the
+** release's sqlite3.c by parser/tokenizer_cut.py. */
+#include "sqlite3_tokenizer.c"
 
 /* Keep the same lookahead rules as sqlite3RunParser, without preparing SQL. */
 int native_token(const char *text, int previous, int *kind){

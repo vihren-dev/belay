@@ -97,7 +97,7 @@ restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
-# Write the generated C of the parser library into parser/generated with Nix (ADR 0023, D1); run it after a change to parser/dialects.json, a vendored release or a generator, and commit the result.
+# Write the generated C of the parser library into parser/generated with Nix from the release archives (ADR 0029); run it on Linux after a change to parser/dialects.json or a generator, and commit the result.
 parser-sources:
     mkdir -p build
     timeout --foreground 900 nix-build build-support/default.nix -A parserLibrary.generated --out-link build/parser-generated --extra-experimental-features 'nix-command flakes'

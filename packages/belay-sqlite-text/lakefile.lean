@@ -25,21 +25,37 @@ lean_lib BelaySqliteText where
     .one `Belay.Sqlite.ParseTree, .andSubmodules `Belay.Sqlite.Translation, .one `Belay.Sqlite.TranslationRequest]
   precompileModules := true
 
-/-- One grammar of the parser library, as {lit}`parser/generated/manifest.json` lists it. -/
-structure ParserGrammar where
-  /-- The Lemon prefix of the grammar's symbols, for example {lit}`Syntax_7c0495821ae35f29`. -/
-  «prefix» : String
-  /-- The folder of the grammar's generated C below {lit}`parser/generated`. -/
+/-- A parser or a tokenizer of the parser library, as {lit}`parser/generated/manifest.json` lists it. -/
+structure ParserPart where
+  /-- The folder of its generated C below {lit}`parser/generated/parsers` or
+  {lit}`parser/generated/tokenizers`. -/
   folder : String
-  /-- The folder of the grammar's SQLite release below {lit}`parser`. -/
-  sources : String
+  /-- The prefix of its symbols, for example {lit}`Syntax_315770c3787c6a51`. -/
+  «prefix» : String
   deriving FromJson
 
-/-- The manifest of the generated C: the compile flags of every unit and the grammars. -/
+/-- One grammar of the parser library: a parser and a tokenizer, by their folders. -/
+structure ParserGrammar where
+  /-- The prefix of the grammar's parse function, for example {lit}`Grammar_513216cb503b3e79`. -/
+  «prefix» : String
+  parser : String
+  tokenizer : String
+  deriving FromJson
+
+/-- The manifest of the generated C: the compile flags of every unit, the parsers, the
+tokenizers and the grammars. -/
 structure ParserManifest where
   flags : Array String
+  parsers : Array ParserPart
+  tokenizers : Array ParserPart
   grammars : Array ParserGrammar
   deriving FromJson
+
+/-- The symbol prefix of the part of {lit}`parts` in {lit}`folder`. -/
+def ParserManifest.prefixOf (parts : Array ParserPart) (folder : String) : Except String String :=
+  match parts.find? (·.folder == folder) with
+  | some part => .ok part.prefix
+  | none => .error s!"parser/generated/manifest.json names no parser or tokenizer folder {folder}"
 
 /-- The folder {lit}`parser` of the repository, relative to the package folder, so that it also
 works for a package that Lake fetches from git with a sub-directory. -/
@@ -61,9 +77,10 @@ def compileParserUnit (pkg : Package) (manifest : ParserManifest) (inputs : Job 
   buildLeanO (pkg.buildDir / "c" / "parser" / object) (sourceJob.zipWith (fun source _ => source) inputs)
     weak (manifest.flags ++ defines)
 
-/-- The static library of the parser: the C units of the parser library, for each grammar its
-tokenizer and its generated parser, and the shim that gives the library's C API Lean's calling
-convention. Lake also makes its shared library, which the precompiled modules load. -/
+/-- The static library of the parser: the C units of the parser library, one for each parser,
+one for each tokenizer and one for each grammar, and the shim that gives the library's C API
+Lean's calling convention. Lake also makes its shared library, which the precompiled modules
+load. -/
 extern_lib parserLibrary pkg := do
   let parser ← IO.FS.realPath (parserFolder pkg)
   let manifestPath := parser / "generated" / "manifest.json"
@@ -73,15 +90,23 @@ extern_lib parserLibrary pkg := do
   let mut jobs := #[← file manifestPath, ← folder (parser / "generated"), ← folder (parser / "c-headers")]
   for name in ["library.h", "runtime.h", "tokenizer.c", "library_prefix.h"] do
     jobs := jobs.push (← file (parser / name))
-  for grammar in manifest.grammars do
-    jobs := jobs ++ #[← file (parser / grammar.sources / "sqlite3.c"), ← file (parser / grammar.sources / "sqlite3.h")]
   let inputs := (Job.collectArray jobs).map (·.flatten)
+  let parsers := FilePath.mk "generated" / "parsers"
+  let tokenizers := FilePath.mk "generated" / "tokenizers"
   let mut objects := #[]
+  for part in manifest.parsers do
+    objects := objects.push (← compileParserUnit pkg manifest inputs "library_parser.c"
+      ("parser-" ++ part.folder ++ ".o") #[parsers / part.folder, "."] #[])
+  for part in manifest.tokenizers do
+    objects := objects.push (← compileParserUnit pkg manifest inputs "library_tokenizer.c"
+      ("tokenizer-" ++ part.folder ++ ".o") #[tokenizers / part.folder, "."] #["-DTOKENIZER_PREFIX=" ++ part.prefix])
   for grammar in manifest.grammars do
-    let includes := #[FilePath.mk "generated" / grammar.folder, FilePath.mk grammar.sources, FilePath.mk "."]
-    for unit in ["library_tokenizer", "library_grammar"] do
-      objects := objects.push (← compileParserUnit pkg manifest inputs (unit ++ ".c")
-        (grammar.folder ++ "-" ++ unit ++ ".o") includes #["-DGRAMMAR_PREFIX=" ++ grammar.prefix])
+    let parserPrefix ← IO.ofExcept <| ParserManifest.prefixOf manifest.parsers grammar.parser
+    let tokenizerPrefix ← IO.ofExcept <| ParserManifest.prefixOf manifest.tokenizers grammar.tokenizer
+    objects := objects.push (← compileParserUnit pkg manifest inputs "library_grammar.c"
+      ("grammar-" ++ grammar.prefix ++ ".o") #[parsers / grammar.parser, tokenizers / grammar.tokenizer, "."]
+      #["-DGRAMMAR_PREFIX=" ++ grammar.prefix, "-DPARSER_PREFIX=" ++ parserPrefix,
+        "-DTOKENIZER_PREFIX=" ++ tokenizerPrefix])
   objects := objects.push (← compileParserUnit pkg manifest inputs "library.c" "library.o"
     #[FilePath.mk "generated", FilePath.mk "."] #[])
   let shim ← inputTextFile (pkg.dir / "c" / "parser_shim.c")

@@ -1,5 +1,5 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
-{ pkgs, leanToolchain, modelPackage, parserLibrary, parserGenerated, conformance, root ? ../.
+{ pkgs, leanToolchain, modelPackage, parserLibrary, conformance, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
 , leanPackages
 # The surface package and the text package below it; the `surface` suite checks them.
@@ -287,14 +287,9 @@ in {
   # The parser library: all grammars in one process and, on Linux, the sanitizer job.
   # Its runtime root holds the built inputs, so a harness or model change reuses the result.
   parserLibrary = suite "parserLibrary" {
-    inputs = map (name: root + "/tests/${name}.py") [ "parser_inputs" "parser_library_inputs" "parser_library_support" ];
+    inputs = map (name: root + "/tests/${name}.py") [ "parser_inputs" "parser_library_inputs" "parser_library_support" ]
+      ++ [ (root + /parser/generated) ];
     runtime = parserLibrary;
-  };
-  # The committed generated C of the parser library against a fresh generation (ADR 0023, D3). The
-  # tree is the runtime root, and the committed files are inputs, so the suite is small and fast.
-  parserSources = suite "parserSources" {
-    inputs = [ (root + /tests/parser_generated_test.py) (root + /parser/generated) ];
-    runtime = parserGenerated;
   };
   surface = surfaceSuite "surface";
   surfaceChecks = surfaceSuite "surfaceChecks";

@@ -40,19 +40,14 @@ in {
       (folder + "/c/parser_shim.c") ];
   };
   # The C of the parser library that Lake compiles into the text package (ADR 0023, D2), with the
-  # layout of `parser/` in the repository: the committed generated C, the C library headers, the
-  # library's own files and the sqlite3.c and sqlite3.h of each release that the manifest names.
+  # layout of `parser/` in the repository: the committed generated C of each parser and tokenizer
+  # (ADR 0029), the C library headers and the library's own files.
   # The text package, and each package that replays it, finds this folder at `../../parser`.
-  parser = let
-    folder = root + /parser;
-    manifest = builtins.fromJSON (builtins.readFile (folder + /generated/manifest.json));
-  in fs.toSource {
+  parser = let folder = root + /parser; in fs.toSource {
     root = folder;
     fileset = fs.unions ([ (folder + /generated) (folder + /c-headers) ]
       ++ map (name: folder + "/${name}") [ "library.c" "library.h" "runtime.h" "tokenizer.c" "library_prefix.h"
-        "library_tokenizer.c" "library_grammar.c" ]
-      ++ builtins.concatMap (grammar: map (name: folder + "/${grammar.sources}/${name}") [ "sqlite3.c" "sqlite3.h" ])
-        manifest.grammars);
+        "library_tokenizer.c" "library_parser.c" "library_grammar.c" ]);
   };
   verifierConformance = package "verifier-conformance";
   docTools = package "public-doc-tools";

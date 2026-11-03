@@ -27,5 +27,5 @@ lake build belay-sqlite-translate
 
 The lakefile reaches `parser/` by the path `../../parser`, so the package folder must stay two
 levels below the repository folder. The C under `parser/generated/` comes from Nix: after a change
-to `parser/dialects.json`, to a vendored SQLite release or to a generator, run `just parser-sources`
+to `parser/dialects.json`, to the release archives or to a generator, run `just parser-sources`
 and commit the result.

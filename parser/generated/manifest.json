@@ -7,16 +7,36 @@
     "-DSQLITE_OS_OTHER=1",
     "-DSQLITE_THREADSAFE=0"
   ],
-  "grammars": [
+  "parsers": [
     {
-      "folder": "7c0495821ae35f29",
-      "prefix": "Syntax_7c0495821ae35f29",
-      "sources": "upstream"
+      "folder": "315770c3787c6a51",
+      "prefix": "Syntax_315770c3787c6a51"
     },
     {
-      "folder": "191f4283d9f99a43",
-      "prefix": "Syntax_191f4283d9f99a43",
-      "sources": "upstream-3.46.0"
+      "folder": "741c4f125b3800cf",
+      "prefix": "Syntax_741c4f125b3800cf"
+    }
+  ],
+  "tokenizers": [
+    {
+      "folder": "ceaf5d19057ca233",
+      "prefix": "Tokenizer_ceaf5d19057ca233"
+    },
+    {
+      "folder": "c66b6b67ee45b769",
+      "prefix": "Tokenizer_c66b6b67ee45b769"
+    }
+  ],
+  "grammars": [
+    {
+      "prefix": "Grammar_513216cb503b3e79",
+      "parser": "315770c3787c6a51",
+      "tokenizer": "ceaf5d19057ca233"
+    },
+    {
+      "prefix": "Grammar_ab21ba2b498a001e",
+      "parser": "741c4f125b3800cf",
+      "tokenizer": "c66b6b67ee45b769"
     }
   ]
 }

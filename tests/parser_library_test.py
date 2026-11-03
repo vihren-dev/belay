@@ -1,9 +1,9 @@
 """The parser library loads all grammars in one process and is free of memory faults.
 
 These tests check the library that `build-support/parser-library.nix` builds from
-`parser/library*.c` and `parser/dialects.json`: its metadata, its grammar selection in
-one process, the status and the byte spans of its documents in each grammar, and its memory
-safety under the sanitizers.
+`parser/library*.c` and the committed generated C of `parser/generated`: the manifest of that
+tree, the library's metadata, its grammar selection in one process, the status and the byte
+spans of its documents in each grammar, and its memory safety under the sanitizers.
 """
 
 import json
@@ -24,9 +24,26 @@ RAISE_ACCEPTED = {"3.51.0": True, "3.46.0": False}
 """Whether each release accepts an expression in RAISE, which SQLite 3.47 added."""
 UNKNOWN_GRAMMAR = "0" * 64
 """A grammar identity that no library contains."""
+GENERATED = Path(__file__).resolve().parents[1] / "parser" / "generated"
+"""The committed generated C, in the source tree that holds this test."""
 SANITIZER_ENVIRONMENT = {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
                          "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"}
 """Stop the sanitized driver at the first finding, including a leak at exit."""
+
+
+@pytest.mark.timeout(60)
+def test_manifest_names_each_folder_and_the_parts_of_each_grammar() -> None:
+    """The manifest lists one folder for each parser and each tokenizer of the tree, each named by
+    the digits of its symbol prefix, and each grammar names a listed parser and tokenizer. The Lake
+    build of the text package and the Nix library read these folders."""
+    manifest = json.loads((GENERATED / "manifest.json").read_text())
+    for kind, prefix in (("parsers", "Syntax_"), ("tokenizers", "Tokenizer_")):
+        folders = [part["folder"] for part in manifest[kind]]
+        assert all(part["prefix"] == prefix + part["folder"] for part in manifest[kind])
+        assert sorted(folders) == sorted(path.name for path in (GENERATED / kind).iterdir())
+    assert all(grammar["parser"] in {part["folder"] for part in manifest["parsers"]}
+               and grammar["tokenizer"] in {part["folder"] for part in manifest["tokenizers"]}
+               for grammar in manifest["grammars"])
 
 
 @pytest.fixture(scope="module")

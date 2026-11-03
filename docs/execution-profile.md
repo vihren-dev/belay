@@ -8,7 +8,7 @@ Lean is independently pinned to 4.34.1.
 
 Native evidence uses the official SQLite
 source ID `fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b`,
-with source/archive hashes recorded under `parser/upstream/` and Nix.
+with source archive hashes recorded in `parser/dialects.json`.
 
 The semantic subset is described in [semantic-subset.md](semantic-subset.md).
 It assumes one ordinary main database, valid SQLite storage, ordinary rowid
@@ -69,7 +69,7 @@ not been formally verified. Coverage and exclusions are reported separately in
 
 The additional release uses official source ID
 `96c92aba00c8375bc32fafcdf12429c58bd8aabfcadab6683e35bbb9cdebf19e`.
-Its source/archive hashes are recorded under `parser/upstream-3.46.0/` and Nix.
+Its source archive hashes are recorded in `parser/dialects.json`.
 The same supported SQL subset and fixed assumptions apply; differences in the
 full grammar remain checked against the separately pinned parser. Selecting
 this version does not select SQLx or impose a migration-history catalog.

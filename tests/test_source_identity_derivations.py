@@ -31,7 +31,7 @@ def test_parser_change_rebuilds_only_the_packages_that_compile_it(tmp_path: Path
         return json.loads(result.stdout)
 
     before = drv_paths()
-    target = next((root / "parser/generated").glob("*/token_names.inc"))
+    target = next((root / "parser/generated").glob("tokenizers/*/token_names.inc"))
     target.write_text(target.read_text() + "\n")
     after = drv_paths()
     assert {name for name in before if before[name] != after[name]} == {"textPackage", "surfacePackage"}

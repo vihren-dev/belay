@@ -1,8 +1,8 @@
 """The parser library build reads grammar options, computes identities and checks the dialect table.
 
 These tests check `parser/grammar_sources.py`, `parser/dialect_table.py` and
-`parser/library_metadata.py` with small synthetic release directories. The Nix build of
-`parserLibrary` runs the same code on the vendored releases.
+`parser/library_metadata.py` with small synthetic release folders. The generation runs the
+same code on the releases' archives.
 """
 
 import json
@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from parser.dialect_table import Dialect, Release, check_dialect, check_release, grammar_identity, load_table
+from parser.dialect_table import (PARSER_FILES, Dialect, Release, check_dialect, check_release, grammar_identity,
+                                  load_table, parser_identity, tokenizer_identity)
 from parser.grammar_sources import C_CONDITIONAL, LEMON_CONDITIONAL, read_release, conditional_macros
 from parser.library_metadata import Grammar, ReleaseRecord, c_string, grammar_size, metadata, write_sources
 from tests.parser_release_fixtures import AMALGAMATION, release
@@ -26,49 +27,41 @@ def test_conditional_macros_reads_lemon_and_c_conditionals() -> None:
         conditional_macros("%if X==2\n", LEMON_CONDITIONAL)
 
 
+RELEASE = Release("3.51.0", "2025", "ab" * 32, "cd" * 32)
+"""A release entry of the dialect table."""
+
+
 def test_read_release_extracts_options_from_parser_sources_only(tmp_path: Path) -> None:
-    """The tokenizer section ends at sqlite3RunParser, so its SQLITE_DEBUG test is no grammar option."""
-    sources = read_release(release(tmp_path / "upstream"))
+    """The tokenizer section ends at sqlite3RunParser, so its SQLITE_DEBUG test is no grammar option;
+    a missing amalgamation marker fails the generation."""
+    sources = read_release(release(tmp_path / "release"))
     assert (sources.version, sources.source_id) == ("3.51.0", "2025-11-04 source")
     assert sources.grammar_options == ("SQLITE_ASCII", "SQLITE_OMIT_CTE", "SQLITE_OMIT_WINDOWFUNC")
-    assert "analyzeWindowKeyword" in sources.tokenizer and "sqlite3RunParser" not in sources.tokenizer
-    assert sources.character_tables.startswith("SQLITE_PRIVATE const unsigned char sqlite3UpperToLower")
-    assert sources.character_tables.endswith("  0, 1\n};") and "other global.c" not in sources.character_tables
-
-
-def test_read_release_refuses_changed_or_incomplete_sources(tmp_path: Path) -> None:
-    """A file that differs from sha256.json, or a missing amalgamation marker, fails the build."""
-    changed = release(tmp_path / "changed")
-    (changed / "parse.y").write_text("%ifdef OTHER\n")
-    with pytest.raises(ValueError, match="differs from its digest"):
-        read_release(changed)
     without_tokenizer = AMALGAMATION.replace("Begin file tokenize.c", "Begin file other.c")
     with pytest.raises(ValueError, match="tokenizer"):
         read_release(release(tmp_path / "incomplete", amalgamation=without_tokenizer))
 
 
-def test_identity_follows_each_input_and_ignores_the_directory(tmp_path: Path) -> None:
-    """The grammar, the tokenizer, the tables and the options each change the identity; the
-    directory name does not."""
-    base = read_release(release(tmp_path / "upstream"))
-    same = read_release(release(tmp_path / "upstream-3.51.1"))
-    identity = grammar_identity("input ::= cmd.", base, ())
-    assert grammar_identity("input ::= cmd.", same, ()) == identity
-    tokenizer = read_release(release(tmp_path / "tokenizer", amalgamation=AMALGAMATION.replace(
-        "return 0;", "return 1;")))
-    tables = read_release(release(tmp_path / "tables", amalgamation=AMALGAMATION.replace("0, 1\n};", "0, 2\n};")))
-    assert len({identity, grammar_identity("input ::= ecmd.", base, ()),
-                grammar_identity("input ::= cmd.", tokenizer, ()),
-                grammar_identity("input ::= cmd.", tables, ()),
-                grammar_identity("input ::= cmd.", base, ("SQLITE_OMIT_CTE",))}) == 5
+def test_identities_follow_each_compiled_input() -> None:
+    """A parser identity follows each of its files, a tokenizer identity its cut, and a grammar
+    identity its parser, its tokenizer and its options; a parser identity needs exactly its files."""
+    files = {name: name for name in PARSER_FILES}
+    parser = parser_identity(files)
+    assert parser != parser_identity({**files, "syntax.c": "other"})
+    assert tokenizer_identity("a") != tokenizer_identity("b")
+    identities = {grammar_identity(parser, "t", ()), grammar_identity("p", "t", ()),
+                  grammar_identity(parser, "u", ()), grammar_identity(parser, "t", ("SQLITE_OMIT_CTE",))}
+    assert len(identities) == 4 and grammar_identity(parser, "t", ()) == grammar_identity(parser, "t", ())
+    with pytest.raises(ValueError, match="digests"):
+        parser_identity({"syntax.c": ""})
 
 
 def test_dialect_table_checks(tmp_path: Path) -> None:
-    """The build refuses a wrong release label, unknown or unbuilt options and another identity."""
-    sources = read_release(release(tmp_path / "upstream"))
-    check_release(Release("3.51.0", "upstream"), sources)
-    with pytest.raises(ValueError, match="labels it 3.46.0"):
-        check_release(Release("3.46.0", "upstream"), sources)
+    """The generation refuses a wrong release label, unknown or unbuilt options and another identity."""
+    sources = read_release(release(tmp_path / "release"))
+    check_release(RELEASE, sources)
+    with pytest.raises(ValueError, match="contain SQLite 3.51.0"):
+        check_release(Release("3.46.0", "2024", "ab" * 32, "cd" * 32), sources)
     check_dialect(Dialect("3.51.0", (), "abc"), sources, "abc")
     with pytest.raises(ValueError, match="records abc"):
         check_dialect(Dialect("3.51.0", (), "abc"), sources, "abd")
@@ -81,13 +74,14 @@ def test_dialect_table_checks(tmp_path: Path) -> None:
 def test_load_table_validates_the_structure(tmp_path: Path) -> None:
     """The checked-in table loads; a duplicate dialect or a missing field is refused."""
     table = load_table(Path(__file__).resolve().parents[1] / "parser/dialects.json")
-    assert [release.version for release in table.releases] == ["3.51.0", "3.46.0"]
+    assert table.releases[0].version == "3.51.0" and "3.46.0" in {release.version for release in table.releases}
+    assert all(len(release.source_archive) == len(release.amalgamation_archive) == 64 for release in table.releases)
     assert all(not dialect.grammar_options and len(dialect.grammar) == 64 for dialect in table.dialects)
     entry = {"version": "3.51.0", "grammarOptions": [], "grammar": "abc"}
+    release_entry = {"version": "3.51.0", "year": "2025", "sourceArchive": "ab", "amalgamationArchive": "cd"}
     for dialects, message in (([entry, entry], "dialect twice"), ([{"version": "3.51.0"}], "fields")):
         path = tmp_path / "dialects.json"
-        path.write_text(json.dumps({"releases": [{"version": "3.51.0", "sources": "upstream"}],
-                                    "dialects": dialects}))
+        path.write_text(json.dumps({"releases": [release_entry], "dialects": dialects}))
         with pytest.raises(ValueError, match=message):
             load_table(path)
 
@@ -95,7 +89,7 @@ def test_load_table_validates_the_structure(tmp_path: Path) -> None:
 def test_metadata_and_generated_c_sources(tmp_path: Path) -> None:
     """The metadata has the documented fields, and the generated C keeps its exact bytes."""
     record = ReleaseRecord("3.51.0", "2025-11-04 source", ("SQLITE_ASCII", "SQLITE_OMIT_CTE", "SQLITE_OMIT_WINDOWFUNC"))
-    grammar = Grammar("ab" * 32, "Syntax_" + "ab" * 8, 409, 186)
+    grammar = Grammar("ab" * 32, "Grammar_" + "ab" * 8, 409, 186)
     document = metadata([record], [Dialect("3.51.0", (), grammar.identity)], [grammar])
     assert document == {
         "api": 1,

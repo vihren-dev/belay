@@ -23,7 +23,9 @@ DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
     "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
-    "parser/generated/7c0495821ae35f29/syntax.c": {"parser"}, "parser/generated/library_metadata.inc": {"parser"},
+    "parser/generated/parsers/0123456789abcdef/syntax.c": {"parser"},
+    "parser/generated/tokenizers/0123456789abcdef/sqlite3_tokenizer.c": {"parser"}, "parser/generated/library_metadata.inc": {"parser"},
+    "parser/generated/manifest.json": {"parser"},
     "parser/c-headers/string.h": {"parser"}, "parser/c-headers/stdio.h": {"parser"},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
@@ -38,7 +40,7 @@ FIXED: dict[str, set[str]] = {
     **{f"packages/belay-sqlite-text/{name}": {"text"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
     **{f"parser/{name}": {"parser"} for name in (
         "library.c", "library.h", "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c",
-        "library_grammar.c", "upstream/sqlite3.c", "upstream/sqlite3.h")},
+        "library_parser.c", "library_grammar.c")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
@@ -48,12 +50,6 @@ PARENTS: tuple[str, ...] = (".", "parser", "belay/sqlite", "tests", "tools",
            *(f"packages/{folder}" for folder in PACKAGES),
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
-PARSER_MANIFEST: str = json.dumps({"flags": [], "grammars": [
-    {"prefix": "Syntax_0", "folder": "0", "sources": "upstream"}]})
-"""The manifest in `parser/generated` that `build-support/sources.nix` reads to select the release
-folders of the parser component: one grammar that uses the release folder `parser/upstream`."""
-
-
 def identities(root: Path) -> dict[str, str]:
     """Evaluate the checked-in fileset expression with the real locked package library, never build."""
     def literal(path: Path) -> str:
@@ -81,7 +77,6 @@ def identity_baseline(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, d
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"declared input {name}\n")
-    (root / "parser/generated/manifest.json").write_text(PARSER_MANIFEST)
     return root, identities(root)
 
 
@@ -181,19 +176,3 @@ def test_model_change_reaches_the_conformance_runtime(
     model.write_bytes(model.read_bytes()+b'\nmodel change\n')
     changed = derivations()
     assert all(changed[name] != before[name] for name in before)
-
-
-def test_manifest_selects_release_folders(identity_tree: tuple[Path, dict[str, str]]) -> None:
-    """A release folder named in `parser/generated/manifest.json` is part of the parser component and
-    another release folder is not: `build-support/sources.nix` selects sqlite3.c and sqlite3.h by the manifest."""
-    root, baseline = identity_tree
-    for name in ("sqlite3.c", "sqlite3.h"):
-        other = root / "parser/other" / name
-        other.parent.mkdir(parents=True, exist_ok=True)
-        other.write_text("a release that no grammar uses")
-    assert identities(root) == baseline
-    (root / "parser/generated/manifest.json").write_text(json.dumps({"flags": [], "grammars": [
-        {"prefix": "Syntax_0", "folder": "0", "sources": "other"}]}))
-    observed = identities(root)
-    assert {name for name in COMPONENTS if observed[name] != baseline[name]} == {"parser"}
-
