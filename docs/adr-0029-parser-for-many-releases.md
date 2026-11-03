@@ -128,9 +128,14 @@ compiled; the cut file has the few declarations that it needs.
 ### D3. Identities by compiled code, and a dialect is a pair
 
 - The **parser identity** is the SHA-256 of the generated parser files without paths
-  (`syntax.c`, `syntax.h`, `token_names.inc`).
+  (`syntax.c`, `syntax.h`, `token_names.inc`), generated with one fixed symbol prefix. The
+  committed files are then generated again with the prefix of that identity
+  (`Syntax_` and its first 16 hexadecimal digits), so that several parsers can be linked into
+  one library. The fixed prefix keeps the identity free of itself; the generation check
+  compares the committed files with this second output.
 - The **tokenizer identity** is the SHA-256 of the cut file of D2, which contains the token
-  numbers.
+  numbers. The cut file has no prefix; `parser/library_prefix.h` makes its symbols internal
+  to its unit, as it does today for the whole `sqlite3.c`.
 - The **grammar identity** of a dialect, which the metadata and the Lean selection use, is the
   SHA-256 of the format name, its parser identity, its tokenizer identity and its grammar
   options. Its form for the Lean side does not change: one string for each dialect.
@@ -221,15 +226,21 @@ fact 6), which is the scaling that this ADR tests.
 2. **Native agreement of the new releases' parsers.** OPEN. Options: (a) the cases of D5
    only; (b) also a scheduled suite that compares each release's acceptance of the parser test
    inputs with native SQLite of that release (`sqlite3_prepare` on an empty database, syntax
-   errors only), which needs a native build of each release. Recommendation: (a). The parser
-   is SQLite's own grammar and tokenizer code, so the cases check the selection of the
-   release, which is our code; (b) is a test of SQLite's Lemon output against SQLite, with
-   24 native builds in CI.
+   errors only), which needs a native build of each release. Option (b) uses native SQLite as
+   an oracle for our code: the grammar rewrite of `parser/generate.py`, the token map and the
+   tokenizer wrapper of `parser/tokenizer.c`. Recommendation: (a), because of the cost: 24
+   native builds and a new scheduled suite. Our code is already checked by the production
+   count of each generated parser against Lemon's export, by the cases of D5 for each release,
+   and by the slice check; and today's library has no native comparison for its two
+   releases either. If a case of D5 or a corpus finds a difference, (b) becomes the test for
+   it.
 3. **Where the generation check runs.** OPEN. Options: (a) in every check run, as today;
-   (b) only in the `full` CI scope, which a change under `parser/` already selects, and in the
-   scheduled runs. Recommendation: (b): the check fetches 440 MB of archives on a runner
-   without a warm store, and only a change under `parser/` or of the generator can make it
-   fail.
+   (b) only in the `full` CI scope and in the scheduled runs. A change under `parser/` selects
+   `full` today (`tests/ci_scope.py`); a change of `build-support/parser-library.nix`, which
+   writes the manifest and runs the generation, selects only `infrastructure`, so (b) adds
+   that file to the files that select `full`. Recommendation: (b): the check fetches 440 MB of
+   archives on a runner without a warm store, and only a change of the generation's inputs
+   (`parser/`, `build-support/parser-library.nix`, the pinned toolchain) can make it fail.
 
 ## Sources
 
