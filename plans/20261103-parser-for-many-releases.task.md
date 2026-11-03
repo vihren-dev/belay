@@ -1,6 +1,6 @@
 # A parser library for the SQLite releases of the last two years
 
-Date: 2026-11-03. Status: OPEN.
+Date: 2026-11-03. Status: DONE (2026-11-03).
 Audience: the implementation team.
 Specification: [ADR 0029](../docs/adr-0029-parser-for-many-releases.md), accepted by the owner on
 2026-11-03, with its owner decisions 1 to 3.

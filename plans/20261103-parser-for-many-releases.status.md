@@ -1,6 +1,6 @@
 # Status: a parser library for the SQLite releases of the last two years
 
-Date: 2026-11-03. Status: OPEN.
+Date: 2026-11-03. Status: DONE (2026-11-03).
 Audience: the implementation team.
 Task: [20261103-parser-for-many-releases.task.md](20261103-parser-for-many-releases.task.md).
 Specification: [ADR 0029](../docs/adr-0029-parser-for-many-releases.md).
@@ -59,3 +59,6 @@ Specification: [ADR 0029](../docs/adr-0029-parser-for-many-releases.md).
   predictions `/nix/store/cs4khimy1nn9zijkdd1cxjag4ld42mmq-sqlite-verifier-predictions` are
   byte-identical (`diff -r`, no output) to trunk's
   `/nix/store/y8q8nsgwz1nnq5xw3g4x8qnhb5wcj78p-sqlite-verifier-predictions`.
+- 2026-11-03, end of the task: `just test-nix` passed (86 passed); `just test-scheduled-checks`
+  passed: `/nix/store/labplyjb6r2h3r8920hwy2pawbwnq66z-sqlite-verifier-scheduled-check-reports`.
+  The task is DONE; the owner checks macOS and merges.
