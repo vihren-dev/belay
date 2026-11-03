@@ -37,6 +37,7 @@ class CiScopeTest(unittest.TestCase):
                     (["build-support/tests.nix"], "infrastructure"),
                     (["tests/test_toolchain_smoke.py"], "test"),
                     (["tests/test_source_identity.py"], "infrastructure"),
+                    (["tests/test_source_identity_derivations.py"], "infrastructure"),
                     (["tests/test_nix_test_targets.py"], "infrastructure"),
                     (["tests/environment_snapshot_test.py"], "infrastructure"),
                     (["tests/nix_suites.json"], "infrastructure"),
