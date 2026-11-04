@@ -30,8 +30,8 @@ text, and it does not make a special case of `date`.
 The research for the second form found a defect in the model that already exists: the value
 that a group gives for a column, or for an expression of columns, is not always SQLite's. The
 model reads such values from the first row of the group in rowid order. SQLite reads them from
-the row with the minimum or maximum when the query has exactly one `min()` or `max()`, and
-from the first row that it reads otherwise, in an order that its query plan chooses. Where the
+the row with the minimum or maximum of the last `min()` or `max()` call of the query, and
+from the first row that it reads when the query has no such call, in an order that its query plan chooses. Where the
 rows of a group compare as equal but differ, for example `'a'` and `'A'` under `NOCASE`, or
 `1` and `1.0`, the model and SQLite give different rows today. Grouping by expressions makes
 such groups more frequent, so this ADR decides the rule for both (D5, owner decision 2).
@@ -197,24 +197,37 @@ From probes, and from `findOrCreateAggInfoColumn` and `analyzeAggregate` (`expr.
   evaluated against "a single arbitrarily chosen row from within the group" (R-62913-19830).
   The implementation is more exact, and the probes show three rules. With rows
   `(1.0,'a',1), (1,'A',3), (1,'A',2)` of `t(a, c TEXT COLLATE NOCASE, n)`:
-  1. **No single `min()` or `max()`.** Every value comes from the first row that SQLite reads:
+  1. **No `min()` or `max()`.** Every value comes from the first row that SQLite reads:
      `SELECT c, count(*) ... GROUP BY c` gives `'a'`; `SELECT a+0, typeof(a) ... GROUP BY a+0`
      gives `1.0` and `real`. `HAVING` reads the same row.
-  2. **Exactly one distinct `min()` or `max()`** (in the result, in `HAVING` or in `ORDER BY`,
-     also with `FILTER`, also with other aggregates such as `count` and `sum`; the same call
-     twice counts once). A column reference, also a grouped column and also under `COLLATE`,
-     comes from the row that gave the minimum or the maximum: `SELECT c, max(n) ... GROUP BY c`
-     gives `'A'`, and `SELECT c || '', max(n) ... GROUP BY c` gives `'A'`. With two different
-     ones (`max(n), min(n)`), rule 1 applies.
-  3. **A result column that is a grouping term but not a column.** A whole result expression
-     that is the same expression as a `GROUP BY` term, and that is not a column under at most
-     `COLLATE`, gives the term's value from the first row, also under rule 2:
-     `SELECT a+0, typeof(a), max(n) ... GROUP BY a+0` gives `1.0` and `integer`, so the two
-     values come from different rows. A part of a larger expression does not count:
-     `SELECT (a+0)*1, max(n) ... GROUP BY a+0` gives `1`. The comparison ignores the case of
-     names (`A + 0` matches `a+0`) and does not reorder operands (`0 + a` does not match).
-     `SELECT CAST(c AS TEXT) COLLATE NOCASE, max(n) ... GROUP BY CAST(c AS TEXT) COLLATE NOCASE`
-     gives the first row's `'a'`.
+  2. **One or more `min()` or `max()` calls** (in the result, in `ORDER BY` or in `HAVING`,
+     also with other aggregates such as `count` and `sum`). The last distinct call decides, in
+     the order result, `ORDER BY`, `HAVING`; a call that is written again counts at its first
+     place. A column reference, also a grouped column and also under `COLLATE`, comes from the
+     first row that gave that call's minimum or maximum: `SELECT c, max(n) ... GROUP BY c`
+     gives `'A'`, `SELECT c || '', max(n) ... GROUP BY c` gives `'A'`,
+     `SELECT c, min(n), max(n) ... GROUP BY c` gives `'A'`, and
+     `SELECT c, max(n), min(n) ... GROUP BY c` gives `'a'`. With `min(n)` in `HAVING` and
+     `max(n)` in `ORDER BY`, `SELECT c` gives `'a'`. The reason is in SQLite's code: each
+     `min` or `max` step resets one shared register and sets it when the row is not a new
+     extremum, and the columns load when the register is clear after all steps.
+  3. **A result column that is a grouping term but not a column.** SQLite associates each
+     `GROUP BY` term with the last result column that is the same expression, `COLLATE` included
+     (`resolve.c` compares every result column and keeps the last match). That result column,
+     when it is not a column under at most `COLLATE`, gives the term's value from the first row,
+     also under rule 2. Other result columns are evaluated as usual:
+     - `SELECT a+0, typeof(a), max(n) ... GROUP BY a+0` gives `1.0` and `integer`, so the two
+       values come from different rows.
+     - `SELECT a+0, a+0, max(n) ... GROUP BY a+0` gives `1` and `1.0`: only the second column
+       is associated.
+     - A part of a larger expression does not count: `SELECT (a+0)*1, max(n) ... GROUP BY a+0`
+       gives `1`.
+     - The comparison ignores the case of names (`A + 0` matches `a+0`) and does not reorder
+       operands (`0 + a` does not match).
+     - `COLLATE` must be the same on both sides. `SELECT CAST(c AS TEXT) COLLATE NOCASE, max(n)`
+       with `GROUP BY CAST(c AS TEXT) COLLATE NOCASE` gives the first row's `'a'`, and
+       `SELECT CAST(c AS TEXT), max(n)` with the same `GROUP BY` gives the maximum's `'A'`.
+       The same holds with `COLLATE` in the result and not in the term.
 - **The first row depends on the plan.** With rows `('A',3), ('a',1), ('a',2)` and an index on
   `n`, `SELECT c, count(*) FROM t GROUP BY c` gives `'A'`, and the same query with
   `WHERE n > 0` gives `'a'`, because SQLite reads the rows through the index.
@@ -331,20 +344,40 @@ is not required by this ADR.
 The value that a group gives for a non-aggregate expression follows SQLite's three rules
 (Context, "The row of a group"), and the model does not decide the plan-dependent choice:
 
+- **Deciding call.** The deciding call is the last distinct `min` or `max` aggregate of the
+  query in the order result columns, `ORDER BY`, `HAVING`, where a call that is written again
+  counts at its first place. A query without such a call has no deciding call.
 - **Representative rows.** For each group, the candidate first rows are all rows of the group.
-  When the query has exactly one distinct `min` or `max` aggregate, the candidate rows for
-  column references are the rows whose value of that aggregate's operand gives the result
-  (the ties of the minimum or maximum); otherwise they are the candidate first rows.
+  With a deciding call, the candidate rows for column references are the rows whose value of
+  that call's operand gives the result (the ties of the minimum or maximum). When a `min` or
+  `max` call of the query has `FILTER`, every row of the group is a candidate: the probes show
+  that SQLite then loads the columns on rows that the simple rule does not give
+  (`SELECT c, max(n), min(n) FILTER (WHERE n > 9)` gives `'a'`, not the maximum's `'A'`), and
+  this ADR does not describe that rule more exactly.
 - **Evaluation.** A result column, a `HAVING` condition and an `ORDER BY` expression read their
-  column references from one chosen candidate row, the same row for the whole group. A result
-  column that is, as a whole, the same resolved expression as a grouping term, and is not a
-  column under at most `COLLATE`, reads that term's value on one chosen candidate first row.
+  column references from one chosen candidate row, the same row for the whole group.
+- **Association.** For each grouping term, the resolver records the last result column that
+  is the same expression as the term, as SQLite's `resolve.c` does. Two expressions are the
+  same when their resolved forms are equal and their explicit `COLLATE` clauses are at the
+  same places with the same names, compared without case. The resolver compares while it
+  still has the written expressions, because the resolved form does not keep `COLLATE`
+  (`resolveOperandTraced` gives the operand's resolved form). The associated result column, when it is not
+  a column under at most `COLLATE` (a column under unary plus or `CAST` is not a column),
+  reads the term's value on one chosen candidate first row. Every other result column reads
+  its column references as the item before says, also when it is equal to a term.
 - **Possible results.** `possibleResults` gives the results for every choice, as it gives the
   results for every order today (ADR 0018, D6). `Query.results`, which proofs use, keeps one
-  choice: the first row in the order of the source, and for a single `min` or `max` the first
-  row that gives the result.
-- **Matching.** The resolved form keeps the difference between a column and an expression whose
-  value is a column (unary plus, `CAST`), because SQLite's rule 3 depends on it.
+  choice: the first row in the order of the source, and for a deciding call the first row
+  that gives the result.
+- **Consumers of one result.** A subquery, a derived table and a compound term read one result
+  (`Query.subqueryRun`, `Query.compoundRun`), not the possible results. They follow the
+  precedent of `SELECT DISTINCT` (`Query.distinctCertain`): a new `Query.groupsCertain` is true
+  when, for each group, every choice gives the same values, and `Query.run` gives the fault
+  `may` when it is false. Through that fault a scalar subquery and `IN` give a value with the
+  fault `may`, a derived table gives no rows to its query (`QuerySource.join` gives none), and a
+  compound term ends with `may`, as for
+  `DISTINCT` today. The index-dependent query of the context as a scalar subquery is then not
+  a certain `'A'`.
 
 This decision changes the meaning of grouped columns, also without D4. It is owner decision 2.
 
@@ -409,8 +442,11 @@ Evidence, reused before new cases:
     not read (duplicate column, unknown column in an index term or filter); `UNIQUE` over
     duplicates, existing and free; the counters after a no-op; a no-op in a transaction that
     rolls back; ASCII case folding of names.
-  - Slice 2: the six rows of "What the model gives today", the two-aggregate case, `HAVING`
-    and `ORDER BY` with a single `max`, and a tie of the maximum whose rows differ.
+  - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
+    across the result, `ORDER BY` and `HAVING`, a repeated call, `FILTER` on the deciding call,
+    a tie of the maximum whose rows differ, a result column written twice, `COLLATE` on one side
+    only, and the index-dependent query as a scalar subquery, as a derived table and as a term
+    of a compound.
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the
     collation cases, aliases and alias shadowing, numbers (`(1)`, `+1`, `-1`, `0`, `1.0`,
     `'1'`), aggregate and window terms, a failing key with and without kept rows, rule 3 with
