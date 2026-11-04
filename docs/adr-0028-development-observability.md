@@ -1,166 +1,192 @@
-# ADR 0028: Continuous development observability MVP
+# ADR 0028: Pytest observability with ClickHouse
 
-Date: 2026-11-02. Status: PROPOSED. Implementation has not started.
-Changed 2026-11-03 at the owner's request: narrow the proposal to an MVP,
-use optional JSON invocation metadata and leave the remaining schema open.
-This replaces the broader collection, retention and reporting proposal of
-2026-11-02. The owner will continue reviewing the tables one by one.
-Audience: designers and reviewers.
-Owner request: retain review statistics outside the repository and continuously
-record test executions and durations, locally and in CI. The longer-term questions
-are suite growth, overlap and unnecessary execution. The owner requires ordinary
-tool interfaces and a schema that grows only when an actual need arises.
-Evidence: [experiment report](../experiments/observability/README.md) and
-[captured summaries](../experiments/observability/results.json).
-Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md),
-[ADR 0011](adr-0011-product-trust-and-development-integrity.md), and
-[ADR 0020](adr-0020-local-build-loop.md).
+Date: 2026-11-02. Revised: 2026-11-04. Status: PROPOSED.
+Audience: designers and reviewers. Implementation has not started.
 
-## Problem and measured basis
+## Problem and scope
 
-Review history grows in `reviews/`. We need to stop that accumulation while
-preserving the findings, resolutions and checklist versions used by the existing
-statistics. The experiment round-tripped 3,580 records, about 3.2 MB of JSONL,
-without changing the statistics.
+The owner needs a continuing record of test executions and durations during local
+development and CI. New pytest cases and suites must inherit collection and
+automatic upload without changes to individual tests.
 
-Public pytest hooks expose test identities, selection, starts, phase durations
-and outcomes. Ten existing tooling tests produced completion events that agreed
-with JUnit. An abrupt exit retained partial events but produced no JUnit file.
-Cached Nix results retained the original execution ID; fresh and reused builds
-returned the same build JSON. Our framed records survived in failed-build logs.
-These observations support a small collector and importer.
+This decision replaces the earlier observability proposal with three features:
 
-The experiments did not test ClickHouse installation or ingestion, live CI
-collection, distributed pytest workers or retry plugins. The MVP still needs
-those integrations that its scope uses. Broader experiment recommendations are
-possible extensions, not additional MVP requirements.
+- One ClickHouse instance, described and operated in the devops repository, with
+  the schema below. The [devops handoff](observability-devops-handoff.md) gives
+  the capabilities and connection information that Belay needs.
+- `pytest-reportlog` enabled for every repository pytest suite.
+- A small uploader, called automatically by the shared local and CI test paths.
 
-## D1. Collect reviews and test executions
+Review-history migration, coverage, Lean proof/dependency measurements, dashboards
+and automatic test selection are outside this scope. Existing review storage and
+JUnit consumers continue to work.
 
-The MVP captures existing review and resolution records, plus pytest execution
-events with test identities, durations and outcomes. Collection runs continuously
-in local development and CI through the configured pytest environment and project
-entry points. Keep JUnit for existing consumers. Use pytest's documented hooks
-and the existing review commands; do not build a general tracing framework.
+## Current basis
 
-Retain starts and available phase results so failures and partial runs remain
-visible. Use the existing JSONL/log approach for failed Nix test builds. The probe
-forwards events after pytest returns; killing the entire builder before that can
-lose records. The MVP must state this limit rather than claim complete capture.
-It does not promise observation of arbitrary commands outside the configured
-entry points or semantic cases hidden inside a Python test's loop.
+The [experiments](../experiments/observability/README.md) exercised public pytest
+hooks, partial results after abrupt exit, Nix result reuse and failed-build logs.
+They did not validate reportlog or ClickHouse ingestion. Their broader
+recommendations are historical findings, not requirements of this decision.
 
-Python coverage, dependency snapshots, Lean diagnostics/profiles/proof costs,
-mutation results and requirement links are deferred. They are not prerequisites
-for the MVP. Keep their experimental findings for a later decision driven by a
-specific analytical question. Test selection and removal remain unchanged.
+[`pytest-reportlog`](https://github.com/pytest-dev/pytest-reportlog) writes and
+flushes a JSON object per event. Its native records include `SessionStart`,
+`CollectReport`, `TestReport`, `WarningMessage` and `SessionFinish`. Test reports
+carry `nodeid`, phase, outcome and duration. Preserve these records without a
+custom event vocabulary or a fork of reportlog.
 
-## D2. Start with an intentionally incomplete schema
+The shared suite factory in [`build-support/tests.nix`](../build-support/tests.nix)
+sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. Merely installing reportlog is insufficient.
+The local environment is in [`nix/dev-shell.nix`](../nix/dev-shell.nix), and shared
+pytest configuration starts at [`conftest.py`](../conftest.py).
 
-Invocation metadata is a generic JSON object named `metadata`. An empty object
-`{}` is valid. There are no required metadata keys initially. The earlier list of
-command, revision, selection, selection reason, CI identifiers and environment
-columns is withdrawn; these can become optional metadata keys when needed.
-Do not populate them merely because the producer can obtain them.
+## D1. Store executions and native events
 
-Keep only the identity and lifecycle fields needed to link observations and
-interpret execution results as dedicated fields. Their exact definitions, and
-the remaining tables, stay open for the owner's table-by-table review. This ADR
-does not approve the earlier full table layout or prescribe ClickHouse DDL.
+Use database `belay_observability` with two tables and two views. The devops repo
+owns deployment of this schema; this ADR defines the producer/consumer contract.
 
-Add a metadata key when a concrete query needs it. Add or promote a dedicated
-column when querying or validating that data warrants it. Older records can lack
-the new key; absence means unknown, not a default value inferred after the fact.
-No backfill or general schema-migration framework is required for optional keys.
-Metadata must not contain credentials or a complete environment dump.
+```sql
+CREATE DATABASE IF NOT EXISTS belay_observability;
 
-A separate `source_snapshot_id` and `dirty` field are not required for this
-jj-based MVP. If source identity is later collected, the full working-copy
-commit ID captured by jj before the command can be optional metadata. A jj change
-ID does not identify immutable contents. Files can still change during a local
-run, and ignored/generated files or runtime artifacts are not identified by that
-commit alone; an extra snapshot hash would not solve those execution boundaries.
+CREATE TABLE IF NOT EXISTS belay_observability.test_executions
+(
+    execution_id UUID,
+    started_at DateTime64(6, 'UTC'),
+    metadata String DEFAULT '{}'
+)
+ENGINE = ReplacingMergeTree
+ORDER BY execution_id;
 
-An invocation requests work; an execution actually runs tests. Preserve this
-semantic distinction without requiring a particular table arrangement. Missing
-metadata limits comparisons: for example, we cannot assume two durations came
-from comparable environments when those environments were not recorded.
+CREATE TABLE IF NOT EXISTS belay_observability.test_events
+(
+    execution_id UUID,
+    event_id UUID,
+    test_node_id Nullable(String),
+    kind String,
+    data String
+)
+ENGINE = ReplacingMergeTree
+ORDER BY (execution_id, event_id);
 
-## D3. Deliver files to one ClickHouse database
+CREATE VIEW IF NOT EXISTS belay_observability.test_executions_unique AS
+SELECT * FROM belay_observability.test_executions FINAL;
 
-Use one self-hosted ClickHouse server. Producers write JSONL files, and a small
-import command inserts batches through its documented HTTP interface. Local
-files outside the checkout and CI artifacts provide buffering and replay. Use
-simple scheduled import invocations for continuing collection. Hosted CI can
-publish artifacts for the ClickHouse host to retrieve, so it need not reach the
-private database. No custom ingestion service or message broker is required.
+CREATE VIEW IF NOT EXISTS belay_observability.test_events_unique AS
+SELECT * FROM belay_observability.test_events FINAL;
+```
 
-Nix builders write files and our framed log records only. Keep uploader credentials
-and network access outside builders. Invocation IDs and timestamps must not enter
-derivation inputs and invalidate caches. Generate execution identity when the
-tests actually run, and preserve it when their artifact is retrieved.
+`execution_id` identifies one actual pytest session. Generate it and `started_at`
+when that session starts, and retain them in `execution.json` beside its
+`report.jsonl`. A new run gets a new ID; retries and cached artifacts keep the
+original ID and timestamp. A collection-only session has no executed test cases.
 
-Keep these correctness requirements in the MVP:
+`metadata` is an optional JSON object; `{}` is valid and has no required keys.
+`data` contains the complete native report object. Both are stored as JSON text
+in `String` columns; the uploader validates objects and JSON-encodes these strings
+inside each `JSONEachRow` row. Native ClickHouse JSON storage is not required.
+Add metadata or dedicated columns only when a concrete query needs them.
 
-- Reimporting the same observations must not double-count them. Preserve stable
-  observation identities across replay and make published queries deduplicate
-  before counting; background table merges alone are insufficient.
-- Retrieving cached test results must not count as another execution. First seeing
-  an execution ID is not proof that the current machine ran it.
-- Missing completion must not become a passing result. Keep available partial
-  results and report collection failures without inventing a termination cause.
-- Collection or upload failure must not change the test/build result. Keep files
-  for retry until import is confirmed, and report delivery failures separately.
+Derive `event_id` as UUIDv5 with the execution UUID as namespace and the original
+one-based reportlog line number, in decimal, as name. Preserve line positions
+across copies and retries. `test_node_id` comes from `nodeid`, or is null when
+absent. `kind` is `$report_type`. Retain unknown event kinds and additional fields.
+Use native phase timestamps and durations in `data`; do not invent an event time
+from the upload time. Session completion and exit status come from `SessionFinish`.
 
-The MVP implementation must choose a working server version, endpoint and access
-configuration. This ADR does not require a full deployment framework, dashboards,
-fixed retention periods, daily aggregates or a catalogue of weekly reports.
-Measure storage growth before choosing retention policies; do not enable automatic
-expiry merely to fill in the previously proposed retention table.
+Rows are immutable observations: replay sends the same row for the same ID.
+Consumers query the `_unique` views. `ReplacingMergeTree` merges alone do not
+guarantee unique query results; the views apply `FINAL` before counting or joining.
+Count test outcomes from their phases, not the number of event rows. A missing
+call or session completion is not a passing result. Invocation/cache-request
+tables and a separate source-snapshot identity are not required.
 
-## D4. Move review history with a narrow migration check
+## D2. Enable reportlog in the shared pytest setup
 
-Preserve existing review/resolution payloads, original IDs and checklist versions.
-Preserve the reader's ordering: date, review before resolution at the same second,
-then original record path. Historical fields not present in the records stay
-unknown. Additional duration or model metadata is deferred until needed.
+Add reportlog to every repository pytest environment and load it explicitly where
+plugin autoloading is disabled. Shared pytest setup assigns a distinct report
+directory per execution and enables reporting automatically, including direct
+`pytest` and `python3 -m pytest` runs using the repository configuration.
 
-Export the tracked records and import them into ClickHouse. Verify record content
-and counts, and reproduce existing `review-stats` output before stopping repository
-writes. Retain the original export outside the checkout for recovery. Then update
-writers, readers, CI record checks, command documentation and `AGENTS.md` together;
-remove the tracked archive from the current tree while preserving old commits.
-Keep the historical import reader for replay, not a second ongoing writer.
+Existing `just` recipes, source checks, scheduled and mutant suites, and pytest
+subprocesses that exercise repository tests use this setup. The shared Nix suite
+factory includes its files and dependencies in every suite. A future test needs
+only normal pytest discovery and any existing Nix suite registration. A new runner
+must inherit the same setup; it must not require a list of tests to observe.
 
-Resolution commands must still validate their referenced finding. If that record
-is unavailable, report that validation cannot finish. Missing database access
-must not silently drop a review or produce an empty successful statistics report.
-The current instruction to commit review records applies until implementation
-replaces it. Updating this proposed ADR does not change the current workflow.
+Keep local reports in a persistent spool outside version control. Nix builders
+write reports as build artifacts. Generate execution identity inside the running
+builder, not as a changing derivation input. Keep sandboxing and cache reuse.
 
-## MVP acceptance and deferred work
+Reportlog has no test-start event: an abrupt exit during setup can leave no report
+for that test. Retain complete available lines and report incomplete sessions.
+Do not add a custom start-event collector in this scope. Failures before pytest
+initializes, or loss of the whole machine, can leave no usable report.
 
-The MVP succeeds when we can query historical reviews and actual test executions
-from local development and CI, including test durations and outcomes, without
-accumulating new review records in the repository.
+## D3. Upload automatically outside Nix builders
 
-Verify that outcome with a local run, a CI run, review-history import with matching
-statistics, and replay of the same import. Include failed and interrupted test
-runs, collection/upload failure, and reuse of a cached test artifact to check the
-four correctness requirements in D3. An invocation with `metadata: {}` must work.
-Use bounded integration checks for our collector and importer, rather than a broad
-acceptance matrix for deferred features.
+The uploader reads an execution manifest and its reportlog, wraps native events
+in the schema above, and sends batches using ClickHouse's HTTP interface and
+`INSERT ... FORMAT JSONEachRow`. Python's standard library is sufficient.
+Insert the execution row and event rows; retain the files until all inserts are
+confirmed. The two inserts need no cross-table transaction: interrupted delivery
+can temporarily leave partial data, and replay completes it.
 
-Detailed table definitions remain under discussion. Retention schedules,
-automatic aggregates/reports, advanced delivery mechanisms and the additional
-signals in the experiment report require a concrete need before entering scope.
-The MVP supplies execution history; it does not establish test redundancy or a
-safe mechanism for skipping Lean tests. Local observations remain development
-telemetry, not the trusted conformance evidence of ADR 0011 or a replacement for
-the Nix checks of ADR 0020.
+Local pytest finalization automatically attempts upload after reportlog closes.
+Add a shared host-side Nix test runner that collects artifacts and attempts upload
+after the build, on success or failure. Route all current Nix test recipes and CI
+jobs through it. Keep credentials and network access outside builders.
+
+For failed Nix builds, preserve the manifest and complete reportlog lines through
+the framed build-log export exercised by the experiment. Extract them before
+cleanup. If the whole builder is killed before export, its last records can be
+lost; this MVP does not promise complete capture in that case.
+
+Upload has a bounded overall deadline and bounded network requests. Collection
+or delivery errors produce a separate diagnostic and preserve the test/build
+exit status. Keep undelivered files for automatic retry on the next test command.
+Do not upload a file while its producer can still append to it. A stopped
+producer's unterminated final line is reported and excluded; a malformed complete
+line is reported and retained for diagnosis, rather than silently discarded.
+
+CI uses finalization that runs after failed tests too, and retains undelivered
+files as artifacts. A trusted CI upload job handles runs without database
+credentials, using artifacts as data and the uploader from trusted code. Scheduled
+CI retries retained artifacts before their retention expires. Local direct runs
+and CI need no manual upload command in the normal path. The same uploader can
+also be invoked explicitly for diagnosis or replay.
+
+Network loss after a successful insert can leave its acknowledgement uncertain.
+Retry with unchanged IDs; the views prevent double counting. Reimporting cached
+Nix results recovers original observations and never creates a new execution.
+Do not relabel them with the retrieving machine's time or metadata.
+
+## Acceptance
+
+Implementation is complete when bounded integration checks demonstrate:
+
+- Ordinary direct local pytest, the current test recipes and CI automatically
+  produce queryable test names, phases, outcomes and durations in ClickHouse.
+- A newly discovered parametrized test and a new suite using the shared Nix
+  factory inherit reporting and upload without observability-specific changes.
+  Check the configured test entry points, including scheduled and mutant jobs.
+- Passing, failing, skipped, xfailed, setup-error and collection-error sessions
+  retain their native reports. An interrupted session retains available records
+  without inventing successful completion.
+- Concurrent sessions use separate artifacts. Replaying a report or retrieving
+  a cached Nix result leaves counts in the `_unique` views unchanged immediately,
+  without waiting for background merges. A fresh execution increases the count.
+- An unavailable server and an uncertain acknowledgement preserve test results;
+  retained reports reach the database on automatic retry. CI artifact recovery
+  covers jobs that cannot hold credentials. Empty metadata works.
+- The devops handoff is satisfied: local and CI connectivity, restricted writer
+  and reader access, persistent storage and the deployed schema are verified.
+
+Validate the schema and uploader against the deployed ClickHouse version. These
+are acceptance requirements, not claims about the earlier experiments. Local
+telemetry remains a development observation, not conformance evidence (ADR 0020).
 
 ## References
 
-The experiment report links the extraction interfaces and records their limits.
-ClickHouse documents its [HTTP interface](https://clickhouse.com/docs/interfaces/http)
-and [ReplacingMergeTree deduplication semantics](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree).
+- [Reportlog implementation](https://github.com/pytest-dev/pytest-reportlog/blob/main/src/pytest_reportlog/plugin.py)
+- [ClickHouse HTTP inserts](https://clickhouse.com/docs/interfaces/http)
+- [ClickHouse query-time deduplication](https://clickhouse.com/resources/engineering/clickhouse-optimize-table-final)
+- [ADR 0020: local build loop](adr-0020-local-build-loop.md)

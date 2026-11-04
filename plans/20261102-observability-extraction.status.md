@@ -55,6 +55,19 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
 - Review attempt `20261103T104419Z-7ecac007` stopped at the reviewer's rate limit
   without a completed review. The owner instructed us on 2026-11-03 to skip the
   automated reviewer for this revision and will review it personally.
+- Owner revision on 2026-11-04: replace ADR 0028 with a pytest-only proposal:
+  a devops-managed ClickHouse instance and concrete two-table schema, reportlog
+  enabled through shared pytest setup, and automatic local/CI upload and retry.
+  Added [instructions for the devops maintainer](../docs/observability-devops-handoff.md).
+  Review-history migration and coverage are outside this reduced scope. The
+  proposal covers direct local pytest, shared Nix suites, scheduled/mutant jobs,
+  failed-build artifacts and future tests inheriting the shared setup.
+  This is a documentation change; production implementation and deployment have
+  not started. The owner remains the reviewer for this ADR discussion.
+  Local links, section anchors and whitespace checks passed. Cross-checked the
+  design against shared pytest configuration, Nix suite construction, current CI
+  entry points and upstream reportlog/ClickHouse documentation. Schema execution
+  and uploader integration checks remain implementation acceptance work.
 
 ## References
 
