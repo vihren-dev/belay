@@ -37,3 +37,8 @@ Tests of the slice: `tests/conformance_group_values_test.py` (all 41 cases agree
 - 2026-11-04: review fix (`refactor:`): `smallIntegerLiteral` takes only values from 0, so a
   hexadecimal literal that wraps to a negative integer compares as written; corpus cases
   `group-values-repeated-hexadecimal` and `group-values-repeated-large-hexadecimal`.
+- 2026-11-04: slice-end checks on `oqtksyvq`: the first `just test-full` failed on one timeout
+  (`tests/surface_check_command_test.py::test_sql_check_sampling_options`, 240 s, a test with
+  no GROUP BY, while other builds loaded the machine); the second run passed. `just verdict`
+  passed with no `DISAGREE` in any claimed corpus. Slice 2 is code complete; the claims pull
+  request at the end of the ADR claims its corpus.
