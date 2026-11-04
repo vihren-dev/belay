@@ -31,7 +31,8 @@ def Query.groupRow (context : EvalContext) (query : Query) (group : List (List V
   | some call => call.decidingRow context group
   | none => group.headD []
 
-/-- For every query without a deciding call, the row of a group is its first row. -/
+/-- For every query without a deciding call, the row of a group is its first row. Proof sketch:
+with {lit}`none` in place of the deciding call, {name}`Query.groupRow` is its first-row branch. -/
 @[simp] theorem Query.groupRow_none {context : EvalContext} {query : Query} {group : List (List Value)}
     (none : query.deciding = none) : query.groupRow context group = group.headD [] := by
   simp [Query.groupRow, none]

@@ -141,10 +141,13 @@ expressions of the result columns, `HAVING` and `ORDER BY` of a query, such as `
 `HAVING` with and without `GROUP BY`, where a column outside an aggregate reads one row of
 the group: the first row in the order of the source, or, when the query has `min` or `max`,
 the first row that gives the last distinct such call in the order result columns, `ORDER BY`,
-`HAVING` (the last row when the call's operand is NULL on every row), and a result column
-that a grouping term names by number or alias, or that is the same expression as the term,
-gives the term's value on the first row unless it is a column under at most `COLLATE`; SQLite
-documents this row as arbitrary, and the model follows SQLite's plan of a full scan (ADR 0030,
+`HAVING` (the last row when the call's operand is NULL on every row); the result column
+associated with a grouping term gives the term's value on the first row unless it is a column
+under at most `COLLATE`: a number names its result column, and an alias or any other term is
+associated with the last result column that is the same expression as the term or as the
+aliased expression; SQLite documents the row as arbitrary, and the model follows SQLite's plan
+of a full scan, except that with two or more grouping terms SQLite reads an associated column
+that `ORDER BY` names from the row of the group, where the model gives the first row (ADR 0030,
 D5), and `SELECT DISTINCT`, which keeps one row of each set of
 equal rows; when the rows of such a set differ, the statement is not described (ADR 0018,
 slice 3), `json_extract` with one or more paths and the operators `->` and `->>`

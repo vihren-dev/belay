@@ -29,10 +29,12 @@ def Syntax.Subquery.callLocation (query : Syntax.Subquery) (call : Syntax.Expr) 
 
 /-- The deciding call of an aggregate query (ADR 0030, D5): of the {lit}`min` and {lit}`max`
 calls of its result columns, {lit}`ORDER BY` and {lit}`HAVING`, in that order, the last one
-whose resolved form is not that of an earlier call. A call is resolved as the query's aggregate
+that is not the same written expression as an earlier call ({name}`Syntax.Expr.sameIn` with the
+columns of {lit}`scope`), as SQLite compares them: {lit}`max(n)` and {lit}`MAX(t.n)` are one call,
+{lit}`max(n)` and {lit}`max(+n)` are two. A call is resolved as the query's aggregate
 {lit}`aggregates` of the same call {lit}`calls`, or as the output {lit}`outputs` of a result column
 {lit}`written` that is the call. -/
-def decidingCall (query : Syntax.Subquery) (calls : List Syntax.Expr) (aggregates : List Resolved.Aggregate)
+def decidingCall (scope : Scope) (query : Syntax.Subquery) (calls : List Syntax.Expr) (aggregates : List Resolved.Aggregate)
     (written : List (Option Syntax.Expr)) (outputs : List Resolved.Output) : Option Resolved.Aggregate :=
   let resolved : Syntax.Expr → Option Resolved.Aggregate := fun call => match call.indexIn calls with
     | some index => aggregates[index]?
@@ -42,9 +44,11 @@ def decidingCall (query : Syntax.Subquery) (calls : List Syntax.Expr) (aggregate
   let minMax := (query.columns.flatMap (fun
       | .expression value _ _ => value.aggregateCalls
       | .star | .sourceStar _ => []) ++
-    query.orderBy.flatMap (·.expression.aggregateCalls) ++ query.having.toList.flatMap Syntax.Expr.aggregateCalls).filterMap
-      fun call => (resolved call).bind Resolved.Aggregate.minOrMax
-  (minMax.foldl (fun kept call => if kept.contains call then kept else kept ++ [call]) []).getLast?
+    query.orderBy.flatMap (·.expression.aggregateCalls) ++ query.having.toList.flatMap Syntax.Expr.aggregateCalls).filter
+      fun call => ((resolved call).bind Resolved.Aggregate.minOrMax).isSome
+  let same := Syntax.Expr.sameIn (·.columnReadsIn scope)
+  let distinct := minMax.foldl (fun kept call => if kept.any (same · call) then kept else kept ++ [call]) []
+  distinct.getLast?.bind fun call => (resolved call).bind Resolved.Aggregate.minOrMax
 
 /-- The operand of a term of {lit}`ORDER BY`: a name that no column has lists the aliases of the
 result columns among its candidates, because the term could have named one. -/
@@ -164,7 +168,7 @@ def resolveQueryBodyTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
   if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
     throw (.restriction [6] .windowedGroupSum)
   let deciding := if aggregate then
-    decidingCall query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
+    decidingCall scope query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
   return ({ sources, filter := condition, aggregate, groupBy := terms,
             columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
             offset := (offsetValue.getD 0).toNat,

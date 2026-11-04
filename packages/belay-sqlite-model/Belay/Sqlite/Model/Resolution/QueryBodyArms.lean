@@ -70,7 +70,7 @@ through the monad with {lit}`traced_drop`, and split on the alias test of each o
     if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
       throw (.restriction [6] .windowedGroupSum)
     let deciding := if aggregate then
-      decidingCall query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
+      decidingCall scope query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
     return ({ sources, filter := condition, aggregate, groupBy := terms,
               columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
               offset := (offsetValue.getD 0).toNat,

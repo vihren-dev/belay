@@ -33,18 +33,18 @@ theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : Subquery
 
 /-- For every query whose one result column is an aggregate call, without grouping, ordering and {lit}`HAVING`, and
 whose call resolves to the aggregate {lit}`a`, the deciding call is {lit}`a` when it is {lit}`min` or {lit}`max`
-({name}`Resolved.Aggregate.minOrMax`), and none otherwise. -/
+({name}`Resolved.Aggregate.minOrMax`), and none otherwise. Proof sketch: the query's one call is the
+result column itself, so it is listed once and resolves to the output {lit}`a`; then split on whether
+{lit}`a` is {lit}`min` or {lit}`max`. -/
 theorem decidingCall_aggregateColumn (scope : Scope) (source : Option Syntax.TableReference)
     (filter : Option Syntax.Expr) (name : String) (operand : Syntax.Expr) (alias : Option Identifier) (text : String)
     (called : aggregateCall (.call name [operand]) = true) (a : Resolved.Aggregate) :
-    decidingCall (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] source [] filter [] [] none none none
+    decidingCall scope (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] source [] filter [] [] none none none
         none false none none) [] [] (writtenResults scope [.expression (.call name [operand]) alias text]) [.aggregate a] =
       a.minOrMax := by
-  simp only [decidingCall, writtenResults, Syntax.Expr.indexIn, Syntax.Expr.aggregateCalls, called, List.flatMap_cons,
-    List.flatMap_nil, ite_true, List.append_nil, Option.toList_none, List.findIdx?_nil, List.filterMap_cons,
-    List.filterMap_nil, List.findIdx?_cons, Option.any_some, Syntax.Expr.same_self, Option.bind_some,
-    List.getElem?_cons_zero]
-  cases a.minOrMax <;> simp
+  cases minMax : a.minOrMax <;>
+    simp [decidingCall, writtenResults, Syntax.Expr.indexIn, Syntax.Expr.aggregateCalls, called, Syntax.Expr.same_self,
+      minMax]
 
 /-- For every query {lit}`SELECT agg(x) FROM … WHERE p` without join, grouping, ordering, window, {lit}`HAVING`,
 {lit}`DISTINCT` and compound, whose aggregate {lit}`agg` is one of one operand that does not write JSON

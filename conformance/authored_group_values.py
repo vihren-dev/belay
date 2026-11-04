@@ -38,7 +38,7 @@ ARBITRARY_ROW = "R-62913-19830"
 
 def definitions() -> list[QueryCase]:
     """The cases: the queries of "What the model gives today", the deciding call in each clause and
-    order, repeated calls, ties, NULL operands, associated result columns by number and alias with
+    order, repeated calls in other spellings and with unary plus, ties, NULL operands, associated result columns by number and alias with
     `COLLATE`, unary plus and `CAST`, and the result read by a derived table and a compound."""
     def case(name: str, sql: str, *features: str, setup: str = ROWS) -> QueryCase:
         """Give a case its name prefix, requirement and features."""
@@ -58,6 +58,9 @@ def definitions() -> list[QueryCase]:
         case("order-before-having", "SELECT * FROM (SELECT c FROM t GROUP BY c HAVING max(n) > 0 ORDER BY min(n));",
              "having", "order-by"),
         case("repeated-call", "SELECT c, max(n), min(n), max(n) AS again FROM t GROUP BY c ORDER BY 3;", "repeated"),
+        case("repeated-other-spelling", "SELECT c, max(n), min(n), MAX(t.n) AS again FROM t GROUP BY c ORDER BY 3;",
+             "repeated"),
+        case("repeated-with-plus", "SELECT c, max(n), min(n), max(+n) FROM t GROUP BY c ORDER BY 3;", "repeated", "plus"),
         case("repeated-in-having", "SELECT c, min(n), max(n) FROM t GROUP BY c HAVING min(n) > 0 ORDER BY 3;",
              "repeated", "having"),
         case("other-aggregates", "SELECT c, count(*), sum(n), max(n) FROM t GROUP BY c ORDER BY 4;", "max"),

@@ -12,7 +12,7 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lea
 `docs/semantic-subset.md`; new: `GroupRow.lean`, `Resolution/GroupAssociation.lean`,
 `conformance/authored_group_values.py`, `tests/surface/ClaimsGroupValues.lean`.
 
-Tests of the slice: `tests/conformance_group_values_test.py` (all 35 cases agree),
+Tests of the slice: `tests/conformance_group_values_test.py` (all 37 cases agree),
 `tests/surface_group_values_test.py`, `tests/lean_packages_test.py`.
 
 ## Progress
@@ -26,3 +26,8 @@ Tests of the slice: `tests/conformance_group_values_test.py` (all 35 cases agree
   outside the subject's scope, so the corpus has no such case. The probes found one more SQLite
   rule (an associated column in `ORDER BY` with two or more grouping terms); the ADR records it
   as a dated note in D5, and the corpus has no such case.
+- 2026-11-04: review fixes (`refactor:`): the deciding call compares repeated calls as written
+  (`Syntax.Expr.sameIn`), so `max(n)` and `max(+n)` are two calls, with the corpus cases
+  `group-values-repeated-with-plus` and `group-values-repeated-other-spelling`; proof sketches
+  of the deciding-call lemmas; the documentation of the association and of the `ORDER BY`
+  exception.
