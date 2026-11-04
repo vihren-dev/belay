@@ -1,16 +1,17 @@
 # SQLite syntax boundary
 
 The surface and the conformance harness parse SQL with SQLite's own grammar and
-tokenizer, compiled into one shared library: `libsqlite-verifier-parser.so`
-(`.dylib` on macOS). Nix builds it as `parserLibrary.library` in
-`build-support/default.nix`. No database is opened and no SQL is executed,
+tokenizer, compiled from C that Lake builds into the text package's programs and
+shared libraries. The Nix derivation `parserLibrary.library` in
+`build-support/default.nix` builds the same C as `libsqlite-verifier-parser.so`
+(`.dylib` on macOS) for the tests of the library only. No database is opened and no SQL is executed,
 prepared, or schema-resolved.
 
 The text package (`packages/belay-sqlite-text`) is the only caller of the
 library's C API outside the library's own tests. Its binding
-(`Belay.Sqlite.ParserLibrary`, `c/parser_shim.c`) links the library with its
-folder in the Nix store as the run-time search path, and passes the SQL as
-bytes. `Belay.Sqlite.selectGrammar` selects the grammar of a profile from its
+(`Belay.Sqlite.ParserLibrary`, `c/parser_shim.c`) calls the library, which Lake
+compiles from the C in `parser/` and links into the package's programs and
+shared libraries, and passes the SQL as bytes. `Belay.Sqlite.selectGrammar` selects the grammar of a profile from its
 release, its SQLite source id and the grammar options among its compile
 options, and never falls back to another dialect. The surface parses in the
 Lean process while a file elaborates. The conformance harness runs the
@@ -42,17 +43,18 @@ invalid SQL or a violated requirement.
 
 ## Grammar provenance and dialect
 
-The build verifies hashes of the unmodified vendored sources, builds upstream
-Lemon, and uses its `-E` preprocessing and `-g` grammar export. Expanded
+The generation fetches the official release archives by their SHA-256, builds
+upstream Lemon, and uses its `-E` preprocessing and `-g` grammar export. Expanded
 productions, precedence, fallback identifiers, wildcard terminals, and the full
 token inventory are retained. Explicit start symbol `input` compensates for
 Lemon's action-dependent production export order. SQLite code-generation actions
 are replaced by generic tree-building actions. There are no SQL-specific grammar
-rules authored by this project. The build rejects token-inventory differences
-between source grammar and amalgamation.
+rules authored by this project. The generation rejects token-inventory differences
+between source grammar and tokenizer.
 
-Tokenization calls the pinned `sqlite3GetToken` implementation and its contextual
-`WINDOW`/`OVER`/`FILTER` helpers. Comments are enabled, matching the native default.
+Tokenization calls the release's own `sqlite3GetToken` implementation and its
+contextual `WINDOW`/`OVER`/`FILTER` helpers, cut out of the release's `sqlite3.c`
+as unchanged text (see "Release sources"). Comments are enabled, matching the native default.
 Numeric-separator adjacency validation follows upstream `sqlite3DequoteNumber`:
 that lexical check occurs in SQLite's expression action rather than its tokenizer.
 The built dialects are the default builds: no `SQLITE_OMIT_*` or
@@ -63,8 +65,11 @@ Double-quoted tokens are recognized syntactically; the selected execution
 profile governs subsequent expression resolution. Both profiles now use
 library-default DQS. The translator rejects double-quoted expression fallback
 as `UNSUPPORTED` while admitting supported quoted identifiers that resolve to
-schema columns. The second grammar selects SQLite 3.46.0 syntax; it does not
-select a migration framework.
+schema columns. The library has a grammar for each release in
+`parser/dialects.json`: 3.46.0 and each release from 3.47.1 to 3.54.1. The model and
+its execution profiles use 3.51.0 and 3.46.0; a grammar of another release
+parses its syntax and does not give it a model. A grammar does not select a
+migration framework.
 
 The semantic translator must inspect all commands and existing-schema objects,
 admit only its modeled forms, and report parsed unsupported forms as
@@ -86,28 +91,59 @@ A separate RAISE-expression case distinguishes the grammars: support introduced
 in 3.47 is accepted by 3.51 and rejected by 3.46, preventing version relabeling.
 Public native fixture imports and formal/native comparisons are separate work.
 
-Exact source/archive hashes and retained notices are recorded in
-`parser/upstream/{README.md,sha256.json}` and
-`parser/upstream-3.46.0/{README.md,sha256.json}`.
+## Release sources
+
+The repository holds no SQLite source file. For each release, `parser/dialects.json`
+records the SHA-256 of two official archives, and the generation fetches them from
+sqlite.org:
+
+- `parse.y`, `lemon.c` and `lempar.c` come from
+  `https://sqlite.org/YYYY/sqlite-src-NNNNNNN.zip`;
+- `sqlite3.c` and `sqlite3.h` come from
+  `https://sqlite.org/YYYY/sqlite-autoconf-NNNNNNN.tar.gz`, the archive that
+  `nix/sqlite.nix` also builds native SQLite from.
+
+`YYYY` is the year folder of the table and `NNNNNNN` the release number, for
+example `3510000` for 3.51.0. The files are unmodified upstream copies with their
+public-domain notices; the SQLite release log gives each release's source id.
+
+`parser/tokenizer_cut.py` cuts the tokenizer out of `sqlite3.c`: named regions
+(the token numbers, the character tables, the fallback table and `tokenize.c` up to
+`sqlite3RunParser`) and named macros, types and declarations, as unchanged text
+with the conditionals that enclose them. The cut is committed with the generated
+parser. `parser/slice_check.py` compiles the tokenizer unit with the cut and with
+the whole `sqlite3.c` at `-O0`, and requires the same machine code for each
+function and the same bytes for each table. The generation runs these checks once,
+on Linux; no check run fetches an archive.
 
 ## Library build and dialect table
 
 `parser/dialects.json` is the dialect table. It lists each release with its
-source directory, and each built dialect (a release with the grammar options in
-effect) with its grammar identity. A grammar identity is the SHA-256 digest of
-Lemon's preprocessed `parse.y` for those options, the tokenizer and keyword code
-of `sqlite3.c` (`tokenize.c` up to `sqlite3RunParser`), the character tables
-`sqlite3UpperToLower` and `sqlite3CtypeMap`, and the options. The grammar
-options of a release are the macros that the conditionals of `parse.y` and of
-this tokenizer code test; the build extracts them. The build fails when the
-sources give another identity than the table records. After a reviewed source
-change, record the identity from the build's message. Only default dialects are
-built: a dialect with grammar options fails the build.
+archives, and each built dialect (a release with the grammar options in effect)
+with its grammar identity. Identities follow the compiled code:
 
-The library contains one parser for each distinct identity, with its own
-release's tokenizer. Each grammar's symbols have a unique prefix, SQLite's own
-symbols stay internal, and the build fails unless the library exports exactly
-the API of `parser/library.h`:
+- a parser identity is the SHA-256 of the generated `syntax.c`, `syntax.h` and
+  `token_map.inc`, generated with the fixed prefix `Syntax`; the committed files
+  are generated again with the prefix `Syntax_` and 16 digits of the identity;
+- a tokenizer identity is the SHA-256 of the tokenizer cut, which holds the
+  release's token numbers;
+- a grammar identity is the SHA-256 of the format name, the parser identity, the
+  tokenizer identity and the grammar options.
+
+The grammar options of a release are the macros that the conditionals of
+`parse.y`, of `tokenize.c` up to `sqlite3RunParser` and of the character tables
+test; the generation extracts them. The generation fails when the sources give
+another identity than the table records. After a reviewed source change, record
+the identity from the generation's message. Only default dialects are built: a
+dialect with grammar options fails the generation.
+
+`parser/generated/` has one folder for each parser identity (`parsers/`) and one
+for each tokenizer identity (`tokenizers/`). The library compiles each parser and
+each tokenizer once, and has one grammar, with its own parse loop and token map,
+for each distinct pair of a parser and a tokenizer, so releases share compiled
+code exactly when it is the same. Each symbol has the prefix of its identity,
+SQLite's own symbols stay internal, and the build fails unless the library
+exports exactly the API of `parser/library.h`:
 
 - `sqlite_verifier_parser_metadata` gives a JSON document with `api` (the API
   version, 1), `releases` (version, `sourceId`, `grammarOptions`), `dialects`
@@ -118,10 +154,8 @@ the API of `parser/library.h`:
   no document.
 - `sqlite_verifier_parser_free` releases either document.
 
-The library makes no promise for concurrent calls. The build checks that the
-production count in the metadata equals Lemon's grammar export. Nix builds each
-release and each grammar in its own derivation, so a patch release with an
-unchanged grammar adds a release derivation and no parser.
+The library makes no promise for concurrent calls. The generation checks that
+the production count in the metadata equals Lemon's grammar export.
 
 The test suite `tests.parserLibrary` (`tests/parser_library_test.py`) loads all
 grammars in one process and parses the RAISE case with each. On Linux, it parses

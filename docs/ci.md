@@ -73,7 +73,6 @@ derivations as `checks.<system>`:
   grammars, and, on Linux, the sanitizer job over every parser test input and
   corpus text. Its runtime root holds the built library and inputs, so a model,
   harness or documentation change reuses the result.
-
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
 with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`).
 The `full` scope builds them through `just test-scheduled-checks`, except the mutant suites of

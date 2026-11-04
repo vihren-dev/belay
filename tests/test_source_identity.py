@@ -1,4 +1,7 @@
-"""Real Nix fileset identities include each declared input and ignore generated trees."""
+"""Real Nix fileset identities include each declared input and ignore generated trees.
+
+The `parser` component holds the C that Lake compiles into the text package (ADR 0023): the
+committed generated C, the C library headers, the library's files and each release's sqlite3.c."""
 
 import json
 from pathlib import Path
@@ -12,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"model", "surface", "text", *PACKAGES.values()}
+COMPONENTS: set[str] = {"model", "surface", "text", "parser", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
@@ -20,6 +23,10 @@ DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
     "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
+    "parser/generated/parsers/0123456789abcdef/syntax.c": {"parser"},
+    "parser/generated/tokenizers/0123456789abcdef/sqlite3_tokenizer.c": {"parser"}, "parser/generated/library_metadata.inc": {"parser"},
+    "parser/generated/manifest.json": {"parser"},
+    "parser/c-headers/string.h": {"parser"}, "parser/c-headers/stdio.h": {"parser"},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
     "packages/public-doc-tools/PublicDocSyntax.lean": {"docTools"},
@@ -31,6 +38,9 @@ FIXED: dict[str, set[str]] = {
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
     **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain")},
     **{f"packages/belay-sqlite-text/{name}": {"text"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
+    **{f"parser/{name}": {"parser"} for name in (
+        "library.c", "library.h", "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c",
+        "library_parser.c", "library_grammar.c")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
@@ -40,18 +50,6 @@ PARENTS: tuple[str, ...] = (".", "parser", "belay/sqlite", "tests", "tools",
            *(f"packages/{folder}" for folder in PACKAGES),
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
-PARSER_LIBRARY_INPUTS: dict[str, str] = {
-    "parser/dialects.json": json.dumps({"releases": [{"version": "3.51.0", "sources": "upstream"}],
-                                        "dialects": [{"version": "3.51.0", "grammarOptions": [], "grammar": "0" * 64}]}),
-    **{f"parser/{name}": f"declared input {name}\n" for name in (
-        "library_steps.py", "grammar_sources.py", "dialect_table.py", "library_metadata.py", "generate.py",
-        "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c", "library_grammar.c",
-        "library.c", "library.h", "upstream/lempar.c", "upstream/sqlite3.c", "upstream/sqlite3.h")},
-}
-"""The files that `build-support/parser-library.nix` reads when Nix evaluates the conformance
-runtime's parser library: a one-release dialect table and placeholders, since nothing is built."""
-
-
 def identities(root: Path) -> dict[str, str]:
     """Evaluate the checked-in fileset expression with the real locked package library, never build."""
     def literal(path: Path) -> str:
@@ -79,10 +77,6 @@ def identity_baseline(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, d
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"declared input {name}\n")
-    for name, text in PARSER_LIBRARY_INPUTS.items():
-        path = root / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
     return root, identities(root)
 
 

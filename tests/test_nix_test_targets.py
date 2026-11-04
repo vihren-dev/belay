@@ -70,12 +70,11 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
 
 @pytest.fixture
 def source_tree(tmp_path: Path) -> Path:
-    """Copy only small potential test inputs; no store outputs, vendored parsers or build trees."""
+    """Copy only small potential test inputs, with the committed parser C; no store outputs or build trees."""
     for name in ('pytest.ini', 'conftest.py', 'LICENSE'):
         shutil.copy2(ROOT / name, tmp_path / name)
-    for name in ('tests', 'belay', 'conformance', 'docs', 'packages', 'reports', 'nix', 'build-support', 'tools'):
-        shutil.copytree(ROOT / name, tmp_path / name,
-                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
+    for name in ('tests', 'belay', 'conformance', 'docs', 'packages', 'reports', 'nix', 'build-support', 'tools', 'parser'):
+        shutil.copytree(ROOT / name, tmp_path / name, ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
     return tmp_path
 
 

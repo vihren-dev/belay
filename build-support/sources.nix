@@ -33,10 +33,21 @@ in {
   };
   # The text package below the surface (ADR 0016, D2, amended): its Lean files with its
   # lakefile.lean, and the C shim that its precompiled modules link with the parser library.
+  # The parser's C is `parser` below.
   text = let folder = root + /packages/belay-sqlite-text; in fs.toSource {
     root = folder;
     fileset = fs.unions [ (extensions [ "lean" ] folder) (folder + "/lake-manifest.json") (folder + "/lean-toolchain")
       (folder + "/c/parser_shim.c") ];
+  };
+  # The C of the parser library that Lake compiles into the text package (ADR 0023, D2), with the
+  # layout of `parser/` in the repository: the committed generated C of each parser and tokenizer
+  # (ADR 0029), the C library headers and the library's own files.
+  # The text package, and each package that replays it, finds this folder at `../../parser`.
+  parser = let folder = root + /parser; in fs.toSource {
+    root = folder;
+    fileset = fs.unions ([ (folder + /generated) (folder + /c-headers) ]
+      ++ map (name: folder + "/${name}") [ "library.c" "library.h" "runtime.h" "tokenizer.c" "library_prefix.h"
+        "library_tokenizer.c" "library_parser.c" "library_grammar.c" ]);
   };
   verifierConformance = package "verifier-conformance";
   docTools = package "public-doc-tools";

@@ -1,0 +1,117 @@
+{
+  "flags": [
+    "-O1",
+    "-std=c99",
+    "-fPIC",
+    "-fvisibility=hidden",
+    "-DSQLITE_OS_OTHER=1",
+    "-DSQLITE_THREADSAFE=0"
+  ],
+  "parsers": [
+    {
+      "folder": "1b86b7b626b6a05b",
+      "prefix": "Syntax_1b86b7b626b6a05b"
+    },
+    {
+      "folder": "f38d34a6841226fb",
+      "prefix": "Syntax_f38d34a6841226fb"
+    },
+    {
+      "folder": "640c7c42dbbc0cd7",
+      "prefix": "Syntax_640c7c42dbbc0cd7"
+    },
+    {
+      "folder": "1990aac6188d890e",
+      "prefix": "Syntax_1990aac6188d890e"
+    },
+    {
+      "folder": "914fc5e74a719840",
+      "prefix": "Syntax_914fc5e74a719840"
+    },
+    {
+      "folder": "136bc0bed44903de",
+      "prefix": "Syntax_136bc0bed44903de"
+    }
+  ],
+  "tokenizers": [
+    {
+      "folder": "ceaf5d19057ca233",
+      "prefix": "Tokenizer_ceaf5d19057ca233"
+    },
+    {
+      "folder": "c66b6b67ee45b769",
+      "prefix": "Tokenizer_c66b6b67ee45b769"
+    },
+    {
+      "folder": "305b13c4314f9da5",
+      "prefix": "Tokenizer_305b13c4314f9da5"
+    },
+    {
+      "folder": "7da88089e6f508ea",
+      "prefix": "Tokenizer_7da88089e6f508ea"
+    },
+    {
+      "folder": "32ab2a22906752c4",
+      "prefix": "Tokenizer_32ab2a22906752c4"
+    },
+    {
+      "folder": "183707f7524e9640",
+      "prefix": "Tokenizer_183707f7524e9640"
+    },
+    {
+      "folder": "f6908d2171739870",
+      "prefix": "Tokenizer_f6908d2171739870"
+    },
+    {
+      "folder": "2bd9aa6eb5c8612b",
+      "prefix": "Tokenizer_2bd9aa6eb5c8612b"
+    }
+  ],
+  "grammars": [
+    {
+      "prefix": "Grammar_814da66842594d8b",
+      "parser": "1b86b7b626b6a05b",
+      "tokenizer": "ceaf5d19057ca233"
+    },
+    {
+      "prefix": "Grammar_cc7b1835a23d2b75",
+      "parser": "f38d34a6841226fb",
+      "tokenizer": "c66b6b67ee45b769"
+    },
+    {
+      "prefix": "Grammar_c01a91a77d7ad847",
+      "parser": "640c7c42dbbc0cd7",
+      "tokenizer": "305b13c4314f9da5"
+    },
+    {
+      "prefix": "Grammar_9817a31716b4c091",
+      "parser": "640c7c42dbbc0cd7",
+      "tokenizer": "7da88089e6f508ea"
+    },
+    {
+      "prefix": "Grammar_a0766707f8140d76",
+      "parser": "1990aac6188d890e",
+      "tokenizer": "32ab2a22906752c4"
+    },
+    {
+      "prefix": "Grammar_eec29397a92ee2e4",
+      "parser": "1b86b7b626b6a05b",
+      "tokenizer": "32ab2a22906752c4"
+    },
+    {
+      "prefix": "Grammar_8f3f52ce7a67c90d",
+      "parser": "1b86b7b626b6a05b",
+      "tokenizer": "183707f7524e9640"
+    },
+    {
+      "prefix": "Grammar_619b9a843876106a",
+      "parser": "914fc5e74a719840",
+      "tokenizer": "f6908d2171739870"
+    },
+    {
+      "prefix": "Grammar_7149ded6635edd03",
+      "parser": "136bc0bed44903de",
+      "tokenizer": "2bd9aa6eb5c8612b"
+    }
+  ]
+}

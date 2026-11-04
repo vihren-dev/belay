@@ -1,9 +1,11 @@
-"""The dialect table: which dialects the parser library builds, and their grammar identities.
+"""The dialect table: which releases the parser library has, and their grammar identities.
 
-A dialect is a release with the grammar options in effect. Its grammar identity is a
-SHA-256 digest of the inputs that decide its syntax and tokens. `parser/dialects.json`
-records each built dialect with its identity, and the build fails when the sources give
-another identity. Two dialects share a parser only when their identities are equal.
+Each release names its two archives on sqlite.org by their SHA-256. A dialect is a release
+with the grammar options in effect. Its grammar identity is a digest of its parser identity,
+its tokenizer identity and its options (ADR 0029, D3): each of these is a digest of the
+generated C that is compiled, so two releases share a parser, a tokenizer or a whole grammar
+exactly when the compiled code is the same. `parser/dialects.json` records each dialect with
+its identity, and the generation fails when the sources give another identity.
 """
 
 from dataclasses import dataclass
@@ -15,20 +17,25 @@ from parser.grammar_sources import ReleaseSources
 
 TABLE_FIELDS = frozenset({"releases", "dialects"})
 """The fields of the dialect table object."""
-RELEASE_FIELDS = frozenset({"version", "sources"})
-"""The fields of a release entry: its version label and its source directory under `parser/`."""
+RELEASE_FIELDS = frozenset({"version", "year", "sourceArchive", "amalgamationArchive"})
+"""The fields of a release entry: its version, the year folder of its archives on sqlite.org,
+and the SHA-256 of `sqlite-src-NNNNNNN.zip` and of `sqlite-autoconf-NNNNNNN.tar.gz`."""
 DIALECT_FIELDS = frozenset({"version", "grammarOptions", "grammar"})
 """The fields of a dialect entry: its release, the grammar options in effect and its identity."""
-IDENTITY_FORMAT = "sqlite-verifier-grammar-1"
+IDENTITY_FORMAT = "sqlite-verifier-grammar-2"
 """Names the digest layout below; a new layout must change it, so no old identity matches."""
+PARSER_FILES = ("syntax.c", "syntax.h", "token_map.inc")
+"""The generated files of a parser that its identity digests."""
 
 
 @dataclass(frozen=True)
 class Release:
-    """A release that the library builds, and its vendored source directory under `parser/`."""
+    """A release that the library has, and the SHA-256 of its two archives on sqlite.org."""
 
     version: str
-    sources: str
+    year: str
+    source_archive: str
+    amalgamation_archive: str
 
 
 @dataclass(frozen=True)
@@ -48,16 +55,32 @@ class DialectTable:
     dialects: tuple[Dialect, ...]
 
 
-def grammar_identity(preprocessed: str, release: ReleaseSources, options: tuple[str, ...]) -> str:
-    """Digest the generated grammar file, the tokenizer sources and the options in effect.
-
-    `preprocessed` is Lemon's `-E` output of `parse.y` for these options. It contains no
-    path, so the same sources in another directory give the same identity.
-    """
-    inputs = {"format": IDENTITY_FORMAT, "grammar": preprocessed, "tokenizer": release.tokenizer,
-              "characterTables": release.character_tables, "grammarOptions": sorted(options)}
-    encoded = json.dumps(inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+def _digest(value: dict[str, object]) -> str:
+    """Return the SHA-256 of the canonical JSON text of value."""
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def parser_identity(files: dict[str, str]) -> str:
+    """Digest the generated files of a parser that Lemon wrote with the fixed prefix `Syntax`.
+
+    The committed files are generated again with the prefix of this identity; digesting the
+    first output keeps the identity free of itself.
+    """
+    if set(files) != set(PARSER_FILES):
+        raise ValueError(f"A parser identity digests {sorted(PARSER_FILES)}, not {sorted(files)}")
+    return _digest({"parser": files})
+
+
+def tokenizer_identity(cut: str) -> str:
+    """Digest a tokenizer cut of `parser/tokenizer_cut.py`, which holds its token numbers."""
+    return hashlib.sha256(cut.encode()).hexdigest()
+
+
+def grammar_identity(parser: str, tokenizer: str, options: tuple[str, ...]) -> str:
+    """Digest the format, the parser and tokenizer identities and the options in effect."""
+    return _digest({"format": IDENTITY_FORMAT, "parser": parser, "tokenizer": tokenizer,
+                    "grammarOptions": sorted(options)})
 
 
 def _strings(value: object, where: str) -> tuple[str, ...]:
@@ -90,7 +113,8 @@ def load_table(path: Path) -> DialectTable:
     table = json.loads(path.read_text())
     if not isinstance(table, dict) or set(table) != TABLE_FIELDS:
         raise ValueError(f"{path} must be an object with 'releases' and 'dialects'")
-    releases = tuple(Release(_text(entry, "version", "A release"), _text(entry, "sources", "A release"))
+    releases = tuple(Release(*(_text(entry, key, "A release")
+                               for key in ("version", "year", "sourceArchive", "amalgamationArchive")))
                      for entry in _entries(table, "releases", RELEASE_FIELDS))
     dialects = tuple(Dialect(_text(entry, "version", "A dialect"),
                              _strings(entry["grammarOptions"], "grammarOptions"),
@@ -106,9 +130,8 @@ def load_table(path: Path) -> DialectTable:
 def check_release(release: Release, sources: ReleaseSources) -> None:
     """Fail when the table's version label differs from the version in the release's sqlite3.h."""
     if release.version != sources.version:
-        raise ValueError(f"parser/{release.sources} contains SQLite {sources.version}, but "
-                         f"parser/dialects.json labels it {release.version}. Correct the release "
-                         "entry, or point it at the source directory of that release.")
+        raise ValueError(f"The archives of release {release.version} contain SQLite {sources.version}. "
+                         "Correct the release entry in parser/dialects.json.")
 
 
 def check_dialect(dialect: Dialect, release: ReleaseSources, identity: str) -> None:

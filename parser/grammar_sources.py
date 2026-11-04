@@ -1,15 +1,13 @@
-"""Read the sources of one vendored SQLite release that decide its syntax and tokens.
+"""Read the version and the grammar options of one SQLite release from its sources.
 
-The parser library names each grammar by a digest of these sources (see
-`parser/dialect_table.py`). This module finds them in the release directory: the
-version and source id in `sqlite3.h`, the tokenizer and keyword code and the character
-tables in `sqlite3.c`, and the macros that `parse.y` and the tokenizer test. These macros
-are the release's grammar options; the build extracts them, so nobody keeps a list.
+The generation unpacks each release's archives into a folder with `parse.y`, `sqlite3.c`
+and `sqlite3.h`. This module reads the version and source id in `sqlite3.h`, and the macros
+that the conditionals of `parse.y`, of the tokenizer and keyword code and of the character
+tables of `sqlite3.c` test. These macros are the release's grammar options; the generation
+extracts them, so nobody keeps a list.
 """
 
 from dataclasses import dataclass
-import hashlib
-import json
 from pathlib import Path
 import re
 
@@ -31,12 +29,10 @@ DEFINEDNESS = re.compile(r"[A-Za-z_]\w*|defined|[\s()!|&]")
 
 @dataclass(frozen=True)
 class ReleaseSources:
-    """The syntax-deciding sources of one release, read from its vendored directory."""
+    """The version, source id and grammar options of one release."""
 
     version: str
     source_id: str
-    tokenizer: str
-    character_tables: str
     grammar_options: tuple[str, ...]
 
 
@@ -45,7 +41,7 @@ def section(text: str, start: re.Pattern[str], end: re.Pattern[str], where: str)
     first = start.search(text)
     last = end.search(text, first.end()) if first else None
     if first is None or last is None:
-        raise ValueError(f"Cannot find the {where} in sqlite3.c; check the vendored release")
+        raise ValueError(f"Cannot find the {where} in sqlite3.c; check the release")
     return text[first.start():last.start()]
 
 
@@ -55,7 +51,7 @@ def character_tables(text: str) -> str:
     last = TABLES_LAST.search(text, first.end()) if first else None
     close = re.compile(r"^\};$", re.M).search(text, last.end()) if last else None
     if first is None or close is None:
-        raise ValueError("Cannot find the character tables in sqlite3.c; check the vendored release")
+        raise ValueError("Cannot find the character tables in sqlite3.c; check the release")
     return text[first.start():close.end()]
 
 
@@ -76,22 +72,12 @@ def header_define(header: str, name: str) -> str:
     """Return the string value of a `#define` in `sqlite3.h`."""
     match = re.search(rf'^#define {name}\s+"([^"]+)"$', header, re.M)
     if match is None:
-        raise ValueError(f"sqlite3.h has no {name}; check the vendored release")
+        raise ValueError(f"sqlite3.h has no {name}; check the release")
     return match.group(1)
 
 
-def check_hashes(directory: Path) -> None:
-    """Fail unless each file named in `sha256.json` has its recorded digest."""
-    expected = json.loads((directory / "sha256.json").read_text())
-    for name, digest in sorted(expected.items()):
-        if hashlib.sha256((directory / name).read_bytes()).hexdigest() != digest:
-            raise ValueError(f"{directory / name} differs from its digest in sha256.json; "
-                             "restore the unmodified upstream file")
-
-
 def read_release(directory: Path) -> ReleaseSources:
-    """Read a hash-checked release directory with `parse.y`, `sqlite3.c` and `sqlite3.h`."""
-    check_hashes(directory)
+    """Read a release folder with `parse.y`, `sqlite3.c` and `sqlite3.h`."""
     amalgamation = (directory / "sqlite3.c").read_text()
     header = (directory / "sqlite3.h").read_text()
     tokenizer = section(amalgamation, TOKENIZER_START, TOKENIZER_END, "tokenizer")
@@ -99,5 +85,4 @@ def read_release(directory: Path) -> ReleaseSources:
     options = (conditional_macros((directory / "parse.y").read_text(), LEMON_CONDITIONAL)
                | conditional_macros(tokenizer, C_CONDITIONAL) | conditional_macros(tables, C_CONDITIONAL))
     return ReleaseSources(header_define(header, "SQLITE_VERSION"),
-                          header_define(header, "SQLITE_SOURCE_ID"),
-                          tokenizer, tables, tuple(sorted(options)))
+                          header_define(header, "SQLITE_SOURCE_ID"), tuple(sorted(options)))

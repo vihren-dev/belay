@@ -29,7 +29,7 @@ INFRASTRUCTURE_FILES = {"justfile", ".envrc", "flake.nix", "flake.lock", "lean-t
                         "tools/ci_checks.py", "tools/check_resources.py",
                         "tests/nix_suites.json", "tests/nix_scheduled_suites.json", "tests/nix_mutant_suites.json",
                         "tests/conformance_frontend.json",
-                        "tests/test_source_identity.py", "tests/test_nix_test_targets.py",
+                        "tests/test_source_identity.py", "tests/test_source_identity_derivations.py", "tests/test_nix_test_targets.py",
                         "tests/environment_snapshot_test.py", "tests/test_test_ownership.py"}
 """Build definitions and shared test infrastructure, which `just test-nix` checks."""
 

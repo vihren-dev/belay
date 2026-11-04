@@ -119,7 +119,7 @@ entry; the pinned shell supplies Python for subsequent commands.
 
 The complete input of the flake shell is `nix/flake.nix`, `nix/flake.lock`, `nix/sqlite.nix`
 and `nix/dev-shell.nix`. The root `shell.nix`, which `.envrc` loads, takes its packages from
-`nix/dev-shell.nix` and adds the Lean toolchain and the parser library of `build-support/`. Always
+`nix/dev-shell.nix` and adds the Lean toolchain of `build-support/`. Always
 use explicit `path:./nix` references; `./nix` alone can discover a parent Git
 repository, while a root path flake can copy a whole non-Git workspace. Never put
 build outputs, archives, workspace metadata or application data in `nix/`.

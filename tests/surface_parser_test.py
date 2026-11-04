@@ -6,13 +6,11 @@ Each test runs `lean` on a fixture with the libraries that Lake loads for it
 """
 
 from pathlib import Path
-import shutil
-import sys
 
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, SUFFIX, surface_command
+from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -50,22 +48,3 @@ def test_bytes_that_are_not_utf8_are_a_grammar_error(runtime_root: Path, tmp_pat
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "invalid UTF-8: Belay.Sqlite.ParseResult.inputError 0" in result.stdout, result.diagnostic()
-
-
-@pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")
-def test_missing_parser_library_is_a_load_error(runtime_root: Path, tmp_path: Path) -> None:
-    """When the parser library is missing, `lean` stops with the loader's error, which names the
-    library, instead of elaborating the file: a copy of the text package's shared library, which
-    links the parser library, whose library path is an empty folder stands for an installation
-    without the parser library."""
-    library = tmp_path / f"libbelaySqliteText_BelaySqliteText{SUFFIX}"
-    shutil.copy(runtime_root / f"packages/belay/.lake/build/lib/libbelaySqliteText_BelaySqliteText{SUFFIX}", library)
-    library.chmod(0o755)
-    (tmp_path / "empty").mkdir()
-    patch = run_command(["patchelf", "--set-rpath", str(tmp_path / "empty"), str(library)], cwd=tmp_path, timeout=30)
-    assert patch.returncode == 0, patch.diagnostic()
-    result = run_command(surface_command(runtime_root, FIXTURES / "Accepted.lean", tmp_path, library), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 1, result.diagnostic()
-    assert "error loading library, libsqlite-verifier-parser.so: cannot open shared object file" in \
-        result.stdout + result.stderr, result.diagnostic()

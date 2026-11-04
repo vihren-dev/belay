@@ -18,14 +18,14 @@ SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 """The file suffix of a shared library on this platform."""
 
 
-def module_setup(runtime_root: Path, directory: Path, library: Path | None = None,
+def module_setup(runtime_root: Path, directory: Path,
         automatic_check: bool = False, module: str = "_unknown",
         extra_modules: dict[str, list[list[str]]] | None = None) -> Path:
     """Write the module setup of `lake setup-file` for a file that imports `Belay` to `directory`, and
     give its path: each module's `.olean` and, for Lean module-mode files, its
     server/private data and IR signature/body,
-    and the shared libraries to load, in Lake's order: the model's, the model codec's, the shim's, the text package's
-    Plausible's and the surface's, or `library` in place of the text package's.
+    and the shared libraries to load, in Lake's order: the model's, the model codec's, the parser library's, the text package's
+    Plausible's and the surface's.
 
     The automatic SQL check (`sql.check`) is on by default and costs seconds per theorem. Fixtures
     that test other behavior switch it off here; the automatic tests set `automatic_check`.
@@ -46,8 +46,8 @@ def module_setup(runtime_root: Path, directory: Path, library: Path | None = Non
     modules.update(extra_modules or {})
     libraries = runtime_root / "packages/belay/.lake/build/lib"
     dynlibs = [libraries / f"libbelaySqliteModel_Belay_Sqlite_Model{SUFFIX}",
-               libraries / f"libbelaySqliteModel_Belay_Sqlite_Model_Codec{SUFFIX}", libraries / f"libbelayParserShim{SUFFIX}",
-               library or libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}",
+               libraries / f"libbelaySqliteModel_Belay_Sqlite_Model_Codec{SUFFIX}", libraries / f"libbelayParserLibrary{SUFFIX}",
+               libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}",
                libraries / f"libplausible_Plausible{SUFFIX}", libraries / f"libbelay_Belay{SUFFIX}"]
     path = directory / "setup.json"
     path.write_text(json.dumps({"name": module, "isModule": False, "importArts": modules,
@@ -56,9 +56,9 @@ def module_setup(runtime_root: Path, directory: Path, library: Path | None = Non
     return path
 
 
-def surface_command(runtime_root: Path, source: Path, directory: Path, library: Path | None = None,
+def surface_command(runtime_root: Path, source: Path, directory: Path,
         automatic_check: bool = False) -> list[str]:
     """The `lean` command for a file that imports `Belay`, with its module setup in `directory`."""
-    setup = module_setup(runtime_root, directory, library, automatic_check)
+    setup = module_setup(runtime_root, directory, automatic_check)
     return [str(runtime_root / "lean/bin/lean"), f"--setup={setup}", str(source)]
 

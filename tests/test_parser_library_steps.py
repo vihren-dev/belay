@@ -1,68 +1,71 @@
-"""The build steps of the parser library check each release, grammar and library input.
+"""The library step writes one folder for each parser and tokenizer identity, and the manifest.
 
-These tests check `parser/library_steps.py`, which the derivations of
-`build-support/parser-library.nix` run, with synthetic release directories and Lemon
-outputs. The suite `parserLibrary` checks the library that the real steps build.
+These tests check `library_sources` of `parser/library_steps.py`, which the generation of
+`build-support/parser-library.nix` runs on the outputs of the release steps, with synthetic
+release outputs. The `parserLibrary` suite checks the library compiled from the real tree.
 """
 
+from dataclasses import asdict
+import json
 from pathlib import Path
 
 import pytest
 
-from parser.dialect_table import Dialect, DialectTable, Release, grammar_identity
-from parser.grammar_sources import read_release
-from parser.library_metadata import Grammar, ReleaseRecord
-from parser.library_steps import grammar_record, library_sources, read_release_record, release_record
-from tests.parser_release_fixtures import release
+from parser.dialect_table import Dialect, DialectTable, Release
+from parser.library_steps import library_sources, read_release_output
+from parser.release_step import ReleaseOutput
 
 pytestmark = [pytest.mark.unit, pytest.mark.parser]
-PREPROCESSED = "input ::= cmd."
-"""A stand-in for Lemon's preprocessed grammar."""
 
 
-def test_release_step_checks_each_dialect_of_its_release(tmp_path: Path) -> None:
-    """The step records the release and fails for an identity that the sources do not give."""
-    directory = release(tmp_path / "upstream")
-    identity = grammar_identity(PREPROCESSED, read_release(directory), ())
-    table = DialectTable((Release("3.51.0", "upstream"),), (Dialect("3.51.0", (), identity),))
-    record = release_record(directory, table, PREPROCESSED)
-    assert record == ReleaseRecord("3.51.0", "2025-11-04 source", read_release(directory).grammar_options)
-    changed = DialectTable(table.releases, (Dialect("3.51.0", (), "0" * 64),))
-    with pytest.raises(ValueError, match="records 0000"):
-        release_record(directory, changed, PREPROCESSED)
-    with pytest.raises(ValueError, match="must pass only the release"):
-        release_record(directory, DialectTable(table.releases * 2, table.dialects), PREPROCESSED)
+def release_output(folder: Path, version: str, parser: str, tokenizer: str, grammar: str, text: str = "c") -> Path:
+    """Write the output of one release step with one-file parser and tokenizer folders."""
+    for kind in ("parser", "tokenizer"):
+        (folder / kind).mkdir(parents=True)
+        (folder / kind / "file").write_text(text)
+    record = ReleaseOutput(version, "source " + version, ("SQLITE_A",), parser, tokenizer, grammar, 409, 186)
+    (folder / "release.json").write_text(json.dumps(asdict(record)))
+    return folder
 
 
-def test_grammar_step_compares_the_production_count(tmp_path: Path) -> None:
-    """A generated parser with another production count than Lemon's export fails the step."""
-    (tmp_path / "syntax.c").write_text("#define YYNRULE              2\n")
-    (tmp_path / "syntax.h").write_text("#define P_SEMI 1\n")
-    (tmp_path / "grammar.y").write_text("input ::= cmd.\ncmd ::= SEMI.\n")
-    assert grammar_record(tmp_path, "ab" * 32, "Syntax_ab") == Grammar("ab" * 32, "Syntax_ab", 2, 1)
-    (tmp_path / "grammar.y").write_text("input ::= cmd.\n")
-    with pytest.raises(ValueError, match="has 2 productions"):
-        grammar_record(tmp_path, "ab" * 32, "Syntax_ab")
+def table(*versions: str) -> DialectTable:
+    """A dialect table with one default dialect for each version."""
+    return DialectTable(tuple(Release(version, "2025", "a", "b") for version in versions),
+                        tuple(Dialect(version, (), "g" + version) for version in versions))
 
 
-def test_sources_step_needs_every_grammar_once_with_a_unique_prefix(tmp_path: Path) -> None:
-    """The library inputs are written only for the table's grammars, with distinct prefixes."""
-    table = DialectTable((Release("3.51.0", "upstream"),), (Dialect("3.51.0", (), "ab" * 32),))
-    releases = [ReleaseRecord("3.51.0", "source", ())]
-    grammar = Grammar("ab" * 32, "Syntax_ab", 409, 186)
-    library_sources(table, releases, [grammar], tmp_path)
-    assert (tmp_path / "library_metadata.inc").is_file()
-    with pytest.raises(ValueError, match="one grammar for each identity"):
-        library_sources(table, releases, [], tmp_path)
-    other = DialectTable(table.releases, (*table.dialects, Dialect("3.51.0", ("SQLITE_X",), "cd" * 32)))
-    with pytest.raises(ValueError, match="same symbol prefix"):
-        library_sources(other, releases, [grammar, Grammar("cd" * 32, "Syntax_ab", 409, 186)], tmp_path)
-    with pytest.raises(ValueError, match="in the table.s order"):
-        library_sources(table, [], [grammar], tmp_path)
+@pytest.mark.timeout(10)
+def test_releases_share_the_folders_of_equal_identities(tmp_path: Path) -> None:
+    """Two releases with one parser and two tokenizers give one parser folder, two tokenizer
+    folders and two grammars, each naming its parts in the manifest."""
+    first = release_output(tmp_path / "first", "3.51.0", "p" * 64, "t" * 64, "g" * 64)
+    second = release_output(tmp_path / "second", "3.51.1", "p" * 64, "u" * 64, "h" * 64)
+    output = tmp_path / "output"
+    output.mkdir()
+    library_sources(table("3.51.0", "3.51.1"), [first, second], ["-O1"], output)
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest == {
+        "flags": ["-O1"],
+        "parsers": [{"folder": "p" * 16, "prefix": "Syntax_" + "p" * 16}],
+        "tokenizers": [{"folder": "t" * 16, "prefix": "Tokenizer_" + "t" * 16},
+                       {"folder": "u" * 16, "prefix": "Tokenizer_" + "u" * 16}],
+        "grammars": [{"prefix": "Grammar_" + "g" * 16, "parser": "p" * 16, "tokenizer": "t" * 16},
+                     {"prefix": "Grammar_" + "h" * 16, "parser": "p" * 16, "tokenizer": "u" * 16}]}
+    assert sorted(path.name for path in (output / "tokenizers").iterdir()) == ["t" * 16, "u" * 16]
+    assert read_release_output(second).grammar_options == ("SQLITE_A",)
 
 
-def test_release_record_round_trip(tmp_path: Path) -> None:
-    """A release record that one derivation writes is read back unchanged by the library step."""
-    path = tmp_path / "release.json"
-    path.write_text('{"version": "3.51.0", "source_id": "id", "grammar_options": ["SQLITE_A"]}')
-    assert read_release_record(path) == ReleaseRecord("3.51.0", "id", ("SQLITE_A",))
+@pytest.mark.timeout(10)
+def test_the_step_refuses_conflicts_and_another_order(tmp_path: Path) -> None:
+    """One identity with other bytes, two identities with one folder name, or releases in
+    another order than the table's fail the step."""
+    first = release_output(tmp_path / "first", "3.51.0", "p" * 64, "t" * 64, "g" * 64)
+    changed = release_output(tmp_path / "changed", "3.51.1", "p" * 64, "u" * 64, "h" * 64, text="other")
+    clash = release_output(tmp_path / "clash", "3.51.1", "p" * 16 + "q" * 48, "u" * 64, "h" * 64)
+    for folders, versions, message in (([first, changed], ("3.51.0", "3.51.1"), "different files"),
+                                       ([first, clash], ("3.51.0", "3.51.1"), "same folder name"),
+                                       ([first], ("3.51.1",), "table's order")):
+        output = tmp_path / ("output-" + message.replace(" ", "-").replace("'", ""))
+        output.mkdir()
+        with pytest.raises(ValueError, match=message):
+            library_sources(table(*versions), folders, [], output)

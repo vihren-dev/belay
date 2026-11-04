@@ -31,7 +31,7 @@ build: resources conformance-build
 test-cases *args:
     python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" "$@"
 
-# Build the conformance runtime: the toolchain, the model, the conformance runner and the parser library.
+# Build the conformance runtime: the toolchain, the model, the conformance runner and the translation program, which contains the parser library.
 conformance-build:
     mkdir -p build
     timeout --foreground 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
@@ -97,10 +97,17 @@ restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
+# Write the generated C of the parser library into parser/generated with Nix from the release archives (ADR 0029); run it on Linux after a change to parser/dialects.json or a generator, and commit the result.
+parser-sources:
+    mkdir -p build
+    timeout --foreground 900 nix-build build-support/default.nix -A parserLibrary.generated --out-link build/parser-generated --extra-experimental-features 'nix-command flakes'
+    rm -rf parser/generated
+    cp -R --no-preserve=mode,ownership build/parser-generated/. parser/generated
+
 # Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break.
 dev-build: _dev-shell-warning
     cd packages/belay-sqlite-model && lake build Belay.Sqlite.Model Belay.Sqlite.Model.Codec
-    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserShim:shared belay-sqlite-translate
+    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserLibrary:shared belay-sqlite-translate
     cd packages/verifier-conformance && lake build VerifierConformance conformance-runner
     cd packages/belay && lake build Belay Belay:shared
 
@@ -116,7 +123,7 @@ dev-verdict *corpora: _dev-shell-warning
 
 # Warn when the shell of shell.nix, which has the pinned Lean toolchain, is not loaded.
 _dev-shell-warning:
-    @[ -n "${BELAY_PARSER_LIBRARY:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
+    @[ -n "${BELAY_DEV_SHELL:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
 
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:

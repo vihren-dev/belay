@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-03T07:26:19+00:00",
+  "finding": "20261103T072557Z-f7561cb3#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The amendments are in the next commit of the same slice, 92f127b4, whose review has no findings; the status file at the end of the slice states what exists."
+}

@@ -1,0 +1,43 @@
+{
+  "caller": "claude",
+  "commit": "c8b6feef04d615c654957f55c7bd29448a15a158",
+  "date": "2026-11-03T12:55:42+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr-0029-parser-for-many-releases.md"
+  ],
+  "findings": [
+    {
+      "id": "20261103T125542Z-c8b6feef#1",
+      "line": 120,
+      "path": "docs/adr-0029-parser-for-many-releases.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D2 assumes the named-function comparison covers the tokenizer at `-O0`, but this setting leaves `analyzeWindowKeyword`, `analyzeOverKeyword`, `analyzeFilterKeyword`, `getToken` and `sqlite3ParserFallback` as separate, unchecked functions that were inlined at `-O1`. Fix: include these reachable helper functions in the slice check’s machine-code comparison."
+    }
+  ],
+  "id": "20261103T125542Z-c8b6feef",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

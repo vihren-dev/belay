@@ -3,7 +3,7 @@
 ** library's result code. The SQL is a byte array, so that text that is not UTF-8 reaches the
 ** library, which refuses it. */
 #include <lean/lean.h>
-#include "sqlite-verifier-parser.h"
+#include "library.h"
 
 /* Lake compiles with hidden symbols; the interpreter finds these two by name. */
 #define BELAY_EXPORT __attribute__((visibility("default")))

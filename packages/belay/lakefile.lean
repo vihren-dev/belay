@@ -4,8 +4,8 @@ open Lake DSL System
 /-! The surface: the library that users import, {lit}`Belay`, with SQLite under
 {lit}`Belay.Sqlite` (ADR 0016, D1). It reads SQL text with the text package below it
 ({lit}`belaySqliteText`), which calls the SQLite parser library as native code while a file
-elaborates, so the surface's modules are precompiled too. The text package's lakefile reads the
-parser library's folder from the environment variable {lit}`BELAY_PARSER_LIBRARY`. -/
+elaborates, so the surface's modules are precompiled too. The text package's lakefile compiles the
+parser library's C code. -/
 
 package belay
 

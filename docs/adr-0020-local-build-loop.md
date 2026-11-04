@@ -10,6 +10,8 @@ measurements follow that layout. Later the same day: agent sessions load `.envrc
 direnv (fact 8), so D1, D5 and D6 rely on it; owner decisions 2 and 3 are decided.
 Changed 2026-10-24: D2 includes the complete conformance library and the text
 package's narrower model dependency.
+Changed 2026-11-03 ([ADR 0023](adr-0023-parser-built-by-lake.md)): Lake compiles the parser library in the text package, so
+the shell has no parser library; it sets `BELAY_DEV_SHELL` (fact 5, D1, D2 and D6).
 Initial implementation: one task file and one pull request; the task is
 [`plans/20261022-local-build-loop.task.md`](../plans/20261022-local-build-loop.task.md).
 The 2026-10-24 correction is specified in
@@ -121,6 +123,8 @@ modules). The times above include it. This ADR does not depend on it.
    `packages/belay-sqlite-text/lakefile.lean` reads `BELAY_PARSER_LIBRARY` and stops when
    it is not set. It links the parser library with its folder in the Nix store as the
    run-time search path, so the translation program finds it without a copy.
+   (Amended 2026-11-03, ADR 0023: no longer true. The lakefile compiles the parser's C from
+   `parser/` and reads no variable; the programs contain the parser.)
 6. **The runtime root of predict holds two programs.** `python -m conformance.predict
    --runtime ROOT` runs `ROOT/.lake/build/bin/belay-sqlite-translate` to map SQL text to
    statement syntax, and `ROOT/.lake/build/bin/conformance-runner` to run it. A root with
@@ -142,14 +146,16 @@ modules). The times above include it. This ADR does not depend on it.
 
 ## Decision
 
-### D1. A root `shell.nix` with the pinned toolchain and parser library
+### D1. A root `shell.nix` with the pinned toolchain
 
 A `shell.nix` at the repository root is the development shell for the local loop. It
 has the packages of the flake dev shell and the toolchain of `build-support/default.nix`.
 It sets `BELAY_PARSER_LIBRARY` to `parserLibrary.library` of the same build (fact 5), and
 on Linux it sets `LEAN_CC` to the last wrapper of fact 4. The two shells take their
 package list from one file under `nix/`, which both can import, so that they cannot
-drift apart. `.envrc` loads `shell.nix` (`use nix`), so each agent session that changes
+drift apart. Amended 2026-11-03 (ADR 0023): the shell has no parser library and no
+`BELAY_PARSER_LIBRARY`; it imports only `build-support/lean-toolchain.nix` and sets
+`BELAY_DEV_SHELL=1`, by which the recipes and the test of D6 find it. `.envrc` loads `shell.nix` (`use nix`), so each agent session that changes
 into the repository has the shell of the local loop (fact 8). The flake dev shell stays
 for CI, which calls `nix develop path:./nix`, and for users who enter it by hand (owner
 decision 3).
@@ -170,7 +176,7 @@ It builds these targets, the ones that model work can break:
 | Package | Targets |
 | --- | --- |
 | `belay-sqlite-model` | `Belay.Sqlite.Model`, `Belay.Sqlite.Model.Codec` (the targets of `modelPackage`) |
-| `belay-sqlite-text` | `BelaySqliteText`, `BelaySqliteText:shared`, `parserShim:shared`, `belay-sqlite-translate` |
+| `belay-sqlite-text` | `BelaySqliteText`, `BelaySqliteText:shared`, `parserLibrary:shared`, `belay-sqlite-translate` |
 | `verifier-conformance` | `VerifierConformance`, `conformance-runner` |
 | `belay` | `Belay`, `Belay:shared` (owner decision 1, decided) |
 
@@ -180,6 +186,9 @@ package imports the model's public codec root, which supplies syntax and resolut
 definitions without the model root's proof and example imports.
 
 The documentation tool stays with Nix.
+
+Amended 2026-11-03 (ADR 0023): the text package's `extern_lib` was renamed from
+`parserShim` to `parserLibrary`, because it holds the parser library and not only the shim.
 
 ### D3. A local verdict
 
@@ -235,13 +244,20 @@ with it:
 
 The recipes are our code, and one test checks them. A test marked `requires_nix` (outside the Nix suites, because it needs the shell of D1
 on the host) runs in the shell that direnv loaded and does not start a shell itself
-(fact 8). It skips with a message when `LEAN_CC` (on Linux) or `BELAY_PARSER_LIBRARY` is
+(fact 8). It skips with a message when `LEAN_CC` (on Linux) or `BELAY_DEV_SHELL` is
 not set. It runs `just dev-build` twice and checks that the second run compiles no job,
 checks that the runner and the translation program start (so a Lean upgrade that
 changes the toolchain's flags fails here), and runs `just dev-verdict` on one small
 corpus and checks exit code 0 and that the report has only that corpus, which also
 checks the layout of the runtime root and the reduced claims file. The pull request records one measurement on the same
 commit: the counts of `just dev-verdict` equal those of `just verdict`.
+
+Amended 2026-11-03 (ADR 0023, D5): the test finds the shell by `BELAY_DEV_SHELL`. Its first
+`just dev-build` starts from a clean build folder of the text package, so that Lake compiles the
+parser's C through the `LEAN_CC` wrapper, and the test checks that the compile reports no
+missing header or implicit declaration, that the objects call only the reviewed C library
+functions, and that `lake lean` of a file that evaluates
+`Belay.Sqlite.ParserLibrary.metadata` prints the metadata.
 
 ## Consequences
 

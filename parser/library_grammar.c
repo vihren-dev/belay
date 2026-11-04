@@ -1,14 +1,25 @@
-/* The Lemon parser of one grammar in the parser library, and its parse loop.
+/* The parse loop of one grammar in the parser library: a parser with a tokenizer.
 **
-** The parse loop feeds the release's tokens to the generated parser and adds SQLite's
-** final semicolon when the text has none. library.c checks the
-** input and writes the document; this file only builds the syntax tree in a Context.
+** The parse loop feeds the tokenizer's tokens to the parser and adds SQLite's final
+** semicolon when the text has none. library.c checks the input and writes the document;
+** this file only builds the syntax tree in a Context. tokens.h gives the tokenizer's token
+** numbers and syntax.h the parser's.
 */
 #include "library_prefix.h"
 #include "runtime.h"
-#include "syntax.c"
+#include "syntax.h"
+#include "tokens.h"
 
-/* Map token identities explicitly instead of assuming regenerated number stability. */
+void *SyntaxAlloc(void *(*allocate)(size_t));
+void Syntax(void *parser, int kind, int token, Context *ctx);
+void SyntaxFree(void *parser, void (*release)(void *));
+int native_token(const char *text, int previous, int *kind);
+const char *native_name(int kind);
+int native_space(int kind);
+int native_illegal(int kind);
+int native_semicolon(void);
+
+/* Map each token of the tokenizer to the parser's token of the same name. */
 static int parser_token(int kind){
   switch(kind){
 #include "token_map.inc"

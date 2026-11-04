@@ -1,9 +1,9 @@
 """The parser library loads all grammars in one process and is free of memory faults.
 
 These tests check the library that `build-support/parser-library.nix` builds from
-`parser/library*.c` and `parser/dialects.json`: its metadata, its grammar selection in
-one process, the status and the byte spans of its documents in each grammar, and its memory
-safety under the sanitizers.
+`parser/library*.c` and the committed generated C of `parser/generated`: the manifest of that
+tree, the library's metadata, its grammar selection in one process, the status and the byte
+spans of its documents in each grammar, and its memory safety under the sanitizers.
 """
 
 import json
@@ -13,20 +13,35 @@ import sys
 
 import pytest
 
-from tests.parser_inputs import INVALID, OVERSIZED, RAISE_EXPRESSION, UNICODE_SPANS, VALID
+from tests.parser_inputs import INVALID, OVERSIZED, RELEASES, SYNTAX_CHANGES, UNICODE_SPANS, VALID
 from tests.parser_library_inputs import read_records, write_records
 from tests.parser_library_support import Build, Result, default_dialects, metadata, parse_all, parsed_status
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser]
 API_VERSION = 1
 """The API version of `parser/library.h`."""
-RAISE_ACCEPTED = {"3.51.0": True, "3.46.0": False}
-"""Whether each release accepts an expression in RAISE, which SQLite 3.47 added."""
 UNKNOWN_GRAMMAR = "0" * 64
 """A grammar identity that no library contains."""
+GENERATED = Path(__file__).resolve().parents[1] / "parser" / "generated"
+"""The committed generated C, in the source tree that holds this test."""
 SANITIZER_ENVIRONMENT = {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
                          "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"}
 """Stop the sanitized driver at the first finding, including a leak at exit."""
+
+
+@pytest.mark.timeout(60)
+def test_manifest_names_each_folder_and_the_parts_of_each_grammar() -> None:
+    """The manifest lists one folder for each parser and each tokenizer of the tree, each named by
+    the digits of its symbol prefix, and each grammar names a listed parser and tokenizer. The Lake
+    build of the text package and the Nix library read these folders."""
+    manifest = json.loads((GENERATED / "manifest.json").read_text())
+    for kind, prefix in (("parsers", "Syntax_"), ("tokenizers", "Tokenizer_")):
+        folders = [part["folder"] for part in manifest[kind]]
+        assert all(part["prefix"] == prefix + part["folder"] for part in manifest[kind])
+        assert sorted(folders) == sorted(path.name for path in (GENERATED / kind).iterdir())
+    assert all(grammar["parser"] in {part["folder"] for part in manifest["parsers"]}
+               and grammar["tokenizer"] in {part["folder"] for part in manifest["tokenizers"]}
+               for grammar in manifest["grammars"])
 
 
 @pytest.fixture(scope="module")
@@ -36,27 +51,30 @@ def build(runtime_root: Path) -> Build:
 
 
 def test_metadata_has_a_grammar_for_each_dialect(build: Build, tmp_path: Path) -> None:
-    """`metadata` gives the API version, both releases, and a listed grammar for each dialect."""
+    """`metadata` gives the API version, each release of `RELEASES`, and a listed grammar for
+    each dialect."""
     document = metadata(build, tmp_path)
     assert document["api"] == API_VERSION
     grammars = document["grammars"]
     assert isinstance(grammars, list)
-    assert set(default_dialects(document)) == set(RAISE_ACCEPTED)
+    assert set(default_dialects(document)) == set(RELEASES)
     assert set(default_dialects(document).values()) == {grammar["grammar"] for grammar in grammars}
     assert all(grammar["productions"] > 0 and grammar["tokens"] > 0 for grammar in grammars)
 
 
 def test_one_process_parses_with_each_grammar(build: Build, tmp_path: Path) -> None:
-    """One process parses the RAISE case with every grammar, and each release gives its own result.
-    An unknown grammar identity gives result code 1 and no document."""
+    """One process parses each case of `SYNTAX_CHANGES` with the grammar of every release, and
+    each release accepts exactly the cases that the table says. An unknown grammar identity
+    gives result code 1 and no document."""
     dialects = default_dialects(metadata(build, tmp_path))
     inputs = tmp_path / "inputs"
-    write_records(inputs, [RAISE_EXPRESSION])
-    versions = sorted(dialects)
-    results = parse_all(build, inputs, [dialects[version] for version in versions] + [UNKNOWN_GRAMMAR], tmp_path)
-    for version, [result] in zip(versions, results):
-        assert parsed_status(result) == ("PARSED" if RAISE_ACCEPTED[version] else "INPUT_ERROR"), (version, result)
-    assert results[-1] == [Result(1, b"")]
+    write_records(inputs, [change.sql for change in SYNTAX_CHANGES])
+    results = parse_all(build, inputs, [dialects[version] for version in RELEASES] + [UNKNOWN_GRAMMAR], tmp_path)
+    for version, outputs in zip(RELEASES, results):
+        found = {change.name: parsed_status(result) for change, result in zip(SYNTAX_CHANGES, outputs, strict=True)}
+        assert found == {change.name: "PARSED" if change.accepts(version) else "INPUT_ERROR"
+                         for change in SYNTAX_CHANGES}, version
+    assert results[-1] == [Result(1, b"")] * len(SYNTAX_CHANGES)
 
 
 def checked_document(result: Result, grammar: str, sql: bytes) -> dict[str, object]:

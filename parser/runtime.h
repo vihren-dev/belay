@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* The parser stack's allocator. Lemon's template of SQLite 3.54.0 and later passes the
+   parser context as one more argument, which these macros drop, so every release's
+   parser calls realloc() and free(). */
+#define syntax_stack_realloc(...) syntax_stack_realloc_of(__VA_ARGS__, 0)
+#define syntax_stack_realloc_of(old, size, ...) realloc(old, size)
+#define syntax_stack_free(...) syntax_stack_free_of(__VA_ARGS__, 0)
+#define syntax_stack_free_of(old, ...) free(old)
+
 /* One terminal/nonterminal and its original UTF-8 byte span. */
 typedef struct {
   const char *symbol;

@@ -8,12 +8,12 @@ syntax with the byte range of each node (`Belay.Sqlite.Translation`). The surfac
 translation.
 
 The package requires only the model and imports only the model's roots and Lean's libraries.
-Its modules are precompiled and linked with the parser library, whose folder Lake reads from the
-environment variable `BELAY_PARSER_LIBRARY`:
+Its modules are precompiled and linked with the parser library. Lake compiles the library's C code
+itself, from the files under `parser/` of this repository (ADR 0023): a `lake build` needs the
+pinned Lean and no system C compiler, no C library headers and no Nix.
 
 ```sh
-nix-build build-support/default.nix -A parserLibrary.library --out-link build/parser-library
-BELAY_PARSER_LIBRARY=$PWD/build/parser-library lake build BelaySqliteText BelaySqliteText:shared
+lake build BelaySqliteText BelaySqliteText:shared
 ```
 
 The program `belay-sqlite-translate` translates a batch of SQL texts for the conformance
@@ -22,5 +22,10 @@ line for each; `Belay/Sqlite/TranslationRequest.lean` describes both. The confor
 contains it at `.lake/build/bin/belay-sqlite-translate`:
 
 ```sh
-BELAY_PARSER_LIBRARY=$PWD/build/parser-library lake build belay-sqlite-translate
+lake build belay-sqlite-translate
 ```
+
+The lakefile reaches `parser/` by the path `../../parser`, so the package folder must stay two
+levels below the repository folder. The C under `parser/generated/` comes from Nix: after a change
+to `parser/dialects.json`, to the release archives or to a generator, run `just parser-sources`
+and commit the result.
