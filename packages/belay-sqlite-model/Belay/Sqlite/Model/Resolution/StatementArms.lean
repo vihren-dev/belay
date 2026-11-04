@@ -40,12 +40,13 @@ otherwise, and drops the saved catalog in both cases. Proof sketch: both sides a
     (pragma : Syntax.Pragma) :
     resolveStatement context state (.pragma pragma) = resolveStatementPragma context state pragma := rfl
 
-/-- CREATE TABLE resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
+/-- CREATE TABLE resolves against the catalog of the state, with {name}`resolveCreateTableIf` for the
+clause {lit}`IF NOT EXISTS`. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createTable (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (options : Syntax.TableOptions) :
-    resolveStatement context state (.createTable name columns constraints options) =
-      state.withCatalog (resolveCreateTable context state.catalog name columns constraints options) := rfl
+    (options : Syntax.TableOptions) (ifNotExists : Bool) :
+    resolveStatement context state (.createTable name columns constraints options ifNotExists) =
+      state.withCatalog (resolveCreateTableIf context state.catalog name columns constraints options ifNotExists) := rfl
 
 /-- CREATE VIEW resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createView (context : ResolveContext) (state : ResolveState)
@@ -54,12 +55,13 @@ otherwise, and drops the saved catalog in both cases. Proof sketch: both sides a
     resolveStatement context state (.createView name ifNotExists columns query subqueries) =
       state.withCatalog (resolveCreateView state.catalog name ifNotExists { columns, query, subqueries }) := rfl
 
-/-- CREATE INDEX resolves against the catalog of the state. Proof sketch: both sides are equal by definition. -/
+/-- CREATE INDEX resolves against the catalog of the state, with {name}`resolveCreateIndexIf` for the
+clause {lit}`IF NOT EXISTS`. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_createIndex (context : ResolveContext) (state : ResolveState)
     (name : Identifier) (unique : Bool) (table : Identifier) (terms : List Syntax.OrderTerm)
-    (filter : Option Syntax.Expr) :
-    resolveStatement context state (.createIndex name unique table terms filter) =
-      state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter) := rfl
+    (filter : Option Syntax.Expr) (ifNotExists : Bool) :
+    resolveStatement context state (.createIndex name unique table terms filter ifNotExists) =
+      state.withCatalog (resolveCreateIndexIf context state.catalog name unique table terms filter ifNotExists) := rfl
 
 /-- ALTER TABLE ADD COLUMN resolves against the catalog and the foreign key setting of the state. Proof sketch: both sides are equal by definition. -/
 @[statement_arms] theorem resolveStatement_addColumn (context : ResolveContext) (state : ResolveState)

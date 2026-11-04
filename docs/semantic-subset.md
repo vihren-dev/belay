@@ -15,8 +15,9 @@ The frontend maps these statements, and refuses every other statement as
   and `REFERENCES` (slice 4), `[GENERATED ALWAYS] AS (expr) [VIRTUAL | STORED]` (slice 5),
   and `DEFAULT` with a literal, a signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
   names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
-  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6);
-- `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
+  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6), with or without
+  `IF NOT EXISTS` (ADR 0030);
+- `CREATE [UNIQUE] INDEX [IF NOT EXISTS]` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition, `ALTER TABLE … RENAME TO name` and
   `ALTER TABLE … RENAME [COLUMN] a TO b` and `ALTER TABLE … DROP [COLUMN] a` (ADR 0019, D4). A drop
@@ -217,7 +218,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
-partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
+partial and expression indexes, `TEMP`, schema names, table
 options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
 `FROM`, schema-qualified tables and columns other than the schema `before` of a two-state query (restriction `initial-database`), `NULLS FIRST` and `NULLS LAST`, and
@@ -245,6 +246,16 @@ reserved names are model restrictions.
 Omitted INSERT columns use their literal defaults and column affinities. A column
 with `DEFAULT CURRENT_TIMESTAMP`, `CURRENT_DATE` or `CURRENT_TIME` gives an omitted
 value the text of the INSERT's clock value, stored with the column affinity (slice 6e2).
+
+`IF NOT EXISTS` (ADR 0030) makes `CREATE TABLE` a statement that does nothing when a
+table or a view has the name, and `CREATE INDEX` one that does nothing when an index has the
+name, whatever its table, terms, filter or `UNIQUE`. Such a statement outputs nothing, changes
+no row and keeps `changes()`, `total_changes()` and `last_insert_rowid()`; SQLite does not
+read the rest of the statement, so a body with an error is not an error then. The checks
+before the name check keep their errors: a reserved table name, and for an index a missing
+table, a view as the table and a reserved table or index name. `CREATE TABLE IF NOT EXISTS`
+over an index name and `CREATE INDEX IF NOT EXISTS` over a table or a view name keep their
+errors, and with a free name the statement runs as without the clause.
 
 An index has key terms and an optional `WHERE` filter (ADR 0014, slice 1). A term that
 is a column name is that column; any other term is an expression over the table's

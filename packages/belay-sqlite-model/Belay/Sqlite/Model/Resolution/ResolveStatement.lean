@@ -8,6 +8,7 @@ import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.Drops
 import Belay.Sqlite.Model.Resolution.DropColumnResolve
 import Belay.Sqlite.Model.Resolution.ViewDefinitions
+import Belay.Sqlite.Model.Resolution.ConditionalCreation
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.TriggerDefinitions
 import Belay.Sqlite.Model.Resolution.PragmaResolution
@@ -37,12 +38,12 @@ def resolveStatementRun (context : ResolveContext) (state : ResolveState) :
   | .commit => pure (.commit, { state with saved := none })
   | .rollback => pure (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none })
   | .pragma pragma => Traced.lift (resolveStatementPragma context state pragma)
-  | .createTable name columns constraints options =>
-    Traced.lift (state.withCatalog (resolveCreateTable context state.catalog name columns constraints options))
+  | .createTable name columns constraints options ifNotExists =>
+    Traced.lift (state.withCatalog (resolveCreateTableIf context state.catalog name columns constraints options ifNotExists))
   | .createView name ifNotExists columns query subqueries =>
     Traced.lift (state.withCatalog (resolveCreateView state.catalog name ifNotExists { columns, query, subqueries }))
-  | .createIndex name unique table terms filter =>
-    Traced.lift (state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter))
+  | .createIndex name unique table terms filter ifNotExists =>
+    Traced.lift (state.withCatalog (resolveCreateIndexIf context state.catalog name unique table terms filter ifNotExists))
   | .addColumn table column =>
     Traced.lift (state.withCatalog (resolveAddColumn context state.catalog state.foreignKeys table column))
   | .renameTable table newName => Traced.lift (state.withCatalog (resolveRenameTable context state.catalog table newName))

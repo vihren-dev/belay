@@ -81,6 +81,7 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     db.catalog.find (name! "customers_email") = none) := by
   apply (Succeeds.iff_createIndex (script := uniqueEmail) (head := rfl) _).mpr
   rintro db ⟨tablePresent, holds, freeName⟩
+  right
   cases found : db.raw.catalog.findTable (name! "customers") with
   | none => simp [Belay.Sqlite.Database.catalog, found] at tablePresent
   | some pair =>

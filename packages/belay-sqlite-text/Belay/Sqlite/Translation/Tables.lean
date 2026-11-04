@@ -4,7 +4,8 @@ set_option doc.verso true
 
 /-! CREATE TABLE and ALTER TABLE ADD COLUMN. The port of the table part of
 {lit}`belay/sqlite/syntax_definitions.py`: each production maps to one constructor without
-reading the schema; TEMP, IF NOT EXISTS and a schema name are refused with their range. -/
+reading the schema; IF NOT EXISTS is a flag, and TEMP and a schema name are refused with
+their range. -/
 
 namespace Belay.Sqlite.Translation
 
@@ -79,13 +80,13 @@ def tableConstraints (tree : SqlTree) (listed : ParseNode) (last' : Option Strin
         constraints := constraints.push (deferral tree (tree.children final)[0]! .deferral)
   return constraints
 
-/-- CREATE TABLE with column definitions and table constraints. -/
+/-- CREATE TABLE with column definitions and table constraints, and the clause {lit}`IF NOT EXISTS`
+as a flag. -/
 def createTable (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts := tree.children command
   let header ← require tree parts[0]! ["createkw", "temp", "TABLE", "ifnotexists", "nm", "dbnm"]
   let body ← require tree parts[1]! ["LP", "columnlist", "conslist_opt", "RP", "table_option_set"]
   absent header[1]! "TEMP"
-  absent header[3]! "IF NOT EXISTS"
   absent header[5]! "A schema name"
   let mut columns : Array (Located Syntax.ColumnDefinition) := #[]
   let mut current : Option String := none
@@ -99,8 +100,9 @@ def createTable (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syn
   let columnList := sequence columns body[1]!.start body[1]!.stop
   let constraintList := sequence constraints body[2]!.start body[2]!.stop
   let options ← tableOptions tree body[4]!
-  return composite (.createTable tableName.value columnList.value constraintList.value options.value) command.start
-    command.stop #[tableName.span, columnList.span, constraintList.span, options.span]
+  return composite (.createTable tableName.value columnList.value constraintList.value options.value
+      (!header[3]!.children.isEmpty)) command.start
+    command.stop #[tableName.span, columnList.span, constraintList.span, options.span, spanOf header[3]!]
 
 /-- {lit}`ALTER TABLE ADD [COLUMN]` for an unqualified table name. -/
 def addColumn (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do

@@ -44,12 +44,26 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             column("f", None)],
             "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
                             {"unique": {"columns": ["c", "d"], "algorithm": None}}],
-            "options": {"withoutRowid": False}}},
+            "options": {"withoutRowid": False}, "ifNotExists": False}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "terms": [
             {"expression": {"identifier": {"name": "a", "quote": "none"}}, "descending": False},
-            {"expression": {"identifier": {"name": "B", "quote": "none"}}, "descending": False}], "filter": None}},
+            {"expression": {"identifier": {"name": "B", "quote": "none"}}, "descending": False}], "filter": None,
+            "ifNotExists": False}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
             {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
+
+
+def test_conditional_creation_records_the_clause(parse_sql: Callable[..., Translation]) -> None:
+    """`Translation/Tables.lean` and `Translation/Schema.lean` record IF NOT EXISTS as the flag
+    `ifNotExists` of CREATE TABLE and CREATE [UNIQUE] INDEX, and the statement is otherwise as
+    without the clause."""
+    sql = ("CREATE TABLE IF NOT EXISTS t(a) WITHOUT ROWID; CREATE TABLE t(a) WITHOUT ROWID;"
+           "CREATE UNIQUE INDEX IF NOT EXISTS i ON t(a) WHERE a > 0; CREATE UNIQUE INDEX i ON t(a) WHERE a > 0;")
+    table, plain_table, index, plain_index = mapped(parse_sql, sql)
+    assert table["createTable"]["ifNotExists"] is True and plain_table["createTable"]["ifNotExists"] is False
+    assert index["createIndex"]["ifNotExists"] is True and plain_index["createIndex"]["ifNotExists"] is False
+    assert {**table["createTable"], "ifNotExists": False} == plain_table["createTable"]
+    assert {**index["createIndex"], "ifNotExists": False} == plain_index["createIndex"]
 
 
 def test_renames_keep_names_and_the_spelling_of_the_column_tokens(parse_sql: Callable[..., Translation]) -> None:
@@ -114,7 +128,10 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
 
 
 @pytest.mark.parametrize(("sql", "refused"), [
-    ("CREATE TEMP TABLE t(a);", "TEMP"), ("CREATE TABLE IF NOT EXISTS t(a);", "IF NOT EXISTS"),
+    ("CREATE TEMP TABLE t(a);", "TEMP"), ("CREATE TEMP TABLE IF NOT EXISTS t(a);", "TEMP"),
+    ("CREATE TABLE IF NOT EXISTS main.t(a);", ".t"), ("CREATE TABLE IF NOT EXISTS t AS SELECT 1;", "AS SELECT 1"),
+    ("CREATE TABLE IF NOT EXISTS t(a DEFAULT (1));", "DEFAULT (1)"),
+    ("CREATE INDEX IF NOT EXISTS main.i ON t(a);", ".i"),
     ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICTER;", "STRICTER"),
     ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"),
     ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),

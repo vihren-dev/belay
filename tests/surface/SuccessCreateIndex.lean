@@ -22,16 +22,17 @@ abbrev conditions (db : Database) : Prop :=
     [{ expression := .identifier (name! "x") .none, descending := false }] none
 
 /-- For every database and environment, the index succeeds exactly under its concrete
-schema, resolution and uniqueness conditions. Proof sketch: use the statement law. -/
+schema, resolution and uniqueness conditions. Proof sketch: use the statement law; the
+statement has no {lit}`IF NOT EXISTS`, so its no-op case is false. -/
 theorem index_conditions (db : Database) (env : Env) :
     (db.run uniqueIndex env).outputs.allOk = true ↔ conditions db :=
-  Script.createIndex_allOk_iff rfl db env
+  (Script.createIndex_allOk_iff rfl db env).trans (by simp)
 
 /-- The statement-success equivalence retains an arbitrary predicate over databases.
 Proof sketch: use the public success law with the parsed statement. -/
 theorem universal_index_conditions (predicate : Database → Prop) :
     Succeeds uniqueIndex predicate ↔ ∀ db, predicate db → conditions db :=
-  Succeeds.iff_createIndex rfl predicate
+  (Succeeds.iff_createIndex rfl predicate).trans (by simp)
 
 /-- The positive condition has explicit witnesses and a kernel-checked body. -/
 theorem distinct_conditions : conditions distinctRows := by

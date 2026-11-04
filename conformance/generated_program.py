@@ -53,7 +53,7 @@ def command(kind: str, table: str = "", *, column: str = "v", value: SqlValue = 
                 {"beginTransaction": "BEGIN;", "commit": "COMMIT;", "rollback": "ROLLBACK;"}[kind])
     if kind == "createTable":
         return ({"createTable": {"name": table, "columns": [column_syntax(column, affinity)], "constraints": [],
-                                 "options": {"withoutRowid": False}}},
+                                 "options": {"withoutRowid": False}, "ifNotExists": False}},
                 f"CREATE TABLE {table}({column} {affinity.upper()});")
     if kind == "addColumn":
         return ({"addColumn": {"table": table, "column": column_syntax(column, affinity)}},
