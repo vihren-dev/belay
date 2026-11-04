@@ -14,8 +14,11 @@ let
   parserSources = (import ./sources.nix { inherit (pkgs) lib; inherit root; }).parser;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
+    "tools/__init__.py" "tools/observability_pytest.py" "tools/observability_records.py"
+    "tools/observability_spool.py" "tools/observability_upload.py" "tools/observability_logs.py"
   ];
-  python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
+  python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout
+    (pkgs.callPackage (root + /nix/pytest-reportlog.nix) {}) ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
   # Each test has its own limit, so a hang fails with the name of the test. Nix runs suites
   # in parallel, so the suite limit only guards against a hang outside a test and must not
@@ -75,9 +78,17 @@ let
       installPhase = ''
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+        export BELAY_OBSERVABILITY_BUILD=1
+        export BELAY_OBSERVABILITY_SPOOL="$out/observability"
+        set +e
         timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds}${pkgs.lib.optionalString (builtins.elem name mutantSuites) " --exitfirst"} \
           --junitxml "$out/junit.xml" -v --durations=10
+        status=$?
+        set -e
+        # Failed outputs cannot enter the store; export stopped producers through the build log.
+        if [ "$status" -ne 0 ]; then python3 -m tools.observability_logs || true; fi
+        exit "$status"
       '';
     } // environment);
   # Locked frozen corpora (ADR 0011): each import of conformance.corpus reads the judge's claims.
@@ -221,6 +232,14 @@ let
     tools = [ native.sqlite ] ++ (if pkgs.stdenv.hostPlatform.isLinux then [ pkgs.glibc.bin pkgs.binutils ] else [ pkgs.cctools ]);
   };
 in {
+  # Owner-approved provisional deployment pin; devops#47 will supply the matching deployment revision.
+  observability = assert pkgs.clickhouse.version == "26.8.7.19-lts"; suite "observability" {
+    inputs = [ (root + /build-support/observability-schema.sql) (root + /tests/observability_support.py) ];
+    runtime = pkgs.emptyDirectory;
+    environment.BELAY_TEST_CLICKHOUSE = "${pkgs.clickhouse}/bin/clickhouse";
+    environment.BELAY_TEST_CLICKHOUSE_VERSION = pkgs.clickhouse.version;
+    timeout = 120;
+  };
   sample = suite "sample" {
     inputs = frontend ++ [
       claims
@@ -265,6 +284,7 @@ in {
       (root + /nix/flake.lock)
       (root + /nix/sqlite.nix)
       (root + /nix/dev-shell.nix)
+      (root + /nix/pytest-reportlog.nix)
       (root + /build-support/conformance-native.nix)
       (root + /tests/upstream_profile_calls.test)
       (root + /tests/upstream_helper_calls.test)

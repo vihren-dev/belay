@@ -58,11 +58,11 @@ smoke:
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A developmentTestReports --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    python3 -m tools.observability_nix --timeout {{suite_build_limit}} nix-build build-support/default.nix -A developmentTestReports --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # CI runs all full model and historical evidence checks.
 test-full: build documentation-inventory test-source
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A testReports --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    python3 -m tools.observability_nix --timeout {{suite_build_limit}} nix-build build-support/default.nix -A testReports --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Check every authored public declaration, constructor and field in the compiled import closure.
 documentation-inventory: resources
@@ -142,17 +142,17 @@ test-nix:
 # mutant suites that CI runs in their own job.
 test-scheduled:
     mkdir -p build
-    timeout --foreground {{mutant_build_limit}} nix-build build-support/default.nix -A scheduledTestReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    python3 -m tools.observability_nix --timeout {{mutant_build_limit}} nix-build build-support/default.nix -A scheduledTestReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Run the scheduled suites of the check job: all but the mutant suites (tests/nix_mutant_suites.json).
 test-scheduled-checks:
     mkdir -p build
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledCheckReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    python3 -m tools.observability_nix --timeout {{suite_build_limit}} nix-build build-support/default.nix -A scheduledCheckReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Run one mutant suite of tests/nix_mutant_suites.json, as its CI job does.
 test-mutants suite:
     mkdir -p build/nix-tests-mutants
-    timeout --foreground {{mutant_build_limit}} nix-build build-support/default.nix -A "scheduledTests.{{suite}}" --out-link "build/nix-tests-mutants/{{suite}}" --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    python3 -m tools.observability_nix --timeout {{mutant_build_limit}} nix-build build-support/default.nix -A "scheduledTests.{{suite}}" --out-link "build/nix-tests-mutants/{{suite}}" --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Refresh into build/, then review and assign a new corpus version before freezing.
 conformance-upstream: conformance-build

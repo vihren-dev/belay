@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-pytest_plugins = ["tests.runtime_fixtures"]
+pytest_plugins = ["tests.runtime_fixtures", "tools.observability_pytest"]
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

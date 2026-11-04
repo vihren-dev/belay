@@ -245,5 +245,8 @@
   ],
   "dateClockMutants": [
     "tests/conformance_date_clock_mutants_test.py"
+  ],
+  "observability": [
+    "tests/observability_clickhouse_test.py"
   ]
 }
