@@ -54,7 +54,7 @@ CI test jobs retain `belay-observability-*` artifacts for 14 days. The separate
 artifacts as data, and retries retained artifacts daily in expiry order. It never
 checks out or executes a pull request's code. Replays keep the same IDs.
 
-Devops must provision the `observability` GitHub environment, restrict deployment
+Devops must provision the `belay-observability` GitHub environment, restrict deployment
 to `main`, set variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`, and
 set secret `BELAY_CLICKHOUSE_PASSWORD`. The runner must reach the endpoint and
 trust its CA. If private networking or a private CA is required, configure that
@@ -63,9 +63,10 @@ results. The workflow becomes active after its trusted code reaches `main`.
 
 The implementation uses the ADR schema export in
 `build-support/observability-schema.sql` and ClickHouse 26.8.7.19-lts from pinned
-nixpkgs. The owner reports that ClickHouse is deployed. Connection details, server-version
-matching and live local/CI commissioning remain pending; do not treat the
-local integration check as proof that the service is operational.
+nixpkgs. Live local upload, automatic pytest delivery and replay were verified against
+ClickHouse 26.5.1.882. The cacheable integration check still uses 26.8.7.19-lts;
+matching that pin and live CI commissioning remain pending. CI upload requires
+this workflow and its uploader code on `main`.
 
 ## Queries
 

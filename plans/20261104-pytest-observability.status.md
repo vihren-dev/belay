@@ -102,3 +102,25 @@ rebased #303 branch, `experiments/observability-extraction`.
   environment configuration under the restricted GitHub identity. Requested
   the endpoint and credential reference from the owner; no live claim is made.
 - Owner review remains the review policy. No Lean or mutant tables changed.
+
+## Live local verification and CI environment
+
+- Loaded the owner-provided runtime credentials without recording their values.
+  After the CREATE DATABASE grant was applied, the uploader created both tables
+  and both views on ClickHouse 26.5.1.882. The retained execution uploaded six
+  events; replay kept unique counts at one execution and six events. A fresh
+  pytest execution uploaded automatically, with all three phase reports queryable.
+  This is deployment verification, not semantic conformance evidence. The
+  cacheable integration pin remains 26.8.7.19-lts; version matching is pending.
+- GitHub has environment `belay-observability`, restricted to branch `main`.
+  Updated the workflow, its existing configuration check and the developer
+  handoff to use that name. Targeted development check:
+  `tests/test_observability.py::test_ci_credentials_are_separate_from_test_code`.
+- CI run 41813149317 completed successfully and retained the main test and
+  mutant observation artifacts. Run 41847294761 is still in progress at inspection.
+- CI delivery cannot run yet: PR #308 remains open and the uploader workflow
+  does not exist on `main`. Environment variables/secrets cannot be inspected
+  with this VM's GitHub integration (HTTP 403). No CI delivery success is claimed.
+  The expected configuration is URL and USER as variables, PASSWORD as a secret.
+- Owner review remains required before merge. The environment restriction was
+  left intact; no unreviewed branch received database credentials.

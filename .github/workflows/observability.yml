@@ -15,7 +15,7 @@ permissions:
 jobs:
   upload:
     runs-on: ubuntu-22.04
-    environment: observability
+    environment: belay-observability
     timeout-minutes: 20
     # No test result depends on database availability. Retained artifacts retry daily.
     continue-on-error: true

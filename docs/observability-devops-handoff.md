@@ -10,7 +10,7 @@ test names, outcomes and durations. It does not run tests or collect coverage.
 
 The request is [devops issue #47](https://github.com/vihren-dev/devops/issues/47).
 The implementation's [configuration guide](test-observability.md) names the
-runtime variables and the `observability` GitHub environment. Restrict that
+runtime variables and the `belay-observability` GitHub environment. Restrict that
 environment to `main`; its credentials belong only to the trusted upload workflow.
 The provisional integration pin is ClickHouse 26.8.7.19-lts with the SQL export
 in `build-support/observability-schema.sql`. The owner authorized implementation

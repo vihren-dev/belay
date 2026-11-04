@@ -173,7 +173,7 @@ def test_ci_credentials_are_separate_from_test_code() -> None:
     assert tests.count("name: belay-observability-") == 2
     assert "types: [completed]" in uploader and "schedule:" in uploader
     assert "ref: main" in uploader and "head_sha" not in uploader
-    assert "actions: read" in uploader and "environment: observability" in uploader
+    assert "actions: read" in uploader and "environment: belay-observability" in uploader
     assert "python3 -m tools.observability_ci" in uploader
 
 
