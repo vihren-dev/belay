@@ -335,6 +335,14 @@ other term as an expression of the query's scope:
   (`Syntax.Expr.columnCollation` passes through `.positive`, `.cast` and `.collate`); the
   probes of the context are its test cases.
 
+- **A number or an alias under `COLLATE` (note, 2026-11-04).** SQLite reads a term without
+  its `COLLATE` clauses when it looks for a number (`sqlite3ExprSkipCollate`), and keeps the
+  collation: with rows `'a'`, `'A'` and `'b'` of a column `b`, `SELECT b ... GROUP BY 1 COLLATE
+  NOCASE` gives two groups, and the term is associated with result column 1 (D5). An alias
+  under `COLLATE` is the aliased expression under that collation, and is not associated with
+  the result column, because the two expressions differ in `COLLATE`. The slice 3 task found
+  this; the model resolves both forms so, and does not restrict them.
+
 The restriction `group-by-term` keeps its id for subqueries and gets the text "a subquery is
 not modeled in GROUP BY".
 

@@ -27,9 +27,10 @@ When the task is done, all of these are true:
    restrictions. An aggregate anywhere in the term is SQLite's
    `aggregate functions are not allowed in the GROUP BY clause`. A subquery in the term is the
    restriction `group-by-term`, whose text becomes "a subquery is not modeled in GROUP BY". The
-   counter functions and random values stay restricted in `GROUP BY` (ADR 0024). A number or
-   an alias under `COLLATE` (`GROUP BY 1 COLLATE NOCASE`) stays `group-by-term`: SQLite reads it
-   as the number or the alias, and the ADR does not decide the collation of such a term.
+   counter functions and random values stay restricted in `GROUP BY` (ADR 0024).
+   A number under `COLLATE` names its result column with the explicit collation, and is
+   associated with it; an alias under `COLLATE` is the aliased expression with the explicit
+   collation, and is not associated (ADR 0030, D4 note of 2026-11-04).
 5. **Collation.** The term's collation is an explicit `COLLATE`, else the column's collation
    through unary plus and `CAST`, else `BINARY`.
 6. **Grouped expressions.** `Resolved.Expr.grouped` admits a result expression that is a
@@ -51,8 +52,8 @@ When the task is done, all of these are true:
 - **Authored corpus** `expression-grouping-*`, recorded with the native oracle (version 7
   records), with the probes of "Grouping: SQLite" of the ADR: storage classes and `+0`, NULL
   keys, the collation cases, aliases and alias shadowing, the numbers `(1)`, `+1`, `-1`, `0`,
-  `1.0`, `'1'`, aggregate and window terms, a failing key with and without kept rows, rule 3 of
-  the row of a group with a single `max`, a result column written twice and grouped by
+  `1.0`, `'1'`, a number and an alias under `COLLATE`, aggregate terms, a failing key with
+  and without kept rows, rule 3 of the row of a group with a single `max`, a result column written twice and grouped by
   expression, and a `date(x, 'unixepoch')` key with an explicit clock. Every case agrees; the
   claims pull request claims the corpus with all its cases in `mustAgree`. A form that the
   model refuses (an alias inside a term, a window term, a bare column, a subquery term) cannot
