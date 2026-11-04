@@ -142,3 +142,9 @@ the workflow's overall success status alone is not evidence of delivery.
 The owner requested another check after updating configuration. The restricted
 GitHub identity cannot use the rerun API, so this status-only commit triggers
 the unchanged commissioning workflow on `ci-test`. Verification is pending.
+
+Run 41854096093 received the endpoint but failed delivery with `URLError` for
+all 39 recovered executions. This temporary branch adds a preflight that prints
+only the transport exception type, errno and certificate verification details.
+It uses the same authenticated schema request as the uploader and never prints
+credentials or response bodies. The production workflow remains unchanged.

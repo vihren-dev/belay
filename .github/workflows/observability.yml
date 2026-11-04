@@ -33,7 +33,25 @@ jobs:
           BELAY_CLICKHOUSE_URL: ${{ vars.BELAY_CLICKHOUSE_URL }}
           BELAY_CLICKHOUSE_USER: ${{ vars.BELAY_CLICKHOUSE_USER }}
           BELAY_CLICKHOUSE_PASSWORD: ${{ secrets.BELAY_CLICKHOUSE_PASSWORD }}
-        run: python3 -m tools.observability_ci
+        run: |
+          python3 - <<'PYCODE'
+          import ssl
+          from time import monotonic
+          import urllib.error
+          from tools.observability_upload import create_schema
+          try:
+              create_schema(monotonic() + 12)
+          except urllib.error.HTTPError as error:
+              raise SystemExit(f"ClickHouse HTTP status: {error.code}") from None
+          except urllib.error.URLError as error:
+              reason = error.reason
+              print(f"ClickHouse transport: {type(reason).__name__}; errno={getattr(reason, 'errno', None)}", flush=True)
+              if isinstance(reason, ssl.SSLCertVerificationError):
+                  print(f"TLS verification code: {reason.verify_code}; {reason.verify_message}", flush=True)
+              raise SystemExit(1) from None
+          print("ClickHouse schema preflight passed", flush=True)
+          PYCODE
+          python3 -m tools.observability_ci
       - name: Verify retained artifacts were delivered
         run: |
           python3 - <<'PYCODE'
