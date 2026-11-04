@@ -468,6 +468,9 @@ Evidence, reused before new cases:
 - **Promotions.** Slice 1 adds to `mustAgree`: v4 and v5 `index-if-not-exists`,
   `index:index-6.1c:32`, v5 `index6:index6-14.1:57` and `fkey5:fkey5-10.1:51`. Slice 3 adds v5
   `select5:select5-5.11:21`. The verdict of each other case of every claimed corpus stays.
+  Addition (2026-11-04): v3 `index-if-not-exists` (slice 1) and v5
+  `indexexpr2:indexexpr2-10.1:124` (slice 3, a grouping term that is an expression) agree as
+  well and go into `mustAgree`.
 - **Retained.** v5 `select8:select8-1.*` (`bare-column`), an alias inside a grouping term
   (`alias-in-expression`), v55 `insert-query-group-by` (order of
   an INSERT source), the authored aggregate-in-`GROUP BY` and out-of-range cases of
@@ -492,6 +495,9 @@ Evidence, reused before new cases:
     `'1'`), aggregate and window terms, a failing key with and without kept rows, rule 3 with
     a single `max`, a result column written twice and grouped by expression, and a
     `date(x, 'unixepoch')` key with an explicit clock.
+    Correction (2026-11-04, slice 3 task): a failing key with kept rows and a window term
+    are not corpus cases. The model says only that such a key may fail, and it refuses a
+    window term, so neither can agree.
 - **Kernel-checked examples** in `tests/surface`: the no-op keeps the database and the
   counters (as `ClaimsViewCreate.lean` does for views), creation with the clause equals
   creation without it when the name is free, and a grouped expression's result on a small

@@ -60,7 +60,9 @@ When the task is done, all of these are true:
   `mustAgree`.
 - **Promotions**: v4 and v5 `index-if-not-exists`, v4 and v5 `index:index-6.1c:32`, v5
   `index6:index6-14.1:57` and `fkey5:fkey5-10.1:51` agree and go into `mustAgree`. The verdict
-  of every other case of every claimed corpus stays.
+  of every other case of every claimed corpus stays. Addition (2026-11-04, claims pull
+  request): v3 `index-if-not-exists` is the same case and agrees too, so it also goes into
+  `mustAgree`.
 - **Kernel-checked surface examples** in `tests/surface`: the no-op keeps the database and the
   counters (as `ClaimsViewCreate.lean` does for views), and creation with the clause equals
   creation without it when the name is free.

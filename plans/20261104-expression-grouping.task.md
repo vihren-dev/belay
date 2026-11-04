@@ -62,7 +62,9 @@ When the task is done, all of these are true:
   translation refusal. Correction (2026-11-04): the list named a failing key with kept rows too.
   The model says only that such a key may fail (ADR 0030, D4), so its outcome is
   `MODEL_UNSUPPORTED` and cannot agree; the corpus has the failing key without kept rows only.
-- **Promotion.** v5 `select5:select5-5.11:21` agrees and goes into `mustAgree`.
+- **Promotion.** v5 `select5:select5-5.11:21` agrees and goes into `mustAgree`. Addition
+  (2026-11-04): v5 `indexexpr2:indexexpr2-10.1:124` groups by an expression too, agrees, and
+  also goes into `mustAgree`.
 - **Retained.** v5 `select8:select8-1.*` (`bare-column`), an alias inside a grouping term, v55
   `insert-query-group-by`, and the authored aggregate-in-`GROUP BY` and out-of-range cases of
   `conformance/authored_queries.py` keep their verdicts. No other claimed verdict changes.
