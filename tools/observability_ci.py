@@ -12,12 +12,17 @@ from uuid import UUID
 import zipfile
 
 from tools.observability_records import diagnostic
+from tools.observability_logs import FILES
 from tools.observability_spool import attempt_upload, import_execution, spool
 
 ARTIFACT_PREFIX = "belay-observability-"
 """Only artifacts explicitly published for telemetry are read by the trusted upload job."""
 MAX_BYTES = 256 * 1024 * 1024
 """Bound both archive and expanded data from untrusted test jobs."""
+RECOVERY_SECONDS = 18 * 60
+"""Leave two minutes for listing and shutdown inside the 20-minute CI job."""
+API_SECONDS = 60
+"""Bound each GitHub listing or download command independently."""
 
 
 def import_archive(archive: Path, destination: Path) -> None:
@@ -29,7 +34,7 @@ def import_archive(archive: Path, destination: Path) -> None:
         total = 0
         for member in zipped.infolist():
             path = PurePosixPath(member.filename)
-            if path.name not in {"execution.json", "report.jsonl"}:
+            if path.name not in FILES:
                 continue
             if path.is_absolute() or ".." in path.parts or len(path.parts) < 2:
                 raise ValueError("invalid artifact path")
@@ -60,9 +65,9 @@ def main() -> None:
     suffix = f"runs/{run_id}/artifacts" if run_id else "artifacts"
     result = subprocess.run(["gh", "api", "--paginate", f"repos/{repository}/actions/{suffix}?per_page=100",
                              "--jq", '.artifacts[] | {id,name,expired,created_at,size_in_bytes}'],
-                            capture_output=True, text=True, check=True, timeout=60)
+                            capture_output=True, text=True, check=True, timeout=API_SECONDS)
     artifacts = [json.loads(line) for line in result.stdout.splitlines()]
-    deadline = monotonic() + 18 * 60
+    deadline = monotonic() + RECOVERY_SECONDS
     for artifact in sorted(artifacts, key=lambda item: item["created_at"]):
         if monotonic() >= deadline:
             diagnostic("CI replay deadline reached; remaining artifacts await the next scheduled run")
@@ -78,7 +83,7 @@ def main() -> None:
                 archive = Path(temporary) / "reports.zip"
                 with archive.open("wb") as output:
                     subprocess.run(["gh", "api", f"repos/{repository}/actions/artifacts/{identity}/zip"],
-                                   stdout=output, check=True, timeout=60)
+                                   stdout=output, check=True, timeout=API_SECONDS)
                 import_archive(archive, spool())
                 attempt_upload()
         except (OSError, ValueError, subprocess.SubprocessError, zipfile.BadZipFile) as error:

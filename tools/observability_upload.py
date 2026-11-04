@@ -15,6 +15,12 @@ from tools.observability_spool import attempt_upload, lock, spool
 
 BATCH_BYTES = 1024 * 1024
 """A conservative request size; oversized single records remain available for diagnosis."""
+REQUEST_SECONDS = 3.0
+"""Per-request socket timeout, inside the hard parent-process deadline."""
+WORKER_SECONDS = 12
+"""Leave three seconds of the parent budget for worker startup and shutdown."""
+LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
+"""Only disposable loopback endpoints may use unencrypted HTTP."""
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -33,7 +39,7 @@ def insert(table: str, rows: Iterable[dict[str, object]], deadline: float) -> No
     if (parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username
             or parsed.password or parsed.query or parsed.fragment):
         raise ValueError("BELAY_CLICKHOUSE_URL must be an HTTP(S) endpoint without credentials or query")
-    if parsed.scheme != "https" and parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+    if parsed.scheme != "https" and parsed.hostname not in LOOPBACK_HOSTS:
         raise ValueError("non-loopback ClickHouse endpoints require HTTPS")
     query = urllib.parse.urlencode({"query": f"INSERT INTO belay_observability.{table} FORMAT JSONEachRow",
                                   "wait_end_of_query": "1", "async_insert": "0"})
@@ -50,7 +56,7 @@ def insert(table: str, rows: Iterable[dict[str, object]], deadline: float) -> No
             "X-ClickHouse-User": os.environ.get("BELAY_CLICKHOUSE_USER", "default"),
             "X-ClickHouse-Key": os.environ.get("BELAY_CLICKHOUSE_PASSWORD", ""),
         })
-        with opener.open(request, timeout=min(3.0, remaining)) as response:
+        with opener.open(request, timeout=min(REQUEST_SECONDS, remaining)) as response:
             if response.status != 200 or response.read(65536).strip():
                 raise ValueError("ClickHouse did not confirm an empty successful insert response")
 
@@ -72,7 +78,7 @@ def upload_pending(directory: Path) -> bool:
     if not os.environ.get("BELAY_CLICKHOUSE_URL"):
         diagnostic(f"BELAY_CLICKHOUSE_URL is unset; reports retained in {directory}")
         return False
-    deadline = monotonic() + 12
+    deadline = monotonic() + WORKER_SECONDS
     succeeded = True
     for manifest in sorted(directory.glob("*/execution.json")):
         if manifest.parent.name.startswith("."):
@@ -91,7 +97,9 @@ def upload_pending(directory: Path) -> bool:
                 (manifest.parent / ".uploaded").touch()
         except (OSError, ValueError, KeyError, urllib.error.URLError) as error:
             # Do not echo a server response or URL: it can contain credentials or captured test data.
-            diagnostic(f"{manifest.parent}: delivery failed ({type(error).__name__}); retained for retry")
+            reason = f"HTTP {error.code}" if isinstance(error, urllib.error.HTTPError) else type(error).__name__
+            diagnostic(f"{manifest.parent}: delivery failed ({reason}); inspect the reports and endpoint "
+                       "settings; files retained for retry")
             succeeded = False
         if monotonic() >= deadline:
             return False

@@ -60,6 +60,10 @@ the Nix build infrastructure. `just verdict` grades the development claims as th
 verdict job does. Commands run under explicit timeouts and are also the entry points
 for CI.
 
+Pytest also records test names, outcomes and durations automatically. See
+[test observations](docs/test-observability.md) for local upload configuration,
+retained reports and CI setup.
+
 ## License
 
 Project code is MIT licensed. SQLite is upstream public-domain software. Lean

@@ -8,6 +8,14 @@ pytest execution history. Belay will write JSONL reports locally and in CI, then
 upload batches over HTTP outside Nix build sandboxes. The service records ongoing
 test names, outcomes and durations. It does not run tests or collect coverage.
 
+The request is [devops issue #47](https://github.com/vihren-dev/devops/issues/47).
+The implementation's [configuration guide](test-observability.md) names the
+runtime variables and the `observability` GitHub environment. Restrict that
+environment to `main`; its credentials belong only to the trusted upload workflow.
+The provisional integration pin is ClickHouse 26.8.7.19-lts with the SQL export
+in `build-support/observability-schema.sql`. The owner authorized implementation
+before deployment; confirm or update this combination during the handoff.
+
 ## Service and schema
 
 - Manage the instance configuration, pinned stable version and schema deployment

@@ -1,7 +1,11 @@
 # ADR 0028: Pytest observability with ClickHouse
 
-Date: 2026-11-02. Revised: 2026-11-04. Status: PROPOSED.
-Audience: designers and reviewers. Implementation has not started.
+Date: 2026-11-02. Revised: 2026-11-04. Status: IMPLEMENTED; deployment commissioning pending.
+Audience: designers and reviewers. See the [implementation status](../plans/20261104-pytest-observability.status.md).
+
+On 2026-11-04 the owner authorized implementation against this schema and a
+pinned local ClickHouse version before the devops handoff. Matching the deployed
+schema/version and live local/CI commissioning remain deferred, not satisfied.
 
 ## Problem and scope
 

@@ -1,0 +1,47 @@
+{
+  "fresh": {
+    "exit_code": 0,
+    "execution_id": "ad7556f1-2179-47a1-8658-6e21144b97d1",
+    "events": 10,
+    "call_reports": 2,
+    "session_finished": true,
+    "output": "/nix/store/klw6mlx1nfpyaww6iriwin5pym6il9zb-sqlite-verifier-test-observabilityCommissioning-1",
+    "derivation": "/nix/store/08l3kzc5mf7b8zskfzk77yflca2rqxn6-sqlite-verifier-test-observabilityCommissioning-1.drv"
+  },
+  "cached": {
+    "exit_code": 0,
+    "execution_id": "ad7556f1-2179-47a1-8658-6e21144b97d1",
+    "events": 10,
+    "call_reports": 2,
+    "session_finished": true,
+    "output": "/nix/store/klw6mlx1nfpyaww6iriwin5pym6il9zb-sqlite-verifier-test-observabilityCommissioning-1"
+  },
+  "changed": {
+    "exit_code": 0,
+    "execution_id": "ecc1e0f4-2deb-452e-95c4-dc7bbdfef02f",
+    "events": 10,
+    "call_reports": 2,
+    "session_finished": true,
+    "output": "/nix/store/1fc9ahsphb91d73j58fkm0p5bzv9gxym-sqlite-verifier-test-observabilityCommissioning-1",
+    "derivation": "/nix/store/dga9kq8i29qb31mw30h20sy0vb2rywqm-sqlite-verifier-test-observabilityCommissioning-1.drv"
+  },
+  "failed": {
+    "exit_code": 1,
+    "execution_id": "bda18851-44fa-4074-a365-7ebbd6032183",
+    "events": 10,
+    "call_reports": 2,
+    "session_finished": true,
+    "output": null,
+    "derivation": "/nix/store/m89704yjf8lqkhyhdn15jab2n6622yad-sqlite-verifier-test-observabilityCommissioning-1.drv"
+  },
+  "abrupt": {
+    "exit_code": 1,
+    "execution_id": "9b620e18-59f9-4ff8-a4a7-5bee5ca3c17d",
+    "events": 7,
+    "call_reports": 1,
+    "session_finished": false,
+    "output": null,
+    "derivation": "/nix/store/m1z3dxn59idylnrpxvqliq8b8blyai4n-sqlite-verifier-test-observabilityCommissioning-1.drv"
+  },
+  "scope": "Local sandboxed Nix commissioning. Live production connectivity and trusted CI upload remain deferred by the owner."
+}

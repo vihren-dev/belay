@@ -14,6 +14,10 @@ PREFIX = "BELAY_REPORT "
 """Each frame carries its identity and byte offset so interleaved builder logs remain distinct."""
 FILES = {"execution.json", "report.jsonl"}
 """Only these two data files can cross the build-log boundary."""
+FRAME_BYTES = 24 * 1024
+"""Small frames survive interleaving and ordinary Nix build-log transport."""
+MAX_EXPORT_BYTES = 256 * 1024 * 1024
+"""Bound the amount of data that one build log can reconstruct on the host."""
 
 
 def export_reports(directory: Path) -> None:
@@ -26,7 +30,7 @@ def export_reports(directory: Path) -> None:
                 continue
             with path.open("rb") as stream:
                 offset = 0
-                while chunk := stream.read(24576):
+                while chunk := stream.read(FRAME_BYTES):
                     print(PREFIX + encode({"id": identity, "file": name, "offset": offset,
                                            "data": base64.b64encode(chunk).decode()}), flush=True)
                     offset += len(chunk)
@@ -49,7 +53,7 @@ def recover(lines: Iterable[str], destination: Path) -> None:
                     raise ValueError("invalid file or offset")
                 data = base64.b64decode(str(frame["data"]), validate=True)
                 total += len(data)
-                if len(data) > 24576 or total > 256 * 1024 * 1024:
+                if len(data) > FRAME_BYTES or total > MAX_EXPORT_BYTES:
                     raise ValueError("build log export exceeds size limit")
                 folder = root / identity
                 folder.mkdir(exist_ok=True)
@@ -66,7 +70,7 @@ def recover(lines: Iterable[str], destination: Path) -> None:
                 with path.open("ab") as stream:
                     stream.write(data)
             except (ValueError, KeyError, TypeError, OSError) as error:
-                diagnostic(f"cannot recover build-log frame ({type(error).__name__})")
+                diagnostic(f"cannot recover build-log frame ({type(error).__name__}); inspect the Nix log")
                 return
         for folder in root.iterdir():
             try:

@@ -59,3 +59,7 @@ remain with devops and are explicitly deferred.
 - Pytest now exports the chosen spool to child processes. Copied temporary
   harnesses retain their undelivered reports in the caller's persistent spool;
   a nested real-pytest regression protects this route.
+- Checklist self-review named the delivery and recovery limits (R1), kept HTTP
+  status diagnostics actionable without exposing response bodies (R10), and
+  checked that the guide describes the implemented paths (R13/R19). No Lean
+  propositions or proofs changed, so R3 has no applicable changes.
