@@ -34,7 +34,9 @@ the row with the minimum or maximum of the last `min()` or `max()` call of the q
 from the first row that it reads when the query has no such call, in an order that its query plan chooses. Where the
 rows of a group compare as equal but differ, for example `'a'` and `'A'` under `NOCASE`, or
 `1` and `1.0`, the model and SQLite give different rows today. Grouping by expressions makes
-such groups more frequent, so this ADR decides the rule for both (D5, owner decision 2).
+such groups more frequent, so this ADR decides the rule for both (D5). Where SQLite's result
+depends on the query plan, the model gives one result that SQLite can give; issue #309 is the
+general design for such results.
 
 ## Context
 
@@ -343,20 +345,26 @@ is not required by this ADR.
 ### D5. The values of a group
 
 The value that a group gives for a non-aggregate expression follows SQLite's three rules
-(Context, "The row of a group"), and the model does not decide the plan-dependent choice:
+(Context, "The row of a group"). Where the rules leave a choice to the query plan, the model
+gives one result that SQLite can give: the result of a plan that reads the source rows in
+their order (rowid order for a table), as a full scan does. The general treatment of results
+that depend on the plan, and how they compose, is issue #309; until it is decided, one result
+that SQLite can give is sufficient (owner, 2026-11-04).
 
 - **Deciding call.** The deciding call is the last distinct `min` or `max` aggregate of the
   query in the order result columns, `ORDER BY`, `HAVING`, where a call that is written again
   counts at its first place. A query without such a call has no deciding call.
-- **Representative rows.** For each group, the candidate first rows are all rows of the group.
-  With a deciding call, the candidate rows for column references are the rows whose value of
-  that call's operand gives the result (the ties of the minimum or maximum). When a `min` or
-  `max` call of the query has `FILTER`, every row of the group is a candidate: the probes show
-  that SQLite then loads the columns on rows that the simple rule does not give
-  (`SELECT c, max(n), min(n) FILTER (WHERE n > 9)` gives `'a'`, not the maximum's `'A'`), and
-  this ADR does not describe that rule more exactly.
-- **Evaluation.** A result column, a `HAVING` condition and an `ORDER BY` expression read their
-  column references from one chosen candidate row, the same row for the whole group.
+- **The row of a group.** Without a deciding call, it is the first row of the group in the
+  order of the source. With a deciding call, it is the first row in that order that gives the
+  call's result. A result column, a `HAVING` condition and an `ORDER BY` expression read their
+  column references from that row.
+- **`FILTER` on `min` or `max`.** The probes show that SQLite does not follow the rule of the
+  item before when a `min` or `max` call has `FILTER`
+  (`SELECT c, max(n), min(n) FILTER (WHERE n > 9)` gives `'a'`, not the maximum's `'A'`). A
+  grouped query with such a call that reads a column outside an aggregate is refused with the
+  new restriction `group-filter-row` and the text "a column next to min() or max() with FILTER
+  is not modeled". The task file of slice 2 lists the corpus cases that it refuses; a case of
+  a claim needs an owner decision.
 - **Association.** The resolver records, for each grouping term, at most one associated result
   column, as SQLite's `resolve.c` does:
   - A number names its result column: `SELECT a+0, a+0, max(n) ... GROUP BY 1` gives `1.0`
@@ -369,37 +377,23 @@ The value that a group gives for a non-aggregate expression follows SQLite's thr
     reference resolved to its source column, function and collation names compared without
     case, the type names of `CAST` compared with case, and the same `COLLATE` clauses at the
     same places: `SELECT CAST(c AS TEXT), max(n) ... GROUP BY CAST(c AS text)` gives the
-    maximum's `'A'`, and `GROUP BY CAST(c AS TEXT)` gives the first row's `'a'`. Unary plus and `CAST`
-    count as nodes: `SELECT +c, max(n) ... GROUP BY c` gives the maximum's `'A'`, and
-    `SELECT +c, max(n) ... GROUP BY +c` gives the first row's `'a'`. The resolver compares
+    maximum's `'A'`, and `GROUP BY CAST(c AS TEXT)` gives the first row's `'a'`. Unary plus
+    and `CAST` count as nodes: `SELECT +c, max(n) ... GROUP BY c` gives the maximum's `'A'`,
+    and `SELECT +c, max(n) ... GROUP BY +c` gives the first row's `'a'`. The resolver compares
     the written expressions, because the resolved form does not keep `COLLATE`
     (`resolveOperandTraced` gives the operand's resolved form).
 
   The associated result column, when its written form is not a column under at most `COLLATE`,
-  reads the term's value on one chosen candidate first row. Every other result column reads
-  its column references as the item before says, also when it is equal to a term.
-- **Possible results.** `possibleResults` gives the results for every choice, as it gives the
-  results for every order today (ADR 0018, D6). `Query.results`, which proofs use, keeps one
-  choice: the first row in the order of the source, and for a deciding call the first row
-  that gives the result.
-- **Consumers of one result.** A subquery, a derived table and a compound term read one result
-  (`Query.subqueryRun`), not the possible results. A new `Query.groupsCertain` is true when,
-  for each group, every choice gives the same values. `Query.run` does not read it, because
-  `Query.described` makes a statement whose run has the fault `may` unmodeled, and the
-  top-level query keeps its possible results. `Query.subqueryRun` gives the fault `may` and
-  the ending `may` when it is false, as it does today for a run whose fault is `may`, for
-  example an uncertain `SELECT DISTINCT` (`Query.distinctCertain`). Then a scalar subquery
-  and `IN` give a value with the fault `may`, a derived table gives no rows to its query
-  (`QuerySource.join` gives none), and a compound term ends with `may`. The index-dependent
-  query of the context as a scalar subquery is then not a certain `'A'`.
+  reads the term's value on the first row of the group. Every other result column reads its
+  column references from the row of the group, also when it is equal to a term.
+- **One result everywhere.** `Query.results`, `possibleResults` (which still varies the order
+  of rows only), subqueries, derived tables, compound terms and `INSERT ... SELECT` all read
+  this one result. The model does not mark it as uncertain.
 
-This decision changes the meaning of grouped columns, also without D4. It is owner decision 2.
-
-The number of results grows with the product of the choices of the groups. Most groups have
-one distinct choice: their candidate rows give the same values. The implementation removes
-equal choices per group before it forms products, and gives `unmodeled` with the reason "the
-values of the groups depend on rows that SQLite chooses" above a limit that the task file
-names. A limit that refuses a case of a claim is a capability loss and needs an owner decision.
+This decision changes the meaning of grouped columns, also without D4. It agrees with SQLite
+for every row of "What the model gives today" except the index-dependent query, where SQLite's
+plan reads another row first. Such a case gives a disagreement in the verdict: the task file of
+slice 2 records it as a known case of issue #309 and keeps it out of `mustAgree`.
 
 ### D6. Grouped expressions and bare columns
 
@@ -425,7 +419,7 @@ bare columns; that restriction stays.
   expression is its resolved operand. The duplicate-key laws then hold for expression keys with
   `key.Calm`; a `date` key is not calm (it can read the clock), so these laws do not cover the
   consumer's queries, and no new law is required for them. The laws that read the values of a
-  group (`Query.results`) keep their statements, with D5's choice in `Query.results`. The
+  group (`Query.results`) keep their statements, with D5's row of the group in `Query.results`. The
   resolution arms (`resolveGroupTerm_*`, `resolveQueryBody_arm`) follow the new case split.
 - **Flexibility.** The resolved grouping term stays an arbitrary `Resolved.Expr` with its
   collation, so a user's proof states facts about any grouping, not only about the consumer's
@@ -457,12 +451,11 @@ Evidence, reused before new cases:
     duplicates, existing and free; the counters after a no-op; a no-op in a transaction that
     rolls back; ASCII case folding of names.
   - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
-    across the result, `ORDER BY` and `HAVING`, a repeated call, `FILTER` on the deciding call,
+    across the result, `ORDER BY` and `HAVING`, a repeated call, the `group-filter-row` refusal,
     a tie of the maximum whose rows differ, a result column written twice and grouped by
     number, by alias and by expression, `COLLATE` and unary plus on one side only, `CAST`
     type names that differ in case, and the
-    index-dependent query as a scalar subquery, as a derived table and as a term
-    of a compound.
+    index-dependent query, recorded as a known disagreement of issue #309.
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the
     collation cases, aliases and alias shadowing, numbers (`(1)`, `+1`, `-1`, `0`, `1.0`,
     `'1'`), aggregate and window terms, a failing key with and without kept rows, rule 3 with
@@ -487,9 +480,11 @@ commit that changes the behavior.
   date of a column does.
 - A statement with `IF NOT EXISTS` and a body that the translation refuses stays refused,
   although SQLite runs it as a no-op when the object exists (D2).
-- Queries whose groups hold rows that compare as equal but differ get the set of results that
-  SQLite may give, instead of one result that SQLite does not always give. Predictions of such
-  queries can become `oneOf` lists, and in rare cases `unmodeled` (D5).
+- Queries whose groups hold rows that compare as equal but differ give SQLite's value where
+  SQLite's rules decide it, and one value that SQLite can give where its plan decides it (D5).
+  A case whose native plan reads another row first disagrees, until issue #309 is decided.
+- A grouped query that reads a column next to `min` or `max` with `FILTER` is refused
+  (`group-filter-row`).
 - The CREATE theorems get a second case or a premise. Proofs that use them for creation keep
   their statements with `ifNotExists = false`.
 
@@ -501,11 +496,16 @@ a no-op into `table t already exists`, and it reads a body that SQLite does not 
 **Decide the no-op in the translation.** Rejected: the translation does not know the catalog;
 the resolver does, and views and triggers already decide there.
 
-**Keep the first row in rowid order (no D5).** Rejected as the recommendation, but it is option
-(b) of owner decision 2: it is less work, and it keeps the disagreements of "What the model
-gives today", which expression keys such as `a+0` and `lower(c)` make more frequent.
+**Keep the first row in rowid order (no D5).** Rejected: it keeps four disagreements of "What
+the model gives today" where SQLite's rules decide the row, and expression keys such as `a+0`
+and `lower(c)` make them more frequent.
 
-**Refuse a group whose candidate rows give different values.** Rejected: the `mustAgree` case
+**Give every result that SQLite can give.** Deferred to issue #309 (owner, 2026-11-04). The
+results are a product of the choices of the groups and grow too large for an explicit list,
+and a subquery, a derived table, a compound term and `INSERT ... SELECT` read one result. The
+design of such results is a question for every feature, not only for grouping.
+
+**Refuse a group whose rows give different values.** Rejected: the `mustAgree` case
 `collate-group-by-value` has such a group, so the refusal is a capability loss; D5 describes
 it instead.
 
@@ -529,11 +529,5 @@ it instead.
    Recommendation: (a). (b) needs a new form of statement for a body that the model does not
    describe, and no case or consumer statement needs it: the consumer's CREATE statements with
    the clause have bodies that the model translates.
-2. **The values of a group (D5).** OPEN. Options: (a) D5 as written, in slice 2; (b) keep the
-   first row in rowid order and record the disagreements as a known defect with its own issue;
-   (c) D5 without the plan-dependent choice: the min/max rule only, and the first row in rowid
-   order otherwise. Recommendation: (a). It is the only option that agrees with SQLite for
-   every row of "What the model gives today". (c) fixes four of the five disagreements and
-   keeps one result, but it keeps a rule that SQLite does not promise.
-3. **The limit of D5.** OPEN. The task file of slice 2 proposes the limit from the corpora's
-   largest number of choices; the owner accepts it with the task file.
+2. **The values of a group (D5).** DECIDED (owner, 2026-11-04): one result that SQLite can
+   give is sufficient; the general design is issue #309.
