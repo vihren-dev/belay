@@ -12,7 +12,7 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lea
 `docs/semantic-subset.md`; new: `GroupRow.lean`, `Resolution/GroupAssociation.lean`,
 `conformance/authored_group_values.py`, `tests/surface/ClaimsGroupValues.lean`.
 
-Tests of the slice: `tests/conformance_group_values_test.py` (all 39 cases agree),
+Tests of the slice: `tests/conformance_group_values_test.py` (all 41 cases agree),
 `tests/surface_group_values_test.py`, `tests/lean_packages_test.py`.
 
 ## Progress
@@ -34,3 +34,6 @@ Tests of the slice: `tests/conformance_group_values_test.py` (all 39 cases agree
 - 2026-11-04: review fix (`refactor:`): small integer literals compare by value in
   `Syntax.Expr.sameIn` (`smallIntegerLiteral`), as SQLite's parser stores them, with the corpus
   cases `group-values-repeated-integer-spelling` and `group-values-repeated-real-spelling`.
+- 2026-11-04: review fix (`refactor:`): `smallIntegerLiteral` takes only values from 0, so a
+  hexadecimal literal that wraps to a negative integer compares as written; corpus cases
+  `group-values-repeated-hexadecimal` and `group-values-repeated-large-hexadecimal`.

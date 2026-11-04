@@ -65,6 +65,10 @@ def definitions() -> list[QueryCase]:
              "repeated"),
         case("repeated-real-spelling", "SELECT c, max(n+1.0), min(n), max(n+1.00) AS again FROM t GROUP BY c ORDER BY 3;",
              "repeated"),
+        case("repeated-hexadecimal", "SELECT c, max(n+0x7fffffff), min(n), max(n+0x7FFFFFFF) AS again FROM t GROUP BY c "
+             "ORDER BY 3;", "repeated"),
+        case("repeated-large-hexadecimal", "SELECT c, max(n+0xffffffffffffffff), min(n), max(n+0xFFFFFFFFFFFFFFFF) AS again "
+             "FROM t GROUP BY c ORDER BY 3;", "repeated"),
         case("repeated-in-having", "SELECT c, min(n), max(n) FROM t GROUP BY c HAVING min(n) > 0 ORDER BY 3;",
              "repeated", "having"),
         case("other-aggregates", "SELECT c, count(*), sum(n), max(n) FROM t GROUP BY c ORDER BY 4;", "max"),

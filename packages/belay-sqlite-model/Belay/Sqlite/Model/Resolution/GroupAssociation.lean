@@ -33,10 +33,10 @@ def Syntax.Expr.columnReadsIn (scope : Scope) : Syntax.Expr → Option (List Nat
 
 /-- The value of a numeric literal that SQLite's parser stores as a number
 ({lit}`EP_IntValue`): an integer literal, decimal or hexadecimal, from {lean}`0` to
-{lean}`2147483647`. For example {lit}`01` and {lit}`0x1` give {lean}`1`; {lit}`1.0` and
-{lit}`3000000000` give {lean}`(none : Option Int)`, so SQLite compares them as written. -/
+{lean}`2147483647`. For example {lit}`01` and {lit}`0x1` give {lean}`1`; {lit}`1.0`,
+{lit}`3000000000` and {lit}`0xffffffffffffffff` (the integer {lean}`-1`) give {lean}`(none : Option Int)`, so SQLite compares them as written. -/
 def smallIntegerLiteral (text : String) : Option Int :=
-  (integerLiteral (.numeric text)).filter (· ≤ 2147483647)
+  (integerLiteral (.numeric text)).filter fun value => 0 ≤ value ∧ value ≤ 2147483647
 
 mutual
 /-- Whether two written expressions are the same for the association of a grouping term
