@@ -356,7 +356,10 @@ that SQLite can give is sufficient (owner, 2026-11-04).
   counts at its first place. A query without such a call has no deciding call.
 - **The row of a group.** Without a deciding call, it is the first row of the group in the
   order of the source. With a deciding call, it is the first row in that order that gives the
-  call's result. A result column, a `HAVING` condition and an `ORDER BY` expression read their
+  call's result; when the call's operand is NULL on every row of the group, it is the last row
+  of the group, because SQLite's `min` and `max` load the columns on every NULL row until they
+  have a value (rows `(1.0,'a',NULL), (1,'A',NULL)`: `SELECT a+0, c, max(n) ... GROUP BY 1, c`
+  gives `1.0`, `'A'` and NULL). A result column, a `HAVING` condition and an `ORDER BY` expression read their
   column references from that row.
 - **`FILTER` on `min` or `max`.** The probes show that SQLite does not follow the rule of the
   item before when a `min` or `max` call has `FILTER`
@@ -392,8 +395,10 @@ that SQLite can give is sufficient (owner, 2026-11-04).
 
 This decision changes the meaning of grouped columns, also without D4. It agrees with SQLite
 for every row of "What the model gives today" except the index-dependent query, where SQLite's
-plan reads another row first. Such a case gives a disagreement in the verdict: the task file of
-slice 2 records it as a known case of issue #309 and keeps it out of `mustAgree`.
+plan reads another row first. Every claim forbids `DISAGREE` in its corpus (`judge/claims.py`),
+so such a case is not put into a claimed corpus: issue #309 records the index-dependent query
+as its example. If a case of a claimed corpus disagrees for this reason at the end of a slice,
+that is an owner decision before the slice's pull request.
 
 ### D6. Grouped expressions and bare columns
 
@@ -454,8 +459,9 @@ Evidence, reused before new cases:
     across the result, `ORDER BY` and `HAVING`, a repeated call, the `group-filter-row` refusal,
     a tie of the maximum whose rows differ, a result column written twice and grouped by
     number, by alias and by expression, `COLLATE` and unary plus on one side only, `CAST`
-    type names that differ in case, and the
-    index-dependent query, recorded as a known disagreement of issue #309.
+    type names that differ in case, and a deciding
+    call whose operand is NULL on every row of a group. The index-dependent query is not one
+    of these cases (D5).
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the
     collation cases, aliases and alias shadowing, numbers (`(1)`, `+1`, `-1`, `0`, `1.0`,
     `'1'`), aggregate and window terms, a failing key with and without kept rows, rule 3 with
@@ -482,7 +488,8 @@ commit that changes the behavior.
   although SQLite runs it as a no-op when the object exists (D2).
 - Queries whose groups hold rows that compare as equal but differ give SQLite's value where
   SQLite's rules decide it, and one value that SQLite can give where its plan decides it (D5).
-  A case whose native plan reads another row first disagrees, until issue #309 is decided.
+  A query whose native plan reads another row first disagrees, so the corpora do not contain
+  one until issue #309 is decided.
 - A grouped query that reads a column next to `min` or `max` with `FILTER` is refused
   (`group-filter-row`).
 - The CREATE theorems get a second case or a premise. Proofs that use them for creation keep
