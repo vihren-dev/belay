@@ -37,3 +37,7 @@ the theorems that the ADR's context lists, `tests/syntax_mapping_test.py`,
   `Database.drop_nil`, and `runScriptStep_createTable_noOp` and `runScriptStep_createIndex_noOp`;
   `tests/surface/ClaimsConditionalCreation.lean` uses them. Tests:
   `tests/surface_conditional_creation_test.py`.
+- 2026-11-04: slice-end checks on `ttloulqv` (the authored corpus count fix): `just test-full`
+  passed, and `just verdict` passed with no `DISAGREE` in any claimed corpus. Slice 1 is code
+  complete; its corpus freeze and the `mustAgree` promotions go into the claims pull request at
+  the end of the ADR.
