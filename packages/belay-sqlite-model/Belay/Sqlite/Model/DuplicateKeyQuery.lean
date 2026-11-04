@@ -93,11 +93,12 @@ theorem Query.duplicateKeys_uniqueRecords (context : EvalContext) (rows : List (
         fun group => ([column.eval { context with aggregates := [.integer group.length] } (group.headD [])], []) := by
   unfold Query.uniqueRecords records
   simp only [Query.duplicateKeys, queryGroups, filtered, keptRows, List.isEmpty_cons, Bool.false_eq_true, ite_true,
-    ite_false, Query.groupContext]
+    ite_false, Query.groupContext, Query.groupRow, List.zipIdx_cons, List.zipIdx_nil, List.map_cons, List.map_nil,
+    List.contains_nil, Bool.false_eq_true, ite_false, Nat.zero_add]
   refine filterMap_eq_map_filter_of (fun (group : List (List Value)) => decide (1 < group.length))
     (fun group => ([column.eval { context with aggregates := [.integer group.length] } (group.headD [])], [])) _
     (fun group => ?_) _
-  have counted : List.map (fun x => Aggregate.eval context group x) [Aggregate.countRows] = [.integer group.length] := rfl
+  have counted : Aggregate.eval context group .countRows = .integer group.length := rfl
   simp only [counted]
   have condition : Option.all (fun condition => truthy (Expr.eval { context with aggregates := [.integer group.length] }
       (group.headD []) condition)) (some (Expr.compare .gt none (.aggregateValue 0) (.literal (.integer 1)) .binary)) =
@@ -105,9 +106,6 @@ theorem Query.duplicateKeys_uniqueRecords (context : EvalContext) (rows : List (
     rw [Option.all_some]
     exact Expr.truthy_moreThanOne context (group.headD []) group.length
   rw [condition]
-  by_cases big : decide (1 < group.length) = true
-  · simp [big]
-  · simp [big]
 
 /-- For every duplicate-key query, over any rows, the result rows are one row for each group of more than one row of the
 rows that {lit}`WHERE` keeps ({name}`keptRows`): the result column evaluated for the first row of the group. Proof sketch:

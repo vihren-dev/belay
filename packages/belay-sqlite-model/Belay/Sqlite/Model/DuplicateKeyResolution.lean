@@ -16,6 +16,18 @@ is free. -/
 
 namespace Belay.Sqlite.Model
 
+/-- For every query of one result column {lit}`c` that calls no aggregate, grouped by one term, with {lit}`HAVING
+count(*) > 1` and no {lit}`ORDER BY`, whose one aggregate {lit}`count(*)` resolves to {name}`Resolved.Aggregate.countRows`,
+the query has no deciding call. -/
+theorem decidingCall_duplicateKeys (scope : Scope) (source : Option Syntax.TableReference) (value : Syntax.Expr)
+    (text : String) (filter : Option Syntax.Expr) (term : Syntax.Expr) (name : String) (count : normalizeIdentifier name = "count")
+    (noCalls : value.aggregateCalls = []) (outputs : List Resolved.Output) :
+    decidingCall (Syntax.Subquery.mk [.expression value none text] source [] filter [term] [] none none none
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none none) [.callStar name] [.countRows]
+      (writtenResults scope [.expression value none text]) outputs = none := by
+  simp [decidingCall, noCalls, Syntax.Expr.aggregateCalls, aggregateCall, count, Syntax.Expr.indexIn, Syntax.Expr.same_self,
+    Resolved.Aggregate.minOrMax]
+
 /-- For every query {lit}`SELECT c FROM … [WHERE w] GROUP BY k HAVING count(*) > 1` without join, ordering and window,
 whose result column {lit}`c` has no alias, calls no aggregate and resolves to a column that the grouping key
 covers ({name}`Resolved.Expr.grouped`) and that feeds no aggregate value to a fallible call, whose scope has only own
@@ -78,12 +90,12 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
   · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
       aggregates, terms, names, having, Bind.bind, Except.bind, Pure.pure, Except.pure]
     simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, Resolved.Expr.grouped,
-      Resolved.Query.duplicateKeys]
+      Resolved.Query.duplicateKeys, decidingCall_duplicateKeys scope source value text _ term name count noCalls]
     exact ⟨columnFeeds, havingFeeds⟩
   · simp only [own, columnResolves, pendingOk, aliases, collations, List.flatten_cons, List.flatten_nil, List.append_nil,
       aggregates, terms, names, having, filterOk, Bind.bind, Except.bind, Pure.pure, Except.pure]
     simp [nothing, condition, outputGrouped, windowSkipsFailure, windowValue, filterNames,
-      Resolved.Expr.grouped, Resolved.Query.duplicateKeys]
+      Resolved.Expr.grouped, Resolved.Query.duplicateKeys, decidingCall_duplicateKeys scope source value text _ term name count noCalls]
     exact ⟨columnFeeds, havingFeeds⟩
 
 /-- The result column {lit}`1` meets the conditions of {name}`resolveQueryBody_duplicateKeys` on the result column: it is

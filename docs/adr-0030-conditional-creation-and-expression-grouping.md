@@ -394,6 +394,14 @@ depend on the plan, and how they compose, is issue #309.
   The associated result column, when its written form is not a column under at most `COLLATE`,
   reads the term's value on the first row of the group. Every other result column reads its
   column references from the row of the group, also when it is equal to a term.
+- **An associated column in `ORDER BY` (note, 2026-11-04).** The probes of slice 2 show one
+  more rule that this ADR does not know: when a query has two or more grouping terms and its
+  `ORDER BY` names an associated result column, SQLite reads that column from the row of the
+  group, not from the first row (rows `(1.0,'a',1), (1,'A',3)`:
+  `SELECT a+0, c, max(n) ... GROUP BY 1, c ORDER BY 1` gives `1`, not `1.0`). With one grouping
+  term, and with a term that is an expression or an alias, SQLite reads the first row. The model
+  keeps the rule of the item before in all these queries. Its output is valid, and it can differ
+  from SQLite's, so such a case is not put into a claimed corpus, as the `FILTER` case above.
 - **One result everywhere.** `Query.results`, `possibleResults` (which still varies the order
   of rows only), subqueries, derived tables, compound terms and `INSERT ... SELECT` all read
   this one result. The model does not mark it as uncertain.

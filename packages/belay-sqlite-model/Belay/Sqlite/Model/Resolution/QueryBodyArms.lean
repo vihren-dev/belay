@@ -69,13 +69,18 @@ through the monad with {lit}`traced_drop`, and split on the alias test of each o
     if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
       throw (.restriction [6] .windowedGroupSum)
+    let deciding := if aggregate then
+      decidingCall query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
     return ({ sources, filter := condition, aggregate, groupBy := terms,
               columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
               offset := (offsetValue.getD 0).toNat,
               limit := limitValue.bind fun value => if value < 0 then none else some value.toNat,
               limitParameter, offsetParameter,
               outer := shapes.outer, aggregates, having,
-              distinct := if query.distinct then some collations else none }, (outputs.head?.bind (·.2.2)))
+              distinct := if query.distinct then some collations else none,
+              deciding,
+              firstRowColumns := if deciding.isSome then firstRowResults scope.ownSources query.columns query.groupBy else [] },
+            (outputs.head?.bind (·.2.2)))
   ) := by
   cases hF : query.filter <;> cases hH : query.having <;>
   cases hJ : aliasJoinItem? scope ((resultAliases scope query.columns).filterMap id ++ outerAliases) query.joins <;>

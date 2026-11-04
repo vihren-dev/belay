@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
 import Belay.Sqlite.Model.Resolution.ScopeOwn
+import Belay.Sqlite.Model.Resolution.GroupAssociation
 
 set_option doc.verso true
 
@@ -25,6 +26,25 @@ def Syntax.Subquery.callLocation (query : Syntax.Subquery) (call : Syntax.Expr) 
     | .star | .sourceStar _ => none
   (inColumns <|> (query.having.bind (·.callPath? call)).map ([9] ++ ·)
     <|> query.orderBy.zipIdx.findSome? fun (term, index) => (term.expression.callPath? call).map ([5, index, 0] ++ ·)).getD []
+
+/-- The deciding call of an aggregate query (ADR 0030, D5): of the {lit}`min` and {lit}`max`
+calls of its result columns, {lit}`ORDER BY` and {lit}`HAVING`, in that order, the last one
+whose resolved form is not that of an earlier call. A call is resolved as the query's aggregate
+{lit}`aggregates` of the same call {lit}`calls`, or as the output {lit}`outputs` of a result column
+{lit}`written` that is the call. -/
+def decidingCall (query : Syntax.Subquery) (calls : List Syntax.Expr) (aggregates : List Resolved.Aggregate)
+    (written : List (Option Syntax.Expr)) (outputs : List Resolved.Output) : Option Resolved.Aggregate :=
+  let resolved : Syntax.Expr → Option Resolved.Aggregate := fun call => match call.indexIn calls with
+    | some index => aggregates[index]?
+    | none => (written.findIdx? (·.any (·.same call))).bind fun column => match outputs[column]? with
+      | some (.aggregate aggregate) => some aggregate
+      | some (.scalar _) | none => none
+  let minMax := (query.columns.flatMap (fun
+      | .expression value _ _ => value.aggregateCalls
+      | .star | .sourceStar _ => []) ++
+    query.orderBy.flatMap (·.expression.aggregateCalls) ++ query.having.toList.flatMap Syntax.Expr.aggregateCalls).filterMap
+      fun call => (resolved call).bind Resolved.Aggregate.minOrMax
+  (minMax.foldl (fun kept call => if kept.contains call then kept else kept ++ [call]) []).getLast?
 
 /-- The operand of a term of {lit}`ORDER BY`: a name that no column has lists the aliases of the
 result columns among its candidates, because the term could have named one. -/
@@ -143,12 +163,16 @@ def resolveQueryBodyTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
   if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
   if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
     throw (.restriction [6] .windowedGroupSum)
+  let deciding := if aggregate then
+    decidingCall query calls aggregates (writtenResults scope query.columns) (outputs.map (·.1)) else none
   return ({ sources, filter := condition, aggregate, groupBy := terms,
             columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
             offset := (offsetValue.getD 0).toNat,
             limit := limitValue.bind fun value => if value < 0 then none else some value.toNat,
             limitParameter, offsetParameter,
             outer := shapes.outer, aggregates, having,
-            distinct := if query.distinct then some collations else none }, (outputs.head?.bind (·.2.2)))
+            distinct := if query.distinct then some collations else none,
+            deciding,
+            firstRowColumns := if deciding.isSome then firstRowResults scope.ownSources query.columns query.groupBy else [] }, (outputs.head?.bind (·.2.2)))
 
 end Belay.Sqlite.Model

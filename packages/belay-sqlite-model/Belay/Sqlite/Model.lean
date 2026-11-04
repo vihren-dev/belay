@@ -2,6 +2,7 @@ import Belay.Sqlite.Model.Declarations
 import Belay.Sqlite.Model.Comparison
 import Belay.Sqlite.Model.ComparisonLaws
 import Belay.Sqlite.Model.QueryEval
+import Belay.Sqlite.Model.GroupRow
 import Belay.Sqlite.Model.Truth
 import Belay.Sqlite.Model.QueryJoins
 import Belay.Sqlite.Model.QueryFunctions
@@ -311,6 +312,7 @@ import Belay.Sqlite.Model.Resolution.StatementArms
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
 import Belay.Sqlite.Model.Resolution.ResultColumnArms
 import Belay.Sqlite.Model.Resolution.QueryBodyTraced
+import Belay.Sqlite.Model.Resolution.GroupAssociation
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.Resolution.QueryAggregatesArms
 import Belay.Sqlite.Model.Resolution.SourceRecords
