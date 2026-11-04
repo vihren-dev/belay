@@ -211,9 +211,10 @@ From probes, and from `findOrCreateAggInfoColumn` and `analyzeAggregate` (`expr.
      `max(n)` in `ORDER BY`, `SELECT c` gives `'a'`. The reason is in SQLite's code: each
      `min` or `max` step resets one shared register and sets it when the row is not a new
      extremum, and the columns load when the register is clear after all steps.
-  3. **A result column that is a grouping term but not a column.** SQLite associates each
-     `GROUP BY` term with the last result column that is the same expression, `COLLATE` included
-     (`resolve.c` compares every result column and keeps the last match). That result column,
+  3. **A result column that is a grouping term but not a column.** SQLite associates a numbered
+     `GROUP BY` term with the result column that it names, and every other term (also an
+     alias) with the last result column that is the same expression, `COLLATE` and unary plus
+     included (`resolve.c` compares every result column and keeps the last match). That result column,
      when it is not a column under at most `COLLATE`, gives the term's value from the first row,
      also under rule 2. Other result columns are evaluated as usual:
      - `SELECT a+0, typeof(a), max(n) ... GROUP BY a+0` gives `1.0` and `integer`, so the two
@@ -356,13 +357,23 @@ The value that a group gives for a non-aggregate expression follows SQLite's thr
   this ADR does not describe that rule more exactly.
 - **Evaluation.** A result column, a `HAVING` condition and an `ORDER BY` expression read their
   column references from one chosen candidate row, the same row for the whole group.
-- **Association.** For each grouping term, the resolver records the last result column that
-  is the same expression as the term, as SQLite's `resolve.c` does. Two expressions are the
-  same when their resolved forms are equal and their explicit `COLLATE` clauses are at the
-  same places with the same names, compared without case. The resolver compares while it
-  still has the written expressions, because the resolved form does not keep `COLLATE`
-  (`resolveOperandTraced` gives the operand's resolved form). The associated result column, when it is not
-  a column under at most `COLLATE` (a column under unary plus or `CAST` is not a column),
+- **Association.** The resolver records, for each grouping term, at most one associated result
+  column, as SQLite's `resolve.c` does:
+  - A number names its result column: `SELECT a+0, a+0, max(n) ... GROUP BY 1` gives `1.0`
+    and `1`.
+  - An alias and every other term are associated with the last result column that is the same
+    expression as the term (for an alias, as the aliased expression): with
+    `SELECT a+0 AS k, a+0, max(n) ... GROUP BY k` the second column is associated, and the
+    query gives `1` and `1.0`.
+  - Two expressions are the same when their written forms are the same tree with every column
+    reference resolved to its source column, names and the type names of `CAST` compared
+    without case, and the same `COLLATE` clauses at the same places. Unary plus and `CAST`
+    count as nodes: `SELECT +c, max(n) ... GROUP BY c` gives the maximum's `'A'`, and
+    `SELECT +c, max(n) ... GROUP BY +c` gives the first row's `'a'`. The resolver compares
+    the written expressions, because the resolved form does not keep `COLLATE`
+    (`resolveOperandTraced` gives the operand's resolved form).
+
+  The associated result column, when its written form is not a column under at most `COLLATE`,
   reads the term's value on one chosen candidate first row. Every other result column reads
   its column references as the item before says, also when it is equal to a term.
 - **Possible results.** `possibleResults` gives the results for every choice, as it gives the
@@ -370,14 +381,15 @@ The value that a group gives for a non-aggregate expression follows SQLite's thr
   choice: the first row in the order of the source, and for a deciding call the first row
   that gives the result.
 - **Consumers of one result.** A subquery, a derived table and a compound term read one result
-  (`Query.subqueryRun`, `Query.compoundRun`), not the possible results. They follow the
-  precedent of `SELECT DISTINCT` (`Query.distinctCertain`): a new `Query.groupsCertain` is true
-  when, for each group, every choice gives the same values, and `Query.run` gives the fault
-  `may` when it is false. Through that fault a scalar subquery and `IN` give a value with the
-  fault `may`, a derived table gives no rows to its query (`QuerySource.join` gives none), and a
-  compound term ends with `may`, as for
-  `DISTINCT` today. The index-dependent query of the context as a scalar subquery is then not
-  a certain `'A'`.
+  (`Query.subqueryRun`), not the possible results. A new `Query.groupsCertain` is true when,
+  for each group, every choice gives the same values. `Query.run` does not read it, because
+  `Query.described` makes a statement whose run has the fault `may` unmodeled, and the
+  top-level query keeps its possible results. `Query.subqueryRun` gives the fault `may` and
+  the ending `may` when it is false, as it does today for a run whose fault is `may`, for
+  example an uncertain `SELECT DISTINCT` (`Query.distinctCertain`). Then a scalar subquery
+  and `IN` give a value with the fault `may`, a derived table gives no rows to its query
+  (`QuerySource.join` gives none), and a compound term ends with `may`. The index-dependent
+  query of the context as a scalar subquery is then not a certain `'A'`.
 
 This decision changes the meaning of grouped columns, also without D4. It is owner decision 2.
 
@@ -444,8 +456,9 @@ Evidence, reused before new cases:
     rolls back; ASCII case folding of names.
   - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
     across the result, `ORDER BY` and `HAVING`, a repeated call, `FILTER` on the deciding call,
-    a tie of the maximum whose rows differ, a result column written twice, `COLLATE` on one side
-    only, and the index-dependent query as a scalar subquery, as a derived table and as a term
+    a tie of the maximum whose rows differ, a result column written twice and grouped by
+    number, by alias and by expression, `COLLATE` and unary plus on one side only, and the
+    index-dependent query as a scalar subquery, as a derived table and as a term
     of a compound.
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the
     collation cases, aliases and alias shadowing, numbers (`(1)`, `+1`, `-1`, `0`, `1.0`,
