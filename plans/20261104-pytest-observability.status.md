@@ -56,3 +56,6 @@ remain with devops and are explicitly deferred.
 - A second self-review correction keeps the Nix client in its caller's process
   group. GNU timeout bounds it without detaching it from an enclosing CI kill.
   The host-runner regression now verifies this process-group relationship.
+- Pytest now exports the chosen spool to child processes. Copied temporary
+  harnesses retain their undelivered reports in the caller's persistent spool;
+  a nested real-pytest regression protects this route.

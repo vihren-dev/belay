@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 import fcntl
-from pathlib import Path
+import os
 from typing import BinaryIO
 from uuid import uuid4
 
@@ -26,6 +26,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if hasattr(config, "workerinput"):
         return
     try:
+        # Copied pytest harnesses inherit a persistent spool instead of losing reports with tmp_path.
+        os.environ.setdefault("BELAY_OBSERVABILITY_SPOOL", str(spool().resolve()))
         identity = str(uuid4())
         directory = spool() / identity
         directory.mkdir(parents=True)

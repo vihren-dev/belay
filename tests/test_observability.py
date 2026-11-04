@@ -50,6 +50,24 @@ def test_native_reporting_finalizes_failed_concurrent_sessions(tmp_path: Path) -
             if row.get("kind") == "SessionFinish"} == {1}
 
 
+def test_nested_pytest_inherits_the_persistent_spool(tmp_path: Path) -> None:
+    """Copied subprocess harnesses keep pending reports alongside their caller's observations."""
+    root = harness(tmp_path / "parent")
+    nested = harness(tmp_path / "nested")
+    (root / "tests/test_discovered.py").write_text(
+        'import subprocess, sys\ndef test_child():\n'
+        '    """Exercise an isolated repository pytest subprocess."""\n'
+        f'    result = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd={str(nested)!r}, timeout=15)\n'
+        '    assert result.returncode == 1\n')
+    env = environment(tmp_path / "unused")
+    del env["BELAY_OBSERVABILITY_SPOOL"]
+    result = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=root, env=env,
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert len(list((root / "build/observability").glob("*/execution.json"))) == 2
+    assert not (nested / "build/observability").exists()
+
+
 def test_replay_after_lost_acknowledgement_preserves_ids(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Our retry resends identical rows after uncertain delivery, and skips live producers."""
     directory = observation(tmp_path)
