@@ -53,3 +53,6 @@ remain with devops and are explicitly deferred.
   Manifest reads are bounded before decoding, including malformed local files.
 - The focused development checks are `tests/test_observability.py`; the final
   Nix integration check will validate the changed uploader against the schema.
+- A second self-review correction keeps the Nix client in its caller's process
+  group. GNU timeout bounds it without detaching it from an enclosing CI kill.
+  The host-runner regression now verifies this process-group relationship.

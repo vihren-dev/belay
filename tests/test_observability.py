@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -141,6 +142,8 @@ def test_host_runner_preserves_failure_and_recovers_logs(
     code = run([sys.executable, "-c", f"print({frames!r}); raise SystemExit(17)"], 5)
     assert code == 17
     assert execution(tmp_path / "host" / directory.name) == execution(directory)
+    # An enclosing CI timeout must reach the Nix client as well as this wrapper.
+    assert run([sys.executable, "-c", f"import os; assert os.getpgrp() == {os.getpgrp()}"], 5) == 0
 
 
 def test_ci_credentials_are_separate_from_test_code() -> None:
