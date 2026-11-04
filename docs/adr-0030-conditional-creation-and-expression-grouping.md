@@ -35,8 +35,8 @@ from the first row that it reads when the query has no such call, in an order th
 rows of a group compare as equal but differ, for example `'a'` and `'A'` under `NOCASE`, or
 `1` and `1.0`, the model and SQLite give different rows today. Grouping by expressions makes
 such groups more frequent, so this ADR decides the rule for both (D5). Where SQLite's result
-depends on the query plan, the model gives one result that SQLite can give; issue #309 is the
-general design for such results.
+depends on the query plan, the model gives an output that SQLite's documentation allows;
+issue #309 is the general design for such results.
 
 ## Context
 
@@ -344,12 +344,14 @@ is not required by this ADR.
 
 ### D5. The values of a group
 
-The value that a group gives for a non-aggregate expression follows SQLite's three rules
-(Context, "The row of a group"). Where the rules leave a choice to the query plan, the model
-gives one result that SQLite can give: the result of a plan that reads the source rows in
-their order (rowid order for a table), as a full scan does. The general treatment of results
-that depend on the plan, and how they compose, is issue #309; until it is decided, one result
-that SQLite can give is sufficient (owner, 2026-11-04).
+The model follows SQLite where it can, and gives a valid output where it cannot (owner,
+2026-11-04). A valid output is one that SQLite's documentation allows: a non-aggregate
+expression is evaluated against "a single arbitrarily chosen row from within the group"
+(R-62913-19830). So the value that a group gives follows SQLite's three rules (Context, "The
+row of a group"). Where the rules leave a choice to the query plan, or where the model does not
+know SQLite's rule, the model gives the result of a plan that reads the source rows in their
+order (rowid order for a table), as a full scan does. The general treatment of results that
+depend on the plan, and how they compose, is issue #309.
 
 - **Deciding call.** The deciding call is the last distinct `min` or `max` aggregate of the
   query in the order result columns, `ORDER BY`, `HAVING`, where a call that is written again
@@ -363,11 +365,11 @@ that SQLite can give is sufficient (owner, 2026-11-04).
   column references from that row.
 - **`FILTER` on `min` or `max`.** The probes show that SQLite does not follow the rule of the
   item before when a `min` or `max` call has `FILTER`
-  (`SELECT c, max(n), min(n) FILTER (WHERE n > 9)` gives `'a'`, not the maximum's `'A'`). A
-  grouped query with such a call that reads a column outside an aggregate is refused with the
-  new restriction `group-filter-row` and the text "a column next to min() or max() with FILTER
-  is not modeled". The task file of slice 2 lists the corpus cases that it refuses; a case of
-  a claim needs an owner decision.
+  (`SELECT c, max(n), min(n) FILTER (WHERE n > 9)` gives `'a'`, not the maximum's `'A'`), and
+  this ADR does not know SQLite's rule. When a `min` or `max` call of the query has `FILTER`,
+  the row of a group is its first row in the order of the source, as without a deciding call.
+  That output is valid, and it can differ from SQLite's, so such a case is not put into a
+  claimed corpus, as the index-dependent query below.
 - **Association.** The resolver records, for each grouping term, at most one associated result
   column, as SQLite's `resolve.c` does:
   - A number names its result column: `SELECT a+0, a+0, max(n) ... GROUP BY 1` gives `1.0`
@@ -456,7 +458,7 @@ Evidence, reused before new cases:
     duplicates, existing and free; the counters after a no-op; a no-op in a transaction that
     rolls back; ASCII case folding of names.
   - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
-    across the result, `ORDER BY` and `HAVING`, a repeated call, the `group-filter-row` refusal,
+    across the result, `ORDER BY` and `HAVING`, a repeated call,
     a tie of the maximum whose rows differ, a result column written twice and grouped by
     number, by alias and by expression, `COLLATE` and unary plus on one side only, `CAST`
     type names that differ in case, and a deciding
@@ -490,8 +492,6 @@ commit that changes the behavior.
   SQLite's rules decide it, and one value that SQLite can give where its plan decides it (D5).
   A query whose native plan reads another row first disagrees, so the corpora do not contain
   one until issue #309 is decided.
-- A grouped query that reads a column next to `min` or `max` with `FILTER` is refused
-  (`group-filter-row`).
 - The CREATE theorems get a second case or a premise. Proofs that use them for creation keep
   their statements with `ifNotExists = false`.
 
@@ -536,5 +536,6 @@ it instead.
    Recommendation: (a). (b) needs a new form of statement for a body that the model does not
    describe, and no case or consumer statement needs it: the consumer's CREATE statements with
    the clause have bodies that the model translates.
-2. **The values of a group (D5).** DECIDED (owner, 2026-11-04): one result that SQLite can
-   give is sufficient; the general design is issue #309.
+2. **The values of a group (D5).** DECIDED (owner, 2026-11-04): follow SQLite where the model
+   can, and give an output that SQLite's documentation allows where it cannot; the general
+   design is issue #309.
