@@ -133,3 +133,12 @@ imports artifacts from completed CI run 41813149317. A temporary final check
 requires delivery receipts for every imported execution. These workflow changes
 are only for commissioning; production still uses `main` and normal triggers.
 Live CI results are pending. No credentials are committed.
+
+## CI configuration retry
+
+Run 41853380170 recovered 39 executions but delivered none because the workflow
+received an empty `BELAY_CLICKHOUSE_URL`. The temporary delivery check failed;
+the workflow's overall success status alone is not evidence of delivery.
+The owner requested another check after updating configuration. The restricted
+GitHub identity cannot use the rerun API, so this status-only commit triggers
+the unchanged commissioning workflow on `ci-test`. Verification is pending.
