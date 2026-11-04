@@ -348,9 +348,11 @@ The model follows SQLite where it can, and gives a valid output where it cannot 
 2026-11-04). A valid output is one that SQLite's documentation allows: a non-aggregate
 expression is evaluated against "a single arbitrarily chosen row from within the group"
 (R-62913-19830). So the value that a group gives follows SQLite's three rules (Context, "The
-row of a group"). Where the rules leave a choice to the query plan, or where the model does not
-know SQLite's rule, the model gives the result of a plan that reads the source rows in their
-order (rowid order for a table), as a full scan does. The general treatment of results that
+row of a group"). Where the rules leave a choice to the query plan, the model gives the result
+of a plan that reads the source rows in their order (rowid order for a table), as a full scan
+does. Where the model does not know SQLite's rule (`FILTER` below), it reads the first row of
+the group in that order: a choice that the documentation allows, which can differ from the
+result of every plan of SQLite. The general treatment of results that
 depend on the plan, and how they compose, is issue #309.
 
 - **Deciding call.** The deciding call is the last distinct `min` or `max` aggregate of the
