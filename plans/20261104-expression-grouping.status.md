@@ -1,6 +1,6 @@
 # Expression grouping: task status
 
-Date: 2026-11-04. Status: OPEN.
+Date: 2026-11-04. Status: DONE.
 Audience: the implementation team.
 Task: [Expression grouping](20261104-expression-grouping.task.md).
 Specification: [ADR 0030](../docs/adr-0030-conditional-creation-and-expression-grouping.md).
@@ -53,3 +53,6 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Query
   passed. `just verdict` passed with no `DISAGREE`: corpora v56 to v58 agree in all cases, and
   `select5:select5-5.11:21` and `indexexpr2:indexexpr2-10.1:124` agree. Mutant test:
   `tests/conformance_query_resolution_mutants_test.py`. Slice 3 is code complete.
+- 2026-11-04: ADR end: `just test-nix` (86 passed) and `just test-scheduled-checks`
+  (`/nix/store/yqzbp5f654yvfi9cb04b82bj87lh9l1f-sqlite-verifier-scheduled-check-reports`)
+  passed. The three tasks of ADR 0030 are DONE; the subject and claims pull requests follow.

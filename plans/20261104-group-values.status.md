@@ -1,6 +1,6 @@
 # The values of a group: task status
 
-Date: 2026-11-04. Status: OPEN.
+Date: 2026-11-04. Status: DONE.
 Audience: the implementation team.
 Task: [The values of a group](20261104-group-values.task.md).
 Specification: [ADR 0030](../docs/adr-0030-conditional-creation-and-expression-grouping.md).

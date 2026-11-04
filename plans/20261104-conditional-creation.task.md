@@ -1,6 +1,6 @@
 # Conditional table and index creation
 
-Date: 2026-11-04. Status: OPEN.
+Date: 2026-11-04. Status: DONE.
 Audience: the implementation team.
 Specification: [ADR 0030](../docs/adr-0030-conditional-creation-and-expression-grouping.md),
 slice 1 (D1 to D3, the first item of D7, the slice-1 parts of D8). Accepted by the owner on

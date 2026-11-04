@@ -1,6 +1,6 @@
 # Expression grouping
 
-Date: 2026-11-04. Status: OPEN.
+Date: 2026-11-04. Status: DONE.
 Audience: the implementation team.
 Specification: [ADR 0030](../docs/adr-0030-conditional-creation-and-expression-grouping.md),
 slice 3 (D4, D6, the second and third items of D7, the slice-3 parts of D8).

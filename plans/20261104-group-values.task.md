@@ -1,6 +1,6 @@
 # The values of a group
 
-Date: 2026-11-04. Status: OPEN.
+Date: 2026-11-04. Status: DONE.
 Audience: the implementation team.
 Specification: [ADR 0030](../docs/adr-0030-conditional-creation-and-expression-grouping.md),
 slice 2 (D5, the slice-2 parts of D8). Accepted by the owner on 2026-11-04.
