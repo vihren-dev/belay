@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.SyntaxEquality
 import Belay.Sqlite.Model.Resolution.Collations
 import Belay.Sqlite.Model.Resolution.ResultColumnTraced
+import Belay.Sqlite.Model.Resolution.QueryTerms
 
 set_option doc.verso true
 
@@ -30,10 +31,18 @@ def Syntax.Expr.columnReadsIn (scope : Scope) : Syntax.Expr → Option (List Nat
   | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
   | .raise .. => none
 
+/-- The value of a numeric literal that SQLite's parser stores as a number
+({lit}`EP_IntValue`): an integer literal, decimal or hexadecimal, from {lean}`0` to
+{lean}`2147483647`. For example {lit}`01` and {lit}`0x1` give {lean}`1`; {lit}`1.0` and
+{lit}`3000000000` give {lean}`(none : Option Int)`, so SQLite compares them as written. -/
+def smallIntegerLiteral (text : String) : Option Int :=
+  (integerLiteral (.numeric text)).filter (· ≤ 2147483647)
+
 mutual
 /-- Whether two written expressions are the same for the association of a grouping term
 (SQLite's {lit}`sqlite3ExprCompare`): the same tree, where two column references are the same
-when they read the same source columns ({lit}`reads`), function names and collation names
+when they read the same source columns ({lit}`reads`), two small integer literals are the same
+when their values are ({name}`smallIntegerLiteral`), function names and collation names
 compare without ASCII case, and {lit}`CAST` type names, unary plus and every other part
 compare as written ({name}`Syntax.Expr.same`). For example {lit}`A + 0` is the same as
 {lit}`a+0`, and {lit}`0 + a` is not. -/
@@ -44,7 +53,10 @@ def Syntax.Expr.sameIn (reads : Syntax.Expr → Option (List Nat)) : Syntax.Expr
     | some x, some y => x == y
     | some _, none | none, some _ | none, none => a.same b
   | .null, .null => true
-  | .numeric a, .numeric b | .currentTime a, .currentTime b => a == b
+  | .numeric a, .numeric b => match smallIntegerLiteral a, smallIntegerLiteral b with
+    | some x, some y => x == y
+    | some _, none | none, some _ | none, none => a == b
+  | .currentTime a, .currentTime b => a == b
   | .callStar a, .callStar b => normalizeIdentifier a == normalizeIdentifier b
   | .string a, .string b | .blob a, .blob b => a == b
   | .negate a, .negate b | .positive a, .positive b | .not a, .not b => a.sameIn reads b
