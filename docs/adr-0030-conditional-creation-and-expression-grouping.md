@@ -464,14 +464,16 @@ Evidence, reused before new cases:
   - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
     across the result, `ORDER BY` and `HAVING`, a repeated call,
     a tie of the maximum whose rows differ, a result column written twice and grouped by
-    number, by alias and by expression, `COLLATE` and unary plus on one side only, `CAST`
+    number and by alias, `COLLATE` and unary plus on one side only, `CAST`
     type names that differ in case, and a deciding
     call whose operand is NULL on every row of a group. The index-dependent query is not one
-    of these cases (D5).
+    of these cases (D5). Correction (2026-11-04, slice 2 task): a probe whose grouping term is
+    a written expression needs D4, so it is a case of slice 3.
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the
     collation cases, aliases and alias shadowing, numbers (`(1)`, `+1`, `-1`, `0`, `1.0`,
     `'1'`), aggregate and window terms, a failing key with and without kept rows, rule 3 with
-    a single `max`, and a `date(x, 'unixepoch')` key with an explicit clock.
+    a single `max`, a result column written twice and grouped by expression, and a
+    `date(x, 'unixepoch')` key with an explicit clock.
 - **Kernel-checked examples** in `tests/surface`: the no-op keeps the database and the
   counters (as `ClaimsViewCreate.lean` does for views), creation with the clause equals
   creation without it when the name is free, and a grouped expression's result on a small
