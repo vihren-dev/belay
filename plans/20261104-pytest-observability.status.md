@@ -1,6 +1,7 @@
 # Automatic pytest observability status
 
-Created: 2026-11-04. Status: IN PROGRESS.
+Created: 2026-11-04. Status: DONE for repository implementation.
+Deployment matching and live commissioning remain deferred by owner decision.
 
 Task: [20261104-pytest-observability.task.md](20261104-pytest-observability.task.md).
 Specification: [ADR 0028](../docs/adr-0028-development-observability.md).
@@ -17,11 +18,11 @@ Specification: [ADR 0028](../docs/adr-0028-development-observability.md).
 - Task-file validation: checked links and scope against the current ADR. No
   production code changed in this commit. Review is by the owner.
 
-## Remaining
+## Deployment follow-up
 
-Implement collection, upload, Nix and CI integration; validate and open the
-stacked PR. Deployment matching, credentials, connectivity and live commissioning
-remain with devops and are explicitly deferred.
+Deployment matching, credentials, connectivity and live commissioning remain
+with devops and are explicitly deferred. The implementation PR targets the
+rebased #303 branch, `experiments/observability-extraction`.
 
 ## Implementation
 
@@ -43,7 +44,7 @@ remain with devops and are explicitly deferred.
 - Development checks exercised `test_observability.py`, `test_observability_identity.py`,
   `test_pytest_harness.py`, `test_resources.py`, `test_recipe_limits.py`,
   `test_nix_test_targets.py`, `test_test_ownership.py`, and `test_ci_workflow.py`.
-  These host checks are not conformance evidence. Full required checks follow.
+  These host checks are not conformance evidence. Required check results appear below.
 - Owner review replaces the agent reviewer for this work.
 
 ## Deadline correction
@@ -63,3 +64,18 @@ remain with devops and are explicitly deferred.
   status diagnostics actionable without exposing response bodies (R10), and
   checked that the guide describes the implemented paths (R13/R19). No Lean
   propositions or proofs changed, so R3 has no applicable changes.
+
+## Acceptance
+
+- `just test-full`, `just test-nix`, `just test-scheduled-checks` and `just verdict`
+  completed successfully on the initial implementation. The full Nix output has
+  1,429 passing tests; the scheduled output has 50. No mutant tables changed.
+- Follow-up corrections passed focused regressions and the final cacheable
+  ClickHouse check. The [acceptance record](../reports/20261104-pytest-observability/README.md)
+  identifies the revisions and immutable outputs, and distinguishes broad
+  initial-implementation checks from final targeted checks.
+- A temporary new Nix suite demonstrated fresh/cached identity, relevant-input
+  invalidation, assertion failure and abrupt-exit recovery. Its fixture was
+  removed after preserving the observations. No live deployment is claimed.
+- Documentation links and the SQL export's agreement with the ADR were checked.
+  Owner review replaces the agent reviewer throughout this task.

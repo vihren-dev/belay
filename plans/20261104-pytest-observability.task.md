@@ -1,6 +1,7 @@
 # Automatic pytest observability
 
-Created: 2026-11-04. Status: IN PROGRESS.
+Created: 2026-11-04. Status: DONE for repository implementation.
+Deployment matching and live commissioning are deferred by the owner as recorded below.
 
 Implement [ADR 0028](../docs/adr-0028-development-observability.md) in a PR
 stacked on #303. Every repository pytest session produces native reportlog
