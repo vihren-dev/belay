@@ -1,8 +1,8 @@
 # ADR 0030: Conditional table and index creation, and grouping by expressions
 
-Date: 2026-11-04. Status: PROPOSED (owner decisions below are open).
-Implementation: three slices (D8), each with its own task file, as local commits, after the
-owner accepts this ADR.
+Date: 2026-11-04. Status: ACCEPTED (owner, 2026-11-04: "implement the adr"). Owner decision 1
+is open; the implementation follows its recommendation (a), which keeps today's refusals.
+Implementation: three slices (D8), each with its own task file, as local commits.
 Audience: designers and reviewers.
 Related: [ADR 0012](adr-0012-query-semantics.md) ("Queries": groups, the fixed order of the
 model), [ADR 0014](adr-0014-schema-features.md) (D3: the collation of a `GROUP BY` term),
@@ -277,10 +277,11 @@ blocks them.
 
 ### D1. Syntax: the flag in the statement
 
-`Syntax.Statement.createTable` and `createIndex` get the field `ifNotExists : Bool`, in the
-place that views and triggers use (after the name). The translation records the flag and
-refuses nothing for it. The paths of restrictions and the spans of the composite nodes move
-with the field.
+`Syntax.Statement.createTable` and `createIndex` get the field `ifNotExists : Bool := false` as
+their last field. Views and triggers have the field after the name, but for these two forms
+about 300 examples and proofs build the statement by position, and a last field with a default
+keeps them and the paths of the other fields. The translation records the flag and refuses
+nothing for it.
 
 ### D2. Translation refusals stay
 
@@ -436,8 +437,9 @@ bare columns; that restriction stays.
 
 ### D8. Slices, evidence and acceptance
 
-Three slices, in this order, each with its own task file and the two pull requests of a claim
-change (ADR 0011):
+Three slices, in this order, each with its own task file, as local commits. At the end of the
+ADR, the work goes into the two pull requests of a claim change (ADR 0011): one with the
+subject and one with the claims, the corpora and the judge lock.
 
 1. **Conditional creation** (D1 to D3, D7 first item).
 2. **The values of a group** (D5) for the grouping that the model has today.
