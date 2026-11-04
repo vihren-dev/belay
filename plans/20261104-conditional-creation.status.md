@@ -24,7 +24,7 @@ the theorems that the ADR's context lists, `tests/syntax_mapping_test.py`,
   decoder reads no default; the regression's `mismatch.json` gets the new case hash. The
   editor's table origins (`SqlTableOrigins.lean`) give no place for `CREATE TABLE IF NOT
   EXISTS`, which may do nothing. Authored corpus module `conformance/authored_conditional_creation.py`
-  (32 cases, version 7 records; every case agrees, and so do the promotions of the
+  (31 cases, version 7 records; every case agrees, and so do the promotions of the
   task); its freeze and claim go into the claims pull request.
   Tests of the commit: `tests/syntax_mapping_test.py`, `tests/conformance_model_test.py`,
   `tests/conformance_conditional_creation_test.py`, `tests/surface_conditional_creation_test.py`,

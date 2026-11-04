@@ -17,7 +17,7 @@ An index of the name stays an error, and a trigger has its own namespace. -/
 def createTableKept (catalog : Catalog) (name : Identifier) : Bool :=
   !reservedName name && match catalog.find name with
     | some (_, { entry := .table _, .. }) | some (_, { entry := .view _, .. }) => true
-    | _ => false
+    | some (_, { entry := .index _, .. }) | some (_, { entry := .trigger _, .. }) | none => false
 
 /-- Whether {lit}`CREATE INDEX IF NOT EXISTS name ON tableName` is a no-op on the catalog: the
 checks before the name pass (the table exists, and neither the table name nor the index name
@@ -27,7 +27,8 @@ def createIndexKept (catalog : Catalog) (name tableName : Identifier) : Bool :=
   (catalog.findTable tableName).isSome && !reservedName tableName && !reservedName name &&
     match catalog.find name with
     | some (_, { entry := .index _, .. }) => true
-    | _ => false
+    | some (_, { entry := .table _, .. }) | some (_, { entry := .view _, .. })
+    | some (_, { entry := .trigger _, .. }) | none => false
 
 /-- Resolve {lit}`CREATE TABLE`, with the clause {lit}`IF NOT EXISTS` when {lit}`ifNotExists`:
 the no-op of {name}`createTableKept`, else {name}`resolveCreateTable`. -/
