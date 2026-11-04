@@ -43,3 +43,13 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Query
   commit: `tests/conformance_query_resolution_mutants_test.py`, `tests/mutant_guards_test.py`,
   `tests/restriction_registry_test.py`, `tests/conformance_restriction_examples_test.py`,
   `tests/surface_expression_grouping_test.py`.
+- 2026-11-04: `tests/surface/SuccessUniqueEmail.lean` (`refactor:`): with no email column, the
+  guide's term `email COLLATE NOCASE` is now SQLite's `no such column` prepare error, not a
+  model restriction; the proof follows, and the collated-column case uses
+  `resolveGroupTerm_collatedColumn`.
+- 2026-11-04: slice-end checks on the top of the stack (with the claims commits): the first
+  `just test-full` failed only in `tests/surface_success_test.py`
+  (`test_guide_email_success_uses_exact_corrected_precondition`, fixed above); the second run
+  passed. `just verdict` passed with no `DISAGREE`: corpora v56 to v58 agree in all cases, and
+  `select5:select5-5.11:21` and `indexexpr2:indexexpr2-10.1:124` agree. Mutant test:
+  `tests/conformance_query_resolution_mutants_test.py`. Slice 3 is code complete.
