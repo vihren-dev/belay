@@ -67,15 +67,17 @@ def import_execution(source: Path, destination: Path) -> None:
             shutil.rmtree(temporary)
 
 
-def attempt_upload(directory: Path | None = None) -> None:
+def attempt_upload(directory: Path | None = None) -> bool:
     """Run delivery in a killable child; collection and tests retain their own exit status."""
     if os.environ.get("BELAY_OBSERVABILITY_BUILD") == "1":
-        return
+        return True
     try:
         result = subprocess.run([sys.executable, "-m", "tools.observability_upload",
-                                 str(directory or spool())], cwd=ROOT,
+                                 "--worker", str(directory or spool())], cwd=ROOT,
                                 stdin=subprocess.DEVNULL, timeout=UPLOAD_SECONDS)
         if result.returncode:
             diagnostic("upload incomplete; files retained for the next test command")
+        return result.returncode == 0
     except (OSError, subprocess.TimeoutExpired) as error:
         diagnostic(f"upload stopped ({type(error).__name__}); files retained for retry")
+        return False

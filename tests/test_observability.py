@@ -115,8 +115,18 @@ def test_upload_worker_has_hard_deadline(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.delenv("BELAY_OBSERVABILITY_BUILD", raising=False)
     monkeypatch.setattr(observability_spool, "UPLOAD_SECONDS", 0.01)
     started = monotonic()
-    attempt_upload(tmp_path)
+    assert not attempt_upload(tmp_path)
     assert monotonic() - started < 2
+    assert (directory / "report.jsonl").exists()
+
+
+def test_explicit_upload_uses_bounded_worker(tmp_path: Path) -> None:
+    """The diagnostic CLI shares automatic delivery's worker boundary and reports missing configuration."""
+    directory = observation(tmp_path)
+    result = subprocess.run([sys.executable, "-m", "tools.observability_upload", str(tmp_path)],
+                            env=environment(tmp_path), capture_output=True, text=True, timeout=20)
+    assert result.returncode == 1
+    assert "BELAY_CLICKHOUSE_URL is unset" in result.stderr
     assert (directory / "report.jsonl").exists()
 
 

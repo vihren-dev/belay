@@ -11,7 +11,7 @@ import urllib.parse
 import urllib.request
 
 from tools.observability_records import diagnostic, encode, events, execution
-from tools.observability_spool import lock, spool
+from tools.observability_spool import attempt_upload, lock, spool
 
 BATCH_BYTES = 1024 * 1024
 """A conservative request size; oversized single records remain available for diagnosis."""
@@ -99,4 +99,7 @@ def upload_pending(directory: Path) -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(0 if upload_pending(Path(sys.argv[1]) if len(sys.argv) > 1 else spool()) else 1)
+    worker = len(sys.argv) > 1 and sys.argv[1] == "--worker"
+    arguments = sys.argv[2:] if worker else sys.argv[1:]
+    directory = Path(arguments[0]) if arguments else spool()
+    sys.exit(0 if (upload_pending(directory) if worker else attempt_upload(directory)) else 1)

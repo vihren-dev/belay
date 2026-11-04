@@ -31,7 +31,8 @@ def encode(value: object) -> str:
 
 def execution(directory: Path) -> dict[str, object]:
     """Validate the manifest and normalize its UTC timestamp for ClickHouse."""
-    raw = (directory / "execution.json").read_bytes()
+    with (directory / "execution.json").open("rb") as stream:
+        raw = stream.read(MAX_LINE + 1)
     if len(raw) > MAX_LINE:
         raise ValueError("execution manifest exceeds 8 MiB")
     value = json_object(raw)

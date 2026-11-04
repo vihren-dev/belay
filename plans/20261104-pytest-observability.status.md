@@ -45,3 +45,11 @@ remain with devops and are explicitly deferred.
   `test_nix_test_targets.py`, `test_test_ownership.py`, and `test_ci_workflow.py`.
   These host checks are not conformance evidence. Full required checks follow.
 - Owner review replaces the agent reviewer for this work.
+
+## Deadline correction
+
+- Self-review found that the explicit diagnostic CLI did not share the hard
+  process deadline of automatic upload. Both now use the same bounded child.
+  Manifest reads are bounded before decoding, including malformed local files.
+- The focused development checks are `tests/test_observability.py`; the final
+  Nix integration check will validate the changed uploader against the schema.
