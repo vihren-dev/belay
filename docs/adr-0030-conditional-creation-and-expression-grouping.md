@@ -339,9 +339,11 @@ other term as an expression of the query's scope:
   its `COLLATE` clauses when it looks for a number (`sqlite3ExprSkipCollate`), and keeps the
   collation: with rows `'a'`, `'A'` and `'b'` of a column `b`, `SELECT b ... GROUP BY 1 COLLATE
   NOCASE` gives two groups, and the term is associated with result column 1 (D5). An alias
-  under `COLLATE` is the aliased expression under that collation, and is not associated with
-  the result column, because the two expressions differ in `COLLATE`. The slice 3 task found
-  this; the model resolves both forms so, and does not restrict them.
+  under `COLLATE` is the aliased expression under the same `COLLATE` clauses, and D5's rule
+  associates it with the last result column that is the same expression, `COLLATE` included:
+  with `SELECT c || '' AS k, (c || '') COLLATE NOCASE, max(n) ... GROUP BY k COLLATE NOCASE`
+  the second column is associated, and the aliased column itself is not. The slice 3 task
+  found this; the model resolves both forms so, and does not restrict them.
 
 The restriction `group-by-term` keeps its id for subqueries and gets the text "a subquery is
 not modeled in GROUP BY".

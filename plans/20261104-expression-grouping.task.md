@@ -29,8 +29,9 @@ When the task is done, all of these are true:
    restriction `group-by-term`, whose text becomes "a subquery is not modeled in GROUP BY". The
    counter functions and random values stay restricted in `GROUP BY` (ADR 0024).
    A number under `COLLATE` names its result column with the explicit collation, and is
-   associated with it; an alias under `COLLATE` is the aliased expression with the explicit
-   collation, and is not associated (ADR 0030, D4 note of 2026-11-04).
+   associated with it; an alias under `COLLATE` is the aliased expression under the same
+   `COLLATE` clauses, associated with the last result column that is the same expression,
+   `COLLATE` included (ADR 0030, D4 note of 2026-11-04).
 5. **Collation.** The term's collation is an explicit `COLLATE`, else the column's collation
    through unary plus and `CAST`, else `BINARY`.
 6. **Grouped expressions.** `Resolved.Expr.grouped` admits a result expression that is a
