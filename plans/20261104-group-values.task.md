@@ -47,9 +47,10 @@ today (this slice adds no new grouping terms):
 - **Authored corpus**, recorded with the native oracle (version 7 records): the rows of "What
   the model gives today" of the ADR except the index-dependent query; `min` and `max` in both
   orders and across the result, `ORDER BY` and `HAVING`; a repeated call; a tie of the maximum
-  whose rows differ; a result column written twice and grouped by number, by alias and by an
-  expression that names it; `COLLATE` and unary plus on one side only; `CAST` type names that
-  differ in case; a deciding call whose operand is NULL on every row of a group. Every case
+  whose rows differ; a result column written twice and grouped by number and by alias;
+  `COLLATE` and unary plus on one side only; `CAST` type names that differ in case, compared
+  through an alias; a deciding call whose operand is NULL on every row of a group. A probe whose
+  term is a written expression (`GROUP BY a+0`) needs slice 3 and goes into its corpus. Every case
   agrees, and the corpus is claimed in the claims pull request with all its cases in
   `mustAgree`.
 - **Claimed corpora**: no verdict of a claimed case changes from `AGREE`. A case that changes
