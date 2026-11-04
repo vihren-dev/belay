@@ -158,6 +158,22 @@ evidence stay.
 `JSON cannot hold BLOB values`, but SQLite 3.51.0 reads it as JSONB.
 *Applies to:* `docs/*.md`, `plans/*.md`.
 
+**R20. Expensive tests reuse Nix results.** A new or changed test or test group
+with substantial build, service-startup or execution cost first evaluates the
+existing Nix test machinery for dependency-based reuse. Where reuse preserves
+the meaning of the check, use a cacheable test derivation with narrow, complete
+inputs and avoid duplicate host execution. Merely running a command inside a
+Nix development shell does not cache its result. If this mechanism cannot fit
+the check, record why and obtain an explicit owner decision on where, when and
+with what execution limits it runs before adding or scheduling it. Link that
+decision from the test's specification or configuration. Do not cache a check
+of changing external state as if that state were a declared immutable input.
+Use **must** when an expensive check has neither suitable Nix reuse nor the
+required recorded owner decision.
+*Example of a violation:* a database integration suite starts its server on
+every host test run despite having fixed inputs, with no recorded owner decision.
+*Applies to:* `tests/*`, `tools/*`, `build-support/*`, `nix/*`, `.github/workflows/*`, `justfile`, `docs/adr-*.md`, `plans/*.task.md`.
+
 ## Output format
 
 Write one line per finding, and nothing else in these lines:

@@ -83,6 +83,11 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   and identity checks that do not run the database. Cache misses can still execute
   unchanged tests. Link, anchor and whitespace checks passed; this remains a
   documentation-only proposal reviewed by the owner.
+- Owner instruction on 2026-11-04: add review rule R20 requiring expensive tests
+  to evaluate and use the existing Nix result cache where appropriate. If it
+  cannot fit, an explicit recorded owner decision must set the execution policy.
+  Added the matching testing instruction to AGENTS.md and linked it from ADR 0028.
+  Documentation and checklist-parser checks passed; no test implementation changed.
 
 ## References
 

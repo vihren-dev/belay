@@ -199,6 +199,8 @@ Register its test ownership so ordinary host source checks do not also run it.
 Include the target in the existing local and CI Nix check sets. Those commands
 may request the target on every run; Nix decides whether execution is necessary.
 No separate changed-path selector or new CI scope is required for this check.
+This follows R20 in [the review checklist](review-checklist.md): an expensive
+check that cannot use this mechanism needs a recorded owner decision on how it runs.
 
 Declare only the uploader, schema, integration test, required shared helpers,
 pinned Python dependencies and pinned ClickHouse executable as inputs. Start and
