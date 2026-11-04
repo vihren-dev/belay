@@ -109,7 +109,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
   | .unmodeledFunction => "this function, or this form of it, is not modeled; rewrite the expression without it"
   | .aggregateInExpression => "an aggregate here is not modeled, such as the argument of a function that can fail; use the aggregate as a whole result column"
-  | .aliasInExpression => "a result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled; write the column expression"
+  | .aliasInExpression => "a result column alias inside WHERE, ON, GROUP BY, HAVING or an ORDER BY expression is not modeled; write the column expression"
   | .viewBodyCheck => "a view whose body has an error that SQLite finds only when a statement runs it is not modeled for a statement that reads only its columns; repair the view or select from it"
   | .groupByTerm => "a subquery is not modeled in GROUP BY; group by an expression without a subquery"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"

@@ -633,7 +633,7 @@ should shrink.
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `alias-in-expression` | A result column alias inside WHERE, ON, GROUP BY, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1; ADR 0030, D4 |
 | `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
 | `group-by-term` | A subquery is not modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3; ADR 0030, D4 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |

@@ -176,5 +176,10 @@ def indexKeys (script : List Syntax.Statement) : Option (List IndexKey) :=
 -- collation, which its query planner decides in part.
 #guard reason (migration tables [selectFrom (name! "c") [shown (.collate (ref (name! "n")) (name! "foo"))]]) ==
   RestrictionKind.unknownCollation.message
+-- Also on a number or an alias under COLLATE in GROUP BY.
+#guard reason (migration tables [selectFrom (name! "c") [shown (ref (name! "n"))]
+    (groupBy := [.collate (.numeric "1") (name! "foo")])]) == RestrictionKind.unknownCollation.message
+#guard reason (migration tables [selectFrom (name! "c") [.expression (ref (name! "n")) (some (name! "k")) "n"]
+    (groupBy := [.collate (ref (name! "k")) (name! "foo")])]) == RestrictionKind.unknownCollation.message
 
 end Belay.Sqlite.Model.Resolution.CollationExamples

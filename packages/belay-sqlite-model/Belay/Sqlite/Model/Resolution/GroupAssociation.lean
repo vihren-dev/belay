@@ -111,7 +111,14 @@ clauses: the term {lit}`k COLLATE NOCASE` of an alias {lit}`k` of {lit}`c || ''`
 {lit}`(c || '') COLLATE NOCASE`, as SQLite substitutes an alias. -/
 def Syntax.Expr.replaceUnderCollate : Syntax.Expr → Syntax.Expr → Syntax.Expr
   | .collate operand name, replacement => .collate (operand.replaceUnderCollate replacement) name
-  | _, replacement => replacement
+  | .null, replacement | .numeric _, replacement | .string _, replacement | .blob _, replacement
+  | .parameter _, replacement | .currentTime _, replacement | .identifier .., replacement
+  | .qualified .., replacement | .negate _, replacement | .positive _, replacement | .compare .., replacement
+  | .and .., replacement | .or .., replacement | .not _, replacement | .isNull .., replacement
+  | .callStar _, replacement | .call .., replacement | .arithmetic .., replacement | .cast .., replacement
+  | .exists _, replacement | .inQuery .., replacement | .subquery _, replacement | .inList .., replacement
+  | .between .., replacement | .caseOf .., replacement | .concatenate .., replacement
+  | .raise .., replacement => replacement
 
 /-- The result column associated with a grouping term, as SQLite's {lit}`resolve.c` records
 it: a number, also under unary plus and minus and under {lit}`COLLATE`, names its result column

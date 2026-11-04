@@ -140,7 +140,9 @@ with aliases {lit}`aliases` and collations {lit}`collations` (ADR 0030, D4):
   {lit}`GROUP BY term out of range` error;
 - the result column that a number or an alias names gives its expression and collation;
 - a number or an alias under {lit}`COLLATE` names its result column in the same way, with the
-  explicit collation, as SQLite reads the term without {lit}`COLLATE` (ADR 0030, D4 note);
+  explicit collation, as SQLite reads the term without {lit}`COLLATE` (ADR 0030, D4 note); an
+  unknown collation name there is {name}`RestrictionKind.unknownCollation`, as in any other
+  expression;
 - every other term is an expression ({name}`resolveGroupExpressionTraced`).
 
 An aggregate, also inside the result column that a number or an alias names, is SQLite's
@@ -171,9 +173,12 @@ def resolveGroupTermTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
     | .collate .. =>
       if term.collatedColumn scope then operand (resolveOperandTraced dqs scope shapes true term)
       else match columnNumber term.withoutCollate.1, term.withoutCollate.1 with
-        | some number, _ => numbered number (some (term.collationIn scope))
+        | some number, _ => do
+          unless term.withoutCollate.2 do throw (.restriction [4, item] .unknownCollation)
+          numbered number (some (term.collationIn scope))
         | none, .identifier name quote => match scope.resolveName name, aliasIndex aliases name with
           | .missing, some column => do
+            unless term.withoutCollate.2 do throw (.restriction [4, item] .unknownCollation)
             Traced.record { aliasUseOccurrence name quote column with path := [4, item] }
             Traced.lift ((grouped column).map fun (key, _) => (key, term.collationIn scope))
           | .found .., _ | .missing, none | .ambiguous, _ => resolveGroupExpressionTraced dqs scope shapes aliases item term

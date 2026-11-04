@@ -55,7 +55,8 @@ theorem namesAlias_nil (scope : Scope) : (expression : Syntax.Expr) → namesAli
   | .exists _ | .subquery _ | .raise .. => by simp [namesAlias]
 
 /-- For every scope and list of expressions, no expression names an alias of an empty list of
-aliases ({name}`namesAlias_nil`). -/
+aliases ({name}`namesAlias_nil`). Proof sketch: recursion on the list; the head is
+{name}`namesAlias_nil` and the tail is the recursive call. -/
 theorem namesAliasIn_nil (scope : Scope) : (expressions : List Syntax.Expr) → namesAliasIn scope [] expressions = false
   | [] => by simp [namesAliasIn]
   | argument :: rest => by simp [namesAliasIn, namesAlias_nil scope argument, namesAliasIn_nil scope rest]

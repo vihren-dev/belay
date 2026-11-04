@@ -27,10 +27,19 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Query
   `tests/surface_expression_grouping_test.py` with `tests/surface/ClaimsExpressionGrouping.lean`.
   Task correction: the failing key with kept rows is not a corpus case. The `group-by-term`
   example of `conformance/restriction_examples.py` is now a subquery; the mutants
-  `no_aggregate_in_group_by` and `no_group_by_out_of_range` follow the new code. Local dev verdict:
-  `select5:select5-5.11:21` and also v5 `indexexpr2:indexexpr2-10.1:124` change from
-  `MODEL_UNSUPPORTED` to `AGREE`; no other verdict changes. The claims pull request promotes both.
+  `no_aggregate_in_group_by` and `no_group_by_out_of_range` follow the new code. Besides
+  `select5:select5-5.11:21`, the case v5 `indexexpr2:indexexpr2-10.1:124` groups by an
+  expression; the slice-end verdict gives the verdict of both, and the claims pull request
+  promotes each that agrees.
   Tests for the commit: `tests/conformance_expression_grouping_test.py`,
   `tests/surface_expression_grouping_test.py`, `tests/restriction_registry_test.py`,
   `tests/conformance_restriction_examples_test.py`, `tests/restriction_costs_test.py`,
   `tests/mutant_guards_test.py`.
+- 2026-11-04: review fixes. A number or an alias under an unknown `COLLATE` name is
+  `unknown-collation`, as in any other expression (guards in `Resolution/CollationExamples.lean`);
+  `replaceUnderCollate` lists every form; proof sketch of `namesAliasIn_nil`; the
+  `alias-in-expression` text names GROUP BY. The mutant `no_aggregate_in_group_by` makes the
+  aggregate check a refusal, because a dropped check still gives a prepare error. Tests for the
+  commit: `tests/conformance_query_resolution_mutants_test.py`, `tests/mutant_guards_test.py`,
+  `tests/restriction_registry_test.py`, `tests/conformance_restriction_examples_test.py`,
+  `tests/surface_expression_grouping_test.py`.

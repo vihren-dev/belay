@@ -61,7 +61,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (GROUPING,
         "if !term.aggregateCalls.isEmpty then throw (.prepare .aggregateInGroupBy)",
-        "if false then throw (.prepare .aggregateInGroupBy)"),
+        "if !term.aggregateCalls.isEmpty then throw (.restriction [4, item] .groupByTerm)"),
     "no_order_by_out_of_range": (ORDER_TERMS,
         "| some (.error ()) => throw (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "| some (.error ()) => throw (.restriction [4, item] .aggregateOrderBy)"),
