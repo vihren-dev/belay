@@ -366,8 +366,10 @@ The value that a group gives for a non-aggregate expression follows SQLite's thr
     `SELECT a+0 AS k, a+0, max(n) ... GROUP BY k` the second column is associated, and the
     query gives `1` and `1.0`.
   - Two expressions are the same when their written forms are the same tree with every column
-    reference resolved to its source column, names and the type names of `CAST` compared
-    without case, and the same `COLLATE` clauses at the same places. Unary plus and `CAST`
+    reference resolved to its source column, function and collation names compared without
+    case, the type names of `CAST` compared with case, and the same `COLLATE` clauses at the
+    same places: `SELECT CAST(c AS TEXT), max(n) ... GROUP BY CAST(c AS text)` gives the
+    maximum's `'A'`, and `GROUP BY CAST(c AS TEXT)` gives the first row's `'a'`. Unary plus and `CAST`
     count as nodes: `SELECT +c, max(n) ... GROUP BY c` gives the maximum's `'A'`, and
     `SELECT +c, max(n) ... GROUP BY +c` gives the first row's `'a'`. The resolver compares
     the written expressions, because the resolved form does not keep `COLLATE`
@@ -457,7 +459,8 @@ Evidence, reused before new cases:
   - Slice 2: the six rows of "What the model gives today", `min` and `max` in both orders and
     across the result, `ORDER BY` and `HAVING`, a repeated call, `FILTER` on the deciding call,
     a tie of the maximum whose rows differ, a result column written twice and grouped by
-    number, by alias and by expression, `COLLATE` and unary plus on one side only, and the
+    number, by alias and by expression, `COLLATE` and unary plus on one side only, `CAST`
+    type names that differ in case, and the
     index-dependent query as a scalar subquery, as a derived table and as a term
     of a compound.
   - Slice 3: the probes of "Grouping: SQLite": storage classes and `+0`, NULL keys, the

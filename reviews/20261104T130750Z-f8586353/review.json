@@ -1,0 +1,47 @@
+{
+  "caller": "claude",
+  "commit": "f858635330da0e65a8170196ac94520016982e6b",
+  "date": "2026-11-04T13:07:50+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr-0030-conditional-creation-and-expression-grouping.md",
+    "reviews/20261104T130457Z-6617df89/resolution-1-20261104T130646Z.json",
+    "reviews/20261104T130457Z-6617df89/resolution-2-20261104T130646Z.json",
+    "reviews/20261104T130457Z-6617df89/resolution-3-20261104T130647Z.json",
+    "reviews/20261104T130457Z-6617df89/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261104T130750Z-f8586353#1",
+      "line": 369,
+      "path": "docs/adr-0030-conditional-creation-and-expression-grouping.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The association rule compares CAST type names without case, but SQLite 3.51.0 compares them case-sensitively: on the sample rows, `SELECT CAST(c AS TEXT), max(n) FROM t GROUP BY CAST(c AS text)` returns `'A',3`, whereas matching type-name case returns `'a',3`. Fix: require case-sensitive comparison of CAST type names and add this distinction to the planned evidence cases."
+    }
+  ],
+  "id": "20261104T130750Z-f8586353",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
