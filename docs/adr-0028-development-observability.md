@@ -4,8 +4,9 @@ Date: 2026-11-02. Revised: 2026-11-04. Status: IMPLEMENTED; deployment commissio
 Audience: designers and reviewers. See the [implementation status](../plans/20261104-pytest-observability.status.md).
 
 On 2026-11-04 the owner authorized implementation against this schema and a
-pinned local ClickHouse version before the devops handoff. Matching the deployed
-schema/version and live local/CI commissioning remain deferred, not satisfied.
+pinned local ClickHouse version before the devops handoff. Live local/CI
+commissioning and matching the deployed server version remain pending. The owner subsequently confirmed deployment and assigned schema
+creation to the uploader; devops does not pre-create the schema.
 
 ## Problem and scope
 
@@ -45,8 +46,9 @@ pytest configuration starts at [`conftest.py`](../conftest.py).
 
 ## D1. Store executions and native events
 
-Use database `belay_observability` with two tables and two views. The devops repo
-owns deployment of this schema; this ADR defines the producer/consumer contract.
+Use database `belay_observability` with two tables and two views. Belay owns
+the schema in `build-support/observability-schema.sql`; this ADR defines the
+producer/consumer contract. Devops owns the server and access configuration.
 
 ```sql
 CREATE DATABASE IF NOT EXISTS belay_observability;
@@ -130,6 +132,15 @@ initializes, or loss of the whole machine, can leave no usable report.
 The uploader reads an execution manifest and its reportlog, wraps native events
 in the schema above, and sends batches using ClickHouse's HTTP interface and
 `INSERT ... FORMAT JSONEachRow`. Python's standard library is sufficient.
+Before the first pending upload in each worker, execute the fixed schema's
+`CREATE ... IF NOT EXISTS` statements. Use the same authenticated connection
+settings and deadline as inserts. Concurrent workers and retries can repeat
+creation safely. This creates missing objects; it does not migrate or repair
+existing incompatible tables. Schema errors retain the observations for retry.
+The uploader identity needs CREATE DATABASE for `belay_observability`, CREATE
+TABLE and CREATE VIEW within that database, plus INSERT and SELECT on its two
+tables. SELECT permits creation of the views. It needs no DROP, ALTER or user
+administration privileges.
 Insert the execution row and event rows; retain the files until all inserts are
 confirmed. The two inserts need no cross-table transaction: interrupted delivery
 can temporarily leave partial data, and replay completes it.
@@ -190,7 +201,8 @@ Keep a small suite that checks our shared configuration and uploader:
   artifact recovery path for CI jobs without credentials. A controlled HTTP server
   can exercise uploader behavior without a live production database.
 
-Keep one focused integration check of our uploader and schema. Replay the same
+Keep one focused integration check of our uploader and schema. Start with no
+observability database and let the uploader create it. Replay the same
 observations and query the `_unique` views before background merges; counts stay
 unchanged, while a fresh execution increases them. It checks our keys,
 serialization and views, not ClickHouse's general deduplication behavior.
@@ -212,11 +224,11 @@ stop a disposable ClickHouse instance inside the test environment, with bounded
 startup and shutdown. It uses no production database or uploader credentials.
 Do not depend on the whole checkout, the Lean model or conformance runtime.
 
-The schema and server version must be explicit versioned inputs matching devops
-deployment. Pin the exact schema file/revision from the devops repository, or an
-export of that revision; changes require updating the declared input. Live server
-state is not an input that Nix can detect. Deployment changes must validate the
-corresponding schema/version combination and the separate devops handoff checks.
+The Belay schema file and server version must be explicit versioned inputs.
+Match the pinned ClickHouse version to the devops deployment during commissioning.
+Schema edits invalidate the check directly. Live server state is not an input
+that Nix can detect. Deployment changes must validate the corresponding
+schema/version combination and the separate devops handoff checks.
 
 An unchanged derivation reuses an available successful result locally or from the
 configured binary cache, without starting pytest or ClickHouse. Relevant input

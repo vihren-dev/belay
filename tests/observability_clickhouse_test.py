@@ -15,8 +15,6 @@ from tests.observability_support import observation
 from tools.observability_upload import upload_pending
 
 pytestmark = [pytest.mark.integration, pytest.mark.timeout(90)]
-ROOT = Path(__file__).resolve().parents[1]
-"""The schema export is an explicit Nix input, independent of Lean/conformance sources."""
 
 
 def query(url: str, sql: str) -> str:
@@ -26,7 +24,7 @@ def query(url: str, sql: str) -> str:
 
 
 def test_immutable_replay_and_fresh_execution(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Our IDs, JSON encoding and FINAL views prevent immediate double counting after replay."""
+    """Our uploader creates a missing schema and preserves unique counts on replay and fresh runs."""
     binary = os.environ["BELAY_TEST_CLICKHOUSE"]
     expected_version = os.environ["BELAY_TEST_CLICKHOUSE_VERSION"]
     version = subprocess.run([binary, "--version"], capture_output=True, text=True, check=True, timeout=5)
@@ -69,16 +67,14 @@ def test_immutable_replay_and_fresh_execution(tmp_path: Path, monkeypatch: pytes
                 except (OSError, urllib.error.URLError):
                     assert process.poll() is None and time.monotonic() < deadline, log.read_text()
                     time.sleep(0.1)
-            for statement in (ROOT / "build-support/observability-schema.sql").read_text().split(";"):
-                if statement.strip():
-                    query(url, statement)
-            query(url, "SYSTEM STOP MERGES")
+            assert query(url, "EXISTS DATABASE belay_observability") == "0"
             monkeypatch.setenv("BELAY_CLICKHOUSE_URL", url)
             monkeypatch.setenv("BELAY_CLICKHOUSE_USER", "default")
             monkeypatch.setenv("BELAY_CLICKHOUSE_PASSWORD", "")
             pending = tmp_path / "pending"
             directory = observation(pending)
             assert upload_pending(pending)
+            query(url, "SYSTEM STOP MERGES")
             (directory / ".uploaded").unlink()
             assert upload_pending(pending)
             assert query(url, "SELECT count() FROM belay_observability.test_events_unique") == "1"

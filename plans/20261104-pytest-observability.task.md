@@ -46,3 +46,13 @@ pinned local ClickHouse version, with deployment matching and live commissioning
 deferred. Devops issue vihren-dev/devops#47 is open with no handoff. Do not claim
 live deployment acceptance. The owner reviews this work, as instructed in this
 conversation; do not invoke the agent reviewer.
+
+## Schema ownership follow-up
+
+The owner reports that ClickHouse is deployed without a schema. The uploader
+must create the versioned database, tables and views before inserting pending
+observations. Creation is repeatable and uses existing request deadlines and
+failure retention. The existing cacheable integration check starts with no
+database and verifies creation and replay. A denied creation must retain files
+without a delivery receipt. Verify live delivery when connection details are
+available; this session has no endpoint or credentials configured.

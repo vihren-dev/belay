@@ -1,6 +1,6 @@
 # ClickHouse request for the devops repository
 
-Date: 2026-11-04. Status: requested capabilities; not yet provisioned.
+Date: 2026-11-04. Status: owner reports deployment; connection handoff pending.
 Audience: the person managing the devops repository.
 
 Please describe and provision one persistent ClickHouse instance for Belay's
@@ -14,14 +14,16 @@ runtime variables and the `observability` GitHub environment. Restrict that
 environment to `main`; its credentials belong only to the trusted upload workflow.
 The provisional integration pin is ClickHouse 26.8.7.19-lts with the SQL export
 in `build-support/observability-schema.sql`. The owner authorized implementation
-before deployment; confirm or update this combination during the handoff.
+before deployment; confirm or update the server pin during the handoff. Belay
+owns schema creation, as subsequently requested by the owner.
 
 ## Service and schema
 
-- Manage the instance configuration, pinned stable version and schema deployment
-  in the devops repository. One server is sufficient for this MVP.
-- Create database `belay_observability` and the two tables and two query views
-  defined in [ADR 0028, D1](adr-0028-development-observability.md#d1-store-executions-and-native-events).
+- Manage the instance configuration and pinned stable version in the devops
+  repository. One server is sufficient for this MVP.
+- The Belay uploader creates database `belay_observability`, its two tables and
+  two query views from the versioned SQL file in Belay. The contract is defined
+  in [ADR 0028, D1](adr-0028-development-observability.md#d1-store-executions-and-native-events).
   The contract uses `ReplacingMergeTree`, UUID, UTC `DateTime64`, nullable strings,
   JSON stored as strings, and views with `FINAL`. It needs no experimental types.
 - Support authenticated HTTP `POST` requests with
@@ -39,8 +41,10 @@ before deployment; confirm or update this combination during the handoff.
 - Provide an HTTPS endpoint reachable from developer machines and the trusted CI
   uploader. A private network is suitable if both have a documented route to it.
   The endpoint need not be reachable from Nix builders.
-- Provide an uploader identity with INSERT permission on the two tables, without
-  schema-changing or administrative privileges. Provide a separate analysis
+- Provide an uploader identity with CREATE DATABASE for `belay_observability`,
+  CREATE TABLE and CREATE VIEW within that database, and INSERT and SELECT on
+  its two tables. SELECT permits view creation. It needs no DROP, ALTER or user
+  administration privileges. Provide a separate analysis
   identity that can SELECT the `_unique` views and their underlying tables as
   required by the view security configuration. Analysis uses the views.
 - Provision local and CI credentials at runtime. Keep them out of source control,
@@ -66,11 +70,12 @@ them when the relevant deployment configuration changes; do not add them to
 Belay's ordinary pytest suite. Remove temporary deployment probes afterward.
 
 Verify authenticated insert and read access from a developer machine and the
-trusted CI uploader environment. In a disposable database with the same schema,
+trusted CI uploader environment. Let the uploader create the missing schema, then
 insert one execution and its events twice: the `_unique` views must return one
-copy immediately. Confirm that an uploader cannot change the schema, that an
-analysis identity cannot insert, and that data survives a server restart.
+copy immediately. Confirm that the uploader can create the required objects but
+cannot drop or alter them, that an analysis identity cannot insert, and that data
+survives a server restart.
 
-Belay owns reportlog configuration, execution IDs, report artifacts, uploader
-code, automatic local/CI invocation and replay tests. No message broker, custom
+Belay owns schema creation, reportlog configuration, execution IDs, report
+artifacts, uploader code, automatic local/CI invocation and replay tests. No message broker, custom
 ingestion service, replica cluster or dashboard is required for this handoff.

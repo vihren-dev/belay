@@ -175,3 +175,17 @@ def test_ci_credentials_are_separate_from_test_code() -> None:
     assert "ref: main" in uploader and "head_sha" not in uploader
     assert "actions: read" in uploader and "environment: observability" in uploader
     assert "python3 -m tools.observability_ci" in uploader
+
+
+def test_schema_denial_retains_observations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A schema permission failure prevents inserts and receipts, so the same files can retry."""
+    directory = observation(tmp_path)
+    with receiver(deny_schema=True) as (url, rows):
+        monkeypatch.setenv("BELAY_CLICKHOUSE_URL", url)
+        assert not upload_pending(tmp_path)
+        assert rows == []
+        assert not (directory / ".uploaded").exists()
+    with receiver() as (url, rows):
+        monkeypatch.setenv("BELAY_CLICKHOUSE_URL", url)
+        assert upload_pending(tmp_path)
+        assert len(rows) == 2

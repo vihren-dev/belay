@@ -32,8 +32,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def insert(table: str, rows: Iterable[dict[str, object]], deadline: float) -> None:
-    """Send synchronous JSONEachRow batches; confirm status and an empty insert response."""
+def request(sql: str, body: bytes, deadline: float) -> None:
+    """Execute schema creation or an insert with the same authentication and deadline."""
     endpoint = os.environ["BELAY_CLICKHOUSE_URL"]
     parsed = urllib.parse.urlsplit(endpoint)
     if (parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username
@@ -41,36 +41,46 @@ def insert(table: str, rows: Iterable[dict[str, object]], deadline: float) -> No
         raise ValueError("BELAY_CLICKHOUSE_URL must be an HTTP(S) endpoint without credentials or query")
     if parsed.scheme != "https" and parsed.hostname not in LOOPBACK_HOSTS:
         raise ValueError("non-loopback ClickHouse endpoints require HTTPS")
-    query = urllib.parse.urlencode({"query": f"INSERT INTO belay_observability.{table} FORMAT JSONEachRow",
+    query = urllib.parse.urlencode({"query": sql,
                                   "wait_end_of_query": "1", "async_insert": "0"})
     context = ssl.create_default_context(cafile=os.environ.get("BELAY_CLICKHOUSE_CA"))
     opener = urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=context))
 
-    def send(body: bytes) -> None:
-        """Bound each request by both the remaining worker budget and its request timeout."""
-        remaining = deadline - monotonic()
-        if remaining <= 0:
-            raise TimeoutError("upload deadline reached")
-        request = urllib.request.Request(endpoint + "?" + query, data=body, method="POST", headers={
-            "Content-Type": "application/x-ndjson",
-            "X-ClickHouse-User": os.environ.get("BELAY_CLICKHOUSE_USER", "default"),
-            "X-ClickHouse-Key": os.environ.get("BELAY_CLICKHOUSE_PASSWORD", ""),
-        })
-        with opener.open(request, timeout=min(REQUEST_SECONDS, remaining)) as response:
-            if response.status != 200 or response.read(65536).strip():
-                raise ValueError("ClickHouse did not confirm an empty successful insert response")
+    remaining = deadline - monotonic()
+    if remaining <= 0:
+        raise TimeoutError("upload deadline reached")
+    message = urllib.request.Request(endpoint + "?" + query, data=body, method="POST", headers={
+        "Content-Type": "application/x-ndjson",
+        "X-ClickHouse-User": os.environ.get("BELAY_CLICKHOUSE_USER", "default"),
+        "X-ClickHouse-Key": os.environ.get("BELAY_CLICKHOUSE_PASSWORD", ""),
+    })
+    with opener.open(message, timeout=min(REQUEST_SECONDS, remaining)) as response:
+        if response.status != 200 or response.read(65536).strip():
+            raise ValueError("ClickHouse did not confirm an empty successful response")
 
+
+def create_schema(deadline: float) -> None:
+    """Create missing objects from our fixed SQL contract; never alter existing data."""
+    schema = Path(__file__).resolve().parents[1] / "build-support/observability-schema.sql"
+    for statement in schema.read_text().split(";"):
+        if statement.strip():
+            request(statement, b"", deadline)
+
+
+def insert(table: str, rows: Iterable[dict[str, object]], deadline: float) -> None:
+    """Send synchronous JSONEachRow batches and require a completed insert response."""
+    sql = f"INSERT INTO belay_observability.{table} FORMAT JSONEachRow"
     batch = bytearray()
     for row in rows:
         data = (encode(row) + "\n").encode()
         if len(data) > BATCH_BYTES:
             raise ValueError("row exceeds the 1 MiB upload limit; retained for diagnosis")
         if batch and len(batch) + len(data) > BATCH_BYTES:
-            send(bytes(batch))
+            request(sql, bytes(batch), deadline)
             batch.clear()
         batch.extend(data)
     if batch:
-        send(bytes(batch))
+        request(sql, bytes(batch), deadline)
 
 
 def upload_pending(directory: Path) -> bool:
@@ -80,6 +90,7 @@ def upload_pending(directory: Path) -> bool:
         return False
     deadline = monotonic() + WORKER_SECONDS
     succeeded = True
+    schema_ready = False
     for manifest in sorted(directory.glob("*/execution.json")):
         if manifest.parent.name.startswith("."):
             continue
@@ -92,6 +103,9 @@ def upload_pending(directory: Path) -> bool:
                 # Validate the full log first: malformed complete lines must not be silently dropped.
                 for _ in events(manifest.parent, identity):
                     pass
+                if not schema_ready:
+                    create_schema(deadline)
+                    schema_ready = True
                 insert("test_executions", [row], deadline)
                 insert("test_events", events(manifest.parent, identity, warn=False), deadline)
                 (manifest.parent / ".uploaded").touch()

@@ -79,3 +79,26 @@ rebased #303 branch, `experiments/observability-extraction`.
   removed after preserving the observations. No live deployment is claimed.
 - Documentation links and the SQL export's agreement with the ADR were checked.
   Owner review replaces the agent reviewer throughout this task.
+
+## Uploader-owned schema follow-up
+
+- The owner reports deployment without a schema and assigns schema creation to
+  the uploader. The code and docs now use Belay's fixed SQL file before the
+  first pending insert in a worker, within the existing request/process limits.
+- Schema creation uses `IF NOT EXISTS`. It does not alter existing objects.
+  Failed creation retains reports without a delivery receipt. Both automatic
+  and explicit upload use this behavior.
+- The existing Nix integration check now starts without the database and lets
+  the uploader create it. It then stops merges and checks replay and fresh-run
+  counts. Evidence: `/nix/store/kjmlswp4s87j8fx7yi344jdl179ic1ci-sqlite-verifier-test-observability-1`;
+  one check passed in 0.64 seconds against ClickHouse 26.8.7.19-lts.
+- Focused development checks: `tests/test_observability.py`,
+  `tests/test_observability_identity.py`, and `tests/test_pytest_harness.py`.
+  These cover permission-denied retention, concurrent/nested reporting and
+  complete Nix inputs. Host results are not conformance evidence.
+- Code follow-up: DONE. Live commissioning remains BLOCKED on connection
+  details: no `BELAY_CLICKHOUSE_*` variables in this session, no issue #47
+  handoff, HTTP 403 for devops repository contents, and HTTP 404 for Belay's
+  environment configuration under the restricted GitHub identity. Requested
+  the endpoint and credential reference from the owner; no live claim is made.
+- Owner review remains the review policy. No Lean or mutant tables changed.

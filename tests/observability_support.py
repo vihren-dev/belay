@@ -30,6 +30,8 @@ def observation(root: Path) -> Path:
 def harness(root: Path) -> Path:
     """Copy the actual shared setup without a conformance runtime or other tests."""
     root.mkdir(parents=True)
+    (root / "build-support").mkdir()
+    shutil.copyfile(ROOT / "build-support/observability-schema.sql", root / "build-support/observability-schema.sql")
     for name in ("pytest.ini", "conftest.py"):
         shutil.copyfile(ROOT / name, root / name)
     for package, names in {
@@ -58,7 +60,7 @@ def environment(spool: Path, url: str = "") -> dict[str, str]:
 
 
 @contextmanager
-def receiver(*, lose_acknowledgement: bool = False) -> Iterator[tuple[str, list[dict[str, object]]]]:
+def receiver(*, lose_acknowledgement: bool = False, deny_schema: bool = False) -> Iterator[tuple[str, list[dict[str, object]]]]:
     """Receive real inserts; optionally drop one acknowledgement after accepting an event batch."""
     rows: list[dict[str, object]] = []
     remaining_loss = lose_acknowledgement
@@ -71,8 +73,11 @@ def receiver(*, lose_acknowledgement: bool = False) -> Iterator[tuple[str, list[
             nonlocal remaining_loss
             self.connection.settimeout(3)
             received = self.rfile.read(int(self.headers["Content-Length"]))
+            if deny_schema and not received:
+                self.send_error(403)
+                return
             rows.extend(json.loads(line) for line in received.splitlines())
-            if remaining_loss and "test_events" in self.path:
+            if received and remaining_loss and "test_events" in self.path:
                 remaining_loss = False
                 self.connection.shutdown(socket.SHUT_RDWR)
                 self.connection.close()

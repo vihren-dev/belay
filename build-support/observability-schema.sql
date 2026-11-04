@@ -1,4 +1,4 @@
--- ADR 0028 contract export. Devops deployment matching is pending (devops#47).
+-- ADR 0028 contract. The uploader creates these objects before inserting observations.
 CREATE DATABASE IF NOT EXISTS belay_observability;
 
 CREATE TABLE IF NOT EXISTS belay_observability.test_executions

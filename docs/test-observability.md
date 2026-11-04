@@ -18,7 +18,12 @@ Set these runtime environment variables using the credentials from devops:
 | `BELAY_CLICKHOUSE_CA` | Optional PEM CA file for a private certificate authority |
 
 HTTP is accepted only for loopback tests. The database is `belay_observability`.
-Do not put credentials in Nix expressions or committed shell files.
+The uploader creates its database, tables and views before sending pending
+observations. Devops does not need to create the schema. The writer needs
+CREATE DATABASE for `belay_observability`, CREATE TABLE and CREATE VIEW within
+that database, and INSERT and SELECT on its two tables. Creation uses
+`IF NOT EXISTS`; it does not change existing tables. Permission or schema errors
+retain the files for retry. Do not put credentials in Nix expressions or committed shell files.
 
 Pytest finalization tries delivery after closing the report. A missing endpoint,
 network failure or interrupted acknowledgement retains observations for retry
@@ -58,9 +63,9 @@ results. The workflow becomes active after its trusted code reaches `main`.
 
 The implementation uses the ADR schema export in
 `build-support/observability-schema.sql` and ClickHouse 26.8.7.19-lts from pinned
-nixpkgs. The owner authorized this provisional combination while devops issue #47
-is pending. Deployment matching and live local/CI commissioning remain required
-before declaring the service operational.
+nixpkgs. The owner reports that ClickHouse is deployed. Connection details, server-version
+matching and live local/CI commissioning remain pending; do not treat the
+local integration check as proof that the service is operational.
 
 ## Queries
 
