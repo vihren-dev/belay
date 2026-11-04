@@ -30,3 +30,10 @@ the theorems that the ADR's context lists, `tests/syntax_mapping_test.py`,
   `tests/conformance_conditional_creation_test.py`, `tests/surface_conditional_creation_test.py`,
   `tests/surface_success_test.py` (the create-index and unique-email examples),
   `tests/conformance_generation_test.py`, `tests/surface_editor_origins_test.py`.
+- 2026-11-04: review fixes (`refactor:`): every catalog entry in the matches of the no-op
+  conditions, and editor origin tests of `CREATE TABLE IF NOT EXISTS`.
+- 2026-11-04: the general no-op laws of D7: `runScriptStep_noOp` (a statement that resolves to
+  `.drop []` continues with done, zero changes and the same connection, for every CREATE form),
+  `Database.drop_nil`, and `runScriptStep_createTable_noOp` and `runScriptStep_createIndex_noOp`;
+  `tests/surface/ClaimsConditionalCreation.lean` uses them. Tests:
+  `tests/surface_conditional_creation_test.py`.

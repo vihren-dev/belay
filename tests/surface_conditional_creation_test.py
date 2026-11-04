@@ -13,11 +13,11 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 def test_conditional_creation_keeps_the_database_or_creates(runtime_root: Path, tmp_path: Path) -> None:
     """`Resolution/ConditionalCreation.lean`, `ConditionalCreationSteps.lean` and the generalised
     `Script.createIndex_allOk_iff`: kernel-checked no-ops keep the database, the counters and a
-    rollback; the checks before the name check keep their errors; a free name runs as without
-    the clause. No proof uses an unchecked axiom."""
+    rollback; the checks before the name check keep their errors; the general laws give the no-op
+    step and the step with a free name. No proof uses an unchecked axiom."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsConditionalCreation.lean", tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 7, result.stdout
+    assert len(reports) == 9, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

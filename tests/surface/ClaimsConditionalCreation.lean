@@ -64,6 +64,28 @@ theorem unique_over_duplicates : (Database.empty.run (sql r"
     CREATE UNIQUE INDEX IF NOT EXISTS u ON d(x); CREATE UNIQUE INDEX IF NOT EXISTS w ON d(x);
   ")).outputs = [.done 0, .done 2, .done 0, .done 0, .error 19] := by decide +kernel
 
+/-- For every connection where a table or view has the name, one step of CREATE TABLE with the
+clause outputs done with zero changes and keeps the connection, whatever its body. Proof sketch:
+the model step law. -/
+theorem kept_table {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {name : Identifier} {columns : List Syntax.ColumnDefinition}
+    {constraints : List Syntax.TableConstraint} {options : Syntax.TableOptions} {parameters : List Value}
+    (kept : createTableKept connection.state.database.catalog name = true) :
+    runScriptStep context clock index connection (.createTable name columns constraints options true) parameters =
+      .continued (.done 0) connection [] :=
+  runScriptStep_createTable_noOp kept
+
+/-- For every connection where an index has the name, one step of CREATE INDEX with the clause
+outputs done with zero changes and keeps the connection, whatever its terms. Proof sketch: the
+model step law. -/
+theorem kept_index {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {name tableName : Identifier} {unique : Bool}
+    {terms : List Syntax.OrderTerm} {filter : Option Syntax.Expr} {parameters : List Value}
+    (kept : createIndexKept connection.state.database.catalog name tableName = true) :
+    runScriptStep context clock index connection (.createIndex name unique tableName terms filter true) parameters =
+      .continued (.done 0) connection [] :=
+  runScriptStep_createIndex_noOp kept
+
 /-- For every connection where no table or view has the name, one step of CREATE TABLE with
 the clause is the step without it. Proof sketch: the model step law. -/
 theorem free_table {context : ResolveContext} {clock : Option Clock} {index : Nat}
@@ -90,6 +112,8 @@ theorem free_index (db : Database) (env : Env)
 #print axioms no_op_rollback
 #print axioms errors_kept
 #print axioms unique_over_duplicates
+#print axioms kept_table
+#print axioms kept_index
 #print axioms free_table
 #print axioms free_index
 
