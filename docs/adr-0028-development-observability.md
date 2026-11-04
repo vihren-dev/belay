@@ -186,12 +186,43 @@ Keep a small suite that checks our shared configuration and uploader:
   artifact recovery path for CI jobs without credentials. A controlled HTTP server
   can exercise uploader behavior without a live production database.
 
-Keep one focused integration check of our uploader and schema in a disposable
-database matching the deployed version. Replay the same observations and query
-the `_unique` views before background merges;
-counts stay unchanged, while a fresh execution increases them. Run it when the
-schema or ingestion changes, not for every unrelated commit. It checks our keys,
+Keep one focused integration check of our uploader and schema. Replay the same
+observations and query the `_unique` views before background merges; counts stay
+unchanged, while a fresh execution increases them. It checks our keys,
 serialization and views, not ClickHouse's general deduplication behavior.
+
+### Reuse the existing Nix test cache
+
+Implement this integration check as a separate cacheable Nix test derivation using
+the existing suite machinery in [build-support/tests.nix](../build-support/tests.nix).
+Register its test ownership so ordinary host source checks do not also run it.
+Include the target in the existing local and CI Nix check sets. Those commands
+may request the target on every run; Nix decides whether execution is necessary.
+No separate changed-path selector or new CI scope is required for this check.
+
+Declare only the uploader, schema, integration test, required shared helpers,
+pinned Python dependencies and pinned ClickHouse executable as inputs. Start and
+stop a disposable ClickHouse instance inside the test environment, with bounded
+startup and shutdown. It uses no production database or uploader credentials.
+Do not depend on the whole checkout, the Lean model or conformance runtime.
+
+The schema and server version must be explicit versioned inputs matching devops
+deployment. Pin the exact schema file/revision from the devops repository, or an
+export of that revision; changes require updating the declared input. Live server
+state is not an input that Nix can detect. Deployment changes must validate the
+corresponding schema/version combination and the separate devops handoff checks.
+
+An unchanged derivation reuses an available successful result locally or from the
+configured binary cache, without starting pytest or ClickHouse. Relevant input
+changes invalidate it. An unrelated model edit does not invalidate this target.
+A cold machine, missing cache entry or garbage-collected result can still require
+execution: this is dependency-based reuse, not a promise to run only after edits.
+Shared helper or toolchain changes can legitimately invalidate the result too.
+
+Extend the existing source-identity checks with focused relevant/irrelevant input
+cases for this target. These evaluate derivation identities without running the
+database. The existing [CI scope selector](../tests/ci_scope.py) continues to choose
+broad check sets; Nix supplies reuse within those sets.
 
 ### One-time commissioning checks
 

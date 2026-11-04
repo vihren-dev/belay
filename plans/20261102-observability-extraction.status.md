@@ -76,6 +76,13 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   and replay material. Existing JUnit summaries and review tooling remain in use.
   Updated the devops handoff to match. Documentation links, anchors and whitespace
   were checked; no production code or test behavior changed. Owner review applies.
+- Owner clarification on 2026-11-04: the focused ClickHouse integration check uses
+  the existing Nix suite machinery and dependency-based result reuse, not a new
+  changed-path selector. ADR 0028 now specifies narrow inputs, a disposable server,
+  an explicit devops schema/version pin, exclusion from duplicate host execution,
+  and identity checks that do not run the database. Cache misses can still execute
+  unchanged tests. Link, anchor and whitespace checks passed; this remains a
+  documentation-only proposal reviewed by the owner.
 
 ## References
 
