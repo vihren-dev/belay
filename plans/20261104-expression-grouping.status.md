@@ -14,3 +14,23 @@ Relevant files: `packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Query
 ## Progress
 
 - 2026-11-04: task specified.
+- 2026-11-04: implemented. `resolveGroupTermTraced` resolves every term that is not a name, a
+  number or an alias under `COLLATE` as an expression (`resolveGroupExpressionTraced`): an
+  aggregate is SQLite's error, a subquery is `group-by-term`, an alias inside the term is
+  `alias-in-expression`. `columnNumber` and `Syntax.Expr.withoutCollate` moved to
+  `Resolution/QueryTerms.lean` and serve both ORDER BY and GROUP BY. A number under `COLLATE`
+  names its column under that collation; an alias under `COLLATE` is the aliased expression
+  under it, and `associatedResult` follows D5 for it. Lemmas
+  `resolveGroupTerm_expression`, `resolveGroupExpression_operand` and
+  `GroupTermResolvesIn.expression`. New corpus `conformance/authored_expression_grouping.py`
+  (34 cases), tests `tests/conformance_expression_grouping_test.py` and
+  `tests/surface_expression_grouping_test.py` with `tests/surface/ClaimsExpressionGrouping.lean`.
+  Task correction: the failing key with kept rows is not a corpus case. The `group-by-term`
+  example of `conformance/restriction_examples.py` is now a subquery; the mutants
+  `no_aggregate_in_group_by` and `no_group_by_out_of_range` follow the new code. Local dev verdict:
+  `select5:select5-5.11:21` and also v5 `indexexpr2:indexexpr2-10.1:124` change from
+  `MODEL_UNSUPPORTED` to `AGREE`; no other verdict changes. The claims pull request promotes both.
+  Tests for the commit: `tests/conformance_expression_grouping_test.py`,
+  `tests/surface_expression_grouping_test.py`, `tests/restriction_registry_test.py`,
+  `tests/conformance_restriction_examples_test.py`, `tests/restriction_costs_test.py`,
+  `tests/mutant_guards_test.py`.

@@ -111,7 +111,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .aggregateInExpression => "an aggregate here is not modeled, such as the argument of a function that can fail; use the aggregate as a whole result column"
   | .aliasInExpression => "a result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled; write the column expression"
   | .viewBodyCheck => "a view whose body has an error that SQLite finds only when a statement runs it is not modeled for a statement that reads only its columns; repair the view or select from it"
-  | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
+  | .groupByTerm => "a subquery is not modeled in GROUP BY; group by an expression without a subquery"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
   | .aggregateOrderBy => "an ORDER BY term of an aggregate query that reads a column outside GROUP BY is not modeled; order by a grouping term, an aggregate or a result column"
   | .windowValue => "only an integer literal or a lone parameter is modeled as LIMIT or OFFSET; write an integer or ?"

@@ -50,7 +50,11 @@ The frontend maps these statements, and refuses every other statement as
   with an optional alias (ADR 0012, slice 1). Without `FROM`, the source is one row
   with no columns (slice 6a), which `WHERE` keeps or removes; aggregation, grouping,
   `ORDER BY` and `LIMIT` then apply as for any query, so `SELECT count(*) WHERE 0` is one
-  row with 0. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
+  row with 0. A `GROUP BY` term is a column, a result alias, an integer that names a
+  result column (also under parentheses, unary plus and minus or `COLLATE`; out of range is
+  SQLite's error), or any expression that `WHERE` accepts, compared without affinity under
+  its collation (ADR 0030, D4); a result alias inside a larger term and a subquery are model
+  restrictions, and an aggregate is SQLite's error. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
   first and OFFSET only when the LIMIT is not 0, and convert it as SQLite's
   `OP_MustBeInt` does; a value that is not an integer then fails the statement with
   `datatype mismatch`. A negative LIMIT has no limit, and a negative bound OFFSET skips
@@ -534,8 +538,7 @@ that order. Resolution decides each collation by SQLite's rules: a comparison us
 explicit `COLLATE` of its left operand, else of its right operand, else the collation of
 a column on the left, else on the right, else `BINARY`; `COLLATE` passes through unary plus
 and `CAST`. An `ORDER BY` or `GROUP BY` term, `min` and `max` use the collation of their
-expression, and the equality of `USING` and `NATURAL` that of its left column. A
-`GROUP BY` term may be a column name under one `COLLATE`. An unknown name in a column
+expression, and the equality of `USING` and `NATURAL` that of its left column. An unknown name in a column
 definition or an index term is SQLite's prepare error `no such collation sequence: %s`;
 in any other expression it is the restriction `unknown-collation`, because SQLite looks
 the name up only where it uses the collation, and its query planner decides some of
@@ -632,7 +635,7 @@ should shrink.
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
 | `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
-| `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
+| `group-by-term` | A subquery is not modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3; ADR 0030, D4 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |

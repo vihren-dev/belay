@@ -60,14 +60,14 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (GROUPING,
-        "throw (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
-        "throw ((callIssue name).under [4, item])"),
+        "if !term.aggregateCalls.isEmpty then throw (.prepare .aggregateInGroupBy)",
+        "if false then throw (.prepare .aggregateInGroupBy)"),
     "no_order_by_out_of_range": (ORDER_TERMS,
         "| some (.error ()) => throw (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "| some (.error ()) => throw (.restriction [4, item] .aggregateOrderBy)"),
     "no_group_by_out_of_range": (GROUPING,
-        "| some (.error ()) => throw (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
-        "| some (.error ()) => throw (.restriction [3, item] .groupByTerm)"),
+        "else throw (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
+        "else throw (.restriction [4, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""
@@ -100,7 +100,7 @@ GUARDS: dict[str, str] = {
     "no_such_column": "rule:identifierTraced",
     "no_such_table": "rule:resolveTableReferenceTraced",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
-    "no_aggregate_in_group_by": "rule:resolveGroupTermTraced",
+    "no_aggregate_in_group_by": "rule:resolveGroupExpressionTraced",
     "no_order_by_out_of_range": "rule:resolveOrderTermTraced",
     "no_group_by_out_of_range": "rule:resolveGroupTermTraced",
 }

@@ -26,34 +26,6 @@ structure CompoundTerm where
   /-- Shapes of the term's expression subqueries, needed for derived-column affinity. -/
   shapes : SubqueryShapes := {}
 
-/-- The column number of an {lit}`ORDER BY` term of a compound ({lit}`sqlite3ExprIsInteger`): an
-integer literal from 0 to 2147483647, also in hexadecimal, under unary plus and minus, which
-negates it; none for any other expression, such as {lit}`2147483648` or {lit}`1.0`. For example
-{assert}`columnNumber (.negate (.numeric "1")) = some (-1)`. -/
-def columnNumber : Syntax.Expr → Option Int
-  | .numeric text => match numericValue text false with
-    | .integer value => if 0 ≤ value ∧ value ≤ 2147483647 then some value else none
-    | .real | .hexTooBig => none
-  | .positive operand => columnNumber operand
-  | .negate operand => (columnNumber operand).map (- ·)
-  | .null | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .compare .. | .and .. | .or ..
-  | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate ..
-  | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none
-
-/-- The expression without the {lit}`COLLATE` operators around it
-({lit}`sqlite3ExprSkipCollate`), and whether each of their names names a collation. -/
-def Syntax.Expr.withoutCollate : Syntax.Expr → Syntax.Expr × Bool
-  | .collate operand name =>
-    let (inner, known) := operand.withoutCollate
-    (inner, known && (Collation.named? name).isSome)
-  | expression@.null | expression@(.numeric _) | expression@(.string _) | expression@(.blob _)
-  | expression@(.parameter _) | expression@(.currentTime _) | expression@(.identifier ..) | expression@(.negate _)
-  | expression@(.positive _) | expression@(.compare ..) | expression@(.and ..) | expression@(.or ..)
-  | expression@(.not _) | expression@(.isNull ..) | expression@(.callStar _) | expression@(.call ..)
-  | expression@(.arithmetic ..) | expression@(.cast ..) | expression@(.qualified ..) | expression@(.exists _)
-  | expression@(.inQuery ..) | expression@(.subquery _) | expression@(.inList ..) | expression@(.between ..)
-  | expression@(.caseOf ..) | expression@(.concatenate ..) | expression@(.raise ..) => (expression, true)
-
 /-- Whether an {lit}`ORDER BY` expression that resolves to the same expression as a result
 expression of a term matches it as SQLite compares them ({lit}`sqlite3ExprCompare`): both read
 one column by name, or a column of {lit}`*` (none as written), or the result expression without

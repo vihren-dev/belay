@@ -53,13 +53,15 @@ When the task is done, all of these are true:
 - **Authored corpus** `expression-grouping-*`, recorded with the native oracle (version 7
   records), with the probes of "Grouping: SQLite" of the ADR: storage classes and `+0`, NULL
   keys, the collation cases, aliases and alias shadowing, the numbers `(1)`, `+1`, `-1`, `0`,
-  `1.0`, `'1'`, a number and an alias under `COLLATE`, aggregate terms, a failing key with
-  and without kept rows, rule 3 of the row of a group with a single `max`, a result column written twice and grouped by
+  `1.0`, `'1'`, a number and an alias under `COLLATE`, aggregate terms, a failing key
+  without kept rows, rule 3 of the row of a group with a single `max`, a result column written twice and grouped by
   expression, and a `date(x, 'unixepoch')` key with an explicit clock. Every case agrees; the
   claims pull request claims the corpus with all its cases in `mustAgree`. A form that the
   model refuses (an alias inside a term, a window term, a bare column, a subquery term) cannot
   agree, so it is not a corpus case; a checked example in the model gives its restriction or
-  translation refusal.
+  translation refusal. Correction (2026-11-04): the list named a failing key with kept rows too.
+  The model says only that such a key may fail (ADR 0030, D4), so its outcome is
+  `MODEL_UNSUPPORTED` and cannot agree; the corpus has the failing key without kept rows only.
 - **Promotion.** v5 `select5:select5-5.11:21` agrees and goes into `mustAgree`.
 - **Retained.** v5 `select8:select8-1.*` (`bare-column`), an alias inside a grouping term, v55
   `insert-query-group-by`, and the authored aggregate-in-`GROUP BY` and out-of-range cases of

@@ -31,18 +31,12 @@ def Syntax.Expr.columnReadsIn (scope : Scope) : Syntax.Expr → Option (List Nat
   | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
   | .raise .. => none
 
-/-- The value of a numeric literal that SQLite's parser stores as a number
-({lit}`EP_IntValue`): an integer literal, decimal or hexadecimal, from {lean}`0` to
-{lean}`2147483647`. For example {lit}`01` and {lit}`0x1` give {lean}`1`; {lit}`1.0`,
-{lit}`3000000000` and {lit}`0xffffffffffffffff` (the integer {lean}`-1`) give {lean}`(none : Option Int)`, so SQLite compares them as written. -/
-def smallIntegerLiteral (text : String) : Option Int :=
-  (integerLiteral (.numeric text)).filter fun value => 0 ≤ value ∧ value ≤ 2147483647
-
 mutual
 /-- Whether two written expressions are the same for the association of a grouping term
 (SQLite's {lit}`sqlite3ExprCompare`): the same tree, where two column references are the same
 when they read the same source columns ({lit}`reads`), two small integer literals are the same
-when their values are ({name}`smallIntegerLiteral`), function names and collation names
+when their values are ({name}`columnNumber`: from 0 to 2147483647, also in hexadecimal; {lit}`01`
+and {lit}`0x1` are the same as {lit}`1`), function names and collation names
 compare without ASCII case, and {lit}`CAST` type names, unary plus and every other part
 compare as written ({name}`Syntax.Expr.same`). For example {lit}`A + 0` is the same as
 {lit}`a+0`, and {lit}`0 + a` is not. -/
@@ -53,7 +47,7 @@ def Syntax.Expr.sameIn (reads : Syntax.Expr → Option (List Nat)) : Syntax.Expr
     | some x, some y => x == y
     | some _, none | none, some _ | none, none => a.same b
   | .null, .null => true
-  | .numeric a, .numeric b => match smallIntegerLiteral a, smallIntegerLiteral b with
+  | .numeric a, .numeric b => match columnNumber (.numeric a), columnNumber (.numeric b) with
     | some x, some y => x == y
     | some _, none | none, some _ | none, none => a == b
   | .currentTime a, .currentTime b => a == b
@@ -112,9 +106,18 @@ def writtenResults (scope : Scope) (results : List Syntax.ResultColumn) : List (
     | .sourceStar name => ((scope.starColumns? name).map (·.map fun _ => none)).getD []
     | .expression value _ _ => [some value]
 
+/-- The expression with {lit}`replacement` in place of the operand under its {lit}`COLLATE`
+clauses: the term {lit}`k COLLATE NOCASE` of an alias {lit}`k` of {lit}`c || ''` gives
+{lit}`(c || '') COLLATE NOCASE`, as SQLite substitutes an alias. -/
+def Syntax.Expr.replaceUnderCollate : Syntax.Expr → Syntax.Expr → Syntax.Expr
+  | .collate operand name, replacement => .collate (operand.replaceUnderCollate replacement) name
+  | _, replacement => replacement
+
 /-- The result column associated with a grouping term, as SQLite's {lit}`resolve.c` records
-it: a number names its result column ({name}`namedResult`); an alias that no source column has
-stands for its aliased expression; that expression, or any other term, is associated with the
+it: a number, also under unary plus and minus and under {lit}`COLLATE`, names its result column
+({name}`columnNumber`); an alias that no source column has, also under {lit}`COLLATE`,
+stands for its aliased expression under the same {lit}`COLLATE` clauses
+({name}`Syntax.Expr.replaceUnderCollate`); that expression, or any other term, is associated with the
 last result column whose written form is the same ({name}`Syntax.Expr.sameIn`). For example
 with {lit}`SELECT a+0 AS k, a+0`, {lit}`GROUP BY k` is associated with the second column.
 {lean}`(none : Option Nat)` when no result column is the same. -/
@@ -130,9 +133,12 @@ def associatedResult (scope : Scope) (written : List (Option Syntax.Expr)) (alia
   | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
-  | .concatenate .. | .raise .. => match namedResult aliases term with
-    | some (.ok column) => some column
-    | some (.error ()) | none => lastSame term
+  | .concatenate .. | .raise .. => match columnNumber term.withoutCollate.1, term.withoutCollate.1 with
+    | some number, _ => if 1 ≤ number ∧ number ≤ (aliases.length : Int) then some (number.toNat - 1) else none
+    | none, .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
+      | .missing, some column => (written[column]?).join.bind fun aliased => lastSame (term.replaceUnderCollate aliased)
+      | .missing, none | .ambiguous, _ | .found .., _ => lastSame term
+    | none, _ => lastSame term
 
 /-- The result columns that give the value of their grouping term on the first row of the
 group ({lit}`Resolved.Query.firstRowColumns`): each column associated with a grouping term
