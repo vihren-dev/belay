@@ -1,6 +1,8 @@
 name: Upload test observations
 
 on:
+  push:
+    branches: [ci-test]
   workflow_run:
     workflows: [CI]
     types: [completed]
@@ -22,13 +24,23 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: main
+          ref: 717c35f8be39f6e14fd1746e731bc63844a9fe88
           persist-credentials: false
       - name: Upload observations with trusted code
         env:
           GH_TOKEN: ${{ github.token }}
-          BELAY_OBSERVABILITY_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+          BELAY_OBSERVABILITY_RUN_ID: "41813149317"
           BELAY_CLICKHOUSE_URL: ${{ vars.BELAY_CLICKHOUSE_URL }}
           BELAY_CLICKHOUSE_USER: ${{ vars.BELAY_CLICKHOUSE_USER }}
           BELAY_CLICKHOUSE_PASSWORD: ${{ secrets.BELAY_CLICKHOUSE_PASSWORD }}
         run: python3 -m tools.observability_ci
+      - name: Verify retained artifacts were delivered
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          manifests = list(Path("build/observability").glob("*/execution.json"))
+          pending = [path.parent.name for path in manifests if not (path.parent / ".uploaded").exists()]
+          print(f"Recovered {len(manifests)} executions; {len(pending)} pending uploads", flush=True)
+          assert manifests, "No observations were recovered from CI"
+          assert not pending, "Some observations were not delivered"
+          PYCODE

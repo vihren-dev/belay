@@ -124,3 +124,12 @@ rebased #303 branch, `experiments/observability-extraction`.
   The expected configuration is URL and USER as variables, PASSWORD as a secret.
 - Owner review remains required before merge. The environment restriction was
   left intact; no unreviewed branch received database credentials.
+
+## Temporary ci-test commissioning branch
+
+The owner added `ci-test` to the environment policy. This branch triggers the
+uploader on push, checks out the exact implementation commit `717c35f8`, and
+imports artifacts from completed CI run 41813149317. A temporary final check
+requires delivery receipts for every imported execution. These workflow changes
+are only for commissioning; production still uses `main` and normal triggers.
+Live CI results are pending. No credentials are committed.
