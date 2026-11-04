@@ -53,6 +53,10 @@ put credential values in this document or a pull request.
 
 ## Handoff verification
 
+These are commissioning checks owned by devops. Record their results and repeat
+them when the relevant deployment configuration changes; do not add them to
+Belay's ordinary pytest suite. Remove temporary deployment probes afterward.
+
 Verify authenticated insert and read access from a developer machine and the
 trusted CI uploader environment. In a disposable database with the same schema,
 insert one execution and its events twice: the `_unique` views must return one

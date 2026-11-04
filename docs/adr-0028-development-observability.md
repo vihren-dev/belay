@@ -161,27 +161,75 @@ Do not relabel them with the retrieving machine's time or metadata.
 
 ## Acceptance
 
-Implementation is complete when bounded integration checks demonstrate:
+Observability is supporting code under [AGENTS.md](../AGENTS.md#goal-core-and-supporting-code)
+and [R18](review-checklist.md). Keep its tests proportional to the integration we
+own. R11 still requires regression tests for behavior changes; R15 excludes tests
+of dependency behavior without a known or suspected problem. Every retained test
+names the repository behavior it protects and has bounded subprocesses.
 
-- Ordinary direct local pytest, the current test recipes and CI automatically
-  produce queryable test names, phases, outcomes and durations in ClickHouse.
-- A newly discovered parametrized test and a new suite using the shared Nix
-  factory inherit reporting and upload without observability-specific changes.
-  Check the configured test entry points, including scheduled and mutant jobs.
-- Passing, failing, skipped, xfailed, setup-error and collection-error sessions
-  retain their native reports. An interrupted session retains available records
-  without inventing successful completion.
-- Concurrent sessions use separate artifacts. Replaying a report or retrieving
-  a cached Nix result leaves counts in the `_unique` views unchanged immediately,
-  without waiting for background merges. A fresh execution increases the count.
-- An unavailable server and an uncertain acknowledgement preserve test results;
-  retained reports reach the database on automatic retry. CI artifact recovery
-  covers jobs that cannot hold credentials. Empty metadata works.
-- The devops handoff is satisfied: local and CI connectivity, restricted writer
-  and reader access, persistent storage and the deployed schema are verified.
+### Permanent regression tests
 
-Validate the schema and uploader against the deployed ClickHouse version. These
-are acceptance requirements, not claims about the earlier experiments. Local
+Keep a small suite that checks our shared configuration and uploader:
+
+- Shared setup enables reporting and automatic upload, including finalization
+  after failure. A small discovered-test fixture checks inheritance; configuration
+  checks cover the common Nix factory and local/CI entry points.
+- The uploader preserves representative native records, including unknown fields
+  and empty metadata, and handles partial files and failed-build log extraction.
+  It does not turn an incomplete report into a successful result. Do not maintain
+  an exhaustive matrix of pytest/reportlog outcome semantics.
+- Concurrent sessions get separate artifacts. Replays and cached artifacts retain
+  their execution and event IDs; fresh executions get new IDs. These checks need
+  small fixtures, not repeated real Nix builds.
+- Network failure and uncertain acknowledgement retain files for automatic retry,
+  preserve the test/build exit status and respect upload deadlines. Include our
+  artifact recovery path for CI jobs without credentials. A controlled HTTP server
+  can exercise uploader behavior without a live production database.
+
+Keep one focused integration check of our uploader and schema in a disposable
+database matching the deployed version. Replay the same observations and query
+the `_unique` views before background merges;
+counts stay unchanged, while a fresh execution increases them. Run it when the
+schema or ingestion changes, not for every unrelated commit. It checks our keys,
+serialization and views, not ClickHouse's general deduplication behavior.
+
+### One-time commissioning checks
+
+Before declaring implementation complete, record evidence that:
+
+- Real local pytest and CI produce queryable names, phases, outcomes and durations.
+  Exercise the current test routes, including scheduled/mutant jobs and failed-run
+  recovery. Demonstrate automatic upload of a newly discovered parametrized test
+  and a temporary suite using the shared Nix factory.
+- A real fresh Nix execution and a cache hit preserve the intended identities and
+  counts. Failed and interrupted runs retain available records within D2/D3's
+  stated limits. Representative outcome demonstrations can use temporary fixtures;
+  they do not become a permanent test suite for pytest or reportlog.
+- The devops handoff verifies local/CI connectivity, permissions and persistence
+  against the deployed ClickHouse version. Those are deployment checks owned by
+  devops, repeated when relevant configuration changes, not Belay pytest checks.
+
+Keep the acceptance record and remove temporary demonstration suites, targets
+and deployment probes after recording their results. Permanent regression tests
+remain. The earlier experiments do not satisfy these commissioning requirements.
+
+## Cleanup and retained evidence
+
+The custom collector and probe runners in `experiments/observability/` are research
+scaffolding, not production dependencies or permanent CI checks. Do not carry the
+coverage, Lean, proof-cost or review-export probes into the reduced implementation.
+They currently have no production callers, so archiving them saves maintenance,
+not test execution time.
+
+When retiring the runnable experiments, retain the report, `results.json` and the
+source/readers needed to reproduce the historical evidence. A pinned historical
+snapshot with working reproduction instructions can hold the runnable material;
+update links before removing it from the active tree. Do not leave broken replay
+commands or require old probes to track new production interfaces.
+
+Delete implementation scaffolding and replaced paths; update their callers, per R4.
+Keep existing JUnit reporting, CI summaries and review tooling: this decision does
+not replace them. ADR acceptance alone does not authorize their removal. Local
 telemetry remains a development observation, not conformance evidence (ADR 0020).
 
 ## References

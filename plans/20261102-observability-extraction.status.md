@@ -68,6 +68,14 @@ Base: `187ea5104e7a1ae64477fc46b8e0e4743da27ae4` (`main` at creation).
   design against shared pytest configuration, Nix suite construction, current CI
   entry points and upstream reportlog/ClickHouse documentation. Schema execution
   and uploader integration checks remain implementation acceptance work.
+- Owner follow-up on 2026-11-04: distinguish permanent tests of our shared setup,
+  uploader and schema from one-time commissioning demonstrations in ADR 0028.
+  Apply R11/R15/R18 to this supporting code. Remove temporary demonstration suites
+  and deployment probes after recording acceptance evidence; retain focused
+  regression tests. Retiring research runners must preserve historical evidence
+  and replay material. Existing JUnit summaries and review tooling remain in use.
+  Updated the devops handoff to match. Documentation links, anchors and whitespace
+  were checked; no production code or test behavior changed. Owner review applies.
 
 ## References
 
