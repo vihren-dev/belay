@@ -24,6 +24,11 @@ def harness(tmp_path: Path) -> Path:
     shutil.copy2(ROOT / "conftest.py", root)
     for name in SUPPORT:
         shutil.copy2(ROOT / "tests" / name, root / "tests" / name)
+    (root / "build-support").mkdir()
+    shutil.copy2(ROOT / "build-support/observability-schema.sql", root / "build-support")
+    (root / "tools").mkdir()
+    for source in [ROOT / "tools/__init__.py", *(ROOT / "tools").glob("observability_*.py")]:
+        shutil.copy2(source, root / "tools" / source.name)
     return root
 
 

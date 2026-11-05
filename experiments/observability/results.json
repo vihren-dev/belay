@@ -1,0 +1,214 @@
+{
+  "date": "2026-11-02",
+  "local_daemon_observation": {
+    "build_results": {
+      "changed": [
+        {
+          "drvPath": "/nix/store/gls5zg1b2dy0dqkfkzh90df25r58xkgv-observability-pass.drv",
+          "outputs": {
+            "out": "/nix/store/fqgc677c30pwyazimqmqwqy81vfhy98i-observability-pass"
+          }
+        }
+      ],
+      "fresh": [
+        {
+          "drvPath": "/nix/store/ajxzv5pd8pad7j0pai5glnnbl6jgn5vp-observability-pass.drv",
+          "outputs": {
+            "out": "/nix/store/qadkbmw79rdp3a5d4cdcjfxbccmq0lza-observability-pass"
+          }
+        }
+      ],
+      "reuse": [
+        {
+          "drvPath": "/nix/store/ajxzv5pd8pad7j0pai5glnnbl6jgn5vp-observability-pass.drv",
+          "outputs": {
+            "out": "/nix/store/qadkbmw79rdp3a5d4cdcjfxbccmq0lza-observability-pass"
+          }
+        }
+      ]
+    },
+    "cached_result_preserves_original_execution": true,
+    "failed_builds": {
+      "abrupt": {
+        "build_exit": 1,
+        "leftover_output_exists": true,
+        "log_events": 12,
+        "session_finished": false,
+        "valid_output": false
+      },
+      "fail": {
+        "build_exit": 1,
+        "leftover_output_exists": true,
+        "log_events": 17,
+        "session_finished": true,
+        "valid_output": false
+      }
+    },
+    "irrelevant_input_preserves_identity": true,
+    "relevant_input_changes_identity": true,
+    "scope": "local Nix daemon; not a CI execution",
+    "seed": "dab127ee-25a1-455f-82e9-eb2986ed3b0e",
+    "source_identity": "9f385b64237d8235456218fe271d5a1419576b47 ntxtrkwzpyntslynyxzsnxmwqloussus",
+    "version": "nix (Nix) 2.34.8",
+    "why_depends_exit": 0
+  },
+  "local_repeat": {
+    "directory": "build/observability-local-2",
+    "result": "passed, including all 11 selected repository tests before the sandbox selection excluded the host-Nix case",
+    "scope": "local observation; not Nix acceptance evidence"
+  },
+  "sandboxed_nix_output": "/nix/store/k4c23pmf0mmyrm3lv1kp8qps5137zhng-belay-observability-probes",
+  "sandboxed_summaries": {
+    "context": {
+      "case_files": 17,
+      "cases_with_requirement_tags": 0,
+      "ci_scope": "environment fixture only; no live CI job launched",
+      "mutant_outcomes_measured": false,
+      "scope": "Five key mutant declarations and authored JSON fixtures; not the complete corpus.",
+      "static_mutant_targets": 5
+    },
+    "costs": {
+      "collection_requires_opt_in_import": true,
+      "records": [
+        {
+          "compiler": "4.34.1",
+          "declaration": "counted",
+          "heartbeats": 20606,
+          "identity": "stable",
+          "kind": "thm",
+          "module": "CostFixture",
+          "scheme": "proof-body-v1-async",
+          "sourceHash": "11967674033431244693",
+          "status": "completed",
+          "unit": "internal-heartbeat"
+        }
+      ],
+      "repeat_identical": true,
+      "scope": "Existing optional collector, body elaboration only; not kernel checking or runtime coverage.",
+      "stale_exit": 2,
+      "unit": "internal-heartbeat"
+    },
+    "lean": {
+      "admitted_proof_reported_sorryAx": true,
+      "changed_check_exit": 3,
+      "declarations": 6,
+      "dependency_modules": 2,
+      "diagnostic_fields": [
+        "caption",
+        "data",
+        "endPos",
+        "fileName",
+        "isSilent",
+        "keepFullRange",
+        "kind",
+        "pos",
+        "severity"
+      ],
+      "import_change_invalidated": true,
+      "lake": "Lake version 5.0.0-src+5045d00 (Lean version 4.34.1)",
+      "lean": "Lean (version 4.34.1, x86_64-unknown-linux-gnu, commit 5045d0056413266e57c625dcd7c365b10e377c52, Release)",
+      "profile_bytes": 105206,
+      "profile_threads": 5,
+      "proof_body_references": [
+        "ProbeModel.zero"
+      ],
+      "reuse_preserved_artifact": true,
+      "runtime_coverage": "No runtime path collector used; profiles measure elaboration, not model paths.",
+      "unrelated_source_preserved_artifact": true
+    },
+    "python": {
+      "abrupt_has_junit": false,
+      "abrupt_has_start": true,
+      "collected": 8,
+      "completed": 7,
+      "coverage": {
+        "ctrace": {
+          "child_contexts": [
+            ""
+          ],
+          "child_has_parent_test_context": false,
+          "coverage_version": "7.15.4",
+          "parent_test_attribution_correct": true,
+          "positive_contexts": [
+            "cases.py::test_classify[positive]|run"
+          ],
+          "unsupported_context_warning": false,
+          "zero_contexts": [
+            "cases.py::test_classify[zero]|run"
+          ]
+        },
+        "default": {
+          "child_contexts": [
+            ""
+          ],
+          "child_has_parent_test_context": false,
+          "coverage_version": "7.15.4",
+          "parent_test_attribution_correct": false,
+          "positive_contexts": [
+            "cases.py::test_classify[positive]|run"
+          ],
+          "unsupported_context_warning": true,
+          "zero_contexts": [
+            "cases.py::test_child|run"
+          ]
+        }
+      },
+      "junit_cases": 7,
+      "phase_outcomes": {
+        "call:failed": 1,
+        "call:passed": 3,
+        "call:skipped": 1,
+        "setup:failed": 1,
+        "setup:passed": 5,
+        "setup:skipped": 1,
+        "teardown:passed": 7
+      },
+      "selected": 7
+    },
+    "repository": {
+      "finished_events": 10,
+      "junit_cases": 10,
+      "scope": "Existing review/report tests with repository conftest; host-Nix test deselected."
+    },
+    "reviews": {
+      "duration_records": 0,
+      "fields": {
+        "resolution": [
+          "date",
+          "finding",
+          "kind",
+          "outcome",
+          "reason"
+        ],
+        "review": [
+          "caller",
+          "commit",
+          "date",
+          "exit",
+          "files",
+          "findings",
+          "id",
+          "kind",
+          "reviewer",
+          "revision",
+          "rules",
+          "well_formed"
+        ]
+      },
+      "jsonl_bytes": 3218068,
+      "kinds": {
+        "resolution": 1679,
+        "review": 1901
+      },
+      "model_version_records": 0,
+      "records": 3580,
+      "statistics_preserved": true
+    }
+  },
+  "versions": {
+    "coverage": "7.15.4",
+    "pytest": "9.1.1",
+    "pytest-cov": "7.1.0",
+    "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [GCC 15.3.0]"
+  }
+}

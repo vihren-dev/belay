@@ -1,0 +1,118 @@
+{
+  "source_commit": "a62c89a5",
+  "output": "/nix/store/gm6h6x2zn5ivk8xzs13rqamk129yi2x7-sqlite-verifier-test-reports",
+  "suites": [
+    {
+      "suite": "corpora",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 230.199
+    },
+    {
+      "suite": "coverageFeatures",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 573.363
+    },
+    {
+      "suite": "coverageStatements",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 602.546
+    },
+    {
+      "suite": "documentation",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 62.826
+    },
+    {
+      "suite": "frozen",
+      "tests": 153,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 583.163
+    },
+    {
+      "suite": "harness",
+      "tests": 289,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 107.734
+    },
+    {
+      "suite": "model",
+      "tests": 228,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 617.168
+    },
+    {
+      "suite": "observability",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 0.551
+    },
+    {
+      "suite": "packages",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 1.6
+    },
+    {
+      "suite": "parserLibrary",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 102.596
+    },
+    {
+      "suite": "sample",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 93.104
+    },
+    {
+      "suite": "surface",
+      "tests": 380,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 868.148
+    },
+    {
+      "suite": "surfaceChecks",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 522.372
+    },
+    {
+      "suite": "surfaceS6",
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 831.396
+    },
+    {
+      "suite": "theoremDependencies",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 37.195
+    },
+    {
+      "suite": "upstream",
+      "tests": 117,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 40.648
+    }
+  ]
+}

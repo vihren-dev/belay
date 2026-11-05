@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-02T08:09:50+00:00",
+  "finding": "20261102T080918Z-438f3719#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "R18 explicitly accepts an owner request as present-problem evidence. The owner requested experiments for all seven previously discussed observability areas and asked to prefer supported extraction. The questions establish feasibility, not a production implementation or a claim of measured savings."
+}

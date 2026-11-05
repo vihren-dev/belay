@@ -54,12 +54,12 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
     assert set(scripts) == set(ownership) == mutant_suites | {
         'model', 'coverageStatements', 'coverageFeatures', 'frozen', 'corpora', 'harness',
-        'sample', 'upstream', 'parserLibrary', 'packages', 'documentation', 'theoremDependencies',
+        'observability', 'sample', 'upstream', 'parserLibrary', 'packages', 'documentation', 'theoremDependencies',
         'surface', 'surfaceChecks', 'surfaceS6', 'writers'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
-        limit = '2700' if name in mutant_suites else '1200'
+        limit = '2700' if name in mutant_suites else ('120' if name == 'observability' else '1200')
         assert command[:5] == ['timeout', limit, 'python3', '-m', 'pytest'], (name, command[:5])
         runtime_index = command.index('--runtime-root')
         assert command[5:runtime_index] == ownership[name], (name, command)

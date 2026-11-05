@@ -132,6 +132,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Retain observations for trusted upload
+        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: belay-observability-${{ matrix.system }}
+          path: build/observability/
+          if-no-files-found: ignore
+          retention-days: 14
+
   mutants:
     name: Mutants (${{ matrix.suite }}, ${{ matrix.system }})
     # The mutant suites of the model (tests/nix_mutant_suites.json) run here, one runner each, in
@@ -201,6 +210,15 @@ jobs:
           name: mutant-reports-${{ matrix.suite }}-${{ matrix.system }}
           path: build/nix-tests-mutants/
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Retain observations for trusted upload
+        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: belay-observability-${{ matrix.suite }}-${{ matrix.system }}
+          path: build/observability/
+          if-no-files-found: ignore
           retention-days: 14
 
   publish-nix-store:

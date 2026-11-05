@@ -57,6 +57,10 @@ def nix_build_recipe_lines() -> list[list[str]]:
     text = re.sub(r"\{\{([a-z_]+)\}\}", lambda match: variables.get(match.group(1), match.group(0)), text)
     lines = [shlex.split(line) for line in text.splitlines()
              if line.lstrip().startswith("timeout ") and " nix-build " in line]
+    for line in text.splitlines():
+        if line.lstrip().startswith("python3 -m tools.observability_nix --timeout "):
+            words = shlex.split(line)
+            lines.append(["timeout", "--foreground", words[4], *words[5:]])
     return [words for words in lines if "nix-build" in words]
 
 

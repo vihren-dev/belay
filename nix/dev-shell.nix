@@ -6,7 +6,8 @@
   packages = [
     pkgs.just
     pkgs.coreutils
-    (pkgs.python3.withPackages (ps: [ ps.pytest ps.hypothesis ]))
+    (pkgs.python3.withPackages (ps: [ ps.pytest ps.hypothesis
+      (pkgs.callPackage ./pytest-reportlog.nix {}) ]))
     native.sqlite
     native.sqlite346
     native.sqlite3534

@@ -145,6 +145,11 @@ and changed tests and checks, including checks that tools run during a build.
 - **Workarounds are narrow.** A workaround for a dependency bug covers only the
   cases that we need, names the upstream report, and is removed when the fix
   arrives.
+- **Reuse expensive test results.** First evaluate the existing Nix test
+  machinery for expensive tests and test groups. Use dependency-based caching
+  where it preserves the check's meaning. If it cannot fit, record why and get
+  an explicit owner decision on the execution policy before adding or scheduling
+  the check. See R20 in [the review checklist](docs/review-checklist.md).
 
 ## The local build loop
 
