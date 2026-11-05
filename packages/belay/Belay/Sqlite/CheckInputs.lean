@@ -18,7 +18,9 @@ private def inputTerm (stx : Syntax) (expected : Option Expr := none) : TermElab
     instantiateMVars value
 
 /-- Add typed explicit inputs to the configured sampler. Every supplied database uses the
-same final environment and named inputs, independently of input order. -/
+same final environment and named inputs, independently of input order. Without
+{lit}`(schema := database)`, the first supplied database is also the search schema: the
+generated candidates have its catalog and variants of its rows. -/
 def elaborateInputs (inputs : Array (TSyntax `sqlCheckInput)) : TermElabM SampleConfig := do
   let mut samples := configuredSamples (← getOptions)
   let mut databases := #[]
@@ -42,7 +44,7 @@ def elaborateInputs (inputs : Array (TSyntax `sqlCheckInput)) : TermElabM Sample
         throwErrorAt name "supply only one value for this quantified input"
       samples := { samples with named := samples.named.push (name.getId, ← inputTerm value) }
     | _ => throwUnsupportedSyntax
-  return { samples with witnesses := databases.map fun database =>
+  return { samples with schema := samples.schema.or databases[0]?, witnesses := databases.map fun database =>
     { database, environment := samples.environment, named := samples.named } }
 
 /-- Run the common checker with frontend options and optional supplied terms. Input elaboration

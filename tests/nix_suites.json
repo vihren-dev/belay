@@ -199,6 +199,7 @@
     "tests/surface_check_command_test.py",
     "tests/surface_check_readable_test.py",
     "tests/surface_check_default_budget_test.py",
+    "tests/surface_check_real_schemas_test.py",
     "tests/surface_search_test.py",
     "tests/surface_sampling_test.py",
     "tests/surface_counterexample_test.py",

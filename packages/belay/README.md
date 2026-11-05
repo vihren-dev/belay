@@ -362,7 +362,11 @@ of `sql.checkBudget`. A false claim about an equivalence can need a budget of
 about 250000 units to show its explanation and its regression example.
 
 Use `with (schema := db! "CREATE TABLE custom(x);")` to guide inference, or
-repeat `(db := candidate)` after `with` for an ordered candidate sequence.
+repeat `(db := candidate)` after `with` for an ordered candidate sequence. Without
+`schema :=`, the first `(db := candidate)` is also the schema of the search. The search tries
+the schema's own rows, then each table with one more row: a variant of the table's first row
+with the first ASCII letter of each text in the other case, the same row again, or NULL in a
+column that allows it. For example, the row `'ann@x.io'` gives a second row `'Ann@x.io'`.
 `(env := environment)` supplies the environment; `(input name := value)` supplies
 a quantified input, even when its binder is named `schema` or `env`. These inputs
 work with both frontends. They are proposals: claim preconditions are checked,

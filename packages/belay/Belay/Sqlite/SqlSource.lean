@@ -18,6 +18,11 @@ def scriptSourceKey : Name := `Belay.Sqlite.source.script
 /-- The metadata key for a database construction's original literal text. -/
 def databaseSourceKey : Name := `Belay.Sqlite.source.database
 
+/-- The metadata key for the SQL text of a database's schema, on a database that the checker
+generated on the schema of a {lit}`db!` constant. The text can also have rows, which the
+construction of the generated database leaves out. -/
+def schemaSourceKey : Name := `Belay.Sqlite.source.schema
+
 /-- The metadata key for the original literal syntax, retaining its source range. -/
 def sourceRangeKey : Name := `Belay.Sqlite.source.range
 
@@ -30,6 +35,12 @@ The text is a hint, not evidence that the expression has any particular value. -
 def withSource (key : Name) (literal : Syntax) (text fileName : String) (expression : Expr) : Expr :=
   mkMData (((KVMap.empty.insert key (.ofString text)).insert sourceRangeKey (.ofSyntax literal)).insert
     sourceFileKey (.ofString fileName)) expression
+
+/-- Attach the SQL text of a database's schema ({name}`schemaSourceKey`) to a generated
+database as definitionally irrelevant metadata. The text is a hint for the construction of a
+replay, which validates it. -/
+def withSchemaText (text : String) (expression : Expr) : Expr :=
+  mkMData (KVMap.empty.insert schemaSourceKey (.ofString text)) expression
 
 /-- Original literal text and range recovered from an annotation. A caller must retranslate
 or execute the text and compare it with the represented script or database before replay. -/

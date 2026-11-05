@@ -2,6 +2,8 @@ import Lean.Meta.Reduce
 import Lean.Meta.CtorRecognizer
 import Belay.Sqlite.CheckBudget
 import Belay.Sqlite.ReplayEvaluation
+import Belay.Sqlite.SqlSource
+import Belay.Sqlite.DbBang
 
 set_option doc.verso true
 
@@ -82,5 +84,19 @@ def scriptValue (expression : Expr) (excluded : Array Name := #[])
   let statements ← dataValue (List (Model.Syntax.Statement × List Value))
     (mkApp (mkConst ``Script.statements) expression) excluded excludedLocals
   return ⟨statements⟩
+
+/-- The SQL text of a database term's schema: the source of a {lit}`db!` constant, or the
+schema text of a database that the checker generated ({name}`schemaSourceKey`). None for other
+terms. -/
+def schemaText? (database : Expr) : MetaM (Option String) := do
+  if let some source ← sourceOf databaseSourceKey database then return some source.text
+  return (← sourceOf schemaSourceKey database).map (·.text)
+
+/-- The term of a generated database, with the SQL text of its schema when there is one, so
+that its replay can build it from that text ({lit}`Replay.schemaRowsSql`). -/
+def generatedExpr (raw : Database.Raw) (schema : Option String) : Expr :=
+  match schema with
+  | some text => withSchemaText text (databaseExpr raw)
+  | none => databaseExpr raw
 
 end Belay.Sqlite.Check

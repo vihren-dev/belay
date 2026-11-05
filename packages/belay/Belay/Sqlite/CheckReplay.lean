@@ -62,6 +62,7 @@ def shrinkProposals (witness : Witness) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM (List Witness) := do
   let smaller ← dataValue (List Database.Raw) (mkApp (mkConst ``smallerData) witness.database)
     excluded excludedLocals
-  return smaller.map fun raw => { witness with database := databaseExpr raw }
+  let schema ← schemaText? witness.database
+  return smaller.map fun raw => { witness with database := generatedExpr raw schema }
 
 end Belay.Sqlite.Check

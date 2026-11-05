@@ -89,21 +89,27 @@ def test_lean_continuation_is_described_as_the_model_run_of_the_whole_program(bl
 
 
 def test_false_equivalences_show_the_native_difference(blocks: dict[str, str], tmp_path: Path) -> None:
-    """The refutation of an equivalence names the database and says that the runs differ, and native SQLite
-    leaves different rows for the two programs: the quantity 6 for the first and 7 for the second. The
-    outputs of the two runs are equal, so the text says that the value or the connection differs, and does not
-    claim that the value is the same."""
+    """The refutation of an equivalence shows the database and says that the runs differ, and native SQLite
+    leaves different rows for the two programs: the second quantity is one more than the first. The outputs
+    of the two runs are equal, so the text says that the value or the connection differs, and does not claim
+    that the value is the same. The claim whose premise fixes the database names it (quantity 5 gives 6 and 7);
+    with (db := sample) alone, the shrinking can replace the database by a smaller one on its schema, which the
+    replay builds from the schema's text (Replay.schemaRowsSql)."""
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     for name in ("equiv-false", "equiv-at-false"):
         block = blocks[name]
-        assert "Database: sample" in block, block
+        assert "Database:" in block and "items:" in block, block
         assert ("Failing observation: The actual runs of the two programs differ at this context, in the "
                 "returned value or in the connection that they leave. The outputs of the two runs are equal.") in block, block
         first, second = replays(block)
         inspect = "\nSELECT id, qty FROM items;\n"
-        assert final_rows(sqlite, tmp_path, f"{name}-first", first, inspect) == [[1, 6]], block
-        assert final_rows(sqlite, tmp_path, f"{name}-second", second, inspect) == [[1, 7]], block
+        first_rows = final_rows(sqlite, tmp_path, f"{name}-first", first, inspect)
+        assert len(first_rows) == 1 and first_rows[0][0] == 1, block
+        assert final_rows(sqlite, tmp_path, f"{name}-second", second, inspect) == [[1, first_rows[0][1] + 1]], block
+    assert "Database: sample" in blocks["equiv-at-false"], blocks["equiv-at-false"]
+    assert final_rows(sqlite, tmp_path, "equiv-at-false-check", replays(blocks["equiv-at-false"])[0],
+                      "\nSELECT id, qty FROM items;\n") == [[1, 6]], blocks["equiv-at-false"]
 
 
 def test_explanation_names_what_the_relation_compares(blocks: dict[str, str]) -> None:
