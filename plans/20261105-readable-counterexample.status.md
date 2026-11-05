@@ -33,3 +33,11 @@ Sources: `packages/belay/Belay/Sqlite/CheckDisplay.lean`, `CheckOperation.lean`,
   (the command-line rewrite of `\u` escapes) is fixed: the task file no longer claims it.
   Tests run: `surface_replay_test`, `surface_check_readable_test`.
 - 2026-11-05: review of the refactor commit: no findings.
+- 2026-11-05: the end checks found a regression: `tests/surface_rebuild_test.py`
+  (`RebuildRefutation`, `sql_refute` with the default budget) gave no refutation, because the
+  text of the witness used the rest of the budget. `describeWitness` (`CheckWitnessText.lean`)
+  gives the text the explanation share of the budget, as the failing observation has; without
+  the text, the refutation is reported without its tables. Tests run: `surface_rebuild_test`,
+  `surface_check_readable_test`, `surface_s6_check_programs_test`, `surface_check_command_test`,
+  `surface_replay_test`, `surface_s6_not_blocked_test`, `surface_automatic_test`,
+  `surface_s6_check_editor_test`, `surface_automatic_editor_test`.

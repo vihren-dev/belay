@@ -10,7 +10,9 @@ When `#sql_check`, or the automatic check of a statement, refutes a claim, the m
 one block in this order:
 
 1. `SQL check: false.`
-2. The database. `Database:` is followed by one table for each table of the catalog: the
+2. The database, when the budget allows its text (the share of the failing observation; a
+   certified refutation is reported without it otherwise). `Database:` is followed by one
+   table for each table of the catalog: the
    table name, then the column names as a header and one line for each row, as `#sql`
    shows a result (`textTable`). The cells are SQL literals, so `'a'`, `'A'`, `1`, `'1'`,
    `NULL` and `X'00'` are different cells. When the witness database is a named constant,

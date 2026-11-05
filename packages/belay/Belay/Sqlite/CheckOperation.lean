@@ -26,7 +26,7 @@ structure Outcome where
   run at the witness. None when the claim is no such claim or the text is out of budget. -/
   observation : Option String := none
   /-- The database and environment of a reported refutation as a user reads them. None when there is
-  no refutation. -/
+  no refutation, or when the budget did not allow the text ({name}`describeWitness`). -/
   witness : Option WitnessText := none
 
 /-- Try proof automation, then the shared candidate generator, and require replay before
@@ -54,9 +54,9 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         let proof ← refuteWitness proposition witness excluded excludedLocals
         let reports ← replayClaim proposition witness excluded excludedLocals
         let observation ← observeFailure proposition witness excluded excludedLocals
-        let text ← witnessText witness excluded excludedLocals
+        let text ← describeWitness witness excluded excludedLocals
         let original : Outcome :=
-          { result := .refuted witness proof, replays := reports, observation, witness := some text }
+          { result := .refuted witness proof, replays := reports, observation, witness := text }
         if shrinkAttempts == 0 then return original
         -- Shrinking may use its share of the budget that is left. A certified, replayed witness is kept when
         -- shrinking uses its share without a smaller witness.
@@ -71,8 +71,8 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
           if smaller.database == witness.database then return original
           let reports ← replayClaim proposition smaller excluded excludedLocals
           let observation ← observeFailure proposition smaller excluded excludedLocals
-          let text ← witnessText smaller excluded excludedLocals
-          return { result := .refuted smaller proof, replays := reports, observation, witness := some text }
+          let text ← describeWitness smaller excluded excludedLocals
+          return { result := .refuted smaller proof, replays := reports, observation, witness := text }
         return (smaller.bind id).getD original
       return accepted.getD {}
   return (outcome.bind id).getD {}

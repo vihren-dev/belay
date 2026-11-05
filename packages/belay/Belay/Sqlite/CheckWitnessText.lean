@@ -82,4 +82,14 @@ def witnessText (witness : Witness) (excluded : Array Name := #[])
     (mkApp (Lean.mkConst ``environmentValues) witness.environment) excluded excludedLocals
   return { name, tables, environment := some (environmentText values) }
 
+/-- The text of a witness ({name}`witnessText`), when the budget allows it. The text may use the
+{name}`explanationShare` of the budget that is left, as the failing observation does. A failure
+to make it gives none and leaves the certified refutation as it is, so a refutation that fits
+the budget without its text is still reported. -/
+def describeWitness (witness : Witness) (excluded : Array Name := #[])
+    (excludedLocals : Array FVarId := #[]) : TermElabM (Option WitnessText) := do
+  let shown ← withinBudget (explanationShare.units (← remainingUnits)) <|
+    attempt (witnessText witness excluded excludedLocals)
+  return shown.bind id
+
 end Belay.Sqlite.Check
