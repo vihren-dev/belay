@@ -23,3 +23,6 @@ Sources: `packages/belay/Belay/Sqlite/ReplayConstruction.lean` (`schemaRowsSql`)
   to run out. `tests/surface_s6_check_programs_test.py` checks the difference of the two runs
   instead of fixed quantities for that claim. Tests run: as in the status of #317 (the same
   tree), with `surface_check_real_schemas_test`.
+- 2026-11-05: review of the feature commit: two R5 musts (catch-all matches on `Statement` in
+  `schemaRowsSql` and on `Value` and `CatalogEntry` in `SampleDatabases.lean`) fixed: every
+  constructor is listed. Tests run: `surface_check_real_schemas_test`, `surface_replay_test`.

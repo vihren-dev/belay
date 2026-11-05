@@ -60,7 +60,7 @@ def caseVariant : Value → Option Value
     match bytes.findIdx? isLetter with
     | some position => some (.text (bytes.modify position (· ^^^ 32)))
     | none => none
-  | _ => none
+  | .null | .integer _ | .real _ | .blob _ => none
 
 /-- Rows that a supplied row of the table suggests, in this order: the row with every text in
 its case variant ({name}`caseVariant`), the same row again, and for each column that allows NULL
@@ -91,7 +91,8 @@ def suppliedVariants (base : Database) : List Database :=
         let values := values.zipIdx.map fun (value, column) =>
           if table.rowidAlias == some column then .integer rowid else value
         validated { base.raw with rows := base.raw.rows.set position (rows ++ [{ rowid, values }]) }
-    | _, _ => []
+    | .table _, [] => []
+    | .view _, _ | .index _, _ | .trigger _, _ => []
 
 /-- An upper bound of the number of {name}`suppliedVariants`: for each table with rows, its
 columns and two. -/
@@ -99,7 +100,8 @@ def suppliedVariantBound (base : Database.Raw) : Nat :=
   (base.catalog.zip base.rows).foldl (fun count (object, rows) =>
     match object.entry, rows with
     | .table table, _ :: _ => count + table.columns.length + 2
-    | _, _ => count) 0
+    | .table _, [] => count
+    | .view _, _ | .index _, _ | .trigger _, _ => count) 0
 
 /-- Stable candidates for a supplied schema: its current rows, variants of its rows
 ({name}`suppliedVariants`), empty tables, singleton

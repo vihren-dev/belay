@@ -39,15 +39,17 @@ def schemaRowsSql (schema : String) (database : Database) : IO (Option String) :
   let mut fragments := #[]
   for item in items do
     let span := item.statement.span
-    let text := String.fromUTF8? (bytes.extract span.start span.stop)
-    match item.statement.value, text with
-    | .insert .., _ => continue
-    | .createTable name .., some text =>
+    let some text := String.fromUTF8? (bytes.extract span.start span.stop) | return none
+    match item.statement.value with
+    | .insert .. => continue
+    | .createTable name .. =>
       let some rows := tableRowsSql database name | return none
       fragments := fragments.push (text ++ ";\n" ++ rows)
-    | .createIndex .., some text | .createView .., some text | .createTrigger .., some text =>
+    | .createIndex .. | .createView .. | .createTrigger .. =>
       fragments := fragments.push (text ++ ";\n")
-    | _, _ => return none
+    | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
+    | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insertSelect .. | .update ..
+    | .delete .. | .select .. | .pragma .. => return none
   return some (String.join fragments.toList)
 
 /-- Check that construction text builds precisely the supplied database, with no parameters,
