@@ -1,6 +1,6 @@
 # `#sql_check` on the tables a developer has
 
-Created: 2026-11-05. Status: OPEN.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Source: issue #318 ("Counterexample search finds the NOCASE pair only on a one-column table
 without constraints"); issue #293 (a schema with a primary key discards a certified
 counterexample). Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), D3 and D6 as

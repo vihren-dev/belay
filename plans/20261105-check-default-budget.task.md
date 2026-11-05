@@ -1,6 +1,6 @@
 # The launch examples answer at the default budget
 
-Created: 2026-11-05. Status: OPEN.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Source: issue #317 ("The default sql.checkBudget does not find the launch example's
 counterexample on Linux"). Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), slice 1 (D1).
 Audience: the team.

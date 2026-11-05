@@ -1,6 +1,6 @@
 # Status: `#sql_check` on the tables a developer has
 
-Created: 2026-11-05. Status: IN PROGRESS.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Task: [20261105-check-real-schemas.task.md](20261105-check-real-schemas.task.md).
 Issues: #318, #293. Design: ADR 0031, D3 and D6 as amended.
 
@@ -26,3 +26,6 @@ Sources: `packages/belay/Belay/Sqlite/ReplayConstruction.lean` (`schemaRowsSql`)
 - 2026-11-05: review of the feature commit: two R5 musts (catch-all matches on `Statement` in
   `schemaRowsSql` and on `Value` and `CatalogEntry` in `SampleDatabases.lean`) fixed: every
   constructor is listed. Tests run: `surface_check_real_schemas_test`, `surface_replay_test`.
+- 2026-11-05: reviews of all commits have no open findings. End checks pass on the top of the
+  stack (this task with the other of #317 and #318): `just test-full` (383 passed),
+  `just verdict`, `just test-nix` (87 passed) and `just test-scheduled-checks`. DONE.

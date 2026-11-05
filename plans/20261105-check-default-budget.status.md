@@ -1,6 +1,6 @@
 # Status: the launch examples answer at the default budget
 
-Created: 2026-11-05. Status: IN PROGRESS.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Task: [20261105-check-default-budget.task.md](20261105-check-default-budget.task.md).
 Issue: #317. Design: ADR 0031, D1.
 
@@ -22,3 +22,6 @@ Sources: `packages/belay/Belay/Sqlite/CertificateAuditCache.lean` (new),
   `surface_s6_check_programs_test`, `surface_s6_not_blocked_test`, the five
   `surface_editor_*` tests of `surfaceChecks`, `surface_automatic_editor_test`,
   `surface_s6_check_editor_test`.
+- 2026-11-05: reviews of all commits have no open findings. End checks pass on the top of the
+  stack (this task with the other of #317 and #318): `just test-full` (383 passed),
+  `just verdict`, `just test-nix` (87 passed) and `just test-scheduled-checks`. DONE.
