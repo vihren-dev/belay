@@ -54,12 +54,33 @@ CI test jobs retain `belay-observability-*` artifacts for 14 days. The separate
 artifacts as data, and retries retained artifacts daily in expiry order. It never
 checks out or executes a pull request's code. Replays keep the same IDs.
 
-Devops must provision the `belay-observability` GitHub environment, restrict deployment
-to `main`, set variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`, and
-set secret `BELAY_CLICKHOUSE_PASSWORD`. The runner must reach the endpoint and
-trust its CA. If private networking or a private CA is required, configure that
-runner before enabling the workflow. Database outages do not change CI test
-results. The workflow becomes active after its trusted code reaches `main`.
+Use the existing `belay-observability` GitHub environment, with deployment
+restricted to `main`, variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`,
+and secret `CLICKHOUSE_PASSWORD`. The workflow maps this secret
+to the uploader's runtime variable `BELAY_CLICKHOUSE_PASSWORD`.
+
+The uploader joins Tailscale with GitHub OIDC through the official action before
+sending observations. It reads the existing environment secrets
+`TS_OAUTH_CLIENT_ID` and `TS_AUDIENCE`. The client ID belongs to the federated
+identity `tailscale_federated_identity.belay_ci` managed in devops; the input
+name does not mean an OAuth client secret is required. No variable migration
+is needed.
+
+The identity needs writable `auth_keys` scope for the existing `tag:belay-ci`.
+Devops already grants that tag access to `100.68.176.93` on TCP port 8443.
+Keep `vihren-demo.tail114da.ts.net:8443` as the HTTPS endpoint. Devops must repair
+the identity's subject for GitHub's immutable repository identity and constrain
+the repository/owner IDs, environment and exact production workflow ref.
+Commission on `main`; no temporary `ci-test` trust is requested.
+The action checks peer connectivity, then the uploader checks database delivery.
+Only the uploader job receives the network identity; test jobs retain artifacts.
+The connection step has a five-minute limit. The runner is ephemeral and the
+Tailscale action logs it out when the job ends.
+
+Provisioning is tracked in [devops issue #56](https://github.com/vihren-dev/devops/issues/56).
+The endpoint must use a certificate trusted by the runner. Database or network
+outages do not change CI test results. Commissioning must inspect upload logs
+and query ClickHouse: the workflow's success status alone does not prove delivery.
 
 The implementation uses the ADR schema export in
 `build-support/observability-schema.sql` and ClickHouse 26.8.7.19-lts from pinned
