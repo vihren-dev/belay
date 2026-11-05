@@ -8,7 +8,10 @@ pytest execution history. Belay will write JSONL reports locally and in CI, then
 upload batches over HTTP outside Nix build sandboxes. The service records ongoing
 test names, outcomes and durations. It does not run tests or collect coverage.
 
-The request is [devops issue #47](https://github.com/vihren-dev/devops/issues/47).
+The database request is [devops issue #47](https://github.com/vihren-dev/devops/issues/47).
+The CI network request is [devops issue #56](https://github.com/vihren-dev/devops/issues/56).
+The latter specifies the OIDC identity, `tag:belay-observability`, TCP port 8443,
+and `TS_CLIENT_ID` / `TS_AUDIENCE` GitHub environment variables for the uploader.
 The implementation's [configuration guide](test-observability.md) names the
 runtime variables and the `belay-observability` GitHub environment. Restrict that
 environment to `main`; its credentials belong only to the trusted upload workflow.

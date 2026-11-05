@@ -56,10 +56,24 @@ checks out or executes a pull request's code. Replays keep the same IDs.
 
 Devops must provision the `belay-observability` GitHub environment, restrict deployment
 to `main`, set variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`, and
-set secret `BELAY_CLICKHOUSE_PASSWORD`. The runner must reach the endpoint and
-trust its CA. If private networking or a private CA is required, configure that
-runner before enabling the workflow. Database outages do not change CI test
-results. The workflow becomes active after its trusted code reaches `main`.
+set secret `BELAY_CLICKHOUSE_PASSWORD`.
+
+The uploader joins Tailscale with GitHub OIDC through the official action before
+sending observations. Set environment variables `TS_CLIENT_ID` and `TS_AUDIENCE`
+to the Tailscale federated identity's client ID and audience. These are GitHub
+Actions environment variables, read through `vars`, not runner shell variables.
+The identity needs writable `auth_keys` scope for `tag:belay-observability`.
+Devops must permit that tag to reach `vihren-demo.tail114da.ts.net` on TCP port
+8443 and configure trust for this repository's uploader workflow and environment.
+The action checks peer connectivity, then the uploader checks database delivery.
+Only the uploader job receives the network identity; test jobs retain artifacts.
+The connection step has a five-minute limit. The runner is ephemeral and the
+Tailscale action logs it out when the job ends.
+
+Provisioning is tracked in [devops issue #56](https://github.com/vihren-dev/devops/issues/56).
+The endpoint must use a certificate trusted by the runner. Database or network
+outages do not change CI test results. Commissioning must inspect upload logs
+and query ClickHouse: the workflow's success status alone does not prove delivery.
 
 The implementation uses the ADR schema export in
 `build-support/observability-schema.sql` and ClickHouse 26.8.7.19-lts from pinned

@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 jobs:
   upload:
@@ -24,6 +25,14 @@ jobs:
         with:
           ref: main
           persist-credentials: false
+      - name: Connect uploader to Tailscale
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
+        timeout-minutes: 5
+        with:
+          oauth-client-id: ${{ vars.TS_CLIENT_ID }}
+          audience: ${{ vars.TS_AUDIENCE }}
+          tags: tag:belay-observability
+          ping: vihren-demo.tail114da.ts.net
       - name: Upload observations with trusted code
         env:
           GH_TOKEN: ${{ github.token }}

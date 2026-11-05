@@ -124,3 +124,28 @@ rebased #303 branch, `experiments/observability-extraction`.
   The expected configuration is URL and USER as variables, PASSWORD as a secret.
 - Owner review remains required before merge. The environment restriction was
   left intact; no unreviewed branch received database credentials.
+
+## Tailscale OIDC workflow follow-up (2026-11-05)
+
+- PR #308 is merged. Production upload still needs private network access:
+  commissioning run 41854390554 failed DNS resolution on the GitHub runner.
+- Added the official Tailscale action pinned to v4 commit
+  `064b10558093f38325e838ddea35486bdc6b1d5c`, whose default client is 1.104.4.
+  The uploader requests a GitHub OIDC token, uses `TS_CLIENT_ID` and
+  `TS_AUDIENCE` environment variables, and joins as `tag:belay-observability`.
+  It checks the deployed host before upload and bounds setup to five minutes.
+- No source filter was added, as requested by the owner. The test jobs have no
+  Tailscale credentials. No custom networking code or new permanent test suite
+  was added. The existing workflow boundary check covers the changed setup.
+- Documentation names the exact identity, variables and TCP port 8443 required
+  from devops. Live OIDC commissioning depends on that provisioning and is
+  separate from repository checks. Owner review replaces the agent reviewer.
+
+- Repository implementation: DONE. Existing workflow-boundary and documentation
+  development checks: `test_ci_credentials_are_separate_from_test_code` and
+  `tests/docs_test.py`. Four checks passed; these are configuration checks,
+  not semantic conformance evidence or a live OIDC test.
+- Created [devops issue #56](https://github.com/vihren-dev/devops/issues/56)
+  using the VM's restricted `gh-devops` wrapper. The issue contains the precise
+  workflow inputs, repository/owner IDs, trust restrictions, network destination,
+  and handoff acceptance checks. Provisioning and live verification remain pending.
