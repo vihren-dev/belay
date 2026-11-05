@@ -36,9 +36,11 @@ theorem resolveStatement_certificate (context : ResolveContext) (state next : Re
     cases hsaved : state.saved
     · simpa [hsaved] using valid.1
     · simpa [hsaved] using valid.2 _ hsaved
-  case createTable name columns constraints options =>
+  case createTable name columns constraints options ifNotExists =>
     apply certificate_withCatalog ok
     intro statement after found
+    rcases resolveCreateTableIf_cases found with ⟨rfl, rfl⟩ | found
+    · exact ⟨rfl, rfl, fun _ _ => Catalog.DropClosed.nil _, fun _ valid => valid.drop (Catalog.DropClosed.nil _)⟩
     obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ found
     exact ⟨equal, control, fun _ _ => resolveCreateTable_schemaLink _ _ _ _ _ _ _ _ found,
       fun execution valid => resolveCreateTable_valid _ _ _ _ _ _ _ _ valid execution found⟩
@@ -48,9 +50,11 @@ theorem resolveStatement_certificate (context : ResolveContext) (state next : Re
     obtain ⟨equal, control⟩ := resolveCreateView_applyCatalog _ _ _ _ _ _ found
     exact ⟨equal, control, fun _ _ => resolveCreateView_schemaLink _ _ _ _ _ _ found,
       fun _ valid => resolveCreateView_valid _ _ _ _ _ _ _ valid found⟩
-  case createIndex name unique table terms filter =>
+  case createIndex name unique table terms filter ifNotExists =>
     apply certificate_withCatalog ok
     intro statement after found
+    rcases resolveCreateIndexIf_cases found with ⟨rfl, rfl⟩ | found
+    · exact ⟨rfl, rfl, fun _ _ => Catalog.DropClosed.nil _, fun _ valid => valid.drop (Catalog.DropClosed.nil _)⟩
     obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ found
     exact ⟨equal, control, fun _ _ => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found,
       fun _ valid => resolveCreateIndex_valid _ _ _ _ _ _ _ _ _ valid found⟩

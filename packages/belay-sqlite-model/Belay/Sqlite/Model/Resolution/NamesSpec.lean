@@ -116,18 +116,22 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     cases hsaved : state.saved
     · simpa [hsaved] using current
     · simpa [hsaved] using saved _ hsaved
-  | createTable name columns constraints options =>
+  | createTable name columns constraints options ifNotExists =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ (by assumption))
+    rcases resolveCreateTableIf_cases (by assumption) with ⟨_, kept⟩ | found
+    · exact keep _ (kept ▸ .remove _)
+    · exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ found)
   | createView name ifNotExists columns query subqueries =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateView_step _ _ _ _ _ _ (by assumption))
-  | createIndex name unique table terms filter =>
+  | createIndex name unique table terms filter ifNotExists =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveCreateIndex_step _ _ _ _ _ _ _ _ _ (by assumption))
+    rcases resolveCreateIndexIf_cases (by assumption) with ⟨_, kept⟩ | found
+    · exact keep _ (kept ▸ .remove _)
+    · exact keep _ (resolveCreateIndex_step _ _ _ _ _ _ _ _ _ found)
   | addColumn table column =>
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

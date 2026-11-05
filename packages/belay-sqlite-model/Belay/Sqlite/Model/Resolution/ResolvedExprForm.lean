@@ -125,6 +125,12 @@ inductive Aggregate where
   | total (operand : Expr)
   deriving Repr, DecidableEq
 
+/-- The aggregate when it is {lit}`min` or {lit}`max`, which can decide the row of a group
+({lit}`Query.deciding`); {lean}`(none : Option Aggregate)` for every other aggregate. -/
+def Aggregate.minOrMax : Aggregate → Option Aggregate
+  | aggregate@(.min ..) | aggregate@(.max ..) => some aggregate
+  | .countRows | .count _ | .sum _ | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. | .groupConcat .. | .total _ => none
+
 /-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
 overflow. -/
 def Aggregate.canFail : Aggregate → Bool

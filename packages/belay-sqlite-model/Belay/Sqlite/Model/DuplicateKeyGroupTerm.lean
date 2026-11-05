@@ -17,9 +17,10 @@ only as the resolver does, so the cases are those of the resolver: a name of a c
 {lit}`COLLATE`) or a qualified name resolves to the column, and a name that is no column can resolve in the other ways
 that {name}`resolveOperand` allows, such as a quoted text when the profile allows it ({lit}`dqs`) or the constants
 {lit}`TRUE` and {lit}`FALSE`. The collation is the explicit one if there is one, else the collation of the column,
-else {lit}`BINARY`. A parameter resolves to a constant value with {lit}`BINARY`, and the result-column number {lit}`1` to the result
-column with the given output collation. A term that the resolver rejects, such as an aggregate call, a number other than
-{lit}`1` or an expression, makes the equation false. -/
+else {lit}`BINARY`. The result-column number {lit}`1` resolves to the result column with the given output collation, and
+any other expression resolves as a {lit}`WHERE` operand with its collation ({lit}`GroupTermResolvesIn.expression`), for
+example a parameter to a constant value with {lit}`BINARY`. A term that the resolver rejects, such as an aggregate call, a
+subquery or a number other than {lit}`1`, makes the equation false. -/
 def GroupTermResolvesIn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
     (output : Resolved.Output × String × Option Affinity) (outputCollation : Collation) (term : Syntax.Expr)
     (key : Resolved.Expr) (collation : Collation) : Prop :=
@@ -89,6 +90,24 @@ theorem resolveOperand_moreThanOne (dqs : Bool) (scope : Scope) (shapes : Subque
   have literal : queryNumeric "1" false = .ok (.integer 1) := by rfl
   simp [traced_arms, aggregates, Syntax.Expr.indexIn, Syntax.Expr.same, literal, truthTest, comparisonAffinity,
     comparisonCollation, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, Bind.bind, Except.bind]
+  rfl
+
+/-- For every scope, shapes, result column and its collation, and every grouping term that is not a name, not under
+{lit}`COLLATE`, not an integer ({name}`columnNumber`), with no aggregate call, no subquery and no result alias: if the term
+resolves as a {lit}`WHERE` operand ({name}`resolveOperand`) to the key {lit}`key` with some affinity, the grouping term
+resolves to that key under the collation of the term ({lit}`Syntax.Expr.collationIn`). The formula requires nothing of a
+term whose operand does not resolve. Proof sketch: {name}`resolveGroupTerm_expression`, then
+{name}`resolveGroupExpression_operand`; the only alias of the query is none. -/
+theorem GroupTermResolvesIn.expression {dqs : Bool} {scope : Scope} {shapes : SubqueryShapes}
+    {output : Resolved.Output × String × Option Affinity} {outputCollation : Collation} {term : Syntax.Expr}
+    {key : Resolved.Expr} {affinity : Option Affinity}
+    (notName : ∀ name quote, term ≠ .identifier name quote) (notCollate : ∀ operand name, term ≠ .collate operand name)
+    (number : columnNumber term = none) (noAggregates : term.aggregateCalls = []) (noSubquery : term.hasSubquery = false)
+    (resolves : resolveOperand dqs scope shapes true term = .ok (key, affinity)) :
+    GroupTermResolvesIn dqs scope shapes output outputCollation term key (term.collationIn scope) := by
+  unfold GroupTermResolvesIn
+  rw [resolveGroupTerm_expression dqs scope shapes _ _ _ 0 term notName notCollate number,
+    resolveGroupExpression_operand dqs scope shapes _ 0 term noAggregates noSubquery (by simp [namesAlias_nil]), resolves]
   rfl
 
 end Belay.Sqlite.Model

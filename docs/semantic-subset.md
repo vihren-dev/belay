@@ -15,8 +15,9 @@ The frontend maps these statements, and refuses every other statement as
   and `REFERENCES` (slice 4), `[GENERATED ALWAYS] AS (expr) [VIRTUAL | STORED]` (slice 5),
   and `DEFAULT` with a literal, a signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
   names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
-  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6);
-- `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
+  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6), with or without
+  `IF NOT EXISTS` (ADR 0030);
+- `CREATE [UNIQUE] INDEX [IF NOT EXISTS]` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition, `ALTER TABLE … RENAME TO name` and
   `ALTER TABLE … RENAME [COLUMN] a TO b` and `ALTER TABLE … DROP [COLUMN] a` (ADR 0019, D4). A drop
@@ -49,7 +50,11 @@ The frontend maps these statements, and refuses every other statement as
   with an optional alias (ADR 0012, slice 1). Without `FROM`, the source is one row
   with no columns (slice 6a), which `WHERE` keeps or removes; aggregation, grouping,
   `ORDER BY` and `LIMIT` then apply as for any query, so `SELECT count(*) WHERE 0` is one
-  row with 0. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
+  row with 0. A `GROUP BY` term is a column, a result alias, an integer that names a
+  result column (also under parentheses, unary plus and minus or `COLLATE`; out of range is
+  SQLite's error), or any expression that `WHERE` accepts, compared without affinity under
+  its collation (ADR 0030, D4); a result alias inside a larger term and a subquery are model
+  restrictions, and an aggregate is SQLite's error. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
   first and OFFSET only when the LIMIT is not 0, and convert it as SQLite's
   `OP_MustBeInt` does; a value that is not an integer then fails the statement with
   `datatype mismatch`. A negative LIMIT has no limit, and a negative bound OFFSET skips
@@ -137,7 +142,17 @@ and the collation of `x` (a list of one constant value is SQLite's `x = +c`), `x
 BETWEEN a AND b` as `x >= a AND x <= b`, `CASE` with and without a base (a base compares as
 `=` does), and `x || y`, NULL with a NULL operand (ADR 0018, slice 2), aggregates inside the
 expressions of the result columns, `HAVING` and `ORDER BY` of a query, such as `count(*) + 1`,
-`HAVING` with and without `GROUP BY`, and `SELECT DISTINCT`, which keeps one row of each set of
+`HAVING` with and without `GROUP BY`, where a column outside an aggregate reads one row of
+the group: the first row in the order of the source, or, when the query has `min` or `max`,
+the first row that gives the last distinct such call in the order result columns, `ORDER BY`,
+`HAVING` (the last row when the call's operand is NULL on every row); the result column
+associated with a grouping term gives the term's value on the first row unless it is a column
+under at most `COLLATE`: a number names its result column, and an alias or any other term is
+associated with the last result column that is the same expression as the term or as the
+aliased expression; SQLite documents the row as arbitrary, and the model follows SQLite's plan
+of a full scan, except that with two or more grouping terms SQLite reads an associated column
+that `ORDER BY` names from the row of the group, where the model gives the first row (ADR 0030,
+D5), and `SELECT DISTINCT`, which keeps one row of each set of
 equal rows; when the rows of such a set differ, the statement is not described (ADR 0018,
 slice 3), `json_extract` with one or more paths and the operators `->` and `->>`
 (slice 6b), `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c), and
@@ -217,7 +232,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
-partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
+partial and expression indexes, `TEMP`, schema names, table
 options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
 `FROM`, schema-qualified tables and columns other than the schema `before` of a two-state query (restriction `initial-database`), `NULLS FIRST` and `NULLS LAST`, and
@@ -245,6 +260,16 @@ reserved names are model restrictions.
 Omitted INSERT columns use their literal defaults and column affinities. A column
 with `DEFAULT CURRENT_TIMESTAMP`, `CURRENT_DATE` or `CURRENT_TIME` gives an omitted
 value the text of the INSERT's clock value, stored with the column affinity (slice 6e2).
+
+`IF NOT EXISTS` (ADR 0030) makes `CREATE TABLE` a statement that does nothing when a
+table or a view has the name, and `CREATE INDEX` one that does nothing when an index has the
+name, whatever its table, terms, filter or `UNIQUE`. Such a statement outputs nothing, changes
+no row and keeps `changes()`, `total_changes()` and `last_insert_rowid()`; SQLite does not
+read the rest of the statement, so a body with an error is not an error then. The checks
+before the name check keep their errors: a reserved table name, and for an index a missing
+table, a view as the table and a reserved table or index name. `CREATE TABLE IF NOT EXISTS`
+over an index name and `CREATE INDEX IF NOT EXISTS` over a table or a view name keep their
+errors, and with a free name the statement runs as without the clause.
 
 An index has key terms and an optional `WHERE` filter (ADR 0014, slice 1). A term that
 is a column name is that column; any other term is an expression over the table's
@@ -513,8 +538,7 @@ that order. Resolution decides each collation by SQLite's rules: a comparison us
 explicit `COLLATE` of its left operand, else of its right operand, else the collation of
 a column on the left, else on the right, else `BINARY`; `COLLATE` passes through unary plus
 and `CAST`. An `ORDER BY` or `GROUP BY` term, `min` and `max` use the collation of their
-expression, and the equality of `USING` and `NATURAL` that of its left column. A
-`GROUP BY` term may be a column name under one `COLLATE`. An unknown name in a column
+expression, and the equality of `USING` and `NATURAL` that of its left column. An unknown name in a column
 definition or an index term is SQLite's prepare error `no such collation sequence: %s`;
 in any other expression it is the restriction `unknown-collation`, because SQLite looks
 the name up only where it uses the collation, and its query planner decides some of
@@ -609,9 +633,9 @@ should shrink.
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `alias-in-expression` | A result column alias inside WHERE, ON, GROUP BY, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1; ADR 0030, D4 |
 | `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
-| `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
+| `group-by-term` | A subquery is not modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3; ADR 0030, D4 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |

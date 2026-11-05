@@ -31,6 +31,21 @@ theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : Subquery
   simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
     Except.mapError, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
+/-- For every query whose one result column is an aggregate call, without grouping, ordering and {lit}`HAVING`, and
+whose call resolves to the aggregate {lit}`a`, the deciding call is {lit}`a` when it is {lit}`min` or {lit}`max`
+({name}`Resolved.Aggregate.minOrMax`), and none otherwise. Proof sketch: the query's one call is the
+result column itself, so it is listed once and resolves to the output {lit}`a`; then split on whether
+{lit}`a` is {lit}`min` or {lit}`max`. -/
+theorem decidingCall_aggregateColumn (scope : Scope) (source : Option Syntax.TableReference)
+    (filter : Option Syntax.Expr) (name : String) (operand : Syntax.Expr) (alias : Option Identifier) (text : String)
+    (called : aggregateCall (.call name [operand]) = true) (a : Resolved.Aggregate) :
+    decidingCall scope (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] source [] filter [] [] none none none
+        none false none none) [] [] (writtenResults scope [.expression (.call name [operand]) alias text]) [.aggregate a] =
+      a.minOrMax := by
+  cases minMax : a.minOrMax <;>
+    simp [decidingCall, writtenResults, Syntax.Expr.indexIn, Syntax.Expr.aggregateCalls, called, Syntax.Expr.same_self,
+      minMax]
+
 /-- For every query {lit}`SELECT agg(x) FROM … WHERE p` without join, grouping, ordering, window, {lit}`HAVING`,
 {lit}`DISTINCT` and compound, whose aggregate {lit}`agg` is one of one operand that does not write JSON
 ({name}`aggregateNamed`), whose operand, pending sources and {lit}`WHERE` condition resolve, the body resolves to the
@@ -70,9 +85,10 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
   · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
-      Resolved.Output.canFail]
+      Resolved.Output.canFail, firstRowResults, decidingCall_aggregateColumn scope source _ name operand alias text called]
   · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
-      Model.condition, Functor.map, Except.map, Resolved.Output.canFail]
+      Model.condition, Functor.map, Except.map, Resolved.Output.canFail, firstRowResults,
+      decidingCall_aggregateColumn scope source _ name operand alias text called]
 
 /-- For every statement {lit}`SELECT agg(x) FROM t WHERE p` (or without {lit}`WHERE`) of a table that the catalog of the
 state has at a position, without table-function arguments, whose aggregate {lit}`agg` is one of one operand that does not write

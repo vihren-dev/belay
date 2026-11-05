@@ -30,6 +30,9 @@ def inRebuilt := sql! rebuilt r"SELECT * FROM items"
 def inComputed := sql! computed r"SELECT * FROM items"
 def inImported := sql! helperShop r"SELECT * FROM ledger"
 def inSequence := sql! firstShop r"DROP TABLE items; CREATE TABLE items(z); SELECT * FROM items"
+def conditional : Database := db! r"CREATE TABLE kept_t(a); CREATE TABLE IF NOT EXISTS kept_t(b);
+  CREATE TABLE IF NOT EXISTS fresh_t(c)"
+def inConditional := sql! conditional r"SELECT * FROM kept_t; SELECT * FROM fresh_t"
 def finished : Nat := 0
 '''
 
@@ -39,7 +42,8 @@ def test_table_origins_navigate(runtime_root: Path, tmp_path: Path) -> None:
     in `db!`) reach the real server as go-to-definition targets: the CREATE TABLE of the right
     database when two databases share a table name, through a constant that names another one, in
     an imported module and after a DROP and CREATE in the database text. A computed database and a
-    table that a statement of the script creates again have no target."""
+    table that a statement of the script creates again have no target. CREATE TABLE IF NOT EXISTS,
+    which may do nothing, keeps the place of an existing table and gives a new table none."""
     modules = compile_helper_module(runtime_root, tmp_path, "OriginHelper", HELPER)
     server = LeanServer(runtime_root, tmp_path, module="EditorFixture", extra_modules=modules)
     try:
@@ -59,6 +63,8 @@ def test_table_origins_navigate(runtime_root: Path, tmp_path: Path) -> None:
             (helper_uri, range_of(HELPER, "ledger(id", "ledger"))]
         assert definitions(server, uri, SOURCE, "items; CREATE TABLE items(z)") == [(uri, first_items)]
         assert definitions(server, uri, SOURCE, "items\"", 4) == []
+        assert definitions(server, uri, SOURCE, "kept_t; SELECT") == [(uri, range_of(SOURCE, "kept_t(a)", "kept_t"))]
+        assert definitions(server, uri, SOURCE, "fresh_t\"") == []
         text = hover(server, uri, position(SOURCE, "items\"", 2))["contents"]
         assert isinstance(text, dict) and text["value"].startswith("Table `items` of `rebuilt`."), text
     finally:

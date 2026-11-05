@@ -65,14 +65,16 @@ def isRollback : Syntax.Statement → Bool
   | .createTrigger .. | .dropTrigger .. => false
 
 /-- The places after one more statement of a script: a {lit}`CREATE TABLE` replaces the place of
-its name, a {lit}`DROP TABLE` removes it, and {lit}`ALTER TABLE a RENAME TO b` moves the place of
+its name, a {lit}`CREATE TABLE IF NOT EXISTS` keeps the places (it may do nothing, and a place of
+it could be wrong, so a table that it creates has no place), a {lit}`DROP TABLE` removes it, and {lit}`ALTER TABLE a RENAME TO b` moves the place of
 {lit}`a` to the name {lit}`b` (the table that the script created keeps its {lit}`CREATE TABLE`) and
 removes any place of {lit}`b`. Every other statement keeps the places, also {lit}`DROP COLUMN`, which does
 not change the identity of the table. -/
 def stepCreatedSlots (bytes : ByteArray) (slots : List TableSlot) (item : Located Syntax.Statement) :
     List TableSlot :=
   match item.value with
-  | .createTable name .. =>
+  | .createTable _ _ _ _ true => slots
+  | .createTable name _ _ _ false =>
     slots.filter (·.name.folded != name.folded) ++ (slotAt? bytes item.span [0] name).toList
   | .dropTable name _ => slots.filter (·.name.folded != name.folded)
   | .renameTable name newName =>
@@ -96,7 +98,8 @@ def originSource (sources : OriginSources) (name : Identifier) : Option Identifi
   | none => some name
 
 /-- The sources after one more statement of a script: a {lit}`CREATE TABLE` or {lit}`DROP TABLE` leaves the
-name without an origin, because the table is then not the one that the database had at the start, and
+name without an origin, because the table is then not the one that the database had at the start (also
+{lit}`CREATE TABLE IF NOT EXISTS`, which may or may not create it), and
 {lit}`ALTER TABLE a RENAME TO b` gives {lit}`b` the source of {lit}`a` and leaves {lit}`a` without one.
 {lit}`ROLLBACK` may undo any of these changes, so it leaves every name that an earlier statement changed
 without an origin; a name that no statement changed keeps its table. Every other statement keeps the

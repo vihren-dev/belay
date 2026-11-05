@@ -118,9 +118,17 @@ theorem resolveStatement_single (context : ResolveContext) (state next : Resolve
   case begin => cases ok; rfl
   case commit => cases ok; rfl
   case rollback => cases ok; rfl
-  case createTable => exact plain _ ok fun _ _ found => resolveCreateTable_single _ _ _ _ _ _ _ _ found
+  case createTable =>
+    exact plain _ ok fun _ _ found => by
+      rcases resolveCreateTableIf_cases found with ⟨rfl, _⟩ | found
+      · rfl
+      · exact resolveCreateTable_single _ _ _ _ _ _ _ _ found
   case createView => exact plain _ ok fun _ _ found => resolveCreateView_single _ _ _ _ _ _ found
-  case createIndex => exact plain _ ok fun _ _ found => resolveCreateIndex_single _ _ _ _ _ _ _ _ _ found
+  case createIndex =>
+    exact plain _ ok fun _ _ found => by
+      rcases resolveCreateIndexIf_cases found with ⟨rfl, _⟩ | found
+      · rfl
+      · exact resolveCreateIndex_single _ _ _ _ _ _ _ _ _ found
   case addColumn => exact plain _ ok fun _ _ found => resolveAddColumn_single _ _ _ _ _ _ _ found
   case renameTable =>
     exact plain _ ok fun _ _ found => by

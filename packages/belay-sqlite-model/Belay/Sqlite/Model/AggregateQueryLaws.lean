@@ -12,12 +12,13 @@ namespace Belay.Sqlite.Model.Resolved
 
 /-- The whole-table aggregate query of the given sources, {lit}`WHERE` condition, aggregate and result name: an aggregate
 query of one group with the one result column the aggregate, and without grouping, ordering, window, {lit}`HAVING`,
-{lit}`DISTINCT` or compound, that reads no cell of an outer query. For example, {lit}`SELECT sum(c) FROM t` is
+{lit}`DISTINCT` or compound, that reads no cell of an outer query, and whose deciding call is the aggregate when it
+is {lit}`min` or {lit}`max` ({name}`Aggregate.minOrMax`). For example, {lit}`SELECT sum(c) FROM t` is
 the whole-table aggregate query of the table, no condition, the aggregate {lit}`sum` of the column {lit}`c`. -/
 def Query.aggregateOf (sources : List QuerySource) (filter : Option Expr) (aggregate : Aggregate) (name : String) : Query :=
   { sources, filter, aggregate := true, groupBy := [], columns := [.aggregate aggregate], names := [name],
     orderBy := [], offset := 0, limit := none, limitParameter := none, offsetParameter := none, outer := 0,
-    aggregates := [], having := none, distinct := none }
+    aggregates := [], having := none, distinct := none, deciding := aggregate.minOrMax }
 
 /-- The count query is the whole-table aggregate query of {lit}`count(*)`. Proof sketch: the definitions agree. -/
 theorem Query.countOf_eq_aggregateOf (sources : List QuerySource) (filter : Option Expr) (name : String) :

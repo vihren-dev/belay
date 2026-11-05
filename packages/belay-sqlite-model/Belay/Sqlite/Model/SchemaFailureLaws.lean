@@ -33,31 +33,42 @@ theorem resolveCreateTable_form (context : ResolveContext) (catalog after : Cata
 
 /-- For every connection and CREATE TABLE statement, and every step that continues with an error output: the
 step has no further execution, and the next connection is the connection. In plain words, a CREATE TABLE
-that fails changes nothing, not even the counters (failure law). Proof sketch: the statement resolves to a
-prepare error or to a CREATE TABLE ({name}`resolveCreateTable_form`); a CREATE TABLE step has no error
-output ({name}`runScriptStep_createTable`), and a prepare error keeps the connection
-({name}`runScriptStep_readOnly_keeps`). -/
+that fails changes nothing, not even the counters (failure law), with or without {lit}`IF NOT EXISTS`. Proof
+sketch: the statement resolves to a prepare error, to a CREATE TABLE ({name}`resolveCreateTable_form`) or to
+the no-op of the clause ({name}`resolveCreateTableIf_cases`); a CREATE TABLE step and a drop without rules
+have no error output ({name}`runScriptStep_createTable`, {name}`runScriptStep_drop_plain`), and a prepare
+error keeps the connection ({name}`runScriptStep_readOnly_keeps`). -/
 theorem runScriptStep_createTable_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {name : Identifier} {columns : List Syntax.ColumnDefinition} {constraints : List Syntax.TableConstraint}
-    {options : Syntax.TableOptions} {parameters : List Value} {output : Output} {others : List StatementExecution}
-    (step : runScriptStep context clock index connection (.createTable name columns constraints options) parameters =
-      .continued output next others)
+    {options : Syntax.TableOptions} {ifNotExists : Bool} {parameters : List Value} {output : Output}
+    {others : List StatementExecution}
+    (step : runScriptStep context clock index connection (.createTable name columns constraints options ifNotExists)
+      parameters = .continued output next others)
     (failed : output.isError = true) : others = [] ∧ next = connection := by
   obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_continued_spec step
-  have form : (∃ error, resolved = .prepareError error) ∨ ∃ target created table, resolved = .createTable target created table := by
+  have form : (∃ error, resolved = .prepareError error) ∨
+      (∃ target created table, resolved = .createTable target created table) ∨ resolved = .drop [] := by
     simp only [statement_arms, ResolveState.withCatalog, Except.map] at found
-    cases resolution : resolveCreateTable context connection.resolveState.catalog name columns constraints options with
+    cases resolution : resolveCreateTableIf context connection.resolveState.catalog name columns constraints options
+        ifNotExists with
     | error restriction => simp [resolution] at found
     | ok pair =>
       obtain ⟨statement, catalog⟩ := pair
       rw [resolution] at found
       simp only [Except.ok.injEq, Prod.mk.injEq] at found
       obtain ⟨rfl, -⟩ := found
-      exact resolveCreateTable_form context _ catalog name columns constraints options statement resolution
-  rcases form with ⟨error, rfl⟩ | ⟨target, created, table, rfl⟩
+      rcases resolveCreateTableIf_cases resolution with ⟨rfl, -⟩ | creation
+      · exact .inr (.inr rfl)
+      · rcases resolveCreateTable_form context _ catalog name columns constraints options statement creation with
+          error | created
+        · exact .inl error
+        · exact .inr (.inl created)
+  rcases form with ⟨error, rfl⟩ | ⟨target, created, table, rfl⟩ | rfl
   · exact runScriptStep_readOnly_keeps found (.inr ⟨error, rfl⟩) step
   · rw [(runScriptStep_createTable found step).1] at failed
+    cases failed
+  · rw [(runScriptStep_drop_plain found step).1] at failed
     cases failed
 
 /-- For every context, state with foreign keys off, DROP TABLE and statement that it resolves to: the statement is a

@@ -23,7 +23,8 @@ theorem group_nocase {table : CatalogTable} {index : Nat}
   have operand := resolveOperand_identifier_table (catalog := db.raw.catalog) (reference := {table := name! "customers", alias := none})
     (position := position) (dqs := true) (shapes := {current := some 0, aggregates := [.callStar "count"]})
     (misuse := true) (quote := Syntax.QuoteKind.none) found
-  simp only [GroupTermResolves, GroupTermResolvesIn, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, resolved]
+  simp only [GroupTermResolves, GroupTermResolvesIn]
+  rw [resolveGroupTerm_collatedColumn _ _ _ _ _ _ _ _ _ (by simp [Syntax.Expr.collatedColumn, resolved])]
   rw [resolveOperand_collate _ (by rfl)]
   rw [operand]
   have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl
@@ -31,8 +32,9 @@ theorem group_nocase {table : CatalogTable} {index : Nat}
     Except.mapError, Except.map]
 
 /-- For every customers table without an email column, the grouping claim is false.
-Proof sketch: its COLLATE term is not a column, so subquery resolution gives a model
-restriction and the resulting output has no rows. -/
+Proof sketch: its COLLATE term names no column and no alias, so it resolves as an
+expression and gives SQLite's {lit}`no such column` prepare error; the output of a prepare
+error has no rows. -/
 theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
     (missing : columnPosition table.columns (name! "email") = none) :
@@ -43,6 +45,19 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
   have ownAbsent : (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).ownSources.resolveName
       (name! "email") = .missing := by
     simp [tableScope, Scope.ownSources, Scope.resolveName, Scope.depths, Scope.singleAt, Scope.resolveAt, Scope.resolveStep, missing]
+  have group : ∀ (dqs : Bool) (outputs : List (Resolved.Output × String × Option Affinity)) (collations : List Collation),
+      resolveGroupTerm dqs (tableScope db.raw.catalog { table := name! "customers", alias := none } position table).ownSources
+        { current := some 0, aggregates := [.callStar "count"] } [none] outputs collations 0
+        (.collate (.identifier (name! "email") .none) (name! "NOCASE")) = .error (.prepare (.noSuchColumn (name! "email"))) := by
+    intro dqs outputs collations
+    simp only [resolveGroupTerm, resolveGroupTermTraced, Syntax.Expr.collatedColumn, ownAbsent, Syntax.Expr.withoutCollate,
+      columnNumber, aliasIndex]
+    simp
+    rw [resolveGroupExpression_operand _ _ _ _ _ _ rfl rfl (by simp [namesAlias_nil])]
+    have notRowid : rowidName (name! "email") = false := by decide
+    have notKeyword : booleanKeywordName (name! "email") = false := by decide
+    simp [resolveOperand, resolveOperandTraced, identifierTraced, ownAbsent, missingUse,
+      notRowid, notKeyword, traced_drop, ValueIssue.under, Except.mapError, Except.map]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have countName : normalizeIdentifier "count" = "count" := rfl
   have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl rfl found
@@ -52,21 +67,24 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     intros
     rfl
   have notView := Catalog.findView_none_of_table found
-  have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
-      noDuplicateEmails.statements[0].1 = .error restriction := by
+  have resolved : ∃ error state, resolveStatement runContext db.raw.connection.resolveState
+      noDuplicateEmails.statements[0].1 = .ok (.prepareError error, state) := by
     simp [noDuplicateEmails, resolveStatement_select, resolveSelect, resolveSelectTraced, resolveSelectDetailsTraced, prepareQuerySourcesTraced, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, traced_arms, aliasJoinItem?, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, notView,
       CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, subqueryScopesTraced, scopeOrder, compoundOf, subqueryScope, subqueryScopeTraced, Scope.columns,
       noMain, sources, ownAbsent, Scope.enclose, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, compoundColumnsIssue,
       prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,
       Except.map, Functor.map, Pure.pure, Except.pure, starIssue, SourceIssue.under,
-      resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolvePendingSources_table, resultAliases, resultCollations, resolveGroupTerm_collate, Syntax.Expr.collatedColumn, absent, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]
-  obtain ⟨restriction, failed⟩ := resolved
+      resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolvePendingSources_table, resultAliases, resultCollations, group, absent, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]
+  obtain ⟨error, state, failed⟩ := resolved
   intro holds
   have output := Script.outputOn_eq_step noDuplicateEmails db _ [] [] rfl
   change noDuplicateEmails.outputOn db = some (match resolveStatement runContext db.raw.connection.resolveState noDuplicateEmails.statements[0].1 with | .error restriction => .unmodeled restriction.reason | .ok (resolved, _) => resolvedStepOutput none 0 db.raw.connection [] resolved) at output
   rw [failed] at output
-  simp [Holds, output, Output.hasRows] at holds
+  have noRows : (Resolved.Statement.prepareError error).returnsRows = false := rfl
+  simp only [Holds, output, Output.hasRows, resolvedStepOutput, statementClock, Output.ofStep, noRows] at holds
+  repeat' split at holds
+  all_goals simp_all [Output.hasRows]
 
 /-- The unique email index of the guide. -/
 def uniqueEmail : Script := sql r"CREATE UNIQUE INDEX customers_email ON customers (email COLLATE NOCASE)"
@@ -81,6 +99,7 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     db.catalog.find (name! "customers_email") = none) := by
   apply (Succeeds.iff_createIndex (script := uniqueEmail) (head := rfl) _).mpr
   rintro db ⟨tablePresent, holds, freeName⟩
+  right
   cases found : db.raw.catalog.findTable (name! "customers") with
   | none => simp [Belay.Sqlite.Database.catalog, found] at tablePresent
   | some pair =>

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.QueryEval
+import Belay.Sqlite.Model.GroupRow
 import Belay.Sqlite.Model.CompoundRows
 
 set_option doc.verso true
@@ -16,8 +16,10 @@ def Query.groupContext (context : EvalContext) (query : Query) (group : List (Li
   { context with aggregates := query.aggregates.map (·.eval context group) }
 
 /-- The result rows and sort values of a query, one per source row, or one per group of an
-aggregate query for which {lit}`HAVING` is true. The expressions of a group read its first row
-and the values of the query's aggregates over it ({name}`Query.groupContext`). -/
+aggregate query for which {lit}`HAVING` is true. The expressions of a group read the row of the
+group ({name}`Query.groupRow`) and the values of the query's aggregates over it
+({name}`Query.groupContext`); a result column of {lit}`Query.firstRowColumns` reads the first row
+of the group. -/
 def records (context : EvalContext) (query : Query) (rows : List (List Value)) : List Record :=
   let sortValues := fun (context : EvalContext) (output : List Value) (source : List Value) =>
     query.orderBy.map fun term => match term.key with
@@ -26,11 +28,12 @@ def records (context : EvalContext) (query : Query) (rows : List (List Value)) :
   if query.aggregate then
     (queryGroups context query rows).filterMap fun group =>
       let inGroup := query.groupContext context group
-      let source := group.headD []
+      let source := query.groupRow context group
       if query.having.all fun condition => truthy (condition.eval inGroup source) then
-        let output := query.columns.map fun
-          | .scalar expression => expression.eval inGroup source
-          | .aggregate aggregate => aggregate.eval context group
+        let output := query.columns.zipIdx.map fun
+          | (.scalar expression, index) =>
+            expression.eval inGroup (if query.firstRowColumns.contains index then group.headD [] else source)
+          | (.aggregate aggregate, _) => aggregate.eval context group
         some (output, sortValues inGroup output source)
       else none
   else

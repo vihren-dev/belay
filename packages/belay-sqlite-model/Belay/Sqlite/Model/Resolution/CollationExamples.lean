@@ -114,14 +114,14 @@ def whereC (condition : Expr) : Option (List (List Value)) :=
 -- GROUP BY a NOCASE column puts 'a' and 'A' in one group.
 #guard outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")] (groupBy := [ref (name! "n")])]) ==
   some [[.integer 2], [.integer 1]]
--- GROUP BY a column under one COLLATE groups under it, also in the kernel; a second COLLATE
--- is the restriction group-by-term.
+-- GROUP BY a column under one COLLATE groups under it, also in the kernel; under a second
+-- COLLATE, the outer one decides.
 example : outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")]
     (groupBy := [.collate (ref (name! "b")) (name! "nocase")])]) = some [[.integer 2], [.integer 1]] := by
   decide +kernel
-#guard reason (migration tables [selectFrom (name! "c") [shown (.callStar "count")]
-    (groupBy := [.collate (.collate (ref (name! "b")) (name! "nocase")) (name! "binary")])]) ==
-  RestrictionKind.groupByTerm.message
+#guard outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")]
+    (groupBy := [.collate (.collate (ref (name! "n")) (name! "nocase")) (name! "binary")])]) ==
+  some [[.integer 1], [.integer 1], [.integer 1]]
 -- min and max compare under the operand's collation; a tie keeps the earlier value.
 #guard outputs (filledC ++ [selectFrom (name! "c") [shown (.call "min" [ref (name! "n")]), shown (.call "max" [ref (name! "n")]),
     shown (.call "max" [ref (name! "b")])]]) ==
@@ -176,5 +176,10 @@ def indexKeys (script : List Syntax.Statement) : Option (List IndexKey) :=
 -- collation, which its query planner decides in part.
 #guard reason (migration tables [selectFrom (name! "c") [shown (.collate (ref (name! "n")) (name! "foo"))]]) ==
   RestrictionKind.unknownCollation.message
+-- Also on a number or an alias under COLLATE in GROUP BY.
+#guard reason (migration tables [selectFrom (name! "c") [shown (ref (name! "n"))]
+    (groupBy := [.collate (.numeric "1") (name! "foo")])]) == RestrictionKind.unknownCollation.message
+#guard reason (migration tables [selectFrom (name! "c") [.expression (ref (name! "n")) (some (name! "k")) "n"]
+    (groupBy := [.collate (ref (name! "k")) (name! "foo")])]) == RestrictionKind.unknownCollation.message
 
 end Belay.Sqlite.Model.Resolution.CollationExamples
