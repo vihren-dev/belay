@@ -19,8 +19,6 @@ def uniqueEmail := sql r"CREATE UNIQUE INDEX unique_email ON customers (email CO
 def noDuplicateEmails : Script := sql r"
   SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM customers GROUP BY email HAVING count(*) > 1)"
 
--- The default budget does not reach the candidate with two emails.
-set_option sql.checkBudget 2000000 in
 labelled_sql "unique-email" in #sql_check uniqueEmail succeeds where noDuplicateEmails
 
 labelled_sql "environment" in #sql_check ∀ db : Database, Empty (sql "SELECT 1") db

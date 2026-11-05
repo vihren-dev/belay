@@ -39,7 +39,8 @@ witness that is certified and replayed is reported even when shrinking uses its 
 which permits small GROUP observations under cooperative reduction. Both limits are finite;
 zero disables checking. The caller's recursion option is restored afterwards. Exhaustion
 returns unknown and cancellation
-propagates after state cleanup. Explicit candidates and custom automation remain available. -/
+propagates after state cleanup. Explicit candidates and custom automation remain available.
+The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`). -/
 def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (shrinkAttempts : Nat := 16)
     (prove : Expr → TermElabM (Option Proven) := defaultProof)
@@ -47,7 +48,7 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (recursionLimit : Nat := defaultRecursionLimit) : TermElabM Outcome := do
   if recursionLimit == 0 then return {}
   let outcome : Option (Option Outcome) ← withOptions (maxRecDepth.set · recursionLimit) <|
-    withinBudget heartbeats <| attempt do
+    withAuditCache excluded <| withinBudget heartbeats <| attempt do
       let result ← checkCandidates proposition (pure #[]) prove excluded excludedLocals
       if let .proved _ := result then return { result }
       let accepted : Option Outcome ← visitCandidates proposition samples fun witness => do

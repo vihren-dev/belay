@@ -1,6 +1,7 @@
 import Lean.Meta.Check
 import Lean.Meta.CollectFVars
 import Lean.Meta.AppBuilder
+import Belay.Sqlite.CertificateAuditCache
 
 set_option doc.verso true
 
@@ -28,9 +29,17 @@ def forbiddenDependency (excluded : Array Name) (name : Name) : Bool :=
 /-- Audit types and bodies transitively, including the types and values of used local
 variables. The caller can exclude a theorem and local assumptions. User axioms are rejected;
 only Lean's logical axioms are allowed. Kernel checking separately rejects unsafe declarations.
-Use empty exclusions for an explicit witness outside automatic theorem checking. -/
+Use empty exclusions for an explicit witness outside automatic theorem checking.
+
+Inside {name}`withAuditCache` with the same exclusions, a constant whose closure an earlier
+audit of the operation accepted is not walked again. A successful audit records the constants
+that it walked and that were in the environment when the operation started. -/
 def auditDependencies (expressions : Array Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : MetaM Unit := do
+  let cache := currentAuditCache (← getEnv) excluded
+  let accepted ← match cache with
+    | some cache => cache.accepted.get
+    | none => pure {}
   let mut pending := expressions
   let mut seen : NameSet := {}
   let mut locals : FVarIdSet := {}
@@ -43,7 +52,7 @@ def auditDependencies (expressions : Array Expr) (excluded : Array Name := #[])
     for name in expression.getUsedConstants do
       if forbiddenDependency excluded name then
         throwError "SQL certificate depends on excluded declaration {name}"
-      if !seen.contains name then
+      if !seen.contains name && !accepted.contains name then
         seen := seen.insert name
         let info ← getConstInfo name
         if info.isAxiom && !allowedAxioms.contains name then
@@ -60,6 +69,11 @@ def auditDependencies (expressions : Array Expr) (excluded : Array Name := #[])
         pending := pending.push declaration.type
         if let some value := declaration.value? then
           pending := pending.push value
+  if let some cache := cache then
+    let started := cache.environment
+    cache.accepted.modify fun accepted =>
+      seen.foldl (fun accepted name => if started.contains name then accepted.insert name else accepted)
+        accepted
 
 /-- Check that the supplied expression proves exactly the supplied proposition in the
 current local context, then audit all dependencies with {name}`auditDependencies`.
