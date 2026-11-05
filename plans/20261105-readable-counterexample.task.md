@@ -32,8 +32,8 @@ one block in this order:
    so each replay runs on its own new database, as the model's runs do.
 
 Text values in the construction and replay SQL are string literals (`'a'`, `'a''b'`)
-when their bytes are valid UTF-8 with no NUL and no backslash. Other text keeps
-`CAST(X'..' AS TEXT)`, which keeps every byte.
+when their bytes are valid UTF-8 with no NUL. Other text keeps `CAST(X'..' AS TEXT)`, which
+keeps every byte.
 
 The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidateEnvironment`,
 `Bindings: [[]]` and the second copy of the construction are no longer printed.
@@ -41,7 +41,7 @@ The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidat
 ## Tests
 
 - `tests/surface/CounterexampleReplaySource.lean`: `#guard` checks of the literal of a text
-  value: ASCII, a quote, non-ASCII UTF-8, NUL, a backslash and invalid UTF-8.
+  value: ASCII, a quote, non-ASCII UTF-8, a backslash, NUL and invalid UTF-8.
 - A new surface fixture, run by a pytest test, with the claim of issue #316
   (`uniqueEmail succeeds where noDuplicateEmails`). The test checks the whole block of the
   message against the expected text (the tables with `'a'` and `'A'`, no environment line,
@@ -62,9 +62,9 @@ The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidat
   in `Outcome`; the original and the shrunk witness each need it.
 - The label of a statement needs the script expression of each query site
   (`replayClaim` in `CheckReplay.lean`); `Replay.Report` today has no label.
-- The SQLite 3.51 shell rewrites `\uXXXX` in its input to the character. A text literal
-  with a backslash can therefore change in the replay; such text keeps the CAST form.
-  A literal cannot hold a NUL byte. Construction is validated by `constructionMatches`, so a
+- A literal cannot hold a NUL byte. The replay is read by the shell as a script, which keeps
+  a backslash as it is (`hex('\u0041')` is `5C7530303431` through `.read`); only SQL given as a
+  command-line argument has its `\uXXXX` escapes changed. Construction is validated by `constructionMatches`, so a
   wrong spelling makes the candidate unreplayable instead of wrong; the tests must show that
   the usual witnesses still replay.
 - `Replay.valueLiteral` also spells parameter bindings (`bindingsSql`); the change applies
