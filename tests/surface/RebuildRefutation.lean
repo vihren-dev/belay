@@ -16,7 +16,7 @@ namespace RebuildGuide
 /-- The wrong rebuild on a connection with foreign keys on does not preserve the sessions: on the sample
 database it succeeds and the read gives its one session before the rebuild and none after it. Proof sketch:
 {lit}`sql_refute` runs the model on the sample and certifies the counterexample. -/
-theorem wrong_rebuild_loses_sessions : ¬ (requireNameWrongEnforced preserves allSessions) := by
+theorem wrong_rebuild_loses_sessions : ¬ (makeStrictWrongEnforced preserves allSessions) := by
   sql_refute with (db := sample)
 
 #print axioms wrong_rebuild_loses_sessions

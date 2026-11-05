@@ -20,3 +20,12 @@ Tests of the task: `tests/surface_rebuild_test.py` (five tests), `tests/lean_pac
 - 2026-11-05: task specified for a CHECK constraint. The review found that SQLite 3.53.0 adds
   CHECK constraints in place too (`ADD CONSTRAINT ... CHECK`); the owner chose STRICT instead,
   and the task file was rewritten. The file name keeps its first slug.
+- 2026-11-05: `InsertFits.copy` takes `typed` (every source row fits the STRICT types of the target) in
+  place of `untyped`; `just dev-build` passes. The fixtures name the scripts `makeStrict`,
+  `makeStrictWrong` and `makeStrictWrongEnforced`, create `customers_new` as a STRICT table, name the
+  new table's definition `strictShape` (from `reachedAfter 3`) with its facts checked by the kernel, and
+  state the premise `StrictRows` with `LiteralData.typesFit strictShape`. The replay `with-blob` replaces
+  `without-name`. Local: every fixture chain of `tests/surface_rebuild_test.py` compiles with the three
+  logical axioms; native `sqlite3` 3.51.0 refuses the blob with `cannot store BLOB value in TEXT column
+  customers_new.email (19)` and gives the expected rows. Tests of the commit: `tests/surface_rebuild_test.py`
+  and `tests/lean_packages_test.py` on the Nix conformance runtime.
