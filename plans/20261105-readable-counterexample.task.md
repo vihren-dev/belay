@@ -32,7 +32,7 @@ one block in this order:
    so each replay runs on its own new database, as the model's runs do.
 
 Text values in the construction and replay SQL are string literals (`'a'`, `'a''b'`)
-when their bytes are valid UTF-8 with no NUL. Other text keeps `CAST(X'..' AS TEXT)`, which
+when their bytes are valid UTF-8 with no NUL and no carriage return. Other text keeps `CAST(X'..' AS TEXT)`, which
 keeps every byte.
 
 The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidateEnvironment`,
@@ -41,7 +41,8 @@ The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidat
 ## Tests
 
 - `tests/surface/CounterexampleReplaySource.lean`: `#guard` checks of the literal of a text
-  value: ASCII, a quote, non-ASCII UTF-8, a backslash, NUL and invalid UTF-8.
+  value: ASCII, a quote, non-ASCII UTF-8, a backslash, a line feed, CR LF, NUL and invalid UTF-8;
+  `tests/surface_replay_test.py` replays parameters with CR LF, a lone CR, a quote and a backslash.
 - A new surface fixture, run by a pytest test, with the claim of issue #316
   (`uniqueEmail succeeds where noDuplicateEmails`). The test checks the whole block of the
   message against the expected text (the tables with `'a'` and `'A'`, no environment line,
@@ -62,9 +63,9 @@ The raw Lean structure of the database, `valid := ⋯`, the name `Check.candidat
   in `Outcome`; the original and the shrunk witness each need it.
 - The label of a statement needs the script expression of each query site
   (`replayClaim` in `CheckReplay.lean`); `Replay.Report` today has no label.
-- A literal cannot hold a NUL byte. The replay is read by the shell as a script, which keeps
-  a backslash as it is (`hex('\u0041')` is `5C7530303431` through `.read`); only SQL given as a
-  command-line argument has its `\uXXXX` escapes changed. Construction is validated by `constructionMatches`, so a
+- A literal cannot hold a NUL byte, and the shell reads a script by lines, so a CR LF inside a
+  literal becomes LF alone (`hex('a\r\nb')` is `610A62` through `.read`); such text keeps the
+  CAST. A backslash stays as it is. Construction is validated by `constructionMatches`, so a
   wrong spelling makes the candidate unreplayable instead of wrong; the tests must show that
   the usual witnesses still replay.
 - `Replay.valueLiteral` also spells parameter bindings (`bindingsSql`); the change applies

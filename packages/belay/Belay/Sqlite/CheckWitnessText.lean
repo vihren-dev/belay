@@ -50,7 +50,8 @@ def environmentText : Option Int × Option Nat × Option Nat × Option Int → S
       | some milliseconds =>
         match strftimeValue milliseconds [.text "%Y-%m-%d %H:%M:%S".toUTF8.toList, .text "now".toUTF8.toList] with
         | .text bytes => s!"clock {String.fromUTF8! ⟨bytes.toArray⟩} at the first statement"
-        | _ => s!"clock {milliseconds} Julian-day milliseconds at the first statement"
+        | .null | .integer _ | .real _ | .blob _ =>
+          s!"clock {milliseconds} Julian-day milliseconds at the first statement"
     let counter := fun (name : String) (value : Option String) => s!"{name} {value.getD "unknown"}"
     s!"{time}; {counter "changes()" (changes.map toString)}, " ++
       s!"{counter "total_changes()" (totalChanges.map toString)}, " ++

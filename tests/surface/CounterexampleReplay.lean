@@ -32,6 +32,7 @@ elab "check_replays" : command => Command.liftTermElabM do
   emit "parameters" (← Replay.scriptReport (mkConst ``Database.empty) (mkConst ``parameters))
   emit "overflow" (← Replay.scriptReport (mkConst ``overflow) (mkConst ``sumQuery))
   emit "unbound" (← Replay.scriptReport (mkConst ``Database.empty) (mkConst ``oneQuery))
+  emit "line-parameters" (← Replay.scriptReport (mkConst ``Database.empty) (mkConst ``lineParameters))
   emit "numeric-parameters" (← Replay.scriptReport (mkConst ``Database.empty) (mkConst ``numericParameters))
   emit "numeric-boundaries" (← Replay.scriptReport (mkConst ``Database.empty) (mkConst ``numericBoundaries))
   emit "predicate" (← Replay.databaseReport database)

@@ -3,7 +3,7 @@ import Belay.Sqlite.Values
 
 set_option doc.verso true
 
-/-! SQL spellings for replay values. Text that a string literal can hold is a string literal,
+/-! SQL spellings for replay values. Text that a string literal keeps in the shell is a string literal,
 for example {lit}`'a'`; other text is encoded through a hexadecimal BLOB cast, so NULs and
 arbitrary bytes survive without changing the value's storage class. -/
 
@@ -20,10 +20,11 @@ def blobLiteral (bytes : List UInt8) : String :=
   "X'" ++ ascii (Resolved.hexValue (.blob bytes)).textBytes ++ "'"
 
 /-- The SQL string literal of a text, for example {lit}`'a''b'` for the text {lit}`a'b`: the
-text's characters with each quote doubled. It is none when the bytes are not UTF-8 or hold a
-NUL byte, which a literal cannot hold. -/
+text's characters with each quote doubled. It is none when the bytes are not UTF-8, hold a
+NUL byte, which a literal cannot hold, or hold a carriage return: the {lit}`sqlite3` shell reads a
+script by lines and gives a CR LF inside a literal as LF alone. -/
 def textLiteral (bytes : List UInt8) : Option String := do
-  guard !bytes.contains 0
+  guard (!bytes.contains 0 && !bytes.contains 13)
   let text ← String.fromUTF8? ⟨bytes.toArray⟩
   return "'" ++ text.replace "'" "''" ++ "'"
 

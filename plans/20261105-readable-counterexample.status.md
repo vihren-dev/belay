@@ -25,3 +25,9 @@ Sources: `packages/belay/Belay/Sqlite/CheckDisplay.lean`, `CheckOperation.lean`,
   `surface_s6_check_programs_test`.
 - Finding: the claim of issue #316 is `unknown` with the default `sql.checkBudget` (100000), on
   main before this change too; the fixture sets 2000000. Not changed here.
+- 2026-11-05: review of the feature commit: R11 must (the shell gives a CR LF inside a literal as
+  LF) fixed: text with a carriage return keeps its CAST, with `#guard`s and the native replay of
+  `lineParameters` in `surface_replay_test`; R5 must (catch-all on `Value`) fixed; R13 should
+  fixed: `packages/belay/README.md` describes the new block. The R19 should of the task-file fix
+  (the command-line rewrite of `\u` escapes) is fixed: the task file no longer claims it.
+  Tests run: `surface_replay_test`, `surface_check_readable_test`.
