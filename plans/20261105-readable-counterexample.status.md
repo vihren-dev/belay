@@ -1,6 +1,6 @@
 # Status: a readable counterexample from `#sql_check`
 
-Created: 2026-11-05. Status: IN PROGRESS.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Task: [20261105-readable-counterexample.task.md](20261105-readable-counterexample.task.md).
 Issue: #316.
 
@@ -43,3 +43,5 @@ Sources: `packages/belay/Belay/Sqlite/CheckDisplay.lean`, `CheckOperation.lean`,
   `surface_s6_check_editor_test`, `surface_automatic_editor_test`.
 - 2026-11-05: review of the budget-share fix: R13 should fixed: `packages/belay/README.md` says
   that the block can omit `Database:` and `Environment:`. Text only; no tests changed.
+- 2026-11-05: review of the README fix: no findings. End checks pass: `just test-full`,
+  `just verdict`, `just test-nix` (87 passed) and `just test-scheduled-checks`. DONE.

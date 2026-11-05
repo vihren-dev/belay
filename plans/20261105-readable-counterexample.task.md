@@ -1,6 +1,6 @@
 # A readable counterexample from `#sql_check`
 
-Created: 2026-11-05. Status: OPEN.
+Created: 2026-11-05. Status: DONE (2026-11-05).
 Source: issue #316 ("#sql_check prints a counterexample database as a raw Lean structure, twice").
 Audience: the team.
 
