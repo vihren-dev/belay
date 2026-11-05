@@ -42,8 +42,9 @@ theorem customers_found {db : Database} (pre : db.raw.catalog = sample.raw.catal
 
 /-- The rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit the STRICT
 types of the new table, in every complete environment, on the actual run and on every branch. The rows are otherwise
-unrestricted. Where the database has a customer whose name or email is not text, the claim requires nothing; there
-the INSERT from a query fails on the STRICT type of the new table. Proof sketch: {name}`sendStatements_succeedsFrom` with the facts {name}`Good`; the facts
+unrestricted. Where the database has a customer with a cell that does not fit the STRICT type of its column, for
+example a blob email, the claim requires nothing; there the INSERT from a query fails. NULL fits every type, so a
+customer without a name is within the premise. Proof sketch: {name}`sendStatements_succeedsFrom` with the facts {name}`Good`; the facts
 hold at the start, and {name}`good_advance` shows that each step continues without an error and keeps them. -/
 theorem makeStrict_succeeds :
     Succeeds makeStrict (fun db => db.raw.catalog = sample.raw.catalog ∧ StrictRows db) := by

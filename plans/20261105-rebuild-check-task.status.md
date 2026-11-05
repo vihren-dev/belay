@@ -29,3 +29,7 @@ Tests of the task: `tests/surface_rebuild_test.py` (five tests), `tests/lean_pac
   logical axioms; native `sqlite3` 3.51.0 refuses the blob with `cannot store BLOB value in TEXT column
   customers_new.email (19)` and gives the expected rows. Tests of the commit: `tests/surface_rebuild_test.py`
   and `tests/lean_packages_test.py` on the Nix conformance runtime.
+- 2026-11-05: commit a4c46bff (the STRICT rebuild). Local: the five rebuild tests and the package
+  replay test pass. Review: one "should" finding (R9), the docstrings of `makeStrict` and
+  `makeStrict_succeeds` said "not text" where the copy refuses only a cell that does not fit its
+  STRICT type and NULL fits every type; fixed in the next commit. `just test-full` runs on a4c46bff.
