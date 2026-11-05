@@ -55,9 +55,21 @@ artifacts as data, and retries retained artifacts daily in expiry order. It neve
 checks out or executes a pull request's code. Replays keep the same IDs.
 
 Use the existing `belay-observability` GitHub environment, with deployment
-restricted to `main`, variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`,
-and secret `CLICKHOUSE_PASSWORD`. The workflow maps this secret
-to the uploader's runtime variable `BELAY_CLICKHOUSE_PASSWORD`.
+restricted to `main`. Configure these existing GitHub environment values:
+
+| Kind | Name | Uploader use |
+| --- | --- | --- |
+| Variable | `BELAY_CLICKHOUSE_INTERNAL_URL` | Runtime `BELAY_CLICKHOUSE_URL` |
+| Variable | `BELAY_CLICKHOUSE_CA_PEM` | PEM CA certificate written to a temporary file |
+| Variable | `BELAY_CLICKHOUSE_USER` | Runtime database user |
+| Secret | `CLICKHOUSE_PASSWORD` | Runtime `BELAY_CLICKHOUSE_PASSWORD` |
+
+The workflow writes the CA PEM to the runner's temporary directory and sets
+`BELAY_CLICKHOUSE_CA` to that file. The uploader uses it for TLS certificate and
+hostname verification. The file is removed when the upload step exits. Missing
+URL or CA values stop the step with a configuration error. No system-wide CA
+installation is needed. The existing `BELAY_CLICKHOUSE_URL` GitHub variable
+remains available during migration, but this workflow reads the internal URL.
 
 The uploader joins Tailscale with GitHub OIDC through the official action before
 sending observations. It reads the existing environment secrets
@@ -67,10 +79,10 @@ name does not mean an OAuth client secret is required. No variable migration
 is needed.
 
 The identity needs writable `auth_keys` scope for the existing `tag:belay-ci`.
-Devops already grants that tag access to `100.68.176.93` on TCP port 8443.
-Keep `vihren-demo.tail114da.ts.net:8443` as the HTTPS endpoint. Devops must repair
-the identity's subject for GitHub's immutable repository identity and constrain
-the repository/owner IDs, environment and exact production workflow ref.
+Devops provides access to Vihren DNS and shared HTTPS for the internal endpoint.
+The older `.ts.net:8443` endpoint remains available during migration. OIDC trust
+must match GitHub's immutable repository identity and constrain the
+repository/owner IDs, environment and exact production workflow ref.
 Commission on `main`; no temporary `ci-test` trust is requested.
 The action checks peer connectivity, then the uploader checks database delivery.
 Only the uploader job receives the network identity; test jobs retain artifacts.
@@ -78,7 +90,7 @@ The connection step has a five-minute limit. The runner is ephemeral and the
 Tailscale action logs it out when the job ends.
 
 Provisioning is tracked in [devops issue #56](https://github.com/vihren-dev/devops/issues/56).
-The endpoint must use a certificate trusted by the runner. Database or network
+The endpoint certificate must chain to the supplied CA and match the URL hostname. Database or network
 outages do not change CI test results. Commissioning must inspect upload logs
 and query ClickHouse: the workflow's success status alone does not prove delivery.
 
