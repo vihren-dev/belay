@@ -180,6 +180,9 @@ def test_ci_credentials_are_separate_from_test_code() -> None:
     assert "secrets.TS_OAUTH_CLIENT_ID" in uploader and "secrets.TS_AUDIENCE" in uploader
     assert "tags: tag:belay-ci" in uploader
     assert "BELAY_CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}" in uploader
+    assert "BELAY_CLICKHOUSE_URL: ${{ vars.BELAY_CLICKHOUSE_INTERNAL_URL }}" in uploader
+    assert "vars.BELAY_CLICKHOUSE_CA_PEM" in uploader and '"$BELAY_CLICKHOUSE_CA"' in uploader
+    assert "BELAY_CLICKHOUSE_CA: ${{ runner.temp }}/belay-clickhouse-ca.pem" in uploader
 
 
 def test_schema_denial_retains_observations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

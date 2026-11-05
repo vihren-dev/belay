@@ -37,7 +37,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           BELAY_OBSERVABILITY_RUN_ID: ${{ github.event.workflow_run.id || '' }}
-          BELAY_CLICKHOUSE_URL: ${{ vars.BELAY_CLICKHOUSE_URL }}
+          BELAY_CLICKHOUSE_URL: ${{ vars.BELAY_CLICKHOUSE_INTERNAL_URL }}
+          BELAY_CLICKHOUSE_CA_PEM: ${{ vars.BELAY_CLICKHOUSE_CA_PEM }}
+          BELAY_CLICKHOUSE_CA: ${{ runner.temp }}/belay-clickhouse-ca.pem
           BELAY_CLICKHOUSE_USER: ${{ vars.BELAY_CLICKHOUSE_USER }}
           BELAY_CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}
-        run: python3 -m tools.observability_ci
+        run: |
+          : "${BELAY_CLICKHOUSE_URL:?Set BELAY_CLICKHOUSE_INTERNAL_URL in the GitHub environment}"
+          : "${BELAY_CLICKHOUSE_CA_PEM:?Set BELAY_CLICKHOUSE_CA_PEM in the GitHub environment}"
+          trap 'rm -f -- "$BELAY_CLICKHOUSE_CA"' EXIT
+          printf '%s\n' "$BELAY_CLICKHOUSE_CA_PEM" > "$BELAY_CLICKHOUSE_CA"
+          python3 -m tools.observability_ci
