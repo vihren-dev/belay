@@ -41,3 +41,5 @@ Sources: `packages/belay/Belay/Sqlite/CheckDisplay.lean`, `CheckOperation.lean`,
   `surface_check_readable_test`, `surface_s6_check_programs_test`, `surface_check_command_test`,
   `surface_replay_test`, `surface_s6_not_blocked_test`, `surface_automatic_test`,
   `surface_s6_check_editor_test`, `surface_automatic_editor_test`.
+- 2026-11-05: review of the budget-share fix: R13 should fixed: `packages/belay/README.md` says
+  that the block can omit `Database:` and `Environment:`. Text only; no tests changed.

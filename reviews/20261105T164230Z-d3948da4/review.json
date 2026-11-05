@@ -1,0 +1,47 @@
+{
+  "caller": "claude",
+  "commit": "d3948da49d398e5862e721465bac41fc48e67c55",
+  "date": "2026-11-05T16:42:30+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay/Belay/Sqlite/CheckOperation.lean",
+    "packages/belay/Belay/Sqlite/CheckWitnessText.lean",
+    "plans/20261105-readable-counterexample.status.md",
+    "plans/20261105-readable-counterexample.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261105T164230Z-d3948da4#1",
+      "line": 57,
+      "path": "packages/belay/Belay/Sqlite/CheckOperation.lean",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The budget fallback can omit both database and environment text, but `packages/belay/README.md` still describes these lines without that exception. Fix: document that both lines can be omitted when witness rendering exceeds its budget while the certified refutation remains reported."
+    }
+  ],
+  "id": "20261105T164230Z-d3948da4",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

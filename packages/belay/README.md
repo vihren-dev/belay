@@ -337,6 +337,9 @@ A false SQL claim shows one block, in this order:
   runs several scripts, the script starts each of them after the first on a new
   database with `.open :memory:`.
 
+The `Database:` and `Environment:` lines need a share of the budget. When that share
+is not sufficient, the block omits these lines and still reports the counterexample.
+
 ### Claims about programs
 
 The command also checks claims about programs: `Sql.check`, `FreshEnsures`,
