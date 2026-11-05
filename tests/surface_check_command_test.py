@@ -34,7 +34,7 @@ def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
                                          "unavailable", "after-limits"}, result.stdout
     for name in false_cases:
         assert blocks[name].startswith("SQL check: false."), (name, blocks[name])
-        assert "Database:" in blocks[name] and "Environment:" in blocks[name], blocks[name]
+        assert "Database:" in blocks[name] and "Environment:" not in blocks[name], blocks[name]
     for name in ("disabled", "no-candidates", "low-depth", "unavailable"):
         assert blocks[name].startswith("SQL check: unknown;"), (name, blocks[name])
     for name in ("proof", "after-limits"):
@@ -56,7 +56,8 @@ def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
         else:
             assert replay.returncode == 0 and not replay.stderr, replay.diagnostic()
             assert native_rows(replay.stdout) == expected_rows[name], (name, replay.diagnostic())
-    assert "Bindings:" not in blocks["plain"] and "Model outputs:" not in blocks["plain"]
+    assert "SELECT :amount (parameters ''''): rows [[\"'\"]]" in blocks["parameter"], blocks["parameter"]
+    assert not any(": rows" in line or ": error" in line for line in blocks["plain"].splitlines()), blocks["plain"]
     proof = blocks["proof"].split("Checked proof: by ", 1)[1]
     copied = tmp_path / "CopiedProof.lean"
     copied.write_text("import Belay\nopen Belay.Sqlite\n"

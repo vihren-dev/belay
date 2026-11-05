@@ -4,6 +4,7 @@ import Belay.Sqlite.CheckAutoProof
 import Belay.Sqlite.CheckSamples
 import Belay.Sqlite.CheckReplay
 import Belay.Sqlite.CheckObservation
+import Belay.Sqlite.CheckWitnessText
 
 set_option doc.verso true
 
@@ -24,6 +25,9 @@ structure Outcome where
   /-- The branch and the failing observation of a reported refutation of a claim about programs, from the model's
   run at the witness. None when the claim is no such claim or the text is out of budget. -/
   observation : Option String := none
+  /-- The database and environment of a reported refutation as a user reads them. None when there is
+  no refutation. -/
+  witness : Option WitnessText := none
 
 /-- Try proof automation, then the shared candidate generator, and require replay before
 reporting a counterexample. An unreplayable candidate is skipped so later candidates can
@@ -50,7 +54,9 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         let proof ← refuteWitness proposition witness excluded excludedLocals
         let reports ← replayClaim proposition witness excluded excludedLocals
         let observation ← observeFailure proposition witness excluded excludedLocals
-        let original : Outcome := { result := .refuted witness proof, replays := reports, observation }
+        let text ← witnessText witness excluded excludedLocals
+        let original : Outcome :=
+          { result := .refuted witness proof, replays := reports, observation, witness := some text }
         if shrinkAttempts == 0 then return original
         -- Shrinking may use its share of the budget that is left. A certified, replayed witness is kept when
         -- shrinking uses its share without a smaller witness.
@@ -65,7 +71,8 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
           if smaller.database == witness.database then return original
           let reports ← replayClaim proposition smaller excluded excludedLocals
           let observation ← observeFailure proposition smaller excluded excludedLocals
-          return { result := .refuted smaller proof, replays := reports, observation }
+          let text ← witnessText smaller excluded excludedLocals
+          return { result := .refuted smaller proof, replays := reports, observation, witness := some text }
         return (smaller.bind id).getD original
       return accepted.getD {}
   return (outcome.bind id).getD {}

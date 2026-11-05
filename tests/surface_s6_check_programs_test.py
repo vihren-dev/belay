@@ -68,9 +68,9 @@ def test_false_triple_names_the_database_the_environment_and_the_failing_run(blo
     """The witness of a false triple names the initial database, the complete environment and the failing
     observation, and native SQLite leaves the row that the model's run leaves: the quantity 6, not 7."""
     block = blocks["triple-false"]
-    assert "Database: sample" in block and "Environment: Check.candidateEnvironment" in block, block
+    assert "Database: sample\nitems:\n" in block and "Environment:" not in block, block
     assert "Failing observation: The check fails on the actual run of the program." in block, block
-    assert "Model outputs: [done 1]" in block and "Note:" not in block, block
+    assert "bump (parameters 1): done 1" in block and "Note:" not in block, block
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     [script] = replays(block)
@@ -113,7 +113,7 @@ def test_explanation_names_what_the_relation_compares(blocks: dict[str, str]) ->
     observation = blocks["observation-false"]
     assert ("Failing observation: The actual runs of the two programs differ at this context, in the returned "
             "value. The outputs of the two runs are equal.") in observation, observation
-    assert "connection" not in observation.split("Database construction:")[0], observation
+    assert "connection" not in observation.split("Construction:")[0], observation
     views = blocks["view-false"]
     assert ("Failing observation: The views of the claim project the actual runs of the two programs to "
             "observations that differ at this context.") in views, views

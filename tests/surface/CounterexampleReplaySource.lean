@@ -42,6 +42,15 @@ def dropShellTable : Script := (sql "DROP TABLE IF EXISTS sqlite_parameters; SEL
 #guard (Replay.valueLiteral (.real 0x8000000000000000)).isNone
 #guard (Replay.valueLiteral (.integer 9223372036854775808)).isNone
 
+-- Text is a string literal when it is UTF-8 with no NUL byte, with each quote doubled, and keeps a
+-- backslash; other text is the CAST of its bytes.
+#guard Replay.valueLiteral (.text "a".toUTF8.toList) == some "'a'"
+#guard Replay.valueLiteral (.text "a'b".toUTF8.toList) == some "'a''b'"
+#guard Replay.valueLiteral (.text "æ".toUTF8.toList) == some "'æ'"
+#guard Replay.valueLiteral (.text "\\u0041".toUTF8.toList) == some "'\\u0041'"
+#guard Replay.valueLiteral (.text [97, 0, 98]) == some "CAST(X'610062' AS TEXT)"
+#guard Replay.valueLiteral (.text [255]) == some "CAST(X'FF' AS TEXT)"
+
 /-- An untrusted compiled implementation supplies a different script from its definition. -/
 @[implemented_by twoQuery] def dishonestScript : Script := oneQuery
 
