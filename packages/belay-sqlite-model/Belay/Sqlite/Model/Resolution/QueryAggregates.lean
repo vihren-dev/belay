@@ -96,14 +96,59 @@ def resolveAggregateCall (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) 
     Except ValueIssue Resolved.Aggregate :=
   (resolveAggregateCallTraced dqs scope shapes call).drop
 
+mutual
+/-- Whether an expression as written has a subquery: {lit}`EXISTS`, {lit}`IN (query)` or a scalar
+subquery, anywhere in it. -/
+def Syntax.Expr.hasSubquery : Syntax.Expr → Bool
+  | .exists _ | .inQuery .. | .subquery _ => true
+  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .concatenate left right =>
+    left.hasSubquery || right.hasSubquery
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _ | .collate operand _ =>
+    operand.hasSubquery
+  | .call _ arguments | .caseOf arguments _ => Syntax.Expr.hasSubqueryIn arguments
+  | .inList operand values _ => operand.hasSubquery || Syntax.Expr.hasSubqueryIn values
+  | .between operand low high _ => operand.hasSubquery || low.hasSubquery || high.hasSubquery
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified ..
+  | .callStar _ | .raise .. => false
+
+/-- Whether some expression has a subquery ({name}`Syntax.Expr.hasSubquery`). -/
+def Syntax.Expr.hasSubqueryIn : List Syntax.Expr → Bool
+  | [] => false
+  | expression :: rest => expression.hasSubquery || Syntax.Expr.hasSubqueryIn rest
+end
+
+/-- Resolve {lit}`GROUP BY` term {lit}`item` that is an expression (ADR 0030, D4), in a query whose
+result columns have the aliases {lit}`aliases`: an aggregate anywhere in the term is SQLite's
+{lit}`aggregate functions are not allowed in the GROUP BY clause`; a subquery is
+{name}`RestrictionKind.groupByTerm`; a result alias inside the term is
+{name}`RestrictionKind.aliasInExpression`; any other term resolves as a {lit}`WHERE` operand does,
+with its collation ({lit}`Syntax.Expr.collationIn`). For example {lit}`GROUP BY lower(a)` resolves
+to the call of {lit}`lower` on the column. -/
+def resolveGroupExpressionTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes)
+    (aliases : List (Option Identifier)) (item : Nat) (term : Syntax.Expr) : Traced ValueIssue (Resolved.Expr × Collation) :=
+  if !term.aggregateCalls.isEmpty then throw (.prepare .aggregateInGroupBy)
+  else if term.hasSubquery then throw (.restriction [4, item] .groupByTerm)
+  else if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [4, item])
+  else ((resolveOperandTraced dqs scope shapes true term).under [4, item]).map (·.1, term.collationIn scope)
+
 /-- Resolve {lit}`GROUP BY` term {lit}`item` of a query whose result columns are {lit}`outputs`,
-with aliases {lit}`aliases` and collations {lit}`collations`: a column name, also under one
-{lit}`COLLATE`, or a qualified name, with its collation; a result column number or alias, with
-the column's collation; a parameter, as a constant value that names no result column (ADR 0019,
-D1); an aggregate, also inside the result column that a number or an alias
-names, is SQLite's {lit}`aggregate functions are not allowed in the GROUP BY clause`; any other term is {name}`RestrictionKind.groupByTerm`.
-A name is a column of the scope first and a result alias second; the occurrence of an alias is the
-result column that it names, and a name that is neither lists the aliases among its candidates. -/
+with aliases {lit}`aliases` and collations {lit}`collations` (ADR 0030, D4):
+- a name is a column of the scope first and a result alias second; the occurrence of an alias is
+  the result column that it names, and a name that is neither lists the aliases among its
+  candidates;
+- an integer ({name}`columnNumber`) names its result column, and one out of range is SQLite's
+  {lit}`GROUP BY term out of range` error;
+- the result column that a number or an alias names gives its expression and collation;
+- a number or an alias under {lit}`COLLATE` names its result column in the same way, with the
+  explicit collation, as SQLite reads the term without {lit}`COLLATE` (ADR 0030, D4 note); an
+  unknown collation name there is {name}`RestrictionKind.unknownCollation`, as in any other
+  expression;
+- every other term is an expression ({name}`resolveGroupExpressionTraced`).
+
+An aggregate, also inside the result column that a number or an alias names, is SQLite's
+{lit}`aggregate functions are not allowed in the GROUP BY clause`. A result alias inside a larger
+term is {name}`RestrictionKind.aliasInExpression`. A subquery is
+{name}`RestrictionKind.groupByTerm`. -/
 def resolveGroupTermTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (aliases : List (Option Identifier))
     (outputs : List (Resolved.Output × String × Option Affinity)) (collations : List Collation) (item : Nat)
     (term : Syntax.Expr) : Traced ValueIssue (Resolved.Expr × Collation) :=
@@ -114,6 +159,10 @@ def resolveGroupTermTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
     | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
   let operand := fun (resolved : Traced ValueIssue Operand) =>
     (resolved.under [4, item]).map (·.1, term.collationIn scope)
+  let numbered := fun (number : Int) (collation : Option Collation) =>
+    if 1 ≤ number ∧ number ≤ (outputs.length : Int) then
+      Traced.lift ((grouped (number.toNat - 1)).map fun (key, own) => (key, collation.getD own))
+    else throw (.prepare (.groupByOutOfRange (item + 1) outputs.length))
   match term with
     | .identifier name quote => match scope.resolveName name, aliasIndex aliases name with
       | .missing, some column => do
@@ -121,20 +170,25 @@ def resolveGroupTermTraced (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes
         Traced.lift (grouped column)
       | .found .., _ | .missing, none | .ambiguous, _ =>
         operand (identifierTraced dqs scope name quote (aliasCandidates aliases))
-    | .callStar name | .call name [] | .call name [_] =>
-      throw (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
-    | .numeric _ | .negate _ => match namedResult aliases term with
-      | some (.ok column) => Traced.lift (grouped column)
-      | some (.error ()) => throw (.prepare (.groupByOutOfRange (item + 1) outputs.length))
-      | none => throw (.restriction [4, item] .groupByTerm)
-    | .qualified .. | .parameter _ => operand (resolveOperandTraced dqs scope shapes true term)
     | .collate .. =>
       if term.collatedColumn scope then operand (resolveOperandTraced dqs scope shapes true term)
-      else throw (.restriction [4, item] .groupByTerm)
-    | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
-    | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _
-    | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
-      throw (.restriction [4, item] .groupByTerm)
+      else match columnNumber term.withoutCollate.1, term.withoutCollate.1 with
+        | some number, _ => do
+          unless term.withoutCollate.2 do throw (.restriction [4, item] .unknownCollation)
+          numbered number (some (term.collationIn scope))
+        | none, .identifier name quote => match scope.resolveName name, aliasIndex aliases name with
+          | .missing, some column => do
+            unless term.withoutCollate.2 do throw (.restriction [4, item] .unknownCollation)
+            Traced.record { aliasUseOccurrence name quote column with path := [4, item] }
+            Traced.lift ((grouped column).map fun (key, _) => (key, term.collationIn scope))
+          | .found .., _ | .missing, none | .ambiguous, _ => resolveGroupExpressionTraced dqs scope shapes aliases item term
+        | none, _ => resolveGroupExpressionTraced dqs scope shapes aliases item term
+    | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .qualified .. | .negate _
+    | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+    | .cast .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
+    | .raise .. => match columnNumber term with
+      | some number => numbered number none
+      | none => resolveGroupExpressionTraced dqs scope shapes aliases item term
 
 /-- The resolved grouping term {lit}`item`: {name}`resolveGroupTermTraced` without its trace. -/
 def resolveGroupTerm (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (aliases : List (Option Identifier))

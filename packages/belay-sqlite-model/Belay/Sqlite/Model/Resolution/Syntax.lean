@@ -87,13 +87,17 @@ inductive Statement where
   Use {lean}`(none : Option (List Identifier))` to derive names when the view is used. -/
   | createView (name : Identifier) (ifNotExists : Bool) (columns : Option (List Identifier))
       (query : Subquery) (subqueries : List Subquery := [])
-  /-- {lit}`CREATE TABLE name (columns, constraints) options`. -/
+  /-- {lit}`CREATE TABLE [IF NOT EXISTS] name (columns, constraints) options`. With
+  {lit}`ifNotExists`, a table or a view of the name makes the statement a no-op; use false for
+  a statement without the clause. -/
   | createTable (name : Identifier) (columns : List ColumnDefinition)
-      (constraints : List TableConstraint) (options : TableOptions := {})
-  /-- {lit}`CREATE [UNIQUE] INDEX name ON table (terms) [WHERE filter]`: each key term is an
-  expression with its sort order, and the filter is none for an index of every row. -/
+      (constraints : List TableConstraint) (options : TableOptions := {}) (ifNotExists : Bool := false)
+  /-- {lit}`CREATE [UNIQUE] INDEX [IF NOT EXISTS] name ON table (terms) [WHERE filter]`: each key
+  term is an expression with its sort order, and the filter is none for an index of every row.
+  With {lit}`ifNotExists`, an index of the name makes the statement a no-op; use false for a
+  statement without the clause. -/
   | createIndex (name : Identifier) (unique : Bool) (table : Identifier) (terms : List OrderTerm)
-      (filter : Option Expr)
+      (filter : Option Expr) (ifNotExists : Bool := false)
   /-- {lit}`ALTER TABLE table ADD COLUMN column`. -/
   | addColumn (table : Identifier) (column : ColumnDefinition)
   /-- {lit}`ALTER TABLE table RENAME TO newName` (ADR 0019, D4). The table is path step 0 and the

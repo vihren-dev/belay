@@ -53,7 +53,7 @@ def statementHints : Syntax.Statement → SchemaHints
   | .update table assignments filter returning subqueries =>
     writeHints table (assignments.map (·.1)) (assignments.map (·.2) ++ filter.toList) returning subqueries
   | .delete table filter returning subqueries => writeHints table [] filter.toList returning subqueries
-  | .createIndex _ _ table terms filter =>
+  | .createIndex _ _ table terms filter _ =>
     writeHints table [] (terms.map (·.expression) ++ filter.toList) [] []
   | .createTable .. | .createView .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView .. | .dropIndex .. | .begin | .commit | .rollback
   | .pragma _ | .createTrigger .. | .dropTrigger .. => {}

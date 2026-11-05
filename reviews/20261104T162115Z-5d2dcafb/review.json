@@ -1,0 +1,105 @@
+{
+  "caller": "claude",
+  "commit": "5d2dcafbd7ca2d7aa824bb2d72b2e24214ba8c35",
+  "date": "2026-11-04T16:21:15+00:00",
+  "exit": 1,
+  "files": [
+    "build-support/tests.nix",
+    "conformance/authored_group_values.py",
+    "docs/adr-0030-conditional-creation-and-expression-grouping.md",
+    "docs/semantic-subset.md",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateQueryLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CountSelectResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyQuery.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyResolution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/GroupRow.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/GroupAssociation.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyArms.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryForm.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolvedExprForm.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261104-group-values.status.md",
+    "tests/conformance_group_values_test.py",
+    "tests/nix_suites.json",
+    "tests/surface/ClaimsGroupValues.lean",
+    "tests/surface_group_values_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261104T162115Z-5d2dcafb#1",
+      "line": 47,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean",
+      "rule": "R1",
+      "severity": "must",
+      "text": "The fold embeds resolved equality as its duplicate-call policy, collapsing `max(n)` and `max(+n)`: with NOCASE rows `('a',1),('A',3),('a',2)`, `SELECT c,max(n),min(n),max(+n) FROM t GROUP BY c` returns `'a'` in the model but `'A'` in SQLite. Fix: deduplicate written calls with a named SQLite-equivalence predicate before resolution and add this regression case."
+    },
+    {
+      "id": "20261104T162115Z-5d2dcafb#2",
+      "line": 37,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateSelectResolution.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`decidingCall_aggregateColumn` is used by another proof but has no proof sketch. Fix: describe the simplification and the split on `a.minOrMax`."
+    },
+    {
+      "id": "20261104T162115Z-5d2dcafb#3",
+      "line": 22,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyResolution.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`decidingCall_duplicateKeys` is used by another proof but has no proof sketch. Fix: explain that the result contains no aggregate calls and the remaining count call cannot decide the row."
+    },
+    {
+      "id": "20261104T162115Z-5d2dcafb#4",
+      "line": 35,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/GroupRow.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`Query.groupRow_none` is used by another proof but has no proof sketch. Fix: explain that substituting `none` reduces `Query.groupRow` to the first-row branch."
+    },
+    {
+      "id": "20261104T162115Z-5d2dcafb#5",
+      "line": 145,
+      "path": "docs/semantic-subset.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The text says an alias-named or matching result expression reads the first row, but `associatedResult` associates only the last matching result column for an alias, as the `alias-twice` case demonstrates. Fix: distinguish numbered association from association with the last matching expression."
+    },
+    {
+      "id": "20261104T162115Z-5d2dcafb#6",
+      "line": 147,
+      "path": "docs/semantic-subset.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The text claims the model follows SQLite’s full-scan plan, but the new ADR 0030 note explicitly records differing results for an associated column in `ORDER BY` with multiple grouping terms. Fix: qualify the claim with that documented exception."
+    }
+  ],
+  "id": "20261104T162115Z-5d2dcafb",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

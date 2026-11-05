@@ -50,8 +50,10 @@ theorem resolveQueryBody_count (dqs : Bool) (scope : Scope) (current : Option Na
     List.append_nil, Option.toList_none, Syntax.Expr.distinctList, List.foldl_nil, Bool.not_eq_true',
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
-  · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.countOf, Resolved.Output.canFail]
+  · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.countOf, Resolved.Output.canFail,
+      decidingCall, writtenResults, firstRowResults, Syntax.Expr.indexIn, aggregates, Syntax.Expr.same_self, Resolved.Aggregate.minOrMax]
   · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.countOf,
-      Model.condition, Functor.map, Except.map, Resolved.Output.canFail]
+      Model.condition, Functor.map, Except.map, Resolved.Output.canFail, decidingCall, writtenResults, firstRowResults,
+      Syntax.Expr.indexIn, aggregates, Syntax.Expr.same_self, Resolved.Aggregate.minOrMax]
 
 end Belay.Sqlite.Model

@@ -152,6 +152,17 @@ structure Query where
   filter and no columns of its own; its rows are those of its terms, its names those of the
   left-most term, and its {lit}`ORDER BY` terms name result columns. -/
   compound : Option Compound := none
+  /-- The deciding call of an aggregate query (ADR 0030, D5): the last distinct {lit}`min` or
+  {lit}`max` call in the order result columns, {lit}`ORDER BY`, {lit}`HAVING`, where a call that
+  is written again counts at its first place. The row of a group is the first row that gives
+  this call's result ({lit}`Query.groupRow`). Use {lean}`(none : Option Aggregate)` for a query
+  without {lit}`min` and {lit}`max`. -/
+  deciding : Option Aggregate := none
+  /-- The result columns, by position, that give the value of their associated grouping term on
+  the first row of the group instead of reading the row of the group (ADR 0030, D5). Resolution
+  lists them only for a query with a deciding call, because without one the row of the group is
+  its first row. Use {lean}`([] : List Nat)` when no result column is associated. -/
+  firstRowColumns : List Nat := []
   deriving Repr, DecidableEq
 
 /-- Whether a query reads the table at the catalog position directly, as one of its sources. -/

@@ -51,7 +51,8 @@
         ],
         "options": {
           "withoutRowid": false
-        }
+        },
+        "ifNotExists": false
       }
     }
   ],

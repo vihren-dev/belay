@@ -22,11 +22,10 @@ def drop (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Sta
   return composite (make dropped.value (!existsNode.children.isEmpty)) command.start command.stop
     #[dropped.span, spanOf existsNode]
 
-/-- {lit}`CREATE [UNIQUE] INDEX name ON table(terms) [WHERE filter]`. -/
+/-- {lit}`CREATE [UNIQUE] INDEX [IF NOT EXISTS] name ON table(terms) [WHERE filter]`. -/
 def createIndex (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["createkw", "uniqueflag", "INDEX", "ifnotexists", "nm", "dbnm", "ON", "nm",
     "LP", "sortlist", "RP", "where_opt"]
-  absent parts[3]! "IF NOT EXISTS"
   absent parts[5]! "A schema name"
   let whereParts := tree.children parts[11]!
   let filter ← if whereParts.isEmpty then pure (missing parts[11]!.start parts[11]!.stop)
@@ -34,8 +33,9 @@ def createIndex (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syn
   let indexName ← identifierName tree parts[4]!
   let table ← identifierName tree parts[7]!
   let terms := sequence (← orderTerms queryMappers tree parts[9]!) parts[9]!.start parts[9]!.stop
-  return composite (.createIndex indexName.value (!parts[1]!.children.isEmpty) table.value terms.value filter.value)
-    command.start command.stop #[indexName.span, spanOf parts[1]!, table.span, terms.span, filter.span]
+  return composite (.createIndex indexName.value (!parts[1]!.children.isEmpty) table.value terms.value filter.value
+      (!parts[3]!.children.isEmpty))
+    command.start command.stop #[indexName.span, spanOf parts[1]!, table.span, terms.span, filter.span, spanOf parts[3]!]
 
 /-- The boolean words of {lit}`sqlite3GetBoolean`, in the order that the Python translation
 tries them. -/

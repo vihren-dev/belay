@@ -38,6 +38,31 @@ def namesAliasIn (scope : Scope) (aliases : List Identifier) : List Syntax.Expr 
 end
 
 mutual
+/-- For every scope and expression, the expression names no alias of an empty list of aliases.
+Proof sketch: structural recursion; an identifier needs an alias, and every other form asks its
+parts. -/
+theorem namesAlias_nil (scope : Scope) : (expression : Syntax.Expr) → namesAlias scope [] expression = false
+  | .identifier .. => by simp [namesAlias]
+  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right
+  | .concatenate left right => by simp [namesAlias, namesAlias_nil scope left, namesAlias_nil scope right]
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
+  | .collate operand _ | .inQuery operand .. => by simp [namesAlias, namesAlias_nil scope operand]
+  | .call _ arguments | .caseOf arguments _ => by simp [namesAlias, namesAliasIn_nil scope arguments]
+  | .inList operand values _ => by simp [namesAlias, namesAlias_nil scope operand, namesAliasIn_nil scope values]
+  | .between operand low high _ => by
+    simp [namesAlias, namesAlias_nil scope operand, namesAlias_nil scope low, namesAlias_nil scope high]
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .callStar _ | .qualified ..
+  | .exists _ | .subquery _ | .raise .. => by simp [namesAlias]
+
+/-- For every scope and list of expressions, no expression names an alias of an empty list of
+aliases ({name}`namesAlias_nil`). Proof sketch: recursion on the list; the head is
+{name}`namesAlias_nil` and the tail is the recursive call. -/
+theorem namesAliasIn_nil (scope : Scope) : (expressions : List Syntax.Expr) → namesAliasIn scope [] expressions = false
+  | [] => by simp [namesAliasIn]
+  | argument :: rest => by simp [namesAliasIn, namesAlias_nil scope argument, namesAliasIn_nil scope rest]
+end
+
+mutual
 /-- Whether an expression names a column in scope: an identifier with the folded name of
 a column, or a qualified name of one, anywhere in the expression, or a subquery, which can read
 the row. A write value that names a column depends on the row. -/

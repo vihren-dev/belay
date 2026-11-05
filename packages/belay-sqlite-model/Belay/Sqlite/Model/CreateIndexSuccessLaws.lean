@@ -67,14 +67,26 @@ private theorem prepareOutput_clock (clock : Option Clock) (index : Nat) (connec
     simp [resolvedStepOutput, statementClock, Resolved.Statement.readsClock, Resolved.Statement.clockExpressions]
   rw [clockFree, resolvedStepOutput_prepareError]
 
+/-- For every clock, statement index, connection and bound values, the statement that does
+nothing ({lit}`.drop []`, the no-op of a CREATE statement with {lit}`IF NOT EXISTS`) outputs
+done with zero changes. Proof sketch: it reads no clock or counter, and its execution
+drops no object. -/
+theorem resolvedStepOutput_drop_nil (clock : Option Clock) (index : Nat) (connection : Connection)
+    (parameters : List Value) :
+    resolvedStepOutput clock index connection parameters (.drop []) = .done 0 := by
+  simp [resolvedStepOutput, statementClock, Resolved.Statement.readsClock,
+    Resolved.Statement.clockExpressions, Resolved.Statement.counterReads, SqlState.statementRun, runStatement, step,
+    Output.ofStep, advanceRun, advanceWith, SqlState.publish, SqlTransition.counted, statementOutput,
+    Resolved.Statement.returnsRows, Resolved.WriteRules.expressions, StatementRun.withKeys,
+    Counters.firstUnknown, haltError]
+
 /-- For every connection whose row lists align with its catalog, clock, statement index and
-bound values, CREATE INDEX gives neither an error nor an ending output exactly when
-{name}`CreateIndexConditions` holds. Both prepare errors and model restrictions fail this
-success test. Proof sketch: split the table and name lookups and the two expression
-resolvers; only their successful branch creates an index, whose output is given by
-{name}`resolvedStepOutput_createIndex`. -/
-theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    (connection : Connection) (parameters : List Value) (name tableName : Identifier)
+bound values, CREATE INDEX without {lit}`IF NOT EXISTS` gives neither an error nor an ending
+output exactly when {name}`CreateIndexConditions` holds. Proof sketch: split the table and
+name lookups and the two expression resolvers; only their successful branch creates an
+index, whose output is given by {name}`resolvedStepOutput_createIndex`. -/
+private theorem runScriptStep_createIndex_plain_ok_iff (context : ResolveContext) (clock : Option Clock)
+    (index : Nat) (connection : Connection) (parameters : List Value) (name tableName : Identifier)
     (unique : Bool) (terms : List Syntax.OrderTerm) (filter : Option Syntax.Expr)
     (aligned : connection.state.database.rows.length = connection.state.database.catalog.length) :
     let output := (runScriptStep context clock index connection (.createIndex name unique tableName terms filter) parameters).output
@@ -136,4 +148,42 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
               ({ table := position, keys := keyTerms, unique := false, filter := resolvedFilter } : CatalogIndex).uniqueKey
               (connection.state.database.rows.getD position []) <;>
             simp_all [CatalogIndex.uniqueKey]
+
+/-- For every connection whose row lists align with its catalog, clock, statement index, bound
+values and flag {lit}`ifNotExists`, CREATE INDEX gives neither an error nor an ending output
+exactly when one of these holds:
+
+* the flag is true and the statement is a no-op ({name}`createIndexKept`: the table exists,
+  no name is reserved, and an index has the name);
+* {name}`CreateIndexConditions` holds.
+
+Both prepare errors and model restrictions fail this success test. Without the clause
+({lean}`false`) only the second item can hold. Proof sketch: the no-op resolves to
+{lit}`.drop []`, whose output {name}`resolvedStepOutput_drop_nil` gives; otherwise the
+statement resolves as without the clause. -/
+theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Option Clock) (index : Nat)
+    (connection : Connection) (parameters : List Value) (name tableName : Identifier)
+    (unique : Bool) (terms : List Syntax.OrderTerm) (filter : Option Syntax.Expr) (ifNotExists : Bool)
+    (aligned : connection.state.database.rows.length = connection.state.database.catalog.length) :
+    let output := (runScriptStep context clock index connection
+      (.createIndex name unique tableName terms filter ifNotExists) parameters).output
+    output.isError = false ∧ output.endsRun = false ↔
+      (ifNotExists = true ∧ createIndexKept connection.state.database.catalog name tableName = true) ∨
+        CreateIndexConditions context connection.state.database name unique tableName terms filter := by
+  dsimp only
+  by_cases noOp : ifNotExists = true ∧ createIndexKept connection.state.database.catalog name tableName = true
+  · obtain ⟨rfl, kept⟩ := noOp
+    rw [runScriptStep_output]
+    simp [statement_arms, resolveCreateIndexIf, Connection.resolveState, kept, ResolveState.withCatalog,
+      Except.map, resolvedStepOutput_drop_nil,
+      Output.isError, Output.endsRun]
+  · have plain : resolveStatement context connection.resolveState (.createIndex name unique tableName terms filter ifNotExists) =
+        resolveStatement context connection.resolveState (.createIndex name unique tableName terms filter) := by
+      have off : (ifNotExists && createIndexKept connection.state.database.catalog name tableName) = false := by
+        cases ifNotExists <;> simp_all
+      simp only [statement_arms, resolveCreateIndexIf, Connection.resolveState] at off ⊢
+      simp [off]
+    rw [runScriptStep_output, plain, ← runScriptStep_output]
+    simpa only [noOp, false_or] using
+      runScriptStep_createIndex_plain_ok_iff context clock index connection parameters name tableName unique terms filter aligned
 end Belay.Sqlite.Model
