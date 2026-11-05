@@ -1,6 +1,6 @@
 # The guide's table rebuild makes the table STRICT
 
-Created: 2026-11-05. Status: in progress.
+Created: 2026-11-05. Status: DONE (2026-11-05); see the status file.
 Audience: the implementation team.
 Decided by: the owner, on 2026-11-05, after the launch review found that SQLite
 3.53.0 (2026-04-09) adds `ALTER TABLE ... ALTER COLUMN ... SET NOT NULL` and

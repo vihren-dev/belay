@@ -1,6 +1,6 @@
 # The guide's table rebuild makes the table STRICT: task status
 
-Date: 2026-11-05. Status: in progress.
+Date: 2026-11-05. Status: DONE (2026-11-05), pull request open.
 Audience: the implementation team.
 Task: [The guide's table rebuild makes the table STRICT](20261105-rebuild-check-task.task.md).
 Specification: the task file; the launch decision of the owner on 2026-11-05 (private product
@@ -25,11 +25,15 @@ Tests of the task: `tests/surface_rebuild_test.py` (five tests), `tests/lean_pac
   `makeStrictWrong` and `makeStrictWrongEnforced`, create `customers_new` as a STRICT table, name the
   new table's definition `strictShape` (from `reachedAfter 3`) with its facts checked by the kernel, and
   state the premise `StrictRows` with `LiteralData.typesFit strictShape`. The replay `with-blob` replaces
-  `without-name`. Local: every fixture chain of `tests/surface_rebuild_test.py` compiles with the three
-  logical axioms; native `sqlite3` 3.51.0 refuses the blob with `cannot store BLOB value in TEXT column
-  customers_new.email (19)` and gives the expected rows. Tests of the commit: `tests/surface_rebuild_test.py`
-  and `tests/lean_packages_test.py` on the Nix conformance runtime.
-- 2026-11-05: commit a4c46bff (the STRICT rebuild). Local: the five rebuild tests and the package
-  replay test pass. Review: one "should" finding (R9), the docstrings of `makeStrict` and
-  `makeStrict_succeeds` said "not text" where the copy refuses only a cell that does not fit its
-  STRICT type and NULL fits every type; fixed in the next commit. `just test-full` runs on a4c46bff.
+  `without-name`; the expected refusal of native SQLite is `cannot store BLOB value in TEXT column`. Tests
+  of the commit: `tests/surface_rebuild_test.py` and `tests/lean_packages_test.py`; their results count
+  from the Nix checks only.
+- 2026-11-05: commit a4c46bff (the STRICT rebuild). Review: one "should" finding (R9), the docstrings
+  of `makeStrict` and `makeStrict_succeeds` said "not text" where the copy refuses only a cell that does
+  not fit its STRICT type and NULL fits every type; fixed in commit 32a11075. Its review: one "should"
+  finding (R19), this file cited local test results; removed.
+- 2026-11-05: `just test-full` on 32a11075: the first run failed in
+  `tests/surface_check_command_test.py::test_sql_check_reports_checked_outcomes` by its 240 s command
+  timeout while `just test-nix` and two reviews ran on the same machine; the second run, alone, passed
+  (all 16 report groups). `just test-nix`: 87 passed. `just test-scheduled-checks`: passed (the writers group).
+- 2026-11-05: DONE. The pull request of the branch `rebuild-strict` is open on `main`.
