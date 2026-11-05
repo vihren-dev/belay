@@ -1,6 +1,7 @@
 # ADR 0031: A fast `#sql_check`: compiled screening, certification of one hit
 
-Date: 2026-11-05. Status: PROPOSED. Owner decisions 1 to 3 are open.
+Date: 2026-11-05. Status: ACCEPTED (owner, 2026-11-05: "I accept your recommendations").
+Owner decisions 1 to 3 follow the recommendations.
 Implementation: three slices (D9), each with its own task file, as local commits.
 Audience: designers and reviewers.
 Related: [ADR 0017](adr-0017-user-surface.md) (S5: counterexamples; the trusted base of the
@@ -108,6 +109,12 @@ SQLite 3.51.0 gives `CHECK constraint failed: message_count >= 0 (19)`.
 - Compiled screening: the 96 pairs of a boundary value and a targeted database take 19 ms, and
   5 are counterexamples. Of 2,000 random seeds, 103 give a database that `Sampling.validated`
   accepts, in 1.06 s, and 4 are counterexamples.
+- Replay construction: `Replay.databaseSqlWith` (`ReplayDatabaseSql.lean`) gives no SQL for a
+  catalog with indexes, triggers or views, or a table with CHECK constraints, foreign keys,
+  keys or defaults. In the pinned `sqlite3` 3.51.0, the consumer schema, then
+  `.dbconfig enable_trigger off`, the two rows (a session with `message_count = 0` and its
+  message) and `.dbconfig enable_trigger on`, gives those rows unchanged, and the DELETE then
+  fails with the CHECK error.
 - `db!` refuses setup rows when a trigger that reads the clock can fire, even when no row
   matches. The probe created the triggers after the setup INSERTs.
 
@@ -125,7 +132,7 @@ automation outside the trusted base.
 
 The docstrings of `CheckRandom.lean` and `CheckData.lean` state a rule of the implementation:
 generation uses only normalized literal data, and no supplied expression runs natively. This
-ADR replaces that rule (owner decision 1).
+ADR replaces that rule (owner decision 1, decided).
 
 ## Decision
 
@@ -149,10 +156,11 @@ it from the claim.
 - The screen only proposes. A candidate that it accepts goes through `refuteWitness`,
   `replayClaim` and the observation as today. A wrong compiled result (an `implemented_by` or
   `extern` that differs from its definition) can only waste time or miss a counterexample.
-- The screen does not count heartbeats. It runs in its own task. The checker waits for it with
-  a time limit and checks cancellation while it waits. At the limit it stops waiting and
-  gives `unknown` with the reason. Compiled pure code cannot be stopped, so an abandoned task
-  runs until its candidate ends (owner decision 3).
+- Compiled code does not count heartbeats. All compiled work of a check (the screen, the
+  generation of D3 and the data of D6) runs in its own task. The checker waits for each task
+  with the time limit of the check and checks cancellation while it waits. At the limit it
+  stops waiting and gives `unknown` with the reason. Compiled pure code cannot be stopped, so
+  an abandoned task runs until its current computation ends (owner decision 3).
 - Before it compiles the screen, the checker reads the closure of the screen (the walk of D1).
   If a constant outside Lean's own packages and `Belay` has `implemented_by`, `extern`, or is
   `partial` or `unsafe`, the checker does not compile the screen. The screen then runs only
@@ -174,7 +182,7 @@ instances also use. The order is:
 3. Seeded random databases.
 
 `sql.checkCandidates` counts screened candidates. Its default comes from the measurements of
-D9. The first counterexample of step 2 has the fewest rows in that order.
+D9.
 
 ### D4. Touched tables and rows that satisfy constraints
 
@@ -188,10 +196,9 @@ D9. The first counterexample of step 2 has the fewest rows in that order.
 
 ### D5. Shrinking by screening
 
-A counterexample from step 2 of D3 has no smaller candidate in that order and is not shrunk.
-For other counterexamples, the checker screens the shrink proposals with the compiled screen
-and certifies only the smallest accepted one. It certifies and replays at most two witnesses,
-the original and the shrunk one.
+The checker screens the shrink proposals of a counterexample with the compiled screen, and
+certifies only the smallest accepted proposal. It certifies and replays at most two
+witnesses, the original and the shrunk one.
 
 ### D6. Data computed by compiled code, confirmed by the kernel
 
@@ -202,6 +209,18 @@ generated candidate is already a value: its expression is `toExpr` of that value
 replay and text use the value. The limits of `CheckBudget.lean` stay as limits on the size of
 the data (nodes and bytes), with values from the measurements of D9 that hold the consumer
 schema.
+
+The construction SQL of a generated candidate:
+
+- On a schema that the checker infers, the formatter of today (`Replay.databaseSqlWith`).
+- On a schema with source text (a `db!` constant, from `with (schema := …)` or D7), the
+  schema's source text, then `.dbconfig enable_trigger off`, one INSERT for each generated row,
+  and `.dbconfig enable_trigger on`. The formatter of today refuses indexes, triggers, CHECK
+  constraints and foreign keys, and an INSERT with the triggers on would fire them. The model
+  validates the construction as today for the source text, and runs the INSERTs on the schema
+  with its triggers removed from the catalog; the rows must be the candidate's rows.
+- Otherwise the candidate has no construction, and the search goes on to the next candidate,
+  as for every candidate that does not replay today.
 
 ### D7. The schema as the domain
 
@@ -217,9 +236,10 @@ schema for the candidates. A claim on the consumer schema is then
 
 ### D8. The budget
 
-The heartbeat budget (`sql.checkBudget`) covers the proof attempt, the certification, the
-replay and the text. The candidate count (`sql.checkCandidates`) and the time limit of D2
-bound the screening. The defaults come from the measurements of D9. The change of #316 to
+The heartbeat budget (`sql.checkBudget`) covers the work in Lean's elaborator and kernel: the
+proof attempt, the certification and the kernel checks of D6. The time limit of D2 covers the
+compiled work: the screen, the generation and the data. The candidate count
+(`sql.checkCandidates`) bounds the search. The defaults come from the measurements of D9. The change of #316 to
 1,000,000 is measured again then.
 
 ### D9. Slices, tests and acceptance
@@ -238,8 +258,9 @@ Tests, each with a timeout, in the suites of the surface checks:
 - A fixture with an authored schema of the consumer's size and kind (more than 8,192 nodes,
   triggers that write another table, CHECK and foreign keys). It is not the consumer's text.
   Its DELETE claim is false, the counterexample has at most two rows in each touched table, and
-  the replay fails in native SQLite with the same CHECK error. The same fixture shows that a
-  counterexample supplied with `db!` is reported.
+  the replay fails in native SQLite with the same CHECK error. Its construction uses
+  `.dbconfig enable_trigger off`, and native SQLite rebuilds the candidate's rows. The same
+  fixture shows that a counterexample supplied with `db!` is reported.
 - The audit: a theorem that uses itself through a lemma is rejected after the audit has
   accepted the lemma's other constants.
 - The screening primitive, given a screen that accepts every candidate, gives no `false` for a
@@ -259,8 +280,9 @@ assertions.
 - Elaborating a claim runs compiled code of the claim's definitions: user definitions, the
   model and `Belay`. Lean already runs user code at elaboration (`#eval`, macros); the
   automatic check now does so for each theorem statement that mentions SQL.
-- `unknown` covers more: every database up to the row bound over the value pool in the
-  touched tables, then random ones. It is still no proof.
+- `unknown` means that more candidates were tried: the candidates of D3 in their order, until
+  the candidate count or the time limit stops the search. They are a subset of the small
+  databases, not all of them, and `unknown` is still no proof.
 - The checker gets faster only where its time was search, audits and decoding. A claim whose
   kernel certification is slow stays slow.
 - The net change of Lean lines is recorded in
@@ -295,15 +317,15 @@ compiler into the trusted base, which the audit forbids.
 
 ## Owner decisions
 
-1. **Compiled code at elaboration (D2, D6).** OPEN. The checker compiles the claim's screen
+1. **Compiled code at elaboration (D2, D6).** DECIDED (owner, 2026-11-05): yes. The checker compiles the claim's screen
    and computes its data with compiled code. Recommendation: yes. The kernel still decides
    every result, and without it the consumer schema cannot be checked at all.
-2. **A claim without a compiled screen (D2).** OPEN. Options: (a) explicit witnesses only, and
+2. **A claim without a compiled screen (D2).** DECIDED (owner, 2026-11-05): (a). Options: (a) explicit witnesses only, and
    `unknown` with the reason; the cooperative path is deleted; (b) keep the cooperative path as
    a fallback. Recommendation: (a), because the measured cooperative path fails on real
    schemas and doubles the search code. Slice 2 lists every existing fixture whose screen does
    not compile, so that the owner sees the capability effect before the merge.
-3. **The time limit of the screen (D2).** OPEN. Options: (a) a wall-clock limit with a default
+3. **The time limit of the screen (D2).** DECIDED (owner, 2026-11-05): (a). Options: (a) a wall-clock limit with a default
    from D9, after which the abandoned task runs to the end of its candidate; (b) no time limit,
    only the candidate count. Recommendation: (a), so that the automatic check of a theorem
    cannot keep the editor waiting.
