@@ -1,6 +1,6 @@
 # ClickHouse request for the devops repository
 
-Date: 2026-11-04. Status: owner reports deployment; connection handoff pending.
+Date: 2026-11-04. Updated: 2026-11-05. Status: internal endpoint provisioned; CI commissioning pending.
 Audience: the person managing the devops repository.
 
 Please describe and provision one persistent ClickHouse instance for Belay's
@@ -10,10 +10,15 @@ test names, outcomes and durations. It does not run tests or collect coverage.
 
 The database request is [devops issue #47](https://github.com/vihren-dev/devops/issues/47).
 The CI network request is [devops issue #56](https://github.com/vihren-dev/devops/issues/56).
-The latter requests repair of the existing `tailscale_federated_identity.belay_ci`
-OIDC trust and commissioning on `main`. Reuse `tag:belay-ci` and its existing
-TCP 8443 grant. The workflow reads environment secrets `TS_OAUTH_CLIENT_ID`,
-`TS_AUDIENCE` and `CLICKHOUSE_PASSWORD`; no variable migration is needed.
+Reuse the existing `tailscale_federated_identity.belay_ci` identity and
+`tag:belay-ci`. The owner reports that devops deployed CI access to Vihren DNS
+and shared HTTPS, with Terraform showing no drift. Devops also provisioned
+GitHub environment variables `BELAY_CLICKHOUSE_INTERNAL_URL` and
+`BELAY_CLICKHOUSE_CA_PEM`. The workflow maps the internal URL to the uploader,
+writes the PEM to a temporary CA file, and keeps certificate verification enabled.
+The original `.ts.net:8443` endpoint remains available during migration.
+The existing secrets `TS_OAUTH_CLIENT_ID`, `TS_AUDIENCE` and `CLICKHOUSE_PASSWORD`
+remain in use. Commission the complete path on `main`.
 The implementation's [configuration guide](test-observability.md) names the
 runtime variables and the `belay-observability` GitHub environment. Restrict that
 environment to `main`; its credentials belong only to the trusted upload workflow.

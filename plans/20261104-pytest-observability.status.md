@@ -167,3 +167,24 @@ rebased #303 branch, `experiments/observability-extraction`.
 - Development validation: the existing workflow-boundary test and documentation
   tests passed (four checks). Issue #56 now requests repair of the existing
   integration and main-only commissioning, with the existing secret contract.
+
+## Internal endpoint and CA handoff (2026-11-05)
+
+- PR #313 is merged. Started this follow-up from current `main` (`2b44247a`).
+- The owner reports deployed CI access to Vihren DNS/shared HTTPS and confirms
+  `BELAY_CLICKHOUSE_INTERNAL_URL` and `BELAY_CLICKHOUSE_CA_PEM` are both GitHub
+  environment variables. This supersedes the prior `.ts.net:8443`-only CI path;
+  devops keeps that endpoint working during migration.
+- Map the internal URL to the uploader's existing runtime variable. Write the
+  supplied PEM to a temporary file and pass it through `BELAY_CLICKHOUSE_CA`.
+  Keep TLS/hostname verification enabled and remove the file when the step exits.
+  Missing URL or PEM values stop the step before artifact processing.
+- Update the developer guide, handoff and existing workflow-boundary check.
+  The Tailscale identity/tag and database secret mappings are unchanged.
+- Repository change: DONE. Existing workflow-boundary and documentation checks
+  passed (four development checks). A one-time shell probe loaded a valid CA
+  with certificate/hostname verification enabled, checked temporary-file cleanup,
+  and confirmed that a missing PEM stops before upload. No new test suite or
+  dependency was added; these checks are not live CI commissioning evidence.
+- Owner review remains the review policy. Live verification of the new internal
+  endpoint follows deployment of this workflow to `main`.
