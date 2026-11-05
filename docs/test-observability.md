@@ -54,17 +54,24 @@ CI test jobs retain `belay-observability-*` artifacts for 14 days. The separate
 artifacts as data, and retries retained artifacts daily in expiry order. It never
 checks out or executes a pull request's code. Replays keep the same IDs.
 
-Devops must provision the `belay-observability` GitHub environment, restrict deployment
-to `main`, set variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`, and
-set secret `BELAY_CLICKHOUSE_PASSWORD`.
+Use the existing `belay-observability` GitHub environment, with deployment
+restricted to `main`, variables `BELAY_CLICKHOUSE_URL` and `BELAY_CLICKHOUSE_USER`,
+and secret `CLICKHOUSE_PASSWORD`. The workflow maps this secret
+to the uploader's runtime variable `BELAY_CLICKHOUSE_PASSWORD`.
 
 The uploader joins Tailscale with GitHub OIDC through the official action before
-sending observations. Set environment variables `TS_CLIENT_ID` and `TS_AUDIENCE`
-to the Tailscale federated identity's client ID and audience. These are GitHub
-Actions environment variables, read through `vars`, not runner shell variables.
-The identity needs writable `auth_keys` scope for `tag:belay-observability`.
-Devops must permit that tag to reach `vihren-demo.tail114da.ts.net` on TCP port
-8443 and configure trust for this repository's uploader workflow and environment.
+sending observations. It reads the existing environment secrets
+`TS_OAUTH_CLIENT_ID` and `TS_AUDIENCE`. The client ID belongs to the federated
+identity `tailscale_federated_identity.belay_ci` managed in devops; the input
+name does not mean an OAuth client secret is required. No variable migration
+is needed.
+
+The identity needs writable `auth_keys` scope for the existing `tag:belay-ci`.
+Devops already grants that tag access to `100.68.176.93` on TCP port 8443.
+Keep `vihren-demo.tail114da.ts.net:8443` as the HTTPS endpoint. Devops must repair
+the identity's subject for GitHub's immutable repository identity and constrain
+the repository/owner IDs, environment and exact production workflow ref.
+Commission on `main`; no temporary `ci-test` trust is requested.
 The action checks peer connectivity, then the uploader checks database delivery.
 Only the uploader job receives the network identity; test jobs retain artifacts.
 The connection step has a five-minute limit. The runner is ephemeral and the

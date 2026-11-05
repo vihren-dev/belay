@@ -174,10 +174,12 @@ def test_ci_credentials_are_separate_from_test_code() -> None:
     assert "types: [completed]" in uploader and "schedule:" in uploader
     assert "ref: main" in uploader and "head_sha" not in uploader
     assert "actions: read" in uploader and "environment: belay-observability" in uploader
-    assert "TS_CLIENT_ID" not in tests and "tailscale/github-action@" not in tests
+    assert "TS_OAUTH_CLIENT_ID" not in tests and "tailscale/github-action@" not in tests
     assert "id-token: write" in uploader
     assert uploader.index("tailscale/github-action@") < uploader.index("python3 -m tools.observability_ci")
-    assert "vars.TS_CLIENT_ID" in uploader and "vars.TS_AUDIENCE" in uploader
+    assert "secrets.TS_OAUTH_CLIENT_ID" in uploader and "secrets.TS_AUDIENCE" in uploader
+    assert "tags: tag:belay-ci" in uploader
+    assert "BELAY_CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}" in uploader
 
 
 def test_schema_denial_retains_observations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -149,3 +149,21 @@ rebased #303 branch, `experiments/observability-extraction`.
   using the VM's restricted `gh-devops` wrapper. The issue contains the precise
   workflow inputs, repository/owner IDs, trust restrictions, network destination,
   and handoff acceptance checks. Provisioning and live verification remain pending.
+
+## Devops review correction (2026-11-05)
+
+- Applied the [devops review](https://github.com/vihren-dev/devops/issues/56#issuecomment-6654273206).
+  Reuse the managed `belay_ci` federated identity and `tag:belay-ci`, whose
+  TCP 8443 grant already exists. Read `TS_OAUTH_CLIENT_ID` and `TS_AUDIENCE`
+  from the existing environment secrets; map `CLICKHOUSE_PASSWORD` to the
+  uploader's `BELAY_CLICKHOUSE_PASSWORD` runtime variable. This supersedes the
+  proposed new tag and variable names above. No migration is required.
+- Devops must repair the immutable OIDC subject and retain the requested
+  repository/owner IDs, protected environment and production workflow-ref
+  restrictions. Request commissioning on `main`, with no temporary branch trust.
+- Updated the existing workflow-boundary check and developer/handoff docs.
+  Owner review remains the review policy. Live verification still depends on
+  devops repairing the identity; no successful CI connection is claimed.
+- Development validation: the existing workflow-boundary test and documentation
+  tests passed (four checks). Issue #56 now requests repair of the existing
+  integration and main-only commissioning, with the existing secret contract.
