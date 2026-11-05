@@ -178,7 +178,12 @@ instances also use. The order is:
 2. For each value of the value pool: the empty database, the targeted databases
    (`Sampling.targeted`), then each content of the touched tables (D4) with up to
    `sql.checkMaxRows` rows in each table, fewest rows in total first. Each row puts one value
-   of the pool in every column, as `Sampling.uniform` does, with the changes of D4.
+   of the pool in every column, as `Sampling.uniform` does, with the changes of D4. The
+   targeted databases start with the supplied database and its row variants (issue #318,
+   added 2026-11-05): for each table with rows, the database with one more row, a variant of
+   the first row (each text with its first ASCII letter in the other case, the same row, or
+   NULL in a column that allows it). Without `(schema := …)`, the first `(db := …)` is the
+   search schema.
 3. Seeded random databases.
 
 `sql.checkCandidates` counts screened candidates. Its default comes from the measurements of
@@ -213,7 +218,12 @@ schema.
 The construction SQL of a generated candidate:
 
 - On a schema that the checker infers, the formatter of today (`Replay.databaseSqlWith`).
-- On a schema with source text (a `db!` constant, from `with (schema := …)` or D7), the
+- On a schema with source text (a `db!` constant, from `with (schema := …)` or D7) that has
+  only CREATE and INSERT statements: the statements of the text in their order without the
+  INSERTs, with the generated rows of each table right after the statement that creates it.
+  A trigger is created after its table, so no trigger fires on these rows, and the model
+  validates the whole text as today. This form came first, for issue #318 (2026-11-05).
+- On a schema with other source text, such as ALTER TABLE in migrations: the
   schema's source text, then `.dbconfig enable_trigger off`, one INSERT for each generated row,
   and `.dbconfig enable_trigger on`. The formatter of today refuses indexes, triggers, CHECK
   constraints and foreign keys, and an INSERT with the triggers on would fire them. The model
@@ -245,7 +255,9 @@ compiled work: the screen, the generation and the data. The candidate count
 ### D9. Slices, tests and acceptance
 
 Three slices, in this order, each with its own task file. The ADR changes no model semantics,
-corpus or claim, so it has one pull request, after the last slice.
+corpus or claim, so it has one pull request, after the last slice. Exception (2026-11-05): the
+launch blockers #317 and #318 come first, as their own pull requests: slice 1 (D1) for #317,
+and the row variants of D3 and the first construction form of D6 for #318.
 
 1. **The audit** (D1).
 2. **Screening, compiled data and shrinking** (D2, D3 without D4, D5, D6, D8).
