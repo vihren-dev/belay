@@ -148,9 +148,13 @@ Filtering carries membership and its truth condition. Projection relates each
 output cell to its expression value. Groups retain input membership, key
 equivalence, multiplicity and the distinction between zero groups and one empty
 aggregate group. A group rule takes the key as an arbitrary resolved expression
-with its collation, not only a column; a key that can fail is a fault obligation. A rule about a grouped scalar column, `HAVING` or a sort
-key names the row that it reads, `Query.groupRow`, so an aggregate rule for `min` or
-`max` and the project rule share the deciding call. Where SQLite's plan decides that
+with its collation, not only a column; a key that can fail is a fault obligation.
+A rule about a grouped scalar column, `HAVING` or an expression sort key names
+the row that it reads, `Query.groupRow`, so an aggregate rule for `min` or
+`max` and the project rule share the deciding call. Two exceptions read
+another row: a result column in `Query.firstRowColumns` reads the first row of
+the group, and a sort key that names a result column reads the projected
+output. Where SQLite's plan decides that
 row (issue #309), the rule states the model's row and makes no claim about native
 SQLite. Aggregate rules include NULL behavior and fault obligations.
 Join rules retain concatenation, ON truth, multiplicity and outer-join NULL
@@ -228,8 +232,11 @@ weakening certification, exclusions, replay or command-level cancellation. Its
 counterexample search is the compiled screen of ADR 0031 D2: a claim is screened when
 its premises and conclusion are decidable at the screened inputs, so `Run.returnsResult Q`
 and `returnsRows P` have `Decidable` instances when `Q` or `P` has one. A claim without a
-screen gets its explicit witnesses and `unknown` with the reason (ADR 0031 owner
-decision 2); that answer is correct, not a defect of this feature. The time limit of
+screen keeps the other routes: the proof route can prove it, and its explicit
+witnesses, the empty database and the databases that the claim names can refute
+it when the kernel certifies one. When no certificate is found, the answer is
+`unknown` with the reason (ADR 0031 owner decision 2); that answer is correct,
+not a defect of this feature. The time limit of
 compiled work (`sql.checkTimeLimit`) and the candidate count (`sql.checkCandidates`)
 are the checker's controls; the proof search of this ADR runs no compiled code and
 stays under the heartbeat budget.

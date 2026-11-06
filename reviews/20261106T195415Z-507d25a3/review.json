@@ -1,0 +1,58 @@
+{
+  "caller": "claude",
+  "commit": "507d25a33e05b70f4f08686097df090c662050ab",
+  "date": "2026-11-06T19:54:15+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr-0027-compositional-select-proofs.md",
+    "docs/select-automation-acceptance.md",
+    "docs/select-automation-retirement.md",
+    "docs/select-automation-review.md",
+    "docs/select-automation-source-map.md",
+    "plans/20261028-select-automation-spec.status.md",
+    "plans/20261028-select-automation-spec.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261106T195415Z-507d25a3#1",
+      "line": 152,
+      "path": "docs/adr-0027-compositional-select-proofs.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D4 assumes grouped scalar columns and sort keys read `Query.groupRow`, but `records` evaluates `firstRowColumns` on the first row and output-index sort keys read the projected output. Fix: state these exceptions explicitly in D4 and the corresponding acceptance requirements."
+    },
+    {
+      "id": "20261106T195415Z-507d25a3#2",
+      "line": 231,
+      "path": "docs/adr-0027-compositional-select-proofs.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The no-screen contract prescribes explicit witnesses and `unknown`, but `CheckOperation.check` can prove the claim and `visitCandidates` also tries empty and claim-named databases that can yield certified refutations. Fix: preserve these routes and require `unknown` only when no certificate is found, including in acceptance case B10."
+    }
+  ],
+  "id": "20261106T195415Z-507d25a3",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

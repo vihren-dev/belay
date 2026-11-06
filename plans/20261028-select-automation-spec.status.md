@@ -347,6 +347,14 @@ gaps are applied to the six documents (`docs_test.py`: 4 passed):
    that the A and B fixtures are modules of the existing Nix surface suites
    (R20).
 
+Review `20261106T195415Z-507d25a3` (Codex) found two R19 "must" points,
+both fixed in the following `refactor:` commit: D4 and A07 now state the two
+exceptions to `Query.groupRow` (a result column in `firstRowColumns` reads the
+first row; a sort key that names a result column reads the projected output),
+and D7 and B10 say that a claim without a screen keeps the proof route, its
+explicit witnesses, the empty database and the databases that it names, and is
+`unknown` only when no certificate is found.
+
 Rule stated for the row of a group: the rules name `Query.groupRow` as the
 model's one result and make no claim about native SQLite where its plan decides
 the row (issue #309). This is the one point put to the owner as a decision: keep
