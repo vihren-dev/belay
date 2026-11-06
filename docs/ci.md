@@ -202,8 +202,8 @@ are individual upper bounds; their sum is not a promised job duration. Individua
 Superseded ordinary runs are cancelled; manual and scheduled runs are not.
 
 The matrix follows GitHub's documented native runner architectures:
-`ubuntu-22.04` is x64 (`x86_64-linux`), and `macos-14` is Apple Silicon
-(`aarch64-darwin`). Each job also checks Nix's actual host system before building.
+`ubuntu-22.04` is x64 (`x86_64-linux`), and `macos-15` is Apple Silicon
+(`aarch64-darwin`). GitHub retired the `macos-14` image on 2026-11-02. Each job also checks Nix's actual host system before building.
 See [GitHub's hosted runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 Runner image updates remain controlled by GitHub; project dependencies are pinned
 separately in `nix/flake.lock` and `lean-toolchain`.
