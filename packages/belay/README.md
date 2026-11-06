@@ -384,9 +384,13 @@ witness independently of search bounds.
 | `sql.checkSeed` | 0 | Reproducible sampler seed |
 | `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
 | `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
+| `sql.checkTimeLimit` | 10000 | Milliseconds of compiled work (candidates, data) for one check |
 
 Use `set_option sql.checkBudget 500000 in` before a command or tactic for a
-larger search. A heartbeat budget is not a wall-clock deadline. Explicit
+larger search. A heartbeat budget is not a wall-clock deadline: the checker
+computes candidates and data with compiled code, which counts no heartbeats, and
+`sql.checkTimeLimit` bounds that work. A check that reaches the time limit gives
+`unknown` with that reason. Explicit
 witnesses come first, then empty/targeted inferred databases and seeded samples
 for each parameter value. Expensive data conditions can need a larger budget.
 

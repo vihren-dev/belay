@@ -54,7 +54,8 @@ def canceledAttempt : TermElabM Unit := do
         goal.mvarId!.assign (mkConst ``True.intro)
         logError "discard this canceled diagnostic"
         pushInfoTree (.hole goal.mvarId!)
-        token.set
+        -- Cancel while the checker waits for the compiled task, not before it starts.
+        discard <| IO.asTask (do IO.sleep 50; token.set)
         Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (100000000 : Nat)))
     pure false
   catch error =>
