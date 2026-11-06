@@ -1,7 +1,7 @@
 # SELECT proof automation: source map
 
-Date: 2026-10-28; reconciled 2026-10-29. Source baseline: main `187ea510`,
-after ADR 0025 and ADR 0026.
+Date: 2026-10-28; reconciled 2026-10-29 and 2026-11-06. Source baseline: main
+`84c0d779`, after ADR 0025, ADR 0026, ADR 0030 and ADR 0031.
 Audience: designers and reviewers. This inventory supports
 [ADR 0027](adr-0027-compositional-select-proofs.md) and its
 [acceptance contract](select-automation-acceptance.md).
@@ -34,10 +34,12 @@ forms; they are not additional constructors of `Resolved.Expr` or `Source`.
 | `Query.distinct` | `none`, `some collations` | Per-column comparison and representative certainty; this is not a Boolean |
 | Compound operators | `unionAll`, `union`, `intersect`, `except` | Left-to-right combination, multiplicity, collation and run ending |
 | Window | Literal fields and optional parameter indexes | Binding, conversion failure, OFFSET/LIMIT order and permitted tie cuts |
+| `Query.deciding`, `Query.firstRowColumns` | `Option Aggregate`, `List Nat` | The deciding `min`/`max` call (`Aggregate.minOrMax`) and the result columns that read the first row of the group (ADR 0030 D5) |
 
 `Query` also retains sources, filter, aggregate flag, grouping terms, columns,
 names, order terms, outer width, indexed aggregates, HAVING and optional compound.
 A compound stores its first term index, operator/index chain and collations.
+A grouping term is any resolved expression with its collation (ADR 0030 D4).
 The expression inventory above includes all 21 constructors; the aggregate
 inventory includes all 10. Function families remain parameters of their rules:
 coverage does not require automatic solution of every function-specific fact.
@@ -54,8 +56,8 @@ special-case theorem elsewhere can help prove them.
 | Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws] | Matched/unmatched collection rules retaining multiplicity and outer cells |
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
 | Filter | `mem_filtered` in [QueryLaws][query-laws] | Complete-collection and cardinality rules, beyond unary membership |
-| Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws] | Partition, multiplicity and representative-row rules for arbitrary group predicates |
-| Aggregate | `Query.aggregateOf_results`, `aggregateOf_fails`, `aggregateOf_run_of_faultless` in [AggregateQueryLaws][aggregate-laws] | Grouped, multi-output and aggregate-expression composition for every aggregate |
+| Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
+| Aggregate | `Query.aggregateOf_results`, `aggregateOf_fails`, `aggregateOf_run_of_faultless` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.Simple.results_eq` in [SimpleResultsLaws][simple-results] | Characterization of general `records`, including HAVING and hidden sort keys |
 | DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws] | Record DISTINCT and every compound operator, with certainty premises |
 | Sort | `stableSort_perm`, `sort_perm`, `sort_sorted` in [QueryLaws][query-laws] | Transfer of collection predicates and observable ordering facts |
@@ -76,8 +78,11 @@ New characterization lemmas can expose fused phases without replacing evaluators
   Missing positional cells can read NULL. Outer joins can add NULL even for a
   source column constrained NOT NULL. See [QueryJoins][joins].
 - Without GROUP BY, aggregation has one group even on empty input. Explicit
-  GROUP BY can have zero groups. Grouped scalars and HAVING read `group.headD []`
-  under `Query.groupContext`. Collation-equivalent keys need not be equal raw
+  GROUP BY can have zero groups. Grouped scalars, `HAVING` and the sort keys read
+  `Query.groupRow` under `Query.groupContext`: the row of the deciding `min` or `max`
+  call, else the first row; the result columns of `firstRowColumns` read the first
+  row. This is one modeled result; where SQLite's plan decides the row, native SQLite
+  can differ (ADR 0030 D5, issue #309). Collation-equivalent keys need not be equal raw
   values; no raw-equality or permutation-invariance premise follows from that
   equivalence alone. See [QueryResults][query-results].
 - `distinctCertain` requires SQL-equal output rows to be identical values.
@@ -107,8 +112,8 @@ New characterization lemmas can expose fused phases without replacing evaluators
   predicate cannot certify arbitrary output-dependent program continuations.
 
 Resolver restrictions remain separate from proof-search limits. Examples are
-bare aggregate columns, fallible calls consuming aggregate values, unsupported
-GROUP BY expressions and grouped SUM with a window. See
+bare aggregate columns, fallible calls consuming aggregate values, a subquery or an
+alias inside a grouping term, and grouped SUM with a window. See
 [QueryBodyTraced][query-body], [QueryTerms][query-terms] and the
 [supported subset](semantic-subset.md). Rule coverage must retain those branches;
 it does not add SQL syntax or turn an unsupported observation into successful rows.
@@ -121,6 +126,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [context-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
 [query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean
 [group-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupsPairwise.lean
+[group-row]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupRow.lean
 [aggregate-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateQueryLaws.lean
 [simple-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleResultsLaws.lean
 [except-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExceptCombineLaws.lean

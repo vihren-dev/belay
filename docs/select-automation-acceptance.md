@@ -1,6 +1,7 @@
 # SELECT proof automation: acceptance contract
 
-Date: 2026-10-28. Status: DRAFT; proposed behavior, not current functionality.
+Date: 2026-10-28; revised 2026-11-06 (ADR 0030, ADR 0031). Status: DRAFT; proposed
+behavior, not current functionality.
 Audience: designers and reviewers. Governing proposal:
 [ADR 0027](adr-0027-compositional-select-proofs.md).
 
@@ -50,7 +51,8 @@ claim. A predicate on a `Run` observation is not automatically equivalent to a
 context-sensitive program triple.
 
 The motivating theorem has arbitrary valid `db`, a supplied invoices catalog
-fact, and the literal query `SELECT customer FROM invoices WHERE id=1`.
+fact (`db.HasCatalog invoices`, which `#sql_check` reads as its search domain, ADR 0031
+D7), and the literal query `SELECT customer FROM invoices WHERE id=1`.
 It concludes successful rows with a present non-NULL first cell. Proposed proof:
 `by sql_auto [schema]`. The theorem does not assume invoice 1 exists, TEXT values
 are the only possible values, or that stored data equals a concrete example.
@@ -93,10 +95,10 @@ negative examples of the retired query-form theorems.
 | A04 | Plain projection preserves source length and duplicates; filtering bounds length | A row-wise property does not imply cardinality or distinctness |
 | A05 | Inner join produces matching concatenated rows; a supplied unique/existing match gives a cardinality theorem | Multiple matches multiply rows; missing match can remove rows |
 | A06 | LEFT, RIGHT and FULL join facts identify matched versus NULL-extended rows | Non-nullness on the optional side is not inferred from its table constraint |
-| A07 | GROUP BY gives a partition with modeled key equivalence, multiplicity and nonempty groups | Raw Value equality does not follow from collated key equality |
+| A07 | GROUP BY, with a column and with an expression term, gives a partition with modeled key equivalence, multiplicity and nonempty groups; a grouped scalar column reads `Query.groupRow` | Raw Value equality does not follow from collated key equality; a key that can fail is a fault obligation; the row of a group is the model's one result, not a native guarantee where the plan decides it (issue #309) |
 | A08 | COUNT(*) without GROUP BY is one output row, including zero on empty input; grouped empty input returns no groups | Empty source does not imply empty aggregate output |
-| A09 | COUNT(x)=COUNT(*) under a non-NULL premise; SUM/MIN/MAX empty and NULL cases | SUM needs an overflow premise; MIN/MAX use modeled comparison |
-| A10 | HAVING keeps exactly groups with a true condition, including COUNT-based conditions | NULL HAVING does not retain a group |
+| A09 | COUNT(x)=COUNT(*) under a non-NULL premise; SUM/MIN/MAX empty and NULL cases | SUM needs an overflow premise; MIN/MAX use modeled comparison, and a `min` or `max` call decides the row that the other columns read (`Query.deciding`) |
+| A10 | HAVING, evaluated on `Query.groupRow`, keeps exactly groups with a true condition, including COUNT-based conditions | NULL HAVING does not retain a group |
 | A11 | Scalar projection combines copied columns, parameters and a modeled arithmetic/CASE expression | Expression value alone does not discharge its failure obligation |
 | A12 | DISTINCT establishes uniqueness under its actual collations and preserves a suitable row property | Different but SQL-equal representations do not imply raw equality or a fixed representative |
 | A13 | ORDER BY establishes modeled ordering and preserves cardinality and row properties | Sort expressions need not occur in SELECT outputs |
@@ -129,8 +131,9 @@ entire execution engine is not a phase rule.
   clock/counters, CASE/coalesce and subquery observations retain value and fault
   semantics. Missing indexes and parameters cannot invent cell-existence facts.
 - Groups and aggregates: all constructors of `Aggregate`, including COUNT,
-  MIN/MAX, SUM/AVG/TOTAL, GROUP_CONCAT and JSON groups; representative group rows,
-  aggregate references, empty groups, faults and order-sensitive results.
+  MIN/MAX, SUM/AVG/TOTAL, GROUP_CONCAT and JSON groups; the row of a group
+  (`Query.groupRow`, the deciding call and `firstRowColumns`), aggregate references,
+  empty groups, faults and order-sensitive results.
 - Results: projection records, distinct records, compound combinations, sorting,
   parameter binding, slicing, tie alternatives and output normalization.
 - Execution: source acquisition, model readiness, expression/source faults,
@@ -138,8 +141,8 @@ entire execution engine is not a phase rule.
 
 Resolution's unsupported forms stay unsupported: examples include window
 functions, aggregate DISTINCT/FILTER forms absent from the AST, rejected bare
-aggregate columns, unsupported grouping expressions and grouped SUM with a
-window. The versioned inventory uses current source definitions rather than an
+aggregate columns, a subquery or a result alias inside a grouping term, and grouped
+SUM with a window. The versioned inventory uses current source definitions rather than an
 open-ended promise about future model constructors. Adding a model constructor
 later requires updating its rule coverage explicitly.
 
@@ -185,7 +188,7 @@ from unbounded rewriting or accidental global changes.
 | B07 | Generated replacement proof elaborates independently with ordinary allowed axioms. A deliberately invalid supplied rule cannot create a kernel-accepted proof. |
 | B08 | A user-supplied proved rule discharges a phase outside built-in automatic closure. Manual composition remains possible without tactic registration. |
 | B09 | Rule choice is deterministic; cyclic registrations terminate within budget. Hints cannot discard premises or assume the target. |
-| B10 | Background checking recognizes the new goal shapes, preserves dependency exclusions, and emits no success on unknown, cancelled or incomplete proofs. |
+| B10 | Background checking recognizes the new goal shapes, screens a convenience claim whose predicate is decidable (ADR 0031 D2) and answers `unknown` with the reason for one that is not, preserves dependency exclusions, and emits no success on unknown, cancelled or incomplete proofs. |
 | B11 | SELECT preparation errors use the actual resolution error and can satisfy a matching error post, but cannot satisfy successful-result claims. |
 
 Explicitly test skipped-work boundaries: LIMIT 0, empty compound operands and
@@ -200,9 +203,15 @@ Lean heartbeat and recursion limits; command checking uses `sql.checkBudget`
 (currently 100000) and `sql.checkRecursionLimit` (currently 4000).
 `Check.remainingUnits` and `withinBudget` retain finite search when the outer
 heartbeat setting is zero; `sql.checkBudget = 0` still disables checking.
+The checker's compiled work (the screen, the candidates and the data of ADR 0031)
+runs outside heartbeats under `sql.checkTimeLimit` (currently 10000 ms) and
+`sql.checkCandidates` (currently 10000); the proof search of this feature runs no
+compiled code.
 Nested SELECT phases share the remaining allowance.
 No new budget option or performance threshold is required by this feature.
-Use finite existing limits and process timeouts in fixtures. Record successful,
+Use finite existing limits and process timeouts in fixtures. The A and B fixtures are
+modules of the existing Nix surface suites, whose derivations cache their results
+(review condition R20); the feature adds no host-only expensive check. Record successful,
 residual and exhausted cases with existing proof-cost support; the current
 experiments are a feasibility baseline, not measurements of the future procedure.
 Replacement proofs must elaborate under the same imports and hints without

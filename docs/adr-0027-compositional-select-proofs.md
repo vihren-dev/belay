@@ -1,12 +1,16 @@
 # ADR 0027: Compositional SELECT proofs
 
-Date: 2026-10-28; revised 2026-10-29 after the integration of ADR 0025 and ADR 0026.
+Date: 2026-10-28; revised 2026-10-29 after the integration of ADR 0025 and ADR 0026,
+and 2026-11-06 after the rebase onto main `84c0d779` (ADR 0030 and ADR 0031).
 Status: DRAFT; experiments checked, owner review pending.
 Audience: designers and reviewers. Number 27 was explicitly requested by the owner.
 Evidence: [semantic review cover](select-automation-review.md), [source map](select-automation-source-map.md).
 Related: [ADR 0017](adr-0017-user-surface.md),
 [ADR 0018](adr-0018-surface-sql.md), [ADR 0022](adr-0022-database-validity.md),
-[ADR 0026](adr-0026-semantic-proof-boundaries.md).
+[ADR 0026](adr-0026-semantic-proof-boundaries.md),
+[ADR 0030](adr-0030-conditional-creation-and-expression-grouping.md) (grouping terms and
+the row of a group), [ADR 0031](adr-0031-fast-sql-check.md) (the compiled screen of
+`#sql_check`).
 Acceptance contract: [SELECT automation](select-automation-acceptance.md).
 Retirement inventory: [replaced code](select-automation-retirement.md).
 Investigation: [task](../plans/20261028-select-automation-spec.task.md).
@@ -20,7 +24,8 @@ motivating NOT NULL projection. This ADR interprets that as general proof rules
 over the existing model and a specified automatic fragment. It does not require
 new SQLite semantics or decision of arbitrary Lean propositions.
 
-At main `187ea510`, after ADR 0025 and ADR 0026, Belay already has `Sql.check`, a predicate transformer,
+At main `84c0d779`, after ADR 0025, ADR 0026, ADR 0030 and ADR 0031, Belay already
+has `Sql.check`, a predicate transformer,
 `Std.Do` triples, `mvcgen` specifications, and sequencing rules. `sql_run` traverses
 programs. For SELECT it applies `Sql.check_query_select`, `check_single_select`
 or `check_send_select`, leaving model-coverage and selected-output obligations.
@@ -30,7 +35,13 @@ SELECT proof procedure exists. The new work extends these interfaces.
 
 The model computes source rows, filters them, constructs records, applies
 DISTINCT, sorts and slices. `records` combines grouping, aggregate evaluation,
-HAVING, projection and sort-key evaluation. `Query.results` selects one result;
+HAVING, projection and sort-key evaluation.
+A grouping term is any expression that `WHERE` resolves, under its collation (ADR 0030
+D4). The scalar columns, `HAVING` and the sort keys of a group read the row of the group,
+`Query.groupRow`: the row of the deciding `min` or `max` call, else the first row in
+source order; the result columns of `Query.firstRowColumns` read the first row (ADR 0030
+D5). That row is one modeled result; `possibleResults` varies only the order of
+rows. `Query.results` selects one result;
 `Query.possibleResults` and execution branches describe permitted alternatives.
 Faults and coverage are separate from pure result computation. A theorem about
 `Query.results` alone is not a theorem about successful SQL execution.
@@ -127,15 +138,21 @@ fixed; this ADR does not silently add window functions or other missing syntax.
 ## D4. Phase rules retain SQLite meaning
 
 Schema facts come from validity and explicit table/column identification. A
-fixed catalog equality can be a convenience; generic schemas and table-presence
-premises remain supported. The tactic must not infer validity from a table name.
+fixed catalog equality (`Database.HasCatalog`, ADR 0031 D7) can be a convenience;
+generic schemas and table-presence premises remain supported. The tactic must
+not infer validity from a table name.
 CHECK permits NULL; WHERE and HAVING require SQL TRUE. Type, affinity and
 collation rules come from the model, not host arithmetic or Lean equality.
 
 Filtering carries membership and its truth condition. Projection relates each
 output cell to its expression value. Groups retain input membership, key
 equivalence, multiplicity and the distinction between zero groups and one empty
-aggregate group. Aggregate rules include NULL behavior and fault obligations.
+aggregate group. A group rule takes the key as an arbitrary resolved expression
+with its collation, not only a column; a key that can fail is a fault obligation. A rule about a grouped scalar column, `HAVING` or a sort
+key names the row that it reads, `Query.groupRow`, so an aggregate rule for `min` or
+`max` and the project rule share the deciding call. Where SQLite's plan decides that
+row (issue #309), the rule states the model's row and makes no claim about native
+SQLite. Aggregate rules include NULL behavior and fault obligations.
 Join rules retain concatenation, ON truth, multiplicity and outer-join NULL
 extension. DISTINCT and compounds use the model's comparison and representative
 restrictions. A scalar subquery with no row can produce NULL.
@@ -207,7 +224,15 @@ automation offers explicit steps that elaborate again without the top-level
 route produces an ordinary Lean proof checked under the current dependency
 policy; no `sorry`, new axiom or native decision bypass is introduced.
 The background checker reuses this search for the new claim shapes without
-weakening certification, exclusions, replay or command-level cancellation.
+weakening certification, exclusions, replay or command-level cancellation. Its
+counterexample search is the compiled screen of ADR 0031 D2: a claim is screened when
+its premises and conclusion are decidable at the screened inputs, so `Run.returnsResult Q`
+and `returnsRows P` have `Decidable` instances when `Q` or `P` has one. A claim without a
+screen gets its explicit witnesses and `unknown` with the reason (ADR 0031 owner
+decision 2); that answer is correct, not a defect of this feature. The time limit of
+compiled work (`sql.checkTimeLimit`) and the candidate count (`sql.checkCandidates`)
+are the checker's controls; the proof search of this ADR runs no compiled code and
+stays under the heartbeat budget.
 
 ## Scope and supersession
 

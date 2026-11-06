@@ -190,7 +190,7 @@ to migration witnesses. The task file records the owner decisions. Checks:
 
 ## GitHub review
 
-The owner moved the remaining review to [PR 299](https://github.com/vihren-dev/sqlite-verifier/pull/299).
+The owner moved the remaining review to [PR 299](https://github.com/vihren-dev/belay/pull/299).
 Merge `cdd3e645` integrates main `2c5fff35`, preserving the SELECT experiment
 registration and main's `theoremDependencies` suite. It passed 11 focused
 ownership, documentation-link and Lean-category process checks and independent
@@ -272,8 +272,8 @@ checked by the `Check (aarch64-darwin)` job of the pull request.
 
 ### Reconciliation gaps against main `84c0d779`
 
-The specification documents still describe main `187ea510`. The gaps below are
-listed for the owner; none is applied yet.
+The specification documents described main `187ea510`. The gaps below were
+found on 2026-11-06; the next section records how each was applied.
 
 1. **ADR 0030 D4, D5 (grouping).** A grouping term is now any expression that
    `WHERE` resolves, with its collation; only a subquery (`group-by-term`) and
@@ -316,6 +316,43 @@ listed for the owner; none is applied yet.
    Nix results); the acceptance already puts the A and B fixtures into the
    existing Nix surface suites, and the implementation task file should say
    so.
+
+### Reconciliation applied (2026-11-06)
+
+The owner asked to update the ADR and to be asked about decisions. All five
+gaps are applied to the six documents (`docs_test.py`: 4 passed):
+
+1. The ADR's intent paragraph, D4 and the source map state the grouping of
+   ADR 0030: a grouping term is any `WHERE`-resolvable expression with its
+   collation, a key that can fail is a fault obligation, and a grouped scalar
+   column, `HAVING` and a sort key read `Query.groupRow` (the deciding
+   `min`/`max` call, else the first row; `firstRowColumns` read the first
+   row). The source map's inventory lists `Query.deciding` and
+   `Query.firstRowColumns`, links `GroupRow.lean`, and the restriction
+   examples name a subquery or an alias inside a grouping term. A07, A09 and
+   A10 and the coverage inventory of the acceptance say the same.
+2. ADR D7 and B10 say that the checker screens a convenience claim whose
+   predicate is decidable (ADR 0031 D2; `Run.returnsResult Q` and
+   `returnsRows P` get `Decidable` instances when `Q` or `P` has one) and
+   answers `unknown` with the reason otherwise; the proof search runs no
+   compiled code. The performance section names `sql.checkTimeLimit` and
+   `sql.checkCandidates` as the checker's controls. D4 and the motivating
+   theorem name `Database.HasCatalog` (ADR 0031 D7).
+3. All baselines name main `84c0d779`; the law group is 638 lines and the
+   resolution-shape group 1,678.
+4. The retirement inventory lists the three ADR 0030 fixtures as retained and
+   adds `GroupRow` and `GroupAssociation` to the definitions that are not
+   replaced.
+5. PR links point at `vihren-dev/belay`; the acceptance and the task file say
+   that the A and B fixtures are modules of the existing Nix surface suites
+   (R20).
+
+Rule stated for the row of a group: the rules name `Query.groupRow` as the
+model's one result and make no claim about native SQLite where its plan decides
+the row (issue #309). This is the one point put to the owner as a decision: keep
+this wording and amend it when #309 is decided, or require the group rules to
+abstract over the representative row so that they stay valid if #309 turns the
+row into alternatives of `possibleResults`.
 
 ## Open design axes
 

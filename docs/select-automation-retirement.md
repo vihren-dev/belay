@@ -1,7 +1,7 @@
 # SELECT proof automation: retirement inventory
 
 Date: 2026-10-29. Status: DRAFT; owner decisions of 2026-10-29 applied;
-reconciled to main `187ea510` after PR 297.
+reconciled to main `84c0d779` on 2026-11-06.
 Audience: designers and reviewers. Governing proposal:
 [ADR 0027](adr-0027-compositional-select-proofs.md), section "Scope and
 supersession". Completion rule: [acceptance contract](select-automation-acceptance.md),
@@ -9,7 +9,7 @@ section "Meaning of completion".
 
 This inventory names the code that the phase rules of ADR 0027 replace. The
 project has no users: replaced code is deleted, not kept behind an alias. Line
-counts are from main `187ea510` and are for orientation only.
+counts are from main `84c0d779` and are for orientation only.
 
 ## How to read the inventory
 
@@ -35,7 +35,7 @@ case splits and the prepare-error output equation; `SampleQueryHints` holds
 the hint functions. The shape is a whole-query lemma,
 which D3 says automation must not need. The equations and claims become the
 "required contrast" column of the acceptance matrix. Line counts are the
-current ones after PR 297; the fourteen files total 1,242 lines.
+current ones on main `84c0d779`; the fourteen files total 1,242 lines.
 
 | File under `packages/belay/Belay/Sqlite/` | Acceptance cover | Status |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ current ones after PR 297; the fourteen files total 1,242 lines.
 
 ## ADR 0026 D1 owners
 
-[PR 297](https://github.com/vihren-dev/sqlite-verifier/pull/297) completed
+[PR 297](https://github.com/vihren-dev/belay/pull/297) completed
 ADR 0026 D1 on main. ADR 0027 supersedes D1: a phase decomposition replaces a
 per-family characterization. The owners are named as they exist on main.
 
@@ -82,7 +82,7 @@ per-family characterization. The owners are named as they exist on main.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountQueryLaws`, `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 620 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted |
+| `CountQueryLaws`, `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 638 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted. The duplicate-key laws cover expression keys under `key.Calm` (ADR 0030 D7); the group rule keeps that generality |
 | `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQueryFaults`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 609 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
 | `InSubqueryColumnLaw`, `InSubqueryEqualityLink`, `InSubqueryEvaluate`, `InSubqueryFilterLaw`, `InSubqueryQueryInLaw`, `InSubqueryQueryLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryRowidAlias` | 863 | Candidate: `NotInQuery.lean` and the ADR 0026 D4 equivalences consume part of them. Keep what those consumers need; the rest becomes the `subquery` rule |
 | `SelectStepKeeps` | 133 | Retained: ADR 0025 preservation |
@@ -98,7 +98,7 @@ needs its equation; the status file records each such deletion.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `FromSourceResolution` | 1,647 | Retained, unless every consumer is retired |
+| `CountSelectResolution`, `CountStatementResolution`, `AggregateSelectResolution`, `ExistsStatementResolution`, `InSubqueryStatementResolution`, `ScalarSubqueryResolution`, `SelectNoFromResolution`, `SelectOneResolution`, `DuplicateKeyResolution`, `SimpleSelectResolution`, `SimpleSourceResolution`, `SimpleStatementResolution`, `SubquerySelectResolution`, `FromSubquerySelectResolution`, `FromSubqueryStatementResolution`, `FromSourceResolution` | 1,678 | Retained, unless every consumer is retired |
 | `BackfillStatementResolution` | 103 | Retained: migration |
 
 ## Examples and fixtures
@@ -108,13 +108,15 @@ needs its equation; the status file records each such deletion.
 | `tests/surface/Claims{Count,Sum,Exists,In,SelectOne,NoFrom,ScalarNoFrom,DuplicateKeys,UniqueLookup,QueryCases,MayFail,AggregateLaws}.lean` | Required: replaced by the A and B fixtures. A negative case that a fixture uniquely protects moves to the "required contrast" of its acceptance case before the fixture is deleted |
 | `tests/surface/ClaimsTableInfo*.lean`, `ClaimsView*.lean`, `ClaimsDerived.lean`, `ClaimsCommonTables.lean`, `ClaimsExpressionLaws.lean` | Retained unless their subject is a retired form; reconcile at assignment |
 | Model `QueryExamples`, `SubqueryExamples`, `QueryWindowExamples`, `PossibleResultsExamples`, `InSubqueryExamples` | Candidate: a necessity example that an acceptance contrast repeats is deleted; one that protects a boundary no case covers stays |
+| `tests/surface/ClaimsGroupValues.lean`, `ClaimsExpressionGrouping.lean`, `ClaimsConditionalCreation.lean` (ADR 0030) | Retained: they check model semantics through execution and use no per-form law |
 | `tests/surface/SelectAutomation*.lean` | Retained through the last slice that changes their contracts, then deleted when the A and B fixtures cover their claims (ADR 0025 D4 test lifetime) |
 
 ## Not replaced
 
 - The core evaluator and its generic laws: `QueryEval`, `QueryResults`,
   `QueryRun`, `QueryFunctions`, `QueryJoins`, `QueryJoinLaws`, `QueryWindow`,
-  `QueryLaws`, `QueryPlainLaws`, `Subqueries`, `CompoundRows`, `CompoundRun`.
+  `QueryLaws`, `QueryPlainLaws`, `Subqueries`, `CompoundRows`, `CompoundRun`, and
+  `GroupRow` with the grouping resolution of ADR 0030 (`GroupAssociation`).
   The phase rules are stated over these definitions.
 - `PossibleResults*`: the rules quantify over every permitted result.
 - ADR 0026 D2 source agreement, D4 execution profiles, D5 expression

@@ -1,6 +1,7 @@
 # SELECT automation: semantic review cover
 
-Date: 2026-10-28; revised 2026-10-29. Status: DRAFT; Lean experiments checked, owner review pending.
+Date: 2026-10-28; revised 2026-10-29. Status: DRAFT; Lean experiments checked, also on
+main `84c0d779` after the rebase of 2026-11-06; owner review pending.
 Audience: designers and reviewers.
 Related: [ADR 0027](adr-0027-compositional-select-proofs.md),
 [acceptance contract](select-automation-acceptance.md).

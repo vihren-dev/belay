@@ -46,7 +46,9 @@ Bounded Lean experiments exercise current automation and proof rules, including
 the initial example and representative collection, aggregate, join, nested-query
 and alternative-result cases. Experiments distinguish existing behavior from
 proposed behavior. False claims and unsupported cases cannot count as successes.
-Use the existing surface harness and Nix evidence paths where possible. Native
+Use the existing surface harness and Nix evidence paths where possible; the
+acceptance fixtures of the implementation are modules of the existing Nix
+surface suites (review condition R20). Native
 SQLite is an oracle only when an experiment concerns model conformance.
 
 A small formal specification and semantic review cover make the trust and
@@ -67,7 +69,10 @@ Required checks that cannot run remain findings.
 
 Source baseline: main commit `187ea510`, which includes ADR 0025 and ADR 0026
 (PR 297). The original baseline `3e2212ed` predated them; the branch was
-reconciled on 2026-10-29.
+reconciled on 2026-10-29. On 2026-11-06 the branch was rebased onto main
+`84c0d779` (ADR 0028 to ADR 0031) and the documents were reconciled again:
+grouping terms are expressions and groups read `Query.groupRow` (ADR 0030),
+and `#sql_check` screens claims with compiled code (ADR 0031).
 Relevant surface files: `ExecutionWP.lean`, `ExecutionWPLaws.lean`,
 `ExecutionSpecifications.lean`, `ReadStepRule.lean`, `SqlRun.lean`,
 `SqlRunGoals.lean`, `AutoSearch.lean`, `SqlSimpLaws.lean`, `CheckAutoProof.lean`.
