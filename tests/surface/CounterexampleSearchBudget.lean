@@ -46,6 +46,8 @@ def canceledAttempt : TermElabM Unit := do
   let messages := (← getThe Core.State).messages.toList.length
   let trees := (← getInfoState).trees.size
   let token ← IO.CancelToken.new
+  -- Whether the wait returned; the interrupt must come before it returns.
+  let returned ← IO.mkRef false
   -- Only this test harness catches the interrupt that the checking API must propagate.
   let _ : MonadExceptOf Exception TermElabM := MonadAlwaysExcept.except
   let interrupted ← try
@@ -59,11 +61,12 @@ def canceledAttempt : TermElabM Unit := do
         -- loop, after it starts the task: the interrupt comes from the wait. The count is a
         -- runtime value, so that the sum is computed in the task.
         let count ← (pure 100000000 : IO Nat)
-        Check.awaitCompiled fun _ => (List.range count).sum
+        discard <| Check.awaitCompiled fun _ => (List.range count).sum
+        returned.set true
     pure false
   catch error =>
     if error.isInterrupt then pure true else throw error
-  unless interrupted && !(← goal.mvarId!.isAssigned) &&
+  unless interrupted && !(← returned.get) && !(← goal.mvarId!.isAssigned) &&
       (← getThe Core.State).messages.toList.length == messages &&
       (← getInfoState).trees.size == trees do
     throwError "cancellation did not propagate with complete speculative cleanup"
