@@ -22,7 +22,9 @@ claim that it does not refute. -/
 structure SampleConfig where
   /-- Explicit candidates, tried before inferred ones; use an empty array for inference alone. -/
   witnesses : Array Witness := #[]
-  /-- Optional validated schema/base expression, for constraints or SQL without visible names. -/
+  /-- Optional validated schema/base expression, for constraints or SQL without visible names.
+  None uses the schema of a premise {lit}`db.HasCatalog schema` of the claim
+  ({name}`domainSchemas`), else the schema that the claim's SQL suggests. -/
   schema : Option Expr := none
   /-- Additional quantified inputs by binder name; use an empty array when none are needed. -/
   named : Array (Name × Expr) := #[]
@@ -98,6 +100,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     let screened := if fixed then screen.map (·, Value.null) else none
     if let some result ← attempt (accept witness screened) then return some result
   let domain := (← attempt (domainDatabases proposition)).getD #[]
+  let suppliedSchema := config.schema.or ((← attempt (domainSchemas proposition)).bind (·[0]?))
   let mut generated : Option ((Database.Raw × List Value × Option (List Model.Identifier)) × Array Database) := none
   for value in config.values do
     if tried >= config.candidates then return none
@@ -120,15 +123,15 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       return none
     let complete := !sites.unsupported && !sites.leanCode && !sites.sites.isEmpty && scripts.size == sites.sites.size
     let scripts ← mkListLit (mkConst ``Script) scripts.toList
-    let schema := match config.schema with
+    let schema := match suppliedSchema with
       | some expression => mkApp2 (mkConst ``Option.some [Level.zero]) (mkConst ``Database) expression
       | none => mkApp (mkConst ``Option.none [Level.zero]) (mkConst ``Database)
     let some data@(base, constants, touched) ← attempt <|
       dataValue (Database.Raw × List Value × Option (List Model.Identifier))
         (mkApp3 (mkConst ``inferredData) scripts schema (toExpr complete)) | continue
     let some baseDatabase := Sampling.validated base | continue
-    let baseExpression := config.schema.getD (databaseExpr base)
-    let schemaText ← match config.schema with
+    let baseExpression := suppliedSchema.getD (databaseExpr base)
+    let schemaText ← match suppliedSchema with
       | some schema => schemaText? schema
       | none => pure none
     let cached := generated.bind fun (known, candidates) => if known == data then some candidates else none

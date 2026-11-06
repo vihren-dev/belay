@@ -76,6 +76,14 @@ def altered : Database := db! r"
 labelled_sql "altered" in #sql_check Succeeds uniqueEmail
   (fun db => db.raw.catalog = altered.raw.catalog ∧ Holds noDuplicateEmails db) with (schema := altered)
 
+labelled_sql "catalog" in #sql_check Succeeds uniqueEmail
+  (fun db => db.HasCatalog altered ∧ Holds noDuplicateEmails db)
+
+/-- {name}`Database.HasCatalog` is decided: a schema has its own catalog, and another schema does
+not have it. -/
+example : altered.HasCatalog altered := by decide
+example : ¬ twoChecked.HasCatalog altered := by decide
+
 open Sampling in
 #guard caseVariant (.text "ann@x.io".toUTF8.toList) == some (.text "Ann@x.io".toUTF8.toList)
 open Sampling in

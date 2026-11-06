@@ -12,7 +12,7 @@ from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
-LABELS = ("one-plain", "one-checked", "two-plain", "two-checked", "two-checked-db", "primary-key", "altered")
+LABELS = ("one-plain", "one-checked", "two-plain", "two-checked", "two-checked-db", "primary-key", "altered", "catalog")
 """The labelled claims of the fixture; each one is false at the default budget."""
 
 

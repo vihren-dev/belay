@@ -70,6 +70,17 @@ def rows (db : Database) (name : String) : Option (List (List Value)) :=
   (db.raw.catalog.findTable (Belay.Sqlite.Model.Identifier.ofString name)).map fun (position, _) =>
     (db.raw.rows.getD position []).map (·.values)
 
+/-- The database has the catalog of the schema database: the catalogs of the two databases are
+equal, so they have the same tables, columns, keys, constraints, indexes, views and triggers.
+The rows of either database can be any rows. For example, {lit}`db.HasCatalog schema` with a
+schema {lit}`schema := db! "CREATE TABLE t(a NOT NULL)"` holds for every database with that one
+table and any valid rows. Use it as the premise of a claim about every database of a schema. -/
+def HasCatalog (db schema : Database) : Prop := db.raw.catalog = schema.raw.catalog
+
+/-- {name}`HasCatalog` is decided by the comparison of the two catalogs. -/
+instance (db schema : Database) : Decidable (db.HasCatalog schema) :=
+  inferInstanceAs (Decidable (db.raw.catalog = schema.raw.catalog))
+
 end Database
 
 /-- Two databases are equal exactly when their model databases are equal, because the proof of validity

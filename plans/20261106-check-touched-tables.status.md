@@ -26,3 +26,14 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   `surface_check_readable_test`, `surface_s6_check_programs_test`,
   `surface_check_default_budget_test`, `surface_sampling_test`, `surface_rebuild_test`,
   `surface_check_command_test`, `surface_counterexample_test`.
+- 2026-11-06: review fixes of D4: the parent keys repeat until they settle
+  (`settledParentKeys`); its docs say when they cannot; the matches name every constructor;
+  `CandidateConstraints.lean` checks `constrainedCells` before validation and CREATE INDEX.
+- 2026-11-06: the schema as the domain (D7). `Database.HasCatalog` with its decision;
+  `Check.domainSchemas` reads `db.HasCatalog schema` premises through `domainPremises`, the walk
+  of `domainDatabases`, which now splits conjunctions and unfolds `Succeeds` (a query name, whose
+  body quantifies the database under its predicate). The search uses the first schema when no
+  `(schema := …)` is supplied. Task item 3 is amended for the parameter order of the ADR. Tests:
+  `surface_check_real_schemas_test` (the claim `catalog`: `HasCatalog altered` in a conjunction,
+  without `(schema := …)`, is false; `decide` proves and refutes `HasCatalog`), and the surface
+  tests of the D4 entry plus `surface_inference_test` and `surface_automatic_test`.

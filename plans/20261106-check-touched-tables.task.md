@@ -29,10 +29,12 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    changes of D4 to the table contents, and the targeted rows test the edges of the constraints on
    purpose (duplicates, NULL cells). Amended 2026-11-06; before, the rule named every generated
    row.
-3. **The schema as the domain (D7).** `Database.HasCatalog schema db` is a decidable
-   proposition: the catalog of `db` is the catalog of `schema`. The search reads a premise
-   `db.HasCatalog schema` (or `HasCatalog schema` applied to the binder, as in
-   `Succeeds s (·.HasCatalog schema)`) as it reads `db = sample`: it uses `schema` as the schema
+3. **The schema as the domain (D7).** `db.HasCatalog schema` (`Database.HasCatalog db schema`)
+   is a decidable proposition: the catalog of `db` is the catalog of `schema`. The ADR writes the
+   parameters as `(schema db)` and the use as `db.HasCatalog schema`; with dot notation the first
+   parameter is `db`, and the equality is the same either way (amended 2026-11-06). The search
+   reads a premise `db.HasCatalog schema`, also as a conjunct and in the predicate of
+   `Succeeds s (·.HasCatalog schema)`, as it reads `db = sample`: it uses `schema` as the schema
    of the candidates, with its schema text for the replay. A supplied `(schema := …)` still takes
    priority.
 
