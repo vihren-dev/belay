@@ -15,6 +15,7 @@ import pytest
 
 from tests.observability_support import observation
 from tools import observability_nix
+from tools.observability_logs import export_reports
 from tools.observability_nix import instantiation, run
 from tools.observability_provenance import provenance, working_copy
 from tools.observability_records import execution
@@ -81,6 +82,25 @@ def test_wrapper_imports_only_executions_that_ran_during_the_command(
     assert not (tmp_path / "spool" / cached.name).exists()
     assert execution(tmp_path / "spool" / fresh.name)["metadata"] == '{"event":"local","suite":"functionMutants"}'
     assert json.loads((fresh / "execution.json").read_text())["metadata"] == {}
+
+
+@pytest.mark.unit
+def test_a_recovered_execution_keeps_the_copy_from_its_output(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """On macOS a failed builder's output stays visible, so `collect_outputs` imports its execution
+    with the suite name before `recover_logs` reads the same execution from the build log. The
+    second import keeps the first copy instead of raising a conflict (#348)."""
+    store = tmp_path / "store"
+    monkeypatch.setattr(observability_nix, "STORE", f"{store}/")
+    failed = output(store, "valueMutants", "2026-11-06T12:00:00+00:00")
+    export_reports(failed.parent)
+    frames = capsys.readouterr().out.splitlines()
+    spool = tmp_path / "spool"
+    observability_nix.collect_outputs(f"{store / 'farm'}\n", spool, datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc),
+                                      {"event": "push"})
+    observability_nix.recover_logs(frames, spool, {"event": "push"})
+    assert execution(spool / failed.name)["metadata"] == '{"event":"push","suite":"valueMutants"}'
+    assert "cannot recover" not in capsys.readouterr().err
 
 
 @pytest.mark.unit

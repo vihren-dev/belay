@@ -13,7 +13,7 @@ import pytest
 from conformance import authored_fromless, authored_numbers, fromless_mutants, number_mutants
 from tests.mutant_sets import Mutants, Targets, measure_set
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
 REAL_ARITHMETIC_GUARDS = {"rule:ArithmeticOperator.real", "rule:realValue"}

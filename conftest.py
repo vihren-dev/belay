@@ -1,4 +1,4 @@
-"""Repository pytest options and execution-only runtime fixtures."""
+"""Repository pytest options; the runtime fixtures are in `tests/runtime_fixtures.py`."""
 
 import json
 from pathlib import Path
@@ -24,11 +24,3 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool 
         return relative in delegated
     return None
 
-
-@pytest.fixture(scope="session")
-def runtime_root(pytestconfig: pytest.Config) -> Path:
-    """Resolve the selected artifact root lazily, without checking unrelated prerequisites."""
-    root = pytestconfig.getoption("runtime_root") or pytestconfig.rootpath
-    if not root.is_dir():
-        pytest.fail(f"Runtime directory is missing: {root}; build the selected runtime first")
-    return root.resolve()

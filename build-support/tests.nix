@@ -243,6 +243,8 @@ in {
     environment.BELAY_TEST_CLICKHOUSE_VERSION = pkgs.clickhouse.version;
     # The test server listens on 127.0.0.1; the macOS sandbox forbids that without this attribute (#333).
     environment.__darwinAllowLocalNetworking = true;
+    # The server reads its zone files from TZDIR; the macOS sandbox forbids the system folder (#347).
+    environment.TZDIR = "${pkgs.tzdata}/share/zoneinfo";
     timeout = 120;
   };
   sample = suite "sample" {

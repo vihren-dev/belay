@@ -12,7 +12,7 @@ from conformance import authored_queries, query_mutants
 from conformance.mutation_edits import source_edits
 from tests.mutant_sets import measure_set
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
 

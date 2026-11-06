@@ -19,7 +19,7 @@ from conformance.model_check import acquire
 from conformance.pipeline import fixtures
 from conformance.resolve_mutants import MUTANTS, measure
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 
