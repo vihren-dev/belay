@@ -4,8 +4,8 @@ ADR 0015 adds SQL functions slice by slice, and each slice lists the changes of 
 that the conformance suite must notice. The cases are the authored cases of
 `conformance.authored_text_functions` (slice 1), `conformance.authored_numeric_functions`
 (slice 2), `conformance.authored_json_edits` (slice 3), `conformance.authored_jsonb` (slice 4),
-`conformance.authored_aggregates` (slice 5) and `conformance.authored_printf` (slice 6), recorded natively with their outputs. Each measurement builds one base copy for
-its mutants with `measure_set` of `tests/mutant_sets.py`, and each mutant
+`conformance.authored_aggregates` (slice 5) and `conformance.authored_printf` (slice 6), recorded natively with their outputs. Each measurement copies its mutants with `measure_set`
+of `tests/mutant_sets.py` from the base that the test process builds once, and each mutant
 copy classifies the case that the mutant names as its target. The tests run in the Nix suite
 `functionMutants`, on their own CI runner.
 """

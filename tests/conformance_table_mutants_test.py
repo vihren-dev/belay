@@ -9,8 +9,8 @@ their own suite, `tableMutants`. The cases are the authored cases of
 `authored_using`, `authored_right`, `authored_merged`, `authored_indexes`,
 `authored_without_rowid`, `authored_collations`, `authored_checks`, `authored_generated`,
 `authored_strict`, `authored_drops`, `authored_after_error` and `authored_counters`, recorded natively with their
-outputs. Each test builds one base copy for its mutants with `measure_set`, and each mutant copy classifies the
-case that the mutant names as its target. The combined 22-mutant join measurement exceeded
+outputs. Each test copies its mutants with `measure_set` from the base that the test process builds once, and
+each mutant copy classifies the case that the mutant names as its target. The combined 22-mutant join measurement exceeded
 its 300-second hosted limit in PR 295. Each existing join table is now one measurement,
 retaining all 22 mutants and their 20 distinct target cases under the same deadlines.
 """

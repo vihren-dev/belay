@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from conformance import resolve_mutants
+from conformance import mutant_builds, resolve_mutants
+from conformance.case_format import Json
 from conformance.mutant_guards import guard_problems, obligation_problems
 from conformance.mutation_edits import Guard, Mutation, MutationGroup, SourceEdit
 
@@ -109,3 +110,37 @@ def test_rule_link_covers_the_complete_fragment(tmp_path: Path) -> None:
     mutants = {"fault": MutationGroup((("Rules.lean", source, "def first : Nat := 0\n"),))}
     assert guard_problems(mutants, {"fault": ("rule:first",)}, tmp_path, set(), set()) == [
         "fault: its text is not inside the declaration first of Rules.lean"]
+
+
+def test_measurements_of_one_process_share_one_base_build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """resolve_mutants.measure builds the unchanged packages once per process with
+    mutant_builds.built_base (#329): a second
+    measurement reuses the built base, still checks the unchanged verdicts, and builds each
+    mutant in its own copy."""
+    repository = tmp_path / "repository"
+    for package in ("belay-sqlite-model", "verifier-conformance"):
+        (repository / "packages" / package).mkdir(parents=True)
+    (repository / "packages/belay-sqlite-model/Rule.lean").write_text("def rule : Nat := 1\n")
+    builds: list[Path] = []
+    classifications: list[Path] = []
+
+    def fake_run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
+        """Record each Lake command; the copy whose rule changed reports another verdict."""
+        if arguments[:2] == ["lake", "build"]:
+            builds.append(cwd.parent)
+            return ""
+        classifications.append(cwd.parent)
+        changed = "11" in (cwd.parent / "belay-sqlite-model/Rule.lean").read_text()
+        return "changed\n" if changed else resolve_mutants.AGREE + "\n"
+
+    monkeypatch.setattr(mutant_builds, "run", fake_run)
+    monkeypatch.setattr(resolve_mutants, "compiled_many", lambda cases, runtime, emit_lean: [
+        {"caseLean": "term"} for _ in cases])
+    cases: list[dict[str, Json]] = [{"provenance": [["authored", "rule-case"]]}]
+    mutants = {"rule": ("belay-sqlite-model/Rule.lean", "def rule : Nat := 1", "def rule : Nat := 11")}
+    for _ in range(2):
+        result = resolve_mutants.measure(cases, repository, tmp_path / "runtime", mutants)
+        assert result == {"rule": {"killed": True, "changed": {"rule-case": "changed"}}}
+    base = mutant_builds.built_base(repository, tmp_path / "runtime/lean")
+    assert builds.count(base) == 1 and len(builds) == 3, builds
+    assert classifications.count(base) == 2 and len(classifications) == 4, classifications

@@ -92,6 +92,15 @@ manual and nightly runs check these suites, and so does a pull request with the
 `full` scope. Pull requests with a smaller scope do not, so that their CI time
 does not grow. The flake checks exclude them.
 
+The `mutants` job reuses accepted results. It evaluates the Nix derivation of its suite
+with `nix-instantiate` (about one second) and restores the report of an accepted run of
+that derivation on the same platform from the GitHub Actions cache, under the key
+`mutant-report-v1-SYSTEM-DERIVATION`. With a report, the job skips the store restore and
+the run, and retains the restored JUnit report. Without one, it runs the suite, and a
+passed `main` push or nightly run saves the report (a few kilobytes) under that key. The
+derivation covers every declared input of the suite, so a change of any input runs the
+suite again. Pull requests and manual runs reuse reports but never save them.
+
 - `scheduledTests.writers`: round trips of the corpus writers of the authored cases
   (`conformance/*_evidence.py`): each writes a new corpus, reads it back unchanged
   and replays it natively. The corpora they wrote are frozen, and `tests.frozen` and
@@ -107,6 +116,12 @@ Each target declares only the inputs that its tests read. The conformance target
 modules listed in `tests/conformance_frontend.json`, so a change to other Python
 code, for example under `tools/`, keeps their results.
 `tests/test_conformance_frontend.py` checks that list against the actual imports.
+Each mutant suite receives only the Python modules that its tests import, which
+`tests/nix_mutant_inputs.json` lists for each suite, and the two Lean packages; it reads no
+judge data or corpus. `tests/test_mutant_suite_inputs.py` checks the lists against the
+imports and the Nix source tree of each suite. A change to the model's Lean files still runs
+every mutant suite, because the translation program of the `conformance` runtime is built
+from the whole model package.
 Only `tests.frozen` (and the `corpora`, `sample` and `upstream` targets that read them) depend on
 the large frozen corpora and retained reports.
 
@@ -149,7 +164,10 @@ fresh. Every scope from `test` up runs all Nix targets of `tests`.
 
 The pinned cache-nix-action restores the Nix store on every applicable run.
 Only main pushes and nightly runs save caches after their checks. The cache key is the platform, the Nix pins and a hash of
-every file except `plans/` and `reviews/`. A push that changes only task records
+the tracked files (`git ls-files --stage`) except `plans/` and `reviews/`. Each job calculates
+this hash directly after the checkout, so files that later steps write into the checkout, such
+as Python caches, cannot change the key, and the check, mutants and publishing jobs of a commit
+use the same key. A push that changes only task records
 therefore restores the exact store of the earlier push, finds every Nix target
 cached and saves nothing. Other runs restore the newest visible matching store for their platform and pins.
 Pull requests and manual runs do not save caches. Nix, not the GitHub cache
@@ -164,14 +182,17 @@ cache.nixos.org. Reads need no credentials, so fork pull requests use it too.
 download fall back to a local build; substitution fallback is unrelated to
 `sandbox-fallback`, which stays disabled.
 
-After both native checks of a `main` push or nightly run pass, the
-`publish-nix-store` job restores, per platform, exactly the store that the check
-job saved and uploads its paths with the pinned Attic client; Attic skips paths
+After the checks of a `main` push or nightly run, the `publish-nix-store` job
+restores, per platform, exactly the store that the check job saved and uploads its
+paths with the pinned Attic client. The cache action saves a store only after a
+passed check job, so a platform publishes only a store that a passed check saved,
+in this run or in an earlier run of the same tree. A failed check of the other
+platform does not stop the publication, and a cancelled run publishes nothing; Attic skips paths
 that cache.nixos.org already provides. Only that job uses the `attic-publish`
 environment, which deploys only from `main` and holds `ATTIC_WRITE_TOKEN`; pull
 request and manual jobs never receive the token. The job may fail or reach
 its 60-minute limit without failing the workflow, and it changes no check
-result. A missing saved store uploads nothing. The cache, its token rotation and
+result. A missing saved store uploads nothing, and the job log shows a warning. The cache, its token rotation and
 server operation are maintained in the devops repository
 (`docs/vihren-demo/attic-ops.md`). An earlier attempt uploaded inside the check
 job and was rolled back ([record](../plans/20260929-attic-ci.status.md)).

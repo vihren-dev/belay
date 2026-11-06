@@ -1,13 +1,11 @@
 """Checks and reference builds share the Linux-only pull-request schedule."""
 
-from pathlib import Path
 import re
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-GUARD = "env.PLATFORM_RUNS == 'true'"
-"""The condition that limits a step to the platforms that check this event."""
+from tests.ci_workflow_text import GUARD, ROOT, job_steps, workflow_jobs
+
 EXPLANATION_STEP = "Skip macOS checks on pull requests"
 """The explanatory step reports the skipped native platform without running it."""
 pytestmark = [pytest.mark.unit]
@@ -62,14 +60,6 @@ CACHE_KEY = "sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE="
 """The publicly readable Vihren Attic cache and its signing key."""
 
 
-def workflow_jobs() -> dict[str, str]:
-    """The text of each top-level job, keyed by job id, so tests can scope assertions to one job."""
-    text = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    body = text[text.index("\njobs:\n") + len("\njobs:\n"):]
-    parts = re.split(r"\n(?=  [a-z][a-z0-9-]*:\n)", "\n" + body)
-    return {part.strip().split(":", 1)[0]: part for part in parts if part.strip()}
-
-
 def test_check_job_substitutes_from_the_public_cache_with_fallback() -> None:
     """Checks read the Attic cache without credentials; a failed substitution builds locally."""
     check = workflow_jobs()["check"]
@@ -89,10 +79,12 @@ def test_only_the_publishing_job_receives_the_write_token() -> None:
 
 
 def test_publishing_follows_accepted_main_and_nightly_checks_only() -> None:
-    """Uploads run after both checks pass, in the main-only environment, and cannot fail the workflow."""
+    """Uploads run after the checks of main pushes and nightly runs, also when the check of the
+    other platform failed (#327), in the main-only environment, and cannot fail the workflow.
+    The upload itself needs the store that a passed check saved (the next tests)."""
     publish = workflow_jobs()["publish-nix-store"]
-    assert ("if: github.event_name == 'schedule' || "
-            "(github.event_name == 'push' && github.ref == 'refs/heads/main')") in publish
+    assert ("if: ${{ !cancelled() && (github.event_name == 'schedule' || "
+            "(github.event_name == 'push' && github.ref == 'refs/heads/main')) }}") in publish
     assert "needs: check" in publish
     assert "environment: attic-publish" in publish
     assert "continue-on-error: true" in publish
@@ -113,24 +105,11 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     upload = publish[publish.index("- name: Upload store paths"):]
     assert "if: steps.restore.outputs.hit-primary-key == 'true'" in upload
     assert "id: restore" in publish[:publish.index("- name: Upload store paths")]
+    assert "hit-primary-key == 'true'" not in publish[:publish.index("- name: Upload store paths")]
     assert "--inputs-from path:./nix nixpkgs#attic-client" in upload
+    missing = next(step for step in job_steps(publish) if "Report a missing saved store" in step)
+    assert "if: steps.restore.outputs.hit-primary-key != 'true'" in missing
+    assert 'run: echo "::warning::No saved Nix store' in missing
     assert 'login vihren https://cache.vihren.dev "$ATTIC_WRITE_TOKEN"' in upload
     assert ("nix path-info --all | grep -v '\\.drv$' | "
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
-
-
-def test_mutant_job_runs_each_mutant_suite_for_the_full_scope() -> None:
-    """The mutants job runs each suite of tests/nix_mutant_suites.json on its own runner, only
-    for the full scope and with the platform guard of the check job, and never saves a cache."""
-    import json
-    job = workflow_jobs()["mutants"]
-    suites = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
-    assert f"suite: [{', '.join(suites)}]" in job
-    assert "save: false" in job and "save: ${{" not in job
-    assert "timeout-minutes: 75" in job
-    steps = re.split(r"\n      - ", job.split("\n    steps:\n", 1)[1])
-    working = [step for step in steps if "Skip macOS checks" not in step]
-    assert all(GUARD in step for step in working)
-    full = "steps.scope.outputs.scope == 'full'"
-    assert all(full in step for step in working if "checkout" not in step and "id: scope" not in step)
-    assert 'just test-mutants "$MUTANT_SUITE"' in job

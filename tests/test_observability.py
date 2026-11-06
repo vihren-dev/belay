@@ -151,15 +151,15 @@ def test_explicit_upload_uses_bounded_worker(tmp_path: Path) -> None:
 
 def test_host_runner_preserves_failure_and_recovers_logs(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """Our common Nix wrapper collects failed-builder frames without converting failure to success."""
+    """Our common Nix wrapper collects failed-builder frames with provenance, keeping the failure status."""
     directory = observation(tmp_path / "builder")
     export_reports(directory.parent)
     frames = capsys.readouterr().out
     monkeypatch.setenv("BELAY_OBSERVABILITY_SPOOL", str(tmp_path / "host"))
     monkeypatch.delenv("BELAY_CLICKHOUSE_URL", raising=False)
-    code = run([sys.executable, "-c", f"print({frames!r}); raise SystemExit(17)"], 5)
-    assert code == 17
-    assert execution(tmp_path / "host" / directory.name) == execution(directory)
+    monkeypatch.setattr("tools.observability_nix.provenance", lambda environment: {"event": "local"})
+    assert run([sys.executable, "-c", f"print({frames!r}); raise SystemExit(17)"], 5) == 17
+    assert execution(tmp_path / "host" / directory.name) == {**execution(directory), "metadata": '{"event":"local"}'}
     # An enclosing CI timeout must reach the Nix client as well as this wrapper.
     assert run([sys.executable, "-c", f"import os; assert os.getpgrp() == {os.getpgrp()}"], 5) == 0
 

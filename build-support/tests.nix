@@ -95,10 +95,13 @@ let
   claims = root + /judge/claims.json;
   lockedCorpora = map (entry: root + "/${entry.path}")
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
-  # Mutants rebuild changed copies of the two Lean packages, so their suites read the
+  # A mutant suite reads the Python modules that its tests import, which
+  # tests/nix_mutant_inputs.json lists and tests/test_mutant_suite_inputs.py checks (#330).
+  # Mutants rebuild changed copies of the two Lean packages, so the suites read their
   # complete sources, without local build outputs in `.lake`.
-  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py)
-    (root + /tests/mutant_guards_test.py) (root + /tests/restriction_registry_test.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
+  mutantModules = builtins.fromJSON (builtins.readFile (root + /tests/nix_mutant_inputs.json));
+  mutantInputs = name: map (module: root + "/${builtins.replaceStrings [ "." ] [ "/" ] module}.py") mutantModules.${name}
+    ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
   # Inputs shared by the suites of the old single model suite and the suites that read the same modules.
   modelInputs = frontend ++ [
@@ -132,7 +135,7 @@ let
     (root + /nix/flake.lock)
     (root + /build-support/conformance-native.nix)
   ] ++ map (name: root + "/conformance/${name}.py") [
-    "model_assertions" "model_cases" "model_check" "resolve_mutants" "mutation_edits" "mutant_guards" "replay_tiers" "native_workers"
+    "model_assertions" "model_cases" "model_check" "resolve_mutants" "mutant_builds" "mutation_edits" "mutant_guards" "replay_tiers" "native_workers"
     "execution_profile" "native_limits" "native_acquisition"
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
@@ -238,6 +241,8 @@ in {
     runtime = pkgs.emptyDirectory;
     environment.BELAY_TEST_CLICKHOUSE = "${pkgs.clickhouse}/bin/clickhouse";
     environment.BELAY_TEST_CLICKHOUSE_VERSION = pkgs.clickhouse.version;
+    # The test server listens on 127.0.0.1; the macOS sandbox forbids that without this attribute (#333).
+    environment.__darwinAllowLocalNetworking = true;
     timeout = 120;
   };
   sample = suite "sample" {
@@ -366,7 +371,7 @@ in {
     tools = modelTools;
   };
 } // pkgs.lib.genAttrs mutantSuites (name: suite name {
-  inputs = mutantInputs;
+  inputs = mutantInputs name;
   runtime = conformance;
   tools = modelTools;
   timeout = mutantSuiteTimeoutSeconds;

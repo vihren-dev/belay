@@ -45,6 +45,13 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Hash the tracked files
+        if: env.PLATFORM_RUNS == 'true'
+        id: tree
+        # The cache key of the Nix store. It hashes the tracked files except task records,
+        # so files that later steps write into the checkout (such as __pycache__) cannot
+        # change it, and the publisher finds the store that the check job saved.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - name: Select complete checks for the changed inputs
         if: env.PLATFORM_RUNS == 'true'
         id: scope
@@ -83,9 +90,9 @@ jobs:
           # Failed Nix builds can leave unreadable transient locks; never archive them.
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
         with:
-          # The key covers every file except task records, so a push that changes only
+          # The key covers every tracked file except task records, so a push that changes only
           # plans/ or reviews/ restores the exact store of the previous push and saves nothing.
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           restore-prefixes-first-match: |
             nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
@@ -145,7 +152,9 @@ jobs:
     name: Mutants (${{ matrix.suite }}, ${{ matrix.system }})
     # The mutant suites of the model (tests/nix_mutant_suites.json) run here, one runner each, in
     # parallel with the check job and for the full scope only: together they need more time
-    # than the check job has left (pull request #191). They never save a cache.
+    # than the check job has left (pull request #191). They never save a Nix store. A passed
+    # main push or nightly run saves the suite's report under its Nix derivation, and a later
+    # run of the same derivation on the same platform reuses that report instead of a run.
     strategy:
       fail-fast: false
       matrix:
@@ -169,6 +178,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Hash the tracked files
+        if: env.PLATFORM_RUNS == 'true'
+        id: tree
+        # The tree part of the check job's cache key.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - name: Select complete checks for the changed inputs
         if: env.PLATFORM_RUNS == 'true'
         id: scope
@@ -187,28 +201,57 @@ jobs:
             extra-trusted-public-keys = sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE=
             connect-timeout = 5
             fallback = true
-      - name: Restore Nix builds
+      - name: Find the Nix derivation of the mutant suite
         if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        id: suite
+        env:
+          MUTANT_SUITE: ${{ matrix.suite }}
+        # The derivation covers every input of the suite: the same derivation gives the same result.
+        run: |
+          derivation="$(nix-instantiate build-support/default.nix -A "scheduledTests.$MUTANT_SUITE" --extra-experimental-features 'nix-command flakes')"
+          echo "derivation=$(basename "$derivation" .drv)" >> "$GITHUB_OUTPUT"
+      - name: Restore the report of an accepted run of this derivation
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        id: accepted
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/mutant-accepted/
+          key: mutant-report-v1-${{ matrix.system }}-${{ steps.suite.outputs.derivation }}
+      - name: Restore Nix builds
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true'
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         env:
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
         with:
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           restore-prefixes-first-match: |
             nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
           save: false
       - name: Run the mutant suite
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true'
         env:
           MUTANT_SUITE: ${{ matrix.suite }}
-        run: nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
+        run: |
+          nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
+          mkdir -p build/mutant-accepted
+          cp -RL "build/nix-tests-mutants/$MUTANT_SUITE" "build/mutant-accepted/$MUTANT_SUITE"
+          chmod -R u+w build/mutant-accepted
+      - name: Save the report of this accepted derivation
+        # Only a passed main push or nightly run saves; other events only reuse.
+        if: success() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true' && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/mutant-accepted/
+          key: mutant-report-v1-${{ matrix.system }}-${{ steps.suite.outputs.derivation }}
       - name: Retain the mutant suite report
         if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mutant-reports-${{ matrix.suite }}-${{ matrix.system }}
-          path: build/nix-tests-mutants/
+          path: |
+            build/nix-tests-mutants/
+            build/mutant-accepted/
           if-no-files-found: warn
           retention-days: 14
 
@@ -223,11 +266,13 @@ jobs:
 
   publish-nix-store:
     name: Publish Nix store (${{ matrix.system }})
-    # After both native checks of a main push or nightly run pass, upload the store
-    # that the check job saved to the Vihren Attic cache. Only this job can use the
-    # attic-publish environment, which deploys only from main and holds the write
-    # token. An upload failure never fails the workflow or changes a check result.
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # After the checks of a main push or nightly run, upload the store that the check
+    # job saved for this platform to the Vihren Attic cache. The cache action saves a
+    # store only after a passed check job, so each platform publishes only a store that
+    # a passed check saved, also when the check of the other platform failed. Only this
+    # job can use the attic-publish environment, which deploys only from main and holds
+    # the write token. An upload failure never fails the workflow or changes a check result.
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     needs: check
     strategy:
       fail-fast: false
@@ -245,6 +290,10 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Hash the tracked files
+        id: tree
+        # The tree part of the check job's cache key.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
         with:
           enable_kvm: false
@@ -257,8 +306,11 @@ jobs:
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         with:
           # The check job's primary key for this commit; this job never saves.
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           save: false
+      - name: Report a missing saved store
+        if: steps.restore.outputs.hit-primary-key != 'true'
+        run: echo "::warning::No saved Nix store of this commit for this platform, so nothing is uploaded to Attic. The check did not pass, or the commit changed only documentation."
       - name: Upload store paths that cache.nixos.org does not provide
         if: steps.restore.outputs.hit-primary-key == 'true'
         env:
