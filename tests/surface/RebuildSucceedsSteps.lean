@@ -45,11 +45,11 @@ facts hold after it. The customers are not changed. Proof sketch: {name}`runScri
 {name}`runScriptStep_setting_frame`, with {name}`advance_0`. -/
 theorem good_0 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 0 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[0].1 requireName.statements[0].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[0].1 makeStrict.statements[0].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 1 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock) (index := index)
-    (statement := requireName.statements[0].1) (parameters := requireName.statements[0].2)
+    (statement := makeStrict.statements[0].1) (parameters := makeStrict.statements[0].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl)
   have frame := runScriptStep_setting_frame (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
   refine ⟨output, next, step, good_step noError (advance_0 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
@@ -60,7 +60,7 @@ The transaction is closed before it, as the resolution state shows. Proof sketch
 {name}`runScriptStep_begin_frame`, with {name}`advance_1`. -/
 theorem good_1 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 1 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[1].1 requireName.statements[1].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[1].1 makeStrict.statements[1].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 2 found.next := by
   have idle : c.state.snapshot = none := by
@@ -69,7 +69,7 @@ theorem good_1 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
     rw [closed] at h2
     simpa using h2
   obtain ⟨output, next, step, noError⟩ := runScriptStep_begin_ok (context := runContext) (clock := clock) (index := index)
-    (statement := requireName.statements[1].1) (parameters := requireName.statements[1].2)
+    (statement := makeStrict.statements[1].1) (parameters := makeStrict.statements[1].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl) idle
   have frame := runScriptStep_begin_frame (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
   refine ⟨output, next, step, good_step noError (advance_1 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
@@ -82,13 +82,13 @@ of a valid database; {name}`runScriptStep_createTable` gives the next database, 
 were and one empty list of rows appended. -/
 theorem good_2 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 2 c) (valid : c.state.Holds (Database.Valid Profile.pinned)) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[2].1 requireName.statements[2].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[2].1 makeStrict.statements[2].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 3 found.next := by
   have length : c.state.database.catalog.length = 2 := by
     rw [(resolveState_parts good.1.1).1]; with_unfolding_all rfl
   obtain ⟨output, next, step, noError⟩ := runScriptStep_createTable_ok (context := runContext) (clock := clock) (index := index)
-    (statement := requireName.statements[2].1) (parameters := requireName.statements[2].2)
+    (statement := makeStrict.statements[2].1) (parameters := makeStrict.statements[2].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl) (by rw [length]; with_unfolding_all rfl)
     (by rw [length]; exact length ▸ valid.1.admitted.rowsShaped.1)
   obtain ⟨-, -, -, aligned, nextEq⟩ := runScriptStep_createTable
@@ -99,17 +99,17 @@ theorem good_2 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   · rw [nextEq]
     simp [List.getD_eq_getElem?_getD, aligned, length]
 
-/-- Statement 3, the INSERT from a query: the step continues without an error in its first execution when no old
-customer lacks a name, and every execution that has no error keeps the facts. The execution of the model is the only
+/-- Statement 3, the INSERT from a query: the step continues without an error in its first execution when every old
+customer fits the STRICT types of the new table, and every execution that has no error keeps the facts. The execution of the model is the only
 one that the model describes. Proof sketch: {name}`copy_continues` and {name}`advance_3`; the facts about the customers
 end with the copy. -/
 theorem good_3 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
-    (named : ∀ row ∈ customers.rows, row.values[1]? ≠ some .null) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[3].1 requireName.statements[3].2 =
+    (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 4 found.next := by
-  obtain ⟨output, next, step, noError⟩ := copy_continues good.1 good.2 valid named
+  obtain ⟨output, next, step, noError⟩ := copy_continues good.1 good.2 valid fits
   exact ⟨output, next, step, good_step noError (advance_3 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
 /-- Statement 4, the DROP of the old customers: the step continues without an error in every execution, and the
@@ -117,11 +117,11 @@ facts hold after it. Proof sketch: {name}`runScriptStep_drop_ok` and {name}`adva
 end with the copy. -/
 theorem good_4 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 4 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[4].1 requireName.statements[4].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[4].1 makeStrict.statements[4].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 5 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_drop_ok (context := runContext) (clock := clock) (index := index)
-    (statement := requireName.statements[4].1) (parameters := requireName.statements[4].2)
+    (statement := makeStrict.statements[4].1) (parameters := makeStrict.statements[4].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl)
   exact ⟨output, next, step, good_step noError (advance_4 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 

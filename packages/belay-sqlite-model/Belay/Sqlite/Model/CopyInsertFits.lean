@@ -9,7 +9,7 @@ set_option doc.verso true
 /-! Copying a table with INSERT from a query (ADR 0017, S6). A rebuild of a table copies the rows of the old
 table into a new, empty table with the same columns. This module says when such a copy fits: the rows that
 the old table holds are the rows that the new table receives, and the new table meets its constraints when
-the old rows meet the NOT NULL columns of the new table. -/
+the old rows meet the NOT NULL columns and the STRICT types of the new table. -/
 
 namespace Belay.Sqlite.Model
 
@@ -94,22 +94,24 @@ theorem LiteralData.uniqueRows_alias (key : UniqueKey) (position : Nat)
     exact LiteralData.uniqueRows_alias key position terms filter rest
       (fun other member => aliased other (List.mem_cons_of_mem _ member)) nodup.2
 
-/-- For every empty target table with a rowid alias, without generated column, STRICT type or CHECK
-constraint, whose only keys are on the alias, and every list of rows that
+/-- For every empty target table with a rowid alias, without generated column or CHECK constraint, whose only
+keys are on the alias, and every list of rows that
 * carry their rowid in the alias cell, with a rowid in range and no rowid twice,
 * have one cell for each column of the target, in the stored form of the column,
+* fit the STRICT types of the target ({name}`LiteralData.typesFit`), which asks nothing of a column without
+  a STRICT type,
 * and hold no NULL in a NOT NULL column of the target,
 
 the cells of the rows fit the target ({name}`InsertFits`), when the alias of the target is an integer column.
-In plain words, copying valid rows into an empty table of the same columns fits, as far as the new table
-asks no more of a cell than the old one, which is the NOT NULL columns that the rows meet. Proof sketch: the
-table that the insert gives holds the rows ({name}`LiteralData.inserted_copy`); each field is the Boolean form
-of one premise, over the zipped columns and cells. -/
+In plain words, copying valid rows into an empty table of the same columns fits, as far as the rows meet what
+the new table asks of a cell: its NOT NULL columns and its STRICT types. Proof sketch: the table that the
+insert gives holds the rows ({name}`LiteralData.inserted_copy`); each field is the Boolean form of one
+premise, over the zipped columns and cells. -/
 theorem InsertFits.copy (keys : List UniqueKey) (target : Table) (position : Nat) (source : List Row)
     (empty : target.rows = []) (alias : target.shape.rowidAlias = some position)
     (aliasInteger : LiteralData.aliasReady target.shape = true)
     (plain : ∀ column ∈ target.shape.columns, column.generated = none)
-    (untyped : ∀ column ∈ target.shape.columns, column.strictType = none)
+    (typed : ∀ row ∈ source, LiteralData.typesFit target.shape row = true)
     (unchecked : target.shape.allChecks = [])
     (aliasKeys : ∀ key ∈ keys, key.terms = [{ term := .column position }] ∧ key.filter = none)
     (aliased : ∀ row ∈ source, row.values[position]? = some (.integer row.rowid))
@@ -139,9 +141,8 @@ theorem InsertFits.copy (keys : List UniqueKey) (target : Table) (position : Nat
     · exact Or.inr (notNull row inSource i column value atColumn atValue required)
     · exact Or.inl (by simpa using required)
   · rw [copied]
-    simp only [LiteralData.typedRows, LiteralData.typesFit, List.all_eq_true, Prod.forall, mem_zip_iff_position]
-    rintro row - column value ⟨i, atColumn, -⟩
-    simp [untyped column (List.mem_of_getElem? atColumn)]
+    simp only [LiteralData.typedRows, List.all_eq_true]
+    exact typed
   · rw [copied]
     simp [LiteralData.checkedRows, LiteralData.checksHold, unchecked]
   · rw [copied]
