@@ -14,7 +14,7 @@ let
   sourceRules = pkgs.writeTextDir "tools/source_revision.py"
     (builtins.readFile ../tools/source_revision.py);
 in pkgs.stdenv.mkDerivation {
-  pname = "sqlite-verifier-doc-gen4";
+  pname = "belay-doc-gen4";
   version = "4.34.1";
   src = sources.doc-gen4;
   # PR #242 exceeds SQLite's compound SELECT limit in the pinned import reader.

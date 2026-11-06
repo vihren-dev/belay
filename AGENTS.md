@@ -1,4 +1,4 @@
-# Agent instructions for sqlite-verifier
+# Agent instructions for Belay
 
 The workspace rules in the parent directory's `AGENTS.md` also apply. This
 file adds rules that are specific to this repository.

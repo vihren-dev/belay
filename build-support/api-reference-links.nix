@@ -11,7 +11,7 @@ let
   fullCommitHashPattern = "[0-9a-f]{40}";
 in
 assert builtins.isString revision && builtins.match fullCommitHashPattern revision != null;
-pkgs.runCommand "sqlite-verifier-api-reference-${builtins.substring 0 12 revision}" {
+pkgs.runCommand "belay-api-reference-${builtins.substring 0 12 revision}" {
   nativeBuildInputs = [ pkgs.python3 ];
 } ''
   python3 ${tools}/tools/api_reference_links.py --base ${base} --output "$out" \
