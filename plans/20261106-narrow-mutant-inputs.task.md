@@ -1,6 +1,6 @@
 # Give each mutant suite only the Python modules and data that it reads (#330)
 
-Created 2026-11-06. Status: open.
+Created 2026-11-06. Status: DONE (2026-11-06).
 Audience: implementers and reviewers.
 Progress: [status](20261106-narrow-mutant-inputs.status.md).
 Inspected base: `tasks/publish-per-platform` plus the #328 fix (`knytyxux`), on `main` `1d74dd4e`.

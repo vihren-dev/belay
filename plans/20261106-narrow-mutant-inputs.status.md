@@ -1,6 +1,6 @@
 # Status: give each mutant suite only the Python modules and data that it reads (#330)
 
-Created: 2026-11-06. Status: open.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-narrow-mutant-inputs.task.md](20261106-narrow-mutant-inputs.task.md).
 Issue: #330. Stacked on the #328 fix of [the CI bug task](20261106-ci-bug-fixes.task.md).
 
@@ -19,3 +19,6 @@ Sources: `build-support/tests.nix` (`mutantInputs`, `modelInputs`), `tests/nix_m
   (fails with the old inputs), `tests/test_conformance_frontend.py`,
   `tests/test_nix_test_targets.py`, `tests/docs_test.py`. Smoke check: each declared module of
   each suite imports in the suite's Nix source tree (12 of 12 suites).
+- 2026-11-06: DONE. On the top commit of the stack with #332, after `just dev-build`:
+  `just test-full`, `just verdict`, `just test-nix` and `just test-scheduled-checks` pass. The
+  mutant suites were not run locally.
