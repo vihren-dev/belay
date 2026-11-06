@@ -12,9 +12,11 @@ own task. Audience: the team.
 The trust rule does not change: `proved` and `false` come only from kernel-checked proofs, and a
 `false` result needs a replay that native SQLite runs.
 
-1. **Compiled screen (D2).** For each claim, the checker builds one screen: a function from a
-   database to `Bool` that is true when the database, with the claim's other inputs, satisfies
-   each premise and falsifies the conclusion. It follows the binders as `contradictAt` does, and
+1. **Compiled screen (D2).** For each claim, the checker builds and compiles one screen: a
+   function from the inputs that the search chooses, a database and a value of the value pool, to
+   `Bool`. It is true when these inputs satisfy each premise and falsify the conclusion. The value
+   goes to each quantified `Value` input that has no supplied value, as `fillValueInputs` does.
+   The environment and the supplied named inputs are fixed for the check. It follows the binders as `contradictAt` does, and
    compares the actual runs of an equivalence claim as `refuteByActualRun?` does. The checker
    compiles the screen and runs it on the generated candidates. Only a candidate that the screen
    accepts goes to certification, replay and the observation. A caller of the checking API can
@@ -42,7 +44,7 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    with values that hold a schema of the consumer's size (9,561 nodes).
 7. **Construction with the triggers off (D6).** A generated candidate on a schema whose source text
    has statements other than CREATE and INSERT, such as ALTER TABLE, is built by the schema's text
-   without its INSERTs, then `.dbconfig enable_trigger off`, one INSERT for each row,
+   without its INSERTs (the candidate's rows replace the supplied rows), then `.dbconfig enable_trigger off`, one INSERT for each row,
    and `.dbconfig enable_trigger on`. The model validates the text, runs the INSERTs on the
    schema without its triggers, and requires the candidate's rows.
 8. **Shrinking by screening (D5).** The shrink proposals are screened; the checker certifies only
@@ -85,8 +87,8 @@ the defaults of `sql.checkCandidates` and `sql.checkTimeLimit` and the measureme
   function runs in a dedicated task. A task cannot be stopped: an abandoned task runs to the end
   of its current computation (owner decision 3). Compile a thunk, so that the work starts in the
   task and not at `evalExpr`.
-- The screen depends on the claim's other inputs (the named values, the environment). It is
-  built and compiled once for each value of the pool, with those inputs fixed.
+- The screen is compiled once for the claim. The database and the pool value are its arguments;
+  the environment and the supplied named inputs are closed terms in its body.
 - Kernel certification stays the only judge: a screen that accepts a wrong candidate wastes time,
   and a screen that rejects a counterexample misses it. Neither gives a wrong result.
 - The time limit and the reason of `unknown` must survive `attempt`, which restores the

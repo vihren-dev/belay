@@ -224,7 +224,9 @@ The construction SQL of a generated candidate:
   A trigger is created after its table, so no trigger fires on these rows, and the model
   validates the whole text as today. This form came first, for issue #318 (2026-11-05).
 - On a schema with other source text, such as ALTER TABLE in migrations: the
-  schema's source text, then `.dbconfig enable_trigger off`, one INSERT for each generated row,
+  schema's source text without its INSERT statements (amended 2026-11-06: the candidate's rows
+  replace the supplied rows, as in the form above), then `.dbconfig enable_trigger off`, one
+  INSERT for each generated row,
   and `.dbconfig enable_trigger on`. The formatter of today refuses indexes, triggers, CHECK
   constraints and foreign keys, and an INSERT with the triggers on would fire them. The model
   validates the construction as today for the source text, and runs the INSERTs on the schema
