@@ -2,24 +2,25 @@
 
 Created: 2026-11-06. Status: OPEN.
 Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), slice 3: D4, D7, and the consumer-size
-fixture and acceptance records of D9. Slice 2 (D2, D3 without D4, D5, D6, D8) is done in
-[20261106-check-compiled-screen](20261106-check-compiled-screen.task.md). Audience: the team.
+fixture and acceptance records of D9. Slice 2 (D2, D3 without D4, D5, D6, D8) is implemented in
+[20261106-check-compiled-screen](20261106-check-compiled-screen.task.md); its end-of-slice
+checks and records are pending there. Audience: the team.
 
 ## Observable behavior
 
 The trust rule does not change: `proved` and `false` come only from kernel-checked proofs, and a
 `false` result needs a replay that native SQLite runs.
 
-1. **Touched tables (D4).** The table contents and the seeded random databases of the search
-   (`Sampling.candidates`) fill only the touched tables; the other tables of the schema keep the
-   rows of the schema database (empty for an inferred schema). The touched tables are the tables
-   that the claim's statements read or write, closed under:
+1. **Touched tables (D4).** The generated candidates of the search (`Sampling.candidates`: the
+   targeted databases, the table contents and the seeded random databases, steps 2 and 3 of D3)
+   fill only the touched tables; the other tables are empty in them. The touched tables are the
+   tables that the claim's statements read or write, closed under:
    - the triggers on a touched table: the tables that their bodies read or write;
    - the foreign keys: the parent tables of a touched table, and the child tables whose foreign
      keys refer to a touched table (their actions and checks run when the parent changes).
    A claim whose statements the checker cannot find (a plain Lean predicate, or no SQL sites)
-   touches every table. Explicit witnesses, the empty database, the named databases and the
-   targeted databases are not changed.
+   touches every table, and so does a statement whose tables the collection does not name.
+   Explicit witnesses, the empty database and the named databases are not changed.
 2. **Rows that satisfy constraints (D4).** A generated row has no NULL in a NOT NULL column. A
    column with a foreign key gets one of the parent's key values when the parent has rows in that
    candidate. A row that repeats a UNIQUE or PRIMARY KEY value (including the rowid alias of an
@@ -38,7 +39,8 @@ Each test has a timeout and runs in the suites of the surface checks (`surfaceCh
 `surfaceS6`).
 
 - Candidate order (`tests/surface/CounterexampleSearchBudget.lean`): on a schema with an
-  untouched table, the generated contents and seeded databases leave it as in the schema; a
+  untouched table that has rows, the targeted databases, the contents and the seeded databases
+  leave it empty; a
   NOT NULL column gets no NULL; a foreign key column gets a parent key; no two rows of a table
   repeat a UNIQUE or PRIMARY KEY value; the trigger and foreign-key closures add their tables.
 - `Database.HasCatalog`: `decide` proves it for a database and its schema and refutes it for
@@ -64,8 +66,11 @@ measured again with the consumer-size claim.
 
 ## Tricky points
 
-- The claim's statements: `querySites` finds the script sites, and `Sampling.scriptHints`
-  (`SchemaHints.sources`) names the tables of their statements and write targets. Trigger bodies
+- The claim's statements: `querySites` finds the script sites. `Sampling.scriptHints`
+  (`SchemaHints.sources`) names the tables of queries and write targets, but `statementHints`
+  gives no sources for other statements, for example ALTER TABLE and DROP TABLE. The touched
+  tables need a collection that names the tables of every statement kind, or that counts every
+  table as touched for a kind that it does not handle. Trigger bodies
   are `CatalogTrigger.body` (`Syntax.BodyStatement`); the foreign keys are on `CatalogTable` and
   `CatalogColumn` (`foreignKeys`). Table names compare as SQLite identifiers (folded case).
 - `visitContents` enumerates contents over every table of the catalog; with dozens of tables and
