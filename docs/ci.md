@@ -55,6 +55,10 @@ derivations as `checks.<system>`:
 
 - `tests.model`: production SQL translation and concrete Lean model assertions,
   compared with pinned native SQLite on authored and generated cases.
+- `tests.columnDefaults`, `tests.schemaChanges` and `tests.queries`: the column defaults
+  of added columns, the other schema changes, and the queries with their syntax. They
+  were part of `tests.model`, which took more than its 1200 s limit on hosted macOS.
+  Each of the four suites should take at most half of the limit there.
 - `tests.coverageStatements` and `tests.coverageFeatures`: the authored coverage cases
   (`tests/conformance_query_coverage_test.py` and `tests/conformance_feature_coverage_test.py`),
   each with a kernel proof of its verdict. They were part of `tests.model`, which took more
