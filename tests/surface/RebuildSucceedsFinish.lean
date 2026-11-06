@@ -16,7 +16,7 @@ namespace RebuildGuide
 /-- Whether the rename of the rebuild resolves, on the resolution state after the first five statements, to a new
 catalog that has the outline of the old one ({name}`Catalog.sameOutline`). -/
 def renameKeepsOutline : Bool :=
-  match resolveStatement runContext (reachedAfter 5).resolveState requireName.statements[5].1 with
+  match resolveStatement runContext (reachedAfter 5).resolveState makeStrict.statements[5].1 with
   | .ok (.rewrite renamed, _) => (reachedAfter 5).resolveState.catalog.sameOutline renamed
   | .ok (.query .., _) | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
   | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
@@ -26,7 +26,7 @@ def renameKeepsOutline : Bool :=
 /-- The rename resolves to a new catalog that has the outline of the old one. Proof sketch: kernel evaluation of
 {name}`renameKeepsOutline`. -/
 theorem rename_resolves : ∃ renamed after,
-    resolveStatement runContext (reachedAfter 5).resolveState requireName.statements[5].1 = .ok (.rewrite renamed, after) ∧
+    resolveStatement runContext (reachedAfter 5).resolveState makeStrict.statements[5].1 = .ok (.rewrite renamed, after) ∧
       (reachedAfter 5).resolveState.catalog.sameOutline renamed = true := by
   have ok : renameKeepsOutline = true := by decide +kernel
   unfold renameKeepsOutline at ok
@@ -40,12 +40,12 @@ facts hold after it. Proof sketch: {name}`runScriptStep_rewrite_ok`, where the n
 old one by evaluation, and {name}`advance_5`. -/
 theorem good_5 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 5 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[5].1 requireName.statements[5].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[5].1 makeStrict.statements[5].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 6 found.next := by
   obtain ⟨renamed, after, resolved, outline⟩ := rename_resolves
   obtain ⟨output, next, step, noError⟩ := runScriptStep_rewrite_ok (context := runContext) (clock := clock)
-    (index := index) (statement := requireName.statements[5].1) (parameters := requireName.statements[5].2)
+    (index := index) (statement := makeStrict.statements[5].1) (parameters := makeStrict.statements[5].2)
     (found := by rw [good.1.1]; exact resolved) (by rw [(resolveState_parts good.1.1).1]; exact outline)
   exact ⟨output, next, step, good_step noError (advance_5 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
@@ -55,7 +55,7 @@ in the catalog of the state, only the sessions have a foreign key, so no other t
 ({name}`Database.foreignKeyCheckRows_isSome`); then {name}`runScriptStep_keyCheck_continues` and {name}`advance_6`. -/
 theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 6 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[6].1 requireName.statements[6].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[6].1 makeStrict.statements[6].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 7 found.next := by
   have catalog := (resolveState_parts good.1.1).1
@@ -71,10 +71,10 @@ theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
         omega)]
       rfl
     simp [Database.keyCheckRows, notChild])
-  have statement : requireName.statements[6] = (.pragma (.foreignKeyCheck none), []) := by with_unfolding_all rfl
+  have statement : makeStrict.statements[6] = (.pragma (.foreignKeyCheck none), []) := by with_unfolding_all rfl
   obtain ⟨output, step, noError⟩ := runScriptStep_keyCheck_continues runContext clock index c [] rows
     (by rw [catalog]; decide +kernel) found
-  have step' : runScriptStep runContext clock index c requireName.statements[6].1 requireName.statements[6].2 =
+  have step' : runScriptStep runContext clock index c makeStrict.statements[6].1 makeStrict.statements[6].2 =
       .continued output c [] := by rw [statement]; exact step
   exact ⟨output, c, step', good_step noError (advance_6 good.1 step') ⟨fun h => by omega, fun h => by omega⟩⟩
 
@@ -83,7 +83,7 @@ The transaction is open before it, as the resolution state shows. Proof sketch: 
 {name}`advance_7`. -/
 theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 7 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[7].1 requireName.statements[7].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[7].1 makeStrict.statements[7].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 8 found.next := by
   have active : ∃ original, c.state.snapshot = some original := by
@@ -97,7 +97,7 @@ theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
     | some original => exact ⟨original, rfl⟩
   obtain ⟨original, active⟩ := active
   obtain ⟨output, next, step, noError⟩ := runScriptStep_commit_ok (context := runContext) (clock := clock)
-    (index := index) (statement := requireName.statements[7].1) (parameters := requireName.statements[7].2)
+    (index := index) (statement := makeStrict.statements[7].1) (parameters := makeStrict.statements[7].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl) active
   exact ⟨output, next, step, good_step noError (advance_7 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
@@ -105,25 +105,26 @@ theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
 facts hold after it. Proof sketch: {name}`runScriptStep_setting_ok` and {name}`advance_8`. -/
 theorem good_8 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 8 c) :
-    ∃ output next, runScriptStep runContext clock index c requireName.statements[8].1 requireName.statements[8].2 =
+    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[8].1 makeStrict.statements[8].2 =
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 9 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock)
-    (index := index) (statement := requireName.statements[8].1) (parameters := requireName.statements[8].2)
+    (index := index) (statement := makeStrict.statements[8].1) (parameters := makeStrict.statements[8].2)
     (found := by rw [good.1.1]; with_unfolding_all exact rfl)
   exact ⟨output, next, step, good_step noError (advance_8 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
-/-- For every clock, tables of the sessions and the customers, and customers that hold no NULL name: for every
+/-- For every clock, tables of the sessions and the customers, and customers whose rows all fit the STRICT types of
+the new customers: for every
 statement of the rebuild and every valid connection that has the facts before it, the step of the statement continues,
 and every execution of it has no error output and reaches a connection that has the facts after it. In plain words,
 each step of the rebuild succeeds and keeps the facts, in every execution. Proof sketch: the nine cases
 {lit}`good_0` to {lit}`good_8`. -/
 theorem good_advance (clock : Option Clock) (sessions customers : Table)
-    (named : ∀ row ∈ customers.rows, row.values[1]? ≠ some .null) :
-    ∀ (n : Nat) (inList : n < requireName.statements.length) (index : Nat) (connection : Connection),
+    (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
+    ∀ (n : Nat) (inList : n < makeStrict.statements.length) (index : Nat) (connection : Connection),
       connection.state.Holds (Database.Valid Profile.pinned) → Good sessions customers n connection →
-      ∃ output next others, runScriptStep runContext clock index connection requireName.statements[n].1
-          requireName.statements[n].2 = .continued output next others ∧
+      ∃ output next others, runScriptStep runContext clock index connection makeStrict.statements[n].1
+          makeStrict.statements[n].2 = .continued output next others ∧
         ∀ found ∈ (RunStep.continued output next others).executions,
           found.output.isError = false ∧ Good sessions customers (n + 1) found.next := by
   intro n inList index connection valid good
@@ -132,7 +133,7 @@ theorem good_advance (clock : Option Clock) (sessions customers : Table)
   | 0, _ => obtain ⟨output, next, step, all⟩ := good_0 (clock := clock) (index := index) good; exact ⟨output, next, _, step, all⟩
   | 1, _ => obtain ⟨output, next, step, all⟩ := good_1 (clock := clock) (index := index) good; exact ⟨output, next, _, step, all⟩
   | 2, _ => obtain ⟨output, next, step, all⟩ := good_2 (clock := clock) (index := index) good valid; exact ⟨output, next, _, step, all⟩
-  | 3, _ => obtain ⟨output, next, step, all⟩ := good_3 (clock := clock) (index := index) good valid named; exact ⟨output, next, _, step, all⟩
+  | 3, _ => obtain ⟨output, next, step, all⟩ := good_3 (clock := clock) (index := index) good valid fits; exact ⟨output, next, _, step, all⟩
   | 4, _ => obtain ⟨output, next, step, all⟩ := good_4 (clock := clock) (index := index) good; exact ⟨output, next, _, step, all⟩
   | 5, _ => obtain ⟨output, next, step, all⟩ := good_5 (clock := clock) (index := index) good; exact ⟨output, next, _, step, all⟩
   | 6, _ => obtain ⟨output, next, step, all⟩ := good_6 (clock := clock) (index := index) good; exact ⟨output, next, _, step, all⟩

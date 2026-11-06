@@ -5,7 +5,7 @@ set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
 set_option exponentiation.threshold 2048
 
-/-! The facts that every execution of the rebuild keeps (ADR 0017, S6, part 3). The rebuild {lit}`requireName` has an
+/-! The facts that every execution of the rebuild keeps (ADR 0017, S6, part 3). The rebuild {lit}`makeStrict` has an
 INSERT from a query, so a branch of a run can reach a connection that the model's own run does not reach. The
 facts that hold in all branches are about the resolution state, which does not depend on the rows, and about the
 table of the sessions, which the rebuild never writes. {lit}`Kept` states them after the first statements, and
@@ -22,7 +22,7 @@ def sessionsName : Identifier := name! "sessions"
 
 /-- The connection that the model reaches after the first statements of the rebuild, started on the sample. -/
 def reachedAfter (count : Nat) : Connection :=
-  (runScriptFrom runContext none 0 sample.raw.connection (requireName.statements.take count)).connection
+  (runScriptFrom runContext none 0 sample.raw.connection (makeStrict.statements.take count)).connection
 
 /-- Where the sessions are after the first statements: at position 1 until the drop of the customers, at position 0
 after it. -/
@@ -71,7 +71,7 @@ statements. Proof sketch: the step law {name}`runScriptStep_setting` gives the n
 state of the sample run is compared by evaluation. -/
 theorem advance_0 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 0 c)
-    (step : runScriptStep runContext clock index c requireName.statements[0].1 requireName.statements[0].2 =
+    (step : runScriptStep runContext clock index c makeStrict.statements[0].1 makeStrict.statements[0].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 1 found.next := by
@@ -91,7 +91,7 @@ as the resolution state shows. Proof sketch: the step law of the statement gives
 resolution state is compared by evaluation. -/
 theorem advance_1 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 1 c)
-    (step : runScriptStep runContext clock index c requireName.statements[1].1 requireName.statements[1].2 =
+    (step : runScriptStep runContext clock index c makeStrict.statements[1].1 makeStrict.statements[1].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 2 found.next := by
@@ -113,7 +113,7 @@ theorem advance_1 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
 the step law of the statement gives the next connection; the resolution state is compared by evaluation. -/
 theorem advance_2 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 2 c)
-    (step : runScriptStep runContext clock index c requireName.statements[2].1 requireName.statements[2].2 =
+    (step : runScriptStep runContext clock index c makeStrict.statements[2].1 makeStrict.statements[2].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 3 found.next := by
@@ -133,7 +133,7 @@ theorem advance_2 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
 sessions are another table than the target. -/
 theorem advance_3 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 3 c)
-    (step : runScriptStep runContext clock index c requireName.statements[3].1 requireName.statements[3].2 =
+    (step : runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 4 found.next := by
@@ -153,7 +153,7 @@ from position 1 to position 0. Proof sketch: the step law of the statement gives
 resolution state is compared by evaluation. -/
 theorem advance_4 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 4 c)
-    (step : runScriptStep runContext clock index c requireName.statements[4].1 requireName.statements[4].2 =
+    (step : runScriptStep runContext clock index c makeStrict.statements[4].1 makeStrict.statements[4].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 5 found.next := by

@@ -5,7 +5,7 @@ set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
 set_option exponentiation.threshold 2048
 
-/-! Claim 1 of the guide's table rebuild (ADR 0017, S6, part 3): the rebuild {lit}`requireName` preserves the read
+/-! Claim 1 of the guide's table rebuild (ADR 0017, S6, part 3): the rebuild {lit}`makeStrict` preserves the read
 {lit}`allSessions` of the sessions on every database whose catalog is the guide's schema. The rebuild is an INSERT
 from a query, so its branches can reach different connections. The facts that each step keeps
 ({lit}`RebuildKeepsInvariant`, {lit}`RebuildKeepsFinish`) hold at the end of every branch
@@ -72,10 +72,10 @@ theorem sessions_obligations {db : Database} {counters : Counters} {ended : Conn
 facts before the statement: every execution of the step of the statement that has no error output reaches a connection
 that keeps the facts after the statement. Proof sketch: the nine cases {lit}`advance_0` to {lit}`advance_8`. -/
 theorem kept_advance (clock : Option Clock) (sessions : Table) :
-    ∀ (n : Nat) (inList : n < requireName.statements.length) (index : Nat) (connection : Connection),
+    ∀ (n : Nat) (inList : n < makeStrict.statements.length) (index : Nat) (connection : Connection),
       connection.state.Holds (Database.Valid Profile.pinned) → Kept sessions n connection →
-      ∀ output next others, runScriptStep runContext clock index connection requireName.statements[n].1
-          requireName.statements[n].2 = .continued output next others →
+      ∀ output next others, runScriptStep runContext clock index connection makeStrict.statements[n].1
+          makeStrict.statements[n].2 = .continued output next others →
         ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
           Kept sessions (n + 1) found.next := by
   intro n inList index connection _ kept output next others step
@@ -98,18 +98,18 @@ otherwise: the customers and sessions can have any rows. Where the rebuild fails
 nothing. Proof sketch: {name}`ReadCertificate.preservesAt` with the certificate of the read; the obligations come
 from {name}`sendStatements_branch_invariant`, with the facts that each step keeps, and from
 {name}`sessions_obligations`. -/
-theorem requireName_preserves_allSessions :
-    Migration.QueryPreserves (send requireName) allSessions (fun db => db.raw.catalog = sample.raw.catalog) := by
+theorem makeStrict_preserves_allSessions :
+    Migration.QueryPreserves (send makeStrict) allSessions (fun db => db.raw.catalog = sample.raw.catalog) := by
   intro db pre env complete
   obtain ⟨sessions, named⟩ := sessions_found pre
-  exact ReadCertificate.preservesAt (send requireName) sessionsCertificate_valid sessionsRead [] (fun _ => True)
+  exact ReadCertificate.preservesAt (send makeStrict) sessionsCertificate_valid sessionsRead [] (fun _ => True)
     (ExecutionContext.initial db env) fun domain branch ran => by
       have ok := (Sql.succeedsFrom_iff_branches _ _ _ _).mp domain.2 branch ran
-      exact sessions_obligations pre named (sendStatements_branch_invariant requireName.statements (Kept sessions)
+      exact sessions_obligations pre named (sendStatements_branch_invariant makeStrict.statements (Kept sessions)
         env.clock 0 (db.raw.connection env.counters) branch ran ok.1 ok.2
         ⟨db.valid, fun _ shown => by simp [Database.Raw.connection] at shown⟩ (kept_start pre named)
         (kept_advance env.clock sessions))
 
-#print axioms requireName_preserves_allSessions
+#print axioms makeStrict_preserves_allSessions
 
 end RebuildGuide
