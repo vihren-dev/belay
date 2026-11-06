@@ -119,7 +119,10 @@ A `Database` has a catalog and the rows of each catalog object:
 - Name lookup folds ASCII letters, as SQLite does. The affinity of a column
   comes from its type text by SQLite's rules.
 - The rows of a table are stored at its catalog position. Each row has a
-  physical rowid, a signed 64-bit value, and its cells in column order.
+  rowid field and its cells in column order.
+- In a table with a rowid, the rowid field is the physical rowid, a signed
+  64-bit value. A `WITHOUT ROWID` table has no rowid: its primary key
+  identifies its rows, and the rowid field of its rows is not a SQLite value.
 - A cell is NULL, an integer, a REAL (its exact IEEE bits), text bytes or a
   BLOB. The model does not convert the encoding of text.
 
@@ -141,10 +144,12 @@ differ from the build that a profile describes. To measure it:
    sqlite_source_id();` and all rows of `PRAGMA compile_options;`, sorted.
 4. After the application's own setup, read back the behavioral settings, for
    example `PRAGMA foreign_keys;` and `PRAGMA recursive_triggers;`.
-5. On the same connection, read each effective limit with the driver's limit
-   API or `sqlite3_limit(db, SQLITE_LIMIT_COLUMN, -1)`. Do not change a limit
-   while you read it. `MAX_COLUMN` in the compile options is only the highest
-   value; it does not show whether the application lowered the limit.
+5. On the same connection, read each effective limit of `Limits` with the
+   driver's limit API or `sqlite3_limit(db, id, -1)`, with the ID of that
+   limit, for example `SQLITE_LIMIT_COLUMN` for the column limit. Do not
+   change a limit while you read it. A `MAX_*` value in the compile options,
+   for example `MAX_COLUMN`, is only the highest value; it does not show
+   whether the application lowered the limit.
 6. Keep the driver's dependency lock, the command, its build configuration and
    its outputs with the application's profile.
 
