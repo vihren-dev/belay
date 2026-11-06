@@ -80,9 +80,11 @@ def eachTable (catalog : Catalog) (change : CatalogTable → List (List Value) �
 
 /-- Apply the parent keys ({name}`withParentKeys`), then remove repeated keys
 ({name}`distinctRows`), until the cells do not change, at most {lit}`fuel` times. A parent that
-gets its own key from a grandparent changes the keys of its children in the next round, so a
-chain of foreign keys settles in one round per table. A cycle of foreign keys can fail to
-settle; then the last round is the result. -/
+gets its own key from a grandparent changes the keys of its children in the next round. A round
+that removes repeated rows renumbers the rowids of the rest, so the rounds can also run out of
+fuel without a cycle of foreign keys; then the last round is the result, and a child can keep a
+key that its parent does not have. The candidates are proposals only, so this costs search
+quality, not soundness. -/
 def settledParentKeys (catalog : Catalog) : (fuel : Nat) → List (List (List Value)) → List (List (List Value))
   | 0, cells => cells
   | fuel + 1, cells =>
@@ -91,10 +93,10 @@ def settledParentKeys (catalog : Catalog) : (fuel : Nat) → List (List (List Va
 
 /-- Selected cells that satisfy the simple constraints of the catalog: no NULL in a NOT NULL
 column ({name}`notNullCells`), no repeated key ({name}`distinctRows`), and foreign keys with
-the keys of their parents, until they settle ({name}`settledParentKeys`). {name}`validated`
-checks the result, but it does not check foreign key references, as SQLite does not without
-{lit}`PRAGMA foreign_keys`: with a cycle of foreign keys that does not settle, a candidate can
-keep a key that its parent does not have. -/
+the keys of their parents, for a bounded number of rounds ({name}`settledParentKeys`).
+{name}`validated` checks the result, but it does not check foreign key references, as SQLite
+does not without {lit}`PRAGMA foreign_keys`: when the rounds do not settle, a candidate can keep a
+key that its parent does not have. -/
 def constrainedCells (catalog : Catalog) (fallback : Value) (cells : List (List (List Value))) :
     List (List (List Value)) :=
   let first := eachTable catalog (fun table rows => distinctRows table (notNullCells table fallback rows)) cells

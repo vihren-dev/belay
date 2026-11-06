@@ -69,6 +69,9 @@ elab "check_candidate_constraints" : command => Command.liftTermElabM do
   let parentDelete := (sql r"DELETE FROM parent").statements.map (·.1)
   unless touches parentDelete (some ["parent", "child", "audit"]) do
     throwError "a table with a foreign key to a touched table, or its trigger's table, is not touched"
+  unless touches ((sql r"CREATE UNIQUE INDEX one_note ON child(note)").statements.map (·.1))
+      (some ["child", "parent", "audit"]) do
+    throwError "CREATE INDEX does not touch its table and the tables that the table needs"
   unless touches ((sql r"ALTER TABLE child ADD COLUMN extra").statements.map (·.1)) none do
     throwError "a statement without named tables does not touch every table"
   let names := (Sampling.statementsTables statements).bind (Sampling.touchedNames schema.raw.catalog)
