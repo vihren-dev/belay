@@ -71,7 +71,8 @@ def schemaRowsSql (schema : String) (database : Database) : IO (Option SchemaCon
     | .createIndex .. | .createView .. | .createTrigger .. =>
       inline := inline.map (·.push (text ++ ";\n"))
       statements := statements.push (text ++ ";\n")
-    | _ =>
+    | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
+    | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .update .. | .delete .. | .select .. =>
       inline := none
       statements := statements.push (text ++ ";\n")
   if let some fragments := inline then return some (.inline (String.join fragments.toList))
