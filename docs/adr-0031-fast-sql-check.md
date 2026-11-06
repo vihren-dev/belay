@@ -1,6 +1,7 @@
 # ADR 0031: A fast `#sql_check`: compiled screening, certification of one hit
 
-Date: 2026-11-05. Status: ACCEPTED (owner, 2026-11-05: "I accept your recommendations").
+Date: 2026-11-05. Status: IMPLEMENTED in pull requests #319, #321, #323, #324 and #345,
+merged on 2026-11-06; accepted by the owner on 2026-11-05 ("I accept your recommendations").
 Owner decisions 1 to 3 follow the recommendations.
 Implementation: three slices (D9), each with its own task file, as local commits.
 Audience: designers and reviewers.
