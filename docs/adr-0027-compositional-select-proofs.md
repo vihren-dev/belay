@@ -2,7 +2,7 @@
 
 Date: 2026-10-28; revised 2026-10-29 after the integration of ADR 0025 and ADR 0026,
 and 2026-11-06 after the rebase onto main `84c0d779` (ADR 0030 and ADR 0031).
-Status: DRAFT; experiments checked, owner review pending.
+Status: ACCEPTED (owner, 2026-11-07: "implement the adr"), with the deep review of 2026-11-06 applied.
 Audience: designers and reviewers. Number 27 was explicitly requested by the owner.
 Evidence: [semantic review cover](select-automation-review.md), [source map](select-automation-source-map.md).
 Related: [ADR 0017](adr-0017-user-surface.md),
@@ -307,8 +307,7 @@ replace duplicated proofs with general rules while preserving capabilities.
 
 The accompanying acceptance contract names positive, negative and residual cases.
 Retained experiments test feasibility and current boundaries, not the existence
-of the proposed tactic. All recommendations above remain draft until reviewed
-with the experiment results and the formal semantic cover.
+of the proposed tactic.
 
 The deep review of 2026-11-06 asked for evidence that phase rules compose
 before the implementation estimate is trusted. Three retained experiments

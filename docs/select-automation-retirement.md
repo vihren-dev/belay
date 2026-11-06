@@ -1,6 +1,6 @@
 # SELECT proof automation: retirement inventory
 
-Date: 2026-10-29. Status: DRAFT; owner decisions of 2026-10-29 applied;
+Date: 2026-10-29. Status: ACCEPTED with ADR 0027 (owner, 2026-11-07); owner decisions of 2026-10-29 applied;
 reconciled to main `84c0d779` on 2026-11-06.
 Audience: designers and reviewers. Governing proposal:
 [ADR 0027](adr-0027-compositional-select-proofs.md), section "Scope and

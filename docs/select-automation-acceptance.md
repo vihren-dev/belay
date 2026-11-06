@@ -1,7 +1,7 @@
 # SELECT proof automation: acceptance contract
 
-Date: 2026-10-28; revised 2026-11-06 (ADR 0030, ADR 0031). Status: DRAFT; proposed
-behavior, not current functionality.
+Date: 2026-10-28; revised 2026-11-06 (ADR 0030, ADR 0031). Status: ACCEPTED with ADR 0027
+(owner, 2026-11-07); required behavior of the implementation, not yet current functionality.
 Audience: designers and reviewers. Governing proposal:
 [ADR 0027](adr-0027-compositional-select-proofs.md).
 
