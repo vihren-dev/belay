@@ -36,9 +36,9 @@ theorem Script.not_claims_selectOne_of_mayFail
     { shape := table, rows := db.raw.rows.getD position [] } condition _ _
     (Database.table_of_findTable db.raw _ position table found) (Resolved.Statement.Quiet.selectOne position condition quiet)
     member inCondition fails
-  unfold Holds Empty Fails
-  rw [Script.outputOn_selectOne head namedSource current arguments found resolves, Option.any_some, Option.any_some, Option.any_some,
-    output.1, output.2.1, output.2.2]
+  have observed := Script.outputOn_selectOne head namedSource current arguments found resolves
+  rw [Holds.iff_of_outputOn observed isQuery, Empty.iff_of_outputOn observed isQuery,
+    Fails.iff_of_outputOn observed isQuery, output.1, output.2.1, output.2.2]
   simp
 
 end Belay.Sqlite

@@ -34,9 +34,9 @@ theorem Script.not_claims_selectOne_exists_of_fallible
     ¬ Holds script db isQuery ∧ ¬ Empty script db isQuery ∧ ¬ Fails script db isQuery := by
   have output := resolvedStepOutput_selectOne_subquery_unmodeled 0 position db.raw.connection parameters (.exists 0) subCondition
     ((Resolved.Expr.calm_exists 0).quiet) quiet inCondition fallible
-  unfold Holds Empty Fails
-  rw [Script.outputOn_selectOne_exists head namedSource current arguments found resolves, Option.any_some, Option.any_some, Option.any_some,
-    output.1, output.2.1, output.2.2]
+  have observed := Script.outputOn_selectOne_exists head namedSource current arguments found resolves
+  rw [Holds.iff_of_outputOn observed isQuery, Empty.iff_of_outputOn observed isQuery,
+    Fails.iff_of_outputOn observed isQuery, output.1, output.2.1, output.2.2]
   simp
 
 /-- For every query script whose first statement is {lit}`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE p)`, where
@@ -61,9 +61,9 @@ theorem Script.not_claims_selectOne_notExists_of_fallible
     ¬ Holds script db isQuery ∧ ¬ Empty script db isQuery ∧ ¬ Fails script db isQuery := by
   have output := resolvedStepOutput_selectOne_subquery_unmodeled 0 position db.raw.connection parameters (.not (.exists 0)) subCondition
     (((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)).quiet) quiet inCondition fallible
-  unfold Holds Empty Fails
-  rw [Script.outputOn_selectOne_notExists head namedSource current arguments found resolves, Option.any_some, Option.any_some, Option.any_some,
-    output.1, output.2.1, output.2.2]
+  have observed := Script.outputOn_selectOne_notExists head namedSource current arguments found resolves
+  rw [Holds.iff_of_outputOn observed isQuery, Empty.iff_of_outputOn observed isQuery,
+    Fails.iff_of_outputOn observed isQuery, output.1, output.2.1, output.2.2]
   simp
 
 end Belay.Sqlite

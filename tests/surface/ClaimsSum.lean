@@ -76,7 +76,7 @@ theorem sum_of_cents_overflows (db : Database) (position index : Nat) (table : C
     Fails (sql r"SELECT sum(cents) FROM ledger") db ↔
       (Resolved.Aggregate.sum (.column index)).fails (Resolved.EvalContext.bound [])
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }) = true := by
-  rw [Fails, sum_of_cents_output db position index table found column]
+  rw [Fails.iff_of_outputOn (sum_of_cents_output db position index table found column)]
   split <;> simp_all [Output.isError]
 
 /-- Over every database as in `sum_of_cents_overflows`, the query returns a row exactly when the aggregate does not
@@ -87,7 +87,7 @@ theorem sum_of_cents_returns_a_row (db : Database) (position index : Nat) (table
     Holds (sql r"SELECT sum(cents) FROM ledger") db ↔
       (Resolved.Aggregate.sum (.column index)).fails (Resolved.EvalContext.bound [])
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }) = false := by
-  rw [Holds, sum_of_cents_output db position index table found column]
+  rw [Holds.iff_of_outputOn (sum_of_cents_output db position index table found column)]
   split <;> simp_all [Output.hasRows]
 
 -- Two rows of 2 to the power 62: the query fails, and both sides agree.
@@ -118,7 +118,7 @@ theorem sum_of_cents_is_never_empty (db : Database) (position index : Nat) (tabl
     (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
     (column : columnPosition table.columns (name! "cents") = some index) :
     ¬ Empty (sql r"SELECT sum(cents) FROM ledger") db := by
-  rw [Belay.Sqlite.Empty, sum_of_cents_output db position index table found column]
+  rw [Empty.iff_of_outputOn (sum_of_cents_output db position index table found column)]
   split <;> simp_all [Output.hasNoRows]
 
 example : ¬ Holds (sql r"SELECT sum(cents) FROM ledger") bigLedger := by

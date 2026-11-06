@@ -471,6 +471,7 @@ import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
 import Belay.Sqlite.Model.TwoStateKeptRows
 import Belay.Sqlite.Model.PlainInsertRows
 import Belay.Sqlite.Model.SelectStepKeeps
+import Belay.Sqlite.Model.SelectOutputShape
 import Belay.Sqlite.Model.OutlineTableLaws
 import Belay.Sqlite.Model.OutlineDatabaseLaws
 import Belay.Sqlite.Model.OutlineKeyLaws

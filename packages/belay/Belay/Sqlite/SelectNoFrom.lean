@@ -50,8 +50,7 @@ theorem Holds.iff_selectNoFrom
     (calm : expression.Calm) (conditionCalm : ∀ part ∈ condition.toList, part.Calm) :
     Holds script db isQuery ↔
       condition.all (fun part => Resolved.truthy (part.eval (Resolved.EvalContext.bound parameters) [])) = true := by
-  unfold Holds
-  rw [Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1, Option.any_some]
+  rw [Holds.iff_of_outputOn (Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1) isQuery]
   exact resolvedStepOutput_selectNoFrom_hasRows 0 db.raw.connection parameters condition expression _ (Resolved.Statement.Calm.selectNoFrom condition expression _ conditionCalm calm)
 
 /-- For every script as in {name}`Holds.iff_selectNoFrom` (one read-only statement): {name}`Empty` of the script on the database means that the
@@ -69,8 +68,7 @@ theorem Empty.iff_selectNoFrom
     (calm : expression.Calm) (conditionCalm : ∀ part ∈ condition.toList, part.Calm) :
     Empty script db isQuery ↔
       condition.all (fun part => Resolved.truthy (part.eval (Resolved.EvalContext.bound parameters) [])) = false := by
-  unfold Empty
-  rw [Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1, Option.any_some]
+  rw [Empty.iff_of_outputOn (Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1) isQuery]
   exact resolvedStepOutput_selectNoFrom_hasNoRows 0 db.raw.connection parameters condition expression _ (Resolved.Statement.Calm.selectNoFrom condition expression _ conditionCalm calm)
 
 /-- For every script as in {name}`Holds.iff_selectNoFrom` (one read-only statement), {name}`Fails` of the script on the database does not hold.
@@ -86,8 +84,7 @@ theorem Fails.not_selectNoFrom
     (resolves : FilterResolves runContext.profile.dqsDml [] [] filter condition)
     (calm : expression.Calm) (conditionCalm : ∀ part ∈ condition.toList, part.Calm) :
     ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1, Option.any_some,
+  rw [Fails.iff_of_outputOn (Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1) isQuery,
     resolvedStepOutput_selectNoFrom_not_isError 0 db.raw.connection parameters condition expression _ (Resolved.Statement.Calm.selectNoFrom condition expression _ conditionCalm calm)]
   simp
 

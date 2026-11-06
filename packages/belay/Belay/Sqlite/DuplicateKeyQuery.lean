@@ -93,8 +93,8 @@ theorem Holds.iff_selectOne_noDuplicateKeys_pairwise
       (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  simp [Holds, Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
-    Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+  rw [Holds.iff_of_outputOn (Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm) isQuery]
+  simp [Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
     beq_eq_false_iff_ne]
 
 /-- For every script as in {name}`Script.outputOn_noDuplicateKeys`: {name}`Empty` of the script on the database
@@ -118,8 +118,8 @@ theorem Empty.iff_selectOne_noDuplicateKeys_repeated
       ¬ (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  simp [Empty, Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm,
-    Output.hasNoRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+  rw [Empty.iff_of_outputOn (Script.outputOn_noDuplicateKeys head count namedSource current arguments found groupResolves keyCalm) isQuery]
+  simp [Output.hasNoRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
     beq_eq_false_iff_ne]
 
 end Belay.Sqlite

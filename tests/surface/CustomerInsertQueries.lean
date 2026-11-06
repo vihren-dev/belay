@@ -28,8 +28,8 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  rw [Holds, Script.outputOn_notExists (script := (noCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
-    (by simp [sql_simp, equalsParameter])]
+  rw [Holds.iff_of_outputOn (Script.outputOn_notExists (script := (noCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
+    (by simp [sql_simp, equalsParameter]))]
   simp [Output.hasRows]
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id`: exactly one customer has the id
@@ -54,9 +54,9 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  rw [Holds, Script.outputOn_count (script := (exactlyOneCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp])]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (exactlyOneCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp]))]
+  simp only [Output.hasRows, apply_ite]
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   exact ⟨fun h => by exact_mod_cast h, fun h => by exact_mod_cast h⟩
 

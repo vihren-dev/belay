@@ -54,4 +54,58 @@ Proof sketch: by cases on the output. -/
 theorem Output.hasNoRows_not_isError (output : Output) (empty : output.hasNoRows = true) : output.isError = false := by
   cases output <;> simp_all [Output.hasNoRows, Output.isError]
 
+/-- {lit}`output.returnsResult Q`: the output is one successful result that has the property
+{lit}`Q`, or a nonempty choice of results that all have it. In terms of the formula:
+
+* {name}`Output.rows` with the rows {lit}`rows`: {lit}`Q rows`;
+* {name}`Output.oneOf` with the results {lit}`results`: the list is not empty and each result
+  in it satisfies {lit}`Q`;
+* {name}`Output.done`, {name}`Output.error` and {name}`Output.unmodeled`: false, for every
+  {lit}`Q`, also for {lit}`fun _ => True`.
+
+An empty choice is false, not true without a check. For example, {lit}`.rows [[.integer 1]]`
+returns a result with one row, and {lit}`.error 1` returns no result. Use
+{lit}`fun _ => True` when only success matters. -/
+def Output.returnsResult (property : List (List Value) → Prop) : Output → Prop
+  | .rows found => property found
+  | .oneOf results => results ≠ [] ∧ ∀ result ∈ results, property result
+  | .done _ | .error _ | .unmodeled _ => False
+
+instance (property : List (List Value) → Prop) [DecidablePred property] (output : Output) :
+    Decidable (output.returnsResult property) :=
+  match output with
+  | .rows found => inferInstanceAs (Decidable (property found))
+  | .oneOf results => inferInstanceAs (Decidable (results ≠ [] ∧ ∀ result ∈ results, property result))
+  | .done _ | .error _ | .unmodeled _ => isFalse id
+
+/-- {lit}`output.returnsError E`: the output is an error ({name}`Output.error`) whose result code
+satisfies {lit}`E`. Every other output is false. Use {lit}`fun _ => True` for any error. -/
+def Output.returnsError (property : Nat → Prop) : Output → Prop
+  | .error code => property code
+  | .rows _ | .oneOf _ | .done _ | .unmodeled _ => False
+
+instance (property : Nat → Prop) [DecidablePred property] (output : Output) :
+    Decidable (output.returnsError property) :=
+  match output with
+  | .error code => inferInstanceAs (Decidable (property code))
+  | .rows _ | .oneOf _ | .done _ | .unmodeled _ => isFalse id
+
+/-- For each output: {name}`Output.hasRows` is true exactly when the output returns a result that
+is not empty ({name}`Output.returnsResult`). Proof sketch: by cases on the output. -/
+theorem Output.hasRows_iff_returnsResult (output : Output) :
+    output.hasRows = true ↔ output.returnsResult (· ≠ []) := by
+  cases output <;> simp [Output.hasRows, Output.returnsResult]
+
+/-- For each output: {name}`Output.hasNoRows` is true exactly when the output returns a result
+that is empty ({name}`Output.returnsResult`). Proof sketch: by cases on the output. -/
+theorem Output.hasNoRows_iff_returnsResult (output : Output) :
+    output.hasNoRows = true ↔ output.returnsResult (· = []) := by
+  cases output <;> simp [Output.hasNoRows, Output.returnsResult]
+
+/-- For each output: {name}`Output.isError` is true exactly when the output returns an error with
+any code ({name}`Output.returnsError`). Proof sketch: by cases on the output. -/
+theorem Output.isError_iff_returnsError (output : Output) :
+    output.isError = true ↔ output.returnsError fun _ => True := by
+  cases output <;> simp [Output.isError, Output.returnsError]
+
 end Belay.Sqlite.Model

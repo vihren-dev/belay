@@ -12,7 +12,7 @@ open Belay.Sqlite.Model
 /-- For every query script beginning with a statement, {name}`Holds` means that resolution
 succeeds and its resolved step has rows. A resolver restriction makes the proposition false.
 The resolved step includes clock, counter and support checks and execution errors.
-Proof sketch: apply {name}`Script.outputOn_eq_step` to the definition of {name}`Holds`. -/
+Proof sketch: {name}`Holds.iff_of_outputOn` with {name}`Script.outputOn_eq_step`. -/
 theorem Holds.iff_step {script : Script} {db : Database} {isQuery : script.isQuery = true}
     {statement : Syntax.Statement} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     (head : script.statements = (statement, parameters) :: rest) :
@@ -20,14 +20,13 @@ theorem Holds.iff_step {script : Script} {db : Database} {isQuery : script.isQue
       match resolveStatement runContext db.raw.connection.resolveState statement with
       | .error _ => False
       | .ok (resolved, _) => (resolvedStepOutput none 0 db.raw.connection parameters resolved).hasRows = true := by
-  unfold Holds
-  rw [Script.outputOn_eq_step script db statement parameters rest head]
+  rw [Holds.iff_of_outputOn (Script.outputOn_eq_step script db statement parameters rest head) isQuery]
   cases resolveStatement runContext db.raw.connection.resolveState statement <;>
     simp [Output.hasRows]
 
 /-- For every query script beginning with a statement, {name}`Empty` means that resolution
 succeeds and its resolved step has no rows. A resolver restriction makes the proposition false.
-Proof sketch: apply {name}`Script.outputOn_eq_step` to the definition of {name}`Empty`. -/
+Proof sketch: {name}`Empty.iff_of_outputOn` with {name}`Script.outputOn_eq_step`. -/
 theorem Empty.iff_step {script : Script} {db : Database} {isQuery : script.isQuery = true}
     {statement : Syntax.Statement} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     (head : script.statements = (statement, parameters) :: rest) :
@@ -35,15 +34,14 @@ theorem Empty.iff_step {script : Script} {db : Database} {isQuery : script.isQue
       match resolveStatement runContext db.raw.connection.resolveState statement with
       | .error _ => False
       | .ok (resolved, _) => (resolvedStepOutput none 0 db.raw.connection parameters resolved).hasNoRows = true := by
-  unfold Empty
-  rw [Script.outputOn_eq_step script db statement parameters rest head]
+  rw [Empty.iff_of_outputOn (Script.outputOn_eq_step script db statement parameters rest head) isQuery]
   cases resolveStatement runContext db.raw.connection.resolveState statement <;>
     simp [Output.hasNoRows]
 
 /-- For every query script beginning with a statement, {name}`Fails` means that resolution
 succeeds and its resolved step gives an error. This includes a resolved prepare error, such as
 a missing table or column. A resolver restriction makes the proposition false.
-Proof sketch: apply {name}`Script.outputOn_eq_step` to the definition of {name}`Fails`. -/
+Proof sketch: {name}`Fails.iff_of_outputOn` with {name}`Script.outputOn_eq_step`. -/
 theorem Fails.iff_step {script : Script} {db : Database} {isQuery : script.isQuery = true}
     {statement : Syntax.Statement} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
     (head : script.statements = (statement, parameters) :: rest) :
@@ -51,8 +49,7 @@ theorem Fails.iff_step {script : Script} {db : Database} {isQuery : script.isQue
       match resolveStatement runContext db.raw.connection.resolveState statement with
       | .error _ => False
       | .ok (resolved, _) => (resolvedStepOutput none 0 db.raw.connection parameters resolved).isError = true := by
-  unfold Fails
-  rw [Script.outputOn_eq_step script db statement parameters rest head]
+  rw [Fails.iff_of_outputOn (Script.outputOn_eq_step script db statement parameters rest head) isQuery]
   cases resolveStatement runContext db.raw.connection.resolveState statement <;>
     simp [Output.isError]
 
@@ -77,8 +74,7 @@ theorem Fails.of_prepareError {script : Script} {db : Database} {isQuery : scrip
     (head : script.statements = (statement, parameters) :: rest)
     (resolved : resolveStatement runContext db.raw.connection.resolveState statement = .ok (.prepareError error, after)) :
     Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_prepareError head resolved]
+  rw [Fails.iff_of_outputOn (Script.outputOn_prepareError head resolved) isQuery]
   rfl
 
 /-- Every query with an unmodeled first output satisfies none of {name}`Holds`, {name}`Empty`
@@ -87,7 +83,8 @@ accepts {name}`Output.unmodeled`. -/
 theorem Script.not_claims_of_unmodeled {script : Script} {db : Database} {isQuery : script.isQuery = true}
     {reason : String} (output : script.outputOn db = some (.unmodeled reason)) :
     ¬ Holds script db isQuery ∧ ¬ Empty script db isQuery ∧ ¬ Fails script db isQuery := by
-  simp [Holds, Empty, Fails, output, Output.hasRows, Output.hasNoRows, Output.isError]
+  rw [Holds.iff_of_outputOn output isQuery, Empty.iff_of_outputOn output isQuery, Fails.iff_of_outputOn output isQuery]
+  simp [Output.hasRows, Output.hasNoRows, Output.isError]
 
 /-- For every query resolved without a clock read or unknown counter, if the model's support
 check {name}`Resolved.Query.described` is false, none of the three claims holds. This covers a

@@ -7,7 +7,7 @@ open Belay.Sqlite
 
 /-- A constant SELECT succeeds for every database and every complete environment. -/
 theorem select_one_success : (sql r"SELECT 1" succeeds) :=
-  Succeeds.of_holds (query := by rfl) fun _ _ => rfl
+  Succeeds.of_holds (query := by rfl) fun _ _ => (Holds.iff_of_outputOn rfl).mpr rfl
 
 /-- The query success equivalence does not unfold the interpreter in a caller's proof. -/
 theorem query_success_cases (db : Database) (q : Script) (query : q.isQuery = true) :

@@ -54,8 +54,7 @@ theorem Holds.iff_selectOne
     Holds script db isQuery ↔
       ∃ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] },
         condition.all (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = true := by
-  unfold Holds
-  rw [Script.outputOn_selectOne head namedSource current arguments found resolves, Option.any_some]
+  rw [Holds.iff_of_outputOn (Script.outputOn_selectOne head namedSource current arguments found resolves) isQuery]
   exact resolvedStepOutput_simpleTable_hasRows 0 position db.raw.connection parameters
     { shape := table, rows := db.raw.rows.getD position [] } condition _ _ (Database.table_of_findTable db.raw _ position table found)
     (Resolved.Statement.Calm.selectOne position condition calm)
@@ -77,8 +76,7 @@ theorem Empty.iff_selectOne
     Empty script db isQuery ↔
       ∀ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] },
         condition.all (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)) = false := by
-  unfold Empty
-  rw [Script.outputOn_selectOne head namedSource current arguments found resolves, Option.any_some]
+  rw [Empty.iff_of_outputOn (Script.outputOn_selectOne head namedSource current arguments found resolves) isQuery]
   exact resolvedStepOutput_simpleTable_hasNoRows 0 position db.raw.connection parameters
     { shape := table, rows := db.raw.rows.getD position [] } condition _ _ (Database.table_of_findTable db.raw _ position table found)
     (Resolved.Statement.Calm.selectOne position condition calm)
@@ -98,8 +96,7 @@ theorem Fails.not_selectOne
       condition)
     (calm : ∀ expression ∈ condition.toList, expression.Calm) :
     ¬ Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_selectOne head namedSource current arguments found resolves, Option.any_some,
+  rw [Fails.iff_of_outputOn (Script.outputOn_selectOne head namedSource current arguments found resolves) isQuery,
     resolvedStepOutput_simpleTable_not_isError 0 position db.raw.connection parameters
     { shape := table, rows := db.raw.rows.getD position [] } condition _ _ (Database.table_of_findTable db.raw _ position table found)
     (Resolved.Statement.Calm.selectOne position condition calm)]
@@ -122,13 +119,11 @@ theorem Fails.selectOne_missing {script : Script} {db : Database} {isQuery : scr
     (notView : db.raw.catalog.findView reference.table = none)
     (notReserved : reservedName reference.table = false) (notFunction : eponymousName reference.table = false) :
     Fails script db isQuery := by
-  unfold Fails
-  rw [Script.outputOn_eq_step script db _ parameters rest head,
+  rw [Fails.iff_of_outputOn (Script.outputOn_eq_step script db _ parameters rest head) isQuery,
     resolveStatement_select_missing_table runContext db.raw.connection.resolveState
       { columns := [.expression (.numeric "1") none "1"], source := some reference, joins := [], filter,
         groupBy := [], orderBy := [], limit := none, offset := none, parent := none, having := none, distinct := false,
-        compound := none } reference rfl rfl namedSource current arguments missing notView notReserved notFunction,
-    Option.any_some]
+        compound := none } reference rfl rfl namedSource current arguments missing notView notReserved notFunction]
   simp only []
   rw [resolvedStepOutput_prepareError]
   rfl

@@ -27,8 +27,7 @@ theorem Holds.iff_noFrom_scalar
       ((Resolved.Query.simple [] condition [.scalar expression] names).run
         (Resolved.EvalContext.bound parameters) [[]]).fault = .none ∧
       condition.all (fun part => Resolved.truthy (part.eval (Resolved.EvalContext.bound parameters) [])) = true := by
-  unfold Holds
-  rw [Script.outputOn_query script db statement parameters rest _ [] after head resolved, Option.any_some]
+  rw [Holds.iff_of_outputOn (Script.outputOn_query script db statement parameters rest _ [] after head resolved) isQuery]
   rw [resolvedStepOutput_simple_fault_hasRows 0 db.raw.connection parameters _
     (Resolved.Query.simple_isSimple _ _ _ _) { rows := [[]], width := 0, fault := .none } quiet
     (Resolved.Query.source_none _ _ _ rfl) rfl,
@@ -52,8 +51,7 @@ theorem Empty.iff_noFrom_scalar
       ((Resolved.Query.simple [] condition [.scalar expression] names).run
         (Resolved.EvalContext.bound parameters) [[]]).fault = .none ∧
       condition.all (fun part => Resolved.truthy (part.eval (Resolved.EvalContext.bound parameters) [])) = false := by
-  unfold Empty
-  rw [Script.outputOn_query script db statement parameters rest _ [] after head resolved, Option.any_some]
+  rw [Empty.iff_of_outputOn (Script.outputOn_query script db statement parameters rest _ [] after head resolved) isQuery]
   rw [resolvedStepOutput_simple_fault_hasNoRows 0 db.raw.connection parameters _
     (Resolved.Query.simple_isSimple _ _ _ _) { rows := [[]], width := 0, fault := .none } quiet
     (Resolved.Query.source_none _ _ _ rfl) rfl,
@@ -76,8 +74,7 @@ theorem Fails.iff_noFrom_scalar
     Fails script db isQuery ↔
       ((Resolved.Query.simple [] condition [.scalar expression] names).run
         (Resolved.EvalContext.bound parameters) [[]]).fault = .must := by
-  unfold Fails
-  rw [Script.outputOn_query script db statement parameters rest _ [] after head resolved, Option.any_some]
+  rw [Fails.iff_of_outputOn (Script.outputOn_query script db statement parameters rest _ [] after head resolved) isQuery]
   rw [resolvedStepOutput_simple_fault_isError 0 db.raw.connection parameters _
     (Resolved.Query.simple_isSimple _ _ _ _) { rows := [[]], width := 0, fault := .none } quiet
     (Resolved.Query.source_none _ _ _ rfl) rfl,

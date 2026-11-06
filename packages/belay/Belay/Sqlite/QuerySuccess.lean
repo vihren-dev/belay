@@ -1,22 +1,11 @@
 import Belay.Sqlite.ScriptSuccess
-import Belay.Sqlite.Queries
+import Belay.Sqlite.QueryObservations
 
 set_option doc.verso true
 
 namespace Belay.Sqlite
 
 open Belay.Sqlite Belay.Sqlite.Model
-
-/-- For every query script, its statements consist of exactly one statement and its bound
-values. Proof sketch: the empty and multiple-statement cases fail {name}`Script.isQuery`. -/
-theorem Script.singleton_of_isQuery {script : Script} (query : script.isQuery = true) :
-    ∃ statement values, script.statements = [(statement, values)] := by
-  cases found : script.statements with
-  | nil => simp [Script.isQuery, found] at query
-  | cons head tail =>
-    cases tail with
-    | nil => exact ⟨head.1, head.2, rfl⟩
-    | cons next tail => simp [Script.isQuery, found] at query
 
 /-- For every query script and database, the default run's output list is the singleton
 list of its query observation. Proof sketch: a query has one statement, and either its
@@ -37,11 +26,10 @@ query has one output; inspect its five possible constructors. -/
 theorem Script.query_allOk_iff {script : Script} (query : script.isQuery = true) (db : Database) :
     (db.run script).outputs.allOk = true ↔
       ¬ Fails script db query ∧ (script.outputOn db).any Output.endsRun = false := by
-  rw [Script.query_outputs query db]
-  unfold Fails
+  rw [Script.query_outputs query db, Fails, Script.returnsError_iff_outputOn query]
   cases found : script.outputOn db with
   | none => simp [List.allOk]
-  | some output => cases output <;> simp [List.allOk, Output.isError, Output.endsRun]
+  | some output => cases output <;> simp [List.allOk, Output.returnsError, Output.isError, Output.endsRun]
 
 /-- For every query and predicate, if every database satisfying the predicate has neither a
 query error nor an ending query output in the default environment, the query succeeds.
@@ -60,11 +48,8 @@ theorem Succeeds.of_holds {script : Script} {predicate : Database → Prop} {que
     (holds : ∀ db, predicate db → Holds script db query) : Succeeds script predicate := by
   apply Succeeds.of_query query
   intro db condition
-  have rows := holds db condition
-  unfold Holds at rows
-  unfold Fails
-  cases found : script.outputOn db with
-  | none => simp [found] at rows
-  | some output => cases output <;> simp_all [Output.hasRows, Output.isError, Output.endsRun]
+  obtain ⟨output, found, rows⟩ := (Script.returnsResult_iff_outputOn query db _).mp (holds db condition)
+  rw [Fails, Script.returnsError_of_outputOn query found]
+  cases output <;> simp_all [Output.returnsResult, Output.returnsError, Output.endsRun]
 
 end Belay.Sqlite

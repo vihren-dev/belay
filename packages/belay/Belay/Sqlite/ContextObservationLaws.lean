@@ -1,5 +1,6 @@
 import Belay.Sqlite.ContextObservation
 import Belay.Sqlite.ExecutionFresh
+import Belay.Sqlite.QueryObservations
 
 set_option doc.verso true
 
@@ -46,9 +47,12 @@ theorem Holds.inContext_not {script : Script} {context : ExecutionContext}
 
 /-- For every query and database, the default assertion at the default observation context of
 the database is {name}`Holds`. The observation inputs are the same: no clock, unknown counters,
-foreign keys off and no open transaction. Proof sketch: both unfold to the same run. -/
+foreign keys off and no open transaction. Proof sketch: both read the output of the query on the
+database ({name}`Script.outputOn_eq_outputIn`, {name}`Script.returnsResult_iff_outputOn`). -/
 theorem Holds.inContext_observation_iff (script : Script) (db : Database) (query : script.isQuery = true) :
-    Holds.inContext script db.raw.observationContext query ↔ Holds script db query := Iff.rfl
+    Holds.inContext script db.raw.observationContext query ↔ Holds script db query := by
+  rw [Holds.inContext_iff, Holds, Script.returnsResult_iff_outputOn query, ← Script.outputOn_eq_outputIn]
+  simp [Output.hasRows_iff_returnsResult]
 
 /-- For every query, context and bundled database that has the database the context sees, the
 default assertion at the context equals {name}`Holds` on that database. The context's clock,
@@ -61,7 +65,7 @@ theorem Holds.reached_iff_holds (script : Script) (context : ExecutionContext) (
   | mk raw valid =>
     simp only [] at sees
     subst sees
-    exact Iff.rfl
+    exact Holds.inContext_observation_iff script ⟨_, valid⟩ query
 
 /-- For every query, context and proof that the database the context sees is valid, the
 default assertion at the context equals {name}`Holds` on that database as a bundled

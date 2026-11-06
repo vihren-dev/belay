@@ -54,8 +54,7 @@ theorem every_email_is_unique (db : Database) (position index : Nat) (table : Ca
     (column : columnPosition table.columns (name! "email") = some index) :
     Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") db ↔
       ∀ group ∈ emailGroups db position index table, group.length ≤ 1 :=
-  (by simpa [emailGroups, Holds, Output.hasRows, apply_ite, List.all_eq_true, List.all_eq_false, Nat.not_le] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasRows = true)
-      (Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
+  (by simpa [emailGroups, Output.hasRows, apply_ite, List.all_eq_true, List.all_eq_false, Nat.not_le] using (Holds.iff_of_outputOn (Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
     (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index))))
 
 /-- Over every database as in `every_email_is_unique`, the query is empty exactly when some group has more than one
@@ -65,8 +64,7 @@ theorem some_email_is_repeated (db : Database) (position index : Nat) (table : C
     (column : columnPosition table.columns (name! "email") = some index) :
     Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") db ↔
       ∃ group ∈ emailGroups db position index table, 1 < group.length :=
-  (by simpa [emailGroups, Belay.Sqlite.Empty, Output.hasNoRows, apply_ite, List.all_eq_true, List.all_eq_false, Nat.not_le] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasNoRows = true)
-      (Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
+  (by simpa [emailGroups, Output.hasNoRows, apply_ite, List.all_eq_true, List.all_eq_false, Nat.not_le] using (Empty.iff_of_outputOn (Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
     (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index))))
 
 /-- Over every database as in `every_email_is_unique`, the query does not fail. -/
@@ -75,9 +73,9 @@ theorem email_check_does_not_fail (db : Database) (position index : Nat) (table 
     (column : columnPosition table.columns (name! "email") = some index) :
     ¬ Fails (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") db :=
   (by
-    rw [Fails, Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
-    (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index)]
-    simp [Output.isError, apply_ite])
+    rw [Fails.iff_of_outputOn (Script.outputOn_noDuplicateKeys (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "users", alias := none }) (by decide) rfl found
+    (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index))]
+    simp [Output.isError])
 
 /-- The guide's claim, over every database that has a table `users` with a column `email` at position `index`: the query
 holds exactly when no user has an email that compares as equal, under the collation of the column, to the email of a

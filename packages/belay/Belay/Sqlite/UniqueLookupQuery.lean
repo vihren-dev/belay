@@ -46,9 +46,8 @@ theorem Holds.selectOne_count_unique_lookup
     (oneTerm : key.terms = [{ term := .column index, descending, collation }]) :
     Holds script db isQuery := by
   have present := Database.table_of_findTable db.raw _ position table found
-  unfold Holds
-  rw [Script.outputOn_count head count namedSource current arguments found subResolves mainResolves
-    (by simp [sql_simp]) (by simp [sql_simp])]
+  rw [Holds.iff_of_outputOn (Script.outputOn_count head count namedSource current arguments found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [sql_simp])) isQuery]
   have bound := Table.KeysUnique.countMatching_le_one (db.valid.unique position _ present)
     (db.valid.admitted.rowsStored position _ present) member columnAt noFilter oneTerm
     (Resolved.EvalContext.bound parameters) (.parameter slot) (parameterValue parameters slot) fun _ => rfl

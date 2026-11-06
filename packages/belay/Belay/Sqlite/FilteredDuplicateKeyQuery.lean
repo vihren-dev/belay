@@ -130,9 +130,9 @@ theorem Holds.iff_selectOne_noDuplicateKeysWhere_pairwise
         (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] })).Pairwise
         fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
           (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
-  simp [Holds, Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
-    columnResolves columnGrouped columnFeeds filterResolves groupResolves whereCalm columnCalm keyCalm,
-    Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
+  rw [Holds.iff_of_outputOn (Script.outputOn_noDuplicateKeysWhere head count namedSource current arguments found notCall noCalls
+    columnResolves columnGrouped columnFeeds filterResolves groupResolves whereCalm columnCalm keyCalm) isQuery]
+  simp [Output.hasRows, apply_ite, Resolved.groups_short_iff_pairwise, Resolved.sameGroup_single,
     beq_eq_false_iff_ne]
 
 end Belay.Sqlite

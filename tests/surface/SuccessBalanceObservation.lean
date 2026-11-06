@@ -130,8 +130,7 @@ theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable
   have output := Script.outputOn_query balanceGuard db _ [] [] query queries _ rfl
     (guard_statement db position index table cell found notTable notView column atIndex)
   refine ⟨inner, ?_⟩
-  unfold Holds
-  rw [output, Option.any_some, resolvedStepOutput_noFrom_hasRows 0 db.raw.connection []
+  rw [Holds.iff_of_outputOn output, resolvedStepOutput_noFrom_hasRows 0 db.raw.connection []
     (some guardCondition) [.scalar (.literal (.integer 1))] ["1"] queries (guard_calm _ _ _ _) faultless]
   exact ran.2
 

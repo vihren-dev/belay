@@ -41,8 +41,8 @@ theorem no_invoice_is_negative (db : Database) (position index : Nat) (table : C
     (shapes := { current := some 0 })
     (term := .compare .lt (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
-  rw [Holds, Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices WHERE amount < 0)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp])]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+  rw [Holds.iff_of_outputOn (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices WHERE amount < 0)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp]))]
+  simp only [Output.hasRows, apply_ite]
   simp [sql_simp]; exact Iff.rfl
 
 -- The instance on `shop`: no invoice is negative, and both sides agree.
@@ -65,13 +65,11 @@ theorem exists_invoice_observations (db : Database) (position : Nat) (table : Ca
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   refine ⟨?_, ?_, ?_⟩
-  · simpa using (by simpa [Holds, Output.hasRows, apply_ite, List.any_eq_true, List.any_eq_false] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasRows = true)
-      (Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
-  · simpa using (by simpa [Belay.Sqlite.Empty, Output.hasNoRows, apply_ite, List.any_eq_true, List.any_eq_false] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasNoRows = true)
-      (Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
+  · simpa using (by simpa [Output.hasRows, apply_ite, List.any_eq_true, List.any_eq_false] using (Holds.iff_of_outputOn (Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
+  · simpa using (by simpa [Output.hasNoRows, apply_ite, List.any_eq_true, List.any_eq_false] using (Empty.iff_of_outputOn (Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
   · exact (by
-    rw [Fails, Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)]
-    simp [Output.isError, apply_ite, List.any_eq_true])
+    rw [Fails.iff_of_outputOn (Script.outputOn_exists (script := (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))]
+    simp [Output.isError])
 
 /-- Over every database with a table of invoices, NOT EXISTS reverses the row and empty observations of EXISTS,
 and never fails. Proof sketch: apply all three NOT EXISTS laws to the absent filter. -/
@@ -86,13 +84,11 @@ theorem not_exists_invoice_observations (db : Database) (position : Nat) (table 
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   refine ⟨?_, ?_, ?_⟩
-  · simpa using (by simpa [Holds, Output.hasRows, apply_ite, List.any_eq_true, List.any_eq_false] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasRows = true)
-      (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
-  · simpa using (by simpa [Belay.Sqlite.Empty, Output.hasNoRows, apply_ite, List.any_eq_true, List.any_eq_false] using Iff.of_eq (congrArg (fun output : Option Output => output.any Output.hasNoRows = true)
-      (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
+  · simpa using (by simpa [Output.hasRows, apply_ite, List.any_eq_true, List.any_eq_false] using (Holds.iff_of_outputOn (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
+  · simpa using (by simpa [Output.hasNoRows, apply_ite, List.any_eq_true, List.any_eq_false] using (Empty.iff_of_outputOn (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))))
   · exact (by
-    rw [Fails, Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp)]
-    simp [Output.isError, apply_ite, List.any_eq_false])
+    rw [Fails.iff_of_outputOn (Script.outputOn_notExists (script := (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp))]
+    simp [Output.isError])
 
 /-- An existing table without invoices distinguishes an empty result from a missing-table error. -/
 def noInvoices : Database := db! r"CREATE TABLE invoices (amount INTEGER);"

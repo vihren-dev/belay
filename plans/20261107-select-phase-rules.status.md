@@ -21,6 +21,25 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   order; the working sequence and the candidate decisions are in this file;
   `ColumnQuery.lean` retires after A19.
 - 2026-11-07: review fix (`refactor:`): a decision for each model example file.
+- 2026-11-07: run observations of D2. `Output.returnsResult` and `Output.returnsError`
+  (`Model/QueryOutputs.lean`), `Run.returnsResult`, `Run.returnsRows` and
+  `Run.returnsError` (`RunResults.lean`), each decidable by a term that the kernel
+  reduces. `Run.returnsError` is the "matching error observation" of D2 that `Fails`
+  needs. A SELECT step gives rows, an error or a choice of at least two results
+  (`Model/SelectOutputShape.lean`), so the bridges to `Sql.check` (`RunResultSteps.lean`,
+  `SelectResultBridge.lean`, `SelectErrorBridge.lean`) hold for raw and concrete choices
+  without a vacuous empty choice. `Holds`, `Empty` and `Fails` are abbreviations of the
+  observations of the default run; `QueryObservations.lean` relates them to
+  `Script.outputOn`, and every caller uses `Holds.iff_of_outputOn` and its two
+  siblings, with no changed statement. Migration witnesses and probes:
+  `tests/surface/SelectRunObservations.lean`. Tests: `just dev-build`; locally the
+  fixtures of `tests/surface_select_rules_test.py`,
+  `surface_select_automation_test.py`, `surface_assertion_examples_test.py`,
+  `surface_claims_test.py`, `surface_proof_cost_compat_test.py`,
+  `surface_s6_automation_test.py`, `surface_success_test.py`,
+  `guide_view_contract_test.py` and `surface_migration_examples_test.py`.
+  Follow-up: `Output.hasRows_ofResults` and `hasNoRows_ofResults` are special cases of
+  `Output.returnsResult_ofResults`.
 
 ## Working sequence
 

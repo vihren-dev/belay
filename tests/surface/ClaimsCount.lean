@@ -38,9 +38,9 @@ theorem invoices_has_n_rows (db : Database) (position : Nat) (table : CatalogTab
   have subResolves : FilterResolves runContext.profile.dqsDml
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
-  rw [Holds, Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp)]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp))]
+  simp only [Output.hasRows, apply_ite]
   simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull,
     Comparison.holds]
 
@@ -82,9 +82,9 @@ theorem invoices_with_negative_amount_are_n (db : Database) (position index : Na
     (shapes := { current := some 0 })
     (term := .compare .lt (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
-  rw [Holds, Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices WHERE amount < 0) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp [sql_simp])]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices WHERE amount < 0) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [sql_simp]))]
+  simp only [Output.hasRows, apply_ite]
   simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull,
     Comparison.holds]
   rw [Resolved.countMatching_eq]
@@ -119,14 +119,14 @@ theorem invoice_count_empty_and_safe (db : Database) (position : Nat) (table : C
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   constructor
-  · rw [Belay.Sqlite.Empty, Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-      mainResolves (by simp [sql_simp]) (by simp)]
-    simp only [Option.any_some, Output.hasNoRows, apply_ite]
+  · rw [Empty.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp))]
+    simp only [Output.hasNoRows, apply_ite]
     simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   · exact (by
-    rw [Fails, Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-      mainResolves (by simp [sql_simp]) (by simp)]
-    simp [Output.isError, apply_ite])
+    rw [Fails.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp))]
+    simp [Output.isError])
 
 example (n : Int64) (isThree : n = 3) : Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop :=
   (invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).1.2 (by subst isThree; decide +kernel)

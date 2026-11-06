@@ -65,11 +65,11 @@ theorem x_is_an_invoice_id (db : Database) (x : Int64) (position col : Nat) (tab
     ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
-  rw [Holds, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  rw [Holds.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
     (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
     mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp)
-    (by simp [sql_simp])]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+    (by simp [sql_simp]))]
+  simp only [Output.hasRows, apply_ite]
   rw [Syntax.Expr.columnCollation_identifier_table column]
   simp [sql_simp, Resolved.SubqueryRun.certain]
   rw [Resolved.truthy_inValue_eq_true]
@@ -136,17 +136,17 @@ theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position 
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
   constructor
-  · rw [Belay.Sqlite.Empty, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  · rw [Empty.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])]
-    simp only [Option.any_some, Output.hasNoRows, apply_ite]
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp]))]
+    simp only [Output.hasNoRows, apply_ite]
     rw [Syntax.Expr.columnCollation_identifier_table column]
     simp
   · exact (by
-    rw [Fails, Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+    rw [Fails.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])]
-    simp [Output.isError, apply_ite])
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp]))]
+    simp [Output.isError])
 
 example (x : Int64) (isFive : x = 5) : Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
   (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel)

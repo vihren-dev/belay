@@ -66,8 +66,8 @@ theorem Holds.iff_query {script : Script} {db : Database} {isQuery : script.isQu
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).overflow = false ∧
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).fault = .none ∧
         bound.results (db.raw.connection.queryContext parameters query subqueries) source.rows ≠ [] := by
-  unfold Holds
-  rw [Script.outputOn_query script db statement parameters rest query subqueries after head resolved, Option.any_some]
+  rw [Holds.iff_of_outputOn
+    (Script.outputOn_query script db statement parameters rest query subqueries after head resolved) isQuery]
   exact resolvedStepOutput_query_hasRows 0 db.raw.connection parameters query bound subqueries source noClock known found window
 
 /-- For every query script that starts with a statement that resolution turns into the query
@@ -92,8 +92,8 @@ theorem Empty.iff_query {script : Script} {db : Database} {isQuery : script.isQu
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).overflow = false ∧
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).fault = .none ∧
         bound.results (db.raw.connection.queryContext parameters query subqueries) source.rows = [] := by
-  unfold Empty
-  rw [Script.outputOn_query script db statement parameters rest query subqueries after head resolved, Option.any_some]
+  rw [Empty.iff_of_outputOn
+    (Script.outputOn_query script db statement parameters rest query subqueries after head resolved) isQuery]
   exact resolvedStepOutput_query_hasNoRows 0 db.raw.connection parameters query bound subqueries source noClock known found window
 
 /-- For every query script that starts with a statement that resolution turns into the query
@@ -117,8 +117,8 @@ theorem Fails.iff_query {script : Script} {db : Database} {isQuery : script.isQu
         ((query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).mismatch = true ∨
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).overflow = true ∨
         (query.run (db.raw.connection.queryContext parameters query subqueries) source.rows).fault = .must) := by
-  unfold Fails
-  rw [Script.outputOn_query script db statement parameters rest query subqueries after head resolved, Option.any_some]
+  rw [Fails.iff_of_outputOn
+    (Script.outputOn_query script db statement parameters rest query subqueries after head resolved) isQuery]
   exact resolvedStepOutput_query_isError 0 db.raw.connection parameters query subqueries source noClock known found
 
 end Belay.Sqlite
