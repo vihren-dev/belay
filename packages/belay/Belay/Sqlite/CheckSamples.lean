@@ -49,16 +49,24 @@ structure SampleConfig where
   database, which leaves every decision to certification. -/
   screen : Option Screen := none
 
-/-- Infer the shared schema and constants once for each set of parameter values. The
-background caller computes it with compiled code and checks it in the kernel. With no named
-SQL source, use the ordinary one-table default schema so plain Lean predicates also receive
-nonempty catalogs. An explicitly supplied schema always takes priority. -/
-def inferredData (scripts : List Script) (schema : Option Database) : Database.Raw × List Value :=
+/-- Infer the shared schema, the constants and the touched tables once for each set of parameter
+values. The background caller computes them with compiled code and checks them in the kernel.
+With no named SQL source, use the ordinary one-table default schema so plain Lean predicates
+also receive nonempty catalogs. An explicitly supplied schema always takes priority. The touched
+tables are those of the scripts' statements, closed over the schema ({name}`Sampling.touchedNames`);
+none, so every table, when {lit}`complete` is false because the claim can read the database
+other than through these scripts, or when a statement does not name its tables. -/
+def inferredData (scripts : List Script) (schema : Option Database) (complete : Bool) :
+    Database.Raw × List Value × Option (List Model.Identifier) :=
   let found := scripts.foldl (fun hints script => hints.append (Sampling.scriptHints script))
     ({} : Sampling.SchemaHints)
   let inferred := if found.sources.isEmpty then Sampling.defaultSchema
     else found.schema.getD Sampling.defaultSchema
-  ((schema.getD inferred).raw, found.expressions.values)
+  let base := (schema.getD inferred).raw
+  let named := if complete then
+      scripts.foldlM (fun names script => (names ++ ·) <$> Sampling.statementsTables (script.statements.map (·.1))) []
+    else none
+  (base, found.expressions.values, named.bind (Sampling.touchedNames base.catalog))
 
 /-- Visit explicit witnesses, then, for each configured value, the empty database, the databases
 that the claim's equality premises name ({name}`domainDatabases`) and the generated candidates
@@ -90,7 +98,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     let screened := if fixed then screen.map (·, Value.null) else none
     if let some result ← attempt (accept witness screened) then return some result
   let domain := (← attempt (domainDatabases proposition)).getD #[]
-  let mut generated : Option (Database.Raw × List Value × Array Database) := none
+  let mut generated : Option ((Database.Raw × List Value × Option (List Model.Identifier)) × Array Database) := none
   for value in config.values do
     if tried >= config.candidates then return none
     let initial : Witness :=
@@ -110,26 +118,27 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     let scripts ← sites.sites.filterMapM fun site => do
       if (← attempt (scriptValue site.script)).isSome then return some site.script
       return none
+    let complete := !sites.unsupported && !sites.leanCode && !sites.sites.isEmpty && scripts.size == sites.sites.size
     let scripts ← mkListLit (mkConst ``Script) scripts.toList
     let schema := match config.schema with
       | some expression => mkApp2 (mkConst ``Option.some [Level.zero]) (mkConst ``Database) expression
       | none => mkApp (mkConst ``Option.none [Level.zero]) (mkConst ``Database)
-    let some (base, constants) ← attempt <| dataValue (Database.Raw × List Value)
-      (mkApp2 (mkConst ``inferredData) scripts schema) | continue
+    let some data@(base, constants, touched) ← attempt <|
+      dataValue (Database.Raw × List Value × Option (List Model.Identifier))
+        (mkApp3 (mkConst ``inferredData) scripts schema (toExpr complete)) | continue
     let some baseDatabase := Sampling.validated base | continue
     let baseExpression := config.schema.getD (databaseExpr base)
     let schemaText ← match config.schema with
       | some schema => schemaText? schema
       | none => pure none
-    let cached := generated.bind fun (raw, known, candidates) =>
-      if raw == base && known == constants then some candidates else none
+    let cached := generated.bind fun (known, candidates) => if known == data then some candidates else none
     let fresh ← match cached with
       | some candidates => pure (some candidates)
       | none => attempt do
-        awaitCompiled fun _ => Sampling.candidates baseDatabase constants config.maxRows
+        awaitCompiled fun _ => Sampling.candidates baseDatabase constants touched config.maxRows
           config.randomSamples config.seed config.size config.candidates
     let some candidates := fresh | return none
-    generated := some (base, constants, candidates)
+    generated := some (data, candidates)
     let mut position := 0
     while position < candidates.size && tried < config.candidates do
       checkSystem "SQL candidate screening"

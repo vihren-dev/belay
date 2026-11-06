@@ -2,9 +2,8 @@
 
 Created: 2026-11-06. Status: OPEN.
 Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), slice 3: D4, D7, and the consumer-size
-fixture and acceptance records of D9. Slice 2 (D2, D3 without D4, D5, D6, D8) is implemented in
-[20261106-check-compiled-screen](20261106-check-compiled-screen.task.md); its end-of-slice
-checks and records are pending there. Audience: the team.
+fixture and acceptance records of D9. Slice 2 (D2, D3 without D4, D5, D6, D8) is DONE in
+[20261106-check-compiled-screen](20261106-check-compiled-screen.task.md). Audience: the team.
 
 ## Observable behavior
 
@@ -21,11 +20,15 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    A claim whose statements the checker cannot find (a plain Lean predicate, or no SQL sites)
    touches every table, and so does a statement whose tables the collection does not name.
    Explicit witnesses, the empty database and the named databases are not changed.
-2. **Rows that satisfy constraints (D4).** A generated row has no NULL in a NOT NULL column. A
-   column with a foreign key gets one of the parent's key values when the parent has rows in that
-   candidate. A row that repeats a UNIQUE or PRIMARY KEY value (including the rowid alias of an
-   INTEGER PRIMARY KEY) of an earlier row of its table is left out. CHECK constraints and the
-   other rules stay with `Sampling.validated`.
+2. **Rows that satisfy constraints (D4).** A row of the table contents and of the seeded random
+   databases has no NULL in a NOT NULL column. A column with a foreign key gets one of the
+   parent's key values when the parent has rows in that candidate. A row that repeats a UNIQUE or
+   PRIMARY KEY value of an earlier row of its table is left out (the rowid alias of an INTEGER
+   PRIMARY KEY is distinct in every row). CHECK constraints and the other rules stay with
+   `Sampling.validated`. The rows of the targeted databases are not changed: ADR D3 applies the
+   changes of D4 to the table contents, and the targeted rows test the edges of the constraints on
+   purpose (duplicates, NULL cells). Amended 2026-11-06; before, the rule named every generated
+   row.
 3. **The schema as the domain (D7).** `Database.HasCatalog schema db` is a decidable
    proposition: the catalog of `db` is the catalog of `schema`. The search reads a premise
    `db.HasCatalog schema` (or `HasCatalog schema` applied to the binder, as in

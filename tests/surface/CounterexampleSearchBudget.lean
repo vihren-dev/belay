@@ -75,10 +75,10 @@ def canceledAttempt : TermElabM Unit := do
 cuts the list. -/
 def candidateOrder : TermElabM Unit := do
   let base := Sampling.defaultSchema
-  let all := Sampling.candidates base [] 2 3 0 2 100000
+  let all := Sampling.candidates base [] none 2 3 0 2 100000
   let targeted := (Sampling.targeted base []).filter (·.raw.rows.all (·.length ≤ 2))
   let seeded := (List.range 3).filterMap fun seed =>
-    (Sampling.seeded (Sampling.database base [] 2) seed 2).toOption
+    (Sampling.seeded (Sampling.touchedDatabase base [] 2 none (.integer 0)) seed 2).toOption
   let raws := all.toList.map (·.raw)
   unless raws.take targeted.length == targeted.map (·.raw) do
     throwError "the search does not start with the targeted databases"
@@ -89,7 +89,7 @@ def candidateOrder : TermElabM Unit := do
   unless !contents.isEmpty && (totals.zip (totals.drop 1)).all fun (a, b) => a ≤ b do
     throwError "table contents are not in order of their row count"
   for limit in [0, 1, targeted.length, targeted.length + 1, all.size + 1] do
-    unless (Sampling.candidates base [] 2 3 0 2 limit).size == min limit all.size do
+    unless (Sampling.candidates base [] none 2 3 0 2 limit).size == min limit all.size do
       throwError "the limit {limit} does not cut the candidates"
 
 /-- Recursion of the elaborator to the given depth. -/

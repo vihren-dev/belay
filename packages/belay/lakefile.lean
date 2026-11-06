@@ -44,7 +44,7 @@ lean_lib Belay where
       .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof, .one `Belay.Sqlite.CheckAutoProof,
       .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,
       .one `Belay.Sqlite.CheckProgram, .one `Belay.Sqlite.CheckObservation, .one `Belay.Sqlite.CheckValueInputs, .one `Belay.Sqlite.CheckDomain,
-      .one `Belay.Sqlite.SampleCandidates, .one `Belay.Sqlite.CheckScreen, .one `Belay.Sqlite.CheckSamples,
+      .one `Belay.Sqlite.SampleTouched, .one `Belay.Sqlite.SampleConstraints, .one `Belay.Sqlite.SampleCandidates, .one `Belay.Sqlite.CheckScreen, .one `Belay.Sqlite.CheckSamples,
       .one `Belay.Sqlite.CheckReplay, .one `Belay.Sqlite.CheckWitnessText, .one `Belay.Sqlite.CheckOperation,
       .one `Belay.Sqlite.CheckInputSyntax, .one `Belay.Sqlite.CheckDeclarations, .one `Belay.Sqlite.CheckExample, .one `Belay.Sqlite.SqlAutomatic,
       .one `Belay.Sqlite.CheckOptions, .one `Belay.Sqlite.CheckInputs, .one `Belay.Sqlite.CheckDisplay,

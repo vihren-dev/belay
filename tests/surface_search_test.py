@@ -68,3 +68,13 @@ def test_shared_search_bounds_compiled_data(runtime_root: Path, tmp_path: Path,
     record_testsuite_property("sql_search.resource_stop", result.stdout)
     assert "discard this" not in result.stdout, result.stdout
     assert "sorry" not in result.stdout, result.stdout
+
+
+def test_candidates_fill_touched_tables_with_constrained_rows(runtime_root: Path, tmp_path: Path) -> None:
+    """SampleTouched and SampleConstraints: the search fills only the tables that the claim's
+    statements touch through triggers and foreign keys, and its rows satisfy NOT NULL, UNIQUE
+    and foreign keys by construction."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateConstraints.lean", tmp_path),
+                         cwd=tmp_path, timeout=90)
+    assert result.returncode == 0, result.diagnostic()
+    assert "candidate constraints passed" in result.stdout, result.stdout
