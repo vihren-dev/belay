@@ -1,6 +1,6 @@
 # Status: `#sql_check` screens candidates with compiled code
 
-Created: 2026-11-06. Status: OPEN.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-check-compiled-screen.task.md](20261106-check-compiled-screen.task.md).
 Design: ADR 0031, slice 2 (D2, D3 without D4, D5, D6, D8).
 
@@ -106,3 +106,15 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   candidate's value is the value of its term; the text of a witness with an opaque term uses its
   carried value), `surface_check_screen_test`, `surface_check_real_schemas_test`,
   `surface_check_readable_test`, `surface_replay_test`, `surface_s6_check_programs_test`.
+- 2026-11-06: end of slice 2. Nix `just test-full` passed (1,444 tests in all suites) and `just verdict` passed
+  on change zxunrlsz. The slice adds and changes no mutant tables, so no mutant tests run.
+  Suite times, after (before: the run of 2026-11-05 on trunk #324): `surfaceChecks` 27 tests in
+  297.6 s (25 in 244.5 s), `surfaceS6` 66 tests in 581.8 s (546.2 s). The tests of the checker
+  are faster: `surface_s6_check_programs_test` 139.2 s to 93.1 s,
+  `surface_check_real_schemas_test` (the old test) 48.1 s to 35.6 s,
+  `surface_check_command_test` 26.8 s to 20.3 s, `surface_check_readable_test` 11.1 s to 5.2 s.
+  The totals grow by the new tests (screen 26.0 s, altered schema 32.0 s, compiled data
+  10.7 s) and by tests that do not run the checker, which were also slower in this run (for
+  example `surface_s6_automation_test` `sql_run` 28.6 s to 36.6 s): other sessions shared the
+  machine. The S6 suite times of the Nix runs on this machine from 2026-11-05 to 2026-11-06 are
+  between 546 s and 871 s, so these totals are records and not a measured speed-up.

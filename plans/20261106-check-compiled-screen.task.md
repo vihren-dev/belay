@@ -1,6 +1,6 @@
 # `#sql_check` screens candidates with compiled code
 
-Created: 2026-11-06. Status: OPEN.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), slice 2: D2, D3 without D4, D5, D6, D8.
 Slice 1 (D1) and the parts of D3 and D6 for #318 are done
 ([20261105-check-default-budget](20261105-check-default-budget.task.md),
