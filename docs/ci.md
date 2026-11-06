@@ -116,6 +116,12 @@ Each target declares only the inputs that its tests read. The conformance target
 modules listed in `tests/conformance_frontend.json`, so a change to other Python
 code, for example under `tools/`, keeps their results.
 `tests/test_conformance_frontend.py` checks that list against the actual imports.
+Each mutant suite receives only the Python modules that its tests import, which
+`tests/nix_mutant_inputs.json` lists for each suite, and the two Lean packages; it reads no
+judge data or corpus. `tests/test_mutant_suite_inputs.py` checks the lists against the
+imports and the Nix source tree of each suite. A change to the model's Lean files still runs
+every mutant suite, because the translation program of the `conformance` runtime is built
+from the whole model package.
 Only `tests.frozen` (and the `corpora`, `sample` and `upstream` targets that read them) depend on
 the large frozen corpora and retained reports.
 
