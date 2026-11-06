@@ -67,15 +67,14 @@ identities, engine builds, transaction modes and changes to established behavior
 settings during case SQL are refused. Setup can replay FK changes when it restores
 the selected profile before case SQL. Transaction-local FK writes keep SQLite's
 no-op behavior; readback still checks the fixed profile after each statement.
-The model implements a profile when it uses SQLite's default execution settings: no
-foreign keys or recursive triggers, DEFERRED transactions, no controlled clock,
-read-write access, trusted schema mode and no other writers
-(`conformance/profile_scope.py`). Name resolution then uses the profile's release,
+The model implements a profile with DEFERRED transactions, read-write access,
+trusted schema mode and no other writers, with foreign keys and recursive triggers
+on or off and with or without a controlled clock (`conformance/profile_scope.py`). Name resolution then uses the profile's release,
 build, limits and double-quoted-string settings. A record whose profile changes
 another setting is `MODEL_UNSUPPORTED`, with the setting named; malformed evidence is
 a harness error.
 A profile record of format 3 also has `limits`, the measured connection limits
-([execution profile](execution-profile.md)); replay establishes and reads them back.
+([execution profiles](native-corpus-format.md#execution-profiles)); replay establishes and reads them back.
 Records of formats 1 and 2 have the limits of their compile options.
 Acquisition `nativeVersion: 5` is version 4 with a profile of format 3 and a `phase`
 in each trace event: `prepare` when `sqlite3_prepare_v2` failed, `step` when

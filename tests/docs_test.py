@@ -52,3 +52,15 @@ if __name__ == "__main__":
     failures = broken_links(ROOT)
     print("\n".join(failures) or "Current documentation links resolve; historical plans, external URLs and anchors are not checked.")
     sys.exit(1 if failures else 0)
+
+
+REMOVED_PRODUCT_TERMS = ("ADR ", "approved contract", "migration framework", "SQLx", "formatVersion")
+"""Terms of the removed verifier product, design records and recorder transport (#19)."""
+
+
+def test_execution_profile_document_is_for_library_users() -> None:
+    """`docs/execution-profile.md` is a user document: it uses none of the vocabulary of the removed
+    verifier product, refers to no design record and leaves the recorder format to
+    `docs/native-corpus-format.md`."""
+    text = (ROOT / "docs/execution-profile.md").read_text()
+    assert [term for term in REMOVED_PRODUCT_TERMS if term in text] == []
