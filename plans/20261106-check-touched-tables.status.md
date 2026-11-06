@@ -55,3 +55,12 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   (`test_search_screens_while_generating_with_a_share_per_value` in `surface_search_test`), with
   a test that the screen of the last candidate stops at the time limit (it times out when that
   screen runs outside the timed task). Tests: `surface_search_test`.
+- 2026-11-06: the consumer-size fixture (D9): `tests/surface/CheckConsumerSize.lean` with
+  `tests/surface_check_consumer_size_test.py` in `surfaceChecks`. An authored schema of six
+  tables with CHECK constraints, foreign keys, eight indexes, five triggers (the delete trigger
+  logs into `message_log`, whose CHECK rejects a NULL conversation) and an ALTER TABLE; its data
+  are 58,745 nodes (the limit is 65,536). `∀ id, Succeeds (deleteMessage id) (·.HasCatalog
+  consumer)` is false at the default options with one message row; native SQLite rebuilds the
+  rows with the triggers off and the replay fails with `CHECK constraint failed:
+  conversation_id IS NOT NULL`. The same claim with `(db := orphanMessage)`, a `db!`
+  counterexample, is false. Tests: `surface_check_consumer_size_test`.
