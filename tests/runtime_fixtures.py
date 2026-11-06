@@ -65,7 +65,9 @@ def pytest_collection_finish(session: pytest.Session) -> None:
     try:
         built_base(Path(__file__).resolve().parents[1], root.resolve() / "lean")
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
-        pytest.exit(f"The unchanged model of the mutant tests did not build: {error}", returncode=pytest.ExitCode.TESTS_FAILED)
+        pytest.exit(f"The unchanged model of the mutant tests did not build: {error}\n"
+                    "Fix the build error in packages/ and run the mutant tests again.",
+                    returncode=pytest.ExitCode.TESTS_FAILED)
 
 
 def require_file(path: Path, *, executable: bool = False) -> Path:
