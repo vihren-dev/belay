@@ -1,0 +1,61 @@
+{
+  "caller": "claude",
+  "commit": "a4c46bff649abd14e4c50e99a41f72a24a6d408d",
+  "date": "2026-11-05T15:44:09+00:00",
+  "exit": 0,
+  "files": [
+    "docs/spec-proof-query-observation-targets.md",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CopyInsertFits.lean",
+    "plans/20261105-rebuild-check-task.status.md",
+    "reviews/20261105T150854Z-9c9b1d68/resolution-1-20261105T152139Z.json",
+    "reviews/20261105T150854Z-9c9b1d68/resolution-2-20261105T152139Z.json",
+    "reviews/20261105T152312Z-a318975b/review.json",
+    "tests/surface/RebuildCopyFacts.lean",
+    "tests/surface/RebuildGuide.lean",
+    "tests/surface/RebuildKeeps.lean",
+    "tests/surface/RebuildKeepsFinish.lean",
+    "tests/surface/RebuildKeepsInvariant.lean",
+    "tests/surface/RebuildRefutation.lean",
+    "tests/surface/RebuildReplays.lean",
+    "tests/surface/RebuildSucceeds.lean",
+    "tests/surface/RebuildSucceedsCopy.lean",
+    "tests/surface/RebuildSucceedsFinish.lean",
+    "tests/surface/RebuildSucceedsSteps.lean",
+    "tests/surface_rebuild_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261105T154409Z-a4c46bff#1",
+      "line": 29,
+      "path": "tests/surface/RebuildGuide.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The docstring says the copy rejects every non-text name, but `name` remains nullable and NULL passes, contradicting the same claim in `RebuildSucceeds.lean:45`. Fix: update both docstrings to say that NULL names are accepted and blob names or emails cause the copy to fail."
+    }
+  ],
+  "id": "20261105T154409Z-a4c46bff",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
