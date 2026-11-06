@@ -40,8 +40,9 @@ def visitContents [Monad m] (pool : List Value) (maxRows : Nat) (visit : List (L
 
 /-- The first candidates of the search on a schema, at most {lit}`limit` of them, in this order:
 the targeted databases ({name}`targeted`) with at most {lit}`maxRows` rows in
-each table; each valid content of the tables
-with at most {lit}`maxRows` rows in each table, fewest rows in total first ({name}`visitContents`);
+each table; each valid content of the tables with at most {lit}`maxRows` rows in each table,
+fewest rows in total first, whose rows each repeat one pool value in every column, with each
+set of rows once ({name}`visitContents`);
 and {lit}`randomCount` databases of {name}`database` with the seeds from {lit}`seed`. The pool is
 the claim's constants, then {name}`boundaryValues`. The list is finite and explicit; a caller can
 screen it, or supply other candidates to the checker. -/
@@ -52,6 +53,7 @@ def candidates (base : Database) (constants : List Value) (maxRows randomCount s
   for database in targeted base constants do
     if found.size ≥ limit then return found
     if database.raw.rows.all (·.length ≤ maxRows) then found := found.push database
+  if found.size ≥ limit then return found
   let tables := base.raw.catalog.countP fun object => object.entry matches .table _
   let (_, contents) := (do
     for total in List.range (tables * maxRows + 1) do

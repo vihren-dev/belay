@@ -88,8 +88,9 @@ def candidateOrder : TermElabM Unit := do
   let totals := contents.map fun raw => (raw.rows.map List.length).sum
   unless !contents.isEmpty && (totals.zip (totals.drop 1)).all fun (a, b) => a ≤ b do
     throwError "table contents are not in order of their row count"
-  unless (Sampling.candidates base [] 2 3 0 2 3).size == 3 do
-    throwError "the limit does not cut the candidates"
+  for limit in [0, 1, targeted.length, targeted.length + 1, all.size + 1] do
+    unless (Sampling.candidates base [] 2 3 0 2 limit).size == min limit all.size do
+      throwError "the limit {limit} does not cut the candidates"
 
 /-- Recursion of the elaborator to the given depth. -/
 def deeper : Nat → TermElabM Unit
