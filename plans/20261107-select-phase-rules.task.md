@@ -24,10 +24,12 @@ The three parts of "Meaning of completion" in the acceptance contract hold:
 2. **Automatic closure of the core set.** `sql_auto` closes A01, A02, A03, A04,
    A08, A10, A13 and A14 without a hint that proves the whole query.
 3. **Empty required column.** Every file that the retirement inventory marks
-   required is deleted with its callers migrated; every candidate is deleted
-   or recorded with its reason in the status file; every retired claim is
-   derived by an acceptance case or a retained rule with the same entry
-   assumptions.
+   required is deleted with its callers migrated; every candidate is decided
+   at assignment, and the status file records each decision and the reason
+   for each candidate that stays; every retired claim is derived by an
+   acceptance case or a retained rule with the same entry assumptions. A
+   file is retired only after the cases of its "Acceptance cover" pass, for
+   example `ColumnQuery.lean` after A19.
 
 Observable behavior that users see:
 
@@ -49,31 +51,6 @@ Observable behavior that users see:
   qualified declaration-name order.
 - Failures leave typed residual goals with a phase-specific explanation, and
   B01 to B11 hold.
-
-## Slices
-
-Each slice ends with the checks of a slice end. A slice is complete when its
-cases are proved, its families' replaced code is deleted with callers
-migrated, and its Nix checks pass.
-
-1. **Execution bridge, conveniences, projection and filter.** The execution
-   rule, `Run.returnsResult` and `Run.returnsRows` with their bridges, the
-   `Holds`/`Empty`/`Fails` abbreviations, the projection, filter and
-   expression rules; cases A01 to A04 and A11, B01, B02, B05 and B11; the
-   retirement of the families that these cases cover (`SelectOneFrom`,
-   `ColumnQuery`, the `Simple*` laws and their outputs).
-2. **Groups, aggregates, HAVING, DISTINCT, order and window.** Cases A07 to
-   A10 and A12 to A14; the retirement of the count, aggregate and
-   duplicate-key families and `UniqueLookupQuery` once A05 holds there or in
-   slice 3.
-3. **Sources, joins, compounds, subqueries and context.** Cases A05, A06 and
-   A15 to A22; the retirement of the EXISTS, IN-subquery, no-FROM, may-fail,
-   query-case and hint families; the decision on each candidate.
-4. **The procedure.** `sql_select`, the `sql_select_rule` attribute, the
-   `sql_run` delegation and the `sql_auto` route; automatic closure of the
-   core set; B03, B04 and B06 to B10; the end-to-end invoices and program
-   composition theorems; deletion of the `SelectAutomation*` experiments
-   and the migration witnesses; the measurement.
 
 ## Test suite
 
