@@ -26,7 +26,7 @@ jobs:
         include:
           - runner: ubuntu-22.04
             system: x86_64-linux
-          - runner: macos-14
+          - runner: macos-15
             system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
     # The owner limits the complete job to 75 minutes; child limits remain unchanged.
@@ -155,7 +155,7 @@ jobs:
           - system: x86_64-linux
             runner: ubuntu-22.04
           - system: aarch64-darwin
-            runner: macos-14
+            runner: macos-15
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 75
     env:
@@ -235,7 +235,7 @@ jobs:
         include:
           - runner: ubuntu-22.04
             system: x86_64-linux
-          - runner: macos-14
+          - runner: macos-15
             system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
     environment: attic-publish
