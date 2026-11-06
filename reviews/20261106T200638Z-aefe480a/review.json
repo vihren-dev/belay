@@ -1,0 +1,59 @@
+{
+  "caller": "claude",
+  "commit": "aefe480af1a0766ba5e084bbb114d25c6136f2cf",
+  "date": "2026-11-06T20:06:38+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/README.md",
+    "build-support/default.nix",
+    "build-support/tests.nix",
+    "docs/ci.md",
+    "tests/nix_suites.json",
+    "tests/shared_table_shape_test.py",
+    "tests/test_conformance_frontend.py",
+    "tests/test_nix_test_targets.py"
+  ],
+  "findings": [
+    {
+      "id": "20261106T200638Z-aefe480a#1",
+      "line": 101,
+      "path": "tests/shared_table_shape_test.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The changed compilation timeout is a policy limit embedded as a literal in `compile_checks`. Fix: define a named timeout constant with a docstring explaining the hosted macOS constraint."
+    },
+    {
+      "id": "20261106T200638Z-aefe480a#2",
+      "line": 165,
+      "path": "docs/ci.md",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The documented `developmentTests` exclusions omit `columnDefaults`, `schemaChanges`, and `queries`, which this commit also excludes. Fix: add the three suites to this list."
+    }
+  ],
+  "id": "20261106T200638Z-aefe480a",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -18,6 +18,9 @@ from tests.runtime_support import run_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
+COMPILE_CHECKS_TIMEOUT_SECONDS = 60
+"""The limit of one `compile_checks` command. It takes a few seconds on Linux, but more than 15 s
+on hosted macOS, where all the Nix suites share three cores (#353)."""
 
 SHAPE_CHECKS = """
 import Belay.Sqlite.Model
@@ -90,15 +93,13 @@ GOLDEN: list[Json] = [
 
 def compile_checks(source: str, directory: Path, sysroot: Path, libraries: tuple[Path, Path],
                    setup: Path | None = None) -> str:
-    """Compile fresh theorem or codec checks, with module setup for split surface packages.
-
-    One command takes a few seconds on Linux, but more than 15 s on hosted macOS, where all the
-    suites share three cores (#353)."""
+    """Compile fresh theorem or codec checks, with module setup for split surface packages."""
     path = directory / "ShapeChecks.lean"
     path.write_text(source)
     options = [f"--setup={setup}"] if setup is not None else []
     result = run_command([str(sysroot / "bin/lean"), *options, str(path)], cwd=directory,
-        timeout=60, environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, libraries))})
+        timeout=COMPILE_CHECKS_TIMEOUT_SECONDS,
+        environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, libraries))})
     assert result.returncode == 0, result.diagnostic()
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
     return result.stdout

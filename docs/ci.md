@@ -162,7 +162,9 @@ sandbox is supplied or tested. Nix daemon tests run on the host.
 Cheap unit tests rerun normally. Direct `just test-cases FILE` always executes
 pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
-`tests.model`, the two coverage suites, `tests.frozen` and `tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
+`tests.model` and the suites split from it (`tests.columnDefaults`,
+`tests.schemaChanges`, `tests.queries` and the two coverage suites), `tests.frozen` and
+`tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
 fresh. Every scope from `test` up runs all Nix targets of `tests`.
 
