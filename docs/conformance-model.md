@@ -125,7 +125,7 @@ recorder measures the limits that apply. Each connection
 verifies library-default DQS_DML=1 and DQS_DDL=1 with `sqlite3_db_config`;
 the pinned engine retains its default build configuration. Connections use native
 autocommit, defensive mode off, trusted schema on, and writable schema off.
-Explicit [native corpus profiles](execution-profile.md#native-corpus-profiles-adr-0005-in-progress)
+Explicit [native corpus profiles](native-corpus-format.md#execution-profiles)
 can record additional settings and the native-only 3.53.4 pin. Such records
 remain `MODEL_UNSUPPORTED`; they do not expand this model correspondence boundary.
 

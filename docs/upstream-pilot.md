@@ -30,7 +30,7 @@ these fields against a fresh execution. This acquisition version is distinct
 from the Lean case format: admitted literal-write records map to case version two
 and compare direct counts. Query and parameter semantics remain unsupported;
 native acquisition records faithful tie groups and cutoff boundaries. Explicit
-profile/clock evidence uses native version 4; see [profiles](execution-profile.md).
+profile/clock evidence uses native version 4; see [profiles](native-corpus-format.md#execution-profiles).
 Default extraction continues to produce versions 1/2 unchanged.
 
 ADR 0005 extraction preserves Tcl SQL call boundaries, including calls without

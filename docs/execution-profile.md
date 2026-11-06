@@ -1,180 +1,170 @@
-# Supported execution profiles
+# Execution profiles
 
-The model's supported version strings are `3.51.0` and `3.46.0`. Both select SQLite
-semantics without a migration framework. Unsupported versions reject.
-Lean is independently pinned to 4.34.1.
+An execution profile describes the SQLite build and the connection settings
+under which the model runs SQL. The model's results agree with SQLite only for
+a connection that has the profile's settings and that satisfies the assumptions
+on this page.
 
-## Pinned SQLite configuration
+## The profile in Lean
 
-Native evidence uses the official SQLite
-source ID `fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b`,
-with source archive hashes recorded in `parser/dialects.json`.
+A profile is a value of `Belay.Sqlite.Model.Profile`
+(`packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Profile.lean`).
+It has these fields:
 
-The semantic subset is described in [semantic-subset.md](semantic-subset.md).
-It assumes one ordinary main database, valid SQLite storage, ordinary rowid
-tables, only the admitted schema objects, no ambient transaction, and the pinned default
-build with library-default DQS_DML=1 and DQS_DDL=1 and the documented limits of its release, which the
-profile records and resolution checks (2,000 columns for both releases). No extensions, custom
-authorizers, concurrent connections, application callbacks, or custom collations
-may change supported statement behavior. Writable-schema mode is off. Other
-SQLite resource limits must not interrupt the modeled execution.
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `release` | The release, as `sqlite_version()` reports it | none |
+| `sourceId` | The build, as `sqlite_source_id()` reports it | none |
+| `limits` | The effective limits of the connection (`Limits`) | none |
+| `dqsDml` | `SQLITE_DBCONFIG_DQS_DML`: a double-quoted name that names no column is a string literal in DML | none |
+| `dqsDdl` | `SQLITE_DBCONFIG_DQS_DDL`: the same setting for DDL | none |
+| `foreignKeys` | `PRAGMA foreign_keys` at the start of the script | `false` |
+| `recursiveTriggers` | `PRAGMA recursive_triggers` at the start of the script | `false` |
 
-Double-quoted tokens in expression positions may fall back to string literals in
-SQLite. Resolution applies the fallback with the profile's DQS settings: while
-DQS_DML is on, a double-quoted name that names no column is a string literal.
-Quoted identifiers that resolve to declared columns remain column names.
-Native C-API connections verify both defaults without overriding them. The shell
-runner explicitly enables both settings because the shell starts with DQS off.
+Name resolution reads the limits and the two double-quoted-string settings.
+The execution semantics reads the foreign-key and recursive-trigger settings.
+The model does not read `release` and `sourceId`: they record which build the
+profile describes, and they do not select or check the semantics.
 
-Submit each complete statement in script order on one connection and stop on
-the first statement error. Statements outside explicit transactions use
-autocommit. Transaction operations must appear in the supplied SQL; no framework
-rollback, bookkeeping, cache handling or connection-close maintenance is added.
-Configuration-changing SQL remains unsupported. See the semantic subset for
-the exact admitted transaction and data-operation forms.
-The model does not run SQL on a live connection and cannot inspect one to
-enforce these assumptions.
+`Limits` holds the values that `sqlite3_limit(db, id, -1)` reports: columns,
+expression depth, compound SELECT terms, function arguments, the highest
+parameter number, the length of one value and the trigger depth. A
+compile-time option sets the highest value of each limit, and a connection can
+lower it. `Limits.documentedDefaults` has the defaults that SQLite documents,
+for example 2,000 columns.
 
-The model includes the prepare errors that resolution decides, such as table
-exists, no such table, duplicate column and too many columns, and the
-transaction-already-active, no-active-transaction and supported constraint errors. It excludes interruptions, memory/disk/resource exhaustion, corruption,
-I/O errors, process crashes, power loss, and interference. It makes no crash or
-whole-script rollback guarantee. Applicability and every modeled outcome remain
-explicit proof obligations under the supplied approved contract.
+Use these profiles:
 
-## Shared storage model
+- `Profile.pinned`: SQLite 3.51.0 with its source ID, the documented default
+  limits, both double-quoted-string settings on, and foreign keys and recursive
+  triggers off. The surface library runs statements with this profile.
+- `Profile.documented release sourceId`: the same settings for another build.
+  Use it until you have measured the build.
+- A full `Profile` value: the measured limits and settings of a connection.
 
-The catalog records object names as written, ordered columns with their declared
-type text, nullability, defaults, keys and indexes; lookup uses SQLite's ASCII
-folding, and SQLite's rules compute each column's affinity from its type text. The
-database keys tables by catalog position. Preserving an existing key's
-old column projections preserves any predicate over those projections; this
-does not introduce an unproved native comparator or broaden CREATE support.
-Database values include NULL, integer, opaque real payloads, UTF-8-independent
-text bytes, and blobs. These value domains are conservative: this release does
-not prove native float encoding, coercion rules, schema-text identity, pragmas,
-schema-cookie values, physical layouts, or arbitrary application queries.
-Additive statements preserve old values without evaluating or converting them.
-Physical rowids are unique signed 64-bit values; rowid-shadowing columns are
-rejected. Logical projection helpers retain row identity and every designated
-cell; native observation tests explicitly order by rowid.
+## SQLite releases
 
-Native correspondence is supported by pinned documentation and
-tests, separately from Lean proof acceptance. The SQLite C implementation has
-not been formally verified. Coverage and exclusions are reported separately in
+The conformance evidence compares the model with native SQLite 3.51.0, source
+ID `fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b`.
+Some tests also compare the model with native SQLite 3.46.0, source ID
+`96c92aba00c8375bc32fafcdf12429c58bd8aabfcadab6683e35bbb9cdebf19e`. The source
+archive hashes are in `parser/dialects.json`.
+
+The parser library has the grammar of more releases (`parser/dialects.json`).
+A grammar gives the syntax of a release. It does not mean that the model
+describes the semantics of that release.
+
+The conformance tools can also record evidence with a native-only SQLite
+3.53.4 build. The model has no support for that build. It does not show that
+SQLite 3.53.4, or the build in an application's driver, behaves as 3.51.0 does.
+
+## Assumptions
+
+The model runs SQL under these assumptions. The model does not run SQL on a
+live connection, so it cannot check them. A theorem about a script tells you
+about a real connection only when the assumptions hold for it.
+
+The database and the connection:
+
+- One main database on one connection. No attached or temporary schemas.
+- Valid SQLite storage that contains only the schema objects that the
+  [supported subset](semantic-subset.md) admits.
+- No transaction is open when the script starts.
+- The connection has the profile's limits and settings.
+- Writable-schema mode is off, trusted-schema mode is on and the access is
+  read-write.
+- No extensions, custom authorizers, application callbacks or custom
+  collations change what a statement does.
+- No other connection or process writes to the database.
+
+How the script runs:
+
+- Each complete statement runs in script order on the same connection, as an
+  application sends it. A statement after a failed statement also runs.
+- A statement outside an explicit transaction runs in autocommit mode.
+- Each transaction statement is in the supplied SQL. Nothing else adds a
+  rollback, bookkeeping, cache handling or work when the connection closes.
+- Only the pragmas that the supported subset names change a setting.
+- Each statement reads the clock value that the run supplies for it. The
+  time zone is UTC.
+
+The outcomes:
+
+- The model gives the SQLite errors of the supported subset, for example
+  `table exists`, `no such table`, `duplicate column`, `too many columns`,
+  the transaction errors and the constraint errors.
+- The model has no outcome for an interruption, an exhausted resource
+  (memory, disk or a limit that the profile does not record), corruption, an
+  I/O error, a process crash, a power loss or interference by another
+  process.
+- The model does not guarantee a rollback of the whole script after an error,
+  and it makes no guarantee about the state after a crash.
+
+## Double-quoted strings
+
+In SQLite, a double-quoted token in an expression can be a string literal. When
+`dqsDml` is on, a double-quoted name that names no column in a DML statement is
+a string literal. `dqsDdl` gives the same rule for DDL. A double-quoted name
+that names a declared column stays a column name. SQLite's default build and
+`Profile.pinned` have both settings on. The `sqlite3` shell starts with both
+settings off, so a shell session can give a different result.
+
+## Storage
+
+A `Database` has a catalog and the rows of each catalog object:
+
+- The catalog has each schema object in creation order. A table records its
+  name as written, its columns in order with their declared type text,
+  nullability and defaults, and its keys and indexes.
+- Name lookup folds ASCII letters, as SQLite does. The affinity of a column
+  comes from its type text by SQLite's rules.
+- The rows of a table are stored at its catalog position. Each row has a
+  rowid field and its cells in column order.
+- In a table with a rowid, the rowid field is the physical rowid, a signed
+  64-bit value. A `WITHOUT ROWID` table has no rowid: its primary key
+  identifies its rows, and the rowid field of its rows is not a SQLite value.
+- A cell is NULL, an integer, a REAL (its exact IEEE bits), text bytes or a
+  BLOB. The model does not convert the encoding of text.
+
+The model does not describe physical page layouts, schema text identity or the
+schema cookie. The SQLite C code is not formally verified: the agreement of
+the model with SQLite comes from the conformance evidence, which is
 [upstream fixture evidence](conformance-fixtures.md) and
 [derived model comparisons](conformance-model.md).
 
-## SQLite 3.46.0
+## Measure the engine build of an application
 
-The additional release uses official source ID
-`96c92aba00c8375bc32fafcdf12429c58bd8aabfcadab6683e35bbb9cdebf19e`.
-Its source archive hashes are recorded in `parser/dialects.json`.
-The same supported SQL subset and fixed assumptions apply; differences in the
-full grammar remain checked against the separately pinned parser. Selecting
-this version does not select SQLx or impose a migration-history catalog.
+An application uses the SQLite build that its driver links. That build can
+differ from the build that a profile describes. To measure it:
 
-## Native corpus profiles (ADR 0005, in progress)
+1. For each driver that the application ships, build a small command with the
+   exact module version, build tags and connection setup of the driver.
+2. Run the command on each platform that the application ships.
+3. On the driver connection, collect `SELECT sqlite_version(),
+   sqlite_source_id();` and all rows of `PRAGMA compile_options;`, sorted.
+4. After the application's own setup, read back the behavioral settings, for
+   example `PRAGMA foreign_keys;` and `PRAGMA recursive_triggers;`.
+5. On the same connection, read each effective limit of `Limits` with the
+   driver's limit API or `sqlite3_limit(db, id, -1)`, with the ID of that
+   limit, for example `SQLITE_LIMIT_COLUMN` for the column limit. Do not
+   change a limit while you read it. A `MAX_*` value in the compile options,
+   for example `MAX_COLUMN`, is only the highest value; it does not show
+   whether the application lowered the limit.
+6. Keep the driver's dependency lock, the command, its build configuration and
+   its outputs with the application's profile.
 
-Explicit native evidence carries a named, versioned profile with measured engine
-version, source ID and the complete sorted compile-option list. Behavioral
-settings include foreign-key enforcement and recursive triggers; they
-are established and read back before case SQL runs. The profile names the
-deferred or immediate transaction convention; SQL must use that convention.
-Ignored settings carry reasons, and assumptions about other writers are recorded.
+A system `sqlite3` shell or a package version does not measure the engine that
+a driver links.
 
-Clock input is either excluded or `unix-milliseconds-v1`. In the latter mode,
-recording requires a setup timestamp and one timestamp per reached statement.
-A private VFS delegates native filesystem operations and supplies both SQLite
-time callbacks. Defaults, trigger bodies and supplementary probes therefore see
-the same engine time. Replay supplies the recorded inputs and refuses a different
-profile. Valid explicit-profile evidence stays model-unsupported until production
-semantics can execute that profile. Existing frozen records retain their old path.
-Controlled profiles also record `timezone: UTC`: recording/replay temporarily
-establish UTC for native `localtime` conversion and restore the caller's timezone.
-Recording is serialized while this process-global setting is active; parallel
-recording should use worker processes. Other timezone profiles are refused.
-Setting PRAGMAs outside the profile are refused during case SQL. Explicit boolean
-writes that already match the profile are accepted. Foreign-key writes inside
-an open transaction are also accepted: SQLite leaves that setting unchanged.
-The recorder reads back the settings after each case statement.
+Then compare the measurements with the profile that your proofs use:
 
-Setup can temporarily change `foreign_keys` through its original SQL. Setup must
-finish outside a transaction with the selected profile restored. The recorder
-checks this boundary without repairing settings or resetting the database.
-Fresh replay uses the same setup commands; upstream acquisition also checks
-their outcomes and results against the captured Tcl execution. A source reset
-clears its prefix only when `reset_db` succeeds. A failed reset leaves a named
-refusal because it can have partial effects. Resets with nonempty `SETUP_SQL`
-also stay refused because the reset boundary does not retain their initialization
-SQL. A later plain successful reset clears those refusals. Restoration in the
-same database retains the prefix and its data dependencies. Ignored settings may name
-`journal_mode`, `synchronous`, `cache_size`, `temp_store`, `mmap_size` and
-`busy_timeout`, each with a reason; behavioral settings cannot be labelled ignored.
-Corpus manifests declare full records in `executionProfiles`; every v4 case
-must match one declaration exactly. Missing/conflicting records and duplicate
-name/version identities are refused. Legacy manifests retain implicit profiles.
+- A different release, source ID or compile option is an open gap until you
+  have checked its effect on the application's SQL.
+- If the difference affects that SQL, the evidence needs a build with that
+  source. Do not label evidence from one build as evidence for another build.
+- Until the measurements exist, say that the evidence uses the pinned build
+  and that the difference to the application's build is not measured.
 
-Profiles using the original field set retain trusted schema on, DQS_DML=1,
-DQS_DDL=1 and read-write/create access. Their transport remains byte-for-byte
-unchanged. Profile transport `formatVersion: 2` adds four required fields:
-`trustedSchema`, `dqsDml`, `dqsDdl` (booleans), and `accessMode` (`read-write` or
-`read-only`). This format version is separate from the named profile's `version`,
-native record version 4 and snapshot/shard storage versions. Unknown fields,
-partial field sets and unsupported formats are refused.
-
-Profile transport `formatVersion: 3` adds `limits`: the effective limits of the
-connection, as `sqlite3_limit(db, id, -1)` reports them, with the fields
-`columns`, `expressionDepth`, `compoundSelect`, `functionArguments`,
-`variableNumber`, `length` and `triggerDepth` (`conformance/native_limits.py`).
-Establishing such a profile lowers the connection's limits to these values and
-reads them back. A profile of format 1 or 2 has no limits field; its recorder
-kept every limit at the compile-time value, so its limits are the `SQLITE_MAX_*`
-values of its compile options. No frozen record changes. Native connections no
-longer set a limit of their own: a new connection keeps the build's
-compile-time limits until a profile or fixture lowers them. SQLite cannot read
-its schema table with fewer than 5 columns, so the recorder refuses to lower
-the column limit below 5. A profile record itself accepts any natural number.
-
-The recorder establishes trusted schema and both DQS modes on each connection,
-then verifies the settings and SQLite's actual database access flag. It checks
-them again after SQL, before initialization reopens and on committed-state
-observers. Read-only cases initialize and commit their fixtures on a separate
-writable connection with the same behavioral settings, then open the case
-database with `SQLITE_OPEN_READONLY`. A query guard or `query_only` setting
-cannot stand in for this access mode. Ordinary primary/extended code 8 write
-denial is evidence only under a verified read-only profile; extended READONLY
-recovery, locking and filesystem errors remain harness failures.
-
-An additional native-only engine, `sqlite3-3.53.4`, uses the official source ID
-`2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc`
-and source archive SHA256
-`0e9483900e92cd5de8fd48d16bf9200145a61f7fd5be542a5ac81d8a9516eb9c`.
-This independent source build retains its complete actual compile options. It
-does not add production parser/model support or establish equivalence with an
-application's driver build. Driver/native differences still need scoped external
-measurement and disposition before the workload gate can complete.
-
-### Measuring a workload's engine builds
-
-For each driver the application ships, build a small measurement command using
-that driver's exact module version, build tags and connection initialization.
-Run it on each shipped platform. On the opened driver connection, collect
-`SELECT sqlite_version(), sqlite_source_id();` and every row of
-`PRAGMA compile_options;`, sorted. Read back behavioral settings such as
-`PRAGMA foreign_keys;` and `PRAGMA recursive_triggers;` after application setup.
-Read the effective column limit on that same connection through the driver's
-limit API or `sqlite3_limit(db, SQLITE_LIMIT_COLUMN, -1)`. Query it without
-changing it. `MAX_COLUMN` in the compile options gives the ceiling; it does not
-show whether the application lowered the connection's limit. Profile format 3
-records the measured limits, and the recorder establishes and verifies them.
-Retain the driver dependency lock, command, build configuration and outputs
-beside the external workload profile. A system sqlite3 shell or package version
-does not measure the engine linked into a driver.
-
-Compare those measurements with the pinned recorder engine. Any version/source
-or compile-option difference remains an explicit gap until its effect on the
-workload SQL is checked. Add a source-pinned engine when the difference affects
-that SQL; do not relabel evidence from another build. Before measurements exist,
-state that evidence uses the pinned engine and the workload-engine gap is
-unmeasured. Workload identities and measurement artifacts stay outside the core.
+The conformance tools record native evidence under recorded execution profiles.
+The team documentation of those records is in
+[native corpus records](native-corpus-format.md#execution-profiles).

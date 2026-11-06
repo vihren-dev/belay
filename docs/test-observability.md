@@ -40,10 +40,15 @@ diagnose delivery explicitly, run `python3 -m tools.observability_upload`. To
 replay a delivered observation, remove only its `.uploaded` marker first.
 
 The `just` test recipes use the shared host Nix runner. Successful Nix outputs
-contain reports; failed builders export reports through their logs. Cached
-outputs retain the original execution ID and timestamp. Calling `nix-build`
-directly retains successful reports in its output but does not run host delivery;
-use the recipes or `python3 -m tools.observability_nix --timeout 2700 nix-build ...`.
+contain reports; failed builders export reports through their logs. The runner
+imports only the executions whose builder ran during its command. When the build
+fails, it also reads the outputs that the build produced, such as the suites
+that passed in a link farm with one failed suite. A cached output
+keeps the original execution ID and timestamp, and the command that built it
+imported it. Calling `nix-build`
+directly retains successful reports in its output but does not run host delivery,
+and a later runner command does not import them from the cache; use the recipes or
+`python3 -m tools.observability_nix --timeout 2700 nix-build ...`.
 Builders have no upload credentials or database access. If a builder dies before
 its export runs, its last observations can be lost.
 
@@ -115,5 +120,37 @@ WHERE kind = 'TestReport' AND JSONExtractString(data, 'when') = 'call';
 ```
 
 Setup or teardown failures also affect the test result. A missing call phase is
-not a passing result. `metadata` starts as an empty object; add fields when a
-concrete query needs them.
+not a passing result.
+
+## Provenance
+
+The host runner adds these `metadata` fields to each execution that it imports.
+A value that is not available is absent. Builders write `metadata: {}`, so the
+fields never change a Nix derivation. Pytest sessions outside the runner keep
+`metadata: {}`.
+
+| Field | Value |
+| --- | --- |
+| `event` | `GITHUB_EVENT_NAME` on GitHub Actions (`push`, `schedule`, `pull_request`, `workflow_dispatch`), otherwise `local` |
+| `platform` | Nix system of the host, such as `x86_64-linux` or `aarch64-darwin` |
+| `run_id`, `run_attempt`, `job` | GitHub Actions run, attempt and job, on CI only |
+| `commit` | `GITHUB_SHA` on CI; locally the jj commit of the last snapshot of `@` |
+| `change` | Locally, the jj change of `@` |
+| `suite` | Nix suite of a successful output; absent for a report recovered from a failed build's log |
+
+Locally, edits after the last jj command are not in the recorded commit. Test
+time per suite, platform and event:
+
+```sql
+SELECT JSONExtractString(x.metadata, 'suite') AS suite,
+       JSONExtractString(x.metadata, 'platform') AS platform,
+       JSONExtractString(x.metadata, 'event') AS event,
+       count(DISTINCT x.execution_id) AS executions,
+       sum(JSONExtractFloat(e.data, 'duration')) AS seconds
+FROM belay_observability.test_executions_unique AS x
+JOIN belay_observability.test_events_unique AS e USING (execution_id)
+WHERE e.kind = 'TestReport'
+GROUP BY suite, platform, event;
+```
+
+Add other fields only when a concrete query needs them.

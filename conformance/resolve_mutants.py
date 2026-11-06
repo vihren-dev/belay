@@ -6,7 +6,7 @@ suite is known to test each rule. Resolution functions are called through dot
 notation (`catalog.find`), so a copy of single definitions in a private namespace
 would still call the originals. Each mutant is therefore a real copy of the
 `belay-sqlite-model` and `verifier-conformance` packages with one logical fault, which Lake
-rebuilds from one shared base build. The build covers only the import closure of
+rebuilds from one shared base build. A test process builds that base once, for all of its tests. The build covers only the import closure of
 `VerifierConformance.Classify`, which does not import the law modules, so a mutant that
 breaks a law still builds. The Lean interpreter then classifies the cases, given as the
 Lean terms that the conformance runner emits, with the mutant's `classifyCase`.
@@ -21,11 +21,11 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 import shutil
-import subprocess
 from tempfile import TemporaryDirectory
 
 from conformance.case_format import Json
 from conformance.model_check import compiled_many
+from conformance.mutant_builds import built_base, classify, verdicts
 from conformance.mutation_edits import Mutation, source_edits
 
 SQLITE = "belay-sqlite-model/Belay/Sqlite/Model/"
@@ -95,10 +95,6 @@ GUARDS: dict[str, str] = {
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""
 
-BUILD_TIMEOUT_SECONDS = 600
-"""One Lake build of a copy; a fresh base build takes about 12 seconds."""
-RUN_TIMEOUT_SECONDS = 300
-"""One interpreted classification of all case terms."""
 AGREE = "Belay.Sqlite.Model.Conformance.Verdict.agree"
 """The printed verdict of an agreeing case."""
 UNSUPPORTED = "Belay.Sqlite.Model.Conformance.Verdict.modelUnsupported"
@@ -118,24 +114,6 @@ def classifier(terms: list[str]) -> str:
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
-
-
-def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
-    """Run a toolchain command with only the pinned Lean on the path; raise with its output on failure."""
-    result = subprocess.run(arguments, cwd=cwd, capture_output=True, text=True, timeout=timeout, check=False,
-                            env={**os.environ, "PATH": f"{lean / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}",
-                                 "HOME": str(cwd)})
-    if result.returncode:
-        raise RuntimeError(f"{' '.join(arguments)} failed in {cwd}: {result.stdout}{result.stderr}")
-    return result.stdout
-
-
-def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
-    """Build the case classification of the copy and print one verdict for each case."""
-    conformance = packages / "verifier-conformance"
-    run(["lake", "build", "VerifierConformance.Classify"], conformance, lean, BUILD_TIMEOUT_SECONDS)
-    (conformance / "Classify.lean").write_text(program)
-    return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
 
 def mutate(base: Path, root: Path, name: str, change: Mutation, lean: Path, program: str) -> list[str]:
@@ -167,15 +145,12 @@ def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
     missing = [name for name, indexes in selected.items() if not indexes]
     if missing:
         raise ValueError(f"Mutants without a target case among the cases: {missing}; name an existing case")
+    base = built_base(repository, lean)
+    original = classify(base, lean, classifier(terms))
+    if original != [expected] * len(cases):
+        raise ValueError(f"Every case must be {expected} with the unchanged model before mutation: {original}")
     with TemporaryDirectory(prefix="resolve-mutants-") as directory:
         root = Path(directory)
-        base = root / "base"
-        for package in ("belay-sqlite-model", "verifier-conformance"):
-            shutil.copytree(repository / "packages" / package, base / package,
-                            ignore=shutil.ignore_patterns(".lake", "build"))
-        original = verdicts(base, lean, classifier(terms))
-        if original != [expected] * len(cases):
-            raise ValueError(f"Every case must be {expected} with the unchanged model before mutation: {original}")
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
             results = dict(zip(mutants, pool.map(
                 lambda name: mutate(base, root, name, mutants[name], lean,
