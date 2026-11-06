@@ -41,7 +41,9 @@ replay a delivered observation, remove only its `.uploaded` marker first.
 
 The `just` test recipes use the shared host Nix runner. Successful Nix outputs
 contain reports; failed builders export reports through their logs. The runner
-imports only the executions whose builder ran during its command. A cached output
+imports only the executions whose builder ran during its command. When the build
+fails, it also reads the outputs that the build produced, such as the suites
+that passed in a link farm with one failed suite. A cached output
 keeps the original execution ID and timestamp, and the command that built it
 imported it. Calling `nix-build`
 directly retains successful reports in its output but does not run host delivery,

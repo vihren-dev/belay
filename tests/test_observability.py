@@ -151,8 +151,7 @@ def test_explicit_upload_uses_bounded_worker(tmp_path: Path) -> None:
 
 def test_host_runner_preserves_failure_and_recovers_logs(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """Our common Nix wrapper collects failed-builder frames, with the provenance of the command (#332),
-    without converting failure to success."""
+    """Our common Nix wrapper collects failed-builder frames with provenance, keeping the failure status."""
     directory = observation(tmp_path / "builder")
     export_reports(directory.parent)
     frames = capsys.readouterr().out

@@ -178,8 +178,10 @@ Amended 2026-11-06 (#332): the host runner adds provenance metadata to each
 execution whose builder ran during its command, and does not import cached Nix
 results. A cached result was imported by the command that built it; importing it
 again with the builder's empty metadata would replace that provenance, because
-`ReplacingMergeTree` keeps the last row of an execution. A result that a direct
-`nix-build` built is therefore not recovered by a later runner command.
+`ReplacingMergeTree` keeps the last row of an execution. When a build fails,
+the runner also imports the outputs that the build produced before the failure,
+such as the suites of a link farm that passed. A result that a direct `nix-build`
+built is therefore not recovered by a later runner command.
 
 ## Acceptance
 

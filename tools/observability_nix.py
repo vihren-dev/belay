@@ -19,6 +19,8 @@ from tools.observability_spool import attempt_upload, import_execution, spool
 
 STORE = "/nix/store/"
 """Only store paths in the output of the Nix command are read as outputs."""
+QUERY_SECONDS = 60
+"""One Nix query for the outputs of a failed build."""
 SUITE_OUTPUT = re.compile(r"[0-9a-z]{32}-sqlite-verifier-test-(.+)-1")
 """The store path name of a Nix test suite output (`build-support/tests.nix`), with the suite name."""
 
@@ -36,6 +38,35 @@ def build(arguments: list[str], timeout: int) -> CommandResult:
         stdout, stderr = streams.close()
     return CommandResult(tuple(arguments), process.returncode, stdout, stderr,
                          monotonic() - started, not closed or process.returncode == 124)
+
+
+def instantiation(arguments: list[str]) -> list[str] | None:
+    """The `nix-instantiate` command for the derivations of a `nix-build` command, without its
+    output links, or None for another command."""
+    if not arguments or Path(arguments[0]).name != "nix-build":
+        return None
+    command, link = ["nix-instantiate"], False
+    for argument in arguments[1:]:
+        if not link and argument not in ("--out-link", "-o", "--no-out-link"):
+            command.append(argument)
+        link = argument in ("--out-link", "-o")
+    return command
+
+
+def built_outputs(arguments: list[str]) -> str:
+    """The existing outputs of the derivations of a failed `nix-build` command and of their direct
+    inputs, one per line. A link farm fails when one suite fails, and `nix-build` then prints no
+    path, but the suites that passed during the command have outputs."""
+    command = instantiation(arguments)
+    if command is None:
+        return ""
+    def query(*command: str) -> list[str]:
+        """Run one Nix query and return the paths that it prints."""
+        return subprocess.run(command, capture_output=True, text=True, timeout=QUERY_SECONDS, check=True).stdout.split()
+    derivations = query(*command)
+    inputs = [path for path in query("nix-store", "--query", "--references", *derivations) if path.endswith(".drv")]
+    return "\n".join(path for path in query("nix-store", "--query", "--outputs", *derivations, *inputs)
+                     if Path(path).is_dir())
 
 
 def import_with(source: Path, destination: Path, metadata: dict[str, str]) -> None:
@@ -96,8 +127,10 @@ def run(arguments: list[str], timeout: int) -> int:
     result = build(arguments, timeout)
     try:
         collect_outputs(result.stdout, spool(), since, metadata)
+        if result.returncode:
+            collect_outputs(built_outputs(arguments), spool(), since, metadata)
         recover_logs((result.stdout + "\n" + result.stderr).splitlines(), spool(), metadata)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         diagnostic(f"artifact recovery failed ({type(error).__name__}); inspect the retained build log")
     attempt_upload()
     return 124 if result.timed_out else result.returncode

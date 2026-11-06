@@ -20,3 +20,8 @@ Sources: `tools/observability_pytest.py`, `tools/observability_nix.py`,
   `testReports`, `scheduledTestReports` and `developmentTestReports` are unchanged. Tests run:
   `tests/test_observability_provenance.py` (new), `tests/test_observability.py`,
   `tests/test_observability_identity.py`, `tests/test_recipe_limits.py`, `tests/docs_test.py`.
+- 2026-11-06: review: one must (a failed link farm prints no path, so the suites that passed in
+  it were lost) and two shoulds (wall-clock test, file length), fixed: after a failed `nix-build`
+  the runner queries the outputs of the derivations and their direct inputs. Tests run: the new
+  integration test builds a link farm with a passed and a failed suite (it fails without the
+  fix), the provenance tests with fixed times, `tests/test_observability.py`.
