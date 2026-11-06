@@ -116,6 +116,9 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     assert "if: steps.restore.outputs.hit-primary-key == 'true'" in upload
     assert "id: restore" in publish[:publish.index("- name: Upload store paths")]
     assert "--inputs-from path:./nix nixpkgs#attic-client" in upload
+    missing = next(step for step in job_steps(publish) if "Report a missing saved store" in step)
+    assert "if: steps.restore.outputs.hit-primary-key != 'true'" in missing
+    assert 'run: echo "::warning::No saved Nix store' in missing
     assert 'login vihren https://cache.vihren.dev "$ATTIC_WRITE_TOKEN"' in upload
     assert ("nix path-info --all | grep -v '\\.drv$' | "
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
