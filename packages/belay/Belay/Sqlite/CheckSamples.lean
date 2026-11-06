@@ -39,6 +39,8 @@ structure SampleConfig where
   randomSamples : Nat := 4
   /-- Maximum total candidates, including explicit and targeted candidates; zero disables search. -/
   candidates : Nat := 128
+  /-- The time limit of the compiled work of the check, in milliseconds. -/
+  timeLimit : Nat := defaultTimeLimit
 
 /-- Infer the shared schema and constants once for each set of parameter values. The
 background caller reduces this pure computation before decoding its raw result. With no named

@@ -57,9 +57,10 @@ def test_shared_search_reuses_samples_and_original_replays(runtime_root: Path, t
     assert "sorry" not in result.stdout, result.stdout
 
 
-def test_shared_search_reduces_before_native_decoding(runtime_root: Path, tmp_path: Path,
+def test_shared_search_bounds_compiled_data(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
-    """CheckData interrupts pure computation and retains logical data and reconstruction errors."""
+    """CheckData computes data with compiled code under the time limit and cancellation, refuses
+    compiled overrides and opaque constants, and retains logical data and reconstruction errors."""
     result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearchBudget.lean", tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()

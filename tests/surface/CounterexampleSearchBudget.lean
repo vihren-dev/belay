@@ -4,8 +4,10 @@ import Belay.Sqlite.CheckReplayData
 
 open Lean Elab Term Meta Belay.Sqlite
 
-/-! The background evaluator must reduce computation cooperatively before native decoding.
-A compiled override and a costly pure expression exercise that boundary without timing assertions. -/
+/-! The checker computes background data with compiled code in a dedicated task
+(`Check.compiledValue`), and the kernel checks each value. This fixture checks that a compiled
+override or an opaque constant is not run, that cancellation and the time limit stop the wait,
+and that the check restores the caller's state, without timing assertions. -/
 
 namespace SearchBudgetFixture
 
@@ -20,7 +22,8 @@ def differentImplementation : Script := ⟨[(.rollback, [])]⟩
 @[implemented_by differentImplementation]
 def originalDefinition : Script := ⟨[(.commit, [])]⟩
 
-/-- Closed opaque computations cannot be reduced to literal data by the background checker. -/
+/-- The checker does not run compiled code of an opaque constant, whose definition the kernel
+cannot see. -/
 opaque opaqueScript : Script := ⟨[(.commit, [])]⟩
 
 /-- A schema that cannot be normalized must not delay an accepted earlier candidate. -/
@@ -36,7 +39,7 @@ def constructionCases : List (Script × Bool) :=
     (sql "SELECT 1 FROM absent", false), (sql "BEGIN", false),
     (sql "SELECT random()", false)]
 
-/-- A real cancellation token interrupts owned reduction and restores speculative state. -/
+/-- A real cancellation token interrupts the wait for compiled data and restores speculative state. -/
 def canceledAttempt : TermElabM Unit := do
   modifyInfoState fun state => { state with enabled := true }
   let goal ← mkFreshExprMVar (mkConst ``True)
@@ -52,7 +55,7 @@ def canceledAttempt : TermElabM Unit := do
         logError "discard this canceled diagnostic"
         pushInfoTree (.hole goal.mvarId!)
         token.set
-        Check.normalizedData (mkApp (mkConst ``Script.statements) (mkConst ``bytesAndReal))
+        Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (100000000 : Nat)))
     pure false
   catch error =>
     if error.isInterrupt then pure true else throw error
@@ -103,6 +106,11 @@ def canceledEmptyRows : TermElabM Unit := do
   unless interrupted && (← calls.get) == 2 do
     throwError "empty-column rows did not check cancellation incrementally"
 
+/-- Recursion of the elaborator to the given depth. -/
+def deeper : Nat → TermElabM Unit
+  | 0 => pure ()
+  | depth + 1 => withIncRecDepth (deeper depth)
+
 /-- The checker's finite depth limit restores assignments, diagnostics and the caller's
 options after exhaustion. Zero disables work and cannot request unlimited recursion. -/
 def depthLimitedAttempt : TermElabM Unit := do
@@ -117,7 +125,7 @@ def depthLimitedAttempt : TermElabM Unit := do
       goal.mvarId!.assign (mkConst ``True.intro)
       logError "discard this depth-limited attempt"
       pushInfoTree (.hole goal.mvarId!)
-      discard <| Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (4000000 : Nat)))
+      deeper 1000
       return none)
   let .unknown := outcome.result | throwError "depth exhaustion became a result"
   unless (← started.get) && !(← goal.mvarId!.isAssigned) &&
@@ -130,14 +138,12 @@ def depthLimitedAttempt : TermElabM Unit := do
 
 elab "check_bounded_search_data" : command => Command.liftTermElabM do
   let started ← IO.monoMsNow
-  let reason ← IO.mkRef "no exhaustion"
-  let result ← Check.withinBudget 2000 <| tryCatchRuntimeEx
-    (Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (4000000 : Nat))))
-    (fun error => do
-      reason.set (if error.isMaxHeartbeat then "heartbeats" else if error.isMaxRecDepth then "recursion" else "other")
-      throw error)
-  unless result.isNone do throwError "expensive data escaped the cooperative checking budget"
-  logInfo m!"bounded data exhaustion: {← reason.get}; {(← IO.monoMsNow) - started} ms"
+  let stopped ← Check.withCompiledLimit 20 do
+    let result ← Check.attempt
+      (Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (100000000 : Nat))))
+    pure (result.isNone && (← Check.compiledLimitExpired))
+  unless stopped do throwError "expensive data escaped the time limit of compiled work"
+  logInfo m!"bounded data: time limit; {(← IO.monoMsNow) - started} ms"
   canceledAttempt
   canceledGeneration
   canceledEmptyRows
@@ -157,11 +163,10 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
     let generated ← Check.randomCandidate Sampling.defaultSchema.raw [] 2 seed 2
     let expected := (Sampling.seeded (Sampling.database Sampling.defaultSchema [] 2) seed 2).toOption.map (·.raw)
     unless generated == expected do throwError "cooperative sampling changed Plausible's seeded proposal"
-  let value ← Check.scriptValue (mkConst ``originalDefinition)
-  unless value.statements == [(.commit, [])] do
-    throwError "compiled override changed the background value"
+  unless (← Check.attempt (Check.scriptValue (mkConst ``originalDefinition))).isNone do
+    throwError "the checker ran a compiled override"
   unless (← Check.attempt (Check.scriptValue (mkConst ``opaqueScript))).isNone do
-    throwError "an opaque computation reached native decoding"
+    throwError "the checker ran compiled code of an opaque constant"
   let value ← Check.scriptValue (mkConst ``bytesAndReal)
   unless value.statements == bytesAndReal.statements do throwError "literal bytes or REAL bits changed"
   for (script, expected) in constructionCases do

@@ -10,11 +10,12 @@ namespace Belay.Sqlite.Check
 
 open Lean Elab Term
 
-/-- Background decoding accepts at most this many constructor and literal nodes. Larger
+/-- A value that the background checker computes has at most this many nodes as a term. It holds
+an application schema of 6 tables, 8 indexes and 5 triggers (about 9,600 nodes) with rows. Larger
 values can use the explicit witness API instead of the convenience checker. -/
-def maxDataNodes : Nat := 8192
+def maxDataNodes : Nat := 65536
 
-/-- Background decoding and generated proposals accept at most this many literal bytes. -/
+/-- A value that the background checker computes has at most this many literal bytes. -/
 def maxLiteralBytes : Nat := 65536
 
 /-- Native replay translation receives at most this many UTF-8 bytes of proposed SQL. -/
@@ -32,6 +33,10 @@ def maxRandomCells : Nat := 8192
 
 /-- Bound seed arithmetic by the same literal storage policy as decoded data. -/
 def maxSeedBits : Nat := maxLiteralBytes * 8
+
+/-- The default time limit, in milliseconds, of the compiled work of one check: the screen, the
+generation of candidates and the data. -/
+def defaultTimeLimit : Nat := 10000
 
 /-- The default finite reduction depth permits small GROUP observations. Each checking
 operation can choose another positive depth; zero disables it. -/

@@ -42,6 +42,11 @@ register_option sql.checkCandidates : Nat := {
   defValue := 128
   descr := "maximum SQL counterexample candidates" }
 
+/-- Time limit of the compiled work of one SQL check (screen, candidates, data), in milliseconds. -/
+register_option sql.checkTimeLimit : Nat := {
+  defValue := Belay.Sqlite.Check.defaultTimeLimit
+  descr := "time limit in milliseconds of the compiled work of one SQL check" }
+
 /-- Maximum shrink attempts after a checked witness; zero retains that witness directly. -/
 register_option sql.checkShrinkAttempts : Nat := {
   defValue := 16
@@ -57,6 +62,7 @@ def configuredSamples (options : Options) : SampleConfig := {
   size := sql.checkSize.get options
   maxRows := sql.checkMaxRows.get options
   randomSamples := sql.checkRandomSamples.get options
-  candidates := sql.checkCandidates.get options }
+  candidates := sql.checkCandidates.get options
+  timeLimit := sql.checkTimeLimit.get options }
 
 end Belay.Sqlite.Check

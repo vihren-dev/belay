@@ -28,6 +28,9 @@ structure Outcome where
   /-- The database and environment of a reported refutation as a user reads them. None when there is
   no refutation, or when the budget did not allow the text ({name}`describeWitness`). -/
   witness : Option WitnessText := none
+  /-- Why the result is unknown, when a limit of the search explains it, for example the time limit
+  of compiled work ({name}`timeLimitReason`). -/
+  reason : Option String := none
 
 /-- Try proof automation, then the shared candidate generator, and require replay before
 reporting a counterexample. An unreplayable candidate is skipped so later candidates can
@@ -40,13 +43,16 @@ which permits small GROUP observations under cooperative reduction. Both limits 
 zero disables checking. The caller's recursion option is restored afterwards. Exhaustion
 returns unknown and cancellation
 propagates after state cleanup. Explicit candidates and custom automation remain available.
-The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`). -/
+The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`).
+Compiled work of the operation ends at {name}`SampleConfig.timeLimit` ({name}`withCompiledLimit`); an
+unknown result that the limit stopped has its reason. -/
 def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (shrinkAttempts : Nat := 16)
     (prove : Expr → TermElabM (Option Proven) := defaultProof)
     (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[])
     (recursionLimit : Nat := defaultRecursionLimit) : TermElabM Outcome := do
   if recursionLimit == 0 then return {}
+  withCompiledLimit samples.timeLimit do
   let outcome : Option (Option Outcome) ← withOptions (maxRecDepth.set · recursionLimit) <|
     withAuditCache excluded <| withinBudget heartbeats <| attempt do
       let result ← checkCandidates proposition (pure #[]) prove excluded excludedLocals
@@ -76,6 +82,9 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
           return { result := .refuted smaller proof, replays := reports, observation, witness := text }
         return (smaller.bind id).getD original
       return accepted.getD {}
-  return (outcome.bind id).getD {}
+  let outcome := (outcome.bind id).getD {}
+  if outcome.result matches .unknown then
+    if ← compiledLimitExpired then return { outcome with reason := some timeLimitReason }
+  return outcome
 
 end Belay.Sqlite.Check
