@@ -63,6 +63,19 @@ def insertCustomer : Script := sql! customerSchema r"
 labelled_sql "primary-key" in #sql_check Succeeds insertCustomer
   (fun db => db.raw.catalog = customerSchema.raw.catalog) with (schema := customerSchema)
 
+/-- A schema text with a trigger that writes another table and an ALTER TABLE after it. The
+replay builds a candidate from the text without its INSERT, then inserts the candidate's rows
+with the triggers off, so the trigger does not add rows to {lit}`audit`. -/
+def altered : Database := db! r"
+  CREATE TABLE customers (id INTEGER PRIMARY KEY, email TEXT NOT NULL);
+  CREATE TABLE audit (note TEXT);
+  CREATE TRIGGER log_customer AFTER INSERT ON customers BEGIN INSERT INTO audit VALUES ('added'); END;
+  ALTER TABLE customers ADD COLUMN name TEXT;
+  INSERT INTO customers VALUES (1, 'ann@x.io', 'Ann');"
+
+labelled_sql "altered" in #sql_check Succeeds uniqueEmail
+  (fun db => db.raw.catalog = altered.raw.catalog ∧ Holds noDuplicateEmails db) with (schema := altered)
+
 open Sampling in
 #guard caseVariant (.text "ann@x.io".toUTF8.toList) == some (.text "Ann@x.io".toUTF8.toList)
 open Sampling in

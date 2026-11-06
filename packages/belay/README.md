@@ -332,7 +332,13 @@ A false SQL claim shows one block, in this order:
   not the checker's default candidate.
 - One line for each checked statement with the model's output, for example
   `uniqueEmail: error 19`, with the parameter values of a statement that has some.
-- `Construction:` with the SQL that builds the database, once.
+- `Construction:` with the SQL that builds the database, once. For a database that
+  the search made on a schema text, the construction is the text without its INSERT
+  statements, with the rows of each table after the statement that creates it. When the
+  text has other statements, such as ALTER TABLE, the construction is the text without
+  its INSERT statements, then the rows of every table between
+  `.dbconfig enable_trigger off` and `.dbconfig enable_trigger on`, so no trigger fires.
+  The shell prints each of these settings when it runs them.
 - `SQLite replay:` with one script for the pinned `sqlite3` shell. When the claim
   runs several scripts, the script starts each of them after the first on a new
   database with `.open :memory:`.

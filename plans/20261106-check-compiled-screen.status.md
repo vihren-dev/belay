@@ -60,3 +60,16 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   `surface_search_test`, `surface_check_default_budget_test`, `surface_check_real_schemas_test`,
   `surface_rebuild_test`, `surface_s6_check_programs_test`, `surface_inference_test`,
   `surface_sampling_test`, `surface_automatic_test`.
+- 2026-11-06: construction with the triggers off (D6). `Replay.schemaRowsSql` gives a
+  `SchemaConstruction`: `inline` as before for text with only CREATE and INSERT statements;
+  otherwise `triggersOff` (the text without its INSERTs, then every table's rows between
+  `.dbconfig enable_trigger off` and `on`). A text with a PRAGMA has no construction.
+  `checkedConstruction` validates `triggersOff` with `constructionWithoutTriggersMatches` (the
+  schema, then the rows on the result without its triggers, then the triggers back). Test:
+  `surface_check_real_schemas_test` (`altered`: a trigger that writes `audit` and an ALTER
+  TABLE; native SQLite has the audit rows of the counterexample and fails on the unique index),
+  `surface_replay_test`, `surface_rebuild_test`, `surface_check_readable_test`,
+  `surface_check_default_budget_test`, `surface_search_test`, `surface_s6_check_programs_test`.
+  Observation for D8: under a load average near 7, the `altered` counterexample once came out
+  unshrunk; at a load near 3 it is shrunk in each of three runs. A plausible cause is the
+  wall-clock time limit of the check; D8 measures the compiled time of a check.
