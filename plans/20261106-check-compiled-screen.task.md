@@ -25,11 +25,13 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    constant with `implemented_by` or `extern`, or a `partial` or `unsafe` constant, outside the
    modules of Lean and of this repository's packages.
 3. **No screen (owner decision 2).** A claim whose screen cannot be built or compiled is checked
-   with its explicit witnesses and the databases that its equality premises name, and the result
+   with its explicit witnesses, the empty database and the databases that its equality premises
+   name, and the result
    is `unknown` with the reason. The cooperative candidate path (`normalizedData`, the draws of
    `CheckRandom.lean`, `targetedData`) is deleted.
-4. **Candidates in order (D3 without D4).** For each value of the value pool: the empty database,
-   the targeted databases, then each content of all tables with up to `sql.checkMaxRows` rows in
+4. **Candidates in order (D3 without D4).** For each value of the value pool: the empty database
+   (certified without the screen, because it needs no inferred schema), the targeted databases
+   with up to `sql.checkMaxRows` rows in each table, then each content of all tables with up to `sql.checkMaxRows` rows in
    each table, fewest rows in total first, each row with one value of the pool in every column
    (`Sampling.uniform`), then the seeded random databases. Compiled code generates them with the
    functions of `Sampling`. `sql.checkCandidates` counts screened candidates.

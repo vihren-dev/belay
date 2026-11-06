@@ -7,8 +7,9 @@ set_option sql.checkShrinkAttempts 0
 set_option sql.checkMaxRows 1
 set_option sql.checkRandomSamples 1
 
-/-! Check frontend options through actual search and replay. The singleton -1 row occurs
-only in the seeded distribution, so targeted and missing-table witnesses cannot pass. -/
+/-! Check frontend options through actual search and replay. The row {lit}`(-1, NULL)` has
+different values in its columns, so only the seeded random databases contain it: the targeted
+databases and the small table contents repeat one value in every column of a row. -/
 
 /-- Label the actual command's result for replay and outcome assertions. -/
 elab "option_case " label:str " in " cmd:command : command => do
@@ -16,25 +17,28 @@ elab "option_case " label:str " in " cmd:command : command => do
   Command.elabCommand cmd
   logInfo m!"OPTION-END {label.getString}"
 
-/-- For every database, table t is not exactly one row containing integer -1.
-This false claim requires a row absent from targeted patterns. -/
-def randomOnly : Prop := ∀ db : Database, db.rows "t" ≠ some [[Value.integer (-1)]]
+/-- For every database, table t is not exactly one row with integer -1 and NULL.
+This false claim requires a row that only the seeded random databases contain. -/
+def randomOnly : Prop := ∀ db : Database, db.rows "t" ≠ some [[Value.integer (-1), .null]]
+
+/-- The schema of the search: one table with two columns. -/
+def twoColumns : Database := db! "CREATE TABLE t(a, b);"
 
 set_option sql.checkSeed 13 in
-option_case "seed-13" in #sql_check randomOnly
+option_case "seed-13" in #sql_check randomOnly with (schema := twoColumns)
 set_option sql.checkSeed 0 in
-option_case "seed-0" in #sql_check randomOnly
+option_case "seed-0" in #sql_check randomOnly with (schema := twoColumns)
 set_option sql.checkSeed 13 in
 set_option sql.checkRandomSamples 0 in
-option_case "no-random" in #sql_check randomOnly
+option_case "no-random" in #sql_check randomOnly with (schema := twoColumns)
 set_option sql.checkSeed 12 in
-option_case "one-random" in #sql_check randomOnly
+option_case "one-random" in #sql_check randomOnly with (schema := twoColumns)
 set_option sql.checkSeed 12 in
 set_option sql.checkRandomSamples 2 in
-option_case "two-random" in #sql_check randomOnly
+option_case "two-random" in #sql_check randomOnly with (schema := twoColumns)
 set_option sql.checkSeed 13 in
 set_option sql.checkMaxRows 0 in
-option_case "no-rows" in #sql_check randomOnly
+option_case "no-rows" in #sql_check randomOnly with (schema := twoColumns)
 
 /-- Every database has no table t or has no rows in t. A nonempty table refutes this
 claim; deleting its only row fails, then shrinking its cell to NULL keeps a counterexample. -/

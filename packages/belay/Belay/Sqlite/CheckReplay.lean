@@ -50,8 +50,8 @@ def replayClaim (proposition : Expr) (witness : Witness)
     return { report with label := scriptName site.script }
   return if sites.leanCode then reports.map ({ · with note := some leanCodeNote }) else reports
 
-/-- Raw results of the existing validity-preserving shrinker. The background caller reduces
-this computation cooperatively; every retained proposal still needs a fresh certificate. -/
+/-- Raw results of the existing validity-preserving shrinker. The background caller computes
+them with compiled code ({name}`dataValue`); every retained proposal still needs a fresh certificate. -/
 def smallerData (database : Database) : List Database.Raw :=
   (Sampling.shrinkDatabase database).map (·.raw)
 

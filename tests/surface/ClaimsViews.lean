@@ -37,16 +37,15 @@ run_meta do
     throwError "sampling changed the view catalog or stored rows for a view"
   checkWithKernel (databaseExpr sample.raw)
 
-/- The shared incremental traversal draws only for physical tables, but checks resources
-for every catalog object. Assembly must discard cells supplied for a view's storage slot. -/
+/- The sampling traversal draws only for physical tables. Assembly must discard cells supplied
+for a view's storage slot. -/
 run_meta do
   let draws ← IO.mkRef (0 : Nat)
-  let checks ← IO.mkRef (0 : Nat)
   let cells ← Sampling.selectCells database.raw.catalog
-    (do draws.modify (· + 1); pure 1) (pure (.integer 9)) (checks.modify (· + 1))
-  unless (← draws.get) == 2 && (← checks.get) == 10 &&
+    (do draws.modify (· + 1); pure 1) (pure (.integer 9))
+  unless (← draws.get) == 2 &&
       cells == [[[.integer 9]], [[.integer 9, .integer 9]]] ++ List.replicate 6 [] do
-    throwError "shared sampling drew view rows or skipped a resource boundary"
+    throwError "shared sampling drew view rows"
   let raw := Sampling.withCells database.raw
     (cells.take 2 ++ List.replicate 6 [[.integer 99]])
   unless some raw == (Sampling.uniform database [.integer 9]).map (·.raw) do

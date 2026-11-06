@@ -26,7 +26,7 @@ def originalDefinition : Script := ⟨[(.commit, [])]⟩
 cannot see. -/
 opaque opaqueScript : Script := ⟨[(.commit, [])]⟩
 
-/-- A schema that cannot be normalized must not delay an accepted earlier candidate. -/
+/-- A schema without a definition must not delay an accepted earlier candidate. -/
 opaque deferredSchema : Database := Database.empty
 
 /-- SQL values include UInt8/UInt64 constructor data, not only natural-number literals. -/
@@ -71,47 +71,25 @@ def canceledAttempt : TermElabM Unit := do
       (← getInfoState).trees.size == trees do
     throwError "cancellation did not propagate with complete speculative cleanup"
 
-/-- Cancel after the first cell in the shared traversal. The next fixed Plausible draw
-must observe the token, rather than finishing the complete proposal first. -/
-def canceledGeneration : TermElabM Unit := do
-  let token ← IO.CancelToken.new
-  let drawn ← IO.mkRef (0 : Nat)
-  let some base := Sampling.schema [("t", ["a", "b"])] | throwError "invalid fixture schema"
-  let cell : StateT StdGen TermElabM Value := do
-    let value ← Check.drawValue [] 2
-    drawn.modify (· + 1)
-    token.set
-    return value
-  let _ : MonadExceptOf Exception TermElabM := MonadAlwaysExcept.except
-  let interrupted ← try
-    discard <| withTheReader Core.Context (fun context => { context with cancelTk? := some token }) <|
-      Check.withinBudget 200000 do
-        discard <| (Sampling.selectCells base.raw.catalog (pure 1) cell).run (mkStdGen 0)
-    pure false
-  catch error => if error.isInterrupt then pure true else throw error
-  unless interrupted && (← drawn.get) == 1 do
-    throwError "generation did not stop between its first and second cell draws"
-
-/-- A raw zero-column shape still checks each row, and a large requested range must
-not allocate eagerly before the first row check. Valid database generation excludes this
-shape; the shared traversal accepts raw catalogs and therefore checks it explicitly. -/
-def canceledEmptyRows : TermElabM Unit := do
-  let token ← IO.CancelToken.new
-  let calls ← IO.mkRef (0 : Nat)
-  let catalog : Catalog := [{ name := Model.Identifier.ofString "empty", entry := .table { columns := [] } }]
-  let check : TermElabM Unit := do
-    checkSystem "fixture row boundary"
-    calls.modify (· + 1)
-    if (← calls.get) == 2 then token.set
-  let _ : MonadExceptOf Exception TermElabM := MonadAlwaysExcept.except
-  let interrupted ← try
-    discard <| withTheReader Core.Context (fun context => { context with cancelTk? := some token }) <|
-      Check.withinBudget 100 do
-        Sampling.selectCells catalog (pure 1000000) (pure .null) check
-    pure false
-  catch error => if error.isInterrupt then pure true else throw error
-  unless interrupted && (← calls.get) == 2 do
-    throwError "empty-column rows did not check cancellation incrementally"
+/-- {name}`Sampling.candidates` keeps the order of the search: the targeted databases, table contents with fewest rows first, then the seeded random databases. The limit
+cuts the list. -/
+def candidateOrder : TermElabM Unit := do
+  let base := Sampling.defaultSchema
+  let all := Sampling.candidates base [] 2 3 0 2 100000
+  let targeted := (Sampling.targeted base []).filter (·.raw.rows.all (·.length ≤ 2))
+  let seeded := (List.range 3).filterMap fun seed =>
+    (Sampling.seeded (Sampling.database base [] 2) seed 2).toOption
+  let raws := all.toList.map (·.raw)
+  unless raws.take targeted.length == targeted.map (·.raw) do
+    throwError "the search does not start with the targeted databases"
+  unless raws.drop (raws.length - seeded.length) == seeded.map (·.raw) do
+    throwError "the seeded random databases are not the last candidates"
+  let contents := (raws.drop targeted.length).take (raws.length - targeted.length - seeded.length)
+  let totals := contents.map fun raw => (raw.rows.map List.length).sum
+  unless !contents.isEmpty && (totals.zip (totals.drop 1)).all fun (a, b) => a ≤ b do
+    throwError "table contents are not in order of their row count"
+  unless (Sampling.candidates base [] 2 3 0 2 3).size == 3 do
+    throwError "the limit does not cut the candidates"
 
 /-- Recursion of the elaborator to the given depth. -/
 def deeper : Nat → TermElabM Unit
@@ -152,24 +130,14 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
   unless stopped do throwError "expensive data escaped the time limit of compiled work"
   logInfo m!"bounded data: time limit; {(← IO.monoMsNow) - started} ms"
   canceledAttempt
-  canceledGeneration
-  canceledEmptyRows
+  candidateOrder
   depthLimitedAttempt
+  -- A schema without a definition must not delay the empty candidate.
   let first ← Check.visitCandidates (mkConst ``True)
-    { schema := some (mkConst ``deferredSchema), randomSamples := 1000000000 }
+    { schema := some (mkConst ``deferredSchema), randomSamples := 1000000000, screen := some fun _ _ => true }
     (fun witness => pure witness.database)
   unless first == some (Lean.mkConst ``Database.empty) do
     throwError "later generation prevented accepting the empty candidate"
-  let generated ← Check.randomCandidate Sampling.defaultSchema.raw [] 2 0 2
-  let some raw := generated | throwError "the ordinary seeded proposal was rejected"
-  discard <| Check.databaseValue (databaseExpr raw)
-  unless raw.rows.all (fun rows => rows.length <= 2) do throwError "seeded proposal exceeded its row bound"
-  unless raw.rows.map (fun rows => rows.map (·.values)) == [[[.blob []], [.text []]]] do
-    throwError "seed zero changed the previously observed count/value draw order"
-  for seed in [1, 17] do
-    let generated ← Check.randomCandidate Sampling.defaultSchema.raw [] 2 seed 2
-    let expected := (Sampling.seeded (Sampling.database Sampling.defaultSchema [] 2) seed 2).toOption.map (·.raw)
-    unless generated == expected do throwError "cooperative sampling changed Plausible's seeded proposal"
   unless (← Check.attempt (Check.scriptValue (mkConst ``originalDefinition))).isNone do
     throwError "the checker ran a compiled override"
   unless (← Check.attempt (Check.scriptValue (mkConst ``opaqueScript))).isNone do

@@ -25,3 +25,22 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   `surface_counterexample_test`, `surface_inference_test`, `surface_replay_test`,
   `surface_s6_check_programs_test`, `surface_s6_not_blocked_test`, `surface_automatic_test`,
   `surface_rebuild_test`.
+- 2026-11-06: compiled screen and candidate order (`CheckScreen.lean`: `screenTerm`,
+  `compileScreen`, `firstAccepted`; `SampleCandidates.lean`: `Sampling.candidates`). For each
+  value, `visitCandidates` tries the empty database and the named databases, then screens the
+  candidates in batches of `screenBatch` in a compiled task and certifies each accepted one.
+  `SampleConfig.screen` lets a caller supply a screen. A claim without a screen records the
+  reason. `CheckRandom.lean` (the cooperative draws) and `targetedData` are deleted;
+  `Sampling.selectCells` loses its resource-check parameter. `sql.checkCandidates` is 10,000.
+  Targeted databases with more than `sql.checkMaxRows` rows in a table are skipped, as before.
+  Capability changes: `CounterexampleCheckOptions.lean` (`one-random`, seed 12, one sample) is
+  now `false`, because the table contents of the boundary values contain the row `-1`; the
+  fixture now needs the two-column row `(-1, NULL)`, which only the random databases contain.
+  New tests: `surface_check_screen_test` (accept-all screen, `implemented_by` claim with its
+  reason and its explicit witness, slow screen at the time limit). Fixture claims of
+  `surfaceChecks` and `surfaceS6` whose screen does not compile: the `implemented_by` claim of
+  `CheckScreenFixture.lean` (intended), and the claim of `S6CheckPrograms.lean` that quantifies
+  the result of a run (`∀ k, k + 1 = 0` on `send bump`: the screen has no input for the
+  result); its test result is unchanged. Tests: `surface_check_screen_test`, the tests of
+  `surfaceChecks` and `surfaceS6`, `surface_automatic_cancel_test`, `surface_rebuild_affinity_test`,
+  `surface_claims_test`, `surface_replay_test`.

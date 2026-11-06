@@ -112,22 +112,16 @@ def targeted (base : Database) (constants : List Value := []) : List Database :=
   base :: suppliedVariants base ++
     (boundaryRows ++ constants.map (fun value => [value, value])).filterMap (uniform base)
 
-/-- Select row counts and cells in catalog, row and column order. Views and other non-table objects get
-empty storage. Ordinary Plausible sampling and cooperative checking share this traversal;
-the optional resource action runs before each object and row, including zero-column rows.
-The incremental row loop does not allocate a range before the first check. No validity is assumed. -/
-def selectCells [Monad m] (catalog : Catalog) (rowCount : m Nat) (cell : m Value)
-    (check : m Unit := pure ()) : m (List (List (List Value))) :=
+/-- Select row counts and cells in catalog, row and column order, for Plausible's database
+generator ({lit}`database`). Views and other non-table objects get empty storage and draw
+nothing. No validity is assumed. -/
+def selectCells [Monad m] (catalog : Catalog) (rowCount : m Nat) (cell : m Value) :
+    m (List (List (List Value))) :=
   catalog.mapM fun object => do
-    check
     match object.entry with
     | .table table =>
       let count ← rowCount
-      let mut rows := []
-      for _ in [:count] do
-        check
-        rows := (← table.columns.mapM fun _ => cell) :: rows
-      return rows.reverse
+      (List.range count).mapM fun _ => table.columns.mapM fun _ => cell
     | .index _ | .trigger _ | .view _ => pure []
 
 /-- Assemble selected cells with the existing affinity and rowid rules. Missing cells become

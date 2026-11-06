@@ -39,13 +39,13 @@ witnesses with valid replays; absent, rejected or unchanged shrinks retain the o
 certificate and replay. The budget
 covers the complete operation; the shrinking of a witness uses at most {name}`shrinkShare` of what is left, so a
 witness that is certified and replayed is reported even when shrinking uses its share. A separately configurable recursion limit uses {name}`defaultRecursionLimit`,
-which permits small GROUP observations under cooperative reduction. Both limits are finite;
+which permits small GROUP observations in the kernel and the elaborator. Both limits are finite;
 zero disables checking. The caller's recursion option is restored afterwards. Exhaustion
 returns unknown and cancellation
 propagates after state cleanup. Explicit candidates and custom automation remain available.
 The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`).
 Compiled work of the operation ends at {name}`SampleConfig.timeLimit` ({name}`withCompiledLimit`); an
-unknown result that the limit stopped has its reason. -/
+unknown result that the limit or a claim without a screen explains has its reason ({name}`recordedReason`). -/
 def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (shrinkAttempts : Nat := 16)
     (prove : Expr → TermElabM (Option Proven) := defaultProof)
@@ -83,8 +83,7 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         return (smaller.bind id).getD original
       return accepted.getD {}
   let outcome := (outcome.bind id).getD {}
-  if outcome.result matches .unknown then
-    if ← compiledLimitExpired then return { outcome with reason := some timeLimitReason }
+  if outcome.result matches .unknown then return { outcome with reason := ← recordedReason }
   return outcome
 
 end Belay.Sqlite.Check

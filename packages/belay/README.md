@@ -376,11 +376,11 @@ witness independently of search bounds.
 | Lean option | Default | Meaning |
 | --- | ---: | --- |
 | `sql.check` | true | Check SQL theorem statements in the background |
-| `sql.checkBudget` | 100000 | Cooperative Lean heartbeat units; zero disables checking |
+| `sql.checkBudget` | 100000 | Lean heartbeat units (in thousands); zero disables checking |
 | `sql.checkRecursionLimit` | 4000 | Finite reduction depth; zero disables checking |
-| `sql.checkCandidates` | 128 | Maximum proposals tried, including explicit witnesses |
+| `sql.checkCandidates` | 10000 | Maximum candidates screened, including explicit witnesses |
 | `sql.checkMaxRows` | 2 | Maximum generated rows per table |
-| `sql.checkRandomSamples` | 4 | Seeded proposals per parameter value |
+| `sql.checkRandomSamples` | 4 | Seeded random databases after the small table contents |
 | `sql.checkSeed` | 0 | Reproducible sampler seed |
 | `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
 | `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
@@ -390,9 +390,19 @@ Use `set_option sql.checkBudget 500000 in` before a command or tactic for a
 larger search. A heartbeat budget is not a wall-clock deadline: the checker
 computes candidates and data with compiled code, which counts no heartbeats, and
 `sql.checkTimeLimit` bounds that work. A check that reaches the time limit gives
-`unknown` with that reason. Explicit
-witnesses come first, then empty/targeted inferred databases and seeded samples
-for each parameter value. Expensive data conditions can need a larger budget.
+`unknown` with that reason.
+
+The search tries the explicit witnesses first. Then, for each parameter value, it
+tries the empty database, then screens candidate databases with compiled code of
+the claim: the targeted databases of the inferred schema, each table content of at most
+`sql.checkMaxRows` rows per table with values of the claim's constants and boundary
+values, fewest rows first, and the seeded random databases. The kernel certifies
+each candidate that the screen accepts, so the screen cannot make a result wrong.
+The checker does not run compiled code that differs from the definition that the
+kernel checks: a claim that uses a constant with `implemented_by`, `@[extern]`, an
+`unsafe` or a `partial` definition gets no screen. The search then tries only the
+explicit witnesses, the empty database and the databases that the claim names, and the result is
+`unknown` with that reason; supply a counterexample with `(db := ...)`.
 
 For arbitrary generators, call `Check.check` with `Check.SampleConfig.witnesses`,
 or `Check.checkCandidates` with an elaboration-monad callback. `Check.refuteWith`

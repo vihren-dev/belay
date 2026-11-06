@@ -5,7 +5,7 @@ import Belay.Sqlite.ProgramQueries
 set_option doc.verso true
 
 /-! Replay preparation for background checking. Data evaluation and model execution use
-cooperative reduction. Native translation receives bounded text; explicit replay APIs remain
+compiled code within the time limit of the check, and the kernel checks each value. Native translation receives bounded text; explicit replay APIs remain
 available for larger scripts and databases. -/
 
 namespace Belay.Sqlite.Check
@@ -71,8 +71,8 @@ def checkedConstruction (expression : Expr) (excluded : Array Name := #[])
     | .oneOf results => mkApp (mkConst ``Model.Output.oneOf) (toExpr results)
     | .unmodeled reason => mkApp (mkConst ``Model.Output.unmodeled) (toExpr reason)
 
-/-- Prepare the same original-query report as explicit replay, using cooperative evaluation
-for the database, script and model observations. Missing source or opaque computation makes
+/-- Prepare the same original-query report as explicit replay, using compiled evaluation
+({name}`dataValue`) for the database, script and model observations. Missing source or opaque computation makes
 this background attempt unavailable, without changing the explicit certification primitive. -/
 def checkedScriptReport (database script : Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM Replay.Report := do

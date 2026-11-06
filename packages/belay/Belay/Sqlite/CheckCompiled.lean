@@ -21,8 +21,12 @@ structure CompiledLimit where
   /-- Whether compiled work of the operation reached the deadline. It is a reference, so that the
   fact stays when a failed attempt restores the elaboration state. -/
   expired : IO.Ref Bool
+  /-- Why the search of the operation ended without a result, when a limit or a missing screen
+  explains it. It is a reference for the same reason. -/
+  reason : IO.Ref (Option String)
 
-instance : Nonempty CompiledLimit := ⟨{ deadline := 0, expired := Classical.ofNonempty }⟩
+instance : Nonempty CompiledLimit :=
+  ⟨{ deadline := 0, expired := Classical.ofNonempty, reason := Classical.ofNonempty }⟩
 
 /-- The time limit of the current checking operation, when there is one. The state is local to
 the environment branch, as the record of the certificate audit is. -/
@@ -35,8 +39,9 @@ def withCompiledLimit [Monad m] [MonadEnv m] [MonadLiftT BaseIO m] [MonadFinally
     (milliseconds : Nat) (action : m α) : m α := do
   let previous := compiledLimitExtension.getState (← getEnv)
   let expired ← (IO.mkRef false : BaseIO (IO.Ref Bool))
+  let reason ← (IO.mkRef none : BaseIO (IO.Ref (Option String)))
   let deadline := (← (IO.monoMsNow : BaseIO Nat)) + milliseconds
-  modifyEnv (compiledLimitExtension.setState · (some { deadline, expired }))
+  modifyEnv (compiledLimitExtension.setState · (some { deadline, expired, reason }))
   try action
   finally modifyEnv (compiledLimitExtension.setState · previous)
 
@@ -50,6 +55,18 @@ def compiledLimitExpired : CoreM Bool := do
 /-- The text of an unknown result that the time limit stopped. -/
 def timeLimitReason : String :=
   "the search reached its time limit; increase sql.checkTimeLimit to search longer"
+
+/-- Record why the search of the current operation ends without a result. The first reason
+stays. Outside a checking operation it does nothing. -/
+def recordReason (text : String) : CoreM Unit := do
+  if let some limit := compiledLimitExtension.getState (← getEnv) then
+    limit.reason.modify (·.or (some text))
+
+/-- The recorded reason of the current operation ({name}`recordReason`), if any. -/
+def recordedReason : CoreM (Option String) := do
+  match compiledLimitExtension.getState (← getEnv) with
+  | some limit => limit.reason.get
+  | none => return none
 
 /-- Wait for compiled work in a dedicated task. The wait checks cancellation, and stops at the
 time limit of the operation ({name}`withCompiledLimit`): it then records the limit and throws.
@@ -66,6 +83,7 @@ def awaitCompiled (work : Unit → α) : CoreM α := do
     if let some limit := limit then
       if (← IO.monoMsNow) ≥ limit.deadline then
         limit.expired.set true
+        limit.reason.modify (·.or (some timeLimitReason))
         throwError timeLimitReason
     IO.sleep 1
   return task.get
