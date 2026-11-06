@@ -1,11 +1,12 @@
 # SELECT automation specification checkpoint
 
-Created 2026-10-28. Status: IN PROGRESS.
+Created 2026-10-28. Status: DONE (2026-11-07): the owner accepted ADR 27 and asked for its
+implementation.
 Audience: team. Task: [required outcome](20261028-select-automation-spec.task.md).
 The owner explicitly requested number ADR 27 for this work. The
-[ADR draft](../docs/adr-0027-compositional-select-proofs.md) and
-[acceptance draft](../docs/select-automation-acceptance.md) are not yet accepted;
-gaps in earlier ADR numbers do not change that request.
+[ADR](../docs/adr-0027-compositional-select-proofs.md) and the
+[acceptance contract](../docs/select-automation-acceptance.md) are accepted (owner,
+2026-11-07); gaps in earlier ADR numbers do not change that request.
 
 ## Current state
 
@@ -422,6 +423,21 @@ following `refactor:` commit: fifteen files, 1,328 physical lines, 905
 maintained code lines, 2,553 with the model files (`scc` on main `84c0d779`
 plus the 86-line, 61-code-line `ScalarNoFrom.lean`).
 Review `20261106T214907Z-50657f9e` (Codex) of that refactor found nothing.
+
+## Rebase onto main `c54d8395` and acceptance (2026-11-07)
+
+PR 299 was rebased onto main `c54d8395` without conflicts. The six new main
+commits change only Nix suite plumbing (the model suite split, #353) and leaf
+names of the Belay rename (#27); they change no Lean file, so the baselines
+and line counts of the documents, measured on `84c0d779`, still hold. Focused
+Nix evidence on the rebased tree: the `surfaceS6` build with
+`PYTEST_ADDOPTS="-k select_"` ran the five SELECT automation tests: 5 passed,
+66 deselected. Report:
+`/nix/store/ymjdljjvdjs1x47zpjr088jg2np42zln-sqlite-verifier-test-surfaceS6-1/junit.xml`.
+
+The owner then asked to implement the ADR (2026-11-07). The ADR, the
+acceptance contract, the review cover and the retirement inventory now say
+ACCEPTED. The implementation has its own task and status files.
 
 ## Open design axes
 

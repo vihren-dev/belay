@@ -1,6 +1,6 @@
 # Compositional SELECT automation: specification and experiments
 
-Created 2026-10-28. Status: IN PROGRESS.
+Created 2026-10-28. Status: DONE (2026-11-07): ADR 27 accepted; the implementation is a separate task.
 Audience: team. Status: [checkpoint](20261028-select-automation-spec.status.md).
 
 ## Required outcome
