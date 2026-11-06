@@ -1,6 +1,6 @@
 # Record the provenance of each test execution (#332)
 
-Created 2026-11-06. Status: open.
+Created 2026-11-06. Status: DONE (2026-11-06).
 Audience: implementers and reviewers.
 Progress: [status](20261106-test-provenance.status.md).
 Inspected base: the #330 fix of [the narrower mutant inputs](20261106-narrow-mutant-inputs.task.md).

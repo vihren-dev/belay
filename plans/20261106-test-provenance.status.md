@@ -1,6 +1,6 @@
 # Status: record the provenance of each test execution (#332)
 
-Created: 2026-11-06. Status: open.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-test-provenance.task.md](20261106-test-provenance.task.md).
 Issue: #332. Stacked on the #330 fix.
 
@@ -25,3 +25,5 @@ Sources: `tools/observability_pytest.py`, `tools/observability_nix.py`,
   the runner queries the outputs of the derivations and their direct inputs. Tests run: the new
   integration test builds a link farm with a passed and a failed suite (it fails without the
   fix), the provenance tests with fixed times, `tests/test_observability.py`.
+- 2026-11-06: DONE. On the top commit, after `just dev-build`: `just test-full`, `just verdict`,
+  `just test-nix` and `just test-scheduled-checks` pass. The mutant suites were not run locally.
