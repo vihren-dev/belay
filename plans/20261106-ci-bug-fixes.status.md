@@ -20,3 +20,12 @@ Sources: `build-support/tests.nix`, `.github/workflows/ci.yml`, `docs/ci.md`,
   `reviews/`, hashed with `git hash-object`, in a step directly after the checkout of each of the
   three jobs; the publisher warns when it finds no saved store. Tests run:
   `tests/test_ci_workflow.py`, `tests/test_ci_scope.py`, `tests/docs_test.py`, actionlint.
+- 2026-11-06: #326 reviews: two shoulds (no test of the publisher's warning; test file over 200
+  lines), fixed: a test of the warning, the cache-key tests in `tests/test_ci_cache_key.py` and
+  the shared helper `tests/ci_workflow_text.py`.
+- 2026-11-06: #329: `conformance.mutant_builds.built_base` copies and builds the base once per
+  process; `measure` still classifies its cases with the unchanged model first. The review asked
+  for files under 200 lines, so the Lake builds moved to `conformance/mutant_builds.py` (a new
+  input of the Nix suites). Tests run: `tests/mutation_edits_test.py` (new test: two measurements,
+  one base build), and `tests/conformance_function_mutants_test.py -k "printf or aggregate"` in one
+  process: the second test did not build the base.
