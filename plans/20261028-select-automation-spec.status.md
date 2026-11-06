@@ -421,6 +421,7 @@ surface files after the `ScalarNoFrom.lean` row was added. Fixed in the
 following `refactor:` commit: fifteen files, 1,328 physical lines, 905
 maintained code lines, 2,553 with the model files (`scc` on main `84c0d779`
 plus the 86-line, 61-code-line `ScalarNoFrom.lean`).
+Review `20261106T214907Z-50657f9e` (Codex) of that refactor found nothing.
 
 ## Open design axes
 
