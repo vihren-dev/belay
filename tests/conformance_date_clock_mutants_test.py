@@ -13,7 +13,7 @@ from conformance import (authored_clock, authored_date_functions, authored_date_
                          clock_mutants, date_function_mutants, date_modifier_mutants)
 from tests.mutant_sets import measure_set
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
 DATE_INPUT_GUARDS = {"rule:Expr.evaluate", "rule:parseTimezone", "rule:DateTime.ofRawNumber"}

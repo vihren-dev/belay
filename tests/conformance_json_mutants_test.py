@@ -13,7 +13,7 @@ from conformance import (authored_json, authored_json_each, authored_json_functi
                          json_each_mutants, json_function_mutants, json_mutants)
 from tests.mutant_sets import measure_set
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
 JSON_VALUE_GROUPS = {"rule:sqlValueOfNode": "conversion", "rule:arrowJson": "conversion",

@@ -30,7 +30,7 @@ from conformance import (after_error_mutants, authored_after_error, authored_che
                          using_mutants, without_rowid_mutants, write_mutants)
 from tests.mutant_sets import measure_set
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base, pytest.mark.requires_lean,
               pytest.mark.requires_native("translation-program", "sqlite3")]
 
 

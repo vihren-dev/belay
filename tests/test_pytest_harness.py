@@ -84,3 +84,55 @@ def test_timeout_kills_process_group_and_retains_output(tmp_path: Path) -> None:
     else:
         pytest.fail(f"Grandchild {pid} survived the process-group timeout")
 
+
+
+FAKE_BASE_BUILD = ('from pathlib import Path\n'
+                   'def built_base(repository, lean):\n'
+                   '    if (repository / "fail").exists():\n'
+                   '        raise RuntimeError("lake build failed in base")\n'
+                   '    with (repository / "builds.log").open("a") as log:\n'
+                   '        log.write(f"{repository} {lean}\\n")\n')
+"""A stand-in for `conformance.mutant_builds`, which logs each base build instead of running Lake."""
+MUTANT_PROBE = ('import pytest\nfrom pathlib import Path\npytestmark = pytest.mark.requires_mutant_base\n'
+                'def test_first():\n    Path("ran").touch()\n    assert Path("builds.log").is_file()\n'
+                'def test_second():\n    assert Path("builds.log").is_file()\n')
+"""Mutant measurements that see whether the base was built before they started."""
+UNMARKED_PROBE = 'def test_unmarked():\n    pass\n'
+"""A test without the mutant marker."""
+
+
+def with_fake_base_build(harness: Path) -> Path:
+    """Add the stand-in base build to a harness."""
+    (harness / "conformance").mkdir()
+    (harness / "conformance/mutant_builds.py").write_text(FAKE_BASE_BUILD)
+    return harness
+
+
+def test_mutant_tests_start_after_one_base_build(harness: Path) -> None:
+    """The collection hook of `tests/runtime_fixtures.py` builds the mutant base once, with the
+    repository and the runtime's `lean` folder, before the first marked test starts (#346), so
+    no test's own time limit pays for the build."""
+    root = with_fake_base_build(harness)
+    result = invoke(root, MUTANT_PROBE)
+    assert result.returncode == 0 and "2 passed" in result.stdout, result.diagnostic()
+    assert (root / "builds.log").read_text() == f"{root.resolve()} {root.resolve() / 'lean'}\n"
+
+
+def test_no_base_build_without_a_selected_mutant_test(harness: Path) -> None:
+    """The hook builds nothing when the selection has no marked test, when `-k` deselects the
+    marked tests (exit status 5, no tests ran), or when pytest only collects tests."""
+    root = with_fake_base_build(harness)
+    for source, arguments in ((UNMARKED_PROBE, ()), (MUTANT_PROBE, ("-k", "nothing")), (MUTANT_PROBE, ("--collect-only",))):
+        result = invoke(root, source, *arguments)
+        assert result.returncode in (0, 5), result.diagnostic()
+    assert not (root / "builds.log").exists()
+
+
+def test_failed_base_build_stops_the_session(harness: Path) -> None:
+    """A failed base build stops the session with its error before any marked test runs."""
+    root = with_fake_base_build(harness)
+    (root / "fail").touch()
+    result = invoke(root, MUTANT_PROBE)
+    assert result.returncode == 1, result.diagnostic()
+    assert "The unchanged model of the mutant tests did not build: lake build failed in base" in result.stdout + result.stderr
+    assert not (root / "ran").exists(), result.diagnostic()

@@ -9,7 +9,7 @@ from conformance.native_replay import prepare
 from conformance.resolve_mutants import AGREE, UNSUPPORTED, measure
 from conformance.sql_text import runtime_translator
 
-pytestmark = [pytest.mark.integration, pytest.mark.conformance,
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_mutant_base,
               pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 """The packages copied by the existing mutant runner."""
