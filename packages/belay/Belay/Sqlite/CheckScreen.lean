@@ -1,5 +1,6 @@
 import Belay.Sqlite.CounterexampleWitness
 import Belay.Sqlite.CheckCompiled
+import Belay.Sqlite.SampleShrink
 
 set_option doc.verso true
 
@@ -99,5 +100,16 @@ def firstAccepted (screen : Screen) (value : Value) (candidates : Array Database
     Option Nat :=
   (List.range' start (min count (candidates.size - start))).find? fun position =>
     candidates[position]?.any (screen · value)
+
+/-- Shrink a database with the screen: at most {lit}`steps` times, replace it with the first
+shrink proposal ({name}`Sampling.shrinkDatabase`) that the screen accepts with the value. The
+result is the database itself when no proposal is accepted. It is only a proposal: the checker
+certifies the result once in the kernel. -/
+def shrinkScreened (screen : Screen) (value : Value) : (steps : Nat) → Database → Database
+  | 0, database => database
+  | steps + 1, database =>
+    match (Sampling.shrinkDatabase database).find? (screen · value) with
+    | some smaller => shrinkScreened screen value steps smaller
+    | none => database
 
 end Belay.Sqlite.Check

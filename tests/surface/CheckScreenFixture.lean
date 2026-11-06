@@ -28,6 +28,31 @@ elab "check_accept_all_screen" : command => Command.liftTermElabM do
 
 check_accept_all_screen
 
+/-- A false claim: table {lit}`t` is missing or empty. -/
+def noRows : Prop := ∀ db : Database, db.rows "t" = none ∨ db.rows "t" = some []
+
+/-- A counterexample to {name}`noRows` with one row. -/
+def withSeven : Database := db! "CREATE TABLE t(a); INSERT INTO t VALUES (7);"
+
+/-- Shrinking with a screen certifies only its result. An accept-all screen shrinks the witness to
+an empty table, which the kernel rejects, so the original witness stays; the compiled screen of
+the claim shrinks the cell to NULL. -/
+elab "check_screened_shrinking" : command => Command.liftTermElabM do
+  let witnesses := #[{ database := mkConst ``withSeven }]
+  let outcome ← Check.check (mkConst ``noRows) 200000
+    { witnesses, screen := some fun _ _ => true } (prove := fun _ => pure none)
+  let .refuted witness _ := outcome.result | throwError "the accept-all screen lost the counterexample"
+  unless witness.database == mkConst ``withSeven do
+    throwError "a shrink that the kernel rejects replaced the original witness"
+  let outcome ← Check.check (mkConst ``noRows) 200000 { witnesses } (prove := fun _ => pure none)
+  let .refuted witness _ := outcome.result | throwError "the compiled screen lost the counterexample"
+  let database ← Check.databaseValue witness.database
+  unless database.rows "t" == some [[.null]] do
+    throwError "the compiled screen did not shrink the cell to NULL"
+  logInfo "screened shrinking: original kept; shrunk to NULL"
+
+check_screened_shrinking
+
 /-- The logical value of the flag. -/
 def plainFlag : Bool := true
 

@@ -16,11 +16,13 @@ def test_screen_proposes_and_certification_decides(runtime_root: Path, tmp_path:
     """CheckSamples.visitCandidates and CheckScreen.compileScreen: an accept-all screen gives no false
     result for a true claim; a claim with an implemented_by constant has no screen, so it is unknown
     with the reason, and its supplied database still certifies; a slow screen stops at
-    sql.checkTimeLimit with the time-limit reason and no error."""
+    sql.checkTimeLimit with the time-limit reason and no error. CheckOperation.check shrinks with the
+    screen and certifies only the result: a shrink that the kernel rejects keeps the original witness."""
     result = run_command(surface_command(runtime_root, FIXTURES / "CheckScreenFixture.lean", tmp_path),
                          cwd=tmp_path, timeout=180)
     assert result.returncode == 0, result.diagnostic()
     assert "accept-all screen: unknown" in result.stdout, result.stdout
+    assert "screened shrinking: original kept; shrunk to NULL" in result.stdout, result.stdout
     blocks = split_blocks(result.stdout)
     assert blocks["override"].startswith("SQL check: unknown; the search could not compile a screen"), blocks
     assert "(db := ...)" in blocks["override"], blocks["override"]

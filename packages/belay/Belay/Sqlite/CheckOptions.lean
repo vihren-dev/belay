@@ -51,7 +51,7 @@ register_option sql.checkTimeLimit : Nat := {
 /-- Maximum shrink attempts after a checked witness; zero retains that witness directly. -/
 register_option sql.checkShrinkAttempts : Nat := {
   defValue := 16
-  descr := "maximum checked SQL counterexample shrink attempts" }
+  descr := "maximum SQL counterexample shrink steps; the checker certifies only the smallest result" }
 
 namespace Belay.Sqlite.Check
 open Lean

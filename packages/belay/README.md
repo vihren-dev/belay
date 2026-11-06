@@ -383,7 +383,7 @@ witness independently of search bounds.
 | `sql.checkRandomSamples` | 4 | Seeded random databases after the small table contents |
 | `sql.checkSeed` | 0 | Reproducible sampler seed |
 | `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
-| `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
+| `sql.checkShrinkAttempts` | 16 | Shrink steps of a counterexample; zero keeps the first witness |
 | `sql.checkTimeLimit` | 10000 | Milliseconds of compiled work (candidates, data) for one check |
 
 Use `set_option sql.checkBudget 500000 in` before a command or tactic for a

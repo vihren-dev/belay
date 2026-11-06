@@ -64,20 +64,17 @@ def inferredData (scripts : List Script) (schema : Option Database) : Database.R
 that the claim's equality premises name ({name}`domainDatabases`) and the generated candidates
 ({name}`Sampling.candidates`) that the screen accepts, in order, stopping at the first accepted
 result. The screen is {name}`SampleConfig.screen`, else the compiled screen of the claim
-({name}`compileScreen`). A claim without a screen gets only the explicit witnesses and the named
-databases, and the reason is recorded ({name}`recordReason`). The candidate count covers every
+({name}`compileScreen`). A claim without a screen gets only the explicit witnesses, the empty
+database and the named databases, and the reason is recorded ({name}`recordReason`). The
+callback also gets the screen and the value that hold for the witness, for shrinking: for a
+generated candidate, its value; for an explicit witness with the configured environment and
+named inputs, {name}`Value.null`, which no input uses then; else none. The candidate count covers every
 witness, named database and screened candidate. Compiled work stops at the time limit of the
 operation. Rejected candidates restore speculative state; exhaustion and cancellation propagate.
 The callback can demand a certificate plus replay, or impose another acceptance condition.
 Finite search failure supplies no evidence for a universal proposition. -/
 def visitCandidates (proposition : Expr) (config : SampleConfig)
-    (accept : Witness → TermElabM α) : TermElabM (Option α) := do
-  let mut tried := 0
-  for witness in config.witnesses do
-    if tried >= config.candidates then return none
-    tried := tried + 1
-    if let some result ← attempt (accept witness) then return some result
-  let domain := (← attempt (domainDatabases proposition)).getD #[]
+    (accept : Witness → Option (Screen × Value) → TermElabM α) : TermElabM (Option α) := do
   let screen ← match config.screen with
     | some screen => pure (some screen)
     | none =>
@@ -85,6 +82,14 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       catch error =>
         recordReason s!"the search could not compile a screen for this claim ({← error.toMessageData.toString}), so it tried only the supplied databases, the empty database and the databases that the claim names; supply a counterexample with (db := ...)"
         pure none
+  let mut tried := 0
+  for witness in config.witnesses do
+    if tried >= config.candidates then return none
+    tried := tried + 1
+    let fixed := witness.environment == config.environment && witness.named == config.named
+    let screened := if fixed then screen.map (·, Value.null) else none
+    if let some result ← attempt (accept witness screened) then return some result
+  let domain := (← attempt (domainDatabases proposition)).getD #[]
   let mut generated : Option (Database.Raw × List Value × Array Database) := none
   for value in config.values do
     if tried >= config.candidates then return none
@@ -92,11 +97,12 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       { database := mkConst ``Database.empty, environment := config.environment, named := config.named }
     let some witness ← attempt (fillValueInputs proposition initial value) | continue
     tried := tried + 1
-    if let some result ← attempt (accept witness) then return some result
+    if let some result ← attempt (accept witness (screen.map (·, value))) then return some result
     for database in domain do
       if tried >= config.candidates then return none
       tried := tried + 1
-      if let some result ← attempt (accept { witness with database }) then return some result
+      if let some result ← attempt (accept { witness with database } (screen.map (·, value))) then
+        return some result
     -- No inferred Value binder means later parameter values would repeat this sequence.
     let last := witness.named == config.named
     let some screen := screen | if last then return none else continue
@@ -140,7 +146,8 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
         let some candidate := candidates[index]? | return none
         let raw := candidate.raw
         let expression := if raw == base then baseExpression else generatedExpr raw schemaText
-        if let some result ← attempt (accept { witness with database := expression }) then return some result
+        if let some result ← attempt (accept { witness with database := expression } (some (screen, value))) then
+          return some result
     if last then return none
   return none
 

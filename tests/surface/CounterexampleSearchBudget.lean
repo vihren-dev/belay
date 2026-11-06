@@ -136,7 +136,7 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
   -- A schema without a definition must not delay the empty candidate.
   let first ← Check.visitCandidates (mkConst ``True)
     { schema := some (mkConst ``deferredSchema), randomSamples := 1000000000, screen := some fun _ _ => true }
-    (fun witness => pure witness.database)
+    (fun witness _ => pure witness.database)
   unless first == some (Lean.mkConst ``Database.empty) do
     throwError "later generation prevented accepting the empty candidate"
   unless (← Check.attempt (Check.scriptValue (mkConst ``originalDefinition))).isNone do

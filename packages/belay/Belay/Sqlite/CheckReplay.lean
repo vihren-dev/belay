@@ -2,6 +2,7 @@ import Belay.Sqlite.CheckClaim
 import Belay.Sqlite.CounterexampleShrink
 import Belay.Sqlite.SampleShrink
 import Belay.Sqlite.CheckReplayData
+import Belay.Sqlite.CheckScreen
 
 set_option doc.verso true
 
@@ -64,5 +65,16 @@ def shrinkProposals (witness : Witness) (excluded : Array Name := #[])
     excluded excludedLocals
   let schema ← schemaText? witness.database
   return smaller.map fun raw => { witness with database := generatedExpr raw schema }
+
+/-- The witness with the smallest database that the screen accepts after at most
+{lit}`steps` shrink steps ({name}`shrinkScreened`), computed with compiled code. None when the
+screen accepts no smaller database. The witness still needs its certificate. -/
+def screenedShrinkProposal (witness : Witness) (screen : Screen) (value : Value) (steps : Nat)
+    (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) : TermElabM (Option Witness) := do
+  let database ← databaseValue witness.database excluded excludedLocals
+  let smaller ← awaitCompiled fun _ => shrinkScreened screen value steps database
+  if smaller.raw == database.raw then return none
+  let schema ← schemaText? witness.database
+  return some { witness with database := generatedExpr smaller.raw schema }
 
 end Belay.Sqlite.Check

@@ -36,7 +36,10 @@ structure Outcome where
 reporting a counterexample. An unreplayable candidate is skipped so later candidates can
 still supply a report within the same budget. Optional shrinking retains only recertified
 witnesses with valid replays; absent, rejected or unchanged shrinks retain the original
-certificate and replay. The budget
+certificate and replay. With a screen, shrinking takes at most {lit}`shrinkAttempts` screened
+steps ({name}`screenedShrinkProposal`) and certifies only their result, so the operation
+certifies at most two witnesses; without one, the kernel certifies at most
+{lit}`shrinkAttempts` proposals ({name}`shrinkCertified`). The budget
 covers the complete operation; the shrinking of a witness uses at most {name}`shrinkShare` of what is left, so a
 witness that is certified and replayed is reported even when shrinking uses its share. A separately configurable recursion limit uses {name}`defaultRecursionLimit`,
 which permits small GROUP observations in the kernel and the elaborator. Both limits are finite;
@@ -57,7 +60,7 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     withAuditCache excluded <| withinBudget heartbeats <| attempt do
       let result ← checkCandidates proposition (pure #[]) prove excluded excludedLocals
       if let .proved _ := result then return { result }
-      let accepted : Option Outcome ← visitCandidates proposition samples fun witness => do
+      let accepted : Option Outcome ← visitCandidates proposition samples fun witness screened => do
         let proof ← refuteWitness proposition witness excluded excludedLocals
         let reports ← replayClaim proposition witness excluded excludedLocals
         let observation ← observeFailure proposition witness excluded excludedLocals
@@ -68,13 +71,20 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         -- Shrinking may use its share of the budget that is left. A certified, replayed witness is kept when
         -- shrinking uses its share without a smaller witness.
         let smaller : Option (Option Outcome) ← withinBudget (shrinkShare.units (← remainingUnits)) <| attempt do
-          let proposals ← shrinkProposals witness excluded excludedLocals
-          if proposals.isEmpty then return original
-          -- The convenience checker tries one shared shrink round. The public
-          -- shrinkCertified primitive permits repeated or custom rounds.
-          let (smaller, proof) ← shrinkCertified proposition witness (fun current =>
-            pure (if current.database == witness.database then proposals else []))
-            shrinkAttempts excluded excludedLocals
+          let (smaller, proof) ← match screened with
+            | some (screen, value) =>
+              -- The screen chooses the smaller database; the kernel certifies only that one.
+              let some smaller ← screenedShrinkProposal witness screen value shrinkAttempts excluded excludedLocals
+                | return original
+              pure (smaller, ← refuteWitness proposition smaller excluded excludedLocals)
+            | none =>
+              -- Without a screen, the kernel certifies each proposal of one shared shrink round. The
+              -- public shrinkCertified primitive permits repeated or custom rounds.
+              let proposals ← shrinkProposals witness excluded excludedLocals
+              if proposals.isEmpty then return original
+              shrinkCertified proposition witness (fun current =>
+                pure (if current.database == witness.database then proposals else []))
+                shrinkAttempts excluded excludedLocals
           if smaller.database == witness.database then return original
           let reports ← replayClaim proposition smaller excluded excludedLocals
           let observation ← observeFailure proposition smaller excluded excludedLocals

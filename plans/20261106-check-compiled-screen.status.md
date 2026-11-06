@@ -44,3 +44,18 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   result); its test result is unchanged. Tests: `surface_check_screen_test`, the tests of
   `surfaceChecks` and `surfaceS6`, `surface_automatic_cancel_test`, `surface_rebuild_affinity_test`,
   `surface_claims_test`, `surface_replay_test`.
+- 2026-11-06: review fixes: `Sampling.candidates` checks its limit before the table contents;
+  the docs describe the selection of values before affinity and rowid assignment.
+- 2026-11-06: shrinking by screening (D5). `visitCandidates` gives its callback the screen and
+  the value of a witness; `check` shrinks with `screenedShrinkProposal` (`shrinkScreened`: at
+  most `sql.checkShrinkAttempts` steps, each to the first proposal that the screen accepts) and
+  certifies only the result, so a check certifies at most two witnesses. A claim without a
+  screen keeps the certified shrinking (`shrinkCertified`). Capability change: the shrinking of
+  `equiv-shrink-exhausted` (`S6CheckPrograms.lean`) now finishes at 100,000 units; the case
+  now uses 30,000 (it finishes at 45,000, and runs out at 35,000 and 25,000), so it still
+  checks that a shrinking that runs out keeps the refutation. Tests:
+  `surface_check_screen_test` (a shrink that the kernel rejects keeps the original witness),
+  `surface_check_command_test`, `surface_check_readable_test`, `surface_counterexample_test`,
+  `surface_search_test`, `surface_check_default_budget_test`, `surface_check_real_schemas_test`,
+  `surface_rebuild_test`, `surface_s6_check_programs_test`, `surface_inference_test`,
+  `surface_sampling_test`, `surface_automatic_test`.
