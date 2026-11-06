@@ -41,9 +41,12 @@ request of the stack, in the order above.
   fresh copy of the built base. The documented time of a base build is the measured one.
 - **#327.** On an eligible run (`main` push or nightly), each platform publishes its
   saved store when its own check passed, also when the check of the other platform
-  failed. A platform whose check failed publishes nothing. The `attic-publish`
-  environment, the token scope and the trusted events stay the same. A cancelled run
-  publishes nothing.
+  failed. Only a store that a passed check saved is published: a failed check saves no
+  store, so its outputs are never published. When an earlier run of the same tree
+  passed on that platform, its saved store is the store of that tree and is published
+  again, also if the current check failed; the upload then adds no new paths. The
+  `attic-publish` environment, the token scope and the trusted events stay the same. A
+  cancelled run publishes nothing.
 - **#328.** A mutant suite whose Nix derivation is the same as in an accepted `main`
   push or nightly run on the same platform does not run again: the job restores the
   JUnit report of that run and retains it as the job's report. Only a passed run of an
@@ -77,8 +80,8 @@ request of the stack, in the order above.
   derivation attribute goes there.
 - `.github/workflows/ci.yml`: `nix-community/cache-nix-action` runs its save step with
   `post-if: success()` (pinned `7df957e3`), so an archive under a commit's primary key
-  exists only after a passed check job of that commit and platform. The publisher can
-  use this as the acceptance signal of its own platform.
+  exists only after a passed check job of that tree and platform, in this run or an
+  earlier one. The publisher can use this as the acceptance signal of its own platform.
 - A matrix job cannot give one output per matrix entry reliably, which is a reason to
   avoid job outputs for the per-platform gate.
 - `conformance/resolve_mutants.py`, `measure` and `verdicts`; `tests/mutant_sets.py`.
