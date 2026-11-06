@@ -70,12 +70,21 @@ def inferredData (scripts : List Script) (schema : Option Database) (complete : 
     else none
   (base, found.expressions.values, named.bind (Sampling.touchedNames base.catalog))
 
+/-- The generated candidates that one value of the value pool can use: an equal share of the
+{lit}`left` candidates for it and the values after it, {lit}`values` in all with it, so that a
+value without a counterexample, for example NULL as a key, does not use the count of the values
+after it. A value that uses less leaves the rest to the values after it. The share is zero when
+fewer candidates than values are left. A claim without a parameter value ({lit}`last`) gets all
+of them. For example, {assert}`valueShare 100 4 false = 25` and
+{assert}`valueShare 100 4 true = 100`. -/
+def valueShare (left values : Nat) (last : Bool) : Nat :=
+  if last then left else left / max 1 values
+
 /-- Visit explicit witnesses, then, for each configured value, the empty database, the databases
 that the claim's equality premises name ({name}`domainDatabases`) and the generated candidates
 ({name}`Sampling.candidates`) that the screen accepts, in order, stopping at the first accepted
-result. The generated candidates of a value are at most an equal share of the candidate count
-that is left for it and the values after it, so that a value without a counterexample does not
-use the count of the others; a claim without a parameter value gets all of it. The screen is {name}`SampleConfig.screen`, else the compiled screen of the claim
+result. The generated candidates of a value are at most its share of the candidate count that
+is left ({name}`valueShare`). The screen is {name}`SampleConfig.screen`, else the compiled screen of the claim
 ({name}`compileScreen`). A claim without a screen gets only the explicit witnesses, the empty
 database and the named databases, and the reason is recorded ({name}`recordReason`). The
 callback also gets the screen and the value that hold for the witness, for shrinking: for a
@@ -103,7 +112,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     if let some result ← attempt (accept witness screened) then return some result
   let domain := (← attempt (domainDatabases proposition)).getD #[]
   let suppliedSchema := config.schema.or ((← attempt (domainSchemas proposition)).bind (·[0]?))
-  for (value, index) in config.values.zipIdx do
+  for (value, valueIndex) in config.values.zipIdx do
     if tried >= config.candidates then return none
     let initial : Witness :=
       { database := mkConst ``Database.empty, environment := config.environment, named := config.named }
@@ -137,24 +146,24 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       | none => pure none
     -- Generate and screen together, up to the first candidate after the position that the screen
     -- accepts; after a rejected certificate, generate again and continue after it.
-    -- Each value gets an equal share of the candidates that are left, so that a value without a
-    -- counterexample, for example NULL as a key, does not use the count of the values after it.
-    let share := if last then config.candidates - tried
-      else max 1 ((config.candidates - tried) / (config.values.length - index))
-    let valueEnd := tried + share
+    let valueEnd := tried + valueShare (config.candidates - tried) (config.values.length - valueIndex) last
     let mut position := 0
     repeat
       if tried >= valueEnd then break
       checkSystem "SQL candidate screening"
       let start := position
       let limit := start + (valueEnd - tried)
-      let some candidates ← attempt do
-          awaitCompiled fun _ => Sampling.candidates baseDatabase constants touched config.maxRows
-            config.randomSamples config.seed config.size limit fun index database => start ≤ index && screen database value
+      -- The screen of the last candidate also runs in the timed task: the list can end at the
+      -- limit without the stop test.
+      let some (candidates, accepted) ← attempt do
+          awaitCompiled fun _ =>
+            let candidates := Sampling.candidates baseDatabase constants touched config.maxRows
+              config.randomSamples config.seed config.size limit fun index database => start ≤ index && screen database value
+            (candidates, candidates.size > start && candidates.back?.any (screen · value))
         | return none
       tried := tried + (candidates.size - start)
       let some candidate := candidates.back? | break
-      unless candidates.size > start && screen candidate value do break
+      unless accepted do break
       position := candidates.size
       let proposal := if candidate.raw == base then { witness with database := baseExpression, value := some candidate }
         else witness.generated candidate schemaText

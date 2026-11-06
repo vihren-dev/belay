@@ -46,3 +46,8 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   the value NULL used the whole count and time limit. A task whose certificate is rejected can
   now generate up to its share again from that position. Tests: the surface tests of the D7
   entry.
+- 2026-11-06: review fixes of the streaming change: the screen of the last candidate runs in the
+  timed task; the share is `Check.valueShare` and can be zero; `CounterexampleSearchBudget.lean`
+  (`valueShares`) checks the stop test, the continuation after a rejected certificate and that
+  the value 1 is reached within 200 candidates after NULL (it fails when every value gets the
+  whole count). Tests: the surface tests of the D7 entry.

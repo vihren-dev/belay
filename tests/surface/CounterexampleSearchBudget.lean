@@ -92,6 +92,35 @@ def candidateOrder : TermElabM Unit := do
     unless (Sampling.candidates base [] none 2 3 0 2 limit).size == min limit all.size do
       throwError "the limit {limit} does not cut the candidates"
 
+/-- Checks the stop test of {name}`Sampling.candidates` and the share of each value in
+{name}`Check.visitCandidates` ({name}`Check.valueShare`): the list ends after the first
+candidate that passes the stop test; after a rejected certificate the search continues with a
+later candidate; and with 200 candidates, the value NULL, which the screen never accepts, leaves
+enough of the count for the value 1. Before the share, NULL used all 200. -/
+def valueShares : TermElabM Unit := do
+  let base := Sampling.defaultSchema
+  let all := Sampling.candidates base [] none 2 3 0 2 100000
+  let stopped := Sampling.candidates base [] none 2 3 0 2 100000 fun index _ => index == 5
+  unless stopped.toList.map (·.raw) == (all.toList.take 6).map (·.raw) do
+    throwError "the candidates do not end after the first one that passes the stop test"
+  unless Check.valueShare 3 16 false == 0 && Check.valueShare 200 16 false == 12 do
+    throwError "the value share is not an equal share of what is left"
+  let proposition ← elabTerm (← `(∀ v : Value, v = v)) none
+  let hasRows (database : Database) := database.raw.rows.any (!·.isEmpty)
+  let rejected ← IO.mkRef (none : Option Database)
+  let accepted ← Check.visitCandidates proposition
+      { candidates := 200, screen := some fun database value => value == .integer 1 && hasRows database }
+    fun witness screened => do
+      let some (_, value) := screened | throwError "no screen"
+      let some database := witness.value | throwError "not generated"
+      if (← rejected.get).isNone then
+        rejected.set (some database)
+        throwError "rejected certificate"
+      pure (value, database)
+  let some (value, database) := accepted | throwError "the value 1 was not reached within 200 candidates"
+  unless value == .integer 1 && (← rejected.get).any (·.raw != database.raw) do
+    throwError "the search did not continue after the rejected candidate"
+
 /-- Recursion of the elaborator to the given depth. -/
 def deeper : Nat → TermElabM Unit
   | 0 => pure ()
@@ -151,6 +180,7 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
   canceledAttempt
   candidateOrder
   carriedValues
+  valueShares
   depthLimitedAttempt
   -- A schema without a definition must not delay the empty candidate.
   let first ← Check.visitCandidates (mkConst ``True)
