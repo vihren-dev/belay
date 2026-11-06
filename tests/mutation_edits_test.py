@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from conformance import resolve_mutants
+from conformance import mutant_builds, resolve_mutants
 from conformance.case_format import Json
 from conformance.mutant_guards import guard_problems, obligation_problems
 from conformance.mutation_edits import Guard, Mutation, MutationGroup, SourceEdit
@@ -113,7 +113,8 @@ def test_rule_link_covers_the_complete_fragment(tmp_path: Path) -> None:
 
 
 def test_measurements_of_one_process_share_one_base_build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """resolve_mutants.measure builds the unchanged packages once per process (#329): a second
+    """resolve_mutants.measure builds the unchanged packages once per process with
+    mutant_builds.built_base (#329): a second
     measurement reuses the built base, still checks the unchanged verdicts, and builds each
     mutant in its own copy."""
     repository = tmp_path / "repository"
@@ -132,7 +133,7 @@ def test_measurements_of_one_process_share_one_base_build(tmp_path: Path, monkey
         changed = "11" in (cwd.parent / "belay-sqlite-model/Rule.lean").read_text()
         return "changed\n" if changed else resolve_mutants.AGREE + "\n"
 
-    monkeypatch.setattr(resolve_mutants, "run", fake_run)
+    monkeypatch.setattr(mutant_builds, "run", fake_run)
     monkeypatch.setattr(resolve_mutants, "compiled_many", lambda cases, runtime, emit_lean: [
         {"caseLean": "term"} for _ in cases])
     cases: list[dict[str, Json]] = [{"provenance": [["authored", "rule-case"]]}]
@@ -140,6 +141,6 @@ def test_measurements_of_one_process_share_one_base_build(tmp_path: Path, monkey
     for _ in range(2):
         result = resolve_mutants.measure(cases, repository, tmp_path / "runtime", mutants)
         assert result == {"rule": {"killed": True, "changed": {"rule-case": "changed"}}}
-    base = resolve_mutants.built_base(repository, tmp_path / "runtime/lean")
+    base = mutant_builds.built_base(repository, tmp_path / "runtime/lean")
     assert builds.count(base) == 1 and len(builds) == 3, builds
     assert classifications.count(base) == 2 and len(classifications) == 4, classifications
