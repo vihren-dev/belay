@@ -357,10 +357,9 @@ explicit witnesses, the empty database and the databases that it names, and is
 
 Rule stated for the row of a group: the rules name `Query.groupRow` as the
 model's one result and make no claim about native SQLite where its plan decides
-the row (issue #309). This is the one point put to the owner as a decision: keep
-this wording and amend it when #309 is decided, or require the group rules to
-abstract over the representative row so that they stay valid if #309 turns the
-row into alternatives of `possibleResults`.
+the row (issue #309). DECIDED (owner, 2026-11-06): keep this wording; the
+rules name the model's one row, and they are amended when #309 is decided. The
+alternative, rules that abstract over the representative row, was rejected.
 
 ## Open design axes
 
