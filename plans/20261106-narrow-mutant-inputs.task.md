@@ -57,8 +57,9 @@ Measured on the base of this task:
   that it holds no `judge/` file and no `conformance/cases/` file, and that its Python
   files are exactly `common`, the suite's test files and the closure.
 - Before the pull request, a smoke check imports each module of each suite's closure
-  in the Nix source tree of that suite, with no other path. It finds a closure module
-  whose imports the analysis misses, also an import inside a function. It cannot find a
+  in the Nix source tree of that suite, with no other path. It finds a module-level
+  import that the analysis misses. It does not run an import inside a function: only the
+  analysis (which reads all import statements) and the CI run see those. It cannot find a
   module that the code loads by a computed name (no closure module uses `importlib` or
   `__import__` at the inspected base), and it does not run the tests. The status file
   records this check once; it is not a test. Only the CI run of the suites shows that a
