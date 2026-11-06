@@ -92,6 +92,15 @@ manual and nightly runs check these suites, and so does a pull request with the
 `full` scope. Pull requests with a smaller scope do not, so that their CI time
 does not grow. The flake checks exclude them.
 
+The `mutants` job reuses accepted results. It evaluates the Nix derivation of its suite
+with `nix-instantiate` (about one second) and restores the report of an accepted run of
+that derivation on the same platform from the GitHub Actions cache, under the key
+`mutant-report-v1-SYSTEM-DERIVATION`. With a report, the job skips the store restore and
+the run, and retains the restored JUnit report. Without one, it runs the suite, and a
+passed `main` push or nightly run saves the report (a few kilobytes) under that key. The
+derivation covers every declared input of the suite, so a change of any input runs the
+suite again. Pull requests and manual runs reuse reports but never save them.
+
 - `scheduledTests.writers`: round trips of the corpus writers of the authored cases
   (`conformance/*_evidence.py`): each writes a new corpus, reads it back unchanged
   and replays it natively. The corpora they wrote are frozen, and `tests.frozen` and

@@ -33,3 +33,9 @@ Sources: `build-support/tests.nix`, `.github/workflows/ci.yml`, `docs/ci.md`,
   only on an exact hit of its saved store, which cache-nix-action saves only after a passed check
   job (`post-if: success()` in its pinned `action.yml`). Tests run: `tests/test_ci_workflow.py`,
   `tests/test_ci_cache_key.py`, `tests/test_ci_scope.py`, `tests/docs_test.py`, actionlint.
+- 2026-11-06: #328: the `mutants` job evaluates the suite derivation with `nix-instantiate` and
+  restores the report of an accepted run under `mutant-report-v1-SYSTEM-DERIVATION`
+  (`actions/cache` v6.1.0, pinned); a hit skips the store restore and the run, a passed eligible
+  run saves its report. The mutants-job tests moved to `tests/test_ci_mutants_workflow.py`.
+  Tests run: the three workflow test files, `tests/test_ci_scope.py`, `tests/docs_test.py`,
+  actionlint, and the derivation step's command locally.

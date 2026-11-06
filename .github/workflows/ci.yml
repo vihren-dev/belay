@@ -152,7 +152,9 @@ jobs:
     name: Mutants (${{ matrix.suite }}, ${{ matrix.system }})
     # The mutant suites of the model (tests/nix_mutant_suites.json) run here, one runner each, in
     # parallel with the check job and for the full scope only: together they need more time
-    # than the check job has left (pull request #191). They never save a cache.
+    # than the check job has left (pull request #191). They never save a Nix store. A passed
+    # main push or nightly run saves the suite's report under its Nix derivation, and a later
+    # run of the same derivation on the same platform reuses that report instead of a run.
     strategy:
       fail-fast: false
       matrix:
@@ -199,8 +201,24 @@ jobs:
             extra-trusted-public-keys = sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE=
             connect-timeout = 5
             fallback = true
-      - name: Restore Nix builds
+      - name: Find the Nix derivation of the mutant suite
         if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        id: suite
+        env:
+          MUTANT_SUITE: ${{ matrix.suite }}
+        # The derivation covers every input of the suite: the same derivation gives the same result.
+        run: |
+          derivation="$(nix-instantiate build-support/default.nix -A "scheduledTests.$MUTANT_SUITE" --extra-experimental-features 'nix-command flakes')"
+          echo "derivation=$(basename "$derivation" .drv)" >> "$GITHUB_OUTPUT"
+      - name: Restore the report of an accepted run of this derivation
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        id: accepted
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/mutant-accepted/
+          key: mutant-report-v1-${{ matrix.system }}-${{ steps.suite.outputs.derivation }}
+      - name: Restore Nix builds
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true'
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         env:
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
@@ -211,16 +229,29 @@ jobs:
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
           save: false
       - name: Run the mutant suite
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true'
         env:
           MUTANT_SUITE: ${{ matrix.suite }}
-        run: nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
+        run: |
+          nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
+          mkdir -p build/mutant-accepted
+          cp -RL "build/nix-tests-mutants/$MUTANT_SUITE" "build/mutant-accepted/$MUTANT_SUITE"
+          chmod -R u+w build/mutant-accepted
+      - name: Save the report of this accepted derivation
+        # Only a passed main push or nightly run saves; other events only reuse.
+        if: success() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full' && steps.accepted.outputs.cache-hit != 'true' && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/mutant-accepted/
+          key: mutant-report-v1-${{ matrix.system }}-${{ steps.suite.outputs.derivation }}
       - name: Retain the mutant suite report
         if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mutant-reports-${{ matrix.suite }}-${{ matrix.system }}
-          path: build/nix-tests-mutants/
+          path: |
+            build/nix-tests-mutants/
+            build/mutant-accepted/
           if-no-files-found: warn
           retention-days: 14
 

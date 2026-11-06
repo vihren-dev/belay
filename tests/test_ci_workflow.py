@@ -113,21 +113,3 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     assert 'login vihren https://cache.vihren.dev "$ATTIC_WRITE_TOKEN"' in upload
     assert ("nix path-info --all | grep -v '\\.drv$' | "
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
-
-
-def test_mutant_job_runs_each_mutant_suite_for_the_full_scope() -> None:
-    """The mutants job runs each suite of tests/nix_mutant_suites.json on its own runner, only
-    for the full scope and with the platform guard of the check job, and never saves a cache."""
-    import json
-    job = workflow_jobs()["mutants"]
-    suites = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
-    assert f"suite: [{', '.join(suites)}]" in job
-    assert "save: false" in job and "save: ${{" not in job
-    assert "timeout-minutes: 75" in job
-    steps = re.split(r"\n      - ", job.split("\n    steps:\n", 1)[1])
-    working = [step for step in steps if "Skip macOS checks" not in step]
-    assert all(GUARD in step for step in working)
-    full = "steps.scope.outputs.scope == 'full'"
-    assert all(full in step for step in working
-               if "checkout" not in step and "id: scope" not in step and "id: tree" not in step)
-    assert 'just test-mutants "$MUTANT_SUITE"' in job
