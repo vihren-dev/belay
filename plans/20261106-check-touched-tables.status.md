@@ -69,19 +69,21 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   database to the kernel: the true variant of #316 spent 0.4 to 0.5 s on it. Test:
   `CandidateShares.lean` (`emptyScreened`: a screen that accepts nothing gets no certification).
   Tests: the surface tests of the D7 entry and `surface_check_consumer_size_test`.
-- 2026-11-06: acceptance records (D9). Phases at the default options, two runs each, with the
-  phases as in the Context section of the ADR:
-  - #316: proof attempt 15 ms, screen compilation 14 ms, candidate search 0.9 to 1.0 s (one
-    certification, 0.7 s), `replayClaim` 0.4 to 0.5 s (`databaseValue` of the witness 44 ms,
-    `checkedConstruction` 0.13 s), screened shrink 4 ms; total 1.4 to 1.7 s, `false` (ADR:
-    37.8 s).
-  - True variant (`GROUP BY email COLLATE NOCASE`): proof attempt 16 ms, screen compilation
-    15 ms, candidate search 0.34 s with no certification; total 0.38 s, `unknown` (ADR: 23.0 s;
-    slice 2: 0.6 to 1.0 s).
-  - Consumer-size claim: proof attempt 12 to 16 ms, screen compilation 17 to 19 ms, candidate
-    search 7.7 to 9.0 s (one certification, 3.3 to 3.7 s), `replayClaim` 2.4 to 2.7 s
-    (`databaseValue` 0.8 to 0.9 s, `checkedConstruction` 2.5 to 2.9 s), screened shrink 10 to
-    18 ms, certification of the shrunk witness 2.8 to 3.2 s; total 16.3 to 18.9 s, `false`.
+- 2026-11-06: acceptance records (D9). Phases at the default options, three runs each of the
+  final code of the slice, with the phases as in the Context section of the ADR:
+  - #316: proof attempt 14 to 22 ms, screen compilation 14 to 23 ms, candidate search 0.85 to
+    1.4 s (one certification, 0.55 to 0.92 s), `replayClaim` 0.36 to 0.53 s (`databaseValue` of
+    the witness 41 to 61 ms, `checkedConstruction` 0.11 to 0.15 s), screened shrink 4 to 5 ms;
+    total 1.4 to 2.2 s, `false` (ADR: 37.8 s).
+  - True variant (`GROUP BY email COLLATE NOCASE`): proof attempt 14 to 27 ms, screen
+    compilation 15 to 20 ms, candidate search 0.32 to 0.47 s with no certification; total 0.35
+    to 0.52 s, `unknown` (ADR: 23.0 s; slice 2: 0.6 to 1.0 s).
+  - Consumer-size claim: proof attempt 11 to 16 ms, screen compilation 16 to 20 ms, candidate
+    search 9.0 to 11.3 s (one certification, 3.7 to 4.7 s), `replayClaim` 2.7 to 3.5 s
+    (`databaseValue` 0.9 to 1.2 s, `checkedConstruction` 2.9 to 3.4 s), screened shrink 11 to
+    18 ms, certification of the shrunk witness 3.2 to 4.2 s; total 18.9 to 23.4 s, `false`.
+  Before the empty database was screened, each value sent it to the kernel (four certifications
+  for this claim instead of one).
   Defaults measured again with the consumer-size claim: it is `false` with 300 candidates and
   `unknown` with 100; `false` with a time limit of 5,000 ms and `unknown` with 3,500 ms; `false`
   with a budget of 62,000 and `unknown` with 50,000. The defaults do not change: budget 100,000,
