@@ -73,3 +73,7 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   Observation for D8: under a load average near 7, the `altered` counterexample once came out
   unshrunk; at a load near 3 it is shrunk in each of three runs. A plausible cause is the
   wall-clock time limit of the check; D8 measures the compiled time of a check.
+- 2026-11-06: the time limit counts only the waits for compiled work (`CompiledLimit.remaining`).
+  Before, it was a deadline from the start of the check, so the kernel's time also used it up,
+  against the option's description and D2/D8. Test: `surface_search_test` (a 200 ms sleep in the
+  elaborator under a 50 ms limit leaves the compiled data available), `surface_check_screen_test`.

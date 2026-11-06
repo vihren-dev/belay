@@ -14,34 +14,37 @@ namespace Belay.Sqlite.Check
 
 open Lean Meta Elab Term
 
-/-- The time limit of the compiled work of one checking operation. -/
+/-- The time limit of the compiled work of one checking operation. Only the time that the
+operation waits for compiled work counts; the elaborator and the kernel count heartbeats
+instead. -/
 structure CompiledLimit where
-  /-- The time ({name}`IO.monoMsNow`) at which the operation stops waiting for compiled work. -/
-  deadline : Nat
-  /-- Whether compiled work of the operation reached the deadline. It is a reference, so that the
-  fact stays when a failed attempt restores the elaboration state. -/
+  /-- The milliseconds of waiting for compiled work that the operation has left. It is a
+  reference, so that the time stays spent when a failed attempt restores the elaboration state. -/
+  remaining : IO.Ref Nat
+  /-- Whether compiled work of the operation reached the limit. It is a reference for the same
+  reason. -/
   expired : IO.Ref Bool
   /-- Why the search of the operation ended without a result, when a limit or a missing screen
   explains it. It is a reference for the same reason. -/
   reason : IO.Ref (Option String)
 
 instance : Nonempty CompiledLimit :=
-  ⟨{ deadline := 0, expired := Classical.ofNonempty, reason := Classical.ofNonempty }⟩
+  ⟨{ remaining := Classical.ofNonempty, expired := Classical.ofNonempty, reason := Classical.ofNonempty }⟩
 
 /-- The time limit of the current checking operation, when there is one. The state is local to
 the environment branch, as the record of the certificate audit is. -/
 initialize compiledLimitExtension : EnvExtension (Option CompiledLimit) ←
   registerEnvExtension (pure none) (asyncMode := .local)
 
-/-- Run an operation whose compiled work ends after the given number of milliseconds, and restore
-the previous limit afterwards. Use it around one checking operation. -/
+/-- Run an operation that may wait for compiled work for the given number of milliseconds in
+total, and restore the previous limit afterwards. Use it around one checking operation. -/
 def withCompiledLimit [Monad m] [MonadEnv m] [MonadLiftT BaseIO m] [MonadFinally m]
     (milliseconds : Nat) (action : m α) : m α := do
   let previous := compiledLimitExtension.getState (← getEnv)
   let expired ← (IO.mkRef false : BaseIO (IO.Ref Bool))
   let reason ← (IO.mkRef none : BaseIO (IO.Ref (Option String)))
-  let deadline := (← (IO.monoMsNow : BaseIO Nat)) + milliseconds
-  modifyEnv (compiledLimitExtension.setState · (some { deadline, expired, reason }))
+  let remaining ← (IO.mkRef milliseconds : BaseIO (IO.Ref Nat))
+  modifyEnv (compiledLimitExtension.setState · (some { remaining, expired, reason }))
   try action
   finally modifyEnv (compiledLimitExtension.setState · previous)
 
@@ -68,20 +71,30 @@ def recordedReason : CoreM (Option String) := do
   | some limit => limit.reason.get
   | none => return none
 
-/-- Wait for compiled work in a dedicated task. The wait checks cancellation, and stops at the
-time limit of the operation ({name}`withCompiledLimit`): it then records the limit and throws.
+/-- Wait for compiled work in a dedicated task. The wait checks cancellation. Its time counts
+against the time limit of the operation ({name}`withCompiledLimit`); when the time that is left
+runs out, the wait records the limit and throws.
 Compiled code cannot be stopped, so an abandoned task runs to the end of its computation; its
 result is not used. Outside a checking operation there is no time limit. -/
 def awaitCompiled (work : Unit → α) : CoreM α := do
   let limit := compiledLimitExtension.getState (← getEnv)
   if let some limit := limit then
     if ← limit.expired.get then throwError timeLimitReason
+  let start ← IO.monoMsNow
+  let deadline ← match limit with
+    | some limit => pure (some (start + (← limit.remaining.get)))
+    | none => pure none
   let task := Task.spawn (prio := .dedicated) work
   repeat
-    if ← IO.hasFinished task then return task.get
+    if ← IO.hasFinished task then
+      if let some limit := limit then
+        let waited := (← IO.monoMsNow) - start
+        limit.remaining.modify (· - waited)
+      return task.get
     Core.checkInterrupted
-    if let some limit := limit then
-      if (← IO.monoMsNow) ≥ limit.deadline then
+    if let (some limit, some deadline) := (limit, deadline) then
+      if (← IO.monoMsNow) ≥ deadline then
+        limit.remaining.set 0
         limit.expired.set true
         limit.reason.modify (·.or (some timeLimitReason))
         throwError timeLimitReason
