@@ -361,6 +361,61 @@ the row (issue #309). DECIDED (owner, 2026-11-06): keep this wording; the
 rules name the model's one row, and they are amended when #309 is decided. The
 alternative, rules that abstract over the representative row, was rejected.
 
+## Deep review (2026-11-06)
+
+The owner asked for a deep review of the ADR by Codex (GPT-6-Astra, reasoning
+effort ultra, with web search and local experiments); only the review was
+kept, at `/home/codex/work/.adr27-deep-review/review.md` outside the
+repository. It found eight points, all confirmed against the code and, for the
+`HAVING` divergence, against native SQLite 3.51.0:
+
+1. The intro said the alternatives of `possibleResults` vary "only the order
+   of rows". They vary the selection at a LIMIT or OFFSET cut and normalize the
+   selected tie groups; `Query.results` need not be a member. Fixed in the
+   intro.
+2. The grouping-term sentence overstated what resolution accepts. Fixed in
+   the ADR and the source map (operand rules of WHERE after the grouping
+   checks; integer and alias own rules; a subquery refused).
+3. D7 and B10 said `unknown` "only when no certificate is found". A certified
+   candidate whose replay cannot be produced is also `unknown`, and screening
+   needs supported and supplied inputs and an executable closure (ADR 0031
+   D1). Fixed in D7 and B10.
+4. The source map's output row did not name the group row. Fixed.
+5. The retirement inventory omitted `ScalarNoFrom.lean` and claimed a net
+   reduction that the baselines do not establish. Fixed: a row for the file
+   and a measurement caveat.
+6. No evidence showed that phase rules compose. Added the three fixtures
+   `tests/surface/SelectAutomationPhaseRules.lean` (nine rules),
+   `SelectAutomationPhaseBridge.lean` (the D2 observer, `run_of_faultless`,
+   `outputs_of_calm_table`) and `SelectAutomationPhases.lean`
+   (`schema_projection_phases`, the grouped `HAVING` proofs and their
+   witnesses), registered as `test_select_phase_rules_compose` in
+   `tests/surface_select_automation_test.py` with axiom counts 9, 3 and 5.
+   The ADR's validation section and the review cover cite them.
+7. D2's scalar convenience needed the quiet premise of `ScalarNoFrom` and the
+   clause that a statement count permits a `.done` output. Fixed in D2.
+8. The `Query.groupRow` limitation reaches `HAVING`, the cardinality of the
+   result, nested queries and continuations, and a quantifier over execution
+   branches does not cover SQLite's plans. Stated in D4 and in the A10
+   contrast of the acceptance; the owner keeps the model's one row until
+   issue #309 is decided.
+
+Nix evidence for the fixtures: a sandboxed `nix-build` of `tests.surfaceS6`
+with `PYTEST_ADDOPTS="-k select_"` ran the five SELECT automation tests: 5
+passed, 66 deselected, no failures, errors or skips. Report:
+`/nix/store/yiv0vsp2zqnaqvwwzskpw4larjrcpa6k-sqlite-verifier-test-surfaceS6-1/junit.xml`,
+rooted at `build/select-automation-tests`.
+`tests/docs_test.py` passed (4 tests) after the document edits.
+
+Review `20261106T214403Z-d4b95e3a` (Codex) of the fixture commit found no
+must findings and two should findings (R12): the rules and the proofs fixtures
+had 202 and 204 lines. Both fixed in the following `refactor:` commit by
+shorter module docstrings and proofs (199 lines each); the chain compiles
+unchanged. Nix evidence after the fix: the same focused `surfaceS6` build, 5
+passed, 66 deselected. Report:
+`/nix/store/dncxsrhgbymmykijlxrfjf3miachlpq7-sqlite-verifier-test-surfaceS6-1/junit.xml`.
+Review `20261106T214630Z-66d021e0` (Codex) of the refactor commit found nothing.
+
 ## Open design axes
 
 The revised proposal fixes the successful-result bridge domain, entry goal forms,

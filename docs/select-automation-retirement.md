@@ -47,6 +47,7 @@ current ones on main `84c0d779`; the fourteen files total 1,242 lines.
 | `ExistsQuery.lean`, `NotExistsQuery.lean` | A18 | Required |
 | `DuplicateKeyQuery.lean`, `FilteredDuplicateKeyQuery.lean` | A07, A10 | Required |
 | `UniqueLookupQuery.lean` | A05 | Required |
+| `ScalarNoFrom.lean` | A20, B01, B05 | Required: its three laws take a quiet statement, which permits fallible functions; the derived forms keep that premise before `ClaimsScalarNoFrom.lean` is deleted |
 | `ExistsMayFail.lean`, `SelectOneMayFail.lean` | B05 | Required |
 | `QueryCases.lean` | B01, B11 | Required |
 | `SampleQueryHints.lean` | D6 hints | Required |
@@ -126,6 +127,13 @@ needs its equation; the status file records each such deletion.
 - `Sql.check`, `sql_run`, `sql_auto`, `AutoSearch` and the `mvcgen` integration.
 
 ## Measurement
+
+The net reduction is not established. The physical counts above are the gross
+deletion opportunity: by `scc`, the fourteen surface files hold 844 maintained
+code lines and the required model files 1,648, together 2,492, before retained
+laws move. Measure the first completed family, with its retained-law moves, the
+tactic code, the migrated clients and the tests, and use that result to decide
+the remaining scope.
 
 Record in the status file, once at completion: lines deleted by this inventory,
 lines added by the rule library and tactic, and the net change in maintained

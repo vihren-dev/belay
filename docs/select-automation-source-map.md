@@ -29,7 +29,7 @@ forms; they are not additional constructors of `Resolved.Expr` or `Source`.
 | `Aggregate`, counting/extrema | `countRows`, `count`, `min`, `max` | Empty and NULL inputs; extrema collations and representative values |
 | `Aggregate`, numeric | `sum`, `avg`, `total` | Modeled summation, empty inputs and overflow |
 | `Aggregate`, collection/text | `jsonGroupArray`, `jsonGroupObject`, `groupConcat` | Input order, JSON binary flag, labels and per-row separator |
-| Resolved `Output` | `scalar`, `aggregate` | Scalar row or group-head evaluation; whole-group aggregate evaluation |
+| Resolved `Output` | `scalar`, `aggregate` | Scalar evaluation on the source row, or on `Query.groupRow` for a group (the first row for a column in `firstRowColumns`); whole-group aggregate evaluation |
 | `SortKey` | `expression`, `output` | Hidden sort values or output index; each term's direction/collation |
 | `Query.distinct` | `none`, `some collations` | Per-column comparison and representative certainty; this is not a Boolean |
 | Compound operators | `unionAll`, `union`, `intersect`, `except` | Left-to-right combination, multiplicity, collation and run ending |
@@ -39,7 +39,9 @@ forms; they are not additional constructors of `Resolved.Expr` or `Source`.
 `Query` also retains sources, filter, aggregate flag, grouping terms, columns,
 names, order terms, outer width, indexed aggregates, HAVING and optional compound.
 A compound stores its first term index, operator/index chain and collations.
-A grouping term is any resolved expression with its collation (ADR 0030 D4).
+A grouping term is any resolved expression with its collation; resolution reads
+it in `Scope.ownSources` with the operand rules of `WHERE` after the grouping
+checks, and an integer or alias term has its own rule (ADR 0030 D4).
 The expression inventory above includes all 21 constructors; the aggregate
 inventory includes all 10. Function families remain parameters of their rules:
 coverage does not require automatic solution of every function-specific fact.

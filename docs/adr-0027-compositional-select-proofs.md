@@ -36,13 +36,19 @@ SELECT proof procedure exists. The new work extends these interfaces.
 The model computes source rows, filters them, constructs records, applies
 DISTINCT, sorts and slices. `records` combines grouping, aggregate evaluation,
 HAVING, projection and sort-key evaluation.
-A grouping term is any expression that `WHERE` resolves, under its collation (ADR 0030
-D4). The scalar columns, `HAVING` and the sort keys of a group read the row of the group,
+A grouping term is a general expression under its collation: resolution reads it
+with the operand rules of `WHERE` after the grouping checks, in `Scope.ownSources`
+(the query's own sources, not the enclosing query's); an integer position and a
+result alias have their own grouping rules, and a subquery is refused (ADR 0030
+D4). The pure group rules accept any resolved expression with a collation. The scalar columns, `HAVING` and the sort keys of a group read the row of the group,
 `Query.groupRow`: the row of the deciding `min` or `max` call, else the first row in
 source order; the result columns of `Query.firstRowColumns` read the first row (ADR 0030
-D5). That row is one modeled result; `possibleResults` varies only the order of
-rows. `Query.results` selects one result;
-`Query.possibleResults` and execution branches describe permitted alternatives.
+D5). That row is one modeled result. `Query.results` computes the stable
+representative before the normalization of tie groups: `Query.normalResult`
+belongs to `Query.possibleResults`, `Query.results` need not. The alternatives
+vary the selection at a LIMIT or OFFSET cut boundary and normalize each selected
+tie group; they do not vary the row of a group. Execution branches describe the
+other permitted alternatives.
 Faults and coverage are separate from pure result computation. A theorem about
 `Query.results` alone is not a theorem about successful SQL execution.
 
@@ -91,7 +97,9 @@ only `.ok rows` and applies Q to those rows. `single` retains its existing
 
 These predicates describe the outputs of that run. Equivalence with a
 branch-universal success claim applies to one SELECT observation with a
-context-independent row-list predicate and explicit statement/context premises.
+context-independent row-list predicate and explicit statement/context premises,
+among them that the statement is a SELECT: a statement count alone permits a
+`.done` output, which `queryResult` reads as `.ok []`.
 For arbitrary programs, use `Sql.check_actual` to obtain the actual returned
 value and its postcondition; outputs alone give no reverse implication.
 A continuation can differ across choices. Context-sensitive
@@ -107,7 +115,10 @@ on 2026-10-29. Each becomes an abbreviation of the observation predicates of thi
 decision: `Holds` and `Empty` of the successful-result predicate, `Fails` of the
 matching error observation. Each has the same truth value as its current
 definition on every query script and database; the implementation proves that
-equivalence as a migration witness, then deletes the old definitions. The
+equivalence as a migration witness, then deletes the old definitions. A per-form
+law of these names keeps its premises when it is derived again: the laws of
+`ScalarNoFrom.lean` take a quiet statement, which permits fallible functions,
+not a calm one; a derivation under a calm premise would lose that capability. The
 decidable instances and the `check_query` argument are kept. Their consumers in
 the claims driver, assertions, explanations and migration patterns change no
 statement. There is one claim vocabulary, not two.
@@ -156,7 +167,11 @@ another row: a result column in `Query.firstRowColumns` reads the first row of
 the group, and a sort key that names a result column reads the projected
 output. Where SQLite's plan decides that
 row (issue #309), the rule states the model's row and makes no claim about native
-SQLite. Aggregate rules include NULL behavior and fault obligations.
+SQLite. That limitation reaches every consumer of the row: `HAVING` on the row,
+the cardinality of the result, a nested query and a continuation that reads the
+result. A proved successful nonempty model result is not a plan-independent
+native guarantee where the plan decides the row; a quantifier over execution
+branches covers the alternatives that the model represents, not SQLite's plans. Aggregate rules include NULL behavior and fault obligations.
 Join rules retain concatenation, ON truth, multiplicity and outer-join NULL
 extension. DISTINCT and compounds use the model's comparison and representative
 restrictions. A scalar subquery with no row can produce NULL.
@@ -229,14 +244,18 @@ route produces an ordinary Lean proof checked under the current dependency
 policy; no `sorry`, new axiom or native decision bypass is introduced.
 The background checker reuses this search for the new claim shapes without
 weakening certification, exclusions, replay or command-level cancellation. Its
-counterexample search is the compiled screen of ADR 0031 D2: a claim is screened when
-its premises and conclusion are decidable at the screened inputs, so `Run.returnsResult Q`
-and `returnsRows P` have `Decidable` instances when `Q` or `P` has one. A claim without a
+counterexample search is the compiled screen of ADR 0031 D2. The convenience
+predicates preserve decidability: `Run.returnsResult Q` and `returnsRows P` have
+`Decidable` instances when `Q` or `P` has one. Screening needs more than
+decidability: a supported or supplied input for every binder, and an executable
+dependency closure that passes the checks of ADR 0031 D1. A decidable claim can
+therefore have no compiled screen. A claim without a
 screen keeps the other routes: the proof route can prove it, and its explicit
 witnesses, the empty database and the databases that the claim names can refute
-it when the kernel certifies one. When no certificate is found, the answer is
-`unknown` with the reason (ADR 0031 owner decision 2); that answer is correct,
-not a defect of this feature. The time limit of
+it when the kernel certifies one. The answer is `unknown` with the
+reason when no admissible proof or refutation report is completed, which
+includes a certified candidate whose required replay cannot be produced (ADR
+0031 owner decision 2); that answer is correct, not a defect of this feature. The time limit of
 compiled work (`sql.checkTimeLimit`) and the candidate count (`sql.checkCandidates`)
 are the checker's controls; the proof search of this ADR runs no compiled code and
 stays under the heartbeat budget.
@@ -290,3 +309,20 @@ The accompanying acceptance contract names positive, negative and residual cases
 Retained experiments test feasibility and current boundaries, not the existence
 of the proposed tactic. All recommendations above remain draft until reviewed
 with the experiment results and the formal semantic cover.
+
+The deep review of 2026-11-06 asked for evidence that phase rules compose
+before the implementation estimate is trusted. Three retained experiments
+answer it:
+[SelectAutomationPhaseRules.lean](../tests/surface/SelectAutomationPhaseRules.lean)
+states nine phase rules (projection in scalar and grouped form, grouping, the
+group row, the window, DISTINCT and the alternatives of a query without a
+window) for every query that meets the phase's own premises;
+[SelectAutomationPhaseBridge.lean](../tests/surface/SelectAutomationPhaseBridge.lean)
+states the D2 observer over an output and the quiet premises under which a
+calm statement of one query over one table outputs the query's possible
+results; and
+[SelectAutomationPhases.lean](../tests/surface/SelectAutomationPhases.lean)
+proves the schema projection of `SelectAutomationSchema.lean` and a grouped
+`HAVING` query over arbitrary databases through those rules only, with
+concrete witnesses for every premise. The rules are experiment fixtures and
+the first drafts of D4's rules, not the public rule library.
