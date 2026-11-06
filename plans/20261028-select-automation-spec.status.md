@@ -438,6 +438,10 @@ Nix evidence on the rebased tree: the `surfaceS6` build with
 The owner then asked to implement the ADR (2026-11-07). The ADR, the
 acceptance contract, the review cover and the retirement inventory now say
 ACCEPTED. The implementation has its own task and status files.
+Review `20261106T221202Z-9d74e6fb` (Codex) of the acceptance commit found one
+R19 "must" point: the review cover still called its recommendations draft and
+subject to owner review. Fixed in the following `refactor:` commit; review
+`20261106T221243Z-86f835a3` of that commit found nothing.
 
 ## Open design axes
 
