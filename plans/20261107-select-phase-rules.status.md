@@ -20,6 +20,7 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: review fixes (`refactor:`): the task file states outcomes without an
   order; the working sequence and the candidate decisions are in this file;
   `ColumnQuery.lean` retires after A19.
+- 2026-11-07: review fix (`refactor:`): a decision for each model example file.
 
 ## Working sequence
 
@@ -51,9 +52,19 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
   `InSubqueryQueryRowidAlias`, whose import chain contains the other seven files.
   A declaration of the chain that this consumer does not use is deleted when the
   `subquery` rule exists.
-- Model examples: `QueryExamples` stays (the conformance package
-  `VerifierConformance/QueryOutputs.lean` imports it). In `SubqueryExamples`,
-  `QueryWindowExamples`, `PossibleResultsExamples` and `InSubqueryExamples`, an
-  example that an acceptance contrast repeats is deleted when that contrast lands;
-  an example that protects a boundary that no case covers stays, and this file
-  names it.
+- `Model/QueryExamples.lean`: retain. The conformance package
+  (`VerifierConformance/QueryOutputs.lean`) and the other example files import it.
+- `Model/SubqueryExamples.lean`: delete. Its correlated EXISTS, IN-with-NULL and
+  scalar-subquery examples are the contrasts of A18 and A19, which replace them.
+- `Model/QueryWindowExamples.lean`: delete the examples of the queries `windowed` and
+  `empty` (parameter LIMIT/OFFSET results and the mismatch error); A15 replaces them.
+  Retain the `windowInteger` conversion examples (integer, real, text, blob and NULL
+  values of a window parameter): no acceptance case covers that conversion table.
+- `Model/PossibleResultsExamples.lean`: delete the `possible` examples (window ties,
+  DISTINCT and LIMIT over the guide's tables); A12 and A14 replace them. Retain the two
+  `Resolved.normalForm` examples (NaN against NULL, and real 1.0 against integer 1):
+  no case covers the order of output normalization.
+- `Model/InSubqueryExamples.lean`: retain. Its NOT IN against NOT EXISTS examples
+  (NULL, empty subquery and collation) protect the equivalence of `NotInQuery.lean`
+  (ADR 0026 D4), which no ADR 27 case covers; A19 covers one IN observation, not the
+  equivalence.
