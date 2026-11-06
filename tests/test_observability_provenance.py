@@ -119,5 +119,6 @@ def test_a_failed_link_farm_imports_the_suites_that_passed(tmp_path: Path, monke
     monkeypatch.setenv("BELAY_OBSERVABILITY_SPOOL", str(tmp_path / "spool"))
     monkeypatch.delenv("BELAY_CLICKHOUSE_URL", raising=False)
     monkeypatch.setattr(observability_nix, "provenance", lambda environment: {"event": "local"})
-    assert run(["nix-build", str(expression), "--no-out-link", "--option", "keep-going", "true"], 100) != 0
+    assert run(["nix-build", str(expression), "--no-out-link", "--option", "keep-going", "true",
+                "--extra-experimental-features", "nix-command flakes"], 100) != 0
     assert execution(tmp_path / "spool" / identity)["metadata"] == '{"event":"local"}'
