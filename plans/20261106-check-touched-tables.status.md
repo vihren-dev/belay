@@ -94,3 +94,6 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   296.4 s (27 in 297.6 s), `surfaceS6` 66 tests in 483.6 s (66 in 581.8 s); the S6 suite varied
   between 546 s and 871 s in slice 2 on this shared machine, so these are records, not a measured
   speed-up. No existing fixture changed its result in this slice. Slice 3 and the task are DONE.
+- 2026-11-06: before the pull request, on the chain rebased onto main (#342): Nix
+  `just test-nix` passed (90 tests) and `just test-scheduled-checks` passed. The pull request
+  covers slices 2 and 3.
