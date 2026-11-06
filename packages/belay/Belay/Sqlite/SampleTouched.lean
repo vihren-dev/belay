@@ -13,15 +13,17 @@ namespace Belay.Sqlite.Sampling
 open Belay.Sqlite.Model
 
 /-- The tables and views that a statement reads or writes, by name: the named sources of its
-queries and subqueries and its write target ({name}`statementHints`). Transaction control names
+queries and subqueries and its write target, or the table of CREATE INDEX, which reads its rows
+({name}`statementHints`). Transaction control names
 none. None for every other statement, for example ALTER TABLE, CREATE TRIGGER or a PRAGMA,
 whose tables the hints do not name: then every table counts as touched. -/
 def statementTables (statement : Syntax.Statement) : Option (List Identifier) :=
   match statement with
-  | .select .. | .insert .. | .insertSelect .. | .update .. | .delete .. =>
+  | .select .. | .insert .. | .insertSelect .. | .update .. | .delete .. | .createIndex .. =>
     some ((statementHints statement).sources.map (·.table))
   | .begin | .commit | .rollback => some []
-  | _ => none
+  | .createTable .. | .createView .. | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn ..
+  | .dropTable .. | .dropView .. | .dropIndex .. | .pragma _ | .createTrigger .. | .dropTrigger .. => none
 
 /-- The names of the tables and views that a list of statements reads or writes
 ({name}`statementTables`), or none when one of them does not name its tables. -/

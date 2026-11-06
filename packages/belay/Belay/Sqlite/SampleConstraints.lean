@@ -46,13 +46,14 @@ columns of the foreign key. -/
 def parentKeys (catalog : Catalog) (cells : List (List (List Value))) (key : ForeignKey) :
     List (List Value) :=
   match catalog.zipIdx.find? (·.1.name.sameName key.table) with
+  | none => []
   | some ({ entry := .table parent, .. }, position) =>
     let referenced := if key.referenced.isEmpty then parent.primaryKey
       else key.referenced.filterMap fun name => parent.columns.findIdx? (·.name.sameName name)
     if referenced.isEmpty || referenced.length != key.columns.length then []
     else (cells.getD position []).zipIdx.map fun (row, index) =>
       referenced.map fun column => storedCell parent index column row
-  | _ => []
+  | some ({ entry := .index _, .. }, _) | some ({ entry := .trigger _, .. }, _) | some ({ entry := .view _, .. }, _) => []
 
 /-- The selected cells, where each foreign key of a table gets the key values of a parent row
 ({name}`parentKeys`): row {lit}`i` gets those of parent row {lit}`i` modulo the parent's rows.
@@ -68,19 +69,35 @@ def withParentKeys (catalog : Catalog) (cells : List (List (List Value))) : List
           (key.columns.zip values).foldl (fun row (column, value) => row.set column value) row) rows
     | .index _ | .trigger _ | .view _ => rows
 
+/-- The selected cells with a change applied to the rows of each table; other objects get no
+rows. -/
+def eachTable (catalog : Catalog) (change : CatalogTable → List (List Value) → List (List Value))
+    (cells : List (List (List Value))) : List (List (List Value)) :=
+  catalog.zipIdx.map fun (object, position) =>
+    match object.entry with
+    | .table table => change table (cells.getD position [])
+    | .index _ | .trigger _ | .view _ => []
+
+/-- Apply the parent keys ({name}`withParentKeys`), then remove repeated keys
+({name}`distinctRows`), until the cells do not change, at most {lit}`fuel` times. A parent that
+gets its own key from a grandparent changes the keys of its children in the next round, so a
+chain of foreign keys settles in one round per table. A cycle of foreign keys can fail to
+settle; then the last round is the result. -/
+def settledParentKeys (catalog : Catalog) : (fuel : Nat) → List (List (List Value)) → List (List (List Value))
+  | 0, cells => cells
+  | fuel + 1, cells =>
+    let next := eachTable catalog distinctRows (withParentKeys catalog cells)
+    if next == cells then cells else settledParentKeys catalog fuel next
+
 /-- Selected cells that satisfy the simple constraints of the catalog: no NULL in a NOT NULL
 column ({name}`notNullCells`), no repeated key ({name}`distinctRows`), and foreign keys with
-the keys of their parents ({name}`withParentKeys`), after which repeated keys are removed again.
-A parent that changes after its children were given its keys can still give a candidate that
-{name}`validated` rejects. -/
+the keys of their parents, until they settle ({name}`settledParentKeys`). {name}`validated`
+checks the result, but it does not check foreign key references, as SQLite does not without
+{lit}`PRAGMA foreign_keys`: with a cycle of foreign keys that does not settle, a candidate can
+keep a key that its parent does not have. -/
 def constrainedCells (catalog : Catalog) (fallback : Value) (cells : List (List (List Value))) :
     List (List (List Value)) :=
-  let perTable (change : CatalogTable → List (List Value) → List (List Value)) cells :=
-    catalog.zipIdx.map fun (object, position) =>
-      match object.entry with
-      | .table table => change table (cells.getD position [])
-      | .index _ | .trigger _ | .view _ => []
-  let first := perTable (fun table rows => distinctRows table (notNullCells table fallback rows)) cells
-  perTable distinctRows (withParentKeys catalog first)
+  let first := eachTable catalog (fun table rows => distinctRows table (notNullCells table fallback rows)) cells
+  settledParentKeys catalog (catalog.length + 1) first
 
 end Belay.Sqlite.Sampling

@@ -37,12 +37,33 @@ def touches (statements : List Model.Syntax.Statement) (expected : Option (List 
 def column (database : Database) (table : String) (position : Nat) : List Value :=
   ((database.rows table).getD []).map (·.getD position .null)
 
+/-- A chain of foreign keys whose middle key is itself the key that the last table refers to. -/
+def chain : Database := db! "
+  CREATE TABLE g(k INTEGER UNIQUE);
+  CREATE TABLE p(k INTEGER UNIQUE REFERENCES g(k));
+  CREATE TABLE c(k INTEGER REFERENCES p(k));"
+
+/-- Checks {lit}`Sampling.constrainedCells` on selected rows before validation: a NULL in a NOT
+NULL column gets the fallback, a repeated UNIQUE value is left out, a foreign key gets its
+parent's rowid, and a chain of foreign keys settles on the grandparent's key. -/
+def checkConstrainedCells : TermElabM Unit := do
+  let a := Value.text "a".toUTF8.toList
+  let fallback := Value.integer 9
+  let cells := Sampling.constrainedCells schema.raw.catalog fallback
+    [[[.null, .null], [.integer 5, a], [.integer 6, a]], [[.null, .null, .null]], [], [], []]
+  unless cells == [[[.null, fallback], [.integer 5, a]], [[.null, .integer 1, .null]], [], [], []] do
+    throwError "constrained cells: {repr cells}"
+  let chained := Sampling.constrainedCells chain.raw.catalog fallback [[[.integer 1]], [[.integer 0]], [[.integer 0]]]
+  unless chained == [[[.integer 1]], [[.integer 1]], [[.integer 1]]] do
+    throwError "a chain of foreign keys did not settle: {repr chained}"
+
 /-- Checks the touched tables of {name}`deleteChild`, that every generated candidate leaves the
 untouched table empty, and that the table contents and seeded databases after the targeted
 databases satisfy the NOT NULL, UNIQUE and foreign key constraints by construction (a foreign key only
 when the parent table has rows), with at least one candidate that has both rows. -/
 elab "check_candidate_constraints" : command => Command.liftTermElabM do
   let statements := deleteChild.statements.map (·.1)
+  checkConstrainedCells
   unless touches statements (some ["child", "parent", "audit"]) do
     throwError "the touched tables of the DELETE are not child, its parent and the trigger's table"
   let parentDelete := (sql r"DELETE FROM parent").statements.map (·.1)
