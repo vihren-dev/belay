@@ -54,9 +54,12 @@ def canceledAttempt : TermElabM Unit := do
         goal.mvarId!.assign (mkConst ``True.intro)
         logError "discard this canceled diagnostic"
         pushInfoTree (.hole goal.mvarId!)
-        -- Cancel while the checker waits for the compiled task, not before it starts.
-        discard <| IO.asTask (do IO.sleep 50; token.set)
-        Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (100000000 : Nat)))
+        token.set
+        -- The token is set before the wait starts, and awaitCompiled checks it only in its wait
+        -- loop, after it starts the task: the interrupt comes from the wait. The count is a
+        -- runtime value, so that the sum is computed in the task.
+        let count ← (pure 100000000 : IO Nat)
+        Check.awaitCompiled fun _ => (List.range count).sum
     pure false
   catch error =>
     if error.isInterrupt then pure true else throw error
