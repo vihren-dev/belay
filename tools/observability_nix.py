@@ -111,11 +111,13 @@ def collect_outputs(output: str, destination: Path, since: datetime, metadata: d
 
 def recover_logs(lines: list[str], destination: Path, metadata: dict[str, str]) -> None:
     """Recover the reports of failed builders from the log into a staging spool, then import them
-    with the provenance. The log does not tie a frame to its derivation, so they have no suite."""
+    with the provenance. The log does not tie a frame to its derivation, so they have no suite.
+    On macOS the output folder of a failed builder stays visible, and `collect_outputs` has already
+    imported its execution with the suite name; that copy stays (#348)."""
     with tempfile.TemporaryDirectory(prefix="belay-recovered-") as temporary:
         recover(lines, Path(temporary))
         for folder in Path(temporary).iterdir():
-            if (folder / "execution.json").exists():
+            if (folder / "execution.json").exists() and not (destination / folder.name).exists():
                 import_with(folder, destination, metadata)
 
 
