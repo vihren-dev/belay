@@ -187,7 +187,9 @@ instances also use. The order is:
 3. Seeded random databases.
 
 `sql.checkCandidates` counts screened candidates. Its default comes from the measurements of
-D9.
+D9. The generated candidates of one value are at most an equal share of the count that is left
+for it and the values after it (added 2026-11-06: on the consumer schema of D9, the first value,
+NULL, has no counterexample and used the whole count before the value 1 was tried).
 
 ### D4. Touched tables and rows that satisfy constraints
 

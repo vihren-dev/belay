@@ -73,34 +73,44 @@ candidate. The contents and the seeded databases satisfy the simple constraints
 ({name}`constrainedCells`), with the first pool value that is not NULL for a NOT NULL column.
 The stored rows can differ from the selection, and two selections can give the same database,
 because the constraints, column affinity and rowid assignment ({name}`withCells`) apply after
-it. The pool is the claim's constants, then {name}`boundaryValues`. The list is finite and
-explicit; a caller can screen it, or supply other candidates to the checker. -/
+it. The pool is the claim's constants, then {name}`boundaryValues`. The list ends after the
+first candidate for which {lit}`stop` holds, given its position and the candidate, so that a
+caller can screen the candidates while they are generated. The list is finite and explicit; a
+caller can screen it, or supply other candidates to the checker. -/
 def candidates (base : Database) (constants : List Value) (touched : Option (List Model.Identifier))
-    (maxRows randomCount seed size limit : Nat) : Array Database := Id.run do
+    (maxRows randomCount seed size limit : Nat) (stop : Nat → Database → Bool := fun _ _ => false) :
+    Array Database := Id.run do
   let pool := (constants ++ boundaryValues).eraseDups
   let fallback := (pool.find? fun value => !value matches .null).getD (.integer 0)
   let catalog := base.raw.catalog
+  -- Add a candidate; true when the list is complete: the limit or the stop.
+  let add (found : Array Database) (database : Database) : Array Database × Bool :=
+    (found.push database, found.size + 1 ≥ limit || stop found.size database)
   let mut found : Array Database := #[]
+  if limit == 0 then return found
   for database in touchedTargeted base constants touched maxRows do
-    if found.size ≥ limit then return found
-    found := found.push database
+    let (next, done) := add found database
+    found := next
+    if done then return found
   let base := (validated (onlyTouched touched base.raw)).getD base
-  if found.size ≥ limit then return found
   let tables := catalog.countP (fills touched)
-  let (_, contents) := (do
+  let ((), (contents, done)) := (do
     for total in List.range (tables * maxRows + 1) do
       let full ← visitContents pool maxRows (fills touched) (fun cells => do
           if let some database := validated (withCells base.raw (constrainedCells catalog fallback cells)) then
-            modify (·.push database)
-          return (← get).size ≥ limit)
+            let (found, _) ← get
+            set (add found database)
+          return (← get).2)
         catalog total []
       if full then return ()
-    : StateM (Array Database) Unit).run found
+    : StateM (Array Database × Bool) Unit).run (found, false)
   found := contents
+  if done then return found
   for index in List.range randomCount do
-    if found.size ≥ limit then return found
     if let .ok database := seeded (touchedDatabase base constants maxRows touched fallback) (seed + index) size then
-      found := found.push database
+      let (next, done) := add found database
+      found := next
+      if done then return found
   return found
 
 end Belay.Sqlite.Sampling

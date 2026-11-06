@@ -21,10 +21,6 @@ def maxLiteralBytes : Nat := 65536
 /-- Native replay translation receives at most this many UTF-8 bytes of proposed SQL. -/
 def maxReplayBytes : Nat := 16384
 
-/-- The screen runs on at most this many candidates in one compiled task, so that a search that
-reaches the time limit leaves at most one batch running. -/
-def screenBatch : Nat := 256
-
 /-- The default time limit, in milliseconds, of the compiled work of one check: the screen, the
 generation of candidates and the data. -/
 def defaultTimeLimit : Nat := 10000

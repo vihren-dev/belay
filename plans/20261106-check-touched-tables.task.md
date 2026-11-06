@@ -37,6 +37,13 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    `Succeeds s (·.HasCatalog schema)`, as it reads `db = sample`: it uses `schema` as the schema
    of the candidates, with its schema text for the replay. A supplied `(schema := …)` still takes
    priority.
+4. **The candidate count per value (D3, added 2026-11-06).** The generated candidates of one
+   value of the value pool are at most an equal share of the candidate count that is left for it
+   and the values after it; a value that uses less leaves the rest to the values after it. A
+   claim without a parameter value gets the whole count. The search screens each candidate while
+   it generates them and stops at the first one that the screen accepts. Before, the first value
+   could use the whole count: on the consumer schema, NULL as the message id (no counterexample)
+   used all 10,000 candidates and the time limit, and the search never reached the id 1.
 
 ## Tests
 

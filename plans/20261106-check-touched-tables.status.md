@@ -37,3 +37,12 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   `surface_check_real_schemas_test` (the claim `catalog`: `HasCatalog altered` in a conjunction,
   without `(schema := …)`, is false; `decide` proves and refutes `HasCatalog`), and the surface
   tests of the D4 entry plus `surface_inference_test` and `surface_automatic_test`.
+- 2026-11-06: screening during generation and a candidate share per value (task item 4, ADR D3
+  amended). `Sampling.candidates` takes a `stop` test and ends after the first candidate that
+  passes it; `visitCandidates` screens in it and, after a rejected certificate, continues after
+  that candidate. `firstAccepted` and `screenBatch` are removed. Each value gets an equal share of
+  the candidate count that is left. On the consumer-size schema the screen accepts candidate 15
+  for the id 1; the kernel certification and the replay take about 4 s each. Before the share,
+  the value NULL used the whole count and time limit. A task whose certificate is rejected can
+  now generate up to its share again from that position. Tests: the surface tests of the D7
+  entry.

@@ -94,13 +94,6 @@ def compileScreen (proposition environment : Expr) (named : Array (Name × Expr)
   let type ← mkArrow (Lean.mkConst ``Database) (← mkArrow (Lean.mkConst ``Value) (Lean.mkConst ``Bool))
   compileTerm Screen type term
 
-/-- The position of the first candidate from {lit}`start` that the screen accepts with the value,
-among at most {lit}`count` candidates. -/
-def firstAccepted (screen : Screen) (value : Value) (candidates : Array Database) (start count : Nat) :
-    Option Nat :=
-  (List.range' start (min count (candidates.size - start))).find? fun position =>
-    candidates[position]?.any (screen · value)
-
 /-- Shrink a database with the screen: at most {lit}`steps` times, replace it with the first
 shrink proposal ({name}`Sampling.shrinkDatabase`) that the screen accepts with the value. The
 result is the database itself when no proposal is accepted. It is only a proposal: the checker
