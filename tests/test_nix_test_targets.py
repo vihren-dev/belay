@@ -82,6 +82,19 @@ def test_only_the_clickhouse_suite_may_use_local_networking_on_macos() -> None:
     allowed = {name for name, allows in json.loads(result.stdout).items() if allows}
     assert allowed == {'observability'}, allowed
 
+
+def test_the_clickhouse_suite_reads_zone_files_from_the_nix_store() -> None:
+    """The ClickHouse server of the `observability` suite in `build-support/tests.nix` reads
+    its zone files from `TZDIR`, or from `/usr/share/zoneinfo/` without it, which the macOS
+    Nix sandbox forbids (#347). The test evaluates the suite for macOS."""
+    builds = '(import ./build-support/default.nix { system = "aarch64-darwin"; })'
+    result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
+        '--extra-experimental-features', 'nix-command flakes', '--expr', f'{builds}.tests.observability.TZDIR or ""'],
+        cwd=ROOT, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    zone_files = json.loads(result.stdout)
+    assert zone_files.startswith('/nix/store/') and '-tzdata-' in zone_files and zone_files.endswith('/share/zoneinfo'), zone_files
+
 @pytest.fixture
 def source_tree(tmp_path: Path) -> Path:
     """Copy only small potential test inputs, with the committed parser C; no store outputs or build trees."""
