@@ -35,3 +35,13 @@ def test_select_execution_success_and_vacuity(runtime_root: Path, tmp_path: Path
     """Sql.check covers every output choice, rejects modeled errors as success and rejects
     unsupported stops; a false-precondition triple exposes the separate vacuity risk."""
     check_module_chain(runtime_root, tmp_path, (("SelectAutomationExecution", 8),), timeout=60)
+
+
+def test_select_phase_rules_compose(runtime_root: Path, tmp_path: Path) -> None:
+    """The prototype phase rules (projection, grouping, group row, distinct, window, alternatives)
+    and the execution bridge prove the schema projection and a grouped HAVING query over arbitrary
+    databases without a whole-query law; concrete witnesses inhabit every premise (ADR 0027,
+    deep review finding 6)."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("SelectAutomationCore", 7), ("SelectAutomationPhaseRules", 9), ("SelectAutomationPhaseBridge", 3),
+        ("SelectAutomationPhases", 5)), timeout=60)
