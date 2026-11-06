@@ -14,7 +14,8 @@ and it mixes three audiences.
 Current errors and mixed content in the document:
 
 - The first paragraph says that the supported version strings are `3.51.0` and
-  `3.46.0` and that unsupported versions reject. No model code checks a release.
+  `3.46.0` and that unsupported versions reject. No model code checks or reads
+  `Profile.release`: it is recorded metadata.
   The model's profile is `Belay.Sqlite.Model.Profile`
   (`packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Profile.lean`),
   and `Profile.pinned` is SQLite 3.51.0. The parser library has grammars for 24
@@ -24,9 +25,10 @@ Current errors and mixed content in the document:
   evidence only.
 - "Without a migration framework", "approved contract" and "SQLx" belong to
   the removed product.
-- The text says that configuration-changing SQL is unsupported, while
-  `Profile` now has `foreignKeys` and `recursiveTriggers`, and
-  `docs/semantic-subset.md` describes clock values and time zones.
+- The text says that configuration-changing SQL is unsupported. `Profile` now
+  has `foreignKeys` and `recursiveTriggers`, the model implements both settings
+  on and off, and `docs/semantic-subset.md` describes clock values and time
+  zones.
 - About half of the document (the sections "Native corpus profiles (ADR 0005,
   in progress)" and the 3.53.4 paragraph) describes the recorder, its transport
   format versions and refusals. That is for the team and designers, not for
@@ -83,12 +85,16 @@ are later slices. ADRs and historical plans keep their text.
 
 - Keep the meaning of every sentence that moves. Where the old text is
   ambiguous, the issue says to ask the owner before a rewrite.
-- `Profile.foreignKeys` and `recursiveTriggers` exist, but a native record
-  whose profile turns a setting on is `MODEL_UNSUPPORTED`
-  (`conformance/profile_scope.py`, `docs/conformance-format-v2.md`). State
-  what the model does with each setting, not what the recorder accepts.
-- The model reads the release string, but no code rejects an unknown release;
-  do not claim a rejection. The surface runs statements with `Profile.pinned`
+- The settings that the model implements and the settings that it does not
+  are in `conformance/profile_scope.py`: `unsupported_setting` names IMMEDIATE
+  transactions, read-only access, untrusted schema mode and other writers. The
+  model implements foreign keys and recursive triggers on and off, and a
+  controlled clock (`tests/profile_scope_test.py`). The paragraph of
+  `docs/conformance-format-v2.md` that says "no foreign keys or recursive
+  triggers" and "no controlled clock" is stale; correct it in the same slice.
+- Resolution and execution do not read `Profile.release` or
+  `Profile.sourceId`; they are recorded metadata that does not select or check
+  the semantics. Do not claim a rejection of an unknown release. The surface runs statements with `Profile.pinned`
   (for example `packages/belay/Belay/Sqlite/Database.lean`), and its SQL terms
   parse with `Release.default`
   (`packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean`), both 3.51.0.
