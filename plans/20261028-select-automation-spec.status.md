@@ -246,6 +246,77 @@ table said every file proves a complete-output equation, but
 `UniqueLookupQuery.lean` has only a `Holds` claim and `SampleQueryHints.lean`
 has hint functions. Fixed in the next commit.
 
+## Rebase onto main `84c0d779` (2026-11-06)
+
+The branch was rebased with `jj rebase --simplify-parents` onto main
+`84c0d779` (210 commits after the earlier base `de0e0462`: ADR 0028 to ADR
+0031, the leaf rename of #27 and the CI fixes). The two merges of main became
+ordinary commits; the owner's merge of the remote ADR revisions stays a merge.
+Two conflicts were resolved in the commits that caused them:
+
+- `tests/sql_file_support.py` (`8a2b159a`): main no longer passes
+  `BELAY_PARSER_LIBRARY` to Lake (ADR 0023). The helper keeps only the
+  toolchain path and the deployment target, when the caller sets one.
+- `tests/nix_suites.json` (`2dab0fe0`): the SELECT experiment test is
+  registered at the end of main's current `surfaceS6` list.
+
+The PR's other changes (the five documents, the task files, the four fixtures,
+the review records) are unchanged. `just dev-build` passed on the rebased tree
+as a diagnostic. Focused Nix evidence: a sandboxed
+`nix-build` of `tests.surfaceS6` with `PYTEST_ADDOPTS="-k select_"` ran the
+four fixtures on the rebased tree: 4 passed, 66 deselected, in 7.798 seconds,
+no failures, errors or skips. Report:
+`/nix/store/h16mncz9ffj1rq9bnbaim5z4srbygyml-sqlite-verifier-test-surfaceS6-1/junit.xml`,
+rooted at `build/select-automation-tests`. The macOS deployment-target fix is
+checked by the `Check (aarch64-darwin)` job of the pull request.
+
+### Reconciliation gaps against main `84c0d779`
+
+The specification documents still describe main `187ea510`. The gaps below are
+listed for the owner; none is applied yet.
+
+1. **ADR 0030 D4, D5 (grouping).** A grouping term is now any expression that
+   `WHERE` resolves, with its collation; only a subquery (`group-by-term`) and
+   an alias inside an expression (`alias-in-expression`) stay restricted. The
+   row of a group is `Query.groupRow`: the row of the deciding `min`/`max`
+   call (`Query.deciding`), else the first row; the result columns of
+   `Query.firstRowColumns` read the first row. The source map's constructor
+   inventory (`Query` fields), its "Conditions that rules must preserve"
+   (`group.headD []` under `groupContext`) and its restriction examples
+   ("unsupported GROUP BY expressions"), the acceptance's unsupported-form
+   list, A07 to A10 and the ADR's D4 group paragraph must say this. The group
+   value is one modeled result, not an alternative of `possibleResults`;
+   where SQLite's plan decides the row (issue #309) the rules state the
+   model's row. `Query.aggregateOf` now sets the deciding call, and the
+   duplicate-key laws cover expression keys only under `key.Calm`.
+2. **ADR 0031 (the checker).** `#sql_check` builds a compiled screen from the
+   claim (D2) and needs a `Decidable` premise and conclusion at the screened
+   inputs; a claim without a screen gets explicit witnesses and `unknown`
+   (owner decision 2). B10 and ADR 0027 D7 must say what this means for the
+   new claim shapes (`Run.returnsResult`, `returnsRows`, `sql_select` goals):
+   they are screened when their predicate is decidable, otherwise `unknown`
+   is the required answer. The resource list of the acceptance must add the
+   time limit of compiled work (`sql.checkTimeLimit`, outside heartbeats) and
+   the candidate count (`sql.checkCandidates`); `sql.checkBudget` 100000 and
+   `sql.checkRecursionLimit` 4000 are unchanged. The domain premise
+   `Database.HasCatalog` (D7) is the name for the "fixed catalog equality" of
+   ADR 0027 D4 and the motivating theorem of A01.
+3. **Baselines and counts.** The ADR intro, the source map, the retirement
+   inventory and the task file name `187ea510`. On `84c0d779` the per-family
+   law group is 638 lines (was 620) and the resolution-shape group 1,678 (was
+   1,647); every other count is unchanged, and every cited file and
+   declaration still exists.
+4. **New fixtures.** `ClaimsGroupValues.lean`, `ClaimsExpressionGrouping.lean`
+   and `ClaimsConditionalCreation.lean` test model semantics through
+   execution and use no per-form law; the inventory's fixture table should
+   list the two grouping fixtures as retained.
+5. **Links and process.** The retirement inventory and this file link PR 297
+   and PR 299 at `vihren-dev/sqlite-verifier`; the repository is
+   `vihren-dev/belay`. The review checklist has R20 (expensive tests reuse
+   Nix results); the acceptance already puts the A and B fixtures into the
+   existing Nix surface suites, and the implementation task file should say
+   so.
+
 ## Open design axes
 
 The revised proposal fixes the successful-result bridge domain, entry goal forms,
