@@ -97,8 +97,10 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   Before (Nix `just test-full` of 2026-11-05 on trunk #324): `surfaceChecks` 25 tests in
   244.5 s, `surfaceS6` 66 tests in 546.2 s.
 - 2026-11-06: a generated candidate carries its value (task item 6, ADR D6): `Witness.value`,
-  set by `Witness.generated`. Replay (`checkedConstruction`, `checkedScriptReport`), the witness
-  text and the screened shrink use it (`witnessDatabase`), and do not evaluate the term again.
+  set by `Witness.generated`. The replay construction (`checkedConstruction`, also in
+  `checkedScriptReport`), the witness text and the screened shrink use it (`witnessDatabase`) and
+  do not evaluate the database term again. The observations of a replay are still computed from
+  the term, with the kernel check of the model run.
   A review of the D8 commit found that the amendment of item 6 contradicted ADR D6; this
   change replaces the amendment. Tests: `surface_search_test` (`carriedValues`: a generated
   candidate's value is the value of its term; the text of a witness with an opaque term uses its

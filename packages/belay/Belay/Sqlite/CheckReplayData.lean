@@ -70,11 +70,11 @@ database ({name}`Replay.schemaRowsSql`), or with the existing ordinary-table for
 The shared formatter receives only checked literal database data and checks resources between
 table/row fragments. Its text is an untrusted proposal. Compiled model execution validates the
 exact reconstruction ({name}`constructionMatches`, {name}`constructionWithoutTriggersMatches`).
-The value is the database of the expression when the caller has it ({name}`Witness.value`); with
-none, the database is evaluated ({name}`databaseValue`). -/
-def checkedConstruction (expression : Expr) (value : Option Database := none) (excluded : Array Name := #[])
+The known value is the database of the expression when the caller has it ({name}`Witness.value`);
+with none, the database is evaluated ({name}`databaseValue`). -/
+def checkedConstruction (expression : Expr) (known : Option Database := none) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM String := do
-  let database ← match value with
+  let database ← match known with
     | some database => pure database
     | none => databaseValue expression excluded excludedLocals
   let source ← sourceOf databaseSourceKey expression
@@ -120,10 +120,11 @@ def checkedConstruction (expression : Expr) (value : Option Database := none) (e
 /-- Prepare the same original-query report as explicit replay, using compiled evaluation
 ({name}`dataValue`) for the database, script and model observations. Missing source or opaque computation makes
 this background attempt unavailable, without changing the explicit certification primitive.
-The value is the database of {lit}`database` when the caller has it, as for {name}`checkedConstruction`. -/
-def checkedScriptReport (database script : Expr) (value : Option Database := none) (excluded : Array Name := #[])
+The known value is the database of {lit}`database` when the caller has it; only the construction
+uses it ({name}`checkedConstruction`). The observations are computed from the term. -/
+def checkedScriptReport (database script : Expr) (known : Option Database := none) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM Replay.Report := do
-  let construction ← checkedConstruction database value excluded excludedLocals
+  let construction ← checkedConstruction database known excluded excludedLocals
   let value ← scriptValue script excluded excludedLocals
   let some original ← sourceOf scriptSourceKey script
     | throwError "no original SQL is available for this script"
