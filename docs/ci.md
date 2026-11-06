@@ -149,7 +149,10 @@ fresh. Every scope from `test` up runs all Nix targets of `tests`.
 
 The pinned cache-nix-action restores the Nix store on every applicable run.
 Only main pushes and nightly runs save caches after their checks. The cache key is the platform, the Nix pins and a hash of
-every file except `plans/` and `reviews/`. A push that changes only task records
+the tracked files (`git ls-files --stage`) except `plans/` and `reviews/`. Each job calculates
+this hash directly after the checkout, so files that later steps write into the checkout, such
+as Python caches, cannot change the key, and the check, mutants and publishing jobs of a commit
+use the same key. A push that changes only task records
 therefore restores the exact store of the earlier push, finds every Nix target
 cached and saves nothing. Other runs restore the newest visible matching store for their platform and pins.
 Pull requests and manual runs do not save caches. Nix, not the GitHub cache
@@ -171,7 +174,7 @@ that cache.nixos.org already provides. Only that job uses the `attic-publish`
 environment, which deploys only from `main` and holds `ATTIC_WRITE_TOKEN`; pull
 request and manual jobs never receive the token. The job may fail or reach
 its 60-minute limit without failing the workflow, and it changes no check
-result. A missing saved store uploads nothing. The cache, its token rotation and
+result. A missing saved store uploads nothing, and the job log shows a warning. The cache, its token rotation and
 server operation are maintained in the devops repository
 (`docs/vihren-demo/attic-ops.md`). An earlier attempt uploaded inside the check
 job and was rolled back ([record](../plans/20260929-attic-ci.status.md)).

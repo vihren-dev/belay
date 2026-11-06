@@ -45,6 +45,13 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Hash the tracked files
+        if: env.PLATFORM_RUNS == 'true'
+        id: tree
+        # The cache key of the Nix store. It hashes the tracked files except task records,
+        # so files that later steps write into the checkout (such as __pycache__) cannot
+        # change it, and the publisher finds the store that the check job saved.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - name: Select complete checks for the changed inputs
         if: env.PLATFORM_RUNS == 'true'
         id: scope
@@ -83,9 +90,9 @@ jobs:
           # Failed Nix builds can leave unreadable transient locks; never archive them.
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
         with:
-          # The key covers every file except task records, so a push that changes only
+          # The key covers every tracked file except task records, so a push that changes only
           # plans/ or reviews/ restores the exact store of the previous push and saves nothing.
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           restore-prefixes-first-match: |
             nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
@@ -169,6 +176,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Hash the tracked files
+        if: env.PLATFORM_RUNS == 'true'
+        id: tree
+        # The tree part of the check job's cache key.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - name: Select complete checks for the changed inputs
         if: env.PLATFORM_RUNS == 'true'
         id: scope
@@ -193,7 +205,7 @@ jobs:
         env:
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
         with:
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           restore-prefixes-first-match: |
             nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
@@ -245,6 +257,10 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Hash the tracked files
+        id: tree
+        # The tree part of the check job's cache key.
+        run: echo "hash=$(git ls-files --stage -- ':!:plans/' ':!:reviews/' | git hash-object --stdin)" >> "$GITHUB_OUTPUT"
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
         with:
           enable_kvm: false
@@ -257,8 +273,11 @@ jobs:
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         with:
           # The check job's primary key for this commit; this job never saves.
-          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ steps.tree.outputs.hash }}
           save: false
+      - name: Report a missing saved store
+        if: steps.restore.outputs.hit-primary-key != 'true'
+        run: echo "::warning::No saved Nix store of this commit for this platform, so nothing is uploaded to Attic. The check did not pass, or the commit changed only documentation."
       - name: Upload store paths that cache.nixos.org does not provide
         if: steps.restore.outputs.hit-primary-key == 'true'
         env:
