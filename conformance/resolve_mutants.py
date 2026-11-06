@@ -6,7 +6,7 @@ suite is known to test each rule. Resolution functions are called through dot
 notation (`catalog.find`), so a copy of single definitions in a private namespace
 would still call the originals. Each mutant is therefore a real copy of the
 `belay-sqlite-model` and `verifier-conformance` packages with one logical fault, which Lake
-rebuilds from one shared base build. The build covers only the import closure of
+rebuilds from one shared base build. A test process builds that base once, for all of its tests. The build covers only the import closure of
 `VerifierConformance.Classify`, which does not import the law modules, so a mutant that
 breaks a law still builds. The Lean interpreter then classifies the cases, given as the
 Lean terms that the conformance runner emits, with the mutant's `classifyCase`.
@@ -18,6 +18,7 @@ an agreeing case out of the model's scope.
 
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from functools import cache
 import os
 from pathlib import Path
 import shutil
@@ -96,7 +97,7 @@ GUARDS: dict[str, str] = {
 changes. `conformance.mutant_guards` checks every entry."""
 
 BUILD_TIMEOUT_SECONDS = 600
-"""One Lake build of a copy; a fresh base build takes about 12 seconds."""
+"""One Lake build of a copy; a fresh base build takes about 60 seconds on 8 cores."""
 RUN_TIMEOUT_SECONDS = 300
 """One interpreted classification of all case terms."""
 AGREE = "Belay.Sqlite.Model.Conformance.Verdict.agree"
@@ -130,12 +131,42 @@ def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
     return result.stdout
 
 
-def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
-    """Build the case classification of the copy and print one verdict for each case."""
+def build(packages: Path, lean: Path) -> None:
+    """Build the case classification of the copy."""
+    run(["lake", "build", "VerifierConformance.Classify"], packages / "verifier-conformance", lean, BUILD_TIMEOUT_SECONDS)
+
+
+def classify(packages: Path, lean: Path, program: str) -> list[str]:
+    """Print one verdict for each case with the built classification of the copy."""
     conformance = packages / "verifier-conformance"
-    run(["lake", "build", "VerifierConformance.Classify"], conformance, lean, BUILD_TIMEOUT_SECONDS)
     (conformance / "Classify.lean").write_text(program)
     return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
+
+
+def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
+    """Build the case classification of the copy and print one verdict for each case."""
+    build(packages, lean)
+    return classify(packages, lean, program)
+
+
+BASE_DIRECTORIES: list[TemporaryDirectory[str]] = []
+"""The directories of the built bases. Python removes them when the process ends."""
+
+
+@cache
+def built_base(repository: Path, lean: Path) -> Path:
+    """The two packages of `repository`, copied without build outputs and built once for the
+    process. Every measurement of the process copies its mutants from this base, so a test suite
+    builds the unchanged model once and not once for each test. After the build, only the
+    classification program of a measurement changes in the base."""
+    directory = TemporaryDirectory(prefix="resolve-mutants-base-")
+    BASE_DIRECTORIES.append(directory)
+    base = Path(directory.name)
+    for package in ("belay-sqlite-model", "verifier-conformance"):
+        shutil.copytree(repository / "packages" / package, base / package,
+                        ignore=shutil.ignore_patterns(".lake", "build"))
+    build(base, lean)
+    return base
 
 
 def mutate(base: Path, root: Path, name: str, change: Mutation, lean: Path, program: str) -> list[str]:
@@ -167,15 +198,12 @@ def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
     missing = [name for name, indexes in selected.items() if not indexes]
     if missing:
         raise ValueError(f"Mutants without a target case among the cases: {missing}; name an existing case")
+    base = built_base(repository, lean)
+    original = classify(base, lean, classifier(terms))
+    if original != [expected] * len(cases):
+        raise ValueError(f"Every case must be {expected} with the unchanged model before mutation: {original}")
     with TemporaryDirectory(prefix="resolve-mutants-") as directory:
         root = Path(directory)
-        base = root / "base"
-        for package in ("belay-sqlite-model", "verifier-conformance"):
-            shutil.copytree(repository / "packages" / package, base / package,
-                            ignore=shutil.ignore_patterns(".lake", "build"))
-        original = verdicts(base, lean, classifier(terms))
-        if original != [expected] * len(cases):
-            raise ValueError(f"Every case must be {expected} with the unchanged model before mutation: {original}")
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
             results = dict(zip(mutants, pool.map(
                 lambda name: mutate(base, root, name, mutants[name], lean,
