@@ -5,10 +5,9 @@ set_option doc.verso true
 set_option sql.check false
 set_option maxRecDepth 8192
 
-/-! ADR 0027's two prototype proofs through the phase rules (deep review, finding 6): the
-schema projection of {lit}`SelectAutomationSchema`, and a grouped query with {lit}`HAVING`.
-Neither proof unfolds a whole-query law; each reads the rules of
-{lit}`SelectAutomationPhaseRules` and the bridge of {lit}`SelectAutomationPhaseBridge`. -/
+/-! ADR 0027's two prototype proofs through the phase rules (deep review, finding 6): the schema
+projection of {lit}`SelectAutomationSchema`, and a grouped query with {lit}`HAVING`. Neither proof
+unfolds a whole-query law; each reads {lit}`SelectAutomationPhaseRules` and {lit}`SelectAutomationPhaseBridge`. -/
 
 namespace SelectAutomation
 open Belay.Sqlite
@@ -52,14 +51,11 @@ theorem schema_projection_phases (script : Script) (db : Database)
   obtain ⟨original, _⟩ := (Resolved.mem_filtered _ _ _ source).mp kept
   obtain ⟨stored, storedIn, rfl⟩ := (mem_sourceRows_iff table source).mp original
   have wide := db.valid.admitted.rowsWide position table present stored storedIn
-  have inside : columnIndex < stored.values.length := by
-    rw [wide]
-    exact (List.getElem?_eq_some_iff.mp columnAt).1
+  have inside : columnIndex < stored.values.length := wide ▸ (List.getElem?_eq_some_iff.mp columnAt).1
   have nonnull := db.notNull position table present stored storedIn columnIndex column
     stored.values[columnIndex] columnAt (List.getElem?_eq_getElem inside) required
   refine ⟨stored.values[columnIndex], ?_, nonnull⟩
-  rw [output]
-  simp [Resolved.Query.simple, Resolved.Expr.eval_column, List.getD_eq_getElem?_getD,
+  simp [output, Resolved.Query.simple, Resolved.Expr.eval_column, List.getD_eq_getElem?_getD,
     List.getElem?_eq_getElem inside]
 
 /-! Proof 2: a grouped query with {lit}`HAVING`, through the rules. -/
@@ -190,10 +186,9 @@ theorem grouped_instance :
       change expression ∈ [Resolved.Expr.column 0, Resolved.Expr.column 0,
         Resolved.Expr.compare .isNot (some .text) (.column 0) (.literal .null) .binary] at member
       simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl | rfl
-      · exact Resolved.Expr.calm_column 0
-      · exact Resolved.Expr.calm_column 0
-      · exact (Resolved.Expr.calm_compare ..).mpr ⟨Resolved.Expr.calm_column 0, Resolved.Expr.calm_literal .null⟩)
+      rcases member with rfl | rfl | rfl <;> first
+        | exact Resolved.Expr.calm_column 0
+        | exact (Resolved.Expr.calm_compare ..).mpr ⟨Resolved.Expr.calm_column 0, Resolved.Expr.calm_literal .null⟩)
 
 #print axioms schema_projection_phases
 #print axioms grouped_rows

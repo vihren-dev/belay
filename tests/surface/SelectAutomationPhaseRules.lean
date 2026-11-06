@@ -4,15 +4,13 @@ set_option doc.verso true
 set_option sql.check false
 set_option maxRecDepth 8192
 
-/-! ADR 0027's prototype of the phase rules (deep review, finding 6): one theorem per phase
-of {name}`Belay.Sqlite.Model.Resolved.Query.results`, each about what the phase's output keeps
-from its input. The rules are stated for every query that meets the phase's own premises; no
-rule names a whole query shape. -/
+/-! ADR 0027's prototype of the phase rules (deep review, finding 6): one theorem per phase of
+{name}`Belay.Sqlite.Model.Resolved.Query.results`, each about what the phase's output keeps from
+its input, stated for every query that meets the phase's own premises; none names a query shape. -/
 
 namespace SelectAutomation
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
-
 
 /-- Projection rule, scalar form: for every context, query that is no aggregate query, rows and
 record of {name}`Resolved.records`, some row of the rows gives the record's output: each result
@@ -128,7 +126,6 @@ theorem mem_results (context : Resolved.EvalContext) (query : Resolved.Query) (r
     split at inWindow
     · exact List.mem_of_mem_drop inWindow
     · exact List.mem_of_mem_drop (List.mem_of_mem_take inWindow)
-  unfold Resolved.Query.sortedRecords at sorted
   exact (Resolved.stableSort_perm _ _).mem_iff.mp sorted
 
 /-- Keep-fold rule: for every test, items and start, each item of the fold that keeps an item
