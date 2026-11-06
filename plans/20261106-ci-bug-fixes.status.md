@@ -1,6 +1,6 @@
 # Status: fix the CI bugs #333, #326, #329, #327 and #328
 
-Created: 2026-11-06. Status: open.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-ci-bug-fixes.task.md](20261106-ci-bug-fixes.task.md).
 Issues: #333, #326, #329, #327, #328. Stacked on PR #324.
 
@@ -39,3 +39,6 @@ Sources: `build-support/tests.nix`, `.github/workflows/ci.yml`, `docs/ci.md`,
   run saves its report. The mutants-job tests moved to `tests/test_ci_mutants_workflow.py`.
   Tests run: the three workflow test files, `tests/test_ci_scope.py`, `tests/docs_test.py`,
   actionlint, and the derivation step's command locally.
+- 2026-11-06: end checks on the last fix: `just test-full` (after `just dev-build`), `just verdict`,
+  `just test-nix` and `just test-scheduled-checks` pass. The task is DONE. The CI validations of
+  #333, #326, #327 and #328 need the first `main` runs after the merge.

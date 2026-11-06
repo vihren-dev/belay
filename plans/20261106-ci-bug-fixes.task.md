@@ -1,6 +1,6 @@
 # Fix the CI bugs #333, #326, #329, #327 and #328
 
-Created 2026-11-06. Status: open.
+Created 2026-11-06. Status: DONE (2026-11-06).
 Audience: implementers and reviewers.
 Progress: [status](20261106-ci-bug-fixes.status.md).
 Inspected base: `tasks/check-real-schemas` (PR #324), `23194e0d`.
