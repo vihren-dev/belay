@@ -1,6 +1,6 @@
 # Task: a user document for execution profiles (#19, one slice)
 
-Created 2026-11-06. Issue: [#19](https://github.com/vihren-dev/belay/issues/19).
+Created 2026-11-06. Status: DONE (2026-11-06). Issue: [#19](https://github.com/vihren-dev/belay/issues/19).
 Status: [20261106-execution-profile-docs.status.md](20261106-execution-profile-docs.status.md).
 
 ## Problem

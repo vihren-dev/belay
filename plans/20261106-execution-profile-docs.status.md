@@ -1,6 +1,6 @@
 # Status: a user document for execution profiles (#19, one slice)
 
-Created: 2026-11-06. Status: open.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-execution-profile-docs.task.md](20261106-execution-profile-docs.task.md).
 Issue: #19. Stacked on the #332 fix.
 
@@ -21,3 +21,8 @@ Sources: `docs/execution-profile.md`, `docs/native-corpus-format.md`,
   `docs/conformance-format-v2.md` and `docs/upstream-pilot.md` point to it, and the stale list
   of implemented settings in `docs/conformance-format-v2.md` is corrected. Tests run:
   `python3 -m pytest tests/docs_test.py` (the new vocabulary test fails on the old document).
+- 2026-11-06: review of the document: two R19 findings (each limit is read by its own ID; the
+  rows of `WITHOUT ROWID` tables have no rowid), fixed.
+- 2026-11-06: DONE. On the top commit, after `just dev-build`: `just test-full`, `just verdict`,
+  `just test-nix` and `just test-scheduled-checks` pass. Issue #19 stays open for the other
+  documents, the diagnostics and the per-directory audit.
