@@ -2,6 +2,7 @@ import Belay.Sqlite.CheckClaim
 import Belay.Sqlite.CounterexampleShrink
 import Belay.Sqlite.SampleShrink
 import Belay.Sqlite.CheckReplayData
+import Belay.Sqlite.CheckScreen
 
 set_option doc.verso true
 
@@ -42,16 +43,17 @@ def replayClaim (proposition : Expr) (witness : Witness)
   if sites.sites.isEmpty then
     unless sites.leanCode || (← sqlMention? proposition (includeSource := false)) == some false do
       throwError "SQL replay could not identify the original query and its database"
-    let construction ← checkedConstruction witness.database excluded excludedLocals
+    let construction ← checkedConstruction witness.database witness.value excluded excludedLocals
     return #[{ construction, sqlite := construction ++ "\n;\n", note := if sites.leanCode then some noScriptNote else none }]
   let reports ← sites.sites.mapM fun site => do
-    let report ← checkedScriptReport site.database site.script
+    let value := if site.database == witness.database then witness.value else none
+    let report ← checkedScriptReport site.database site.script value
       (excluded := excluded) (excludedLocals := excludedLocals)
     return { report with label := scriptName site.script }
   return if sites.leanCode then reports.map ({ · with note := some leanCodeNote }) else reports
 
-/-- Raw results of the existing validity-preserving shrinker. The background caller reduces
-this computation cooperatively; every retained proposal still needs a fresh certificate. -/
+/-- Raw results of the existing validity-preserving shrinker. The background caller computes
+them with compiled code ({name}`dataValue`); every retained proposal still needs a fresh certificate. -/
 def smallerData (database : Database) : List Database.Raw :=
   (Sampling.shrinkDatabase database).map (·.raw)
 
@@ -63,6 +65,17 @@ def shrinkProposals (witness : Witness) (excluded : Array Name := #[])
   let smaller ← dataValue (List Database.Raw) (mkApp (mkConst ``smallerData) witness.database)
     excluded excludedLocals
   let schema ← schemaText? witness.database
-  return smaller.map fun raw => { witness with database := generatedExpr raw schema }
+  return smaller.map fun raw => { witness with database := generatedExpr raw schema, value := none }
+
+/-- The witness with the smallest database that the screen accepts after at most
+{lit}`steps` shrink steps ({name}`shrinkScreened`), computed with compiled code. None when the
+screen accepts no smaller database. The witness still needs its certificate. -/
+def screenedShrinkProposal (witness : Witness) (screen : Screen) (value : Value) (steps : Nat)
+    (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) : TermElabM (Option Witness) := do
+  let database ← witnessDatabase witness excluded excludedLocals
+  let smaller ← awaitCompiled fun _ => shrinkScreened screen value steps database
+  if smaller.raw == database.raw then return none
+  let schema ← schemaText? witness.database
+  return some (witness.generated smaller schema)
 
 end Belay.Sqlite.Check

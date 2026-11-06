@@ -57,9 +57,10 @@ def test_shared_search_reuses_samples_and_original_replays(runtime_root: Path, t
     assert "sorry" not in result.stdout, result.stdout
 
 
-def test_shared_search_reduces_before_native_decoding(runtime_root: Path, tmp_path: Path,
+def test_shared_search_bounds_compiled_data(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
-    """CheckData interrupts pure computation and retains logical data and reconstruction errors."""
+    """CheckData computes data with compiled code under the time limit and cancellation, refuses
+    compiled overrides and opaque constants, and retains logical data and reconstruction errors."""
     result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearchBudget.lean", tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
@@ -67,3 +68,24 @@ def test_shared_search_reduces_before_native_decoding(runtime_root: Path, tmp_pa
     record_testsuite_property("sql_search.resource_stop", result.stdout)
     assert "discard this" not in result.stdout, result.stdout
     assert "sorry" not in result.stdout, result.stdout
+
+
+def test_candidates_fill_touched_tables_with_constrained_rows(runtime_root: Path, tmp_path: Path) -> None:
+    """SampleTouched and SampleConstraints: the search fills only the tables that the claim's
+    statements touch through triggers and foreign keys, and its rows satisfy NOT NULL, UNIQUE
+    and foreign keys by construction."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateConstraints.lean", tmp_path),
+                         cwd=tmp_path, timeout=90)
+    assert result.returncode == 0, result.diagnostic()
+    assert "candidate constraints passed" in result.stdout, result.stdout
+
+
+def test_search_screens_while_generating_with_a_share_per_value(runtime_root: Path, tmp_path: Path) -> None:
+    """CheckSamples.visitCandidates and Sampling.candidates: the search stops generating at the
+    first candidate that the screen accepts, continues after a rejected certificate, screens the
+    last candidate within the time limit, and gives each parameter value a share of the
+    candidate count, so that NULL does not use the count of the value 1."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateShares.lean", tmp_path),
+                         cwd=tmp_path, timeout=90)
+    assert result.returncode == 0, result.diagnostic()
+    assert "candidate shares passed" in result.stdout, result.stdout

@@ -10,28 +10,20 @@ namespace Belay.Sqlite.Check
 
 open Lean Elab Term
 
-/-- Background decoding accepts at most this many constructor and literal nodes. Larger
+/-- A value that the background checker computes has at most this many nodes as a term. It holds
+an application schema of 6 tables, 8 indexes and 5 triggers (about 9,600 nodes) with rows. Larger
 values can use the explicit witness API instead of the convenience checker. -/
-def maxDataNodes : Nat := 8192
+def maxDataNodes : Nat := 65536
 
-/-- Background decoding and generated proposals accept at most this many literal bytes. -/
+/-- A value that the background checker computes has at most this many literal bytes. -/
 def maxLiteralBytes : Nat := 65536
 
 /-- Native replay translation receives at most this many UTF-8 bytes of proposed SQL. -/
 def maxReplayBytes : Nat := 16384
 
-/-- Background row-count draws use this finite ceiling; explicit sampling remains available
-for larger databases. The bound keeps each standard random choice to one generator step. -/
-def maxRandomRows : Nat := 8192
-
-/-- At most this many supplied constants precede the ordinary random boundary values. -/
-def maxRandomValues : Nat := 8192
-
-/-- A background random proposal contains at most this many cells before validation. -/
-def maxRandomCells : Nat := 8192
-
-/-- Bound seed arithmetic by the same literal storage policy as decoded data. -/
-def maxSeedBits : Nat := maxLiteralBytes * 8
+/-- The default time limit, in milliseconds, of the compiled work of one check: the screen, the
+generation of candidates and the data. -/
+def defaultTimeLimit : Nat := 10000
 
 /-- The default finite reduction depth permits small GROUP observations. Each checking
 operation can choose another positive depth; zero disables it. -/
@@ -91,7 +83,7 @@ def explanationShare : Share := ⟨9, 10⟩
 /-- Run a checking attempt with a fresh heartbeat origin and a finite Lean heartbeat budget.
 Zero disables work, rather than using Lean's unlimited zero convention. Check again after
 the action so a compiled computation cannot return an accepted result after exhausting its
-budget. This is a cooperative heartbeat limit, not a hard elapsed-time limit. Runtime exhaustion
+budget. This is a heartbeat limit, not an elapsed-time limit: compiled work counts no heartbeats. Runtime exhaustion
 returns none; an interrupt is rethrown by {name}`tryCatchRuntimeEx`. Other errors remain
 available to the caller as diagnostics, not evidence that a proposition is false. -/
 def withinBudget (heartbeats : Nat) (action : TermElabM α) : TermElabM (Option α) := do

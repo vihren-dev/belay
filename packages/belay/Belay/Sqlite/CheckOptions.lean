@@ -3,7 +3,8 @@ import Belay.Sqlite.CheckOperation
 set_option doc.verso true
 
 /-! Explicit commands, searched tactics and automatic checks share these finite controls. Heartbeats bound
-cooperative work, not elapsed time. The programmatic checker accepts custom policies directly. -/
+elaborator and kernel work, and the time limit bounds compiled work. The programmatic checker accepts
+custom policies directly. -/
 
 /-- A finite Lean heartbeat budget for SQL checks; zero returns unknown without searching.
 Automatic checking shares it across discovery, all declarations in one command and the
@@ -32,20 +33,25 @@ register_option sql.checkMaxRows : Nat := {
   defValue := 2
   descr := "maximum generated rows per SQL table" }
 
-/-- Seeded proposals after the targeted proposals for each parameter value. -/
+/-- Seeded proposals after the small table contents. -/
 register_option sql.checkRandomSamples : Nat := {
   defValue := 4
   descr := "random SQL database proposals per parameter value" }
 
-/-- Maximum candidates, including supplied witnesses; zero skips all candidates. -/
+/-- Maximum candidates, including supplied witnesses and screened candidates; zero skips all candidates. -/
 register_option sql.checkCandidates : Nat := {
-  defValue := 128
+  defValue := 10000
   descr := "maximum SQL counterexample candidates" }
+
+/-- Time limit of the compiled work of one SQL check (screen, candidates, data), in milliseconds. -/
+register_option sql.checkTimeLimit : Nat := {
+  defValue := Belay.Sqlite.Check.defaultTimeLimit
+  descr := "time limit in milliseconds of the compiled work of one SQL check" }
 
 /-- Maximum shrink attempts after a checked witness; zero retains that witness directly. -/
 register_option sql.checkShrinkAttempts : Nat := {
   defValue := 16
-  descr := "maximum checked SQL counterexample shrink attempts" }
+  descr := "maximum SQL counterexample shrink steps; the checker certifies only the smallest result" }
 
 namespace Belay.Sqlite.Check
 open Lean
@@ -57,6 +63,7 @@ def configuredSamples (options : Options) : SampleConfig := {
   size := sql.checkSize.get options
   maxRows := sql.checkMaxRows.get options
   randomSamples := sql.checkRandomSamples.get options
-  candidates := sql.checkCandidates.get options }
+  candidates := sql.checkCandidates.get options
+  timeLimit := sql.checkTimeLimit.get options }
 
 end Belay.Sqlite.Check

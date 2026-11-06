@@ -68,11 +68,12 @@ structure WitnessText where
   {name}`candidateEnvironment`, which a user does not need to read. -/
   environment : Option String := none
 
-/-- Evaluate the database and environment of a witness, with the same certified evaluation as
-replay ({name}`databaseValue`, {name}`dataValue`), and give their text. -/
+/-- Give the text of the database and environment of a witness. The database is the value that
+the witness carries ({name}`Witness.value`), else the certified evaluation of its term, as in
+replay ({name}`witnessDatabase`); the environment is evaluated ({name}`dataValue`). -/
 def witnessText (witness : Witness) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM WitnessText := do
-  let database ← databaseValue witness.database excluded excludedLocals
+  let database ← witnessDatabase witness excluded excludedLocals
   let tables := databaseTables database.raw
   let name := match witness.database.consumeMData with
     | .const name _ => if name == ``Database.empty then none else some name

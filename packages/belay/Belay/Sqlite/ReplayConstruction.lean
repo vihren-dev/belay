@@ -26,31 +26,59 @@ private def tableRowsSql (database : Database) (name : Model.Identifier) : Optio
   let rows ← (database.raw.rows.getD position []).mapM (rowSql object.name table)
   return String.join rows
 
-/-- Construction text for a database whose catalog comes from SQL text, for example a
-candidate that the checker generated on the schema of a {lit}`db!` constant. The text keeps
-the schema's statements in their order, leaves out its INSERT statements, and inserts the
-database's rows of each table right after the statement that creates the table. So the rows
-are stored before any trigger or index that a later statement creates, and no trigger fires.
-None when the text has another statement kind, such as an ALTER TABLE or an UPDATE. The text
-is a proposal: the caller validates that it builds exactly the database. -/
-def schemaRowsSql (schema : String) (database : Database) : IO (Option String) := do
+/-- The construction of a database on the catalog of a schema text ({lit}`schemaRowsSql`). -/
+inductive SchemaConstruction where
+  /-- One text: the schema's statements, with each table's rows right after the statement that
+  creates the table. -/
+  | inline (text : String)
+  /-- The schema's statements without their INSERTs, then the rows of every table, which the
+  replay inserts with the triggers off. -/
+  | triggersOff (schema rows : String)
+  deriving Inhabited
+
+/-- The replay text of a construction. For {name}`SchemaConstruction.triggersOff`, the SQLite
+shell commands {lit}`.dbconfig enable_trigger off` and {lit}`on` enclose the rows, so that no
+trigger fires while they are inserted. -/
+def SchemaConstruction.text : SchemaConstruction → String
+  | .inline text => text
+  | .triggersOff schema rows =>
+    schema ++ ".dbconfig enable_trigger off\n" ++ rows ++ ".dbconfig enable_trigger on\n"
+
+/-- The construction of a database whose catalog comes from SQL text, for example a candidate
+that the checker generated on the schema of a {lit}`db!` constant. The INSERT statements of the
+text are left out; the database's rows replace them. When the text has only CREATE and INSERT
+statements, the rows of each table follow the statement that creates the table, so they are
+stored before any trigger or index that a later statement creates, and no trigger fires
+({name}`SchemaConstruction.inline`). Otherwise, for example with an ALTER TABLE, the text's other
+statements come first, then the rows of every table with the triggers off
+({name}`SchemaConstruction.triggersOff`). None when the text has a PRAGMA, which can change the
+connection that inserts the rows, or a row has no SQL spelling. The construction is a proposal:
+the caller validates that it builds exactly the database. -/
+def schemaRowsSql (schema : String) (database : Database) : IO (Option SchemaConstruction) := do
   let .ok items ← translated schema | return none
   let bytes := schema.toUTF8
-  let mut fragments := #[]
+  let mut inline := some #[]
+  let mut statements := #[]
   for item in items do
     let span := item.statement.span
     let some text := String.fromUTF8? (bytes.extract span.start span.stop) | return none
     match item.statement.value with
-    | .insert .. => continue
+    | .insert .. | .insertSelect .. => continue
+    | .pragma .. => return none
     | .createTable name .. =>
-      let some rows := tableRowsSql database name | return none
-      fragments := fragments.push (text ++ ";\n" ++ rows)
+      inline := inline.bind fun fragments => (tableRowsSql database name).map (fragments.push <| text ++ ";\n" ++ ·)
+      statements := statements.push (text ++ ";\n")
     | .createIndex .. | .createView .. | .createTrigger .. =>
-      fragments := fragments.push (text ++ ";\n")
+      inline := inline.map (·.push (text ++ ";\n"))
+      statements := statements.push (text ++ ";\n")
     | .addColumn .. | .renameTable .. | .renameColumn .. | .dropColumn .. | .dropTable .. | .dropView ..
-    | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insertSelect .. | .update ..
-    | .delete .. | .select .. | .pragma .. => return none
-  return some (String.join fragments.toList)
+    | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .update .. | .delete .. | .select .. =>
+      inline := none
+      statements := statements.push (text ++ ";\n")
+  if let some fragments := inline then return some (.inline (String.join fragments.toList))
+  let tables := database.raw.catalog.filter fun object => object.entry matches .table _
+  let some rows := tables.mapM (tableRowsSql database ·.name) | return none
+  return some (.triggersOff (String.join statements.toList) (String.join rows))
 
 /-- Check that construction text builds precisely the supplied database, with no parameters,
 errors, model restrictions or open transaction. A different catalog or cell fails validation. -/

@@ -1,0 +1,53 @@
+{
+  "caller": "claude",
+  "commit": "6439f1a4fcae68c8dcab53dfe96a72b880de52a8",
+  "date": "2026-11-06T09:31:18+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261106-check-compiled-screen.status.md",
+    "plans/20261106-check-compiled-screen.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261106T093118Z-6439f1a4#1",
+      "line": 45,
+      "path": "plans/20261106-check-compiled-screen.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The construction recipe removes the source INSERTs, but ADR 0031 D6 requires the schema’s source text before the generated INSERTs, so the specifications prescribe different replay contents. Fix: reconcile the source-row policy with D6 and record any changed decision with its date."
+    },
+    {
+      "id": "20261106T093118Z-6439f1a4#2",
+      "line": 89,
+      "path": "plans/20261106-check-compiled-screen.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Compiling a screen for each pool value contradicts both the one-screen-per-claim requirement above and ADR 0031 D2’s single compilation over the chosen inputs. Fix: compile one screen per claim with the database, environment and named values as inputs."
+    }
+  ],
+  "id": "20261106T093118Z-6439f1a4",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

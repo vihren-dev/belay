@@ -27,6 +27,10 @@ structure Witness where
   environment : Expr := mkConst ``candidateEnvironment
   /-- Explicit inputs by quantified binder name, for example the value of {lit}`:amount`. -/
   named : Array (Name × Expr) := #[]
+  /-- The value of {lit}`database` when the checker generated it from that value, so that replay
+  and text use it and do not evaluate the term again. Use none for a supplied term: then the
+  checker evaluates the term with compiled code and checks the result in the kernel. -/
+  value : Option Database := none
 
 /-- Choose a supplied named input, database, environment or context for a quantified binder.
 A context is the initial context of the witness's database and environment: a claim for every

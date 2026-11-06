@@ -24,14 +24,21 @@ def schema (tables : List (String × List String)) : Option Database :=
     (Identifier.ofString name, { shape := { columns := columns.map fun column =>
       { name := Identifier.ofString column, declaredType := none } }, rows := [] })
 
-/-- Store supplied cells with the existing column affinities and assign distinct rowids.
-An INTEGER PRIMARY KEY alias receives that rowid. Other constraints are checked by
-{name}`validated` after the complete candidate has been assembled. -/
+/-- The stored value of the selected cell at a column position of the row with the given
+index: the rowid {lit}`index + 1` for the INTEGER PRIMARY KEY alias, else the cell (NULL when it
+is missing) with the column's affinity. NULL for a position outside the table. -/
+def storedCell (table : CatalogTable) (index position : Nat) (cells : List Value) : Value :=
+  if table.rowidAlias == some position then .integer (Int.ofNat (index + 1))
+  else match table.columns[position]? with
+    | some column => (cells.getD position .null).store column.affinity
+    | none => .null
+
+/-- Store supplied cells with the existing column affinities and assign distinct rowids
+({name}`storedCell`). An INTEGER PRIMARY KEY alias receives that rowid. Other constraints are
+checked by {name}`validated` after the complete candidate has been assembled. -/
 private def row (table : CatalogTable) (index : Nat) (cells : List Value) : Row :=
-  let rowid := Int.ofNat (index + 1)
-  { rowid, values := table.columns.zipIdx.map fun (column, position) =>
-      if table.rowidAlias == some position then .integer rowid
-      else (cells.getD position .null).store column.affinity }
+  { rowid := Int.ofNat (index + 1)
+    values := (List.range table.columns.length).map fun position => storedCell table index position cells }
 
 /-- Replace each table's rows with copies of the supplied values, one value across all its
 columns per row. This targets duplicate keys, case pairs and aggregate boundaries while
@@ -112,22 +119,16 @@ def targeted (base : Database) (constants : List Value := []) : List Database :=
   base :: suppliedVariants base ++
     (boundaryRows ++ constants.map (fun value => [value, value])).filterMap (uniform base)
 
-/-- Select row counts and cells in catalog, row and column order. Views and other non-table objects get
-empty storage. Ordinary Plausible sampling and cooperative checking share this traversal;
-the optional resource action runs before each object and row, including zero-column rows.
-The incremental row loop does not allocate a range before the first check. No validity is assumed. -/
-def selectCells [Monad m] (catalog : Catalog) (rowCount : m Nat) (cell : m Value)
-    (check : m Unit := pure ()) : m (List (List (List Value))) :=
+/-- Select row counts and cells in catalog, row and column order, for Plausible's database
+generator ({lit}`database`). Views and other non-table objects get empty storage and draw
+nothing. No validity is assumed. -/
+def selectCells [Monad m] (catalog : Catalog) (rowCount : m Nat) (cell : m Value) :
+    m (List (List (List Value))) :=
   catalog.mapM fun object => do
-    check
     match object.entry with
     | .table table =>
       let count ← rowCount
-      let mut rows := []
-      for _ in [:count] do
-        check
-        rows := (← table.columns.mapM fun _ => cell) :: rows
-      return rows.reverse
+      (List.range count).mapM fun _ => table.columns.mapM fun _ => cell
     | .index _ | .trigger _ | .view _ => pure []
 
 /-- Assemble selected cells with the existing affinity and rowid rules. Missing cells become
