@@ -44,7 +44,8 @@ request of the stack, in the order above.
   failed. Only a store that a passed check saved is published: a failed check saves no
   store, so its outputs are never published. When an earlier run of the same tree
   passed on that platform, its saved store is the store of that tree and is published
-  again, also if the current check failed; the upload then adds no new paths. The
+  again, also if the current check failed; the upload adds only the paths of that
+  accepted store that Attic does not have yet. The
   `attic-publish` environment, the token scope and the trusted events stay the same. A
   cancelled run publishes nothing.
 - **#328.** A mutant suite whose Nix derivation is the same as in an accepted `main`
