@@ -44,7 +44,7 @@ Each downward view fixes the program, input and environment in the cited
 fixture and retains **all** permitted executions of that program. Its semantic
 view is this complete execution family; its review artifact is the named Lean
 theorem and the explanation below. This is refinement of the execution
-semantics used by the draft, not a claim that a complete future automation
+semantics used by the ADR, not a claim that a complete future automation
 implementation has been constructed. A prohibited claim is shown beside its
 closest admitted execution view.
 
@@ -67,7 +67,7 @@ vacuously; the proposed convenience needs its own negative acceptance case.
 ## Generalized proof and evaluator views
 
 These views expose what pure laws and sound search alone permit. Each removes
-an execution or automatic-closure obligation from the full draft. Thus it is
+an execution or automatic-closure obligation from the full ADR. Thus it is
 an upward view, not evidence that the removed obligation has been met.
 
 | Whole semantic view and direction | Concrete artifact | Consequence and omitted obligation |
@@ -86,7 +86,7 @@ The unsupported-source examples distinguish a current model boundary from a
 missing proof rule. The schema example distinguishes search incompleteness
 from a false proposition. A timeout is a third case: it supplies neither a
 counterexample nor a completion proof. Residual-goal and rollback assertions
-remain the explicit acceptance obligations in the draft, not consequences of
+remain the explicit acceptance obligations of the ADR, not consequences of
 the pure evaluator examples.
 
 ## Scope of this cover and remaining review choices
@@ -100,14 +100,16 @@ outer row; the nested-source examples do not prove this requirement. A read
 after a write must use the reached context. These are required implementation
 tests, not optional extensions inferred from this review cover.
 
-The draft's recommendations remain subject to owner review: success-requiring
-collection conveniences with raw `Sql.check` preserved; semantic decomposition
-for current modeled phases; a bounded automatic closure matrix; explicit
-residual obligations; and proof-rule hints plus manual application. The existing
-public resource options are retained; no new performance thresholds are proposed.
-Public convenience names, the separate tactic
-entry point and the rule-registration interface are draft interface choices.
-No validation failure by itself authorizes changing these intended semantics.
+The owner accepted these recommendations with ADR 0027 on 2026-11-07:
+success-requiring collection conveniences with raw `Sql.check` preserved;
+semantic decomposition for current modeled phases; a bounded automatic closure
+matrix; explicit residual obligations; and proof-rule hints plus manual
+application. The existing public resource options are retained; no new
+performance thresholds are proposed. The public convenience names, the separate
+tactic entry point and the rule-registration interface are the accepted
+interface; the implementation can still find that one of them needs a change,
+which then needs its own owner decision. No validation failure by itself
+authorizes changing these intended semantics.
 
 A finite Z3 projection is not used. The retained contract quantifies over
 arbitrary Lean propositions, unbounded lists and execution contexts. A bounded
@@ -115,6 +117,4 @@ encoding would check a different claim and would not establish faithfulness
 of this higher-order contract. The Lean statements and their actual dependency
 checks are the formal artifact chosen by the owner.
 
-The owner can accept this complete cover, return statements that clarify
-intent, request a different cover without changing intent, or combine
-clarifying statements with a request for a different cover.
+The owner accepted this cover with ADR 0027 on 2026-11-07.
