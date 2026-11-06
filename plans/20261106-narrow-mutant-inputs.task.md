@@ -22,7 +22,7 @@ reuse seldom applies.
 Measured on the base of this task:
 
 - The Python import closures of the 12 mutant test files have 48 to 82 local modules
-  each, 161 together. `modelInputs` declares 224 `conformance/*.py` modules and
+  each, 161 together. `modelInputs` declares 270 `conformance/*.py` modules and
   the 5 frontend modules for every suite.
 - The closure reads no data file of the repository: no `judge/` file, no
   `conformance/cases/*.json`, no `conformance/requirements-3.51.0.json`,
@@ -36,8 +36,8 @@ Measured on the base of this task:
 
 - Each mutant suite gets, as Python inputs, the shared harness files (`common`), its own
   test files and exactly the local modules in the import closure of those test files.
-  A change to a Python module outside the closure of a suite does not change the
-  derivation of that suite.
+  A change to a Python module that is outside the closure of a suite and is not in
+  `common` does not change the derivation of that suite.
 - No mutant suite gets the judge claims, the judge files, the frozen corpora, the other
   data files of `modelInputs` or the two unused test files.
 - The Lean inputs and the runtime stay as they are: both Lean packages without `.lake`,
@@ -56,9 +56,13 @@ Measured on the base of this task:
 - A Nix evaluation test reads the source tree of each mutant suite derivation and checks
   that it holds no `judge/` file and no `conformance/cases/` file, and that its Python
   files are exactly `common`, the suite's test files and the closure.
-- Before the pull request, a `pytest --collect-only` of each mutant suite in its Nix
-  source tree imports all of its modules. This shows that the closure misses no module
-  that the analysis does not see. The status file records this once; it is not a test.
+- Before the pull request, a smoke check imports each module of each suite's closure
+  in the Nix source tree of that suite, with no other path. It finds a closure module
+  whose imports the analysis misses, also an import inside a function. It cannot find a
+  module that the code loads by a computed name (no closure module uses `importlib` or
+  `__import__` at the inspected base), and it does not run the tests. The status file
+  records this check once; it is not a test. Only the CI run of the suites shows that a
+  test reads nothing outside its inputs.
 - The validation of #330 after the merge: the first `main` push that changes only judge
   data, a corpus, or a case module of one suite reuses the reports of the other suites
   (#328). The pull request says that this needs the first `main` runs.
