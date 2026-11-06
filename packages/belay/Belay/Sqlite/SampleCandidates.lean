@@ -41,8 +41,10 @@ def visitContents [Monad m] (pool : List Value) (maxRows : Nat) (visit : List (L
 /-- The first candidates of the search on a schema, at most {lit}`limit` of them, in this order:
 the targeted databases ({name}`targeted`) with at most {lit}`maxRows` rows in
 each table; each valid content of the tables with at most {lit}`maxRows` rows in each table,
-fewest rows in total first, whose rows each repeat one pool value in every column, with each
-set of rows once ({name}`visitContents`);
+fewest rows in total first ({name}`visitContents`): each row selects one pool value for every
+column, and each multiset of selected values per table comes once. The stored rows can differ
+from the selection, and two selections can give the same database, because column affinity
+and rowid assignment ({name}`withCells`) apply after it;
 and {lit}`randomCount` databases of {name}`database` with the seeds from {lit}`seed`. The pool is
 the claim's constants, then {name}`boundaryValues`. The list is finite and explicit; a caller can
 screen it, or supply other candidates to the checker. -/

@@ -395,10 +395,13 @@ computes candidates and data with compiled code, which counts no heartbeats, and
 The search tries the explicit witnesses first. Then, for each parameter value, it
 tries the empty database, then screens candidate databases with compiled code of
 the claim: the targeted databases of the inferred schema, the table contents of at most
-`sql.checkMaxRows` rows per table, fewest rows first, and the seeded random databases. In
-a table content, each row repeats one value in every column, from the claim's constants
-and boundary values, and each set of rows comes once, in one order. Only the random
-databases have rows with different values in their columns. The kernel certifies
+`sql.checkMaxRows` rows per table, fewest rows first, and the seeded random databases. For
+a table content, the search selects one value for every column of a row, from the claim's
+constants and boundary values, and each set of selected rows once, in one order. Column
+affinity and rowid assignment then apply, so a stored row can have different values, for
+example an `INTEGER PRIMARY KEY` column gets the rowid. Selections with different values in
+the columns of a row come only from the random databases and from the variants of supplied
+rows. The kernel certifies
 each candidate that the screen accepts, so the screen cannot make a result wrong.
 The checker does not run compiled code that differs from the definition that the
 kernel checks: a claim that uses a constant with `implemented_by`, `@[extern]`, an
