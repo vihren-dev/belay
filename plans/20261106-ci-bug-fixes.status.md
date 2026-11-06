@@ -29,3 +29,7 @@ Sources: `build-support/tests.nix`, `.github/workflows/ci.yml`, `docs/ci.md`,
   input of the Nix suites). Tests run: `tests/mutation_edits_test.py` (new test: two measurements,
   one base build), and `tests/conformance_function_mutants_test.py -k "printf or aggregate"` in one
   process: the second test did not build the base.
+- 2026-11-06: #327: `publish-nix-store` runs unless the run was cancelled; each platform uploads
+  only on an exact hit of its saved store, which cache-nix-action saves only after a passed check
+  job (`post-if: success()` in its pinned `action.yml`). Tests run: `tests/test_ci_workflow.py`,
+  `tests/test_ci_cache_key.py`, `tests/test_ci_scope.py`, `tests/docs_test.py`, actionlint.

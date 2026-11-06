@@ -79,10 +79,12 @@ def test_only_the_publishing_job_receives_the_write_token() -> None:
 
 
 def test_publishing_follows_accepted_main_and_nightly_checks_only() -> None:
-    """Uploads run after both checks pass, in the main-only environment, and cannot fail the workflow."""
+    """Uploads run after the checks of main pushes and nightly runs, also when the check of the
+    other platform failed (#327), in the main-only environment, and cannot fail the workflow.
+    The upload itself needs the store that a passed check saved (the next tests)."""
     publish = workflow_jobs()["publish-nix-store"]
-    assert ("if: github.event_name == 'schedule' || "
-            "(github.event_name == 'push' && github.ref == 'refs/heads/main')") in publish
+    assert ("if: ${{ !cancelled() && (github.event_name == 'schedule' || "
+            "(github.event_name == 'push' && github.ref == 'refs/heads/main')) }}") in publish
     assert "needs: check" in publish
     assert "environment: attic-publish" in publish
     assert "continue-on-error: true" in publish
@@ -103,6 +105,7 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     upload = publish[publish.index("- name: Upload store paths"):]
     assert "if: steps.restore.outputs.hit-primary-key == 'true'" in upload
     assert "id: restore" in publish[:publish.index("- name: Upload store paths")]
+    assert "hit-primary-key == 'true'" not in publish[:publish.index("- name: Upload store paths")]
     assert "--inputs-from path:./nix nixpkgs#attic-client" in upload
     missing = next(step for step in job_steps(publish) if "Report a missing saved store" in step)
     assert "if: steps.restore.outputs.hit-primary-key != 'true'" in missing

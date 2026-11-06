@@ -235,11 +235,13 @@ jobs:
 
   publish-nix-store:
     name: Publish Nix store (${{ matrix.system }})
-    # After both native checks of a main push or nightly run pass, upload the store
-    # that the check job saved to the Vihren Attic cache. Only this job can use the
-    # attic-publish environment, which deploys only from main and holds the write
-    # token. An upload failure never fails the workflow or changes a check result.
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # After the checks of a main push or nightly run, upload the store that the check
+    # job saved for this platform to the Vihren Attic cache. The cache action saves a
+    # store only after a passed check job, so each platform publishes only a store that
+    # a passed check saved, also when the check of the other platform failed. Only this
+    # job can use the attic-publish environment, which deploys only from main and holds
+    # the write token. An upload failure never fails the workflow or changes a check result.
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     needs: check
     strategy:
       fail-fast: false

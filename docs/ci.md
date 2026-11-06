@@ -167,9 +167,12 @@ cache.nixos.org. Reads need no credentials, so fork pull requests use it too.
 download fall back to a local build; substitution fallback is unrelated to
 `sandbox-fallback`, which stays disabled.
 
-After both native checks of a `main` push or nightly run pass, the
-`publish-nix-store` job restores, per platform, exactly the store that the check
-job saved and uploads its paths with the pinned Attic client; Attic skips paths
+After the checks of a `main` push or nightly run, the `publish-nix-store` job
+restores, per platform, exactly the store that the check job saved and uploads its
+paths with the pinned Attic client. The cache action saves a store only after a
+passed check job, so a platform publishes only a store that a passed check saved,
+in this run or in an earlier run of the same tree. A failed check of the other
+platform does not stop the publication, and a cancelled run publishes nothing; Attic skips paths
 that cache.nixos.org already provides. Only that job uses the `attic-publish`
 environment, which deploys only from `main` and holds `ATTIC_WRITE_TOKEN`; pull
 request and manual jobs never receive the token. The job may fail or reach
