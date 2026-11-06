@@ -78,3 +78,14 @@ def test_candidates_fill_touched_tables_with_constrained_rows(runtime_root: Path
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     assert "candidate constraints passed" in result.stdout, result.stdout
+
+
+def test_search_screens_while_generating_with_a_share_per_value(runtime_root: Path, tmp_path: Path) -> None:
+    """CheckSamples.visitCandidates and Sampling.candidates: the search stops generating at the
+    first candidate that the screen accepts, continues after a rejected certificate, screens the
+    last candidate within the time limit, and gives each parameter value a share of the
+    candidate count, so that NULL does not use the count of the value 1."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateShares.lean", tmp_path),
+                         cwd=tmp_path, timeout=90)
+    assert result.returncode == 0, result.diagnostic()
+    assert "candidate shares passed" in result.stdout, result.stdout

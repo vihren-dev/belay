@@ -51,3 +51,7 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   (`valueShares`) checks the stop test, the continuation after a rejected certificate and that
   the value 1 is reached within 200 candidates after NULL (it fails when every value gets the
   whole count). Tests: the surface tests of the D7 entry.
+- 2026-11-06: the share tests move to `CandidateShares.lean`
+  (`test_search_screens_while_generating_with_a_share_per_value` in `surface_search_test`), with
+  a test that the screen of the last candidate stops at the time limit (it times out when that
+  screen runs outside the timed task). Tests: `surface_search_test`.
