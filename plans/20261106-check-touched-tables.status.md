@@ -64,3 +64,8 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   rows with the triggers off and the replay fails with `CHECK constraint failed:
   conversation_id IS NOT NULL`. The same claim with `(db := orphanMessage)`, a `db!`
   counterexample, is false. Tests: `surface_check_consumer_size_test`.
+- 2026-11-06: the kernel certifies the empty database of a value only when the screen accepts it
+  (ADR D2: the kernel certifies only screened candidates). Before, each value sent the empty
+  database to the kernel: the true variant of #316 spent 0.4 to 0.5 s on it. Test:
+  `CandidateShares.lean` (`emptyScreened`: a screen that accepts nothing gets no certification).
+  Tests: the surface tests of the D7 entry and `surface_check_consumer_size_test`.

@@ -80,7 +80,8 @@ of them. For example, {assert}`valueShare 100 4 false = 25` and
 def valueShare (left values : Nat) (last : Bool) : Nat :=
   if last then left else left / max 1 values
 
-/-- Visit explicit witnesses, then, for each configured value, the empty database, the databases
+/-- Visit explicit witnesses, then, for each configured value, the empty database when the screen
+accepts it, the databases
 that the claim's equality premises name ({name}`domainDatabases`) and the generated candidates
 ({name}`Sampling.candidates`) that the screen accepts, in order, stopping at the first accepted
 result. The generated candidates of a value are at most its share of the candidate count that
@@ -118,7 +119,13 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       { database := mkConst ``Database.empty, environment := config.environment, named := config.named }
     let some witness ← attempt (fillValueInputs proposition initial value) | continue
     tried := tried + 1
-    if let some result ← attempt (accept witness (screen.map (·, value))) then return some result
+    -- The kernel certifies the empty database only when the screen accepts it.
+    let some screensEmpty ← match screen with
+        | some screen => attempt (awaitCompiled fun _ => screen Database.empty value)
+        | none => pure (some true)
+      | return none
+    if screensEmpty then
+      if let some result ← attempt (accept witness (screen.map (·, value))) then return some result
     for database in domain do
       if tried >= config.candidates then return none
       tried := tried + 1

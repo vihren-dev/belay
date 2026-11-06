@@ -51,7 +51,17 @@ def lastScreenTimed : TermElabM Unit := do
     pure (result.isNone && (← Check.compiledLimitExpired))
   unless stopped do throwError "the screen of the last candidate escaped the time limit"
 
+/-- Checks that {name}`Check.visitCandidates` gives the empty database to the kernel only when
+the screen accepts it: with a screen that accepts nothing, the callback, which certifies in the
+checker, is never called. -/
+def emptyScreened : TermElabM Unit := do
+  let calls ← IO.mkRef (0 : Nat)
+  discard <| Check.visitCandidates (mkConst ``True) { candidates := 10, screen := some fun _ _ => false }
+    fun _ _ => do calls.modify (· + 1); (throwError "rejected certificate" : TermElabM Unit)
+  unless (← calls.get) == 0 do throwError "the kernel got a candidate that the screen rejects"
+
 elab "check_candidate_shares" : command => Command.liftTermElabM do
+  emptyScreened
   valueShares
   lastScreenTimed
   logInfo "candidate shares passed"
