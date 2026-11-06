@@ -11,3 +11,12 @@ Sources: `tools/observability_pytest.py`, `tools/observability_nix.py`,
 ## Progress
 
 - 2026-11-06: task and status files.
+- 2026-11-06: review of the task file: three R19 findings (shared harness files are suite inputs,
+  ADR 0028 recovery of cached results, the local commit is a snapshot), fixed by wording.
+- 2026-11-06: `tools/observability_provenance.py` builds the metadata; `tools/observability_nix.py`
+  imports only executions that started during the command, with the metadata and the suite of the
+  output, and recovers failed builds through a staging spool. ADR 0028 is amended;
+  `docs/test-observability.md` lists the fields and the query. The Nix derivations of
+  `testReports`, `scheduledTestReports` and `developmentTestReports` are unchanged. Tests run:
+  `tests/test_observability_provenance.py` (new), `tests/test_observability.py`,
+  `tests/test_observability_identity.py`, `tests/test_recipe_limits.py`, `tests/docs_test.py`.

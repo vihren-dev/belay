@@ -174,6 +174,13 @@ Retry with unchanged IDs; the views prevent double counting. Reimporting cached
 Nix results recovers original observations and never creates a new execution.
 Do not relabel them with the retrieving machine's time or metadata.
 
+Amended 2026-11-06 (#332): the host runner adds provenance metadata to each
+execution whose builder ran during its command, and does not import cached Nix
+results. A cached result was imported by the command that built it; importing it
+again with the builder's empty metadata would replace that provenance, because
+`ReplacingMergeTree` keeps the last row of an execution. A result that a direct
+`nix-build` built is therefore not recovered by a later runner command.
+
 ## Acceptance
 
 Observability is supporting code under [AGENTS.md](../AGENTS.md#goal-core-and-supporting-code)
