@@ -105,6 +105,9 @@ structure Report where
   /-- What the replay does not cover, for a claim about a program that runs Lean code. None when the
   replay runs every statement of the claim. -/
   note : Option String := none
+  /-- The name of the claim's script, for example {lit}`uniqueEmail`, to label its outputs.
+  None when the script is no named constant; the original SQL then labels them. -/
+  label : Option Name := none
 
 /-- Prepare the database-only replay for an arbitrary Lean predicate. It does not invent a
 query for that predicate. The witness's logical refutation is checked separately. -/

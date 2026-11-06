@@ -1,0 +1,47 @@
+# Status: a readable counterexample from `#sql_check`
+
+Created: 2026-11-05. Status: DONE (2026-11-05).
+Task: [20261105-readable-counterexample.task.md](20261105-readable-counterexample.task.md).
+Issue: #316.
+
+Sources: `packages/belay/Belay/Sqlite/CheckDisplay.lean`, `CheckOperation.lean`,
+`CheckReplay.lean`, `ReplayScript.lean`, `ReplayValues.lean`, `ReplayDatabaseSql.lean`,
+`CounterexampleWitness.lean`; `Model/OutputTable.lean` (`textTable`).
+
+## Progress
+
+- 2026-11-05: task and status files.
+- 2026-11-05: review of the task file: R19 must (a backslash in a text literal is kept by the
+  shell's script input) fixed in the task file; the code keeps backslashes in literals.
+- 2026-11-05: the readable counterexample. `CheckWitnessText.lean` (new) gives the tables and the
+  environment; `CheckOperation` keeps them in `Outcome.witness`; `CheckReplay.scriptName` labels
+  each report (`Replay.Report.label`); `CheckDisplay.describe` gives one block with one
+  construction and one replay script (`.open :memory:` between replays); `Replay.textLiteral`
+  spells UTF-8 text without NUL as a string literal. New fixture
+  `tests/surface/CounterexampleReadable.lean` and test `tests/surface_check_readable_test.py`
+  (suite `surfaceChecks`). Tests run for this commit: `surface_check_readable_test`,
+  `surface_replay_test`, `surface_check_command_test`, `surface_automatic_test`,
+  `surface_automatic_editor_test`, `surface_s6_check_editor_test`, `surface_s6_not_blocked_test`,
+  `surface_s6_check_programs_test`.
+- Finding: the claim of issue #316 is `unknown` with the default `sql.checkBudget` (100000), on
+  main before this change too; the fixture sets 2000000. Not changed here: the owner dropped a
+  raise of the default on 2026-11-05, because ADR 0031 (#319) measures the defaults again.
+- 2026-11-05: review of the feature commit: R11 must (the shell gives a CR LF inside a literal as
+  LF) fixed: text with a carriage return keeps its CAST, with `#guard`s and the native replay of
+  `lineParameters` in `surface_replay_test`; R5 must (catch-all on `Value`) fixed; R13 should
+  fixed: `packages/belay/README.md` describes the new block. The R19 should of the task-file fix
+  (the command-line rewrite of `\u` escapes) is fixed: the task file no longer claims it.
+  Tests run: `surface_replay_test`, `surface_check_readable_test`.
+- 2026-11-05: review of the refactor commit: no findings.
+- 2026-11-05: the end checks found a regression: `tests/surface_rebuild_test.py`
+  (`RebuildRefutation`, `sql_refute` with the default budget) gave no refutation, because the
+  text of the witness used the rest of the budget. `describeWitness` (`CheckWitnessText.lean`)
+  gives the text the explanation share of the budget, as the failing observation has; without
+  the text, the refutation is reported without its tables. Tests run: `surface_rebuild_test`,
+  `surface_check_readable_test`, `surface_s6_check_programs_test`, `surface_check_command_test`,
+  `surface_replay_test`, `surface_s6_not_blocked_test`, `surface_automatic_test`,
+  `surface_s6_check_editor_test`, `surface_automatic_editor_test`.
+- 2026-11-05: review of the budget-share fix: R13 should fixed: `packages/belay/README.md` says
+  that the block can omit `Database:` and `Environment:`. Text only; no tests changed.
+- 2026-11-05: review of the README fix: no findings. End checks pass: `just test-full`,
+  `just verdict`, `just test-nix` (87 passed) and `just test-scheduled-checks`. DONE.

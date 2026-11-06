@@ -24,7 +24,8 @@ private def checkTextSize (text : String) : TermElabM Unit := do
   if text.utf8ByteSize > maxReplayBytes then throwError "SQL checking reached its replay text limit"
   checkSystem "SQL replay text"
 
-/-- Reconstruct a database with original metadata or the existing ordinary-table formatter.
+/-- Reconstruct a database with original metadata, with the schema text of a generated
+database ({name}`Replay.schemaRowsSql`), or with the existing ordinary-table formatter.
 The shared formatter receives only checked literal database data and checks resources between
 table/row fragments. Its text is an untrusted proposal. The model execution that validates
 the exact reconstruction is reduced under the checking budget. -/
@@ -32,9 +33,15 @@ def checkedConstruction (expression : Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM String := do
   let database ← databaseValue expression excluded excludedLocals
   let source ← sourceOf databaseSourceKey expression
-  let text ← match source with
-    | some source => pure (some source.text)
-    | none =>
+  let fromSchema ← match ← sourceOf schemaSourceKey expression with
+    | some schema =>
+      checkTextSize schema.text
+      (Replay.schemaRowsSql schema.text database : IO _)
+    | none => pure none
+  let text ← match source, fromSchema with
+    | some source, _ => pure (some source.text)
+    | none, some text => pure (some text)
+    | none, none =>
       let bytes ← IO.mkRef (0 : Nat)
       Replay.databaseSqlWith (fun fragment => do
         checkSystem "SQL replay formatting"

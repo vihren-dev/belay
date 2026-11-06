@@ -93,8 +93,12 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     let some (base, constants) ← attempt <| dataValue (Database.Raw × List Value)
       (mkApp2 (mkConst ``inferredData) scripts schema) | continue
     let baseExpression := config.schema.getD (databaseExpr base)
+    let schemaText ← match config.schema with
+      | some schema => schemaText? schema
+      | none => pure none
     -- The targeted list has at most this many entries; rejected constraints shorten it.
-    for (random, count) in [(false, 1 + Sampling.boundaryRows.length + constants.length),
+    for (random, count) in [(false, 1 + Sampling.suppliedVariantBound base + Sampling.boundaryRows.length +
+                              constants.length),
                             (true, config.randomSamples)] do
       for index in [0:count] do
         checkSystem "SQL candidate generation"
@@ -104,7 +108,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
           else dataValue (Option Database.Raw)
             (mkApp3 (mkConst ``targetedData) baseExpression (toExpr constants) (toExpr index))) | continue
         if raw.rows.any (fun rows => rows.length > config.maxRows) then continue
-        let expression := if raw == base then baseExpression else databaseExpr raw
+        let expression := if raw == base then baseExpression else generatedExpr raw schemaText
         tried := tried + 1
         if let some result ← attempt (accept { witness with database := expression }) then return some result
     -- No inferred Value binder means later parameter values would repeat this sequence.

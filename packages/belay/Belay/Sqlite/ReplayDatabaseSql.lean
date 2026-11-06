@@ -36,8 +36,9 @@ private def tableSql (name : Identifier) (table : CatalogTable) : Option String 
 
 /-- Insert one row using SQLite's generated rowid. The model does not support explicit
 implicit-rowid INSERT columns, so exact reconstruction rejects nonsequential rowids.
-Every cell uses the shared storage-preserving spelling, including NULL, BLOB and text. -/
-private def rowSql (name : Identifier) (table : CatalogTable) (row : Row) : Option String := do
+Every cell uses the shared storage-preserving spelling, including NULL, BLOB and text.
+An INTEGER PRIMARY KEY column gets its value, which is the rowid. -/
+def rowSql (name : Identifier) (table : CatalogTable) (row : Row) : Option String := do
   let columns ← (table.columns.map (·.name)).mapM identifier
   let values ← row.values.mapM valueLiteral
   let quoted ← identifier name
