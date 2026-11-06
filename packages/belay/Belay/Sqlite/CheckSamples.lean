@@ -101,7 +101,7 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     for database in domain do
       if tried >= config.candidates then return none
       tried := tried + 1
-      if let some result ← attempt (accept { witness with database } (screen.map (·, value))) then
+      if let some result ← attempt (accept { witness with database, value := none } (screen.map (·, value))) then
         return some result
     -- No inferred Value binder means later parameter values would repeat this sequence.
     let last := witness.named == config.named
@@ -144,9 +144,9 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
         tried := tried + (index + 1 - position)
         position := index + 1
         let some candidate := candidates[index]? | return none
-        let raw := candidate.raw
-        let expression := if raw == base then baseExpression else generatedExpr raw schemaText
-        if let some result ← attempt (accept { witness with database := expression } (some (screen, value))) then
+        let proposal := if candidate.raw == base then { witness with database := baseExpression, value := some candidate }
+          else witness.generated candidate schemaText
+        if let some result ← attempt (accept proposal (some (screen, value))) then
           return some result
     if last then return none
   return none

@@ -3,6 +3,7 @@ import Belay.Sqlite.CheckCompiled
 import Belay.Sqlite.ReplayEvaluation
 import Belay.Sqlite.SqlSource
 import Belay.Sqlite.DbBang
+import Belay.Sqlite.CounterexampleWitness
 
 set_option doc.verso true
 
@@ -88,5 +89,18 @@ def generatedExpr (raw : Database.Raw) (schema : Option String) : Expr :=
   match schema with
   | some text => withSchemaText text (databaseExpr raw)
   | none => databaseExpr raw
+
+/-- The witness with a generated database ({name}`generatedExpr`) that carries its value
+({name}`Witness.value`). -/
+def Witness.generated (witness : Witness) (database : Database) (schema : Option String) : Witness :=
+  { witness with database := generatedExpr database.raw schema, value := some database }
+
+/-- The database value of a witness: the value that it carries ({name}`Witness.value`), else the
+checked compiled value of its term ({name}`databaseValue`). -/
+def witnessDatabase (witness : Witness) (excluded : Array Name := #[])
+    (excludedLocals : Array FVarId := #[]) : TermElabM Database :=
+  match witness.value with
+  | some database => pure database
+  | none => databaseValue witness.database excluded excludedLocals
 
 end Belay.Sqlite.Check

@@ -41,9 +41,8 @@ The trust rule does not change: `proved` and `false` come only from kernel-check
    and no error. Cancellation stops the wait.
 6. **Compiled data (D6).** `dataValue`, `databaseValue` and `scriptValue` of the checker compute
    with compiled code and keep the kernel check of `expression = toExpr value`. Lean's evaluator
-   (`reduce`) no longer computes them. The replay and text of a generated candidate compute its
-   value again from its expression (amended 2026-11-06: with compiled data this takes about 44 ms
-   of 1.8 s for the claim of #316, so the candidate does not carry its value). The data limits of `CheckBudget.lean` are limits on the size of the value,
+   (`reduce`) no longer computes them. A generated candidate carries its value; its replay and
+   text use that value. The data limits of `CheckBudget.lean` are limits on the size of the value,
    with values that hold a schema of the consumer's size (9,561 nodes).
 7. **Construction with the triggers off (D6).** A generated candidate on a schema whose source text
    has statements other than CREATE and INSERT, such as ALTER TABLE, is built by the schema's text

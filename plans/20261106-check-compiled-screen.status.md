@@ -93,6 +93,14 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
   5 ms. The true variant screens all its candidates with a time limit of 100 ms and stops at 30 ms.
   So neither limit binds these claims, and the time limit only caps a slow screen: it adds no
   wait to a claim whose compiled work is fast. Slice 3 measures again with the consumer-size
-  schema. Item 6 of the task is amended: the candidate does not carry its value.
+  schema.
   Before (Nix `just test-full` of 2026-11-05 on trunk #324): `surfaceChecks` 25 tests in
   244.5 s, `surfaceS6` 66 tests in 546.2 s.
+- 2026-11-06: a generated candidate carries its value (task item 6, ADR D6): `Witness.value`,
+  set by `Witness.generated`. Replay (`checkedConstruction`, `checkedScriptReport`), the witness
+  text and the screened shrink use it (`witnessDatabase`), and do not evaluate the term again.
+  A review of the D8 commit found that the amendment of item 6 contradicted ADR D6; this
+  change replaces the amendment. Tests: `surface_search_test` (`carriedValues`: a generated
+  candidate's value is the value of its term; the text of a witness with an opaque term uses its
+  carried value), `surface_check_screen_test`, `surface_check_real_schemas_test`,
+  `surface_check_readable_test`, `surface_replay_test`, `surface_s6_check_programs_test`.

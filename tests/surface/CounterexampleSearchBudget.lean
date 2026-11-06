@@ -122,6 +122,19 @@ def depthLimitedAttempt : TermElabM Unit := do
   let .unknown := (← Check.check (mkConst ``True) 200000 (recursionLimit := 0)).result
     | throwError "zero requested unlimited recursion"
 
+/-- Checks that a generated candidate carries its value ({name}`Check.Witness.value`) and that the
+witness text uses a carried value without evaluating the term: here the term is the opaque
+{name}`deferredSchema`, which the checker does not evaluate. -/
+def carriedValues : TermElabM Unit := do
+  let generated ← Check.visitCandidates (mkConst ``True) { screen := some fun _ _ => true }
+    fun witness _ => if witness.value.isSome then pure witness else throwError "not generated"
+  let some { database, value := some value, .. } := generated | throwError "no generated candidate"
+  unless database == Check.generatedExpr value.raw none do
+    throwError "the carried value is not the value of the generated term"
+  let some _ ← Check.attempt
+      (Check.witnessText { database := mkConst ``deferredSchema, value := some Database.empty })
+    | throwError "the witness text evaluated the term instead of using the carried value"
+
 elab "check_bounded_search_data" : command => Command.liftTermElabM do
   let started ← IO.monoMsNow
   let stopped ← Check.withCompiledLimit 20 do
@@ -137,6 +150,7 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
   logInfo m!"bounded data: time limit; {(← IO.monoMsNow) - started} ms"
   canceledAttempt
   candidateOrder
+  carriedValues
   depthLimitedAttempt
   -- A schema without a definition must not delay the empty candidate.
   let first ← Check.visitCandidates (mkConst ``True)
