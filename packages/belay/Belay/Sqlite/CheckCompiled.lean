@@ -55,6 +55,13 @@ def compiledLimitExpired : CoreM Bool := do
   | some limit => limit.expired.get
   | none => return false
 
+/-- The milliseconds of waiting for compiled work that the current operation has left. None
+outside a checking operation. -/
+def compiledTimeLeft : CoreM (Option Nat) := do
+  match compiledLimitExtension.getState (← getEnv) with
+  | some limit => some <$> limit.remaining.get
+  | none => return none
+
 /-- The text of an unknown result that the time limit stopped. -/
 def timeLimitReason : String :=
   "the search reached its time limit; increase sql.checkTimeLimit to search longer"

@@ -130,10 +130,10 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
     pure (result.isNone && (← Check.compiledLimitExpired))
   unless stopped do throwError "expensive data escaped the time limit of compiled work"
   -- Only the waits for compiled work count: time in the elaborator does not use up the limit.
-  let computed ← Check.withCompiledLimit 50 do
+  let left ← Check.withCompiledLimit 50 do
     IO.sleep 200
-    Check.attempt (Check.scriptValue (mkConst ``bytesAndReal))
-  unless computed.isSome do throwError "time outside compiled work used up the time limit"
+    Check.compiledTimeLeft
+  unless left == some 50 do throwError "time outside compiled work used up the time limit: {left}"
   logInfo m!"bounded data: time limit; {(← IO.monoMsNow) - started} ms"
   canceledAttempt
   candidateOrder
