@@ -32,10 +32,11 @@ or more of: a `Script.outputOn_<form>` complete-output equation (ADR 0026 D1),
 holds one `Holds` claim; `ExistsMayFail` and `SelectOneMayFail` hold the
 `Script.not_claims_*` negative claims; `QueryCases` holds the `*.iff_step`
 case splits and the prepare-error output equation; `SampleQueryHints` holds
-the hint functions. The shape is a whole-query lemma,
+the hint functions; `ScalarNoFrom` holds the three quiet-statement laws of a
+scalar query without `FROM`. The shape is a whole-query lemma,
 which D3 says automation must not need. The equations and claims become the
 "required contrast" column of the acceptance matrix. Line counts are the
-current ones on main `84c0d779`; the fourteen files total 1,242 lines.
+current ones on main `84c0d779`; the fifteen files total 1,328 lines.
 
 | File under `packages/belay/Belay/Sqlite/` | Acceptance cover | Status |
 | --- | --- | --- |
@@ -129,8 +130,8 @@ needs its equation; the status file records each such deletion.
 ## Measurement
 
 The net reduction is not established. The physical counts above are the gross
-deletion opportunity: by `scc`, the fourteen surface files hold 844 maintained
-code lines and the required model files 1,648, together 2,492, before retained
+deletion opportunity: by `scc`, the fifteen surface files hold 905 maintained
+code lines and the required model files 1,648, together 2,553, before retained
 laws move. Measure the first completed family, with its retained-law moves, the
 tactic code, the migrated clients and the tests, and use that result to decide
 the remaining scope.

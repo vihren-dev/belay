@@ -415,6 +415,12 @@ unchanged. Nix evidence after the fix: the same focused `surfaceS6` build, 5
 passed, 66 deselected. Report:
 `/nix/store/dncxsrhgbymmykijlxrfjf3miachlpq7-sqlite-verifier-test-surfaceS6-1/junit.xml`.
 Review `20261106T214630Z-66d021e0` (Codex) of the refactor commit found nothing.
+Review `20261106T214758Z-f199fe41` (Codex) of the specification commit found
+one should finding (R19): the retirement measurement still counted fourteen
+surface files after the `ScalarNoFrom.lean` row was added. Fixed in the
+following `refactor:` commit: fifteen files, 1,328 physical lines, 905
+maintained code lines, 2,553 with the model files (`scc` on main `84c0d779`
+plus the 86-line, 61-code-line `ScalarNoFrom.lean`).
 
 ## Open design axes
 
