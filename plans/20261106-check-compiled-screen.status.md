@@ -76,4 +76,23 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
 - 2026-11-06: the time limit counts only the waits for compiled work (`CompiledLimit.remaining`).
   Before, it was a deadline from the start of the check, so the kernel's time also used it up,
   against the option's description and D2/D8. Test: `surface_search_test` (a 200 ms sleep in the
-  elaborator under a 50 ms limit leaves the compiled data available), `surface_check_screen_test`.
+  elaborator under a 50 ms limit leaves the time left unchanged, `compiledTimeLeft`),
+  `surface_check_screen_test`.
+- 2026-11-06: D8 records (local measurements on the dev build, load average 2 to 3; not evidence).
+  Phases of the claim of #316, at the default budget: proof attempt 16 ms, screen compilation
+  14 ms, candidate search 1.0 s (2 accepted candidates, 0.9 s of it to certify them), `replayClaim`
+  0.48 s (44 ms of it `databaseValue` of the witness, 123 ms `checkedConstruction`), observation
+  1 ms, `describeWitness` 44 ms, screened shrink 47 ms; total 1.6 to 1.8 s (ADR: 37.8 s with a
+  budget of 1,000,000). True variant (`GROUP BY email COLLATE NOCASE`): proof attempt 15 ms,
+  screen compilation 14 ms, search 0.6 to 0.9 s (the empty database, certified in 0.4 to 0.7 s),
+  `unknown`; total 0.6 to 1.0 s (ADR: 23.0 s).
+  Defaults, unchanged: `sql.checkBudget` 100,000, `sql.checkCandidates` 10,000,
+  `sql.checkRandomSamples` 4, `sql.checkTimeLimit` 10,000 ms. Measurements behind them: the claim
+  of #316 is `false` with a budget of 12,000 and `unknown` with 6,000, so the 1,000,000 of the
+  work of #316 is not necessary (ADR D8). It is `false` with a time limit of 20 ms and stops at
+  5 ms. The true variant screens all its candidates with a time limit of 100 ms and stops at 30 ms.
+  So neither limit binds these claims, and the time limit only caps a slow screen: it adds no
+  wait to a claim whose compiled work is fast. Slice 3 measures again with the consumer-size
+  schema. Item 6 of the task is amended: the candidate does not carry its value.
+  Before (Nix `just test-full` of 2026-11-05 on trunk #324): `surfaceChecks` 25 tests in
+  244.5 s, `surfaceS6` 66 tests in 546.2 s.
