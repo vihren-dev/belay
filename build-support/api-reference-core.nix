@@ -2,7 +2,7 @@
 # Its only inputs are the Lean toolchain and the pinned doc-gen4, and its commands are here,
 # not in a repository script, so Nix and the CI cache reuse it until one of them changes.
 { pkgs, leanToolchain, docGen4 }:
-pkgs.runCommand "sqlite-verifier-api-reference-core" {
+pkgs.runCommand "belay-api-reference-core" {
   nativeBuildInputs = [ leanToolchain ];
 } ''
   export HOME="$TMPDIR"

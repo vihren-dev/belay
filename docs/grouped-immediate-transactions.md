@@ -2,7 +2,7 @@
 
 Audience: model and native-evidence reviewers.
 
-[Issue #36](https://github.com/vihren-dev/sqlite-verifier/issues/36) adds five
+[Issue #36](https://github.com/vihren-dev/belay/issues/36) adds five
 neutral groups in [authored_transactions.py](../conformance/authored_transactions.py).
 Each group executes `BEGIN IMMEDIATE` and multiple statements on the same writer
 connection. The recorder observes committed storage through a separate connection

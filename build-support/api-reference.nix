@@ -7,7 +7,7 @@ let
     (builtins.readFile ../tools/source_revision.py);
 in
 pkgs.stdenv.mkDerivation {
-  pname = "sqlite-verifier-api-reference-base";
+  pname = "belay-api-reference-base";
   version = "2";
   # The model comes built from its package derivation; doc-gen4 only reads it.
   dontUnpack = true;

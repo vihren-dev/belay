@@ -167,8 +167,8 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [adr]: adr-0026-semantic-proof-boundaries.md
 [spec]: spec-proof-agreement.md
 [agreement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SourceAgreement.lean
-[reads]: https://github.com/vihren-dev/sqlite-verifier/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateReads.lean
-[current]: https://github.com/vihren-dev/sqlite-verifier/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateCurrentLaws.lean
+[reads]: https://github.com/vihren-dev/belay/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateReads.lean
+[current]: https://github.com/vihren-dev/belay/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateCurrentLaws.lean
 [statement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateStatementLaws.lean
 [append]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprAppendLaws.lean
 [context]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean

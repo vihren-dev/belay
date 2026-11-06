@@ -1,7 +1,7 @@
 # Check authored public documentation without adding tools to the conformance runtime.
 { pkgs, leanToolchain, inventoryTools, docTools, modelPackage }:
 pkgs.stdenv.mkDerivation {
-  pname = "sqlite-verifier-public-documentation";
+  pname = "belay-public-documentation";
   version = "1";
   # The inventory reads the sources of the built packages below packages/.
   dontUnpack = true;

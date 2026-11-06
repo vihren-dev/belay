@@ -9,7 +9,7 @@ let
     verifier-conformance = verifierConformance;
   };
   libraries = builtins.attrValues packages ++ [ plausiblePackage ];
-in pkgs.runCommand "sqlite-verifier-theorem-dependencies" {
+in pkgs.runCommand "belay-theorem-dependencies" {
   nativeBuildInputs = [ leanToolchain pkgs.python3 ];
 } ''
   mkdir -p packages

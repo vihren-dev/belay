@@ -338,7 +338,25 @@ in {
     runtime = pkgs.linkFarm "sqlite-verifier-test-lean" [ { name = "lean"; path = leanToolchain; } ];
     tools = [ pkgs.nodejs ];
   };
+  # The old `model` suite is four suites, one for each area of the model: on hosted macOS it took
+  # more than its 1200 s limit (#353). Each suite should take at most half of the limit there.
+  # `compile_checks` is in `tests/shared_table_shape_test.py`, a test file of `schemaChanges`.
   model = suite "model" {
+    inputs = modelInputs ++ [ (root + /tests/shared_table_shape_test.py) ];
+    runtime = conformance;
+    tools = modelTools;
+  };
+  columnDefaults = suite "columnDefaults" {
+    inputs = modelInputs ++ [ (root + /tests/shared_table_shape_test.py) ];
+    runtime = conformance;
+    tools = modelTools;
+  };
+  schemaChanges = suite "schemaChanges" {
+    inputs = modelInputs;
+    runtime = conformance;
+    tools = modelTools;
+  };
+  queries = suite "queries" {
     inputs = modelInputs;
     runtime = conformance;
     tools = modelTools;

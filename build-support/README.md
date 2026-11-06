@@ -97,8 +97,9 @@ Conformance targets exclude unrelated tests and documentation. Changes to shared
 pytest support invalidate every suite. Nix owns all result reuse.
 The sample owns the frozen v4 and synthetic inputs plus their shared replay and
 validation helpers. Full-only historical evidence and tests do not invalidate it.
-`developmentTests` selects every target except `tests.model`, the coverage suites
-(`tests.coverageStatements`, `tests.coverageFeatures`), `tests.frozen` and `tests.corpora`;
+`developmentTests` selects every target except `tests.model` and the suites split from it
+(`tests.columnDefaults`, `tests.schemaChanges`, `tests.queries`, `tests.coverageStatements`,
+`tests.coverageFeatures`), `tests.frozen` and `tests.corpora`;
 the full target set remains in CI.
 
 `publicDocumentation` checks the compiled public import closure against its

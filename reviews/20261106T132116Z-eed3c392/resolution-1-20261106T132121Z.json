@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-06T13:21:21+00:00",
+  "finding": "20261106T132116Z-eed3c392#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "plans/20260924-* is a historical record; the link check exempts plans so that historical records keep their original text and paths"
+}

@@ -14,7 +14,8 @@ import pytest
 from tests.python_imports import import_closure
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFORMANCE_SUITES = ("model", "coverageStatements", "coverageFeatures", "frozen", "harness", "sample", "upstream", "writers")
+CONFORMANCE_SUITES = ("model", "columnDefaults", "schemaChanges", "queries", "coverageStatements", "coverageFeatures",
+                      "frozen", "harness", "sample", "upstream", "writers")
 """The Nix suites that receive the narrowed frontend inputs."""
 pytestmark = [pytest.mark.unit]
 

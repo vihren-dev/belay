@@ -69,15 +69,15 @@ in rec {
   mutantSuites = builtins.fromJSON (builtins.readFile ../tests/nix_mutant_suites.json);
   # `just test` skips the slow model comparisons, the kernel proofs of the coverage cases, the frozen evidence and the locked-corpus
   # validation; `just test-full` runs them.
-  developmentTests = pkgs.lib.removeAttrs tests [ "model" "coverageStatements" "coverageFeatures" "frozen" "corpora" ];
+  developmentTests = pkgs.lib.removeAttrs tests [ "model" "columnDefaults" "schemaChanges" "queries" "coverageStatements" "coverageFeatures" "frozen" "corpora" ];
   # One folder per suite, named after the suite, for the justfile recipes: for example
   # build/nix-tests-full/frozen/junit.xml. `nix-build -A tests` would instead number its
   # out-links in alphabetical order of the suites.
-  testReports = pkgs.linkFarm "sqlite-verifier-test-reports" tests;
-  developmentTestReports = pkgs.linkFarm "sqlite-verifier-development-test-reports" developmentTests;
-  scheduledTestReports = pkgs.linkFarm "sqlite-verifier-scheduled-test-reports" scheduledTests;
+  testReports = pkgs.linkFarm "belay-test-reports" tests;
+  developmentTestReports = pkgs.linkFarm "belay-development-test-reports" developmentTests;
+  scheduledTestReports = pkgs.linkFarm "belay-scheduled-test-reports" scheduledTests;
   # The scheduled suites that the `full` scope runs in the check job: all but the mutant suites.
-  scheduledCheckReports = pkgs.linkFarm "sqlite-verifier-scheduled-check-reports"
+  scheduledCheckReports = pkgs.linkFarm "belay-scheduled-check-reports"
     (pkgs.lib.removeAttrs scheduledTests mutantSuites);
   # The binding of the parser library and the translation of SQL text, below the surface
   # (ADR 0016, D2, amended). Lake compiles the parser's C from `parser/` (ADR 0023).
@@ -173,7 +173,7 @@ in rec {
   '';
   # The runner built against an instrumented copy of the model's sources, which compiles here.
   conformanceCoverage = (leanPackage {
-    pname = "sqlite-verifier-conformance-coverage";
+    pname = "belay-conformance-coverage";
     directory = "packages/verifier-conformance";
     source = sources.verifierConformance;
     targets = [ "conformance-runner" ];

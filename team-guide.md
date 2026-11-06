@@ -1,4 +1,4 @@
-**SQLite Verifier — Team and Working Agreement**
+**Belay — Team and Working Agreement**
 
 Version 0.2 · 24 September 2026
 
