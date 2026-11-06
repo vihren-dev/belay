@@ -21,8 +21,9 @@ def split_blocks(output: str) -> dict[str, str]:
 
 
 def replays(block: str) -> list[str]:
-    """The SQLite scripts of the replays of one block, in order."""
-    return [part.split("\nDatabase construction:", 1)[0] for part in block.split("SQLite replay:\n")[1:]]
+    """The SQLite scripts of the replays of one block, in order: the parts of its one replay script,
+    each of which after the first starts on a new database with `.open :memory:`."""
+    return block.split("SQLite replay:\n", 1)[1].split("\n.open :memory:\n")
 
 
 def final_rows(sqlite: str, directory: Path, name: str, script: str, inspect: str) -> list[list[object]]:

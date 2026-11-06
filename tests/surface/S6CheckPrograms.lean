@@ -64,9 +64,9 @@ labelled_sql "view-false" in
 #sql_check ∀ db : Database, db = sample → ∀ env : Env, env.Complete →
   Sql.View.EquivAt (Sql.View.quiet (send bump)) (Sql.View.identity (send bump)) (ExecutionContext.initial db env)
 
--- Shrinking needs about 280000 units and gets half of what is left, so it runs out. The refutation that was
--- certified and explained before the shrinking stays as the result.
-set_option sql.checkBudget 200000 in
+-- Shrinking needs more than 100000 units and gets half of what is left, so it runs out (it finishes with
+-- 200000). The refutation that was certified and explained before the shrinking stays as the result.
+set_option sql.checkBudget 100000 in
 labelled_sql "equiv-shrink-exhausted" in
 #sql_check Sql.Equiv (send bump) (send bumpTwice) with (db := sample)
 

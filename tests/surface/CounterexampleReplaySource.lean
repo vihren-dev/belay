@@ -33,6 +33,10 @@ def missingShellTable : Script := sql "SELECT count(*) FROM sqlite_parameters"
 def boundShellTable : Script := (sql "SELECT :n FROM sqlite_parameters") (.integer 1)
 def shellMetadata : Script := (sql "SELECT name FROM pragma_table_info('sqlite_parameters') WHERE cid=:i")
   (.integer 0)
+/-- Text values whose string literals the shell must keep: a CR LF and a lone CR keep their
+CAST, and a quote and a backslash are in a literal. -/
+def lineParameters : Script := (sql "SELECT hex(:crlf), hex(:cr), hex(:quote)")
+  (.text [97, 13, 10, 98]) (.text [99, 13, 100]) (.text "a'b\\u0041".toUTF8.toList)
 def numericParameters : Script := (sql "SELECT ?, ?3, ?1; SELECT ?2") (.integer 8) (.integer 9) (.integer 10)
 def numericBoundaries : Script := (sql "SELECT :lo,:hi,typeof(:r),:r=1.5")
   (.integer (-9223372036854775808)) (.integer 9223372036854775807) (.real (1.5 : Float).toBits)
@@ -41,6 +45,17 @@ def dropShellTable : Script := (sql "DROP TABLE IF EXISTS sqlite_parameters; SEL
 #guard Replay.valueLiteral (.real (1.5 : Float).toBits) == some "1.5"
 #guard (Replay.valueLiteral (.real 0x8000000000000000)).isNone
 #guard (Replay.valueLiteral (.integer 9223372036854775808)).isNone
+
+-- Text is a string literal when it is UTF-8 with no NUL byte and no carriage return, with each quote
+-- doubled, and keeps a backslash and a line feed; other text is the CAST of its bytes.
+#guard Replay.valueLiteral (.text "a".toUTF8.toList) == some "'a'"
+#guard Replay.valueLiteral (.text "a'b".toUTF8.toList) == some "'a''b'"
+#guard Replay.valueLiteral (.text "æ".toUTF8.toList) == some "'æ'"
+#guard Replay.valueLiteral (.text "\\u0041".toUTF8.toList) == some "'\\u0041'"
+#guard Replay.valueLiteral (.text [97, 0, 98]) == some "CAST(X'610062' AS TEXT)"
+#guard Replay.valueLiteral (.text [255]) == some "CAST(X'FF' AS TEXT)"
+#guard Replay.valueLiteral (.text [97, 13, 10, 98]) == some "CAST(X'610D0A62' AS TEXT)"
+#guard Replay.valueLiteral (.text [97, 10, 98]) == some "'a\nb'"
 
 /-- An untrusted compiled implementation supplies a different script from its definition. -/
 @[implemented_by twoQuery] def dishonestScript : Script := oneQuery

@@ -4,6 +4,7 @@ import Belay.Sqlite.CheckAutoProof
 import Belay.Sqlite.CheckSamples
 import Belay.Sqlite.CheckReplay
 import Belay.Sqlite.CheckObservation
+import Belay.Sqlite.CheckWitnessText
 
 set_option doc.verso true
 
@@ -24,6 +25,9 @@ structure Outcome where
   /-- The branch and the failing observation of a reported refutation of a claim about programs, from the model's
   run at the witness. None when the claim is no such claim or the text is out of budget. -/
   observation : Option String := none
+  /-- The database and environment of a reported refutation as a user reads them. None when there is
+  no refutation, or when the budget did not allow the text ({name}`describeWitness`). -/
+  witness : Option WitnessText := none
 
 /-- Try proof automation, then the shared candidate generator, and require replay before
 reporting a counterexample. An unreplayable candidate is skipped so later candidates can
@@ -35,7 +39,8 @@ witness that is certified and replayed is reported even when shrinking uses its 
 which permits small GROUP observations under cooperative reduction. Both limits are finite;
 zero disables checking. The caller's recursion option is restored afterwards. Exhaustion
 returns unknown and cancellation
-propagates after state cleanup. Explicit candidates and custom automation remain available. -/
+propagates after state cleanup. Explicit candidates and custom automation remain available.
+The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`). -/
 def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (shrinkAttempts : Nat := 16)
     (prove : Expr → TermElabM (Option Proven) := defaultProof)
@@ -43,14 +48,16 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (recursionLimit : Nat := defaultRecursionLimit) : TermElabM Outcome := do
   if recursionLimit == 0 then return {}
   let outcome : Option (Option Outcome) ← withOptions (maxRecDepth.set · recursionLimit) <|
-    withinBudget heartbeats <| attempt do
+    withAuditCache excluded <| withinBudget heartbeats <| attempt do
       let result ← checkCandidates proposition (pure #[]) prove excluded excludedLocals
       if let .proved _ := result then return { result }
       let accepted : Option Outcome ← visitCandidates proposition samples fun witness => do
         let proof ← refuteWitness proposition witness excluded excludedLocals
         let reports ← replayClaim proposition witness excluded excludedLocals
         let observation ← observeFailure proposition witness excluded excludedLocals
-        let original : Outcome := { result := .refuted witness proof, replays := reports, observation }
+        let text ← describeWitness witness excluded excludedLocals
+        let original : Outcome :=
+          { result := .refuted witness proof, replays := reports, observation, witness := text }
         if shrinkAttempts == 0 then return original
         -- Shrinking may use its share of the budget that is left. A certified, replayed witness is kept when
         -- shrinking uses its share without a smaller witness.
@@ -65,7 +72,8 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
           if smaller.database == witness.database then return original
           let reports ← replayClaim proposition smaller excluded excludedLocals
           let observation ← observeFailure proposition smaller excluded excludedLocals
-          return { result := .refuted smaller proof, replays := reports, observation }
+          let text ← describeWitness smaller excluded excludedLocals
+          return { result := .refuted smaller proof, replays := reports, observation, witness := text }
         return (smaller.bind id).getD original
       return accepted.getD {}
   return (outcome.bind id).getD {}

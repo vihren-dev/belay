@@ -33,7 +33,7 @@ def replay_reports(runtime_root: Path, tmp_path: Path) -> dict[str, dict[str, ob
             report = json.loads(line.removeprefix("REPLAY:"))
             assert isinstance(report, dict) and isinstance(report.get("name"), str)
             reports[report["name"]] = report
-    assert len(reports) == 9, reports
+    assert len(reports) == 10, reports
     return reports
 
 
@@ -83,7 +83,7 @@ def test_replay_matches_pinned_sqlite(runtime_root: Path, tmp_path: Path) -> Non
     version = run_command([sqlite, "-version"], cwd=tmp_path, timeout=5)
     assert version.returncode == 0 and version.stdout.startswith("3.51.0 "), version.diagnostic()
     reports = replay_reports(runtime_root, tmp_path)
-    for name in ("values", "parameters", "rebound", "numeric-parameters", "numeric-boundaries", "unbound"):
+    for name in ("values", "parameters", "line-parameters", "rebound", "numeric-parameters", "numeric-boundaries", "unbound"):
         report = reports[name]
         result = native_replay(sqlite, report["sql"], tmp_path, name)
         assert result.returncode == 0 and not result.stderr, result.diagnostic()

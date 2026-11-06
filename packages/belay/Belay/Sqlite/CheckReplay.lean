@@ -22,6 +22,14 @@ def noScriptNote : String :=
   "The program is Lean code, or it sends no script that this replay can run. The replay builds the database only. " ++
   "The model's run of the program gives the failing result."
 
+/-- The name of the constant that gives a script, possibly applied to its parameter values, for
+example {lit}`uniqueEmail`. None for an {lit}`sql` literal, which elaborates to
+{name}`Script.mk` or {name}`Script.withValues`, and for any other term. -/
+def scriptName (script : Expr) : Option Name :=
+  match script.consumeMData.getAppFn.consumeMData with
+  | .const name _ => if name == ``Script.mk || name == ``Script.withValues then none else some name
+  | _ => none
+
 /-- Reconstruct every recognized query observation in the instantiated claim. A plain Lean
 predicate receives only its database reconstruction. SQL outside the supported structural
 query/script forms, unavailable observations, or missing original text refuse the report.
@@ -36,8 +44,10 @@ def replayClaim (proposition : Expr) (witness : Witness)
       throwError "SQL replay could not identify the original query and its database"
     let construction ← checkedConstruction witness.database excluded excludedLocals
     return #[{ construction, sqlite := construction ++ "\n;\n", note := if sites.leanCode then some noScriptNote else none }]
-  let reports ← sites.sites.mapM fun site => checkedScriptReport site.database site.script
-    (excluded := excluded) (excludedLocals := excludedLocals)
+  let reports ← sites.sites.mapM fun site => do
+    let report ← checkedScriptReport site.database site.script
+      (excluded := excluded) (excludedLocals := excludedLocals)
+    return { report with label := scriptName site.script }
   return if sites.leanCode then reports.map ({ · with note := some leanCodeNote }) else reports
 
 /-- Raw results of the existing validity-preserving shrinker. The background caller reduces
@@ -52,6 +62,7 @@ def shrinkProposals (witness : Witness) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM (List Witness) := do
   let smaller ← dataValue (List Database.Raw) (mkApp (mkConst ``smallerData) witness.database)
     excluded excludedLocals
-  return smaller.map fun raw => { witness with database := databaseExpr raw }
+  let schema ← schemaText? witness.database
+  return smaller.map fun raw => { witness with database := generatedExpr raw schema }
 
 end Belay.Sqlite.Check

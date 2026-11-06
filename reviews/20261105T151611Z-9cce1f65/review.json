@@ -1,0 +1,68 @@
+{
+  "caller": "claude",
+  "commit": "9cce1f65e793a67c72f2582bb26c279cd531c5e4",
+  "date": "2026-11-05T15:16:11+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr-0031-fast-sql-check.md"
+  ],
+  "findings": [
+    {
+      "id": "20261105T151611Z-9cce1f65#1",
+      "line": 150,
+      "path": "docs/adr-0031-fast-sql-check.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Replay “as today” cannot meet D9’s generated consumer-schema test because `Replay.databaseSqlWith` rejects triggers, indexes, CHECK constraints and foreign keys, while D6’s reified candidates lack original construction text. Fix: specify how generated candidates obtain construction SQL that passes exact reconstruction validation."
+    },
+    {
+      "id": "20261105T151611Z-9cce1f65#2",
+      "line": 191,
+      "path": "docs/adr-0031-fast-sql-check.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D5 assumes every step-2 counterexample has no smaller candidate, but D3 tries targeted two-row patterns before exhaustive one-row candidates. Fix: retain shrinking for targeted hits and skip it only when the search order establishes minimality."
+    },
+    {
+      "id": "20261105T151611Z-9cce1f65#3",
+      "line": 220,
+      "path": "docs/adr-0031-fast-sql-check.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D8 assumes heartbeats bound replay and text preparation, but D6 introduces compiled data computations that cannot be interrupted by that budget, and D2’s timed wait covers only screening. Fix: extend the timed, cancellation-aware execution boundary to compiled data evaluation."
+    },
+    {
+      "id": "20261105T151611Z-9cce1f65#4",
+      "line": 262,
+      "path": "docs/adr-0031-fast-sql-check.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The claim that `unknown` covers every database within the row bound contradicts D3’s uniform-row restriction and the candidate and time limits. Fix: describe a bounded search over the specified candidate subset that can stop before enumeration finishes."
+    }
+  ],
+  "id": "20261105T151611Z-9cce1f65",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

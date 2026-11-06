@@ -316,15 +316,29 @@ conflict in a unique index. The grouping and index must use the same collation.
 ## Check a claim before proving it
 
 `#sql_check P` tries checked proof automation, then searches for a valid database
-that refutes `P`. It reports **proved**, **false**, or **unknown**. A false SQL
-claim includes the database construction, bindings, environment, model outputs
-and a script for pinned SQLite. Unknown gives no evidence about the claim.
-The command adds no theorem. For example:
+that refutes `P`. It reports **proved**, **false**, or **unknown**. Unknown gives
+no evidence about the claim. The command adds no theorem. For example:
 
 ```lean
 #sql_check ∀ db : Database, Empty (sql "SELECT 1") db
 example : ¬ (∀ db : Database, Empty (sql "SELECT 1") db) := by sql_refute
 ```
+
+A false SQL claim shows one block, in this order:
+
+- `Database:` and each table of the database, with its column names and one line
+  for each row. The cells are SQL literals, for example `'a'`, `1` and `NULL`.
+- `Environment:` with the clock and the counters, only when the environment is
+  not the checker's default candidate.
+- One line for each checked statement with the model's output, for example
+  `uniqueEmail: error 19`, with the parameter values of a statement that has some.
+- `Construction:` with the SQL that builds the database, once.
+- `SQLite replay:` with one script for the pinned `sqlite3` shell. When the claim
+  runs several scripts, the script starts each of them after the first on a new
+  database with `.open :memory:`.
+
+The `Database:` and `Environment:` lines need a share of the budget. When that share
+is not sufficient, the block omits these lines and still reports the counterexample.
 
 ### Claims about programs
 
@@ -348,7 +362,11 @@ of `sql.checkBudget`. A false claim about an equivalence can need a budget of
 about 250000 units to show its explanation and its regression example.
 
 Use `with (schema := db! "CREATE TABLE custom(x);")` to guide inference, or
-repeat `(db := candidate)` after `with` for an ordered candidate sequence.
+repeat `(db := candidate)` after `with` for an ordered candidate sequence. Without
+`schema :=`, the first `(db := candidate)` is also the schema of the search. The search tries
+the schema's own rows, then each table with one more row: a variant of the table's first row
+with the first ASCII letter of each text in the other case, the same row again, or NULL in a
+column that allows it. For example, the row `'ann@x.io'` gives a second row `'Ann@x.io'`.
 `(env := environment)` supplies the environment; `(input name := value)` supplies
 a quantified input, even when its binder is named `schema` or `env`. These inputs
 work with both frontends. They are proposals: claim preconditions are checked,
