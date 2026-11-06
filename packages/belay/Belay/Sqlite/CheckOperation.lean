@@ -37,8 +37,8 @@ reporting a counterexample. An unreplayable candidate is skipped so later candid
 still supply a report within the same budget. Optional shrinking retains only recertified
 witnesses with valid replays; absent, rejected or unchanged shrinks retain the original
 certificate and replay. With a screen, shrinking takes at most {lit}`shrinkAttempts` screened
-steps ({name}`screenedShrinkProposal`) and certifies only their result, so the operation
-certifies at most two witnesses; without one, the kernel certifies at most
+steps ({name}`screenedShrinkProposal`) and certifies only their result, so it adds at most one
+certification after a replayable witness; without one, the kernel certifies at most
 {lit}`shrinkAttempts` proposals ({name}`shrinkCertified`). The budget
 covers the complete operation; the shrinking of a witness uses at most {name}`shrinkShare` of what is left, so a
 witness that is certified and replayed is reported even when shrinking uses its share. A separately configurable recursion limit uses {name}`defaultRecursionLimit`,

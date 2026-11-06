@@ -49,7 +49,8 @@ Sources: `packages/belay/Belay/Sqlite/CheckSamples.lean` (`visitCandidates`),
 - 2026-11-06: shrinking by screening (D5). `visitCandidates` gives its callback the screen and
   the value of a witness; `check` shrinks with `screenedShrinkProposal` (`shrinkScreened`: at
   most `sql.checkShrinkAttempts` steps, each to the first proposal that the screen accepts) and
-  certifies only the result, so a check certifies at most two witnesses. A claim without a
+  certifies only the result, so shrinking adds at most one certification after a replayable
+  witness. A claim without a
   screen keeps the certified shrinking (`shrinkCertified`). Capability change: the shrinking of
   `equiv-shrink-exhausted` (`S6CheckPrograms.lean`) now finishes at 100,000 units; the case
   now uses 30,000 (it finishes at 45,000, and runs out at 35,000 and 25,000), so it still
