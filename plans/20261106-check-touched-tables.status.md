@@ -1,6 +1,6 @@
 # Status: `#sql_check` fills only the touched tables
 
-Created: 2026-11-06. Status: OPEN.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Task: [20261106-check-touched-tables.task.md](20261106-check-touched-tables.task.md).
 Design: ADR 0031, slice 3 (D4, D7, the consumer-size fixture of D9).
 Previous slice: [20261106-check-compiled-screen.status.md](20261106-check-compiled-screen.status.md).
@@ -69,3 +69,26 @@ Relevant source files: `packages/belay/Belay/Sqlite/SampleCandidates.lean`,
   database to the kernel: the true variant of #316 spent 0.4 to 0.5 s on it. Test:
   `CandidateShares.lean` (`emptyScreened`: a screen that accepts nothing gets no certification).
   Tests: the surface tests of the D7 entry and `surface_check_consumer_size_test`.
+- 2026-11-06: acceptance records (D9). Phases at the default options, two runs each, with the
+  phases as in the Context section of the ADR:
+  - #316: proof attempt 15 ms, screen compilation 14 ms, candidate search 0.9 to 1.0 s (one
+    certification, 0.7 s), `replayClaim` 0.4 to 0.5 s (`databaseValue` of the witness 44 ms,
+    `checkedConstruction` 0.13 s), screened shrink 4 ms; total 1.4 to 1.7 s, `false` (ADR:
+    37.8 s).
+  - True variant (`GROUP BY email COLLATE NOCASE`): proof attempt 16 ms, screen compilation
+    15 ms, candidate search 0.34 s with no certification; total 0.38 s, `unknown` (ADR: 23.0 s;
+    slice 2: 0.6 to 1.0 s).
+  - Consumer-size claim: proof attempt 12 to 16 ms, screen compilation 17 to 19 ms, candidate
+    search 7.7 to 9.0 s (one certification, 3.3 to 3.7 s), `replayClaim` 2.4 to 2.7 s
+    (`databaseValue` 0.8 to 0.9 s, `checkedConstruction` 2.5 to 2.9 s), screened shrink 10 to
+    18 ms, certification of the shrunk witness 2.8 to 3.2 s; total 16.3 to 18.9 s, `false`.
+  Defaults measured again with the consumer-size claim: it is `false` with 300 candidates and
+  `unknown` with 100; `false` with a time limit of 5,000 ms and `unknown` with 3,500 ms; `false`
+  with a budget of 62,000 and `unknown` with 50,000. The defaults do not change: budget 100,000,
+  candidates 10,000, time limit 10,000 ms, random samples 4.
+- 2026-11-06: end of the slice. The fixture commit no longer adds `tests/surface/setup.json`, a
+  file that a local probe run wrote. Nix `just test-full` passed: 1,447 tests in all suites;
+  `just verdict` passed. Suite times (slice 2 in parentheses): `surfaceChecks` 30 tests in
+  296.4 s (27 in 297.6 s), `surfaceS6` 66 tests in 483.6 s (66 in 581.8 s); the S6 suite varied
+  between 546 s and 871 s in slice 2 on this shared machine, so these are records, not a measured
+  speed-up. No existing fixture changed its result in this slice. Slice 3 and the task are DONE.

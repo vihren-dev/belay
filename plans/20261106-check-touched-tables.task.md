@@ -1,6 +1,6 @@
 # `#sql_check` fills only the touched tables, with rows that satisfy constraints
 
-Created: 2026-11-06. Status: OPEN.
+Created: 2026-11-06. Status: DONE (2026-11-06).
 Design: [ADR 0031](../docs/adr-0031-fast-sql-check.md), slice 3: D4, D7, and the consumer-size
 fixture and acceptance records of D9. Slice 2 (D2, D3 without D4, D5, D6, D8) is DONE in
 [20261106-check-compiled-screen](20261106-check-compiled-screen.task.md). Audience: the team.
