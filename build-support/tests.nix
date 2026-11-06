@@ -238,6 +238,8 @@ in {
     runtime = pkgs.emptyDirectory;
     environment.BELAY_TEST_CLICKHOUSE = "${pkgs.clickhouse}/bin/clickhouse";
     environment.BELAY_TEST_CLICKHOUSE_VERSION = pkgs.clickhouse.version;
+    # The test server listens on 127.0.0.1; the macOS sandbox forbids that without this attribute (#333).
+    environment.__darwinAllowLocalNetworking = true;
     timeout = 120;
   };
   sample = suite "sample" {

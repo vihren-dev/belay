@@ -68,6 +68,20 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
             *early_failure, '--junitxml', '$out/junit.xml', '-v', '--durations=10'], (name, command)
 
 
+def test_only_the_clickhouse_suite_may_use_local_networking_on_macos() -> None:
+    """The `observability` suite of `build-support/tests.nix` starts a ClickHouse server on
+    127.0.0.1, which the macOS Nix sandbox forbids unless the derivation allows local
+    networking (#333). No other suite needs or gets this permission. Nixpkgs keeps the attribute
+    only in macOS derivations, so the test evaluates the suites for macOS."""
+    builds = '(import ./build-support/default.nix { system = "aarch64-darwin"; })'
+    result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
+        '--extra-experimental-features', 'nix-command flakes', '--expr',
+        f'builtins.mapAttrs (_: test: test.__darwinAllowLocalNetworking or false) ({builds}.tests // {builds}.scheduledTests)'],
+        cwd=ROOT, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    allowed = {name for name, allows in json.loads(result.stdout).items() if allows}
+    assert allowed == {'observability'}, allowed
+
 @pytest.fixture
 def source_tree(tmp_path: Path) -> Path:
     """Copy only small potential test inputs, with the committed parser C; no store outputs or build trees."""
