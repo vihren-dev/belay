@@ -413,8 +413,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   environment through `Run.send_unready`: a possible fault of the filter, and a fallible call in a
   subquery. Tests: `just dev-build`; locally `tests/surface_claims_test.py`,
   `surface_assertion_examples_test.py`, `surface_select_sources_test.py`, `surface_select_rules_test.py`,
-  `surface_layers_test.py`,
-  `test_model_package.py` and `lean_packages_test.py`.
+  `surface_layers_test.py`, `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: refactor after the review of the EXISTS and may-fail retirement (R19, should): the
+  retirement inventory names `SelectExistsCases.lean` (A18) and `SelectExecutionRules.lean` (B05)
+  as the acceptance fixtures; `ClaimsExists.lean` and `ClaimsMayFail.lean` keep the claims of the
+  deleted forms. Tests: none (documentation only).
 
 ## Working sequence
 
