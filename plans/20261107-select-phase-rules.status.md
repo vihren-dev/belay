@@ -530,6 +530,12 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   use them. The inventory has no Required row left; the `InSubquery*` candidate remains. Tests:
   `just dev-build`; locally `tests/surface_success_test.py`, `surface_select_rules_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: the `InSubquery*` chain (stage 3, decided at assignment: retain). Of its 27
+  declarations, the two statement laws that `NotInQuery.lean` uses need all but three:
+  `correlatedEquality_of_guarded_compare`, `Expr.evaluate_notIn_eq_notExists_of_rowidAlias` and
+  `Expr.evaluate_in_truthy_eq_exists_of_rowidAlias` had no caller and are deleted. The inventory has
+  no Required or Candidate row left. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 
