@@ -630,6 +630,26 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   claim and inside the procedure that `sql_run` gives a check to; `sql_commute` and `sql_run` do not read
   the hints of a run claim. The interruption passes through the attempt of `closesBySelect`, and the goals
   stay unchanged and unassigned. Tests: locally `tests/surface_select_procedure_test.py`.
+- 2026-11-07: background checking of SELECT claims (B10). The proof route of the checker
+  (`CheckAutoProof.searchedProof`) also searches a claim that opens to a claim about the run of a query
+  (`Select.isQueryRun`, which `sql_select` now uses too), so `#sql_check` proves A01 by
+  `sql_select [rfl, ⟨_, _, _, rfl⟩]`. These default hints of the checker showed three defects of
+  `sql_select`, which a user's `sql_auto [rfl]` also hits: a premise took the hint `rfl` before the
+  hypotheses, so `db.HasCatalog ?schema` chose `db` and the resolution premise could not evaluate (the
+  hypotheses now come first); `ruleTerm` elaborated `⟨…⟩` without an expected type, and the elaborator
+  logged the error without throwing it (a hint whose elaboration logs an error is now no rule); and a hint
+  that is no simp lemma made the final `simp_all` fail (`simpLemmas` keeps only accepted ones). The claim
+  inspection (`CheckClaim.querySites`) did not know the run observations, so every refutation of a
+  `returnsResult` claim had no replay and the result was unknown after the whole search; `runSites` reads
+  the program of a `Database.run`. A refuted candidate without a replay now records its reason.
+  `tests/surface/SelectCheckCases.lean` (module of `tests/surface_select_procedure_test.py`, after
+  `S6CheckLabels`): proved A01; false claims refuted by the schema's screen, an explicit database, the named
+  `shop` and the empty database, each replayed in native SQLite; a screened convenience claim; unknown for
+  the arithmetic claim and, with the reason, for a run of `Sql.run`, which has no replay; an excluded
+  execution rule removes the proof; and a cancellation in the search reaches the caller. A claim passed by
+  its name (`#sql_check claim`) stays unknown, because the opening (`intros`) does not unfold the name; the
+  fixture states its claims in place. Tests: `just dev-build`; locally the SELECT, checker, counterexample,
+  replay and S6 automation tests (list in the commit).
 
 ## Working sequence
 

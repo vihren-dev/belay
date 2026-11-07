@@ -29,7 +29,7 @@ structure Outcome where
   no refutation, or when the budget did not allow the text ({name}`describeWitness`). -/
   witness : Option WitnessText := none
   /-- Why the result is unknown, when a limit of the search explains it, for example the time limit
-  of compiled work ({name}`timeLimitReason`). -/
+  of compiled work ({name}`timeLimitReason`), or a refuted candidate that has no SQLite replay. -/
   reason : Option String := none
 
 /-- Try proof automation, then the shared candidate generator, and require replay before
@@ -48,7 +48,8 @@ returns unknown and cancellation
 propagates after state cleanup. Explicit candidates and custom automation remain available.
 The certificate audit of the operation walks each accepted constant once ({name}`withAuditCache`).
 Compiled work of the operation ends at {name}`SampleConfig.timeLimit` ({name}`withCompiledLimit`); an
-unknown result that the limit or a claim without a screen explains has its reason ({name}`recordedReason`). -/
+unknown result that the limit, a claim without a screen or a refutation without a replay explains has its reason
+({name}`recordedReason`). -/
 def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
     (shrinkAttempts : Nat := 16)
     (prove : Expr → TermElabM (Option Proven) := defaultProof)
@@ -62,7 +63,11 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
       if let .proved _ := result then return { result }
       let accepted : Option Outcome ← visitCandidates proposition samples fun witness screened => do
         let proof ← refuteWitness proposition witness excluded excludedLocals
-        let reports ← replayClaim proposition witness excluded excludedLocals
+        let reports ← try replayClaim proposition witness excluded excludedLocals
+          catch error =>
+            recordReason s!"the kernel refutes the claim on a database, but the checker could not build its SQLite \
+              replay ({← error.toMessageData.toString}), so it reports no counterexample"
+            throw error
         let observation ← observeFailure proposition witness excluded excludedLocals
         let text ← describeWitness witness excluded excludedLocals
         let original : Outcome :=

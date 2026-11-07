@@ -5,7 +5,8 @@ import Belay.Sqlite.CheckProof
 set_option doc.verso true
 
 /-! The default proof attempt of the SQL checker: the short closing tactics of {name}`Belay.Sqlite.Check.tryProof`, then the
-search of {lit}`sql_auto` on the check of a program. The search needs the checks of a program in the form
+search of {lit}`sql_auto` on the check of a program or on a claim about the results of a run of a query
+({name}`Belay.Sqlite.Select.isQueryRun`). The search needs the checks of a program in the form
 that {lit}`sql_run` reads, so the attempt first opens a fresh triple to that form. The result is a script of
 explicit steps: the checker elaborates it again without a search, and the kernel checks its proof against the
 original claim. -/
@@ -25,7 +26,8 @@ premise gives for a variable replaces the variable. -/
 def openingTactic : TermElabM (TSyntax `tactic) :=
   `(tactic| ((first | refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_ | skip); intros; try subst_vars))
 
-/-- Search for a proof of a claim that opens to the check of a program, with the routes of {lit}`sql_auto`,
+/-- Search for a proof of a claim that opens to the check of a program or to a claim about the run of a query,
+with the routes of {lit}`sql_auto`,
 using at most {name}`searchShare` of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
 proves the claim again without a search. None when the claim has no such proof. -/
 def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
@@ -35,8 +37,13 @@ def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
   let found ← withinBudget share <| attempt do
     let goal ← mkFreshExprMVar proposition
     let [opened] ← runStrict goal.mvarId! opening | throwError "the claim has no single goal after the opening"
-    -- The search is for the check of a program. Other claims have no route, and a search would use the budget.
-    unless (← checkProgram? (← opened.getType)).isSome do throwError "the opened claim is no check of a program"
+    -- The search is for the check of a program or the run of a query. Other claims have no route, and a
+    -- search would use the budget.
+    let searchable ← opened.withContext do
+      let type ← instantiateMVars (← opened.getType)
+      return (← checkProgram? type).isSome || Select.isQueryRun (← whnfR type)
+    unless searchable do
+      throwError "the opened claim is no check of a program and no claim about the run of a query"
     let .ok found ← search hints opened | throwError "no route closes the goal"
     let steps := found.steps
     let script ← `(tactic| ($opening:tactic; $[$steps:tactic];*))

@@ -89,7 +89,7 @@ partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String
     for rule in rules do
       let key := (ruleKey rule, fact)
       if applied.contains key then continue
-      let term ← goal.withContext (ruleTerm rule)
+      let some term ← goal.withContext (ruleTerm rule) | continue
       if let .ok next ← applyForward hints goal term hypothesis.fvarId then
         return ← saturate hints (fuel - 1) (applied.insert key) next
   return (goal, false)
@@ -133,14 +133,20 @@ def unknownShape : MessageData :=
     resolved query (Resolved) or the rows of a table (Database.scanAt). This goal is none of these, and no \
     hint applies to it. Use another tactic, or pass a rule as a hint."
 
+/-- Whether a goal target in weak head normal form is a claim about the run of a query: an observation of the
+result of a run ({lit}`Run.returnsResult`, which {lit}`returnsRows` unfolds to), or the check of a query
+({lit}`Sql.check`). The execution rules apply to these goals. -/
+def isQueryRun (target : Expr) : Bool :=
+  target.isAppOf ``Belay.Sqlite.Run.returnsResult ||
+    (target.isAppOfArity ``Belay.Sqlite.Sql.check 4 && (target.getArg! 1).isAppOf ``Belay.Sqlite.query)
+
 /-- The procedure on one goal; the result is the goals that stay open. A goal that is no claim about the
 results of a query, and to which no hint applies backward, is refused with an error. -/
 partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized : Bool := false) :
     TacticM (List MVarId) := do
   let (_, goal) ← goal.intros
   let target ← goal.withContext do whnfR (← instantiateMVars (← goal.getType))
-  let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult ||
-    (target.isAppOfArity ``Belay.Sqlite.Sql.check 4 && (target.getArg! 1).isAppOf ``Belay.Sqlite.query)
+  let isRun := isQueryRun target
   let recognized := recognized || isRun || (← aboutQuery goal)
   let phase := if isRun then "execution" else "result"
   if fuel == 0 then
@@ -149,7 +155,7 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
   let phases := if isRun then [SelectPhase.execution] else []
   let mut refused : Option (MessageData × Expr) := none
   for rule in ← candidates hints phases do
-    let term ← goal.withContext (ruleTerm rule)
+    let some term ← goal.withContext (ruleTerm rule) | continue
     match ← applyBackward hints goal term with
     | .ok next => return ← selectGoal hints (fuel - 1) next true
     | .error (.premise type) =>

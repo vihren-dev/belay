@@ -55,17 +55,20 @@ def closesChecked (goal : MVarId) (tactic : TSyntax `tactic) : TacticM Bool := d
     return false
 
 /-- Close a premise of a rule. The attempts are, in order: evaluation by the kernel of an equation
-whose left side is closed data, each hint, the hypotheses, {lit}`rfl`, {lit}`decide +kernel` for a
+whose left side is closed data, the hypotheses, each hint, {lit}`rfl`, {lit}`decide +kernel` for a
 premise without variables, and the simplifier with the evaluation laws ({lit}`sql_select_simp`) for a
-premise without metavariables. The kernel checks each proof at once ({name}`closesChecked`). The result
-is {lean}`false`, with no change, when no attempt closes it. -/
+premise without metavariables. The hypotheses come before the hints: in a premise with a metavariable,
+such as the catalog in {lit}`db.HasCatalog ?schema`, a hypothesis names the instance of the claim, while
+a general hint such as {lit}`rfl` can choose an instance ({lit}`db` itself) that the next premises cannot
+use. The kernel checks each proof at once ({name}`closesChecked`). The result is {lean}`false`, with no
+change, when no attempt closes it. -/
 def closeSide (hints : Hints) (goal : MVarId) : TacticM Bool := goal.withContext do
   if ← goal.isAssigned then return true
   let type ← instantiateMVars (← goal.getType)
   if ← closeByEvaluation goal then return true
+  if ← closesWith goal (← `(tactic| assumption)) then return true
   for hint in hints do
     if ← closesWith goal (← `(tactic| exact $hint)) then return true
-  if ← closesWith goal (← `(tactic| assumption)) then return true
   if ← closesChecked goal (← `(tactic| exact rfl)) then return true
   if !type.hasFVar && !type.hasMVar then
     if ← closesWith goal (← `(tactic| decide +kernel)) then return true
@@ -73,15 +76,30 @@ def closeSide (hints : Hints) (goal : MVarId) : TacticM Bool := goal.withContext
     if ← closesChecked goal (← `(tactic| (simp [sql_select_simp]; done))) then return true
   return false
 
-/-- The term of a rule: a global theorem with fresh universe levels, or an elaborated hint. -/
-def ruleTerm (rule : Sum Name (TSyntax `term)) : TermElabM Expr :=
+/-- The term of a rule: a global theorem with fresh universe levels, or an elaborated hint. The result is
+{lean}`none`, with no change and no message, for a hint that has no type of its own, such as the
+anonymous constructor {lit}`⟨_, rfl⟩`: such a hint only closes premises and goals, whose types it takes. -/
+def ruleTerm (rule : Sum Name (TSyntax `term)) : TermElabM (Option Expr) :=
   match rule with
-  | .inl name => mkConstWithFreshMVarLevels name
+  | .inl name => some <$> mkConstWithFreshMVarLevels name
   | .inr hint => do
     if hint.raw.isIdent then
       if let some name ← (try some <$> realizeGlobalConstNoOverload hint.raw catch _ => pure none) then
-        return ← mkConstWithFreshMVarLevels name
-    Term.elabTerm hint none
+        return some (← mkConstWithFreshMVarLevels name)
+    -- The elaborator logs some errors, such as a stuck anonymous constructor, and does not throw them.
+    let messages ← Core.getMessageLog
+    Core.resetMessageLog
+    let saved ← saveState
+    let term ← try
+        Term.withoutErrToSorry do
+          let term ← Term.elabTerm hint none
+          Term.synthesizeSyntheticMVarsNoPostponing
+          pure (some (← instantiateMVars term))
+      catch _ => pure none
+    let term := if (← Core.getMessageLog).hasErrors then none else term
+    if term.isNone then saved.restore
+    modifyThe Core.State fun state => { state with messages := messages ++ state.messages }
+    return term
 
 /-- Why a rule did not apply: its conclusion or trigger does not match, or one of its premises stays
 open, with the type of the premise. -/

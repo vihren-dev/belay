@@ -36,8 +36,20 @@ def unfoldHead (goal : MVarId) : MetaM MVarId := goal.withContext do
   let unfolded ← deltaExpand target (· == name)
   goal.replaceTargetDefEq unfolded
 
+/-- The hints that the simplifier accepts as lemmas in the context of the goal. A hint such as {lit}`rfl`
+or {lit}`⟨_, rfl⟩` closes premises, but it is no simp lemma, and the simplifier stops with an error on
+the whole set when it gets one. The test elaborates {lit}`simp only [hint]` on a fresh goal
+{lean}`True`, which the simplifier closes when it accepts the hint. -/
+def simpLemmas (goal : MVarId) (hints : Hints) : TacticM (Array (TSyntax ``Parser.Tactic.simpLemma)) := do
+  let mut accepted := #[]
+  for hint in hints do
+    let lemma ← `(Parser.Tactic.simpLemma| $hint:term)
+    let probe ← goal.withContext do return (← mkFreshExprSyntheticOpaqueMVar (mkConst ``True)).mvarId!
+    if (← runsOn probe (← `(tactic| simp only [$lemma]))) == some [] then accepted := accepted.push lemma
+  return accepted
+
 /-- Close the last goal: unfold its head, then simplify the goal and the hypotheses with the evaluation
-laws and the hints, then try {lit}`decide` and {lit}`omega`. If the goal stays open, a goal that is an
+laws and the hints that are simp lemmas ({name}`simpLemmas`), then try {lit}`decide` and {lit}`omega`. If the goal stays open, a goal that is an
 existential takes each hypothesis of the witness type as the witness, the most recent first, and a
 conjunction is closed part by part, in the simplified context. The simplifier runs once for each goal,
 because it is the most expensive step. The result is {lean}`false`, with no change, when the goal stays
@@ -45,7 +57,7 @@ open. -/
 partial def finishLeaf (hints : Hints) (goal : MVarId) : TacticM Bool := do
   let saved ← Tactic.saveState
   let unfolded ← unfoldHead goal
-  let lemmas : Array (TSyntax ``Parser.Tactic.simpLemma) ← hints.mapM fun hint => `(Parser.Tactic.simpLemma| $hint:term)
+  let lemmas ← simpLemmas unfolded hints
   let unfolded ← match ← runsOn unfolded (← `(tactic| simp_all [sql_select_simp, $lemmas,*])) with
     | some [] => return true
     | some [next] => pure next

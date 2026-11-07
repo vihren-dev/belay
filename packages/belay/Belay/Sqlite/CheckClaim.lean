@@ -4,6 +4,7 @@ import Belay.Sqlite.CheckProgram
 import Belay.Sqlite.ExecutionObservations
 import Belay.Sqlite.ExecutionViewEquivalence
 import Belay.Sqlite.Queries
+import Belay.Sqlite.RunResults
 import Belay.Sqlite.SqlSource
 import Belay.Sqlite.SampleValues
 import Belay.Sqlite.SampleScriptHints
@@ -118,9 +119,22 @@ def programSites (programs : Array Expr) (state : Expr) : MetaM QuerySites := do
     result := result.append { sites := shape.scripts.map ({ script := ·, database }), leanCode := shape.leanCode }
   return result
 
+/-- The first scripts of the program of an observation of a run ({name}`Run.returnsResult`,
+{name}`Run.returnsError`), at the database of the run. A run that is no {name}`Database.run`, or a property that
+mentions SQL, is unsupported. -/
+def runSites (run property : Expr) : MetaM QuerySites := do
+  let run ← instantiateMVars run
+  unless run.isAppOfArity ``Database.run 6 && (← sqlMention? property (includeSource := false)) == some false do
+    return { unsupported := true }
+  let arguments := run.getAppArgs
+  let program := mkAppN (mkConst ``Runnable.toSql) #[arguments[0]!, arguments[1]!, arguments[2]!, arguments[4]!]
+  let shape ← programScripts defaultProgramFuel program
+  return { sites := shape.scripts.map ({ script := ·, database := arguments[3]! }), leanCode := shape.leanCode }
+
 /-- Inspect a proposition under concrete data inputs. Implication premises retain local
 proof variables while their SQL is inspected; these variables are never supplied to the
-certificate. Query predicates retain their exact database argument. Script success uses the
+certificate. Query predicates retain their exact database argument; an observation of a run reads the
+program of the run ({name}`runSites`). Script success uses the
 selected database; a raw continuation program is marked unsupported instead of flattened.
 The finite depth is a heuristic limit. Missing inputs or unsupported structure can return
 unknown in the caller, while the explicit refutation primitive remains available. -/
@@ -160,6 +174,8 @@ where
         return premise.append { sites := #[{ script, database }] }
       if head.isConstOf ``Sql.check && arguments.size == 4 then
         return ← programSites #[arguments[1]!] arguments[3]!
+      if (head.isConstOf ``Run.returnsResult || head.isConstOf ``Run.returnsError) && arguments.size == 3 then
+        return ← runSites arguments[1]! arguments[2]!
       if programRelationNames.any head.isConstOf && arguments.size ≥ 4 then
         return ← programSites #[arguments[1]!, arguments[2]!] arguments.back!
       if head.isLambda then return ← visit fuel (head.beta arguments)
