@@ -57,8 +57,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   environment (`SelectExecution.lean`). The unready rule (`resolvedStepOutput_select_unready`,
   `Run.send_unready`) is case B05. The run rule (`Query.run_single`, `Query.run_clean_iff`,
   `SelectReady.of_phases`, `Model/SelectRunRule.lean`) splits the run into the
-  `fails`, `mustFail`, `mayFail` and `distinctCertain` obligations; `SelectReady.of_calm`
-  (`Model/SelectCalmRule.lean`) discharges them for a calm statement. The general calm
+  `fails`, `mustFail`, `mayFail` and `distinctCertain` obligations; for a calm statement
+  `SelectReady.of_calm` (`Model/SelectCalmRule.lean`) discharges `mustFail` and `mayFail`,
+  and keeps no overflow (`fails`) and DISTINCT certainty as premises. The general calm
   laws (`EvalContext.bound`, `Connection.queryContext_of_calm`, `Calm.faultless_nil`) move
   from `SimpleQuerySteps.lean` to that file. The model library lists
   `SelectOutputShape`, which the run observations commit left out of `lakefile.toml`, and
@@ -66,6 +67,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface/SelectExecutionRules.lean`. Tests: `just dev-build`; locally
   `tests/surface_select_rules_test.py`, `tests/test_model_package.py`,
   `tests/surface_layers_test.py` and the source checks.
+- 2026-11-07: review fix (`refactor:`, review `20261107T031515Z-b7c6a717`): the progress
+  entry of the execution rule names the obligations that `SelectReady.of_calm` discharges
+  and the two that stay premises.
 
 ## Working sequence
 

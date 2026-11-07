@@ -1,0 +1,67 @@
+{
+  "caller": "claude",
+  "commit": "b7c6a71721311211df140578d2faa905f80ab561",
+  "date": "2026-11-07T03:15:05+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/RunResultSteps.lean",
+    "packages/belay/Belay/Sqlite/SelectExecution.lean",
+    "packages/belay/Belay/Sqlite/SelectResultBridge.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectExecutionRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectRunRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261107-select-phase-rules.status.md",
+    "reviews/20261107T030414Z-5927dc14/review.json",
+    "tests/surface/SelectExecutionRules.lean",
+    "tests/surface_select_rules_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261107T031505Z-b7c6a717#1",
+      "line": 43,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectExecutionRule.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The execution-rule docstrings promise every SQLite result, but the formulas quantify over `possibleResults`, which fixes the model’s group row and excludes plan-dependent alternatives documented in ADR 0027 D4. Fix: describe modeled results in the new model and surface docstrings and state the group-row limitation."
+    },
+    {
+      "id": "20261107T031505Z-b7c6a717#2",
+      "line": 69,
+      "path": "tests/surface/SelectExecutionRules.lean",
+      "rule": "R5",
+      "severity": "should",
+      "text": "The catch-all branch hides unhandled resolution outcomes and resolved statement constructors, so new constructors will not require this helper to change. Fix: enumerate the error outcome and each non-query statement constructor explicitly."
+    }
+  ],
+  "id": "20261107T031505Z-b7c6a717",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
