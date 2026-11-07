@@ -190,9 +190,12 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `keptCounts_of_mem`) hold for every grouping term or column. Contrasts: `'acme'` and `'ACME'`
   are one group but different values; a grouping key `abs(amount)` over the least integer leaves
   the run undescribed; `HAVING NULL` keeps no group; `HAVING customer = 'ACME' COLLATE BINARY`
-  reads the model's row of the group, a model claim (issue #309: native SQLite keeps the group over
-  a full scan and keeps none over an index on `customer`). Resolution for the fixed catalog is
+  reads the model's row of the group, a model claim (issue #309: SQLite does not promise the row;
+  native SQLite 3.51.0 gives the model's empty result over a full scan and over an index on
+  `customer`). Resolution for the fixed catalog is
   computed by `decide +kernel`. Tests: locally `tests/surface_select_rules_test.py`.
+- 2026-11-07: review fix (`refactor:`, review `20261107T051539Z-53f7a356`): the A10 model claim
+  and its status entry state the native result of the exact fixture correctly.
 
 ## Working sequence
 

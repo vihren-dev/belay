@@ -126,10 +126,10 @@ theorem exactHaving_one : exactHaving.statements.length = 1 := rfl
 
 /-- A10 model claim: a condition on the row of a group reads the model's row
 ({name}`Resolved.Query.groupRow`). On {name}`mixed` the model reads the first order of {lit}`acme`,
-written {lit}`'acme'`, so the condition is false for every group and the result is empty. In native
-SQLite the plan decides the row (issue #309): over a full scan of the table it keeps the group of
-{lit}`acme`, and over an index on {lit}`customer` it keeps no group, as the model does. The claim
-holds of the model and of some plans, not of every plan. -/
+written {lit}`'acme'`, so the condition is false for every group and the result is empty. Native
+SQLite 3.51.0 gives the same empty result over a full scan and over an index on {lit}`customer`, but
+SQLite does not promise which row of a group a condition reads (issue #309): the claim holds of the
+model, and of a native plan only where that plan reads the same row. -/
 theorem group_row_claim : (mixed.run (query exactHaving exactHaving_one)).returnsResult (· = []) := by
   decide +kernel
 
