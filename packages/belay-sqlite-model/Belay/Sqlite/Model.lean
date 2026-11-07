@@ -403,7 +403,6 @@ import Belay.Sqlite.Model.GroupsPairwise
 import Belay.Sqlite.Model.GroupKeyConflictLaws
 import Belay.Sqlite.Model.CreateIndexSuccessLaws
 import Belay.Sqlite.Model.ConditionalCreationSteps
-import Belay.Sqlite.Model.AggregateQueryLaws
 import Belay.Sqlite.Model.AggregateSelectResolution
 import Belay.Sqlite.Model.UniqueLookupCells
 import Belay.Sqlite.Model.UniqueLookupCompare
@@ -416,6 +415,7 @@ import Belay.Sqlite.Model.SumValueLaws
 import Belay.Sqlite.Model.TwoStateQuery
 import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.PlainQueryRules
+import Belay.Sqlite.Model.UngroupedQueryRules
 import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
 import Belay.Sqlite.Model.PartialUniqueCount

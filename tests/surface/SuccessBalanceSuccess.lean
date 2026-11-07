@@ -45,8 +45,9 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     ((Run.query_returnsResult_calmTable (script := balance a) rfl rfl db Env.default resolved rfl
       (Database.table_of_findTable db.raw _ _ _ found) calm rfl rfl rfl ?_ rfl _).mpr ?_)
   rotate_left
-  · simp [Resolved.Query.aggregateOf_possibleResults]
-  rw [Resolved.Query.aggregateOf_fails, Resolved.Query.aggregateOf_filtered]
+  · simp [Resolved.Query.possibleResults_ungrouped, Resolved.Query.aggregateOf]
+  rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf])]
+  simp only [Resolved.Query.aggregateOf, List.any_cons, List.any_nil, Bool.false_or, Bool.or_false]
   change (sumOf (((Resolved.sourceRows {shape := table, rows := db.raw.rows.getD position []}).filter
       (fun row => Resolved.truthy (predicate.eval (Resolved.EvalContext.bound [a]) row))).map
       (fun row => row[cents]?.getD .null))).sumValue.isNone = false

@@ -58,7 +58,7 @@ theorem sumQuery_calm (position index : Nat) : (Resolved.Statement.query (sumQue
 with a property {lit}`Q` exactly when {lit}`Q` holds of the one row of the sum over the scan of the
 table, provided the sum does not fail; the clock and the counters do not matter. Proof sketch:
 {name}`resolveStatement_select_aggregate` resolves the query to {name}`sumQuery`, and
-{name}`Run.query_returnsResult_calmTable` with {name}`Resolved.Query.aggregateOf_possibleResults`
+{name}`Run.query_returnsResult_calmTable` with {name}`Resolved.Query.possibleResults_ungrouped`
 reads its one result. -/
 theorem sumCents_results (db : Database) (env : Env) {position index : Nat} {table : CatalogTable}
     (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
@@ -69,9 +69,10 @@ theorem sumCents_results (db : Database) (env : Env) {position index : Nat} {tab
       property [[(centsSum index).eval (Resolved.EvalContext.bound []) (scanOf db position table)]] := by
   rw [Run.query_returnsResult_calmTable (script := sumCents) rfl sumCents_one db env (sumCents_resolved db env found column) rfl
     (Database.table_of_findTable _ _ _ _ found) (sumQuery_calm position index) rfl rfl rfl
-    (by rw [Resolved.Query.aggregateOf_fails, Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; exact safe) rfl property]
-  simp only [Resolved.Query.aggregateOf_possibleResults, Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl,
+    (by rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf]), Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; simpa [Resolved.Query.aggregateOf, scanOf] using safe) rfl property]
+  simp only [Resolved.Query.possibleResults_ungrouped _ (query := sumQuery position index) rfl rfl rfl rfl rfl rfl rfl rfl, Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl,
     List.mem_singleton, forall_eq]
+  exact Iff.rfl
 
 /-- For every database and environment as in {name}`sumCents_results`, when the sum over the scan
 fails, the run of {name}`sumCents` returns no result, and it returns an error with a property
@@ -88,7 +89,7 @@ theorem sumCents_overflow (db : Database) (env : Env) {position index : Nat} {ta
         code ExecutionError.integerOverflow.primaryCode) := by
   exact Run.query_overflow_calmTable (script := sumCents) rfl sumCents_one db env (sumCents_resolved db env found column) rfl
     (Database.table_of_findTable _ _ _ _ found) (sumQuery_calm position index) rfl rfl rfl
-    (by rw [Resolved.Query.aggregateOf_fails, Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; exact overflow) rfl property code
+    (by rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf]), Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; simpa [Resolved.Query.aggregateOf, scanOf] using overflow) rfl property code
 
 /-- A09 for {lit}`sum`, the three claims: for every database as in {name}`sumCents_results`,
 

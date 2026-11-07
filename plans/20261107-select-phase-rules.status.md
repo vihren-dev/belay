@@ -518,6 +518,18 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `surface_rebuild_test.py`, `surface_schema_script_test.py`, `guide_view_contract_test.py`,
   `surface_select_rules_test.py`, `surface_select_sources_test.py`, `surface_s6_automation_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: review 20261107T131932Z-8107b939 found that the observation targets mapped the
+  retired exact-output law, which allowed any subqueries, to `resolvedStepOutput_calm_unordered`,
+  which takes none. They now name `resolvedStepOutput_select_unordered` with readiness from
+  `Connection.SelectReady.of_faultless`.
+- 2026-11-07: retirement of `AggregateQueryLaws` (stage 3). The query `Resolved.Query.aggregateOf`
+  moved to `AggregateSelectResolution`, which gives it. The new `UngroupedQueryRules.lean` holds the
+  general rules of an aggregate query without `GROUP BY`: `Query.fails_ungrouped` (it fails exactly
+  when an aggregate fails over the kept rows) and `Query.possibleResults_ungrouped` (one result of
+  one row, the group record of the kept rows). `SelectSumCases.lean` and `SuccessBalanceSuccess.lean`
+  use them. The inventory has no Required row left; the `InSubquery*` candidate remains. Tests:
+  `just dev-build`; locally `tests/surface_success_test.py`, `surface_select_rules_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 

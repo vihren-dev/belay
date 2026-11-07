@@ -64,11 +64,11 @@ per-family characterization. The owners are named as they exist on main.
 | Owner on main | Status |
 | --- | --- |
 | `resolvedStepOutput_selectOne` in `SelectOneOutput.lean` (35) and the per-family output files below that apply it (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Deleted: after the retirement of the surface forms no caller remained |
-| `AggregateQueryOutput.lean` | Required, after the `aggregate` phase rule exists |
+| `AggregateQueryOutput.lean` | Deleted, with `AggregateQuery.lean` (see the model per-family output laws) |
 | `QueryOutputFacts.lean` (98): `Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`, `Connection.runOn_of_found`, `normalForm_eq_nil` | Retained: the execution bridge of D5 uses them |
 | `QueryStatementOutput.lean`: `Fault.ne_must_iff_none`, `resolvedStepOutput_query_hasRows`, `_hasNoRows`, `_isError` | Retained: generic observation laws |
 | The resolver-only transports (`*Resolution.lean`) | Retained: see "Resolution-shape laws" |
-| The surface `Script.outputOn_<form>` equations in the files of the table above | Required, with the surface forms above |
+| The surface `Script.outputOn_<form>` equations in the files of the table above | Deleted, with the surface forms above. The generic `Script.outputOn_query`, `outputOn_eq_step`, `outputOn_isQuery` and `outputOn_eq_outputIn` stay |
 
 ## Model per-family output laws
 
@@ -93,7 +93,7 @@ per-family characterization. The owners are named as they exist on main.
 | File | Lines | Status |
 | --- | --- | --- |
 | `CountQueryLaws` | 118 | Deleted: the ungrouped rule `Resolved.records_ungrouped` replaces its `Query.Count` laws |
-| `AggregateQueryLaws` | 127 | Required: its content becomes the `group`, `aggregate` and `having` rules. A general law that the file holds moves to the rule library before the file is deleted |
+| `AggregateQueryLaws` | 127 | Deleted: the query `Resolved.Query.aggregateOf` moved to `AggregateSelectResolution`, which gives it. Its result and overflow laws became the general rules `Query.possibleResults_ungrouped` and `Query.fails_ungrouped` of an aggregate query without `GROUP BY` in `UngroupedQueryRules`; the fixtures `SelectSumCases.lean` and `SuccessBalanceSuccess.lean` use them. `countOf_eq_aggregateOf` had no caller |
 | `NoFromQuerySteps` | 104 | Deleted: the query `Resolved.Query.selectOneWhere` and its laws moved to `PlainQueryRules`; the fixture `SuccessBalanceObservation.lean` reads the guard through `resolvedStepOutput_select_unordered` |
 | `DuplicateKeyQuery` | 176 | Reduced to 33 lines: it keeps the definitions `Resolved.Query.duplicateKeys`, which `DuplicateKeyResolution` gives, and `Resolved.keptRows`. Its laws are deleted; the fixture `SelectDuplicateKeySupport.lean` keeps their generality, expression keys under `key.Calm` (ADR 0030 D7) |
 | `DuplicateKeyGroupTerm` | 113 | Retained: the resolution of the grouping term (`GroupTermResolves`), which the premises of the support use |

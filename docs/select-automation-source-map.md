@@ -60,7 +60,7 @@ special-case theorem elsewhere can help prove them.
 | Subqueries | `EvalContext.statement_subqueries`, `statement_one`, `Query.subqueryRun_clean`, `subqueryRun_of_faultless`, `results_eq_nil_iff_plain`, `results_plain_unordered`, `windowCertain_of_short` in [SelectSubqueryRules][subquery-rules] | Run rules for each outer row, with the emptiness, first-column and first-value facts that EXISTS, IN and a scalar subquery read |
 | Filter | `mem_filtered` in [QueryLaws][query-laws] | Complete-collection and cardinality rules, beyond unary membership |
 | Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
-| Aggregate | `Query.aggregateOf_possibleResults`, `aggregateOf_fails` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
+| Aggregate | `Query.possibleResults_ungrouped`, `Query.fails_ungrouped` in [UngroupedQueryRules][ungrouped-rules]; `Resolved.Query.aggregateOf` in `AggregateSelectResolution` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.results_plain_unordered` in [SelectSubqueryRules][subquery-rules] | Characterization of general `records`, including HAVING and hidden sort keys |
 | DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws]; `distinctRows_rules`, `mem_distinctRows_iff`, `combine_pairwise`, `mem_union_combine`, `mem_intersect_combine`, `mem_except_combine` in [SelectCompoundMembership][compound-membership] | Record DISTINCT and every compound operator, with certainty premises |
 | Compound runs | `Compound.ending_done`, `chainEnd_done`, `stepEnd_done`, `Compound.rows_unionAll` in [SelectCompoundRules][compound-rules]; `Query.perm_of_mem_possibleResults_compound`, `Connection.SelectReady.of_compound` in [SelectCompoundReady][compound-ready]; `Run.query_returnsResult_compound` in [SelectCalmExecution][calm-execution] | Ending, readiness and result rules of a compound statement |
@@ -144,7 +144,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean
 [group-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupsPairwise.lean
 [group-row]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupRow.lean
-[aggregate-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateQueryLaws.lean
+[ungrouped-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/UngroupedQueryRules.lean
 [except-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExceptCombineLaws.lean
 [window]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryWindow.lean
 [possible-lemmas]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsLemmas.lean
