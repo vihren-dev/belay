@@ -68,7 +68,7 @@ special-case theorem elsewhere can help prove them.
 | Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas]; `resolvedStepOutput_select_mismatch` in [SelectOverflowRule][overflow-rule]; `Run.query_mismatch` in [SelectOverflow][overflow-execution] | Parameter/error and tie-boundary rules, not only a representative list slice |
 | Alternatives | `Query.normalResult_mem`, `possibleResults_ne_nil`, `possibleResults_length` in [PossibleResultsLaws][possible-laws] | Transfer of arbitrary predicates to every permitted result |
 | Output construction | `Output.ofResults_listed`, `Output.listed_iff` in [OutputResultsLaws][output-laws] | Successful-result predicates and their nonempty-alternative bridges |
-| Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `resolvedStepOutput_selectOne` in [SelectOneOutput][select-one-output] (ADR 0026 D1, to be replaced); `Sql.check_query_select` in [ReadStepRule][read-rule]; `Connection.SelectReady.of_faultless` in [SelectCalmRule][calm-rule]; `Run.query_returnsResult_faultless` in [SelectCalmExecution][calm-execution]; `check_query_select_at`, `check_query_select_faultless` in [SelectContextExecution][context-execution], with `Connection.resolveState_afterWrite` in [SendStepRules][send-rules] for a read after a write | General phase-to-execution adapters retaining actual readiness and context |
+| Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `resolvedStepOutput_selectOne` in [SelectOneOutput][select-one-output] (ADR 0026 D1, to be replaced); `Sql.check_query_select` in [ReadStepRule][read-rule]; `Connection.SelectReady.of_faultless` in [SelectCalmRule][calm-rule]; `Run.query_returnsResult_faultless` in [SelectCalmExecution][calm-execution]; `check_query_select_at`, `check_query_select_faultless` in [SelectContextExecution][context-execution], with `Connection.resolveState_afterWrite` in [Connection][model-connection] for a read after a write | General phase-to-execution adapters retaining actual readiness and context |
 
 The pure pipeline already exists: [QueryEval][query-eval] supplies filtering,
 grouping, aggregates and sorting; [QueryResults][query-results] supplies records,
@@ -131,7 +131,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [calm-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean
 [calm-execution]: ../packages/belay/Belay/Sqlite/SelectCalmExecution.lean
 [context-execution]: ../packages/belay/Belay/Sqlite/SelectContextExecution.lean
-[send-rules]: ../packages/belay/Belay/Sqlite/SendStepRules.lean
+[model-connection]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Connection.lean
 [compound-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundRules.lean
 [derived-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean
 [source-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean

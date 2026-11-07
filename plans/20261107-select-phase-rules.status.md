@@ -360,6 +360,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   does not hold after the delete; `changes()` has no result with `Env.default`, gives 0 with
   `Env.newConnection` and 1 after the delete. Native SQLite 3.51.0 gives the instance results. Tests:
   `just dev-build`; locally `tests/surface_select_sources_test.py`.
+- 2026-11-07: refactor after the review of A21 and A22 (R6, must): `Connection.afterWrite` and
+  `Connection.resolveState_afterWrite` move from `SendStepRules.lean` to the model file
+  `Model/Connection.lean`, beside `Connection.resolveState`. Tests: `just dev-build`.
 
 ## Working sequence
 

@@ -54,4 +54,22 @@ def Connection.afterStep (connection : Connection) (after : ResolveState) (count
   | .next state => { state, foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers }
   | .halt outcome => connection.afterError after counts outcome
 
+/-- The connection after a statement that changes the stored database and the counters and nothing else:
+the connection with the database, and with the counters after the counts of the statement. The snapshot of
+an open transaction, the clock assignment and the settings stay. A successful plain write and a failed
+write both give this connection. -/
+def Connection.afterWrite (connection : Connection) (database : Database) (counts : Counts) : Connection :=
+  { connection with state := { connection.state with
+      database, counters := connection.state.counters.apply counts } }
+
+/-- For every connection, database and counts: when the database has the catalog of the database of
+the connection, the connection after the write ({name}`Connection.afterWrite`) has the
+resolution state of the connection. So a write that changes rows and counters keeps the state in
+which the next statements resolve. For example, {lean}`Database.setRows` keeps the catalog. Proof
+sketch: the write changes neither the catalog, nor the snapshot, nor the settings. -/
+theorem Connection.resolveState_afterWrite (connection : Connection) {database : Database}
+    (counts : Counts) (catalog : database.catalog = connection.state.database.catalog) :
+    (connection.afterWrite database counts).resolveState = connection.resolveState := by
+  simp [Connection.resolveState, Connection.afterWrite, catalog]
+
 end Belay.Sqlite.Model
