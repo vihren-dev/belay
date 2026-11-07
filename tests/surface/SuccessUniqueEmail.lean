@@ -1,4 +1,4 @@
-import Belay
+import SelectDuplicateKeySupport
 
 set_option doc.verso true
 
@@ -105,12 +105,14 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     cases column : columnPosition table.columns (name! "email") with
     | none => exact False.elim (missing_email db position table found column holds)
     | some index =>
-      have groups := holds
-      rw [Holds.iff_of_outputOn (Script.outputOn_noDuplicateKeys (script := noDuplicateEmails) (head := rfl) (count := rfl)
-        (namedSource := rfl) (current := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
-        (keyCalm := Resolved.Expr.calm_column index))] at groups
-      simp only [apply_ite, Output.hasRows] at groups
-      simp at groups
+      obtain ⟨notCall, noCalls, columns, grouped, feeds⟩ := resultColumn_one_facts runContext.profile.dqsDml
+        (tableScope db.raw.catalog { table := name! "customers", alias := none } position table)
+        { current := some 0, aggregates := [.callStar "count"] } (.column index)
+      have groups := (noDuplicateKeys_claims (script := noDuplicateEmails) (head := rfl) (count := rfl)
+        (namedSource := rfl) (current := rfl) (arguments := rfl) found notCall noCalls columns grouped feeds
+        (FilterResolves.of_none _ _ _ _) (group_nocase column db position).toIn (by simp) (Resolved.Expr.calm_literal _)
+        (Resolved.Expr.calm_column index)).1.mp holds
+      simp [Resolved.keptRows_none, List.all_eq_true] at groups
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
         found, by decide, by decide, freeName, ?_, rfl, ?_⟩
       · have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl

@@ -5,8 +5,8 @@ set_option sql.check false
 set_option maxRecDepth 8192
 
 /-! Support of the A07 to A10 acceptance cases of ADR 0027: the table {lit}`orders`, the partition of
-rows by a key ({lit}`KeyPartition`), the record rule of a query with one grouping term and the result
-rule of an ungrouped aggregate query. -/
+rows by a key ({lit}`KeyPartition`), the record rule of a query with one grouping term, the truth of a
+count condition and the result rule of an ungrouped aggregate query. -/
 
 namespace SelectGroupCases
 open Belay.Sqlite
@@ -108,6 +108,19 @@ theorem uniqueRecords_grouped {query : Resolved.Query} {term : Resolved.Expr} {c
   dsimp only
   rw [noDistinct, Resolved.filtered_of_filter_none _ noFilter, Resolved.records_aggregate _ aggregate,
     Resolved.queryGroups_grouped _ (by simp [grouped]), grouped]
+
+/-- For every context of a group whose first aggregate value is the integer {lit}`count`, every row and
+threshold, the condition {lit}`count(*) > threshold` is true exactly when
+{lit}`count` is more than the threshold. Proof sketch: the comparison of two integers without affinity
+is the order of the integers ({name}`Collation.compare_integer`). -/
+theorem countCondition_truthy (context : Resolved.EvalContext) (row : List Value) (count threshold : Int)
+    (first : context.aggregates.getD 0 .null = .integer count) :
+    Resolved.truthy ((Resolved.Expr.compare .gt none (.aggregateValue 0) (.literal (.integer threshold))).eval context row) =
+      decide (threshold < count) := by
+  have value : (Resolved.Expr.aggregateValue 0).eval context row = .integer count := first
+  rw [Resolved.Expr.eval_compare, value, Resolved.Expr.eval_literal]
+  simp only [Resolved.comparisonOperands, Comparison.apply, Collation.compare_integer, Comparison.holds, Resolved.truthy]
+  by_cases above : threshold < count <;> simp [above, Value.isNull, truth, Int.compare_eq_gt]
 
 /-- Result rule of an ungrouped aggregate query: for every aggregate query without {lit}`GROUP BY`,
 {lit}`HAVING`, {lit}`WHERE`, {lit}`DISTINCT`, compound, {lit}`OFFSET` and {lit}`LIMIT`, every list of rows and

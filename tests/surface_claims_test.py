@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_assertion_examples_test import COUNT_SUPPORT, check_module_chain
+from tests.surface_assertion_examples_test import COUNT_SUPPORT, DUPLICATE_KEY_SUPPORT, check_module_chain
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -79,12 +79,12 @@ def test_a_table_has_a_column_according_to_pragma_table_info(runtime_root: Path,
 
 def test_no_two_rows_of_a_table_have_equal_keys(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t GROUP BY k HAVING count(*) > 1)` over every database: `Holds`
-    means that no group of rows with equal keys has more than one row, proved with the lemmas and `sql_simp`, with
-    instances on three databases where `decide +kernel` checks the claim: different keys, keys that differ only
-    in case under `NOCASE`, and two NULL keys."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsDuplicateKeys.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    means that no group of rows with equal keys has more than one row, proved through the phase rules with the
+    support of `SelectDuplicateKeySupport`, with instances on three databases where `decide +kernel` checks the
+    claim: different keys, keys that differ only in case under `NOCASE`, and two NULL keys. The axiom audit shows
+    that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 3), *DUPLICATE_KEY_SUPPORT,
+                                                ("ClaimsDuplicateKeys", 5)), timeout=90)
 
 
 def test_a_unique_lookup_matches_at_most_one_row(runtime_root: Path, tmp_path: Path) -> None:

@@ -146,21 +146,31 @@ theorem Query.results_eq_nil_iff_plain (context : EvalContext) {query : Query} (
     | succ => simp [List.length_take]
   · rfl
 
-/-- Unordered result rule: for every context, query that is no compound and has no
+/-- Unordered result rule: for every context, query that is no compound and has no {lit}`DISTINCT`,
+no {lit}`ORDER BY`, no {lit}`OFFSET` and no {lit}`LIMIT`, and rows, the result rows of the query
+({name}`Query.results`) are the rows of its records ({name}`records`) over the rows that {lit}`WHERE` keeps
+({name}`filtered`), in order, with or without aggregation. Proof sketch: without sort terms the sort keeps the
+records ({name}`stableSort_of_total`). -/
+theorem Query.results_unordered (context : EvalContext) {query : Query} (single : query.compound = none)
+    (noDistinct : query.distinct = none) (unordered : query.orderBy = []) (noOffset : query.offset = 0)
+    (noLimit : query.limit = none) (rows : List (List Value)) :
+    query.results context rows = (records context query (filtered context query rows)).map Prod.fst := by
+  unfold Query.results
+  simp only [unordered, List.map_nil, noOffset, noLimit, List.drop_zero]
+  rw [stableSort_of_total _ (by simp [compareSort])]
+  simp only [Query.uniqueRecords, single, noDistinct]
+
+/-- Unordered plain result rule: for every context, query that is no compound and has no
 {lit}`DISTINCT`, no aggregation, no {lit}`ORDER BY`, no {lit}`OFFSET` and no {lit}`LIMIT`, and
 rows, the result rows of the query ({name}`Query.results`) are the result rows
-({name}`Query.rowOutput`) of the rows that {lit}`WHERE` keeps ({name}`filtered`), in order. A
-subquery that {lit}`IN` or a scalar subquery reads has this order in the model. Proof sketch:
-without sort terms every two records are in order, so the sort keeps them
-({name}`stableSort_of_total`), and {name}`Query.uniqueRecords_outputs_plain` gives the records. -/
+({name}`Query.rowOutput`) of the rows that {lit}`WHERE` keeps ({name}`filtered`), in order. A subquery that
+{lit}`IN` or a scalar subquery reads has this order. Proof sketch: {name}`Query.results_unordered`. -/
 theorem Query.results_plain_unordered (context : EvalContext) {query : Query} (single : query.compound = none)
     (noDistinct : query.distinct = none) (plain : query.aggregate = false) (unordered : query.orderBy = [])
     (noOffset : query.offset = 0) (noLimit : query.limit = none) (rows : List (List Value)) :
     query.results context rows = (filtered context query rows).map (query.rowOutput context) := by
-  unfold Query.results
-  simp only [unordered, List.map_nil, noOffset, noLimit, List.drop_zero]
-  rw [stableSort_of_total _ (by simp [compareSort])]
-  exact query.uniqueRecords_outputs_plain context single noDistinct plain rows
+  rw [query.results_unordered context single noDistinct unordered noOffset noLimit]
+  exact records_outputs_plain context plain _
 
 /-- Short window rule: for every context, query without {lit}`OFFSET`, rows with at most one record
 ({name}`Query.uniqueRecords`), limit and choice of complete rows, the first values of the window are

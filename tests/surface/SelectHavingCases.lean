@@ -36,19 +36,6 @@ def KeptCounts (key : List Value → Value) (collation : Collation) (threshold :
       result.Perm ((all.filter fun group => decide (threshold < group.length)).map fun group =>
         [key (pick group), .integer group.length])
 
-/-- For every context of a group whose first aggregate value is the integer {lit}`count`, every row and
-threshold, the condition {lit}`count(*) > threshold` of {name}`havingQuery` is true exactly when
-{lit}`count` is more than the threshold. Proof sketch: the comparison of two integers without affinity
-is the order of the integers ({name}`Collation.compare_integer`). -/
-theorem countCondition_truthy (context : Resolved.EvalContext) (row : List Value) (count threshold : Int)
-    (first : context.aggregates.getD 0 .null = .integer count) :
-    Resolved.truthy ((Resolved.Expr.compare .gt none (.aggregateValue 0) (.literal (.integer threshold))).eval context row) =
-      decide (threshold < count) := by
-  have value : (Resolved.Expr.aggregateValue 0).eval context row = .integer count := first
-  rw [Resolved.Expr.eval_compare, value, Resolved.Expr.eval_literal]
-  simp only [Resolved.comparisonOperands, Comparison.apply, Collation.compare_integer, Comparison.holds, Resolved.truthy]
-  by_cases above : threshold < count <;> simp [above, Value.isNull, truth, Int.compare_eq_gt]
-
 /-- Having rule of A10 for every column: for every index of a grouping column, collation, names, threshold, rows and
 result that the model permits for {name}`havingQuery` in the context without parameters, the result
 is {name}`KeptCounts` of the column's cell. Proof sketch:

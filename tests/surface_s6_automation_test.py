@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
-from tests.surface_assertion_examples_test import COUNT_SUPPORT, check_module_chain
+from tests.surface_assertion_examples_test import COUNT_SUPPORT, DUPLICATE_KEY_SUPPORT, check_module_chain
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
@@ -72,5 +72,6 @@ def test_sql_run_proves_the_partial_index_invariant_of_a_signup(runtime_root: Pa
     of valid databases (`Database.Valid.countMatching_partial_le_one`, `Database.Valid.keptRows_pairwise`) give the
     unique index. The proofs use only ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        *COUNT_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
+        *COUNT_SUPPORT, *DUPLICATE_KEY_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2),
+        ("GlobalSignupInvariant", 3),
         ("S6AutoSignup", 2)), timeout=CHAIN_TIMEOUT_SECONDS)

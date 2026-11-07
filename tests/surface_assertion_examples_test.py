@@ -39,6 +39,10 @@ COUNT_SUPPORT = (("SelectOneWhereSupport", 3), ("SelectCountWhereSupport", 2))
 """The support fixtures of the claims about `SELECT 1 WHERE c` with one subquery, and with a count
 subquery, through the phase rules (ADR 0027), with their counts of `#print axioms` reports."""
 
+DUPLICATE_KEY_SUPPORT = (("SelectGroupSupport", 0), ("SelectDuplicateKeySupport", 4))
+"""The support fixtures of the claims about `SELECT 1 WHERE NOT EXISTS (SELECT … GROUP BY k HAVING count(*) > 1)`
+through the phase rules (ADR 0027), after `SelectOneWhereSupport`, with their counts of `#print axioms` reports."""
+
 
 def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
                        timeout: int = 120, output_of: str | None = None) -> str:
@@ -98,18 +102,20 @@ def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path
     invariant (no email has two live accounts, a GROUP BY query) is proved for every admitted database
     with the same site and NOT NULL on the email, with the same counterexample."""
     check_module_chain(runtime_root, tmp_path, (
-        *COUNT_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3)))
+        *COUNT_SUPPORT, *DUPLICATE_KEY_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2),
+        ("GlobalSignupInvariant", 3)))
 
 
 @pytest.mark.requires_native("sqlite3")
 def test_filtered_duplicate_key_query_agrees_with_native_sqlite(runtime_root: Path, tmp_path: Path) -> None:
-    """The model's result of the guide's global signup invariant query (our filtered duplicate-key
-    query law and `Holds`) agrees with pinned native SQLite on six databases: no live duplicate, a live
+    """The model's result of the guide's global signup invariant query (our model of the filtered
+    duplicate-key query and `Holds`) agrees with pinned native SQLite on six databases: no live duplicate, a live
     duplicate, a duplicate with one deleted account, two live NULL emails (GROUP BY joins NULL keys), and
     emails that are equal only under NOCASE, with and without that collation in GROUP BY. The kernel checks the
     same results in the fixture; the fixture logs the SQL and the model's result of each case."""
     stdout = check_module_chain(runtime_root, tmp_path, (
-        *COUNT_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
+        *COUNT_SUPPORT, *DUPLICATE_KEY_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2),
+        ("GlobalSignupInvariant", 3),
         ("FilteredDuplicateKeyExamples", 1)))
     cases = {str(case["name"]): case for case in lines_after(stdout, "FILTERED-DUPLICATES:")
              if isinstance(case, dict)}

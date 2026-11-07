@@ -451,6 +451,30 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_claims_test.py`, `surface_assertion_examples_test.py`, `surface_s6_automation_test.py`,
   `surface_select_rules_test.py`, `surface_select_sources_test.py`, `surface_layers_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: retirement of the duplicate-key family (stage 3). `DuplicateKeyQuery.lean`,
+  `FilteredDuplicateKeyQuery.lean` and `Model/DuplicateKeyOutput.lean` are deleted.
+  `Model/DuplicateKeyQuery.lean` keeps only the definitions `Resolved.Query.duplicateKeys`, which
+  `DuplicateKeyResolution` gives, and `Resolved.keptRows`; its per-form laws are deleted. New result
+  rule `Resolved.Query.results_unordered` (`Model/SelectSubqueryRules.lean`): the results of a query
+  without compound, `DISTINCT`, `ORDER BY` and window are the rows of its records over the kept rows,
+  with or without aggregation; `Resolved.Query.results_plain_unordered` now follows from it. The new
+  fixture `SelectDuplicateKeySupport.lean` gives the calmness of the statement
+  (`duplicateKeys_calm`), the run of `SELECT e FROM t WHERE w GROUP BY k HAVING count(*) > 1` as a
+  subquery (`duplicateKeysOne_run`, through the subquery run rule, `Resolved.Query.results_unordered`,
+  `Resolved.records_aggregate` and `Resolved.queryGroups_grouped`), the claims of the `NOT EXISTS`
+  statement (`noDuplicateKeys_claims`) and their pairwise form (`keyGroupsShort_iff_pairwise`), for
+  expression keys under `key.Calm`. `ClaimsDuplicateKeys.lean`, `SuccessUniqueEmail.lean` and
+  `GlobalSignupInvariant.lean` use it; `ClaimsDuplicateKeys.lean` gets an axiom audit of its five
+  claims. `countCondition_truthy` moves from `SelectHavingCases.lean` to `SelectGroupSupport.lean`.
+  Tests: `just dev-build`; locally `tests/surface_claims_test.py`, `surface_assertion_examples_test.py`,
+  `surface_s6_automation_test.py`, `surface_success_test.py`, `surface_select_rules_test.py`,
+  `surface_select_sources_test.py`, `surface_layers_test.py`, `test_model_package.py` and
+  `lean_packages_test.py`.
+- 2026-11-07: the retirement of the count family deleted `Resolved.Query.countOf_isCount`, but
+  `SuccessBalanceSubqueries.lean` still used it. Its `count_run` now follows from the subquery run
+  rule and `Resolved.records_ungrouped`, as `countOne_run` does. A search of `tests/` for each
+  declaration that this stack deletes finds no other caller. Tests: locally
+  `tests/surface_success_test.py`.
 
 ## Working sequence
 
