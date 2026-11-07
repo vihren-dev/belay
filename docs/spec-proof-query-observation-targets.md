@@ -42,7 +42,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 | --- | --- | --- |
 | `AggregateQuery` (removed by ADR 0027) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
 | [ColumnQuery](../packages/belay/Belay/Sqlite/ColumnQuery.lean) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
-| [CountQuery](../packages/belay/Belay/Sqlite/CountQuery.lean) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
+| `CountQuery` (removed by ADR 0027) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
 | `ExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
 | `NotExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
 | [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
@@ -52,8 +52,8 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and
 `Empty.iff_selectOne_noDuplicateKeys_repeated` in `DuplicateKeyQuery`, and
-`Holds.selectOne_count_unique_lookup` in
-[UniqueLookupQuery](../packages/belay/Belay/Sqlite/UniqueLookupQuery.lean).
+`Holds.selectOne_count_unique_lookup` in `UniqueLookupQuery` (removed by ADR 0027; the fixture
+`tests/surface/ClaimsUniqueLookup.lean` proves the bound as `unique_lookup_holds`).
 Also retain the mathematical consequence `Holds.iff_selectOne_noDuplicateKeysWhere_pairwise` in
 `FilteredDuplicateKeyQuery`. Preserve result-column resolution/groupedness,
 aggregate-feed restrictions, `GroupTermResolvesIn`, filter/column/key calmness,

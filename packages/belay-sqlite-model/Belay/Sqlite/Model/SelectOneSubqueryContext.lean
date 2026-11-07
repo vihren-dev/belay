@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.SimpleSubqueryRun
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.ExprEvalLaws
 import Belay.Sqlite.Model.ExprCalmLaws
+import Belay.Sqlite.Model.CountOf
 
 set_option doc.verso true
 
@@ -10,7 +11,8 @@ set_option doc.verso true
 of its context is the run of the subquery in the context of the values, and for the simple query of a
 table that run has the result rows of the query over the table. The statement {lit}`SELECT 1 WHERE c`
 with the one subquery {lit}`SELECT 1 FROM t WHERE p` is calm when both conditions are calm, and quiet
-when both are quiet. -/
+when both are quiet; with the count query {lit}`SELECT count(*) FROM t WHERE p` as its subquery, it is
+calm when both conditions are calm. -/
 
 namespace Belay.Sqlite.Model
 
@@ -79,7 +81,7 @@ theorem Resolved.Statement.Calm.selectOne_subquery (position : Nat) (main : Reso
   intro expression member
   simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
     Resolved.Query.simple_first_expressions, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-    List.mem_cons, List.not_mem_nil, or_false] at member
+    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
   rcases member with (rfl | rfl) | member | rfl
   · exact mainCalm
   · exact literal
@@ -100,11 +102,30 @@ theorem Resolved.Statement.Quiet.selectOne_subquery (position : Nat) (main : Res
   intro expression member
   simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
     Resolved.Query.simple_first_expressions, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-    List.mem_cons, List.not_mem_nil, or_false] at member
+    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
   rcases member with (rfl | rfl) | member | rfl
   · exact mainQuiet
   · exact literal
   · exact subQuiet expression (by simpa using member)
   · exact literal
+
+/-- For every calm condition {lit}`c` and every calm condition of the subquery, the statement
+{lit}`SELECT 1 WHERE c` with the count query of the first source of a table as its one subquery is calm
+({name}`Resolved.Statement.Calm`). Proof sketch: the expressions of the statement are the condition, the
+literal one, and the condition of the subquery ({name}`Resolved.Query.countOf_expressions`); the first
+source has no expression. -/
+theorem Resolved.Statement.Calm.selectOne_count (position : Nat) (main : Resolved.Expr) (subCondition : Option Resolved.Expr)
+    (name : String) (mainCalm : main.Calm) (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) :
+    (Resolved.Statement.query (Resolved.Query.selectOneWhere main)
+      [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition name]).Calm := by
+  intro expression member
+  simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
+    Resolved.Query.countOf_expressions, Resolved.QuerySource.first, Resolved.QuerySource.expressions,
+    List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
+    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
+  rcases member with (rfl | rfl) | member
+  · exact mainCalm
+  · exact Resolved.Expr.calm_literal _
+  · exact subCalm expression member
 
 end Belay.Sqlite.Model

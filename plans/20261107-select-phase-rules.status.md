@@ -418,6 +418,25 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   retirement inventory names `SelectExistsCases.lean` (A18) and `SelectExecutionRules.lean` (B05)
   as the acceptance fixtures; `ClaimsExists.lean` and `ClaimsMayFail.lean` keep the claims of the
   deleted forms. Tests: none (documentation only).
+- 2026-11-07: retirement of the count and unique-lookup families (stage 3). `CountQuery.lean`,
+  `UniqueLookupQuery.lean`, `Model/CountQueryLaws.lean` and `Model/CountSubqueryOutput.lean` are
+  deleted. The count query `Resolved.Query.countOf`, `Resolved.SubqueryRun.count` and
+  `Resolved.countMatching` move to the new `Model/CountOf.lean`, with the law of its expressions for
+  any sources (`Resolved.Query.countOf_expressions`);
+  `Resolved.Statement.Calm.selectOne_count` moves to `Model/SelectOneSubqueryContext.lean`. New
+  context rule `Resolved.Expr.evaluate_statement_one` (`Model/SelectSubqueryRules.lean`): an
+  expression in the statement context of one subquery evaluates as in the context of its run. The
+  new fixture `SelectCountWhereSupport.lean` gives the run of `SELECT count(*) FROM t WHERE p` as a
+  subquery (`countOne_run`, through the subquery run rule and `Resolved.records_ungrouped`) and the
+  claims of `SELECT 1 WHERE c` with that subquery (`whereCount_claims`). `ClaimsCount.lean`,
+  `CustomerInsertQueries.lean`, `AccountSignupQueries.lean` and `ExpansionCountQueries.lean` use it;
+  `ClaimsUniqueLookup.lean` proves the bound of a unique lookup as `unique_lookup_holds`, with
+  `Table.KeysUnique.countMatching_le_one`. `SelectOneWhereSupport.lean` now takes any values. The
+  retirement inventory also marks `AggregateQuery.lean`, `SelectOneFrom.lean` and their outputs and
+  fixtures as deleted, as stages 1 and 2 did. Tests: `just dev-build`; locally
+  `tests/surface_claims_test.py`, `surface_assertion_examples_test.py`,
+  `surface_s6_automation_test.py`, `surface_layers_test.py`, `test_model_package.py` and
+  `lean_packages_test.py`.
 
 ## Working sequence
 

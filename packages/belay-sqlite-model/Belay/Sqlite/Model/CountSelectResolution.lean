@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.CountQueryLaws
+import Belay.Sqlite.Model.CountOf
 import Belay.Sqlite.Model.SimpleSourceResolution
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.Resolution.ResultColumnArms

@@ -1,5 +1,5 @@
 import CustomerInsertSite
-import SelectOneWhereSupport
+import SelectCountWhereSupport
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: what the three queries of the insert and
 lookup claim say about every database (ADR 0017, S6). Each query is evaluated over the rows of the table in any
@@ -44,7 +44,7 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id`: exactly one customer has the id
 exactly when the condition {lit}`id = ?1` is true for one row of the table. Proof sketch: apply
-{name}`Script.outputOn_count` to the resolved conditions. -/
+{name}`whereCount_claims` to the resolved conditions. -/
 theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col : Nat) (table : CatalogTable)
     (cell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -64,9 +64,8 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (exactlyOneCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp]))]
-  simp only [Output.hasRows, apply_ite]
+  rw [(whereCount_claims (script := (exactlyOneCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp])).1]
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   exact ⟨fun h => by exact_mod_cast h, fun h => by exact_mod_cast h⟩
 

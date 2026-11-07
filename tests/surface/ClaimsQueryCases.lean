@@ -125,7 +125,6 @@ example : (resolvedStepOutput none 0 { state := { database := .ofTables [] } } [
 #print axioms Fails.iff_step
 #print axioms prepare_error_has_no_rows
 #print axioms Script.not_claims_query_of_undescribed
-#print axioms Holds.selectOne_count_unique_lookup
 #print axioms resolvedStepOutput_query_source
 #print axioms resolvedStepOutput_selectOne
 #print axioms Resolved.Query.aggregateOf_possibleResults

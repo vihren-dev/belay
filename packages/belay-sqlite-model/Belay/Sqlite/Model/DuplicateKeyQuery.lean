@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.SimpleResultsLaws
-import Belay.Sqlite.Model.CountQueryLaws
+import Belay.Sqlite.Model.CountOf
 import Belay.Sqlite.Model.IntegerCompareLaws
 import Belay.Sqlite.Model.ExprEvalLaws
 import Belay.Sqlite.Model.SimpleSubqueryRun

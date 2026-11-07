@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SelectCalmRule
 import Belay.Sqlite.Model.SelectProjectionRules
+import Belay.Sqlite.Model.ExprContextLaws
 
 set_option doc.verso true
 
@@ -36,6 +37,24 @@ theorem EvalContext.statement_one (parameters : List Value) (database : Database
     (outer : List Value) :
     (EvalContext.statement parameters database [inner]).subqueries 0 outer =
       inner.subqueryRun (EvalContext.bound parameters) database outer := rfl
+
+/-- One-subquery context rule: for every values, database, subquery {lit}`inner` and expression, the
+expression has the same value and fault over the row with no cells in the statement context of the
+one subquery as in the context of the values with the run of {lit}`inner` for that row
+({name}`EvalContext.withRuns`). Proof sketch: the two contexts differ only in their subqueries,
+which agree at the row with no cells ({name}`EvalContext.statement_one`), so
+{name}`Expr.evaluate_withSubqueries` applies. -/
+theorem Expr.evaluate_statement_one (parameters : List Value) (database : Database) (inner : Query)
+    (expression : Expr) :
+    expression.evaluate (EvalContext.statement parameters database [inner]) [] =
+      expression.evaluate ((EvalContext.bound parameters).withRuns
+        [inner.subqueryRun (EvalContext.bound parameters) database []]) [] := by
+  refine ((Expr.evaluate_withSubqueries (EvalContext.statement parameters database [inner]) []
+    (fun index _ => ([inner.subqueryRun (EvalContext.bound parameters) database []][index]?).getD
+      { rows := [], fault := .none }) (fun index => ?_) expression).1).symm
+  cases index with
+  | zero => rfl
+  | succ later => simp [statementContext, subqueryContext]
 
 /-- Subquery run rule: for every context, database, outer row, optional initial database, query
 that is no compound, source rows {lit}`source` of the query after the outer row

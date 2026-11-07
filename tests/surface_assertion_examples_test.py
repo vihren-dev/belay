@@ -35,6 +35,11 @@ def lines_after(stdout: str, tag: str) -> list[object]:
     return [json.loads(line.removeprefix(tag)) for line in stdout.splitlines() if line.startswith(tag)]
 
 
+COUNT_SUPPORT = (("SelectOneWhereSupport", 2), ("SelectCountWhereSupport", 2))
+"""The support fixtures of the claims about `SELECT 1 WHERE c` with one subquery, and with a count
+subquery, through the phase rules (ADR 0027), with their counts of `#print axioms` reports."""
+
+
 def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[str, int], ...],
                        timeout: int = 120, output_of: str | None = None) -> str:
     """Elaborate the fixture modules in order, each importing the earlier ones, and audit the axioms of
@@ -70,8 +75,7 @@ def test_insert_then_lookup_claims_over_every_database(runtime_root: Path, tmp_p
     guard on a table without a key, and a duplicate name that fails the insert. Every instance and
     counterexample is checked from the actual run of the statement."""
     check_module_chain(runtime_root, tmp_path, (
-        ("CustomerInsertSite", 2), ("SelectOneWhereSupport", 2), ("CustomerInsertQueries", 5),
-        ("InsertLookupClaims", 3)))
+        ("CustomerInsertSite", 2), *COUNT_SUPPORT, ("CustomerInsertQueries", 5), ("InsertLookupClaims", 3)))
 
 
 def test_preserved_count_claim_over_every_database(runtime_root: Path, tmp_path: Path) -> None:
@@ -81,7 +85,7 @@ def test_preserved_count_claim_over_every_database(runtime_root: Path, tmp_path:
     are satisfiable on a database, and keeps the counterexample that the site excludes: a trigger on UPDATE
     that existed before the expansion and removes the rows when the backfill fires it."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ExpansionCountQueries", 1), *LOWERCASE_LIBRARY[:3], ("ExpansionCountClaims", 3)))
+        *COUNT_SUPPORT, ("ExpansionCountQueries", 1), *LOWERCASE_LIBRARY[:3], ("ExpansionCountClaims", 3)))
 
 
 def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path: Path) -> None:
@@ -94,7 +98,7 @@ def test_signup_invariant_with_partial_unique_index(runtime_root: Path, tmp_path
     invariant (no email has two live accounts, a GROUP BY query) is proved for every admitted database
     with the same site and NOT NULL on the email, with the same counterexample."""
     check_module_chain(runtime_root, tmp_path, (
-        ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3)))
+        *COUNT_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3)))
 
 
 @pytest.mark.requires_native("sqlite3")
@@ -105,7 +109,7 @@ def test_filtered_duplicate_key_query_agrees_with_native_sqlite(runtime_root: Pa
     emails that are equal only under NOCASE, with and without that collation in GROUP BY. The kernel checks the
     same results in the fixture; the fixture logs the SQL and the model's result of each case."""
     stdout = check_module_chain(runtime_root, tmp_path, (
-        ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
+        *COUNT_SUPPORT, ("AccountSignupQueries", 1), ("SignupInvariantClaims", 2), ("GlobalSignupInvariant", 3),
         ("FilteredDuplicateKeyExamples", 1)))
     cases = {str(case["name"]): case for case in lines_after(stdout, "FILTERED-DUPLICATES:")
              if isinstance(case, dict)}

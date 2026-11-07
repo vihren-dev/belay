@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_assertion_examples_test import check_module_chain
+from tests.surface_assertion_examples_test import COUNT_SUPPORT, check_module_chain
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -52,11 +52,10 @@ def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_pat
 
 def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE (SELECT count(*) FROM t [WHERE p]) = $n` over every database: `Holds` means that the
-    table has `n` rows (or `n` rows for which `p` is true), proved with the lemmas and `sql_simp`, with instances
-    on one database where `decide +kernel` checks the claim for a true and for a false `n`."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCount.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    table has `n` rows (or `n` rows for which `p` is true), proved through the phase rules with the support of
+    `SelectCountWhereSupport`, with instances on one database where `decide +kernel` checks the claim for a true
+    and for a false `n`. The axiom audit shows that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (*COUNT_SUPPORT, ("ClaimsCount", 3)), timeout=90)
 
 
 def test_a_parameter_is_in_a_column_of_a_table(runtime_root: Path, tmp_path: Path) -> None:
@@ -90,12 +89,12 @@ def test_no_two_rows_of_a_table_have_equal_keys(runtime_root: Path, tmp_path: Pa
 
 def test_a_unique_lookup_matches_at_most_one_row(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE (SELECT count(*) FROM t WHERE c = $v) <= 1` over every database whose table has `c` under a
-    `UNIQUE` constraint or as its `PRIMARY KEY`: the claim holds, proved with the lemmas and `sql_simp`, with instances
-    on databases where `decide +kernel` checks it: a stored and an unknown address, the affinity of an `INTEGER`
-    column, and a `NOCASE` column with a `BINARY` unique index, where the bound fails because the collations differ."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsUniqueLookup.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    `UNIQUE` constraint or as its `PRIMARY KEY`: the claim holds, proved through the phase rules with the support of
+    `SelectCountWhereSupport` and the unique keys of the valid database, with instances on databases where
+    `decide +kernel` checks it: a stored and an unknown address, the affinity of an `INTEGER` column, and a `NOCASE`
+    column with a `BINARY` unique index, where the bound fails because the collations differ. The axiom audit shows
+    that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (*COUNT_SUPPORT, ("ClaimsUniqueLookup", 1)), timeout=90)
 
 
 def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_path: Path) -> None:
@@ -106,7 +105,7 @@ def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_p
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 10, result.stdout
+    assert len(reports) == 9, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
 
 

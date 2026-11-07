@@ -40,14 +40,14 @@ current ones on main `84c0d779`; the fifteen files total 1,328 lines.
 
 | File under `packages/belay/Belay/Sqlite/` | Acceptance cover | Status |
 | --- | --- | --- |
-| `CountQuery.lean` | A08 | Required |
-| `AggregateQuery.lean` | A08, A09 | Required |
+| `CountQuery.lean` (74) | A08 | Deleted: `ClaimsCount.lean`, `CustomerInsertQueries.lean`, `AccountSignupQueries.lean` and `ExpansionCountQueries.lean` prove their claims for every database through the subquery run rule, the ungrouped rule `Resolved.records_ungrouped` and `whereOne_claims`, with the support of `SelectCountWhereSupport.lean` |
+| `AggregateQuery.lean` (86) | A08, A09 | Deleted: `SelectCountCases.lean` and `SelectNullAggregateCases.lean` cover A08 and A09 through the aggregate rules |
 | `ColumnQuery.lean` | A19 | Required |
-| `SelectOneFrom.lean` | A01, A02 | Required |
+| `SelectOneFrom.lean` (136) | A01, A02 | Deleted: `SelectExistenceCases.lean` proves the existence and emptiness claims through `Resolved.Query.forall_possibleResults_ne_nil_plain` and `Resolved.Query.forall_possibleResults_eq_nil_plain` |
 | `SelectNoFrom.lean` (91) | A20 | Deleted: `SelectSourceCases.lean` proves `SELECT 1 + 2` for every database, and `SelectFunctionFaultCases.lean` proves that `WHERE 0` gives no row for every database |
 | `ExistsQuery.lean`, `NotExistsQuery.lean` (123) | A18 | Deleted: `ClaimsExists.lean` and `CustomerInsertQueries.lean` prove their claims for every database through `Run.query_returnsResult_faultless` and the subquery run rule, with the support of `SelectOneWhereSupport.lean` |
 | `DuplicateKeyQuery.lean`, `FilteredDuplicateKeyQuery.lean` | A07, A10 | Required |
-| `UniqueLookupQuery.lean` | A05 | Required |
+| `UniqueLookupQuery.lean` (57) | A05 | Deleted: `ClaimsUniqueLookup.lean` proves the bound of a unique lookup for every database through `whereCount_claims` and `Table.KeysUnique.countMatching_le_one` |
 | `ScalarNoFrom.lean` (83) | A20, B01, B05 | Deleted: `SelectFunctionFaultCases.lean` proves its three claims for every database and environment through `SelectReady.of_phases` and `Run.send_mustFail`, which take a quiet statement and so keep fallible functions |
 | `ExistsMayFail.lean`, `SelectOneMayFail.lean` (113) | B05 | Deleted: `ClaimsMayFail.lean` proves their claims for every database and environment through `Run.send_unready` |
 | `QueryCases.lean` | B01, B11 | Required |
@@ -75,7 +75,10 @@ per-family characterization. The owners are named as they exist on main.
 
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
-| `CountSubqueryOutput`, `AggregateQueryOutput`, `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `DuplicateKeyOutput`, `SimpleTableOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `SelectOneOutput` | 921 | Required |
+| `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `DuplicateKeyOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `SelectOneOutput` | 676 | Required |
+| `CountSubqueryOutput` | 116 | Deleted, with `CountQuery.lean`; `Resolved.Statement.Calm.selectOne_count` moved to `SelectOneSubqueryContext`, and the count query `Resolved.Query.countOf` with `Resolved.SubqueryRun.count` to `CountOf` |
+| `AggregateQueryOutput` | 62 | Deleted, with `AggregateQuery.lean` |
+| `SimpleTableOutput` | 67 | Deleted, with `SelectOneFrom.lean` |
 | `ExistsSubqueryOutput`, `NotExistsSubqueryOutput` | 154 | Deleted, with `ExistsQuery.lean` and `NotExistsQuery.lean`; the subquery context laws and `Resolved.Statement.Calm.selectOne_subquery` moved to `SelectOneSubqueryContext` |
 | `QueryMayFailOutput`, `SubqueryMayFailOutput` | 204 | Deleted, with `SelectOneMayFail.lean` and `ExistsMayFail.lean`; `Resolved.Statement.Quiet.selectOne` moved to `SelectOneResolution` and `Resolved.Statement.Quiet.selectOne_subquery` to `SelectOneSubqueryContext` |
 | `SelectNoFromOutput` | 68 | Deleted, with `SelectNoFrom.lean`; a certainly failing call uses `resolvedStepOutput_select_mustFail` in `SelectFailureRule` |
@@ -87,7 +90,8 @@ per-family characterization. The owners are named as they exist on main.
 
 | File | Lines | Status |
 | --- | --- | --- |
-| `CountQueryLaws`, `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 638 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted. The duplicate-key laws cover expression keys under `key.Calm` (ADR 0030 D7); the group rule keeps that generality |
+| `CountQueryLaws` | 118 | Deleted: the ungrouped rule `Resolved.records_ungrouped` replaces its `Query.Count` laws |
+| `AggregateQueryLaws`, `DuplicateKeyQuery`, `DuplicateKeyGroupTerm`, `NoFromQuerySteps` | 520 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted. The duplicate-key laws cover expression keys under `key.Calm` (ADR 0030 D7); the group rule keeps that generality |
 | `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQueryFaults`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 609 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
 | `InSubqueryColumnLaw`, `InSubqueryEqualityLink`, `InSubqueryEvaluate`, `InSubqueryFilterLaw`, `InSubqueryQueryInLaw`, `InSubqueryQueryLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryRowidAlias` | 863 | Candidate: `NotInQuery.lean` and the ADR 0026 D4 equivalences consume part of them. Keep what those consumers need; the rest becomes the `subquery` rule |
 | `SelectStepKeeps` | 133 | Retained: ADR 0025 preservation |
@@ -110,8 +114,10 @@ needs its equation; the status file records each such deletion.
 
 | Location | Status |
 | --- | --- |
-| `tests/surface/Claims{Count,Sum,In,SelectOne,DuplicateKeys,UniqueLookup,QueryCases,AggregateLaws}.lean` | Required: replaced by the A and B fixtures. A negative case that a fixture uniquely protects moves to the "required contrast" of its acceptance case before the fixture is deleted |
+| `tests/surface/Claims{In,DuplicateKeys,QueryCases}.lean` | Required: replaced by the A and B fixtures. A negative case that a fixture uniquely protects moves to the "required contrast" of its acceptance case before the fixture is deleted |
 | `tests/surface/ClaimsExists.lean`, `ClaimsMayFail.lean` | Retained: they keep the claims of the deleted EXISTS and may-fail forms, now proved through the phase rules. The acceptance fixtures are `SelectExistsCases.lean` for A18, whose subquery is correlated, and `SelectExecutionRules.lean` for B05 |
+| `tests/surface/ClaimsCount.lean`, `ClaimsUniqueLookup.lean` | Retained: they keep the claims of the deleted count and unique-lookup forms, now proved through the phase rules. The acceptance fixtures are `SelectCountCases.lean` for A08 and `SelectJoinCases.lean` for A05 |
+| `tests/surface/ClaimsSelectOne.lean`, `ClaimsSum.lean`, `ClaimsAggregateLaws.lean` | Deleted, with `SelectOneFrom.lean` and `AggregateQuery.lean`: `SelectExistenceCases.lean`, `SelectCountCases.lean` and `SelectNullAggregateCases.lean` take their place |
 | `tests/surface/ClaimsNoFrom.lean`, `ClaimsScalarNoFrom.lean` | Deleted, with `SelectNoFrom.lean` and `ScalarNoFrom.lean`: `SelectSourceCases.lean` and `SelectFunctionFaultCases.lean` prove their claims and instances |
 | `tests/surface/ClaimsTableInfo*.lean`, `ClaimsView*.lean`, `ClaimsDerived.lean`, `ClaimsCommonTables.lean`, `ClaimsExpressionLaws.lean` | Retained unless their subject is a retired form; reconcile at assignment |
 | Model `QueryExamples`, `SubqueryExamples`, `QueryWindowExamples`, `PossibleResultsExamples`, `InSubqueryExamples` | A necessity example that an acceptance contrast repeats is deleted; one that protects a boundary no case covers stays. `SubqueryExamples` stays: no acceptance case checks its depth-two correlation or its fault contrasts of a scalar subquery and of `IN` over a window. `PossibleResultsExamples` stays: no acceptance case checks the exact alternatives of `LIMIT` without `ORDER BY`, of a window across tie groups, or of `DISTINCT` and `GROUP BY` with `LIMIT`. `QueryExamples` and `InSubqueryExamples` stay. `QueryWindowExamples` keeps its `windowInteger` examples; its query examples go when `ClaimsQueryCases.lean` is deleted |

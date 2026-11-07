@@ -353,10 +353,9 @@ import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.StatementQuiet
 import Belay.Sqlite.Model.SelectNoFromResolution
 import Belay.Sqlite.Model.ExprAnyLaws
-import Belay.Sqlite.Model.CountQueryLaws
+import Belay.Sqlite.Model.CountOf
 import Belay.Sqlite.Model.ExprContextLaws
 import Belay.Sqlite.Model.SelectOneSubqueryOutput
-import Belay.Sqlite.Model.CountSubqueryOutput
 import Belay.Sqlite.Model.CountSelectResolution
 import Belay.Sqlite.Model.CountStatementResolution
 import Belay.Sqlite.Model.CountMatchingLaws

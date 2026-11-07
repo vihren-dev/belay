@@ -1,7 +1,7 @@
-import Belay
+import SelectCountWhereSupport
 
 /-! A fixture of `tests/surface_claims_test.py`: the query form `SELECT 1 WHERE (SELECT count(*) FROM t
-[WHERE p]) <op> $n` over every database (ADR 0017, S4; `Belay/Sqlite/CountQuery.lean`). Each claim is
+[WHERE p]) <op> $n` over every database, through the phase rules of ADR 0027 (`SelectCountWhereSupport.lean`). Each claim is
 about every database; each claim has an instance on one database, where `decide +kernel` checks that
 its two sides agree, so that no claim is vacuous. -/
 
@@ -38,9 +38,8 @@ theorem invoices_has_n_rows (db : Database) (position : Nat) (table : CatalogTab
   have subResolves : FilterResolves runContext.profile.dqsDml
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
-  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp))]
-  simp only [Output.hasRows, apply_ite]
+  rw [(whereCount_claims (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp)).1]
   simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull,
     Comparison.holds]
 
@@ -82,9 +81,8 @@ theorem invoices_with_negative_amount_are_n (db : Database) (position index : Na
     (shapes := { current := some 0 })
     (term := .compare .lt (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
-  rw [Holds.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices WHERE amount < 0) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-    mainResolves (by simp [sql_simp]) (by simp [sql_simp]))]
-  simp only [Output.hasRows, apply_ite]
+  rw [(whereCount_claims (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices WHERE amount < 0) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+    mainResolves (by simp [sql_simp]) (by simp [sql_simp])).1]
   simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull,
     Comparison.holds]
   rw [Resolved.countMatching_eq]
@@ -103,7 +101,7 @@ set_option doc.verso true
 
 /-- Over every database with the table of invoices and every bound integer, the count comparison is empty exactly
 when the count differs from that integer, and never fails. Proof sketch: share the subquery resolutions between
-{name}`Script.outputOn_count`, then simplify the integer comparison. -/
+{name}`whereCount_claims`, then simplify the integer comparison. -/
 theorem invoice_count_empty_and_safe (db : Database) (position : Nat) (table : CatalogTable) (n : Int64)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table)) :
     (Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") db ↔
@@ -119,14 +117,11 @@ theorem invoice_count_empty_and_safe (db : Database) (position : Nat) (table : C
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) [] none none { current := some 0 } :=
     .inl ⟨rfl, rfl⟩
   constructor
-  · rw [Empty.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-      mainResolves (by simp [sql_simp]) (by simp))]
-    simp only [Output.hasNoRows, apply_ite]
+  · rw [(whereCount_claims (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp)).2.1]
     simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
-  · exact (by
-    rw [Fails.iff_of_outputOn (Script.outputOn_count (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
-      mainResolves (by simp [sql_simp]) (by simp))]
-    simp [Output.isError])
+  · exact (whereCount_claims (script := (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n")) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp)).2.2
 
 example (n : Int64) (isThree : n = 3) : Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop :=
   (invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).1.2 (by subst isThree; decide +kernel)
@@ -136,3 +131,7 @@ example (n : Int64) (isTwo : n = 2) : ¬ Empty (sql r"SELECT 1 WHERE (SELECT cou
   decide +kernel
 example (n : Int64) : ¬ Fails (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop :=
   (invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).2
+
+#print axioms invoices_has_n_rows
+#print axioms invoices_with_negative_amount_are_n
+#print axioms invoice_count_empty_and_safe
