@@ -3,6 +3,7 @@ import Belay.Sqlite.CounterexampleCertificate
 import Belay.Sqlite.CheckBudget
 import Belay.Sqlite.SqlSimpLaws
 import Belay.Sqlite.ExecutionEquivalenceLaws
+import Belay.Sqlite.RunResults
 
 set_option doc.verso true
 
@@ -46,15 +47,21 @@ def proveWith (proposition : Expr) (tactic : Syntax) (excluded : Array Name := #
 
 /-- Try logical, SQL simp-set and kernel-decision primitives, and the equivalence of a
 program with itself ({name}`Sql.Equiv.refl`). Profile equality first compares its arguments
-by congruence, so reflexivity does not execute different SQL programs. This is a bounded
-attempt. Failed automation supplies no evidence for the proposition. -/
+by congruence, so reflexivity does not execute different SQL programs. A run observation
+({name}`Run.returnsResult`, {name}`Run.returnsError`, for example {lit}`Empty q db`) is a
+conjunction at default transparency, so {lit}`trivial` would split it and execute the run of a
+database variable; for profiles and run observations it unfolds only reducible definitions and
+leaves execution to {lit}`decide +kernel`. This is a bounded attempt. Failed automation supplies no
+evidence for the proposition. -/
 def tryProof (proposition : Expr) (excluded : Array Name := #[])
     (excludedLocals : Array FVarId := #[]) : TermElabM (Option Proven) := do
-  let profile ← forallTelescopeReducing proposition fun _ conclusion => do
+  let (profile, observation) ← forallTelescopeReducing proposition fun _ conclusion => do
+    let reducible ← whnfR conclusion
     let conclusion ← withTransparency .default <| whnf conclusion
-    pure (conclusion.eq?.any fun (_, left, _) => left.isAppOf ``observationProfile)
+    pure (conclusion.eq?.any fun (_, left, _) => left.isAppOf ``observationProfile,
+      reducible.isAppOf ``Run.returnsResult || reducible.isAppOf ``Run.returnsError)
   let reflexivity ← if profile then `(tactic| (change _ = _; congr; done)) else `(tactic| rfl)
-  let triviality ← if profile then `(tactic| with_reducible trivial) else `(tactic| trivial)
+  let triviality ← if profile || observation then `(tactic| with_reducible trivial) else `(tactic| trivial)
   let tactic ← `(tactic| (intros; first
     | $reflexivity:tactic
     | $triviality:tactic

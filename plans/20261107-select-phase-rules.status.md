@@ -204,6 +204,17 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   still gives the row `[0]`; with a nullable `customer` and one NULL customer the result is
   `[[0, 1]]`. Native SQLite 3.51.0 gives the same results. Tests: locally
   `tests/surface_select_rules_test.py`.
+- 2026-11-07: fix of the automatic check found by the stage-1 `just test-full` (in the second
+  workspace; 1 failure of 382 in the surface tests,
+  `tests/surface_proof_cost_automatic_test.py::test_automatic_check_gives_the_same_result_with_collection`).
+  Since `Empty`, `Holds` and `Fails` are abbreviations of `Run.returnsResult` and
+  `Run.returnsError`, which are conjunctions at default transparency, the proof search's
+  `trivial` split `Empty one db` and executed the run of the database variable: the check of
+  `Empty one db → Empty one db` used most of its budget, and with the proof-cost collector it
+  gave no result. `tryProof` (`Belay/Sqlite/CheckProof.lean`) now uses `with_reducible trivial`
+  for run observations, as it does for profiles. Tests: `just dev-build`; locally
+  `tests/surface_proof_cost_automatic_test.py`, `surface_automatic_test.py`,
+  `surface_automatic_cancel_test.py`, `surface_s6_check_editor_test.py`.
 
 ## Working sequence
 
