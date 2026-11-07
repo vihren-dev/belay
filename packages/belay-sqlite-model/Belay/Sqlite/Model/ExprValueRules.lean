@@ -65,6 +65,14 @@ theorem Expr.eval_inList (context : EvalContext) (row : List Value) (operand : E
     (Expr.inList operand values affinity collation negated).eval context row =
       inValue affinity collation negated (operand.eval context row) (values.eval context row) := rfl
 
+/-- The values of no arguments are no values. Proof sketch: the definition computes. -/
+theorem Arguments.eval_nil (context : EvalContext) (row : List Value) : Arguments.nil.eval context row = [] := rfl
+
+/-- The values of arguments are the value of the first argument, then the values of the rest, in written
+order. Proof sketch: the definition computes. -/
+theorem Arguments.eval_cons (context : EvalContext) (row : List Value) (head : Expr) (tail : Arguments) :
+    (Arguments.cons head tail).eval context row = head.eval context row :: tail.eval context row := rfl
+
 /-- The value of {lit}`iif` with its arguments is {name}`iifValue` of their values, and NULL
 without arguments. Proof sketch: cases on the arguments; the definition computes. -/
 theorem Expr.eval_iif (context : EvalContext) (row : List Value) (arguments : Arguments) :

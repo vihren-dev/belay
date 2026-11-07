@@ -52,3 +52,13 @@ def test_cardinality_cases(runtime_root: Path, tmp_path: Path) -> None:
     number of rows and no distinct rows. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectCardinalityCases", 5)),
                        timeout=60)
+
+
+def test_expression_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A11 through the expression rules (`resolveStatement_select_table`, the value rules of
+    `Model/ExprValueRules.lean`): a projection of a column, a parameter, an arithmetic and a CASE expression
+    over every database with generic premises, with a witness; an `abs` call that can fail is not calm, has a
+    fault, and its query returns neither a result nor an error, although its value rule gives a value.
+    Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectExpressionCases", 4)),
+                       timeout=60)

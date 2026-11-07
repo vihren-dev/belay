@@ -109,6 +109,16 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
   `tests/surface_layers_test.py` and `tests/test_model_package.py` except its installed-package
   test.
+- 2026-11-07: A11. A one-table `SELECT` of any result columns without aggregate calls resolves to
+  the simple query of the table with the resolved outputs (`resolveStatement_select_table`); the
+  one-column law is its corollary. The values of argument lists (`Arguments.eval_nil`,
+  `Arguments.eval_cons`). A11 (`tests/surface/SelectExpressionCases.lean`): a projection of a
+  column, a parameter, an arithmetic and a `CASE` expression over every database with generic
+  premises gives each row from a stored row through the value rules, with a witness; the contrast
+  is an `abs` call that can fail: it is not calm, its fault rule gives a fault, and its query
+  returns neither a result nor an error, although its value rule gives a value. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_layers_test.py`
+  and `tests/test_model_package.py` except its installed-package test.
 
 ## Working sequence
 
