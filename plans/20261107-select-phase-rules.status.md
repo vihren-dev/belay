@@ -557,6 +557,15 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   proves the core set with `sql_select [schema]`. Tests: `just dev-build`; locally
   `tests/surface_select_rules_test.py` passes. `test_model_package.py` and `lean_packages_test.py`
   need the Nix-built runtime root; they run with `just test-full` at the end of the stage.
+- 2026-11-07: review findings of `sql_select` (refactor). `Database.selectQuery?` names each resolved
+  statement constructor. The window order rule `Query.exists_sorted_of_mem_possibleResults_window` is a
+  model theorem, in the new `Model/SelectWindowOrderRules.lean` with the other rules that depend on the
+  window (`Query.exists_sorted_perm_of_mem_possibleResults`, `Query.length_of_mem_possibleResults`,
+  moved from `SelectOrderRules.lean`). The new model laws have proof sketches.
+  `tests/surface/SelectRuleRegistry.lean` checks the registry: the refusals of a declaration that is no
+  theorem, an unknown phase and a scoped registration; a local user rule that ends with its section; and
+  the name order of the rules. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py` and
+  `tests/surface_layers_test.py`.
 
 ## Working sequence
 

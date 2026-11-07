@@ -26,7 +26,11 @@ def Database.selectQuery? (db : Database) (statement : Syntax.Statement) :
     Option (Resolved.Query × List Resolved.Query) :=
   match resolveStatement runContext (db.raw.connection {}).resolveState statement with
   | .ok (.query query subqueries, _) => some (query, subqueries)
-  | _ => none
+  | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _)
+  | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.rewrite _, _) | .ok (.dropColumn .., _) | .ok (.begin, _)
+  | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _) | .ok (.upsert .., _)
+  | .ok (.insertSelect .., _) | .ok (.delete .., _) | .ok (.prepareError _, _) | .ok (.setting .., _)
+  | .error _ => none
 
 /-- A calm statement is decided by the check of each of its expressions ({name}`Resolved.Expr.Calm`). -/
 instance (statement : Resolved.Statement) : Decidable statement.Calm :=
@@ -79,7 +83,7 @@ theorem Run.query_returnsResult_ofCatalog {script : Script} {statement : Syntax.
     split at resolved
     · cases resolved
       exact ⟨_, ‹_›⟩
-    · cases resolved
+    all_goals cases resolved
   have table : db.raw.table position = some { shape, rows := db.raw.rows.getD position [] } := by
     simp [Database.table, show db.raw.catalog = catalog.raw.catalog from schema, present]
   have scan : db.scanAt position = Resolved.sourceRows { shape, rows := db.raw.rows.getD position [] } := by

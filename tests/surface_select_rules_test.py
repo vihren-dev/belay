@@ -153,3 +153,14 @@ def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
                        ("SelectComparisonCases", 5), ("SelectCardinalityCases", 5), ("SelectGroupSupport", 0),
                        ("SelectGroupCases", 6), ("SelectCountCases", 5), ("SelectHavingCases", 6),
                        ("SelectOrderCases", 4), ("SelectProcedureCases", 8)), timeout=90)
+
+
+def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
+    """The registry of the attribute `sql_select_rule` (`Belay/Sqlite/SqlSelectRule.lean`) refuses a
+    declaration that is no theorem, an unknown phase and a scoped registration, each with its message. A
+    local registration of a user rule closes a goal that the built-in rules do not close, and ends with
+    its section; the same claim then needs the rule applied by hand. The procedure tries the rules of a
+    phase in qualified declaration-name order, not in registration order: its explanation names the first
+    rule that matches. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
+                       ("SelectRuleRegistry", 3)), timeout=90)

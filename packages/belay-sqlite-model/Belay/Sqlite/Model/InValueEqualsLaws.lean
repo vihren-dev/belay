@@ -92,7 +92,8 @@ theorem comparisonOperands_isNull (affinity : Option Affinity) (left right : Val
   · cases affinity <;> simp only [comparisonOperands, numericOperand_isNull, and_self] <;> try exact ⟨rfl, rfl⟩
     all_goals split <;> simp only [store_isNull, and_self]
 
-/-- For every two operands, a comparison without affinity keeps them ({name}`comparisonOperands`). -/
+/-- For every two operands, a comparison without affinity keeps them ({name}`comparisonOperands`). Proof sketch: the case
+without affinity of the definition computes. -/
 theorem comparisonOperands_none (left right : Value) : comparisonOperands none left right = (left, right) := rfl
 
 /-- For every affinity, collation, probe and candidates, {name}`inValue` is its four cases: the value of an empty

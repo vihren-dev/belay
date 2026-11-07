@@ -30,7 +30,8 @@ theorem Collation.compare_integer (collation : Collation) (first second : Int) :
   cases Ord.compare first second <;> rfl
 
 /-- For every two integers, their order is greater, as a Boolean test, exactly when the second is less
-than the first. -/
+than the first. Proof sketch: a Boolean equation is an equivalence of the two tests, and
+{name}`Int.compare_eq_gt` gives it. -/
 theorem Int.compare_beq_gt (first second : Int) : (compare first second == Ordering.gt) = decide (second < first) := by
   rw [Bool.eq_iff_iff]
   simp [Int.compare_eq_gt]
@@ -38,7 +39,8 @@ theorem Int.compare_beq_gt (first second : Int) : (compare first second == Order
 /-- For every two natural numbers, the integer literal of the first is less than the integer of the
 second exactly when the first is less than the second. Lean writes a numeral such as {lit}`(1 : Int)` as
 a literal, not as the integer of a natural number, so the law of the integers of two natural numbers
-does not rewrite it. -/
+does not rewrite it. Proof sketch: the literal is by definition the integer of the natural number,
+and {lit}`omega` decides the equivalence of the two orders. -/
 theorem Int.ofNat_literal_lt_natCast (literal number : Nat) :
     ((no_index (OfNat.ofNat literal) : Int) < (number : Int)) ↔ literal < number := by
   change ((literal : Int) < number) ↔ literal < number

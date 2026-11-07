@@ -49,7 +49,8 @@ theorem filterMap_ite_eq_map_filter {α β : Type} (keep : α → Prop) [Decidab
 /-- HAVING condition rule: for every context and query with the {lit}`HAVING` condition
 {lit}`condition`, the query keeps a group ({name}`Query.keepsGroup`) exactly when the condition is true
 ({name}`truthy`) over the row of the group in the context of the group. The equation is a proved one, so
-the simplifier can rewrite with it without a definitional step that the kernel must unfold. -/
+the simplifier can rewrite with it without a definitional step that the kernel must unfold. Proof
+sketch: function extensionality; with the premise, {name}`Query.keepsGroup` reads the one condition. -/
 theorem Query.keepsGroup_of_having (context : EvalContext) {query : Query} {condition : Expr}
     (present : query.having = some condition) :
     query.keepsGroup context = fun group =>

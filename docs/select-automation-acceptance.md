@@ -148,7 +148,7 @@ later requires updating its rule coverage explicitly.
 
 ## Error, residual and trust acceptance
 
-Proposed extension syntax (not yet implemented):
+Extension syntax (implemented by `sql_select` and the attribute `sql_select_rule`):
 
 ```lean
 attribute [local sql_select_rule filter] my_filter_rule

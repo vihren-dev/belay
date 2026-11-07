@@ -20,7 +20,8 @@ def Query.rowOutput (context : EvalContext) (query : Query) (row : List Value) :
     | .aggregate aggregate => aggregate.eval context [row]
 
 /-- For every context and query, the result row function of the query
-({name}`Query.rowOutput`) is the value of each column on the row. -/
+({name}`Query.rowOutput`) is the value of each column on the row. Proof sketch: the right side is the
+definition of {name}`Query.rowOutput`. -/
 theorem Query.rowOutput_eq (context : EvalContext) (query : Query) :
     query.rowOutput context = fun row => query.columns.map fun
       | .scalar expression => expression.eval context row

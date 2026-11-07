@@ -14,29 +14,15 @@ step there makes the kernel unfold the evaluator, which can exceed its recursion
 namespace Belay.Sqlite.Select
 open Belay.Sqlite.Model
 
-/-- Window order rule: for every context, query with an {lit}`OFFSET` other than 0 or a {lit}`LIMIT`,
-rows and result that the model permits for the query over the rows, the result is the rows of a
-permutation of a sublist of the records in order by the {lit}`ORDER BY` terms, as
-{name}`Resolved.Query.exists_sorted_of_mem_possibleResults` says. The premise on the window only routes
-the rule: without a window, {name}`Resolved.Query.exists_sorted_perm_of_mem_possibleResults` gives all the
-records, which is more. -/
-theorem exists_sorted_of_mem_possibleResults_window {context : Resolved.EvalContext}
-    {query : Resolved.Query} {rows result : List (List Value)} (_window : query.offset ≠ 0 ∨ query.limit ≠ none)
-    (member : result ∈ query.possibleResults context rows) :
-    ∃ ordered : List Resolved.Record,
-      (∃ picked : List Resolved.Record, picked.Sublist (query.uniqueRecords context rows) ∧ ordered.Perm picked) ∧
-        ordered.Pairwise (fun a b =>
-          (Resolved.compareSort (query.orderBy.map fun term => (term.descending, term.collation)) a.2 b.2).isLE) ∧
-        result = ordered.map Prod.fst :=
-  Resolved.Query.exists_sorted_of_mem_possibleResults member
-
 /-- Sublist-lift rule: for every function, list and sublist of the list's images, some sublist of the
-list has the sublist as its images. -/
+list has the sublist as its images. Proof sketch:
+{name}`List.sublist_map_iff`. -/
 theorem exists_sublist_map_eq {α β : Type} (f : α → β) {images : List β} {items : List α}
     (sublist : images.Sublist (items.map f)) : ∃ chosen : List α, chosen.Sublist items ∧ images = chosen.map f :=
   List.sublist_map_iff.mp sublist
 
-/-- For every list, keeping the items that pass the test that is always true keeps every item. -/
+/-- For every list, keeping the items that pass the test that is always true keeps every item. Proof
+sketch: {name}`List.filter_eq_self`. -/
 theorem filter_const_true {α : Type} (items : List α) : items.filter (fun _ => true) = items :=
   List.filter_eq_self.mpr fun _ _ => rfl
 
@@ -47,7 +33,7 @@ attribute [sql_select_rule aggregate] Resolved.Query.mem_possibleResults_ungroup
 attribute [sql_select_rule project] Resolved.Query.perm_of_mem_possibleResults_plain
   Resolved.Query.mem_possibleResults_plain
 attribute [sql_select_rule order] Resolved.Query.exists_sorted_perm_of_mem_possibleResults
-attribute [sql_select_rule window] exists_sorted_of_mem_possibleResults_window
+attribute [sql_select_rule window] Resolved.Query.exists_sorted_of_mem_possibleResults_window
   Resolved.Query.length_of_mem_possibleResults Resolved.Query.perm_of_mem_possibleResults
 
 /- The results of a query: the kept rows, the records, the groups and the order. -/
