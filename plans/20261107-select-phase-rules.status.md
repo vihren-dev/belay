@@ -697,6 +697,12 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   prediction change.
 - 2026-11-07: task end checks at `2251a86c`. `just test-nix` passed (91 tests) and
   `just test-scheduled-checks` passed (53 tests). The task is DONE; its pull request is stacked on PR 299.
+- 2026-11-07: after the pull request (#357), the SELECT test files move from `surfaceS6` to a new Nix
+  suite, `surfaceSelect` (`tests/nix_suites.json`, `build-support/tests.nix`). With them, `surfaceS6`
+  took 959 s of its 1200 s limit in the stage 4 `just test-full` (98 tests); the target in
+  `build-support/tests.nix` is about 840 s. On main CI (Linux, `26b48c3d`), `surfaceS6` already took
+  882 s without them; #361 records that cost. Checks for the commit: `tests/test_nix_test_targets.py`,
+  `tests/test_ci_scope.py`, `tests/docs_test.py`, then `just test-full`.
 
 ## Working sequence
 
