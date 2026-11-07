@@ -135,7 +135,6 @@ import Belay.Sqlite.ScalarNoFrom
 import Belay.Sqlite.SelectNoFrom
 import Belay.Sqlite.CountQuery
 import Belay.Sqlite.ColumnQuery
-import Belay.Sqlite.TableInfoQuery
 import Belay.Sqlite.FilteredDuplicateKeyQuery
 import Belay.Sqlite.DuplicateKeyQuery
 import Belay.Sqlite.UniqueLookupQuery

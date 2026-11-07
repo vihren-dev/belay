@@ -363,6 +363,14 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: refactor after the review of A21 and A22 (R6, must): `Connection.afterWrite` and
   `Connection.resolveState_afterWrite` move from `SendStepRules.lean` to the model file
   `Model/Connection.lean`, beside `Connection.resolveState`. Tests: `just dev-build`.
+- 2026-11-07: retirement of the table-info family (stage 3). `TableInfoQuery.lean` and
+  `Model/TableInfoOutput.lean` are deleted. `ClaimsTableInfo.lean` proves its claims through the
+  pragma source rule (`Resolved.Query.source_pragma`) and `Run.query_returnsResult_calm`
+  (`tableInfo_results`); the claim about a stored column now takes a script of one statement.
+  `Resolved.Statement.Calm.selectOne_pragma` moves to `SelectSourceRules.lean`, and
+  `SuccessBalanceSubqueries.lean` uses `Resolved.Query.source_pragma` in place of
+  `source_pragma_fixed`. Tests: `just dev-build`; locally `tests/surface_claims_test.py` and the
+  success-balance tests.
 
 ## Working sequence
 

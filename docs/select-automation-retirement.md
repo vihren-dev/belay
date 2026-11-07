@@ -52,7 +52,7 @@ current ones on main `84c0d779`; the fifteen files total 1,328 lines.
 | `ExistsMayFail.lean`, `SelectOneMayFail.lean` | B05 | Required |
 | `QueryCases.lean` | B01, B11 | Required |
 | `SampleQueryHints.lean` | D6 hints | Required |
-| `TableInfoQuery.lean` (66) | A20 (pragma rows) | Candidate: the metadata fixtures `ClaimsTableInfo*.lean` may need it |
+| `TableInfoQuery.lean` (66) | A20 (pragma rows) | Deleted: `ClaimsTableInfo.lean` uses the pragma source rule `Resolved.Query.source_pragma` |
 | `NotInQuery.lean` (150) | ADR 0026 D4 consumer | Retained: an `EquivAt` law, not a claim form |
 | `Queries.lean`, `QueryLaws.lean`, `QuerySuccess.lean`, `QueryBridge.lean` (378) | D2 | Retained: the claim layer. `Holds`, `Empty` and `Fails` are redefined as abbreviations, see ADR 0027 D2 |
 
@@ -76,7 +76,7 @@ per-family characterization. The owners are named as they exist on main.
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
 | `CountSubqueryOutput`, `AggregateQueryOutput`, `ExistsSubqueryOutput`, `NotExistsSubqueryOutput`, `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SelectNoFromOutput`, `DuplicateKeyOutput`, `SimpleTableOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `QueryMayFailOutput`, `SubqueryMayFailOutput`, `SelectOneOutput` | 1,347 | Required |
-| `TableInfoOutput` | 68 | Candidate, with `TableInfoQuery.lean` |
+| `TableInfoOutput` | 68 | Deleted, with `TableInfoQuery.lean`; `Resolved.Statement.Calm.selectOne_pragma` moved to `SelectSourceRules` |
 | `QueryStatementOutput`, `QueryStepOutput`, `QueryOutputOn`, `QueryOutputRows`, `QueryOutputCases`, `Output`, `StatementOutput`, `OneTableStatementOutput`, `NonQueryOutput`, `PrepareErrorOutput`, `PossibleOutput` | — | Retained: generic observation and execution laws |
 | `TwoStateNotExistsExceptOutput` | 86 | Retained: two-state observation |
 

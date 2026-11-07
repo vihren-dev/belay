@@ -29,7 +29,7 @@ Their current formulas and assumptions remain migration obligations.
 | [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `resolvedStepOutput_exists_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [NotExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/NotExistsSubqueryOutput.lean) | `resolvedStepOutput_notExists_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `resolvedStepOutput_notExists_duplicateKeys_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `resolvedStepOutput_simplePragma_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `TableInfoOutput` (removed by ADR 0027) | `resolvedStepOutput_simplePragma_` | `hasRows`, `hasNoRows`, `not_isError` |
 
 The three `DuplicateKeyOutput` names now quantify over a filter, result column
 and column name. They describe groups of `Resolved.keptRows`, not all source rows.
@@ -48,7 +48,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 | [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
 | [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
 | `FilteredDuplicateKeyEmpty` (removed; current owner: [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean)) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
-| [TableInfoQuery](../packages/belay/Belay/Sqlite/TableInfoQuery.lean) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
+| `TableInfoQuery` (removed by ADR 0027) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and
 `Empty.iff_selectOne_noDuplicateKeys_repeated` in `DuplicateKeyQuery`, and
@@ -73,7 +73,7 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 | [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
 | [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`, `Connection.queryContext_tableSubquery_zero` |
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `Connection.queryContext_duplicateKeys_zero` |
-| [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `Resolved.Query.source_pragma_fixed` |
+| `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
 | [SimpleSubqueryRowsOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean) | `resolvedStepOutput_simple_rows_of_faultless`; reuse this current exact-output fact |
 | [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; reuse different-filter agreement and named-table append semantics |
 | [SimpleTableCalm](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleTableCalm.lean) | `Resolved.Output.operands_of_readsBelow`, `Resolved.Statement.simpleTable_calm`; reuse the current shared calmness proof |

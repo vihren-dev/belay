@@ -1,7 +1,7 @@
 import Belay
 
 /-! A fixture of `tests/surface_claims_test.py`: the query form `SELECT 1 FROM
-pragma_table_info('t') WHERE name = 'c'` over every database (ADR 0017, S4; `Belay/Sqlite/TableInfoQuery.lean`). Each claim is
+pragma_table_info('t') WHERE name = 'c'` over every database (ADR 0017, S4), through the pragma source rule of ADR 0027 (A20). Each claim is
 about every database; each claim has an instance on one database, where `decide +kernel` checks that
 its two sides agree, so that no claim is vacuous. -/
 
@@ -24,34 +24,68 @@ def invoices : Nat × CatalogTable := (shop.raw.catalog.findTable (name! "invoic
 example : shop.raw.catalog.findTable (name! "invoices") = some invoices := by decide +kernel
 
 
+/-- The rows of {lit}`pragma_table_info('t')` for a table, with the hidden argument and schema cells. -/
+def pragmaRows (table : CatalogTable) (argument : List UInt8) : List (List Value) :=
+  table.infoRows.map (· ++ [.text argument, .null])
+
+/-- The condition {lit}`name = 'c'` with the bytes of {lit}`c`, as it resolves in the scope of the pragma. -/
+def nameCondition (bytes : List UInt8) : Resolved.Expr :=
+  .compare .eq (comparisonAffinity (some .blob) none) (.column 1) (.literal (.text bytes)) .binary
+
+/-- The results of {lit}`SELECT 1 FROM pragma_table_info('t') WHERE name = 'c'`: for every script that is this
+statement with its values, database that has a table found by the name of the argument and no table or view named
+like the function, and property {lit}`Q` of a result, the run of the script returns a result with {lit}`Q` exactly
+when every result that the model permits for the query over {name}`pragmaRows` with {name}`nameCondition` has
+{lit}`Q`. Proof sketch: {name}`resolveStatement_select_one_tableInfo` resolves the statement,
+{name}`Resolved.Query.source_pragma` gives the source rows, and {name}`Run.query_returnsResult_calm` the results. -/
+theorem tableInfo_results {script : Script} (db : Database) (argument bytes : List UInt8) (position : Nat)
+    (table : CatalogTable) {parameters : List Value}
+    (head : script.statements = [(.select [.expression (.numeric "1") none "1"]
+      (some { table := name! "pragma_table_info", alias := none, arguments := some [.string argument] }) []
+      (some (.compare .eq (.identifier (name! "name") .none) (.string bytes))) [] [] none none [] none false none,
+      parameters)])
+    (found : db.raw.catalog.findTable ⟨argument⟩ = some (position, table))
+    (notFunction : db.raw.catalog.findTable (name! "pragma_table_info") = none)
+    (notView : db.raw.catalog.findView (name! "pragma_table_info") = none) (property : List (List Value) → Prop) :
+    (db.run script).returnsResult property ↔
+      ∀ result ∈ (Resolved.Query.simple [.pragma (.fixed 8 (pragmaRows table argument))] (some (nameCondition bytes))
+        [.scalar (.literal (.integer 1))] ["1"]).possibleResults (Resolved.EvalContext.bound parameters)
+          (pragmaRows table argument), property result := by
+  have info := Catalog.tableInfoRows_of_findTable _ _ _ _ found
+  have resolves : FilterResolves runContext.profile.dqsDml
+      (tableInfoScope { table := name! "pragma_table_info", alias := none, arguments := some [.string argument] } argument table.infoRows) []
+      (some (.compare .eq (.identifier (name! "name") .none) (.string bytes))) (some (nameCondition bytes)) :=
+    FilterResolves.of_term (result := (nameCondition bytes, none)) (by simp [namesAlias]) (by simp [sql_simp]; rfl)
+  have resolved := resolveStatement_select_one_tableInfo runContext (db.raw.connection Env.default.counters).resolveState
+    { table := name! "pragma_table_info", alias := none, arguments := some [.string argument] } argument table.infoRows
+    _ _ rfl rfl rfl (by dsimp only; decide +kernel) notFunction notView info resolves
+  have one : script.statements.length = 1 := by simp [head]
+  rw [Run.send_returnsResult_iff_query one]
+  exact Run.query_returnsResult_calm head one db Env.default resolved
+    (Resolved.Query.source_pragma _ _ none _ _ _ rfl rfl) (by simp)
+    (Resolved.Statement.Calm.selectOne_pragma _ _ (by simp [nameCondition, sql_simp])) rfl rfl rfl
+    (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl property
+
 /-- The claim behind the three below, for every script that is `SELECT 1 FROM pragma_table_info('t') WHERE name = 'c'`:
 over every database that has a table, found by the name of the argument, and no table or view named like the function, the
 query holds exactly when the table has a column that is not generated and whose name is the bytes `bytes`. -/
 theorem table_has_a_stored_column_named {script : Script} {isQuery : script.isQuery = true} (db : Database)
     (argument bytes : List UInt8) (position : Nat) (table : CatalogTable) {parameters : List Value}
-    {rest : List (Syntax.Statement × List Value)}
-    (head : script.statements = (.select [.expression (.numeric "1") none "1"]
+    (head : script.statements = [(.select [.expression (.numeric "1") none "1"]
       (some { table := name! "pragma_table_info", alias := none, arguments := some [.string argument] }) []
       (some (.compare .eq (.identifier (name! "name") .none) (.string bytes))) [] [] none none [] none false none,
-      parameters) :: rest)
+      parameters)])
     (found : db.raw.catalog.findTable ⟨argument⟩ = some (position, table))
     (notFunction : db.raw.catalog.findTable (name! "pragma_table_info") = none)
     (notView : db.raw.catalog.findView (name! "pragma_table_info") = none) :
     Holds script db isQuery ↔
       ∃ column ∈ table.columns, column.generated.isNone = true ∧ column.name.bytes = bytes := by
-  have info := Catalog.tableInfoRows_of_findTable _ _ _ _ found
-  have resolves : FilterResolves runContext.profile.dqsDml
-      (tableInfoScope { table := name! "pragma_table_info", alias := none, arguments := some [.string argument] } argument table.infoRows) []
-      (some (.compare .eq (.identifier (name! "name") .none) (.string bytes)))
-      (some (.compare .eq (comparisonAffinity (some .blob) none) (.column 1) (.literal (.text bytes)))) :=
-    FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
-      (.literal (.text bytes)) .binary, none))
-      (by simp [namesAlias]) (by simp [sql_simp])
-  refine Iff.trans ((by simpa only [Output.hasRows, Bool.not_eq_true', List.isEmpty_eq_false_iff, ne_eq, Resolved.normalForm_eq_nil, List.map_eq_nil_iff, List.filter_eq_nil_iff, Classical.not_forall, Classical.not_not, exists_prop] using (Holds.iff_of_outputOn (query := isQuery) (Script.outputOn_tableInfo (script := script) (namedSource := rfl) (current := rfl) head rfl (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves
-    (by simp [sql_simp]))))) (Iff.trans ?_ (Iff.trans (CatalogTable.exists_pragmaRow_name table argument
-      (fun cell => cell = Value.text bytes)) ?_))
-  · refine exists_congr fun row => and_congr_right fun _ => ?_
-    simp [sql_simp, Resolved.comparisonOperands, comparisonAffinity, Value.isNull, Comparison.holds]
+  refine ((tableInfo_results db argument bytes position table head found notFunction notView _).trans
+    (Resolved.Query.forall_possibleResults_ne_nil_plain rfl rfl rfl rfl rfl)).trans
+    (Iff.trans ?_ (Iff.trans (CatalogTable.exists_pragmaRow_name table argument (fun cell => cell = Value.text bytes)) ?_))
+  · simp only [Resolved.Query.simple, Option.all_some, pragmaRows]
+    refine exists_congr fun row => and_congr_right fun _ => ?_
+    simp [sql_simp, nameCondition, Resolved.comparisonOperands, comparisonAffinity, Value.isNull, Comparison.holds]
     intro named
     rw [named]
   · simp
@@ -109,8 +143,9 @@ theorem shop_has_no_column_named_with_a_capital :
 set_option doc.verso true
 
 /-- Over every database with an invoices table and no table or view shadowing the pragma function, the status-name query
-is empty exactly when its name comparison is false on every pragma row, and it never fails. Proof sketch: resolve the
-name cell once, then apply {name}`Script.outputOn_tableInfo`. -/
+is empty exactly when its name comparison is false on every pragma row, and it never fails. Proof sketch:
+{name}`tableInfo_results` with the plain emptiness rule; one of {lit}`Holds` and {lit}`Empty` holds, and neither allows
+an error. -/
 theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
     (notFunction : db.raw.catalog.findTable (name! "pragma_table_info") = none)
@@ -120,20 +155,19 @@ theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : C
         Resolved.truthy ((Resolved.Expr.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
           (.literal (.text (bytes! "status"))) .binary).eval (Resolved.EvalContext.bound []) row) = false) ∧
     ¬ Fails (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") db := by
-  have info := Catalog.tableInfoRows_of_findTable _ _ _ _ found
-  have resolves : FilterResolves runContext.profile.dqsDml
-      (tableInfoScope { table := name! "pragma_table_info", alias := none, arguments := some [.string (bytes! "invoices")] } (bytes! "invoices") table.infoRows) []
-      (some (.compare .eq (.identifier (name! "name") .none) (.string (bytes! "status"))))
-      (some (.compare .eq (comparisonAffinity (some .blob) none) (.column 1) (.literal (.text (bytes! "status"))))) :=
-    FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
-      (.literal (.text (bytes! "status"))) .binary, none)) (by simp [namesAlias]) (by simp [sql_simp])
-  constructor
-  · exact (by simpa only [Output.hasNoRows, List.isEmpty_iff, Resolved.normalForm_eq_nil, List.map_eq_nil_iff, List.filter_eq_nil_iff, Bool.not_eq_true, Option.all_some] using (Empty.iff_of_outputOn (Script.outputOn_tableInfo (script := (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'")) (namedSource := rfl) (current := rfl) (head := rfl) rfl
-      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp]))))
-  · exact (by
-    rw [Fails.iff_of_outputOn (Script.outputOn_tableInfo (script := (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'")) (namedSource := rfl) (current := rfl) (head := rfl) rfl
-      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction notView info resolves (by simp [sql_simp]))]
-    simp [Output.isError])
+  have results := tableInfo_results (script := sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'")
+    db (bytes! "invoices") (bytes! "status") position table rfl found notFunction notView
+  have holds : Holds (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") db ↔ _ :=
+    (results _).trans (Resolved.Query.forall_possibleResults_ne_nil_plain rfl rfl rfl rfl rfl)
+  have empty : Empty (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") db ↔ _ :=
+    (results _).trans (Resolved.Query.forall_possibleResults_eq_nil_plain rfl rfl rfl rfl rfl)
+  simp only [Resolved.Query.simple, Option.all_some, pragmaRows, nameCondition] at holds empty
+  refine ⟨empty, fun fails => ?_⟩
+  by_cases kept : ∃ row ∈ table.infoRows.map (· ++ [Value.text (bytes! "invoices"), Value.null]),
+      Resolved.truthy ((Resolved.Expr.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
+        (.literal (.text (bytes! "status"))) .binary).eval (Resolved.EvalContext.bound []) row) = true
+  · exact Holds.not_fails (holds.mpr kept) fails
+  · exact Empty.not_fails (empty.mpr fun row member => by simpa using fun same => kept ⟨row, member, same⟩) fails
 
 /-- An existing table whose schema has no status column. The pragma query succeeds with no matching row. -/
 def noStatus : Database := db! r"CREATE TABLE invoices (id INTEGER PRIMARY KEY);"

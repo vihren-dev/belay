@@ -75,7 +75,7 @@ theorem metadata_run (context : Resolved.EvalContext) (database : Model.Database
       ((rows.map (· ++ [.text (bytes! "ledger"), .null])).filter
         (fun row => Resolved.truthy (condition.eval context row))).map (fun _ => [.integer 1]) := by
   apply one_run (source := {rows := rows.map (· ++ [.text (bytes! "ledger"), .null]), width := 8, fault := .none})
-  · exact Resolved.Query.source_pragma_fixed context _ database 8 _ rfl
+  · exact Resolved.Query.source_pragma context database none _ (.fixed 8 _) _ rfl rfl
   · rfl
   · rfl
   · exact plain

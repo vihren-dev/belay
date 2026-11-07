@@ -1,4 +1,7 @@
 import Belay.Sqlite.Model.QueryFunctions
+import Belay.Sqlite.Model.StatementCalm
+import Belay.Sqlite.Model.SimpleQueryLaws
+import Belay.Sqlite.Model.TableInfoResolution
 
 set_option doc.verso true
 
@@ -56,5 +59,25 @@ theorem Query.source_each_fault (context : EvalContext) (database : Database) (i
   simp [Query.source, single, List.foldlM, QuerySource.join, failed, joinRow, joinMatches,
     QuerySource.matches, bind, Option.bind, pure, Except.toOption]
   rfl
+
+/-- For every pragma rows and condition that is calm, the statement of the simple query of the pragma source with that
+condition and the literal one is calm ({name}`Resolved.Statement.Calm`). Proof sketch: the expressions of the statement are
+the condition and the literal, and a pragma source has no expression. -/
+theorem Statement.Calm.selectOne_pragma (pragma : Resolved.PragmaRows) (condition : Option Resolved.Expr)
+    (calm : ∀ expression ∈ condition.toList, expression.Calm) :
+    (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.pragma pragma] condition
+      [.scalar (.literal (.integer 1))] ["1"]) []).Calm := by
+  intro expression member
+  simp only [Resolved.Statement.clockExpressions, Resolved.Query.expressions, Resolved.Query.keptExpressions,
+    Resolved.Query.simple, Resolved.QuerySource.pragma, Resolved.QuerySource.expressions, List.mem_append,
+    List.mem_flatMap, List.flatMap_nil, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false] at member
+  have literal : (Resolved.Expr.literal (.integer 1)).Calm := by
+    simp [Resolved.Expr.Calm, Resolved.Expr.any, Resolved.Expr.isFallibleCall, Resolved.Expr.readsClockHere,
+      Resolved.Expr.readsCounterHere]
+  simp only [Resolved.Output.scalars, Resolved.Output.operands, List.mem_singleton, List.not_mem_nil, exists_eq_left,
+    List.map_nil, or_false, Option.toList_none] at member
+  rcases member with member | rfl
+  · exact calm expression member
+  · exact literal
 
 end Belay.Sqlite.Model.Resolved
