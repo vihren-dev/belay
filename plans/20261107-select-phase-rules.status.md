@@ -1,6 +1,6 @@
 # Compositional SELECT proofs: task status
 
-Date: 2026-11-07. Status: IN PROGRESS (stage 3 of the working sequence).
+Date: 2026-11-07. Status: IN PROGRESS (stage 4 of the working sequence).
 Audience: the implementation team.
 Task: [Compositional SELECT proofs](20261107-select-phase-rules.task.md).
 Specification: [ADR 0027](../docs/adr-0027-compositional-select-proofs.md),
@@ -536,6 +536,8 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `Expr.evaluate_in_truthy_eq_exists_of_rowidAlias` had no caller and are deleted. The inventory has
   no Required or Candidate row left. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: stage 3 end checks at `aa097c57`. `just test-full` passed (377 tests) and
+  `just verdict` passed, with no prediction change.
 
 ## Working sequence
 
