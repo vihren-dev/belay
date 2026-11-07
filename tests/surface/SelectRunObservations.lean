@@ -5,37 +5,13 @@ set_option sql.check false
 set_option maxRecDepth 8192
 
 /-! Checks of the run observations of ADR 0027 D2 ({lit}`Run.returnsResult`, {lit}`Run.returnsRows` and
-{lit}`Run.returnsError`) and of the claims {lit}`Holds`, {lit}`Empty` and {lit}`Fails` that are now
-abbreviations of them. The migration witnesses prove that each claim has the truth value of its earlier
-definition over the output of the query on every query script and database; they stay until the last
-contract change of the task, then go (ADR 0025 D4). The probes run the model on a concrete database for
-each output shape: rows, a choice of results, an error, an unmodeled stop, an empty choice and more than
-one output. -/
+{lit}`Run.returnsError`) and of the claims {lit}`Holds`, {lit}`Empty` and {lit}`Fails`, which are
+abbreviations of them. The probes run the model on a concrete database for each output shape: rows, a
+choice of results, an error, an unmodeled stop, an empty choice and more than one output. -/
 
 namespace SelectRunObservations
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
-
-/-- Migration witness: for every query script and database, {name}`Holds` is the earlier definition, a
-row in each result of the output of the query. -/
-theorem holds_is_earlier (q : Script) (db : Database) (query : q.isQuery = true) :
-    Holds q db query ↔ (q.outputOn db).any Output.hasRows = true := by
-  obtain ⟨_, _, _, found⟩ := Script.outputOn_isQuery query db
-  rw [Holds.iff_of_outputOn found query, found, Option.any_some]
-
-/-- Migration witness: for every query script and database, {name}`Belay.Sqlite.Empty` is the earlier definition, no
-row in any result of the output of the query. -/
-theorem empty_is_earlier (q : Script) (db : Database) (query : q.isQuery = true) :
-    Belay.Sqlite.Empty q db query ↔ (q.outputOn db).any Output.hasNoRows = true := by
-  obtain ⟨_, _, _, found⟩ := Script.outputOn_isQuery query db
-  rw [Empty.iff_of_outputOn found query, found, Option.any_some]
-
-/-- Migration witness: for every query script and database, {name}`Fails` is the earlier definition, an
-error output of the query. -/
-theorem fails_is_earlier (q : Script) (db : Database) (query : q.isQuery = true) :
-    Fails q db query ↔ (q.outputOn db).any Output.isError = true := by
-  obtain ⟨_, _, _, found⟩ := Script.outputOn_isQuery query db
-  rw [Fails.iff_of_outputOn found query, found, Option.any_some]
 
 /-- Two non-NULL values, for a query whose one-row window has two permitted results. -/
 def sample : Database := db! r"
@@ -87,9 +63,6 @@ theorem bridge_instance (db : Database) (env : Env) (property : List (List Value
         | .ok rows => property rows | .error _ => False) (ExecutionContext.initial db env) :=
   Run.returnsResult_query_iff rfl db env property
 
-#print axioms holds_is_earlier
-#print axioms empty_is_earlier
-#print axioms fails_is_earlier
 #print axioms rows_observed
 #print axioms choice_observed
 #print axioms error_observed

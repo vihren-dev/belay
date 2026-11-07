@@ -668,6 +668,17 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_select_sources_test.py`, `surface_select_procedure_test.py`, `surface_select_rules_test.py`,
   `surface_select_automation_test.py`, `surface_s6_automation_test.py`; Nix results at the end of the
   stage.
+- 2026-11-07: deletion of the experiments and the migration witnesses (stage 4). The experiments
+  `tests/surface/SelectAutomationPhaseRules.lean`, `SelectAutomationPhaseBridge.lean` and
+  `SelectAutomationPhases.lean` are deleted with their test (`test_select_phase_rules_compose`); the
+  public rules of `packages/belay` and the A fixtures replace them. The ADR and
+  `docs/select-automation-review.md` name them as deleted. The migration witnesses `holds_is_earlier`,
+  `empty_is_earlier` and `fails_is_earlier` (`SelectRunObservations.lean`) are deleted (ADR 0025 D4):
+  the last change of their shared contract (`Holds`, `Empty` and `Fails` as abbreviations of the run
+  observations) was in stage 1, and their Nix acceptance against it is the stage 3 `just test-full` at
+  `aa097c57`. The probes of the run observations stay. Checks for the commit: `tests/docs_test.py`,
+  `tests/surface_select_rules_test.py::test_run_observations` and
+  `tests/surface_select_automation_test.py`; Nix results at the end of the stage.
 
 ## Working sequence
 

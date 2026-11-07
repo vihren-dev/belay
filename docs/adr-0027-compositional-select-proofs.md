@@ -312,18 +312,19 @@ Retained experiments test feasibility and current boundaries, not the existence
 of the proposed tactic.
 
 The deep review of 2026-11-06 asked for evidence that phase rules compose
-before the implementation estimate is trusted. Three retained experiments
-answer it:
-[SelectAutomationPhaseRules.lean](../tests/surface/SelectAutomationPhaseRules.lean)
-states nine phase rules (projection in scalar and grouped form, grouping, the
+before the implementation estimate is trusted. Three experiments answered
+it. The implementation deleted them when the public rules of D4 replaced
+them; they stay in the history of the repository:
+`tests/surface/SelectAutomationPhaseRules.lean`
+stated nine phase rules (projection in scalar and grouped form, grouping, the
 group row, the window, DISTINCT and the alternatives of a query without a
 window) for every query that meets the phase's own premises;
-[SelectAutomationPhaseBridge.lean](../tests/surface/SelectAutomationPhaseBridge.lean)
-states the D2 observer over an output and the quiet premises under which a
+`SelectAutomationPhaseBridge.lean`
+stated the D2 observer over an output and the quiet premises under which a
 calm statement of one query over one table outputs the query's possible
 results; and
-[SelectAutomationPhases.lean](../tests/surface/SelectAutomationPhases.lean)
-proves the schema projection of `SelectAutomationSchema.lean` and a grouped
+`SelectAutomationPhases.lean`
+proved the schema projection of `SelectAutomationSchema.lean` and a grouped
 `HAVING` query over arbitrary databases through those rules only, with
-concrete witnesses for every premise. The rules are experiment fixtures and
+concrete witnesses for every premise. The rules were experiment fixtures and
 the first drafts of D4's rules, not the public rule library.

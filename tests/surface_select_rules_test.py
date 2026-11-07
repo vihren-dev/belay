@@ -12,10 +12,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 def test_run_observations(runtime_root: Path, tmp_path: Path) -> None:
     """`Run.returnsResult`, `Run.returnsRows` and `Run.returnsError` read rows, a nonempty choice and
-    errors, and refuse unmodeled stops, empty choices and several outputs; `Holds`, `Empty` and `Fails`
-    keep their earlier truth values (migration witnesses); the successful-result bridge applies to a
-    concrete SELECT. Every proof has only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("SelectRunObservations", 9),), timeout=60)
+    errors, and refuse unmodeled stops, empty choices and several outputs, also through `Holds`, `Empty`
+    and `Fails`; the successful-result bridge applies to a concrete SELECT. Every proof has only logical
+    axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectRunObservations", 6),), timeout=60)
 
 
 def test_execution_rule(runtime_root: Path, tmp_path: Path) -> None:
