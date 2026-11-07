@@ -49,9 +49,12 @@ def test_cardinality_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance case A04 through the result and projection rules (`Query.perm_of_mem_possibleResults_plain`,
     `Run.returnsResult.mono`): a plain projection is a permutation of the stored rows' cells, so it keeps
     their number and duplicates, and a filter bounds the number of rows; a property of each row gives no
-    number of rows and no distinct rows. Every proof has only logical axioms."""
+    number of rows and no distinct rows. Existence and emptiness (`Query.forall_possibleResults_ne_nil_plain`,
+    `Query.forall_possibleResults_eq_nil_plain`): `Holds` and `Empty` of a filter over every database are a
+    kept row and no kept row, with an instance of each side. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectCardinalityCases", 5)),
                        timeout=60)
+    check_module_chain(runtime_root, tmp_path, (("SelectExistenceCases", 3),), timeout=60)
 
 
 def test_expression_cases(runtime_root: Path, tmp_path: Path) -> None:

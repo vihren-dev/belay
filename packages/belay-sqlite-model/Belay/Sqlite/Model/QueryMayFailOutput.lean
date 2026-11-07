@@ -1,4 +1,5 @@
-import Belay.Sqlite.Model.SimpleTableOutput
+import Belay.Sqlite.Model.SimpleQuerySteps
+import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.StatementQuiet
 import Belay.Sqlite.Model.SelectOneResolution
 

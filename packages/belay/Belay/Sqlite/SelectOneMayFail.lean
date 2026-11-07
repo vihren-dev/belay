@@ -1,4 +1,5 @@
-import Belay.Sqlite.SelectOneFrom
+import Belay.Sqlite.QueryBridge
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
@@ -17,7 +18,8 @@ some part of the condition may fail ({name}`Resolved.Expr.mayFailOn`) on the emp
 in the context of the values, none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the
 database. The condition may be true for a row or for no
 row. The source reference has no indexed query.
-The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_selectOne` and {name}`resolvedStepOutput_simpleTable_unmodeled`. -/
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`Script.outputOn_query` with the resolution of
+{name}`resolveStatement_select_one_from`, and {name}`resolvedStepOutput_simpleTable_unmodeled`. -/
 theorem Script.not_claims_selectOne_of_mayFail
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
     {filter : Option Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)}
@@ -36,7 +38,9 @@ theorem Script.not_claims_selectOne_of_mayFail
     { shape := table, rows := db.raw.rows.getD position [] } condition _ _
     (Database.table_of_findTable db.raw _ position table found) (Resolved.Statement.Quiet.selectOne position condition quiet)
     member inCondition fails
-  have observed := Script.outputOn_selectOne head namedSource current arguments found resolves
+  have observed := Script.outputOn_query script db _ parameters rest _ [] _ head
+    (resolveStatement_select_one_from runContext db.raw.connection.resolveState reference filter position table condition
+      namedSource current arguments found resolves)
   rw [Holds.iff_of_outputOn observed isQuery, Empty.iff_of_outputOn observed isQuery,
     Fails.iff_of_outputOn observed isQuery, output.1, output.2.1, output.2.2]
   simp

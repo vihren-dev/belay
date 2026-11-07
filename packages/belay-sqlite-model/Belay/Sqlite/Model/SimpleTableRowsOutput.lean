@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.PossibleResultsLaws
 import Belay.Sqlite.Model.SimpleResultsLaws
-import Belay.Sqlite.Model.SimpleTableOutput
+import Belay.Sqlite.Model.SimpleQuerySteps
+import Belay.Sqlite.Model.TableSourceLaws
 
 set_option doc.verso true
 

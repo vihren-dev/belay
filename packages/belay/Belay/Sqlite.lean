@@ -121,7 +121,6 @@ import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.QueryBridge
 import Belay.Sqlite.QueryCases
 import Belay.Sqlite.SqlCommand
-import Belay.Sqlite.SelectOneFrom
 import Belay.Sqlite.SqlSimp
 import Belay.Sqlite.SqlSimpLaws
 import Belay.Sqlite.ExistsQuery

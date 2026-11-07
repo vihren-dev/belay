@@ -130,6 +130,23 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   alternative keep their own traces, and an empty choice returns no result. Tests:
   `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_layers_test.py`
   and `tests/test_model_package.py` except its installed-package test.
+- 2026-11-07: retirement of `SelectOneFrom`. The existence and emptiness rules
+  (`Query.forall_possibleResults_ne_nil_plain`, `Query.forall_possibleResults_eq_nil_plain`) and
+  the equivalence of the runs of `send` and `query` for one statement
+  (`Run.send_returnsResult_iff_query`, `Run.send_returnsError_iff_query`). A04 existence and
+  emptiness (`tests/surface/SelectExistenceCases.lean`): `Holds`, `Empty` and not `Fails` of
+  `SELECT 1 FROM invoices WHERE amount = 0` over every database, with an instance of each side;
+  it takes the place of `tests/surface/ClaimsSelectOne.lean`. The guide fixtures
+  `AddCustomerQueries` and `CustomerInsertQueries` prove their `Holds` claims through the phase
+  rules. Deleted: `Belay/Sqlite/SelectOneFrom.lean` (131 lines), `Model/SimpleTableOutput.lean`
+  (67), `tests/surface/ClaimsSelectOne.lean` (100); `SelectOneMayFail` reads the resolution of
+  `resolveStatement_select_one_from` itself. The other `Simple*` laws stay for now: the count,
+  duplicate-key, no-FROM, EXISTS and may-fail families of stages 2 and 3, the two-state and
+  certified-output laws and the `SelectAutomation*` experiments use them. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_layers_test.py`,
+  `tests/surface_claims_test.py`, `tests/surface_s6_automation_test.py`,
+  `tests/surface_assertion_examples_test.py` and `tests/test_model_package.py` except its
+  installed-package test.
 
 ## Working sequence
 

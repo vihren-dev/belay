@@ -338,7 +338,6 @@ import Belay.Sqlite.Model.StatementCalm
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.SimpleStatementResolution
 import Belay.Sqlite.Model.PrepareErrorOutput
-import Belay.Sqlite.Model.SimpleTableOutput
 import Belay.Sqlite.Model.SelectOneResolution
 import Belay.Sqlite.Model.ExprEvalLaws
 import Belay.Sqlite.Model.SingleSourceNameLaws

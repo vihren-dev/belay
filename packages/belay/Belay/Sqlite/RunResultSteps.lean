@@ -95,4 +95,21 @@ theorem Run.send_returnsError_iff {script : Script} (one : script.statements.len
     have ends := (runScriptStep_continued step).2
     simp [SqlRun.ofScript, runScriptFrom, step, ScriptRun.ended, ends, RunStep.output]
 
+/-- For every script of one statement, database, environment and property {lit}`Q` of a result: the
+run of the script ({name}`send`) returns a result with {lit}`Q` exactly when the run of its program
+{name}`query` does. Proof sketch: both are the output of the same step
+({name}`Run.send_returnsResult_iff`, {name}`Run.query_returnsResult_iff`). -/
+theorem Run.send_returnsResult_iff_query {script : Script} (one : script.statements.length = 1) (db : Database)
+    (env : Env) (property : List (List Value) → Prop) :
+    (db.run script env).returnsResult property ↔ (db.run (query script one) env).returnsResult property :=
+  (Run.send_returnsResult_iff one db env property).trans (Run.query_returnsResult_iff one db env property).symm
+
+/-- For every script of one statement, database, environment and property {lit}`E` of a result code:
+the run of the script ({name}`send`) returns an error with {lit}`E` exactly when the run of its
+program {name}`query` does. Proof sketch: as {name}`Run.send_returnsResult_iff_query`. -/
+theorem Run.send_returnsError_iff_query {script : Script} (one : script.statements.length = 1) (db : Database)
+    (env : Env) (property : Nat → Prop) :
+    (db.run script env).returnsError property ↔ (db.run (query script one) env).returnsError property :=
+  (Run.send_returnsError_iff one db env property).trans (Run.query_returnsError_iff one db env property).symm
+
 end Belay.Sqlite

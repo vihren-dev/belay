@@ -62,7 +62,9 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
 
 /-- For every database, id, name, and catalog entry of {lit}`customers` with its first two columns: the
 assertion {name}`aCustomerHasTheIdAndName` holds exactly when a scanned row satisfies the id and the name
-conditions. Proof sketch: the resolution of the query, then the laws of the row count. -/
+conditions. Proof sketch: {name}`resolveStatement_select_one_from` resolves the query,
+{name}`Run.query_returnsResult_calmTable` reduces the claim to the results over the scan, and
+{name}`Resolved.Query.forall_possibleResults_ne_nil_plain` to a kept row. -/
 theorem a_customer_has_the_id_and_name_iff (db : Database) (id : Int64) (name : String) (position : Nat) (table : CatalogTable)
     (idCell nameCell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -78,9 +80,15 @@ theorem a_customer_has_the_id_and_name_iff (db : Database) (id : Int64) (name : 
     (term := .and (.compare .eq (.identifier (name! "id") .none) (.parameter 1)) (.compare .eq (.identifier (name! "name") .none) (.parameter 2))) (by simp [namesAlias])
     (result := (.and (equalsParameter idCell 0 1) (equalsParameter nameCell 1 2), none))
     (by simp [sql_simp, idAt, nameAt, idCellAt, nameCellAt, equalsParameter]; constructor <;> rfl)
-  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
-  · simp [sql_simp, equalsParameter]
-  · simp [sql_simp]
+  have resolved := resolveStatement_select_one_from runContext (db.raw.connection Env.default.counters).resolveState
+    { table := name! "customers", alias := none } _ position table _ rfl rfl rfl found resolves
+  rw [Holds, Run.send_returnsResult_iff_query (script := aCustomerHasTheIdAndName id name) rfl,
+    Run.query_returnsResult_calmTable (script := aCustomerHasTheIdAndName id name) rfl rfl db Env.default resolved rfl
+      (Database.table_of_findTable _ _ _ _ found)
+      (Resolved.Statement.Calm.selectOne position _ (by simp [sql_simp, equalsParameter])) rfl rfl rfl
+      (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
+    Resolved.Query.forall_possibleResults_ne_nil_plain rfl rfl rfl rfl rfl]
+  simp [Resolved.Query.simple, sql_simp]
 
 /-- The database with the new row in the table keeps the catalog, so the table is still found. -/
 theorem found_after_insert {db : Database} {id : Int64} {name : String} (site : CustomerInsertSite db id name)

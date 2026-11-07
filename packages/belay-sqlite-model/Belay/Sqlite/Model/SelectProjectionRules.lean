@@ -7,7 +7,7 @@ sublist of the source rows, and a query without aggregation, {lit}`DISTINCT` or 
 one result row for each row that {lit}`WHERE` keeps ({lit}`Query.rowOutput`).
 With the result rules ({lit}`SelectWindowRules.lean`), every result that the model permits for such a
 query is a permutation of the result rows of a sublist of the kept rows, and of all of them without
-a window. -/
+a window; so without a window each result has a row exactly when {lit}`WHERE` keeps one. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -96,5 +96,65 @@ theorem Query.perm_of_mem_possibleResults_plain {context : EvalContext} {query :
     result.Perm ((filtered context query rows).map (query.rowOutput context)) :=
   Query.uniqueRecords_outputs_plain context single noDistinct plain rows ▸
     Query.perm_of_mem_possibleResults offset limit member
+
+/-- Plain existence rule: for every context, query that is no compound and has no {lit}`DISTINCT`,
+aggregation, {lit}`OFFSET` or {lit}`LIMIT`, and rows, each result that the model permits has a row
+exactly when {lit}`WHERE` keeps some row: a row of the rows for which the condition, if any, is
+true. Proof sketch: each result is a permutation of the result rows of the kept rows
+({name}`Query.perm_of_mem_possibleResults_plain`), and the model permits some result
+({name}`Query.possibleResults_ne_nil`). -/
+theorem Query.forall_possibleResults_ne_nil_plain {context : EvalContext} {query : Query}
+    {rows : List (List Value)} (single : query.compound = none) (noDistinct : query.distinct = none)
+    (plain : query.aggregate = false) (offset : query.offset = 0) (limit : query.limit = none) :
+    (∀ result ∈ query.possibleResults context rows, result ≠ []) ↔
+      ∃ row ∈ rows, query.filter.all (fun condition => truthy (condition.eval context row)) = true := by
+  have kept (result : List (List Value)) (member : result ∈ query.possibleResults context rows) :
+      result ≠ [] ↔ filtered context query rows ≠ [] := by
+    rw [← List.length_pos_iff, ← List.length_pos_iff,
+      (Query.perm_of_mem_possibleResults_plain single noDistinct plain offset limit member).length_eq, List.length_map]
+  have someKept : filtered context query rows ≠ [] ↔
+      ∃ row ∈ rows, query.filter.all (fun condition => truthy (condition.eval context row)) = true := by
+    constructor
+    · intro nonempty
+      obtain ⟨row, member⟩ := List.exists_mem_of_ne_nil _ nonempty
+      exact ⟨row, (mem_filtered context query rows row).mp member⟩
+    · rintro ⟨row, inRows, holds⟩
+      exact List.ne_nil_of_mem ((mem_filtered context query rows row).mpr ⟨inRows, holds⟩)
+  rw [← someKept]
+  constructor
+  · intro every
+    obtain ⟨result, member⟩ := List.exists_mem_of_ne_nil _ (Query.possibleResults_ne_nil context query rows)
+    exact (kept result member).mp (every result member)
+  · exact fun some result member => (kept result member).mpr some
+
+/-- Plain emptiness rule: for every context, query that is no compound and has no {lit}`DISTINCT`,
+aggregation, {lit}`OFFSET` or {lit}`LIMIT`, and rows, each result that the model permits has no row
+exactly when {lit}`WHERE` keeps no row: for each row of the rows, the condition is present and not
+true. Proof sketch: each result is a permutation of the result rows of the kept rows
+({name}`Query.perm_of_mem_possibleResults_plain`), and the model permits some result
+({name}`Query.possibleResults_ne_nil`). -/
+theorem Query.forall_possibleResults_eq_nil_plain {context : EvalContext} {query : Query}
+    {rows : List (List Value)} (single : query.compound = none) (noDistinct : query.distinct = none)
+    (plain : query.aggregate = false) (offset : query.offset = 0) (limit : query.limit = none) :
+    (∀ result ∈ query.possibleResults context rows, result = []) ↔
+      ∀ row ∈ rows, query.filter.all (fun condition => truthy (condition.eval context row)) = false := by
+  have kept (result : List (List Value)) (member : result ∈ query.possibleResults context rows) :
+      result = [] ↔ filtered context query rows = [] := by
+    rw [← List.length_eq_zero_iff, ← List.length_eq_zero_iff,
+      (Query.perm_of_mem_possibleResults_plain single noDistinct plain offset limit member).length_eq, List.length_map]
+  have noneKept : filtered context query rows = [] ↔
+      ∀ row ∈ rows, query.filter.all (fun condition => truthy (condition.eval context row)) = false := by
+    rw [List.eq_nil_iff_forall_not_mem]
+    exact ⟨fun absent row inRows => by
+        simpa [mem_filtered, inRows] using absent row,
+      fun every row member => by
+        have := (mem_filtered context query rows row).mp member
+        simp [every row this.1] at this⟩
+  rw [← noneKept]
+  constructor
+  · intro every
+    obtain ⟨result, member⟩ := List.exists_mem_of_ne_nil _ (Query.possibleResults_ne_nil context query rows)
+    exact (kept result member).mp (every result member)
+  · exact fun none result member => (kept result member).mpr none
 
 end Belay.Sqlite.Model.Resolved
