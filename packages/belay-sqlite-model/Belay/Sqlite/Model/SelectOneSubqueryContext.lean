@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.SelectOneOutput
+import Belay.Sqlite.Model.NoFromQuerySteps
 import Belay.Sqlite.Model.SimpleSubqueryRun
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.ExprEvalLaws

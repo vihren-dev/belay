@@ -64,7 +64,7 @@ per-family characterization. The owners are named as they exist on main.
 
 | Owner on main | Status |
 | --- | --- |
-| `resolvedStepOutput_selectOne` in `SelectOneOutput.lean` (35) and the per-family output files below that apply it (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Required |
+| `resolvedStepOutput_selectOne` in `SelectOneOutput.lean` (35) and the per-family output files below that apply it (count, scalar column, EXISTS, NOT EXISTS, duplicate key) | Deleted: after the retirement of the surface forms no caller remained |
 | `AggregateQueryOutput.lean` | Required, after the `aggregate` phase rule exists |
 | `QueryOutputFacts.lean` (98): `Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`, `Connection.runOn_of_found`, `normalForm_eq_nil` | Retained: the execution bridge of D5 uses them |
 | `QueryStatementOutput.lean`: `Fault.ne_must_iff_none`, `resolvedStepOutput_query_hasRows`, `_hasNoRows`, `_isError` | Retained: generic observation laws |
@@ -75,7 +75,8 @@ per-family characterization. The owners are named as they exist on main.
 
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
-| `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `SelectOneOutput` | 440 | Required |
+| `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SelectOneOutput` | 277 | Deleted: after the retirement of the surface forms no caller remained |
+| `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput` | 164 | Required |
 | `DuplicateKeyOutput` | 109 | Deleted, with `DuplicateKeyQuery.lean` and `FilteredDuplicateKeyQuery.lean`; the fixture `SelectDuplicateKeySupport.lean` proves the calmness of the statement and the run of the subquery |
 | `ScalarSubqueryOutput` | 127 | Deleted, with `ColumnQuery.lean`; `Resolved.Statement.Calm.selectOne_scalar` became the general `Resolved.Statement.Calm.selectOne_subquery` in `SelectOneSubqueryContext`, and `Connection.queryContext_tableSubquery_zero`, which only this file used, is deleted |
 | `CountSubqueryOutput` | 116 | Deleted, with `CountQuery.lean`; `Resolved.Statement.Calm.selectOne_count` moved to `SelectOneSubqueryContext`, and the count query `Resolved.Query.countOf` with `Resolved.SubqueryRun.count` to `CountOf` |
@@ -96,7 +97,8 @@ per-family characterization. The owners are named as they exist on main.
 | `AggregateQueryLaws`, `NoFromQuerySteps` | 191 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted |
 | `DuplicateKeyQuery` | 176 | Reduced to 33 lines: it keeps the definitions `Resolved.Query.duplicateKeys`, which `DuplicateKeyResolution` gives, and `Resolved.keptRows`. Its laws are deleted; the fixture `SelectDuplicateKeySupport.lean` keeps their generality, expression keys under `key.Calm` (ADR 0030 D7) |
 | `DuplicateKeyGroupTerm` | 113 | Retained: the resolution of the grouping term (`GroupTermResolves`), which the premises of the support use |
-| `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQueryFaults`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 609 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
+| `SimpleQueryFaults` | 95 | Deleted: `Resolved.Statement.Quiet.selectNoFrom` moves to `SelectSourceRules`, and no caller of its other laws remained |
+| `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 514 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
 | `InSubqueryColumnLaw`, `InSubqueryEqualityLink`, `InSubqueryEvaluate`, `InSubqueryFilterLaw`, `InSubqueryQueryInLaw`, `InSubqueryQueryLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryRowidAlias` | 863 | Candidate: `NotInQuery.lean` and the ADR 0026 D4 equivalences consume part of them. Keep what those consumers need; the rest becomes the `subquery` rule |
 | `SelectStepKeeps` | 133 | Retained: ADR 0025 preservation |
 

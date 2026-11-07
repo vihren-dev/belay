@@ -488,6 +488,14 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `SelectOne*` laws. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
   `surface_select_sources_test.py`, `surface_claims_test.py`, `surface_success_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: retirement of the SELECT-1 outputs (stage 3). `SelectOneOutput.lean`,
+  `SelectOneRowsOutput.lean`, `SelectOneSubqueryOutput.lean` and `SimpleQueryFaults.lean` are
+  deleted: after the retirement of the surface forms no caller of their laws remained, except
+  `Resolved.Statement.Quiet.selectNoFrom`, which moves to `SelectSourceRules.lean` for
+  `SelectFunctionFaultCases.lean`. `SelectOneSubqueryContext.lean` imports `NoFromQuerySteps`
+  directly. The specifications name the deleted owners as removed. Tests: `just dev-build`; locally
+  `tests/surface_select_sources_test.py`, `surface_select_rules_test.py`, `surface_claims_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 
