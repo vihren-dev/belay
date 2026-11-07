@@ -23,7 +23,7 @@ Their current formulas and assumptions remain migration obligations.
 
 | Owning source | Exact name prefix | Exact suffixes to replace |
 | --- | --- | --- |
-| [AggregateQueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateQueryOutput.lean) | `resolvedStepOutput_aggregateTable_` | `hasRows`, `not_hasNoRows`, `isError` |
+| `AggregateQueryOutput` (removed by ADR 0027) | `resolvedStepOutput_aggregateTable_` | `hasRows`, `not_hasNoRows`, `isError` |
 | [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `resolvedStepOutput_scalar_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `resolvedStepOutput_count_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `resolvedStepOutput_exists_` | `hasRows`, `hasNoRows`, `not_isError` |
@@ -40,7 +40,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 
 | Owning source | Exact declarations to replace | Resolver transport to retain |
 | --- | --- | --- |
-| [AggregateQuery](../packages/belay/Belay/Sqlite/AggregateQuery.lean) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
+| `AggregateQuery` (removed by ADR 0027) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
 | [ColumnQuery](../packages/belay/Belay/Sqlite/ColumnQuery.lean) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
 | [CountQuery](../packages/belay/Belay/Sqlite/CountQuery.lean) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
 | [ExistsQuery](../packages/belay/Belay/Sqlite/ExistsQuery.lean) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
