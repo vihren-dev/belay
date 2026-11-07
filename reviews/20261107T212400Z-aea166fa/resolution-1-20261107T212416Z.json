@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-07T21:24:16+00:00",
+  "finding": "20261107T212400Z-aea166fa#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the entry gives the total of the Nix reports, 1,474 tests in 19 suites, and names 377 as the surface suite"
+}
