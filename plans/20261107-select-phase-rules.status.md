@@ -342,6 +342,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `malformed JSON`). Instances: `SELECT count(*)` gives 1 and `count(*)` over the empty `orders`
   gives 0; `PRAGMA table_info(customers)` gives one row of six cells for each column. Native SQLite 3.51.0 gives the
   instance results. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`.
+- 2026-11-07: the tests of the join, subquery, compound, derived, source and window-parameter
+  cases (A05, A06, A15 to A20) move from `tests/surface_select_rules_test.py` to
+  `tests/surface_select_sources_test.py`, a module of the Nix surface suite, so that each file
+  stays under 200 lines. Later stage-3 cases add their tests there. Tests: locally both modules,
+  `tests/test_test_ownership.py`, `tests/test_nix_test_targets.py`.
 
 ## Working sequence
 
