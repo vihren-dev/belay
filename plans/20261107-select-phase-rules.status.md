@@ -538,6 +538,25 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `test_model_package.py` and `lean_packages_test.py`.
 - 2026-11-07: stage 3 end checks at `aa097c57`. `just test-full` passed (377 tests) and
   `just verdict` passed, with no prediction change.
+- 2026-11-07: `sql_select` and `sql_select_rule` (stage 4). In `packages/belay`:
+  `SqlSelectRule.lean` (the attribute, the thirteen phases and the `sql_select_simp` set),
+  `SqlSelectEval.lean` (kernel evaluation of the resolution and the table of a fixed catalog),
+  `SqlSelectSteps.lean` (backward and forward rule steps; a premise proof is checked by the kernel
+  at once, except when the goal shares metavariables with other goals), `SqlSelectLeaf.lean` (the
+  last goal), `SqlSelect.lean` (the procedure), `SelectCatalogExecution.lean` (the execution rule
+  for a catalog fact, `Database.scanAt` and its source rule) and `SqlSelectRules.lean` (the built-in
+  registrations). New model laws: `Query.mem_possibleResults_ungrouped`, `Query.keepsGroup_of_having`,
+  `records_plain`, `Query.rowOutput_eq`, `comparisonOperands_none`, the `Value.isNull` laws of each
+  constructor, `Int.compare_beq_gt` and `Int.ofNat_literal_lt_natCast`; `filterMap_ite_eq_map_filter`
+  now takes a decidable property instead of a Boolean test. Two findings shaped the rules: a
+  definitional (rfl) equation that exposes `truthy` or `Expr.eval` leaves the kernel a gap that it
+  closes by unfolding the evaluator, which exceeds its recursion depth, so such equations are proved
+  theorems (`keepsGroup_of_having`, `records_plain`), and `Resolved.records` is not in the set; and
+  the last goal is simplified once, then its witnesses are tried in the simplified context, which
+  keeps A13 and A14 under the default heartbeat limit. `tests/surface/SelectProcedureCases.lean`
+  proves the core set with `sql_select [schema]`. Tests: `just dev-build`; locally
+  `tests/surface_select_rules_test.py` passes. `test_model_package.py` and `lean_packages_test.py`
+  need the Nix-built runtime root; they run with `just test-full` at the end of the stage.
 
 ## Working sequence
 

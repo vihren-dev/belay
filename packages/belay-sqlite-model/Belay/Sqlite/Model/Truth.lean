@@ -69,6 +69,26 @@ gives an integer, and the definitions compute. -/
 /-- NULL is NULL. Proof sketch: the definition computes. -/
 @[simp] theorem Value.isNull_null : Value.null.isNull = true := rfl
 
+/-- An integer is not NULL. -/
+theorem Value.isNull_integer (number : Int) : (Value.integer number).isNull = false := rfl
+
+/-- A real is not NULL. -/
+theorem Value.isNull_real (bits : UInt64) : (Value.real bits).isNull = false := rfl
+
+/-- A text is not NULL. -/
+theorem Value.isNull_text (bytes : List UInt8) : (Value.text bytes).isNull = false := rfl
+
+/-- A blob is not NULL. -/
+theorem Value.isNull_blob (bytes : List UInt8) : (Value.blob bytes).isNull = false := rfl
+
+/-- For every value, {name}`Value.isNull` is true exactly when the value is NULL. -/
+theorem Value.isNull_iff (value : Value) : value.isNull = true ↔ value = .null := by
+  cases value <;> simp [Value.isNull]
+
+/-- For every value, {name}`Value.isNull` is false exactly when the value is not NULL. -/
+theorem Value.isNull_eq_false_iff (value : Value) : value.isNull = false ↔ value ≠ .null := by
+  cases value <;> simp [Value.isNull]
+
 /-- For every value: if it is NULL, SQLite does not read it as true. Proof sketch: case analysis
 on the value; only NULL is NULL, and {name}`Resolved.truthy` gives false for it. -/
 theorem Value.truthy_of_isNull {value : Value} (null : value.isNull = true) : Resolved.truthy value = false := by

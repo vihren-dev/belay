@@ -35,15 +35,27 @@ group. A query without {lit}`HAVING` keeps every group. -/
 def Query.keepsGroup (context : EvalContext) (query : Query) (group : List (List Value)) : Bool :=
   query.having.all fun condition => truthy (condition.eval (query.groupContext context group) (query.groupRow context group))
 
-/-- For every test, function and list: keeping the items that pass the test and mapping each kept
-item is the same as mapping each item to an optional value that is present when the item passes. Proof sketch: induction on the
-items, by cases on the test. -/
-theorem filterMap_ite_eq_map_filter {α β : Type} (keep : α → Bool) (make : α → β) (items : List α) :
-    items.filterMap (fun item => if keep item = true then some (make item) else none) =
-      (items.filter keep).map make := by
+/-- For every decidable property, function and list: mapping each item to an optional value that is
+present when the item has the property is the same as keeping the items with the property and mapping
+each kept item. Proof sketch: induction on the items, by cases on the property. -/
+theorem filterMap_ite_eq_map_filter {α β : Type} (keep : α → Prop) [DecidablePred keep] (make : α → β)
+    (items : List α) :
+    items.filterMap (fun item => if keep item then some (make item) else none) =
+      (items.filter fun item => decide (keep item)).map make := by
   induction items with
   | nil => rfl
-  | cons item rest ih => by_cases kept : keep item = true <;> simp [kept, ih]
+  | cons item rest ih => by_cases kept : keep item <;> simp [kept, ih]
+
+/-- HAVING condition rule: for every context and query with the {lit}`HAVING` condition
+{lit}`condition`, the query keeps a group ({name}`Query.keepsGroup`) exactly when the condition is true
+({name}`truthy`) over the row of the group in the context of the group. The equation is a proved one, so
+the simplifier can rewrite with it without a definitional step that the kernel must unfold. -/
+theorem Query.keepsGroup_of_having (context : EvalContext) {query : Query} {condition : Expr}
+    (present : query.having = some condition) :
+    query.keepsGroup context = fun group =>
+      truthy (condition.eval (query.groupContext context group) (query.groupRow context group)) := by
+  funext group
+  simp only [Query.keepsGroup, present, Option.all_some]
 
 /-- Aggregate records rule: for every context, aggregate query and rows, the records of the query
 are the records of its groups ({name}`queryGroups`) that {lit}`HAVING` keeps
@@ -56,7 +68,8 @@ theorem records_aggregate (context : EvalContext) {query : Query} (aggregate : q
       ((queryGroups context query rows).filter (query.keepsGroup context)).map (query.groupRecord context) := by
   unfold records
   simp only [aggregate, ite_true]
-  exact filterMap_ite_eq_map_filter (query.keepsGroup context) (query.groupRecord context) _
+  exact (filterMap_ite_eq_map_filter (fun group => query.keepsGroup context group = true)
+    (query.groupRecord context) _).trans (by simp only [Bool.decide_eq_true])
 
 /-- HAVING rule: for every context, aggregate query, rows and record, the record is a record of the
 query exactly when some group of the query keeps it: a group of {name}`queryGroups` that

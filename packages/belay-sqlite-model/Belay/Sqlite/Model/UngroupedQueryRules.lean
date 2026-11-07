@@ -44,4 +44,17 @@ theorem Query.possibleResults_ungrouped (context : EvalContext) {query : Query} 
     records_ungrouped context aggregate ungrouped noHaving]
   simp [normalForm, stableSort, insertStable]
 
+/-- Ungrouped membership rule: for every context, query with the premises of
+{name}`Query.possibleResults_ungrouped`, rows and result that the model permits for the query over the
+rows, the result is the one row of the group of the rows that {lit}`WHERE` keeps
+({name}`Query.groupRecord`). Proof sketch: {name}`Query.possibleResults_ungrouped` has one element. -/
+theorem Query.mem_possibleResults_ungrouped (context : EvalContext) {query : Query} (single : query.compound = none)
+    (noDistinct : query.distinct = none) (aggregate : query.aggregate = true) (ungrouped : query.groupBy = [])
+    (noHaving : query.having = none) (unordered : query.orderBy = []) (noOffset : query.offset = 0)
+    (noLimit : query.limit = none) {rows result : List (List Value)} (member : result ∈ query.possibleResults context rows) :
+    result = [(query.groupRecord context (filtered context query rows)).1] := by
+  rw [Query.possibleResults_ungrouped context single noDistinct aggregate ungrouped noHaving unordered noOffset
+    noLimit] at member
+  simpa using member
+
 end Belay.Sqlite.Model.Resolved

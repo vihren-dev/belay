@@ -19,6 +19,13 @@ def Query.rowOutput (context : EvalContext) (query : Query) (row : List Value) :
     | .scalar expression => expression.eval context row
     | .aggregate aggregate => aggregate.eval context [row]
 
+/-- For every context and query, the result row function of the query
+({name}`Query.rowOutput`) is the value of each column on the row. -/
+theorem Query.rowOutput_eq (context : EvalContext) (query : Query) :
+    query.rowOutput context = fun row => query.columns.map fun
+      | .scalar expression => expression.eval context row
+      | .aggregate aggregate => aggregate.eval context [row] := rfl
+
 /-- Filter rule: for every context, query and rows, the rows that {lit}`WHERE` keeps
 ({name}`filtered`) are a sublist of the rows. -/
 theorem filtered_sublist (context : EvalContext) (query : Query) (rows : List (List Value)) :
@@ -39,6 +46,23 @@ theorem records_outputs_plain (context : EvalContext) {query : Query} (plain : q
     (records context query rows).map Prod.fst = rows.map (query.rowOutput context) := by
   simp [records, plain, Query.rowOutput, Function.comp_def]
   intro _ _ _ _
+  rfl
+
+/-- Plain records rule: for every context, query without aggregation and rows, the records of the
+query ({name}`records`) are, for each row in order, its output (the value of each scalar column on
+the row, and of each aggregate column over the list of that one row) and its sort values (the value of
+each {lit}`ORDER BY` expression on the row, or the output column that the term names). Proof sketch:
+the branch of {name}`records` without aggregation. -/
+theorem records_plain (context : EvalContext) {query : Query} (plain : query.aggregate = false)
+    (rows : List (List Value)) :
+    records context query rows = rows.map fun row =>
+      let output := query.columns.map fun
+        | .scalar expression => expression.eval context row
+        | .aggregate aggregate => aggregate.eval context [row]
+      (output, query.orderBy.map fun term => match term.key with
+        | .expression expression => expression.eval context row
+        | .output index => output.getD index .null) := by
+  simp only [records, plain]
   rfl
 
 /-- Projection rule: for every context, query that is no compound and has no {lit}`DISTINCT` and
