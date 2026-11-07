@@ -147,6 +147,32 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_claims_test.py`, `tests/surface_s6_automation_test.py`,
   `tests/surface_assertion_examples_test.py` and `tests/test_model_package.py` except its
   installed-package test.
+- 2026-11-07: stage 1 end checks. `just verdict` passed. `just test-full` failed in the
+  documentation inventory: `ComparisonTruthRules` declared the NULL laws of
+  `InValueEqualsLaws` again under the same names, and the decision instances of
+  `Output.returnsResult` and `Output.returnsError` had no docstring. Two `fix:` commits remove the
+  duplicates and document the instances; `just test-full` runs again after them.
+- 2026-11-07: decision on the stage of two families. The claims of the count and duplicate-key
+  forms are subquery-wrapped (`SELECT 1 WHERE (SELECT count(*) …)`,
+  `NOT EXISTS (… GROUP BY … HAVING count(*) > 1)`): their retirement needs the subquery rules
+  (A18, A19) as well as the group and aggregate rules, so it moves to stage 3. Stage 2 retires
+  the aggregate family (`AggregateQuery`, `AggregateQueryOutput`, `ClaimsSum`,
+  `ClaimsAggregateLaws`).
+- 2026-11-07: group, aggregate, HAVING, DISTINCT, order and window rules. `Model/GroupPartition.lean`
+  (the fold of `groups` gives a partition: permutation, formed and apart groups);
+  `Model/SelectGroupRules.lean` (`groups_partition`, `queryGroups_ungrouped`,
+  `queryGroups_grouped`, `queryGroups_count`, `mem_queryGroups`, `Query.groupRow_mem`);
+  `Model/SelectAggregateRules.lean` (`Query.groupRecord`, `Query.keepsGroup`,
+  `records_aggregate`, `mem_records_aggregate`, `records_aggregate_length`, `records_ungrouped`,
+  `records_grouped_nil`, the result-column rules); `Model/AggregateValueRules.lean` (the all-NULL
+  rule of every aggregate, `count(x)` without NULL, the extremum of `min` and `max`,
+  `group_concat` without NULL); `Model/SelectDistinctRules.lean` (`keepFirst_fold`,
+  `sameOutput_comm`, `distinctRecords_rules`, `Query.uniqueRecords_distinct`,
+  `pairwise_sameOutput_perm`); `Model/SelectOrderRules.lean` (`exists_perm_map_eq`,
+  `tieGroups_eq`, `Query.exists_sorted_of_mem_possibleResults` for every window,
+  `Query.exists_sorted_perm_of_mem_possibleResults` without one,
+  `Query.length_of_mem_possibleResults`). Tests: `just dev-build`; locally
+  `tests/test_model_package.py` except its installed-package test.
 
 ## Working sequence
 
