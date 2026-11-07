@@ -196,6 +196,14 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   computed by `decide +kernel`. Tests: locally `tests/surface_select_rules_test.py`.
 - 2026-11-07: review fix (`refactor:`, review `20261107T051539Z-53f7a356`): the A10 model claim
   and its status entry state the native result of the exact fixture correctly.
+- 2026-11-07: A08 and the count rule of A09 (`tests/surface/SelectCountCases.lean`;
+  `result_ungrouped` in `SelectGroupSupport.lean`). Over every database with the catalog of
+  `orders`, `SELECT count(*) FROM orders` returns one row with the number of stored rows, the row
+  of 0 when there is no row; the grouped query of A07 returns no row when there is no stored row;
+  `count(customer)` equals `count(*)` because `customer` is NOT NULL. Contrasts: an empty table
+  still gives the row `[0]`; with a nullable `customer` and one NULL customer the result is
+  `[[0, 1]]`. Native SQLite 3.51.0 gives the same results. Tests: locally
+  `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 

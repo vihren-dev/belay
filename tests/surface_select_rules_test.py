@@ -87,3 +87,14 @@ def test_group_cases(runtime_root: Path, tmp_path: Path) -> None:
     a model claim. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
                        ("SelectHavingCases", 6)), timeout=90)
+
+
+def test_count_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A08 and the count rule of A09 through the ungrouped rule
+    (`records_ungrouped`) and the count evaluation (`Resolved.countRows_eval`,
+    `Aggregate.eval_count_of_notNull`): over every database with the catalog of `orders`, `count(*)` without
+    `GROUP BY` returns one row with the number of stored rows, also 0 for no row, a grouped query over no row
+    returns no row, and `count(customer)` equals `count(*)` for a NOT NULL column; without NOT NULL a NULL
+    customer is not counted. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
+                       ("SelectCountCases", 5)), timeout=90)

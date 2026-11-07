@@ -4,8 +4,9 @@ set_option doc.verso true
 set_option sql.check false
 set_option maxRecDepth 8192
 
-/-! Support of the A07 and A10 acceptance cases of ADR 0027: the table {lit}`orders`, the partition of
-rows by a key ({lit}`KeyPartition`), and the record rule of a query with one grouping term. -/
+/-! Support of the A07 to A10 acceptance cases of ADR 0027: the table {lit}`orders`, the partition of
+rows by a key ({lit}`KeyPartition`), the record rule of a query with one grouping term and the result
+rule of an ungrouped aggregate query. -/
 
 namespace SelectGroupCases
 open Belay.Sqlite
@@ -103,6 +104,24 @@ theorem uniqueRecords_grouped {query : Resolved.Query} {term : Resolved.Expr} {c
   dsimp only
   rw [noDistinct, Resolved.filtered_of_filter_none _ noFilter, Resolved.records_aggregate _ aggregate,
     Resolved.queryGroups_grouped _ (by simp [grouped]), grouped]
+
+/-- Result rule of an ungrouped aggregate query: for every aggregate query without {lit}`GROUP BY`,
+{lit}`HAVING`, {lit}`WHERE`, {lit}`DISTINCT`, compound, {lit}`OFFSET` and {lit}`LIMIT`, every list of rows and
+every result that the model permits in the context without parameters, the result is the one row of
+the group of all the rows ({name}`Resolved.Query.groupRecord`), also when there is no row. Proof
+sketch: the result is a permutation of the records ({name}`Resolved.Query.perm_of_mem_possibleResults`),
+which are the one record of all the rows ({name}`Resolved.records_ungrouped`). -/
+theorem result_ungrouped {query : Resolved.Query} (aggregate : query.aggregate = true) (ungrouped : query.groupBy = [])
+    (noHaving : query.having = none) (noFilter : query.filter = none) (noDistinct : query.distinct = none)
+    (single : query.compound = none) (offset : query.offset = 0) (limit : query.limit = none)
+    {rows result : List (List Value)} (member : result ∈ query.possibleResults (Resolved.EvalContext.bound []) rows) :
+    result = [(query.groupRecord (Resolved.EvalContext.bound []) rows).1] := by
+  have perm := Resolved.Query.perm_of_mem_possibleResults offset limit member
+  rw [Resolved.Query.uniqueRecords, single] at perm
+  dsimp only at perm
+  rw [noDistinct, Resolved.filtered_of_filter_none _ noFilter,
+    Resolved.records_ungrouped _ aggregate ungrouped noHaving] at perm
+  exact List.perm_singleton.mp (by simpa using perm)
 
 /-- For every database with the catalog of {name}`orders`, the catalog has {lit}`orders` at position 0
 with the table {name}`ordersShape`. Proof sketch: the premise fixes the catalog. -/
