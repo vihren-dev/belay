@@ -703,6 +703,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `build-support/tests.nix` is about 840 s. On main CI (Linux, `26b48c3d`), `surfaceS6` already took
   882 s without them; #361 records that cost. Checks for the commit: `tests/test_nix_test_targets.py`,
   `tests/test_ci_scope.py`, `tests/docs_test.py`, then `just test-full`.
+- 2026-11-07: `just test-full` on the suite split (`09bad6fb`) passed: 1,474 tests, no failure. Summed
+  per-test times: `surface` 919 s (377 tests), `surfaceChecks` 310 s (30), `surfaceS6` 531 s (66),
+  `surfaceSelect` 419 s (32). The review of the commit has no findings.
 
 ## Working sequence
 
