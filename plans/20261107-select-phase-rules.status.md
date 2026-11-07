@@ -655,6 +655,19 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   (state the claim about a query, a script or a run of a query, or use `sql_refute (db := database)`).
   The status entry of B10 names its checks and no local results. Checks for the commit:
   `tests/surface_select_procedure_test.py`; Nix results at the end of the stage.
+- 2026-11-07: A21 through the procedure (program composition). `SelectCatalogCheck.lean`: new execution
+  rule `Sql.check_query_ofResolveState`, a SELECT at any context whose connection has the resolution state
+  of a database of the model; the facts read the rows of that context. `Sql.check_query_ofCatalog` is now
+  proved from it, and both are registered (`SqlSelectRules.lean`); the name order tries the catalog rule
+  first. The leaf (`SqlSelectLeaf.finishLeaf`) also tries `assumption` after the simplifier: the rule gives
+  the rows under the evaluated shape of `orders`, and the claim names `ordersShape`, which is the same up to
+  unfolding. `SelectContextCases.big_after` (any program, then the A21 SELECT) is now
+  `Sql.check_bind`, `Sql.check_mono` and `sql_select [ReadsBig, bigAt, big_eq, bigCondition]`;
+  `big_eq` states `Big` as a function, because the simplifier unfolds `Big` only where it is applied. `big_after_delete` composes
+  the delete with it; `big_at` keeps the explicit steps. Checks for the commit: `just dev-build` and
+  `tests/surface_select_sources_test.py`, `surface_select_procedure_test.py`, `surface_select_rules_test.py`,
+  `surface_select_automation_test.py`, `surface_s6_automation_test.py`; Nix results at the end of the
+  stage.
 
 ## Working sequence
 

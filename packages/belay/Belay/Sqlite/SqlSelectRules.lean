@@ -27,6 +27,7 @@ theorem filter_const_true {α : Type} (items : List α) : items.filter (fun _ =>
   List.filter_eq_self.mpr fun _ _ => rfl
 
 attribute [sql_select_rule execution] Run.query_returnsResult_ofCatalog Sql.check_query_ofCatalog
+  Sql.check_query_ofResolveState
 attribute [sql_select_rule source] Database.mem_scanAt
 attribute [sql_select_rule expression] exists_sublist_map_eq Resolved.exists_perm_map_eq
 attribute [sql_select_rule aggregate] Resolved.Query.mem_possibleResults_ungrouped

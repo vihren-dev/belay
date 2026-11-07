@@ -49,7 +49,10 @@ def simpLemmas (goal : MVarId) (hints : Hints) : TacticM (Array (TSyntax ``Parse
   return accepted
 
 /-- Close the last goal: unfold its head, then simplify the goal and the hypotheses with the evaluation
-laws and the hints that are simp lemmas ({name}`simpLemmas`), then try {lit}`decide` and {lit}`omega`. If the goal stays open, a goal that is an
+laws and the hints that are simp lemmas ({name}`simpLemmas`), then try {lit}`decide`, {lit}`omega` and
+{lit}`assumption`. The last one closes a goal that a hypothesis gives up to the unfolding of definitions,
+for example a named table shape of the claim against the evaluated shape that a rule gives. If the goal
+stays open, a goal that is an
 existential takes each hypothesis of the witness type as the witness, the most recent first, and a
 conjunction is closed part by part, in the simplified context. The simplifier runs once for each goal,
 because it is the most expensive step. The result is {lean}`false`, with no change, when the goal stays
@@ -62,7 +65,7 @@ partial def finishLeaf (hints : Hints) (goal : MVarId) : TacticM Bool := do
     | some [] => return true
     | some [next] => pure next
     | _ => pure unfolded
-  for attempt in #[← `(tactic| decide), ← `(tactic| omega)] do
+  for attempt in #[← `(tactic| decide), ← `(tactic| omega), ← `(tactic| assumption)] do
     if ← closesWith unfolded attempt then return true
   let target ← unfolded.withContext do whnfR (← instantiateMVars (← unfolded.getType))
   if target.isAppOfArity ``Exists 2 then

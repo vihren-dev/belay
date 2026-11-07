@@ -71,16 +71,25 @@ theorem big_at (state : ExecutionContext)
   rw [same]
   exact perm
 
+/-- {name}`Big` is the function that gives, for each row, the truth of {name}`bigCondition` on it. The simplifier
+unfolds a definition only where it is applied, and {name}`bigAt` uses {name}`Big` as the argument of a
+filter; with this hint, {lit}`sql_select` unfolds it there. -/
+theorem big_eq : Big = fun order => Resolved.truthy (bigCondition.eval (Resolved.EvalContext.bound []) order) := rfl
+
 /-- A21 after any program: for every program {lit}`first` and context {lit}`state` such that
 {lit}`first` checks at {lit}`state` that each reached context has the resolution state of
 {name}`shop`, the program that runs {lit}`first` and then {name}`bigScript` checks
 {name}`ReadsBig` at {lit}`state`: the SELECT returns the rows of the database that
-{lit}`first` reached, not of the database of {lit}`state`. Proof sketch: {name}`Sql.check_bind`
-and {name}`big_at` at each reached context. -/
+{lit}`first` reached, not of the database of {lit}`state`. Proof sketch: {name}`Sql.check_bind`,
+then at each reached context the procedure {lit}`sql_select`, which applies
+{name}`Sql.check_query_ofResolveState` with the resolution state of the context and closes the result
+with the hints {name}`bigAt`, {name}`big_eq` and {name}`bigCondition`; {name}`big_at` is the same read
+by explicit steps. -/
 theorem big_after {α : Type} (first : Sql α) (state : ExecutionContext)
     (reaches : first.check (fun _ final => final.connection.resolveState = (shop.raw.connection {}).resolveState) state) :
-    (do let _ ← first; query bigScript rfl).check ReadsBig state :=
-  (Sql.check_bind _ _ _ _).2 (Sql.check_mono reaches fun _ final shape => big_at final shape)
+    (do let _ ← first; query bigScript rfl).check ReadsBig state := by
+  refine (Sql.check_bind _ _ _ _).2 (Sql.check_mono reaches fun _ final shape => ?_)
+  sql_select [ReadsBig, bigAt, big_eq, bigCondition]
 
 /-- The A21 write, which deletes the orders without a customer. -/
 def deleteScript : Script := sql r"DELETE FROM orders WHERE customer_id IS NULL"

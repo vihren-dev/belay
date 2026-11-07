@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-07T20:24:15+00:00",
+  "finding": "20261107T202053Z-2f94661a#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the reason names the next step: state the claim about a query, a script or a run, or use sql_refute (db := database)"
+}
