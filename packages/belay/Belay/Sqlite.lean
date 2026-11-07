@@ -122,7 +122,6 @@ import Belay.Sqlite.SelectContextExecution
 import Belay.Sqlite.QueryObservations
 import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.QueryBridge
-import Belay.Sqlite.QueryCases
 import Belay.Sqlite.SqlCommand
 import Belay.Sqlite.SqlSimp
 import Belay.Sqlite.SqlSimpLaws

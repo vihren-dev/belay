@@ -9,7 +9,8 @@ set_option maxRecDepth 8192
 every database with the catalog of {lit}`orders`, {lit}`LIMIT ? OFFSET ?` with values that SQLite
 reads as integers gives the window of the rows in order, as {lit}`LIMIT` and {lit}`OFFSET` literals
 do (A14), and a {lit}`LIMIT` value that is not an integer gives the error {lit}`datatype mismatch`,
-not an empty result. With {lit}`LIMIT 0`, SQLite does not read the {lit}`OFFSET` value. -/
+not an empty result. With {lit}`LIMIT 0`, SQLite does not read the {lit}`OFFSET` value; with a
+negative {lit}`LIMIT` it does, also when no row passes the filter. -/
 
 namespace SelectOrderCases
 open Belay.Sqlite
@@ -131,6 +132,31 @@ example : (mixed.run (query (windowScript (.integer 2) (.integer 1)) rfl)).retur
     (mixed.run (query (windowScript (.integer 2) (.text "abc".toUTF8.toList)) rfl)).returnsError
       (· = ExecutionError.datatypeMismatch.primaryCode) ∧
     (mixed.run (query (windowScript (.integer 0) .null) rfl)).returnsResult (· = []) := by
+  decide +kernel
+
+/-- The A15 script with the value of its {lit}`LIMIT` only: the script gives no value for the
+{lit}`OFFSET` parameter, which is then NULL. -/
+def limitOnlyScript (limit : Value) : Script :=
+  { statements := (windowScript limit .null).statements.map fun (statement, _) => (statement, [limit]) }
+
+/-- A15 contrasts of the read of the window on {name}`mixed`, with the rows of native SQLite 3.51.0:
+
+* a negative {lit}`LIMIT` has no limit, and a negative {lit}`OFFSET` skips no row;
+* with {lit}`LIMIT -1` SQLite reads the {lit}`OFFSET`, so NULL there fails with
+  {lit}`datatype mismatch`, and so does an {lit}`OFFSET` value that is not given, which is NULL;
+* SQLite reads the window before the first row: {lit}`WHERE 0` with {lit}`OFFSET NULL` fails, and
+  with {lit}`OFFSET 1` it gives no row. -/
+example : (mixed.run (query (windowScript (.integer (-1)) (.integer 1)) rfl)).returnsResult
+      (· = [[.integer 3], [.integer 1]]) ∧
+    (mixed.run (query (windowScript (.integer 1) (.integer (-5))) rfl)).returnsResult (· = [[.integer 2]]) ∧
+    (mixed.run (query (windowScript (.integer (-1)) .null) rfl)).returnsError
+      (· = ExecutionError.datatypeMismatch.primaryCode) ∧
+    (mixed.run (query (limitOnlyScript (.integer (-1))) rfl)).returnsError
+      (· = ExecutionError.datatypeMismatch.primaryCode) ∧
+    (mixed.run (query (sql r"SELECT id FROM orders WHERE 0 ORDER BY amount LIMIT 2 OFFSET ?" .null) rfl)).returnsError
+      (· = ExecutionError.datatypeMismatch.primaryCode) ∧
+    (mixed.run (query (sql r"SELECT id FROM orders WHERE 0 ORDER BY amount LIMIT 2 OFFSET ?" (.integer 1)) rfl)).returnsResult
+      (· = []) := by
   decide +kernel
 
 #print axioms windowScript_statement

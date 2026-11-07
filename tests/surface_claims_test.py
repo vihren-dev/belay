@@ -97,18 +97,6 @@ def test_a_unique_lookup_matches_at_most_one_row(runtime_root: Path, tmp_path: P
     check_module_chain(runtime_root, tmp_path, (*COUNT_SUPPORT, ("ClaimsUniqueLookup", 1)), timeout=90)
 
 
-def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_path: Path) -> None:
-    """`QueryCases` preserves prepare errors for each advertised form and refuses all three claims
-    for unmodeled output. Complete outputs keep unbound-window errors, possible source faults and
-    tied LIMIT alternatives; generic laws and independent evidence use only ordinary logical axioms."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsQueryCases.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 9, result.stdout
-    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
-
-
 def test_derived_sources_reach_public_query_predicates(runtime_root: Path, tmp_path: Path) -> None:
     """SQL quotations resolve derived tables into the existing query evaluator: metadata,
     compound columns, enclosing scope, empty sources, prepare errors and uncertain membership.

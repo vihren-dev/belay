@@ -77,6 +77,15 @@ def test_outcome_cases(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (("SelectOutcomeCases", 6),), timeout=60)
 
 
+def test_prepare_error_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Contrasts of acceptance case B11 through the body resolution law
+    (`resolveStatement_select_body_prepareError`) and the prepare-error rule (`Run.query_prepareError`):
+    `SELECT missing` returns error code 1 and no result for every database and environment, and a missing
+    table or column in a filter, in `EXISTS`, `NOT EXISTS`, `IN`, `count(*)`, `GROUP BY`, `sum` and a pragma
+    source gives error code 1, while a known column gives no error. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectPrepareErrorCases", 1),), timeout=60)
+
+
 def test_group_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance cases A07 and A10 through the group, aggregate and order rules (`groups_partition`,
     `records_aggregate`, `Query.groupRow_mem`, `Query.exists_sorted_perm_of_mem_possibleResults`): `GROUP BY`

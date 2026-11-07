@@ -89,7 +89,8 @@ theorem shadowed_pragma (db : Database) (position : Nat) (table : CatalogTable)
 
 /-- For every database with the ledger and unshadowed pragma but without cents, the guard
 does not hold because resolution gives a prepare error.
-Proof sketch: The missing-column preparation error contradicts the row-bearing query claim. -/
+Proof sketch: the missing-column preparation error gives no result ({name}`Run.query_prepareError`), so the
+row-bearing query claim fails. -/
 theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
@@ -100,7 +101,8 @@ theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries
       rfl rfl _ (guard_select_missing_cents db.raw.catalog position table found notTable notView missing)
   intro holds
-  exact holds.not_fails (Fails.of_prepareError (script := balanceGuard) (isQuery := by rfl) rfl resolved)
+  exact (Run.query_prepareError (script := balanceGuard) rfl rfl db Env.default resolved _ (fun _ => True)).1
+    ((Run.send_returnsResult_iff_query rfl db Env.default _).mp holds)
 
 /-- For every account value, the balance query succeeds in every complete environment on
 every database with a physical ledger table where the corrected SQL guard holds.

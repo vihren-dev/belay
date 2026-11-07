@@ -475,6 +475,19 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   rule and `Resolved.records_ungrouped`, as `countOne_run` does. A search of `tests/` for each
   declaration that this stack deletes finds no other caller. Tests: locally
   `tests/surface_success_test.py`.
+- 2026-11-07: retirement of the query cases (stage 3). `QueryCases.lean` and
+  `tests/surface/ClaimsQueryCases.lean` are deleted. `SelectOutcomeCases.lean` already proves B01 and
+  B11 for every database through `Run.query_prepareError` and `Sql.check_stopped`. The new fixture
+  `SelectPrepareErrorCases.lean` holds the B11 contrasts: `SELECT missing` for every database and
+  environment through `resolveStatement_select_body_prepareError`, and the nested prepare errors of
+  `ClaimsQueryCases.lean` with the code 1. `SuccessBalanceSuccess.lean` uses `Run.query_prepareError`
+  and `Run.send_returnsResult_iff_query`. The query examples of `QueryWindowExamples` are deleted; their
+  window boundaries are new A15 contrasts in `SelectParameterWindowCases.lean`, which native SQLite
+  3.51.0 gives locally. The `belay` README names the phase rules. `resolvedStepOutput_query_source`
+  and `resolvedStepOutput_selectOne` now have no caller and no axiom audit; the second goes with the
+  `SelectOne*` laws. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
+  `surface_select_sources_test.py`, `surface_claims_test.py`, `surface_success_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 

@@ -273,12 +273,13 @@ When every prefix fits, `sumOf_value_of_fits` gives NULL for no integer inputs a
 integer sum otherwise. These laws require integer or NULL inputs; text and REAL inputs use
 the general aggregate equations and SQLite's conversion rules.
 
-`Holds.iff_step`, `Empty.iff_step` and `Fails.iff_step` expose every resolution branch for
-any query. `Fails.of_prepareError` covers a missing table or column, and
-`Fails.select_body_prepareError` lifts an expression-resolution error without repeating the
-statement interpreter. `Script.not_claims_query_of_undescribed` covers a query that may fail
-or has an unsupported subquery. Keep those cases in proofs: a row satisfying a filter does
-not imply `Holds` if another row can make evaluation fail.
+`Run.query_prepareError` covers a query whose statement resolves to a preparation error,
+such as a missing table or column: the run returns that error and no result.
+`resolveStatement_select_body_prepareError` gives the error of an expression in the body of a
+SELECT without repeating the statement interpreter. `Run.send_unready` covers a query that may
+fail or has a nested subquery with a fallible call: the run returns neither a result nor an
+error. Keep those cases in proofs: a row satisfying a filter does not imply `Holds` if another
+row can make evaluation fail.
 
 For a scalar call without `FROM`, `resolveStatement_selectNoFrom_columns` admits a resolved
 scalar column, including a fallible function. `Connection.SelectReady.of_phases` and

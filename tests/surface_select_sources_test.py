@@ -79,7 +79,8 @@ def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
     `orders`, LIMIT ? OFFSET ? with integer values gives the window of the sorted rows, and a LIMIT value
     that is no integer gives the error `datatype mismatch` and no result. The instances show text values
     that SQLite reads as integers, an OFFSET that fails after LIMIT 2, and LIMIT 0, which does not read the
-    OFFSET. Every proof has only logical axioms."""
+    OFFSET; the contrasts show that a negative LIMIT or OFFSET has no bound, and that a negative LIMIT reads
+    a NULL or missing OFFSET and fails, also with `WHERE 0`. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
                        ("SelectParameterWindowCases", 4)), timeout=90)
 
