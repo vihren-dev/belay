@@ -29,7 +29,7 @@ def Run.returnsResult {α : Type} (run : Run α) (property : List (List Value) �
     | [] | _ :: _ :: _ => False
 
 /-- {lit}`run.returnsRows P`: the run returns a result ({name}`Run.returnsResult`) in which each row
-satisfies {lit}`P`, for each result that SQLite may give. A result without rows satisfies it, so
+satisfies {lit}`P`, for each result that the model permits. A result without rows satisfies it, so
 this claim does not say that a row exists; combine it with {name}`Run.returnsResult` for that. -/
 abbrev Run.returnsRows {α : Type} (run : Run α) (property : List Value → Prop) : Prop :=
   run.returnsResult fun rows => ∀ row ∈ rows, property row
@@ -69,6 +69,20 @@ theorem Run.returnsResult_iff {α : Type} (run : Run α) (property : List (List 
       run.value.isSome = true ∧ ∃ output, run.outputs = [output] ∧ output.returnsResult property := by
   unfold Run.returnsResult
   split <;> simp_all
+
+/-- For every run and two properties {lit}`P` and {lit}`Q` of a result: if every result with
+{lit}`P` has {lit}`Q`, a run that returns a result with {lit}`P` returns a result with {lit}`Q`. For
+example, a result that is a permutation of a list has its length. Proof sketch: the same output, and
+for a choice the same nonempty list of results. -/
+theorem Run.returnsResult.mono {α : Type} {run : Run α} {stronger weaker : List (List Value) → Prop}
+    (holds : run.returnsResult stronger) (implies : ∀ result, stronger result → weaker result) :
+    run.returnsResult weaker := by
+  obtain ⟨valued, output, outputs, returned⟩ := (Run.returnsResult_iff run stronger).mp holds
+  refine (Run.returnsResult_iff run weaker).mpr ⟨valued, output, outputs, ?_⟩
+  cases output with
+  | rows found => exact implies found returned
+  | oneOf results => exact ⟨returned.1, fun result member => implies result (returned.2 result member)⟩
+  | done _ | error _ | unmodeled _ => exact returned
 
 /-- For every run and property, {name}`Run.returnsError` holds exactly when the value of the run is
 some value and the outputs are one output that is an error with a code that has the property. Proof

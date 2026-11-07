@@ -60,6 +60,25 @@ theorem resolveOperand_compare {operator : Comparison} (left right : Syntax.Expr
     cases operator <;> simp_all [truthTest]
   simp [traced_arms, plain]
 
+/-- A comparison with any operator, also {lit}`IS` and {lit}`IS NOT`, whose right operand is not an
+unquoted {lit}`TRUE` or {lit}`FALSE` ({name}`Syntax.Expr.unquotedBoolean`), resolves as
+{name}`resolveOperand_compare` says: its two operands, left first, compared with the affinity
+{name}`comparisonAffinity` of the two and the collation {name}`comparisonCollation` of the written
+operands, with no affinity. An issue of the left operand is under position 1, and then the right operand
+is not resolved; an issue of the right operand is under position 2. For example {lit}`x IS NOT NULL`
+compares {lit}`x` with the NULL literal. Proof sketch: unfold the resolver; the operator is no truth
+test ({name}`truthTest`) because the right operand is no boolean keyword. -/
+theorem resolveOperand_compare_of_notBoolean {operator : Comparison} (left right : Syntax.Expr)
+    (notBoolean : right.unquotedBoolean = false) :
+    resolveOperand dqs scope shapes misuse (.compare operator left right) = (do
+      let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [1])
+      let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [2])
+      .ok (.compare operator (comparisonAffinity a.2 b.2) a.1 b.1 (comparisonCollation scope left right), none)) := by
+  have plain : ∀ b : Resolved.Expr, truthTest operator right b = false := by
+    intro b
+    simp [truthTest, notBoolean]
+  simp [traced_arms, plain]
+
 /-- {lit}`x COLLATE c` with a collation name that the model knows resolves as {lit}`x` does, and an
 issue of {lit}`x` is under position 0. A collation name that the model does not know is not covered. Proof
 sketch: unfold the resolver; the name gives a collation. -/

@@ -64,17 +64,10 @@ theorem customer_present_of_columns (db : Database) (env : Env) {position idInde
       customerAt (List.getElem?_eq_getElem inside) required⟩
     simp [Resolved.Query.rowOutput, Resolved.Query.simple, Resolved.Expr.eval_column, List.getD_eq_getElem?_getD,
       List.getElem?_eq_getElem inside]
-  · apply Resolved.Statement.simpleTable_calm
-    · intro expression member
-      simp only [Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-        List.mem_singleton, Resolved.Output.scalars] at member
-      rcases member with rfl | rfl
-      · simp [Resolved.Expr.Calm, Resolved.Expr.any, Resolved.Expr.isFallibleCall, Resolved.Expr.readsClockHere,
-          Resolved.Expr.readsCounterHere]
-      · exact Resolved.Expr.calm_column customerIndex
-    · intro column member
-      cases List.mem_singleton.mp member
-      rfl
+  · refine Resolved.Statement.simpleColumn_calm _ _ _ _ fun expression member => ?_
+    simp only [Option.toList_some, List.mem_singleton] at member
+    subst member
+    exact (Resolved.Expr.calm_compare ..).mpr ⟨Resolved.Expr.calm_column _, Resolved.Expr.calm_literal _⟩
   · simp [Resolved.Query.fails, Resolved.Query.simple]
 
 /-- The guide's invoices schema, with no rows. -/

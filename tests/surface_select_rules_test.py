@@ -33,3 +33,22 @@ def test_projection_cases(runtime_root: Path, tmp_path: Path) -> None:
     `Sql.check` claim, with an empty and a populated witness and the nullable contrast. Every proof has
     only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6),), timeout=60)
+
+
+def test_filter_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases A02 and A03 through the filter and comparison rules (`Resolved.truthy_isNot_null`,
+    `Resolved.ordinary_of_truthy`): `IS NOT NULL` gives non-NULL cells with no schema constraint, and
+    `amount > :minimum` gives the modeled comparison for every parameter value, over every database with
+    generic premises; a CHECK that accepts NULL, a NULL or NaN parameter, the affinity of the column and
+    the type of the parameter are the contrasts. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectFilterCases", 3),
+                       ("SelectComparisonCases", 5)), timeout=60)
+
+
+def test_cardinality_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A04 through the result and projection rules (`Query.perm_of_mem_possibleResults_plain`,
+    `Run.returnsResult.mono`): a plain projection is a permutation of the stored rows' cells, so it keeps
+    their number and duplicates, and a filter bounds the number of rows; a property of each row gives no
+    number of rows and no distinct rows. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectCardinalityCases", 5)),
+                       timeout=60)

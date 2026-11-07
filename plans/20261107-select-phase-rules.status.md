@@ -91,6 +91,24 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   rules, the execution rule and their fixtures speak of the results that the model permits,
   not of every result of SQLite, and the result rules name the group row that the model fixes
   (ADR 0027 D4); `normalForm_perm` has a proof sketch. Tests: `just dev-build`.
+- 2026-11-07: expression rules (D1) and A02 to A04. The value of each expression constructor
+  (`Model/ExprValueRules.lean`), its possible fault (`Model/ExprFaultRules.lean`) and its calm
+  condition (`Model/ExprCalmRules.lean`, with `Arguments.Calm`); the affinity of a comparison keeps
+  NULL, so `x IS NOT NULL` is true exactly when `x` is not NULL, and a true ordinary comparison has
+  two non-NULL operands that satisfy the operator (`Model/ComparisonTruthRules.lean`). A comparison
+  whose right operand is no `TRUE` or `FALSE` keyword resolves its two operands, also for `IS` and
+  `IS NOT` (`resolveOperand_compare_of_notBoolean`); a one-column read of a table with a calm
+  condition is calm (`Statement.simpleColumn_calm`); `Run.returnsResult.mono` weakens the property
+  of a result. A02 (`tests/surface/SelectFilterCases.lean`): `IS NOT NULL` gives non-NULL cells for a
+  nullable column, with a CHECK that accepts NULL as the contrast. A03
+  (`tests/surface/SelectComparisonCases.lean`): `amount > :minimum` gives the modeled comparison for
+  every parameter value, with the NULL and NaN, affinity and parameter type contrasts. A04
+  (`tests/surface/SelectCardinalityCases.lean`): a plain projection is a permutation of the stored
+  rows' cells, so it keeps their number and duplicates, and a filter bounds the number of rows; a
+  property of each row gives no number of rows and no distinct rows. A01 uses the calm corollary.
+  Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
+  `tests/surface_layers_test.py` and `tests/test_model_package.py` except its installed-package
+  test.
 
 ## Working sequence
 
