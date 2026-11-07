@@ -1,6 +1,6 @@
 # Compositional SELECT proofs: task status
 
-Date: 2026-11-07. Status: IN PROGRESS (slice 1).
+Date: 2026-11-07. Status: IN PROGRESS (stage 2 of the working sequence).
 Audience: the implementation team.
 Task: [Compositional SELECT proofs](20261107-select-phase-rules.task.md).
 Specification: [ADR 0027](../docs/adr-0027-compositional-select-proofs.md),
@@ -271,6 +271,21 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
   The rest of `AggregateQueryLaws` stays for the sum fixture and for `ClaimsQueryCases`. Tests:
   `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_claims_test.py`
   and `tests/surface_success_test.py -k balance`.
+- 2026-11-07: A12, A13 and A14 (`tests/surface/SelectDistinctCases.lean`,
+  `SelectOrderCases.lean`; `cell` moves to `SelectGroupSupport.lean`). A12: over every database with
+  the catalog of `orders` whose customers that compare equal under `NOCASE` are the same values,
+  `SELECT DISTINCT customer FROM orders` returns a result with no two rows equal under `NOCASE`,
+  each row the customer of a stored row, and the customer of each stored row; contrast: with
+  `'acme'` and `'ACME'` (on `mixed` and with the rows in the other order) the model describes no
+  result, since the kept spelling depends on the read order (native SQLite 3.51.0 keeps `acme` and
+  `ACME`). A13: `SELECT id FROM orders ORDER BY amount DESC` returns the ids of a permutation of the
+  stored rows whose amounts decrease under `BINARY`; the sort key is no result column. A14:
+  `SELECT id FROM orders ORDER BY amount LIMIT 2 OFFSET 1` returns `min 2 (n - 1)` rows for `n`
+  stored rows, the ids of a permutation of a sublist of the rows with increasing amounts; instances
+  for `LIMIT 0`, `LIMIT 1`, many rows and an offset past the end; contrast: with two equal smallest
+  amounts the model permits either id for `LIMIT 1` and claims neither alone (native SQLite gives
+  id 1 with a full scan and id 2 with an index on `(amount, id DESC)`). Native SQLite 3.51.0 gives
+  the instance results. Tests: locally `tests/surface_select_rules_test.py`.
 - `TableInfoQuery.lean` and `Model/TableInfoOutput.lean`: delete. The only consumer of
   `Script.outputOn_tableInfo` is `tests/surface/ClaimsTableInfo.lean`, which moves to
   the pragma source rule of A20. `Resolved.Query.source_pragma_fixed`, a general

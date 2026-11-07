@@ -16,10 +16,6 @@ open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 open SelectGroupCases SelectCountCases
 
-/-- The value of a column of a source row, as a resolved column reference reads it. -/
-abbrev cell (index : Nat) (row : List Value) : Value :=
-  (Resolved.Expr.column index).eval (Resolved.EvalContext.bound []) row
-
 /-- For every database with the catalog of {name}`orders`, the columns {lit}`customer` (1) and
 {lit}`amount` (2) are not NULL on any row of the scan. Proof sketch: each scan row is a stored row
 ({name}`mem_sourceRows_iff`) as wide as the table, and the validity of the database

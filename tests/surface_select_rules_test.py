@@ -120,3 +120,16 @@ def test_extremum_and_null_cases(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
                        ("SelectCountCases", 5), ("SelectExtremumCases", 4), ("SelectNullAggregateCases", 3)),
                        timeout=90)
+
+
+def test_distinct_order_and_window_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases A12, A13 and A14 through the distinct, order and window rules
+    (`distinctRecords_rules`, `Query.exists_sorted_of_mem_possibleResults`,
+    `Query.length_of_mem_possibleResults`): over every database with the catalog of `orders`,
+    `SELECT DISTINCT customer` gives each customer once when NOCASE-equal customers are the same values,
+    and no described result for `'acme'` and `'ACME'`; a sort by `amount`, no result column, gives the ids
+    of all the rows in order; `LIMIT 2 OFFSET 1` gives as many rows as the window takes, with zero, one,
+    many and past-end instances, and both tied winners of `LIMIT 1`. Every proof has only logical
+    axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectDistinctCases", 3),
+                       ("SelectOrderCases", 4)), timeout=90)

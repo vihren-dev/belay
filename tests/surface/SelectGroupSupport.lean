@@ -23,6 +23,10 @@ def ordersShape : CatalogTable := ((orders.raw.catalog.findTable (name! "orders"
 def ordersRows (db : Database) : List (List Value) :=
   Resolved.sourceRows { shape := ordersShape, rows := db.raw.rows.getD 0 [] }
 
+/-- The value of a column of a source row, as a resolved column reference reads it. -/
+abbrev cell (index : Nat) (row : List Value) : Value :=
+  (Resolved.Expr.column index).eval (Resolved.EvalContext.bound []) row
+
 /-- Three orders: two of the customer {lit}`acme`, written {lit}`'acme'` and {lit}`'ACME'`, and one of
 {lit}`zeta`. -/
 def mixed : Database := db! r"
