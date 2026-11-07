@@ -236,6 +236,17 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
 
 ## Candidate decisions (at assignment, 2026-11-07)
 
+- 2026-11-07: `just test-full` on the fix of the automatic check (`npzxurlr`, second workspace):
+  2 failures in the surface check tests. (1)
+  `tests/surface_check_command_test.py::test_sql_check_reports_checked_outcomes`: the case
+  `low-depth` (`Empty (sql "SELECT 1") db` at `sql.checkRecursionLimit 128`) gave "false" with the
+  empty database, not "unknown". Before the fix, `trivial` executed the run of the database variable
+  and stopped at the recursion limit; now the proof attempt stops at once and the candidate search
+  finds the counterexample, which is correct. The case now uses the limit 16, at which the search
+  stops at the limit again (locally, "unknown" at 32 and below, "false" at 64 and above). (2)
+  `tests/surface_check_consumer_size_test.py::test_consumer_size_claim_is_false_and_replays`
+  reached the search time limit; a dev-build ran at the same time, and locally the test passes in
+  26 s. The next `just test-full` checks both.
 - 2026-11-07: A09 and the retirement of the aggregate family. `tests/surface/SelectSumCases.lean`:
   over every database whose catalog has a table `ledger` with a column `cents`,
   `SELECT sum(cents) FROM ledger` returns the one row of the sum when the sum does not fail, and
