@@ -31,8 +31,7 @@ or more of: a `Script.outputOn_<form>` complete-output equation (ADR 0026 D1),
 `DuplicateKeyQuery` and `FilteredDuplicateKeyQuery` hold both; `UniqueLookupQuery`
 holds one `Holds` claim; `ExistsMayFail` and `SelectOneMayFail` hold the
 `Script.not_claims_*` negative claims; `QueryCases` holds the `*.iff_step`
-case splits and the prepare-error output equation; `SampleQueryHints` holds
-the hint functions; `ScalarNoFrom` holds the three quiet-statement laws of a
+case splits and the prepare-error output equation; `ScalarNoFrom` holds the three quiet-statement laws of a
 scalar query without `FROM`. The shape is a whole-query lemma,
 which D3 says automation must not need. The equations and claims become the
 "required contrast" column of the acceptance matrix. Line counts are the
@@ -51,7 +50,7 @@ current ones on main `84c0d779`; the fifteen files total 1,328 lines.
 | `ScalarNoFrom.lean` (83) | A20, B01, B05 | Deleted: `SelectFunctionFaultCases.lean` proves its three claims for every database and environment through `SelectReady.of_phases` and `Run.send_mustFail`, which take a quiet statement and so keep fallible functions |
 | `ExistsMayFail.lean`, `SelectOneMayFail.lean` (113) | B05 | Deleted: `ClaimsMayFail.lean` proves their claims for every database and environment through `Run.send_unready` |
 | `QueryCases.lean` (132) | B01, B11 | Deleted: `SelectOutcomeCases.lean` proves B01 and B11 for every database and environment through `Run.query_prepareError` and `Sql.check_stopped`; `SelectPrepareErrorCases.lean` adds a body error for every database through `resolveStatement_select_body_prepareError`; `ClaimsMayFail.lean` keeps the unmodeled claims through `Run.send_unready`; `SuccessBalanceSuccess.lean` uses `Run.query_prepareError` |
-| `SampleQueryHints.lean` | D6 hints | Required |
+| `SampleQueryHints.lean` (66) | none | Retained (owner, 2026-11-07): the traversal of SQL clauses that gives candidate schemas to the sample checker (`SampleScriptHints`, `CheckClaim`, `CheckSamples`). It is not tied to one query form, and the proof hints of D6 do not replace it |
 | `TableInfoQuery.lean` (66) | A20 (pragma rows) | Deleted: `ClaimsTableInfo.lean` uses the pragma source rule `Resolved.Query.source_pragma` |
 | `NotInQuery.lean` (150) | ADR 0026 D4 consumer | Retained: an `EquivAt` law, not a claim form |
 | `Queries.lean`, `QueryLaws.lean`, `QuerySuccess.lean`, `QueryBridge.lean` (378) | D2 | Retained: the claim layer. `Holds`, `Empty` and `Fails` are redefined as abbreviations, see ADR 0027 D2 |

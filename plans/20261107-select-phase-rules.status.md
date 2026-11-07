@@ -496,6 +496,10 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   directly. The specifications name the deleted owners as removed. Tests: `just dev-build`; locally
   `tests/surface_select_sources_test.py`, `surface_select_rules_test.py`, `surface_claims_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07, owner decision: `SampleQueryHints.lean` stays. The inventory listed it as a
+  hint family that D6 replaces, but it is the traversal of SQL clauses that gives candidate
+  schemas to the sample checker, unchanged since `84c0d779`; the proof hints of D6 do not
+  replace it. The inventory row now says Retained.
 
 ## Working sequence
 
@@ -509,8 +513,8 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
    execution; A07 to A10, A12 to A14; retirement of the aggregate family.
 3. Source, join, compound, subquery and context rules; A05, A06, A15 to A22;
    retirement of the count and duplicate-key families (see the decision of 2026-11-07),
-   `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail, query-case and
-   hint families.
+   `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail and query-case
+   families. `SampleQueryHints` stays (owner, 2026-11-07).
 4. `sql_select`, `sql_select_rule`, the `sql_run` delegation and the `sql_auto`
    route; automatic closure of the core set; B03, B04, B06 to B10; the end-to-end
    theorems; deletion of the experiments and migration witnesses; the measurement.
