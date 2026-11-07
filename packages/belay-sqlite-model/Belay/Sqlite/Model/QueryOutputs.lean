@@ -71,6 +71,9 @@ def Output.returnsResult (property : List (List Value) → Prop) : Output → Pr
   | .oneOf results => results ≠ [] ∧ ∀ result ∈ results, property result
   | .done _ | .error _ | .unmodeled _ => False
 
+/-- {name}`Output.returnsResult` is decidable for each output when its property is decidable: the
+check decides the property of the rows, or of each result of a choice. So {lit}`decide` proves a
+claim about a computed output. -/
 instance (property : List (List Value) → Prop) [DecidablePred property] (output : Output) :
     Decidable (output.returnsResult property) :=
   match output with
@@ -84,6 +87,8 @@ def Output.returnsError (property : Nat → Prop) : Output → Prop
   | .error code => property code
   | .rows _ | .oneOf _ | .done _ | .unmodeled _ => False
 
+/-- {name}`Output.returnsError` is decidable for each output when its property is decidable: the
+check decides the property of the result code of an error. -/
 instance (property : Nat → Prop) [DecidablePred property] (output : Output) :
     Decidable (output.returnsError property) :=
   match output with
