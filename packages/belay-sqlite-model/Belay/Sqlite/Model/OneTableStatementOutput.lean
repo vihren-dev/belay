@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.InSubqueryEqualityLink
 import Belay.Sqlite.Model.SimpleSubqueryRowsOutput
-import Belay.Sqlite.Model.ExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 
 set_option doc.verso true
 

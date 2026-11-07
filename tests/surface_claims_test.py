@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
+from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -33,21 +34,20 @@ def test_expression_laws_turn_a_condition_into_logic(runtime_root: Path, tmp_pat
 
 
 def test_no_row_or_some_row_satisfies_a_condition_in_a_subquery(runtime_root: Path, tmp_path: Path) -> None:
-    """`SELECT 1 WHERE [NOT] EXISTS (SELECT 1 FROM t WHERE p)` over every database: a claim proved with the
-    lemmas and `sql_simp`, with an instance on one database where `decide +kernel` checks both sides."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExists.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    """`SELECT 1 WHERE [NOT] EXISTS (SELECT 1 FROM t WHERE p)` over every database: the claims are proved
+    through the phase rules (`Run.query_returnsResult_faultless`, the subquery run rule) with the support of
+    `SelectOneWhereSupport`, with instances on databases where `decide +kernel` checks both sides. The
+    axiom audit shows that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 2), ("ClaimsExists", 3)), timeout=90)
 
 
 def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 FROM t WHERE abs(x) = 1` (and the same call in a subquery of `EXISTS`) on a table with the
     smallest 64-bit integer and the integer 1: SQLite can fail at the call of `abs` on the smallest integer, so
     the model does not describe the statement. None of `Holds`, `Empty` and `Fails` holds, by `decide +kernel`
-    and by the lemmas over every database."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsMayFail.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    and by the rule of a SELECT that is not ready (`Run.send_unready`) over every database. The axiom audit
+    shows that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (("ClaimsMayFail", 2),), timeout=90)
 
 
 def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root: Path, tmp_path: Path) -> None:

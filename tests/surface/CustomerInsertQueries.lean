@@ -1,9 +1,11 @@
 import CustomerInsertSite
+import SelectOneWhereSupport
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: what the three queries of the insert and
-lookup claim say about every database (ADR 0017, S6). Each query is evaluated by the existing laws of the
-`SELECT 1` forms, over the rows of the table in any scan order, and the database after the insert keeps the
-catalog and has the old rows and the new one. -/
+lookup claim say about every database (ADR 0017, S6). Each query is evaluated over the rows of the table in any
+scan order: the `NOT EXISTS` query through the phase rules of ADR 0027 (`SelectOneWhereSupport`), the others by
+the laws of their `SELECT 1` forms, and the database after the insert keeps the catalog and has the old rows and
+the new one. -/
 
 set_option doc.verso true
 
@@ -12,8 +14,8 @@ open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id` at a position: no customer has
-the id exactly when the condition {lit}`id = ?1` is false for every row. Proof sketch: apply
-{name}`Script.outputOn_notExists` to the resolved condition. -/
+the id exactly when the condition {lit}`id = ?1` is false for every row. Proof sketch: {name}`whereOne_claims` with
+{name}`resolveStatement_selectOne_notExists`, and {name}`tableOne_run` for the subquery. -/
 theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : Nat) (table : CatalogTable)
     (cell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -28,9 +30,17 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  rw [Holds.iff_of_outputOn (Script.outputOn_notExists (script := (noCustomerHasTheId id)) (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
-    (by simp [sql_simp, equalsParameter]))]
-  simp [Output.hasRows]
+  have calm : ∀ expression ∈ (some (equalsParameter cell col 1)).toList, expression.Calm := by
+    simp [sql_simp, equalsParameter]
+  have run := tableOne_run db [.integer id.toInt] (name! "customers") position table _ found calm
+  have claims := whereOne_claims (script := noCustomerHasTheId id) (isQuery := rfl) _ [.integer id.toInt] rfl db
+    (.not (.exists 0)) _ (resolveStatement_selectOne_notExists runContext _ _ _ position table _ rfl rfl rfl found resolves)
+    (Resolved.Statement.Calm.selectOne_subquery position _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
+      calm)
+    (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, Resolved.EvalContext.statement_one]; exact run.1)
+  rw [claims.1, Resolved.Expr.eval_not, Resolved.truthy_not, Resolved.Expr.eval_exists,
+    Resolved.EvalContext.statement_one, run.2]
+  simp [someRow, Resolved.falsy]
 
 /-- Over every database with a table {lit}`customers` that has the column {lit}`id`: exactly one customer has the id
 exactly when the condition {lit}`id = ?1` is true for one row of the table. Proof sketch: apply

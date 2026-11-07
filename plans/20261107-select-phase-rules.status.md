@@ -397,6 +397,24 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `just dev-build`; locally `tests/surface_select_sources_test.py`, `surface_select_rules_test.py`,
   `surface_claims_test.py`, `surface_layers_test.py`, `surface_select_automation_test.py`,
   `test_model_package.py` and `lean_packages_test.py`.
+- 2026-11-07: refactor after the review of the no-FROM retirement (R19, should): the line total of
+  the remaining model output files is 1,279. Tests: none (documentation only).
+- 2026-11-07: retirement of the EXISTS and may-fail families (stage 3). `ExistsQuery.lean`,
+  `NotExistsQuery.lean`, `ExistsMayFail.lean`, `SelectOneMayFail.lean`,
+  `Model/NotExistsSubqueryOutput.lean`, `Model/QueryMayFailOutput.lean` and
+  `Model/SubqueryMayFailOutput.lean` are deleted. `Model/ExistsSubqueryOutput.lean` becomes
+  `Model/SelectOneSubqueryContext.lean` without `resolvedStepOutput_exists`; it now also holds
+  `Resolved.Statement.Quiet.selectOne_subquery`, and `Resolved.Statement.Quiet.selectOne` moves to
+  `SelectOneResolution.lean`. The new fixture `SelectOneWhereSupport.lean` gives the run of
+  `SELECT 1 FROM t WHERE p` as a subquery (`tableOne_run`) and the claims of `SELECT 1 WHERE c`
+  with one subquery and any values (`whereOne_claims`), through `Run.query_returnsResult_faultless`
+  and the subquery run rule. `ClaimsExists.lean` and `no_customer_has_the_id_iff` in
+  `CustomerInsertQueries.lean` use it. `ClaimsMayFail.lean` proves its claims for every database and
+  environment through `Run.send_unready`: a possible fault of the filter, and a fallible call in a
+  subquery. Tests: `just dev-build`; locally `tests/surface_claims_test.py`,
+  `surface_assertion_examples_test.py`, `surface_select_sources_test.py`, `surface_select_rules_test.py`,
+  `surface_layers_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 

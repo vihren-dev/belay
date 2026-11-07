@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.NoFromQuerySteps
 import Belay.Sqlite.Model.ExprContextLaws
-import Belay.Sqlite.Model.ExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 
 set_option doc.verso true
 

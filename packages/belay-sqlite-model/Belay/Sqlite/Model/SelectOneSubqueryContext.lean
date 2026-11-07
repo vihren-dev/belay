@@ -6,10 +6,11 @@ import Belay.Sqlite.Model.ExprCalmLaws
 
 set_option doc.verso true
 
-/-! The output of {lit}`SELECT 1 WHERE [NOT] EXISTS (SELECT … FROM t WHERE p)` (ADR 0017, S4): a
-statement without {lit}`FROM` and with one subquery, a simple query of one table. The subquery gives a row exactly
-when {lit}`p` is true for a row of the table, so {lit}`EXISTS` makes the statement have rows exactly then, and
-{lit}`NOT EXISTS` exactly when {lit}`p` is true for no row. -/
+/-! The context of a statement with one subquery (ADR 0017, S4): for a calm statement, subquery 0
+of its context is the run of the subquery in the context of the values, and for the simple query of a
+table that run has the result rows of the query over the table. The statement {lit}`SELECT 1 WHERE c`
+with the one subquery {lit}`SELECT 1 FROM t WHERE p` is calm when both conditions are calm, and quiet
+when both are quiet. -/
 
 namespace Belay.Sqlite.Model
 
@@ -55,33 +56,6 @@ theorem Connection.queryContext_tableSubquery_zero (connection : Connection) (pa
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   exact Resolved.Expr.fault_of_plain _ (Resolved.EvalContext.bound_quiet parameters) row expression (plain expression member)
 
-/-- For every calm SELECT 1 statement with a simple EXISTS subquery over an existing table,
-the complete output contains integer one when some source row matches, and is empty otherwise.
-Proof sketch: substitute the subquery run; its result is empty exactly when no row passes its filter. -/
-theorem resolvedStepOutput_exists (index position : Nat) (connection : Connection) (parameters : List Value)
-    (table : Table) (condition : Option Resolved.Expr) (columns : List Resolved.Output) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).Calm) :
-    resolvedStepOutput none index connection parameters (.query (Resolved.Query.selectOneWhere (.exists 0))
-      [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]) =
-      .rows (if (Resolved.sourceRows table).any (fun row => condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row)))
-        then [[.integer 1]] else []) := by
-  have run := connection.queryContext_tableSubquery_zero parameters _ position table condition columns names present calm
-  rw [resolvedStepOutput_selectOne index connection parameters _ _ calm
-    (by rw [Resolved.Expr.fault_exists, run])]
-  simp only [Resolved.Expr.eval_exists, run, truthy_truth]
-  have empty := (Resolved.Query.simple_isSimple [Resolved.QuerySource.first position] condition columns names).results_eq_nil_iff
-    (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)
-  have same : ((Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names).results
-      (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)).isEmpty =
-      !(Resolved.sourceRows table).any (fun row => condition.all
-        (fun expression => Resolved.truthy (expression.eval (Resolved.EvalContext.bound parameters) row))) := by
-    apply Bool.eq_iff_iff.mpr
-    simpa [List.isEmpty_iff, Bool.not_eq_true', List.any_eq_false, Resolved.Query.simple] using empty
-  simp only [same, Bool.not_not]
-
 /-- The expressions of the simple query of the first source of a table are its condition, if any, and
 the expressions of its result column {lit}`1`. Proof sketch: the definitions compute. -/
 theorem Resolved.Query.simple_first_expressions (position : Nat) (condition : Option Resolved.Expr) :
@@ -110,6 +84,27 @@ theorem Resolved.Statement.Calm.selectOne_subquery (position : Nat) (main : Reso
   · exact mainCalm
   · exact literal
   · exact subCalm expression (by simpa using member)
+  · exact literal
+
+/-- For every quiet condition {lit}`c` and every quiet condition of the subquery, the statement of
+{lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT 1 FROM t WHERE p` that resolution gives is quiet
+({name}`Resolved.Statement.Quiet`). Proof sketch: as for {name}`Resolved.Statement.Calm.selectOne_subquery`. -/
+theorem Resolved.Statement.Quiet.selectOne_subquery (position : Nat) (main : Resolved.Expr)
+    (subCondition : Option Resolved.Expr) (mainQuiet : main.Quiet)
+    (subQuiet : ∀ expression ∈ subCondition.toList, expression.Quiet) :
+    (Resolved.Statement.query (Resolved.Query.selectOneWhere main)
+      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition
+        [.scalar (.literal (.integer 1))] ["1"]]).Quiet := by
+  have literal : (Resolved.Expr.literal (.integer 1)).Quiet := by
+    simp [Resolved.Expr.Quiet, Resolved.Expr.any, Resolved.Expr.readsClockHere, Resolved.Expr.readsCounterHere]
+  intro expression member
+  simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
+    Resolved.Query.simple_first_expressions, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
+    List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with (rfl | rfl) | member | rfl
+  · exact mainQuiet
+  · exact literal
+  · exact subQuiet expression (by simpa using member)
   · exact literal
 
 end Belay.Sqlite.Model

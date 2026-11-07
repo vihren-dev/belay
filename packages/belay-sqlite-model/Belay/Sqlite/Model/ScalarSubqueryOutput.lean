@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.SimpleResultsLaws
 import Belay.Sqlite.Model.SelectOneRowsOutput
-import Belay.Sqlite.Model.ExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 
 set_option doc.verso true
 

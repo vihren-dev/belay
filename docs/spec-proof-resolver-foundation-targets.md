@@ -114,7 +114,8 @@ Reuse it in `assign_derived_append` (`DerivedColumnRows`), `LiteralData.inserted
 and `PlainInsertRows`'s `LiteralData.inserted_plain`/`LiteralData.newCells_getElem?_of_plain`; the `NormalizedField` owners were deleted.
 
 Surface consumers under [Belay/Sqlite](../packages/belay/Belay/Sqlite): `AggregateQuery`, `ColumnQuery`, `CountQuery`,
-`FilteredDuplicateKeyQuery`, `ExistsQuery`, `NotExistsQuery`, `SelectOneFrom`, `SelectOneMayFail`, `UniqueLookupQuery`.
+`FilteredDuplicateKeyQuery`, `SelectOneFrom`, `UniqueLookupQuery`. ADR 0027 removed `ExistsQuery`, `NotExistsQuery`
+and `SelectOneMayFail`.
 D1 removed `FilteredDuplicateKeyEmpty`; the three baseline filtered endpoints are replaced by
 `Script.outputOn_noDuplicateKeysWhere` in `FilteredDuplicateKeyQuery`. The frozen endpoint inventory retains their names.
 Coordinate with query migration; relocation need not rename a theorem. Keep no aliases.

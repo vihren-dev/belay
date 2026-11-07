@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.DuplicateKeyQuery
-import Belay.Sqlite.Model.NotExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 
 set_option doc.verso true
 

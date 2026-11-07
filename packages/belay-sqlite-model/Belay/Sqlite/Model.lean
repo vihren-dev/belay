@@ -348,12 +348,9 @@ import Belay.Sqlite.Model.SubquerySelectResolution
 import Belay.Sqlite.Model.SelectOneOutput
 import Belay.Sqlite.Model.NoFromQuerySteps
 import Belay.Sqlite.Model.SimpleSubqueryRun
-import Belay.Sqlite.Model.ExistsSubqueryOutput
-import Belay.Sqlite.Model.NotExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 import Belay.Sqlite.Model.ExistsStatementResolution
 import Belay.Sqlite.Model.StatementQuiet
-import Belay.Sqlite.Model.QueryMayFailOutput
-import Belay.Sqlite.Model.SubqueryMayFailOutput
 import Belay.Sqlite.Model.SelectNoFromResolution
 import Belay.Sqlite.Model.ExprAnyLaws
 import Belay.Sqlite.Model.CountQueryLaws

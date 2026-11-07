@@ -70,7 +70,8 @@ def test_insert_then_lookup_claims_over_every_database(runtime_root: Path, tmp_p
     guard on a table without a key, and a duplicate name that fails the insert. Every instance and
     counterexample is checked from the actual run of the statement."""
     check_module_chain(runtime_root, tmp_path, (
-        ("CustomerInsertSite", 2), ("CustomerInsertQueries", 5), ("InsertLookupClaims", 3)))
+        ("CustomerInsertSite", 2), ("SelectOneWhereSupport", 2), ("CustomerInsertQueries", 5),
+        ("InsertLookupClaims", 3)))
 
 
 def test_preserved_count_claim_over_every_database(runtime_root: Path, tmp_path: Path) -> None:
