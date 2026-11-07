@@ -474,6 +474,7 @@ import Belay.Sqlite.Model.SelectOutputShape
 import Belay.Sqlite.Model.SelectExecutionRule
 import Belay.Sqlite.Model.SelectRunRule
 import Belay.Sqlite.Model.SelectCalmRule
+import Belay.Sqlite.Model.SelectOverflowRule
 import Belay.Sqlite.Model.SelectWindowRules
 import Belay.Sqlite.Model.SelectGroupRules
 import Belay.Sqlite.Model.SelectAggregateRules

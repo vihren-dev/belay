@@ -173,6 +173,13 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `Query.exists_sorted_perm_of_mem_possibleResults` without one,
   `Query.length_of_mem_possibleResults`). Tests: `just dev-build`; locally
   `tests/test_model_package.py` except its installed-package test.
+- 2026-11-07: overflow rule of execution (D5). `resolvedStepOutput_select_overflow`: a described
+  one-query statement whose bound query has a failing aggregate (`Resolved.Query.fails`) and no
+  certain or possible fault gives the error `integer overflow`. `Run.query_overflow_calmTable`
+  (`Belay/Sqlite/SelectOverflow.lean`): a calm one-table script with such an aggregate returns no
+  result and exactly the error code of the overflow, in every environment. The `sum` claims of
+  A09 that fail use it. Tests: `just dev-build`; locally `tests/test_model_package.py` except
+  its installed-package test and `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 
