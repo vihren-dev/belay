@@ -20,6 +20,16 @@ def Model.Connection.afterWrite (connection : Connection) (database : Model.Data
   { connection with state := { connection.state with
       database, counters := connection.state.counters.apply counts } }
 
+/-- For every connection, database and counts: when the database has the catalog of the database of
+the connection, the connection after the write ({name}`Model.Connection.afterWrite`) has the
+resolution state of the connection. So a write that changes rows and counters keeps the state in
+which the next statements resolve. For example, {lean}`Model.Database.setRows` keeps the catalog. Proof
+sketch: the write changes neither the catalog, nor the snapshot, nor the settings. -/
+theorem Model.Connection.resolveState_afterWrite (connection : Connection) {database : Model.Database}
+    (counts : Counts) (catalog : database.catalog = connection.state.database.catalog) :
+    (connection.afterWrite database counts).resolveState = connection.resolveState := by
+  simp [Connection.resolveState, Model.Connection.afterWrite, catalog]
+
 /-- For every context, statement, values and post: a program that sends the one statement checks the post when
 all of these hold.
 - The statement resolves, at the connection of the context, to no INSERT from a query without rules (premise

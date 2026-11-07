@@ -118,6 +118,7 @@ import Belay.Sqlite.SelectErrorBridge
 import Belay.Sqlite.SelectExecution
 import Belay.Sqlite.SelectCalmExecution
 import Belay.Sqlite.SelectOverflow
+import Belay.Sqlite.SelectContextExecution
 import Belay.Sqlite.QueryObservations
 import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.QueryBridge

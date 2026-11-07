@@ -347,6 +347,19 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_select_sources_test.py`, a module of the Nix surface suite, so that each file
   stays under 200 lines. Later stage-3 cases add their tests there. Tests: locally both modules,
   `tests/test_test_ownership.py`, `tests/test_nix_test_targets.py`.
+- 2026-11-07: context rules of a SELECT, A21 and A22 (stage 3). `SelectContextExecution.lean`:
+  a SELECT at any context, with the readiness premises at that context (`check_query_select_at`),
+  and its calm form over the database of the context (`check_query_select_faultless`); both give
+  that the reached context keeps the connection. `SendStepRules.lean`: a write that keeps the
+  catalog keeps the resolution state (`Connection.resolveState_afterWrite`). Fixture
+  `SelectContextCases.lean`: A21, `SELECT customer_id, amount FROM orders WHERE amount > 5` at every
+  context with the resolution state of `shop` returns the rows of the database of that context,
+  after any program that reaches such contexts, and after `DELETE FROM orders WHERE customer_id IS
+  NULL` (the delete step's coverage stays a premise); A22, `SELECT changes()` at every context whose
+  counters know `changes()` returns that value. Instances: on `partial_` the result from the start
+  does not hold after the delete; `changes()` has no result with `Env.default`, gives 0 with
+  `Env.newConnection` and 1 after the delete. Native SQLite 3.51.0 gives the instance results. Tests:
+  `just dev-build`; locally `tests/surface_select_sources_test.py`.
 
 ## Working sequence
 
