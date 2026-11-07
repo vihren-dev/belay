@@ -1,6 +1,6 @@
 # Compositional SELECT proofs: task status
 
-Date: 2026-11-07. Status: IN PROGRESS (stage 2 of the working sequence).
+Date: 2026-11-07. Status: IN PROGRESS (stage 3 of the working sequence).
 Audience: the implementation team.
 Task: [Compositional SELECT proofs](20261107-select-phase-rules.task.md).
 Specification: [ADR 0027](../docs/adr-0027-compositional-select-proofs.md),
@@ -215,27 +215,6 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   for run observations, as it does for profiles. Tests: `just dev-build`; locally
   `tests/surface_proof_cost_automatic_test.py`, `surface_automatic_test.py`,
   `surface_automatic_cancel_test.py`, `surface_s6_check_editor_test.py`.
-
-## Working sequence
-
-Each stage ends with the checks of a slice end (`just test-full`, `just verdict`).
-
-1. Execution rule, `Run.returnsResult`, `Run.returnsRows` and `Run.returnsError` with
-   their bridges, the `Holds`/`Empty`/`Fails` abbreviations; projection, filter and
-   expression rules; A01 to A04, A11, B01, B02, B05, B11; retirement of
-   `SelectOneFrom`, the `Simple*` laws and the outputs that only these cases cover.
-2. Group, aggregate, HAVING, DISTINCT, order and window rules, and the overflow rule of
-   execution; A07 to A10, A12 to A14; retirement of the aggregate family.
-3. Source, join, compound, subquery and context rules; A05, A06, A15 to A22;
-   retirement of the count and duplicate-key families (see the decision of 2026-11-07),
-   `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail, query-case and
-   hint families.
-4. `sql_select`, `sql_select_rule`, the `sql_run` delegation and the `sql_auto`
-   route; automatic closure of the core set; B03, B04, B06 to B10; the end-to-end
-   theorems; deletion of the experiments and migration witnesses; the measurement.
-
-## Candidate decisions (at assignment, 2026-11-07)
-
 - 2026-11-07: `just test-full` on the fix of the automatic check (`npzxurlr`, second workspace):
   2 failures in the surface check tests. (1)
   `tests/surface_check_command_test.py::test_sql_check_reports_checked_outcomes`: the case
@@ -286,6 +265,48 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
   amounts the model permits either id for `LIMIT 1` and claims neither alone (native SQLite gives
   id 1 with a full scan and id 2 with an index on `(amount, id DESC)`). Native SQLite 3.51.0 gives
   the instance results. Tests: locally `tests/surface_select_rules_test.py`.
+- 2026-11-07: stage 2 end checks. `just verdict` did not run: `just test-full` stopped in
+  `test-source` because `docs/spec-proof-query-observation-targets.md` linked the two deleted
+  aggregate files (`tests/docs_test.py::test_local_markdown_links`). A `fix:` commit names them
+  without links; the checks run again.
+- 2026-11-07: join rules and A05, A06 (stage 3). `Model/SelectJoinRules.lean`: the complete rows
+  of each join kind as a collection with order and multiplicity (`joinRows_inner`,
+  `joinRows_left`, `joinRows_right`, `joinRows_full` over `matchedRows`, `paddedRows` and
+  `unmatchedRows`), the cardinality rule (`joinRows_inner_length`) with its unique-match form, and
+  the two-table source rule (`Query.source_two_tables`). `Run.query_returnsResult_calm`
+  (`SelectExecution.lean`) is the calm execution rule for any source rows;
+  `Run.query_returnsResult_calmTable` is now its one-table case. Fixtures
+  `tests/surface/SelectJoinSupport.lean`, `SelectJoinCases.lean`, `SelectOuterJoinCases.lean` over
+  the catalog of `shop` (`customers`, and `orders` with a nullable `customer_id`): A05, the inner join
+  is a permutation of each order with each matching customer, with as many rows as orders when each
+  order has one match; A06, the left join keeps each order (NULL name without a match), the right
+  join adds each customer without a matching order (NULL id), and the full join both. Contrasts: an
+  order with a missing customer is removed, an order with two matches (`c.id <= o.customer_id`)
+  gives two rows, and the left join returns a NULL name although `customers.name` is NOT NULL.
+  Native SQLite 3.51.0 gives the same rows. Tests: `just dev-build`; locally
+  `tests/surface_select_rules_test.py`, `tests/surface_success_test.py` and
+  `tests/test_model_package.py` except its installed-package test.
+
+## Working sequence
+
+Each stage ends with the checks of a slice end (`just test-full`, `just verdict`).
+
+1. Execution rule, `Run.returnsResult`, `Run.returnsRows` and `Run.returnsError` with
+   their bridges, the `Holds`/`Empty`/`Fails` abbreviations; projection, filter and
+   expression rules; A01 to A04, A11, B01, B02, B05, B11; retirement of
+   `SelectOneFrom`, the `Simple*` laws and the outputs that only these cases cover.
+2. Group, aggregate, HAVING, DISTINCT, order and window rules, and the overflow rule of
+   execution; A07 to A10, A12 to A14; retirement of the aggregate family.
+3. Source, join, compound, subquery and context rules; A05, A06, A15 to A22;
+   retirement of the count and duplicate-key families (see the decision of 2026-11-07),
+   `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail, query-case and
+   hint families.
+4. `sql_select`, `sql_select_rule`, the `sql_run` delegation and the `sql_auto`
+   route; automatic closure of the core set; B03, B04, B06 to B10; the end-to-end
+   theorems; deletion of the experiments and migration witnesses; the measurement.
+
+## Candidate decisions (at assignment, 2026-11-07)
+
 - `TableInfoQuery.lean` and `Model/TableInfoOutput.lean`: delete. The only consumer of
   `Script.outputOn_tableInfo` is `tests/surface/ClaimsTableInfo.lean`, which moves to
   the pragma source rule of A20. `Resolved.Query.source_pragma_fixed`, a general

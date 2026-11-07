@@ -480,6 +480,7 @@ import Belay.Sqlite.Model.SelectAggregateRules
 import Belay.Sqlite.Model.AggregateValueRules
 import Belay.Sqlite.Model.SelectDistinctRules
 import Belay.Sqlite.Model.SelectOrderRules
+import Belay.Sqlite.Model.SelectJoinRules
 import Belay.Sqlite.Model.SelectProjectionRules
 import Belay.Sqlite.Model.ExprValueRules
 import Belay.Sqlite.Model.ExprFaultRules

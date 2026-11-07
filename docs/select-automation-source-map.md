@@ -54,8 +54,8 @@ special-case theorem elsewhere can help prove them.
 
 | Phase | Existing reusable declarations | Required extension |
 | --- | --- | --- |
-| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws] | Collection specifications for every source constructor and the source fold |
-| Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws] | Matched/unmatched collection rules retaining multiplicity and outer cells |
+| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules] | Collection specifications for every source constructor and the source fold |
+| Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws]; `joinRows_inner`, `joinRows_left`, `joinRows_right`, `joinRows_full`, `joinRows_inner_length` in [SelectJoinRules][join-rules] | Matched/unmatched collection rules retaining multiplicity and outer cells |
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
 | Filter | `mem_filtered` in [QueryLaws][query-laws] | Complete-collection and cardinality rules, beyond unary membership |
 | Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
@@ -124,6 +124,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [expr-form]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolvedExprForm.lean
 [table-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableSourceLaws.lean
 [join-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoinLaws.lean
+[join-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectJoinRules.lean
 [expr-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprEvalLaws.lean
 [context-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
 [query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean

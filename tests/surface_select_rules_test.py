@@ -133,3 +133,15 @@ def test_distinct_order_and_window_cases(runtime_root: Path, tmp_path: Path) -> 
     axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectDistinctCases", 3),
                        ("SelectOrderCases", 4)), timeout=90)
+
+
+def test_join_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases A05 and A06 through the join rules (`joinRows_inner`, `joinRows_left`,
+    `joinRows_right`, `joinRows_full`, `joinRows_inner_length_of_unique`), the two-table source rule and
+    the calm execution rule: over every database with the catalog of `shop`, an inner join gives each order
+    with each matching customer, and as many rows as orders when each order has one match; a left join
+    keeps each order, a right join each customer, a full join both, with NULL cells for the missing side.
+    The instances show a removed and a multiplied order and a NULL name of a NOT NULL column. Every proof
+    has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
+                       ("SelectJoinCases", 3), ("SelectOuterJoinCases", 5)), timeout=90)

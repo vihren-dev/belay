@@ -64,18 +64,48 @@ theorem Run.query_returnsResult_select {script : Script} {statement : Syntax.Sta
   rw [same]
   exact runScriptStep_select_returnsResult runContext env.clock 0 _ statement parameters resolved clocked ready property
 
-/-- Calm one-table rule: for every script of one statement with its values, proof that it has one
-statement, database, environment and property {lit}`Q` of a result: when the statement resolves on
-the connection of the environment to a calm query ({name}`Resolved.Statement.Calm`) with no
-subqueries, whose sources are the first source at a catalog position where the database has a
-table, and which is no compound, has no window parameter, no overflow ({lit}`Query.fails`) and a
-certain {lit}`DISTINCT` over the scan of the table, then the run of the program {name}`query` of
-the script returns a result with {lit}`Q` exactly when every result that the model permits over the
-scan of the table ({name}`Resolved.sourceRows`) has {lit}`Q`. The context has only the values
-({name}`Resolved.EvalContext.bound`): the clock and the counters of the environment do not matter.
-Proof sketch: {name}`Connection.SelectReady.of_calm` gives the readiness premises,
+/-- Calm rule: for every script of one statement with its values, proof that it has one statement,
+database, environment, source rows {lit}`source` and property {lit}`Q` of a result: when the
+statement resolves on the connection of the environment to a calm query
+({name}`Resolved.Statement.Calm`) with no subqueries, the query's sources give {lit}`source` over the
+database with only the values as context, {lit}`source` has no possible fault, and the query is no
+compound and has no window parameter, no overflow ({lit}`Query.fails`) and a certain
+{lit}`DISTINCT` over the source rows, then the run of the program {name}`query` of the script
+returns a result with {lit}`Q` exactly when every result that the model permits over the source
+rows has {lit}`Q`. The context has only the values ({name}`Resolved.EvalContext.bound`): the clock
+and the counters of the environment do not matter. Proof sketch:
+{name}`Connection.SelectReady.of_calm` gives the readiness premises,
 {name}`Connection.queryContext_of_calm` the context, and {name}`Run.query_returnsResult_select`
 the equivalence. -/
+theorem Run.query_returnsResult_calm {script : Script} {statement : Syntax.Statement} {parameters : List Value}
+    (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
+    (env : Env) {query : Resolved.Query} {after : ResolveState} {source : Resolved.SourceRows}
+    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
+      .ok (.query query [], after))
+    (found : query.source (Resolved.EvalContext.bound parameters) db.raw = some source)
+    (sourceCertain : source.fault ≠ .may)
+    (calm : (Resolved.Statement.query query []).Calm) (single : query.compound = none)
+    (limitParameter : query.limitParameter = none) (offsetParameter : query.offsetParameter = none)
+    (noOverflow : query.fails (Resolved.EvalContext.bound parameters) source.rows = false)
+    (distinct : query.distinctCertain (Resolved.EvalContext.bound parameters) source.rows = true)
+    (property : List (List Value) → Prop) :
+    (db.run (Belay.Sqlite.query script one) env).returnsResult property ↔
+      ∀ result ∈ query.possibleResults (Resolved.EvalContext.bound parameters) source.rows, property result := by
+  have ready := Connection.SelectReady.of_calm (db.raw.connection env.counters) parameters calm single
+    limitParameter offsetParameter found sourceCertain noOverflow distinct
+  have context : (db.raw.connection env.counters).queryContextAt 0 parameters query [] =
+      Resolved.EvalContext.bound parameters :=
+    Connection.queryContext_of_calm _ parameters query calm
+  rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
+    property, context]
+
+/-- Calm one-table rule: {name}`Run.query_returnsResult_calm` for a query whose sources are the
+first source at a catalog position where the database has a table: for every script of one
+statement with its values, database, environment and property {lit}`Q` of a result, under the same
+premises over the scan of the table ({name}`Resolved.sourceRows`), the run of the program
+{name}`query` of the script returns a result with {lit}`Q` exactly when every result that the model
+permits over the scan has {lit}`Q`. Proof sketch: {name}`Resolved.Query.source_first` gives the
+source rows. -/
 theorem Run.query_returnsResult_calmTable {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
     (env : Env) {query : Resolved.Query} {after : ResolveState} {position : Nat} {table : Table}
@@ -89,15 +119,10 @@ theorem Run.query_returnsResult_calmTable {script : Script} {statement : Syntax.
     (property : List (List Value) → Prop) :
     (db.run (Belay.Sqlite.query script one) env).returnsResult property ↔
       ∀ result ∈ query.possibleResults (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table),
-        property result := by
-  have ready := Connection.SelectReady.of_calm (db.raw.connection env.counters) parameters calm single
-    limitParameter offsetParameter (Resolved.Query.source_first _ query _ position table sources present)
-    (by simp) noOverflow distinct
-  have context : (db.raw.connection env.counters).queryContextAt 0 parameters query [] =
-      Resolved.EvalContext.bound parameters :=
-    Connection.queryContext_of_calm _ parameters query calm
-  rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
-    property, context]
+        property result :=
+  Run.query_returnsResult_calm head one db env resolved
+    (Resolved.Query.source_first _ query _ position table sources present) (by simp) calm single limitParameter
+    offsetParameter noOverflow distinct property
 
 /-- For every script of one statement with its values, database, environment, property {lit}`Q`
 of a result and property {lit}`E` of a result code: when the statement resolves to a query
