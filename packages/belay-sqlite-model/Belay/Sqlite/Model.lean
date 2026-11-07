@@ -485,6 +485,7 @@ import Belay.Sqlite.Model.SelectSubqueryRules
 import Belay.Sqlite.Model.SelectCompoundReady
 import Belay.Sqlite.Model.SelectCompoundMembership
 import Belay.Sqlite.Model.SelectDerivedRules
+import Belay.Sqlite.Model.SelectSourceRules
 import Belay.Sqlite.Model.SelectProjectionRules
 import Belay.Sqlite.Model.ExprValueRules
 import Belay.Sqlite.Model.ExprFaultRules

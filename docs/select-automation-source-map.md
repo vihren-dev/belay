@@ -54,7 +54,7 @@ special-case theorem elsewhere can help prove them.
 
 | Phase | Existing reusable declarations | Required extension |
 | --- | --- | --- |
-| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules]; `Query.source_derived`, `source_derived_uncertain`, `windowCertain_unwindowed` in [SelectDerivedRules][derived-rules] | Collection specifications for every source constructor and the source fold |
+| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules]; `Query.source_derived`, `source_derived_uncertain`, `windowCertain_unwindowed` in [SelectDerivedRules][derived-rules]; `Query.source_pragma`, `source_each`, `source_each_fault` in [SelectSourceRules][source-rules] | Collection specifications for every source constructor and the source fold |
 | Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws]; `joinRows_inner`, `joinRows_left`, `joinRows_right`, `joinRows_full`, `joinRows_inner_length` in [SelectJoinRules][join-rules] | Matched/unmatched collection rules retaining multiplicity and outer cells |
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
 | Subqueries | `EvalContext.statement_subqueries`, `statement_one`, `Query.subqueryRun_clean`, `subqueryRun_of_faultless`, `results_eq_nil_iff_plain`, `results_plain_unordered`, `windowCertain_of_short` in [SelectSubqueryRules][subquery-rules] | Run rules for each outer row, with the emptiness, first-column and first-value facts that EXISTS, IN and a scalar subquery read |
@@ -132,6 +132,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [calm-execution]: ../packages/belay/Belay/Sqlite/SelectCalmExecution.lean
 [compound-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundRules.lean
 [derived-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean
+[source-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean
 [compound-ready]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundReady.lean
 [compound-membership]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundMembership.lean
 [overflow-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOverflowRule.lean

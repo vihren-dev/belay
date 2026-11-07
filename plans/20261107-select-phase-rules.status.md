@@ -330,6 +330,18 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   of an outer join comes through a derived table, and the model describes no result for a derived
   table with `LIMIT` and no `ORDER BY`. Native SQLite 3.51.0 gives the instance results. Tests:
   `just dev-build`; locally `tests/surface_select_rules_test.py`.
+- 2026-11-07: source rules of a query without a table, A20 (stage 3).
+  `Model/SelectSourceRules.lean`: the rows of a pragma that is the only source
+  (`Query.source_pragma`, for every pragma whose rows the model gives), the rows of a `json_each`
+  call that is the only source (`Query.source_each`), and the fault `may` of a call that fails
+  (`Query.source_each_fault`); `Query.source_none` gives the one row with no cells. Fixture
+  `SelectSourceCases.lean`: `SELECT 1 + 2` returns the one row 3 over every database;
+  `SELECT name FROM pragma_table_info('customers')` and `SELECT value FROM json_each(?)` return the
+  names and the JSON values over every database with the catalog of `shop`;
+  `SELECT key FROM json_each('[1')` returns no result and no error (native SQLite gives
+  `malformed JSON`). Instances: `SELECT count(*)` gives 1 and `count(*)` over the empty `orders`
+  gives 0; `PRAGMA table_info(customers)` gives one row of six cells for each column. Native SQLite 3.51.0 gives the
+  instance results. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 

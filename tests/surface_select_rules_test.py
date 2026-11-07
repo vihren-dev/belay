@@ -183,6 +183,19 @@ def test_derived_cases(runtime_root: Path, tmp_path: Path) -> None:
                        ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectDerivedCases", 4)),
                        timeout=120)
 
+
+def test_source_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A20 through the source rules of a query without a table (`Query.source_none`,
+    `Query.source_pragma`, `Query.source_each`, `Query.source_each_fault`): over every database,
+    `SELECT 1 + 2` returns the one row 3; over every database with the catalog of `shop`, a pragma source
+    returns the column names, and `json_each(?)` returns the value cell of each JSON row of the bound
+    value; a malformed JSON argument gives no result and no error, because its fault stays. The instances
+    show `count(*)` without FROM, which counts the one row with no cells. Every proof has only logical
+    axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectSourceCases", 4)),
+                       timeout=120)
+
 def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance case A15 through the faultless execution rule with a bound window and the mismatch rule
     (`resolvedStepOutput_select_mismatch`, `Run.query_mismatch`): over every database with the catalog of
