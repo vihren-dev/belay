@@ -624,6 +624,12 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   proof closes them by other steps. An interruption passes through `try` and `tryCatchRuntimeEx`, so the
   fixture observes it at the `EIO` level. The check of A08 shows that `sql_select` inside the route
   `sql_run` runs out with that route's share. Tests: locally `tests/surface_select_procedure_test.py`.
+- 2026-11-07: review finding of B06 (refactor). A token that is set before the call makes Lean interrupt
+  `evalTactic` before `sql_auto` runs, so that case tested Lean. The hint `cancel_now%` of the fixture now
+  sets the token when the procedure of `sql_select` reads its hints, inside the route `sql_select` of a run
+  claim and inside the procedure that `sql_run` gives a check to; `sql_commute` and `sql_run` do not read
+  the hints of a run claim. The interruption passes through the attempt of `closesBySelect`, and the goals
+  stay unchanged and unassigned. Tests: locally `tests/surface_select_procedure_test.py`.
 
 ## Working sequence
 

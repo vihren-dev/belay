@@ -36,9 +36,9 @@ def test_trust_boundaries(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_work_limit_and_cancellation(runtime_root: Path, tmp_path: Path) -> None:
     """The work limit and the cancellation of `sql_auto` (`Belay/Sqlite/AutoSearch.lean`) on SELECT claims
-    (B06): a call that runs out of a work limit of 300 thousand heartbeats, or that runs with a cancellation
-    token that is set, fails, and the claim and its sibling goal stay unchanged and unassigned. The
-    interruption reaches the caller. The procedure of `sql_select` inside the route `sql_run` runs out with
-    the share of that route, which closes the same check without a limit. Every proof has only logical
-    axioms."""
-    check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("SelectBudgetCases", 4)), timeout=90)
+    (B06): a call that runs out of a work limit of 300 thousand heartbeats, or that is cancelled by a hint
+    that the route `sql_select`, or the procedure inside the route `sql_run`, reads, fails, and the claim
+    and its sibling goal stay unchanged and unassigned. The interruption reaches the caller. The procedure
+    of `sql_select` inside the route `sql_run` runs out with the share of that route, which closes the same
+    check without a limit. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("SelectBudgetCases", 5)), timeout=90)
