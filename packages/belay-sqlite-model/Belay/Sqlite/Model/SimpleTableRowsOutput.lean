@@ -76,7 +76,7 @@ theorem resolvedStepOutput_simple_rows (clock : Option Clock) (index : Nat) (con
     (clean : source.fault = .none) :
     resolvedStepOutput clock index connection parameters (.query query []) =
       .rows (Resolved.normalForm (query.results (Resolved.EvalContext.bound parameters) source.rows)) := by
-  have context := Connection.queryContext_of_calm connection parameters query calm
+  have context := Connection.queryContext_of_quiet connection parameters query calm.quiet
   have run := simple.run_of_faultless (connection.queryContext parameters query []) calm.query_plain source.rows
     (calm.faultless_nil connection parameters)
   rw [resolvedStepOutput_clock_free clock index _ _ _ calm.readsClock,

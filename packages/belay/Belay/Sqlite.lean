@@ -131,8 +131,6 @@ import Belay.Sqlite.NotExistsQuery
 import Belay.Sqlite.NotInQuery
 import Belay.Sqlite.SelectOneMayFail
 import Belay.Sqlite.ExistsMayFail
-import Belay.Sqlite.ScalarNoFrom
-import Belay.Sqlite.SelectNoFrom
 import Belay.Sqlite.CountQuery
 import Belay.Sqlite.ColumnQuery
 import Belay.Sqlite.FilteredDuplicateKeyQuery

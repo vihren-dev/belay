@@ -116,9 +116,11 @@ decision: `Holds` and `Empty` of the successful-result predicate, `Fails` of the
 matching error observation. Each has the same truth value as its current
 definition on every query script and database; the implementation proves that
 equivalence as a migration witness, then deletes the old definitions. A per-form
-law of these names keeps its premises when it is derived again: the laws of
-`ScalarNoFrom.lean` take a quiet statement, which permits fallible functions,
-not a calm one; a derivation under a calm premise would lose that capability. The
+law of these names keeps its premises when it is derived again or replaced: the
+laws of `ScalarNoFrom.lean` take a quiet statement, which permits fallible
+functions, not a calm one; a derivation under a calm premise would lose that
+capability. The rules that replace them, `Connection.SelectReady.of_phases` and
+`Run.send_mustFail`, also take a quiet statement. The
 decidable instances and the `check_query` argument are kept. Their consumers in
 the claims driver, assertions, explanations and migration patterns change no
 statement. There is one claim vocabulary, not two.

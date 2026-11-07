@@ -356,7 +356,6 @@ import Belay.Sqlite.Model.QueryMayFailOutput
 import Belay.Sqlite.Model.SubqueryMayFailOutput
 import Belay.Sqlite.Model.SelectNoFromResolution
 import Belay.Sqlite.Model.ExprAnyLaws
-import Belay.Sqlite.Model.SelectNoFromOutput
 import Belay.Sqlite.Model.CountQueryLaws
 import Belay.Sqlite.Model.ExprContextLaws
 import Belay.Sqlite.Model.SelectOneSubqueryOutput
@@ -471,6 +470,7 @@ import Belay.Sqlite.Model.SelectStepKeeps
 import Belay.Sqlite.Model.SelectOutputShape
 import Belay.Sqlite.Model.SelectExecutionRule
 import Belay.Sqlite.Model.SelectRunRule
+import Belay.Sqlite.Model.SelectFailureRule
 import Belay.Sqlite.Model.SelectCalmRule
 import Belay.Sqlite.Model.SelectOverflowRule
 import Belay.Sqlite.Model.SelectWindowRules

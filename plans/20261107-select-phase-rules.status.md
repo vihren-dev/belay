@@ -383,6 +383,20 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   and A12 and A14 do not check the exact alternatives of `LIMIT` without `ORDER BY`, of a window
   across tie groups, or of `DISTINCT` and `GROUP BY` with `LIMIT`. The candidate decisions below
   for these two files are withdrawn. Tests: `just dev-build`.
+- 2026-11-07: retirement of the no-FROM family (stage 3). `SelectNoFrom.lean`, `ScalarNoFrom.lean`,
+  `Model/SelectNoFromOutput.lean`, `ClaimsNoFrom.lean` and `ClaimsScalarNoFrom.lean` are deleted.
+  New failure rule: `resolvedStepOutput_select_mustFail` (`Model/SelectFailureRule.lean`) and
+  `Run.send_mustFail` give the error of a failing function for a described query whose run
+  certainly fails. `Connection.queryContext_of_calm` becomes `Connection.queryContext_of_quiet`, which
+  takes a quiet statement; the duplicate in `QueryMayFailOutput.lean` is deleted. The new fixture
+  `SelectFunctionFaultCases.lean` proves, for every database and environment, that `SELECT abs(1)`
+  returns the row 1, that `SELECT abs(-9223372036854775808)` returns no result and the error of a
+  failing function, and that `WHERE 0` makes it empty, with the instances of `ClaimsScalarNoFrom`.
+  `SELECT 1` and a false `WHERE` are covered by `sum_returns` (A20) and `abs_least_skipped`. The
+  rules keep the quiet premise of `ScalarNoFrom` (ADR D2 and the task file now say so). Tests:
+  `just dev-build`; locally `tests/surface_select_sources_test.py`, `surface_select_rules_test.py`,
+  `surface_claims_test.py`, `surface_layers_test.py`, `surface_select_automation_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 

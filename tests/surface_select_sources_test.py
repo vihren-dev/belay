@@ -96,3 +96,13 @@ def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
                        ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 4)),
                        timeout=120)
+
+
+def test_function_fault_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Cases B01 and B05 without a table through the must-fail rule (`Run.send_mustFail`,
+    `resolvedStepOutput_select_mustFail`) and the phase rule of a quiet statement
+    (`SelectReady.of_phases`, `queryContext_of_quiet`): over every database, `SELECT abs(1)` returns the one
+    row 1, `SELECT abs(-9223372036854775808)` returns no result and the error of a failing function, and
+    `WHERE 0` skips that call and makes the result empty. The instances check each claim and the negation
+    of the two other claims. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectFunctionFaultCases", 3),), timeout=90)

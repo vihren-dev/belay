@@ -281,8 +281,8 @@ or has an unsupported subquery. Keep those cases in proofs: a row satisfying a f
 not imply `Holds` if another row can make evaluation fail.
 
 For a scalar call without `FROM`, `resolveStatement_selectNoFrom_columns` admits a resolved
-scalar column, including a fallible function. `Holds.iff_noFrom_scalar`,
-`Empty.iff_noFrom_scalar` and `Fails.iff_noFrom_scalar` retain the run's fault and the filter.
+scalar column, including a fallible function. `Connection.SelectReady.of_phases` and
+`Run.send_mustFail` take a quiet statement, so they keep the run's fault and the filter.
 Thus `SELECT abs(1)` holds, `SELECT abs(-9223372036854775808)` fails, and adding `WHERE 0`
 skips that failing projection and makes the result empty, for every database.
 

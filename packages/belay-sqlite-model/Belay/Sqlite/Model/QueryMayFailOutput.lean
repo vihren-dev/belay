@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SimpleQuerySteps
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.StatementQuiet
+import Belay.Sqlite.Model.SelectCalmRule
 import Belay.Sqlite.Model.SelectOneResolution
 
 set_option doc.verso true
@@ -62,16 +63,6 @@ theorem resolvedStepOutput_query_unmodeled (index : Nat) (connection : Connectio
     have := (resolvedStepOutput_query_isError index connection parameters query subqueries source noClock known
       found).mp yes
     simp_all
-
-/-- For every connection, values and quiet statement of a query without subqueries, the context of the
-query on the connection is the context of the values ({name}`Resolved.EvalContext.bound`): the statement
-reads no counter, so the context knows none. Proof sketch: the statement reads no counters
-({name}`Resolved.Statement.Quiet.counterReads`), and the view of the counters for no read is no counter. -/
-theorem Connection.queryContext_of_quiet (connection : Connection) (parameters : List Value) (query : Resolved.Query)
-    (quiet : (Resolved.Statement.query query []).Quiet) :
-    connection.queryContext parameters query [] = Resolved.EvalContext.bound parameters := by
-  simp only [Connection.queryContext, quiet.counterReads, Resolved.statementContext_nil]
-  rfl
 
 /-- For every connection, values, table at a position of the database of the connection and quiet statement of
 the simple query of that table with a {lit}`WHERE` condition, where some expression of the condition may fail

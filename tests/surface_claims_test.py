@@ -50,14 +50,6 @@ def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_pat
     assert result.returncode == 0, result.diagnostic()
 
 
-def test_a_query_without_from_holds_or_is_empty_by_its_condition(runtime_root: Path, tmp_path: Path) -> None:
-    """`SELECT e [WHERE c]` over every database: `Holds` for a query without `WHERE` and `Empty` for a false
-    condition, proved with the lemmas and `sql_simp`, with instances where `decide +kernel` checks the claim."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsNoFrom.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-
-
 def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE (SELECT count(*) FROM t [WHERE p]) = $n` over every database: `Holds` means that the
     table has `n` rows (or `n` rows for which `p` is true), proved with the lemmas and `sql_simp`, with instances
@@ -115,17 +107,6 @@ def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_p
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
     assert len(reports) == 10, result.stdout
-    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
-
-
-def test_no_from_scalar_calls_preserve_function_faults(runtime_root: Path, tmp_path: Path) -> None:
-    """A successful ABS, an overflowing ABS and a skipped overflowing ABS are proved for every
-    database, checked concretely, and audited for unchecked evaluation axioms."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsScalarNoFrom.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 3, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
 
 

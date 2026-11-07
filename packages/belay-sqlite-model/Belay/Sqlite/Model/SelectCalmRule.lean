@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.SelectRunRule
-import Belay.Sqlite.Model.StatementCalm
+import Belay.Sqlite.Model.StatementQuiet
 import Belay.Sqlite.Model.QueryPlainLaws
 
 set_option doc.verso true
@@ -24,14 +24,17 @@ sketch: the definition computes. -/
 theorem Resolved.EvalContext.bound_parameters (parameters : List Value) :
     (Resolved.EvalContext.bound parameters).parameters = parameters := rfl
 
-/-- For every connection, values and calm statement of a query without subqueries, the context of
-the query on the connection is the context of the values ({name}`Resolved.EvalContext.bound`): the
-statement reads no counter, so the context knows none. Proof sketch: the statement reads no counters
-({name}`Resolved.Statement.Calm.counterReads`), and the view of the counters for no read is no counter. -/
-theorem Connection.queryContext_of_calm (connection : Connection) (parameters : List Value) (query : Resolved.Query)
-    (calm : (Resolved.Statement.query query []).Calm) :
+/-- For every connection, values and quiet statement of a query without subqueries
+({name}`Resolved.Statement.Quiet`), the context of the query on the connection is the context of
+the values ({name}`Resolved.EvalContext.bound`): the statement reads no counter, so the context
+knows none. A calm statement is quiet ({name}`Resolved.Statement.Calm.quiet`); a quiet statement
+can call a function that fails, such as {lit}`abs`. Proof sketch: the statement reads no counters
+({name}`Resolved.Statement.Quiet.counterReads`), and the view of the counters for no read is no
+counter. -/
+theorem Connection.queryContext_of_quiet (connection : Connection) (parameters : List Value) (query : Resolved.Query)
+    (quiet : (Resolved.Statement.query query []).Quiet) :
     connection.queryContext parameters query [] = Resolved.EvalContext.bound parameters := by
-  simp only [Connection.queryContext, calm.counterReads, Resolved.statementContext_nil]
+  simp only [Connection.queryContext, quiet.counterReads, Resolved.statementContext_nil]
   rfl
 
 /-- The context in which a calm query statement evaluates its query and its subqueries: the
@@ -64,7 +67,7 @@ theorem Resolved.Statement.Calm.faultless_nil {query : Resolved.Query} (calm : (
   intro rows row _ expression member
   have plain := calm.query_plain
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
-  rw [Connection.queryContext_of_calm connection parameters query calm]
+  rw [Connection.queryContext_of_quiet connection parameters query calm.quiet]
   exact Resolved.Expr.fault_of_plain _ (fun _ _ => ⟨rfl, rfl, rfl⟩) row expression (plain expression member)
 
 /-- Faultless rule: for every connection, values, calm statement of a query with subqueries, where

@@ -40,7 +40,7 @@ theorem calm_table (script : Script) (db : Database) (env : Env) {statement : Sy
     (by simp) noOverflow distinct
   have context : (db.raw.connection env.counters).queryContextAt 0 parameters query [] =
       Resolved.EvalContext.bound parameters :=
-    Connection.queryContext_of_calm _ parameters query calm
+    Connection.queryContext_of_quiet _ parameters query calm.quiet
   rw [Run.send_returnsResult_select head db env resolved (by simp [statementClock, calm.readsClock]) ready property,
     context]
 

@@ -42,7 +42,7 @@ theorem Run.query_overflow_calmTable {script : Script} {statement : Syntax.State
       ((db.run (Belay.Sqlite.query script one) env).returnsError code ↔
         code ExecutionError.integerOverflow.primaryCode) := by
   have context : (db.raw.connection env.counters).queryContextAt 0 parameters query [] =
-      Resolved.EvalContext.bound parameters := Connection.queryContext_of_calm _ parameters query calm
+      Resolved.EvalContext.bound parameters := Connection.queryContext_of_quiet _ parameters query calm.quiet
   have faultless := calm.faultless_nil (db.raw.connection env.counters) parameters (rows := Resolved.sourceRows table)
   rw [Run.query_returnsResult_iff one, Run.query_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]

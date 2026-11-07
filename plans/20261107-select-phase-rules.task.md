@@ -108,7 +108,8 @@ The suite verifies the observable behavior above end to end:
   `.oneOf` wrapper as its first result: the bridge needs the SELECT premise and
   the nonemptiness of generated alternatives.
 - `ScalarNoFrom.lean`'s laws take a quiet statement (fallible functions
-  allowed); a re-derivation under a calm premise loses that capability.
+  allowed); a re-derivation or replacement under a calm premise loses that
+  capability.
 - `sql_run` (`SqlRun.lean`) applies `Sql.check_query_select`,
   `check_single_select` and `check_send_select`, leaving the `reached`
   obligation over every `OutputChoice`; the SELECT procedure starts from that

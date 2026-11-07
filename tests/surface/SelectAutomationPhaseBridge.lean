@@ -76,7 +76,7 @@ values bound to the parameters. Proof sketch: {name}`Script.outputOn_query` and
 {name}`Connection.runOn_of_found` with {name}`Resolved.Query.source_first`, and
 {name}`Resolved.Query.outputOn_clean` give the output; {name}`run_of_faultless` with
 {name}`Resolved.Statement.Calm.faultless_nil` supplies the quiet run, and
-{name}`Connection.queryContext_of_calm` the context. -/
+{name}`Connection.queryContext_of_quiet` the context. -/
 theorem outputs_of_calm_table (script : Script) (db : Database) {statement : Syntax.Statement}
     {parameters : List Value} {after : ResolveState} {position : Nat} {table : Table} (query : Resolved.Query)
     (isQuery : script.isQuery = true)
@@ -92,7 +92,7 @@ theorem outputs_of_calm_table (script : Script) (db : Database) {statement : Syn
       [Output.ofResults (query.possibleResults (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table))] := by
   have output := Script.outputOn_query script db statement parameters [] _ [] after head resolved
   rw [Script.query_outputs isQuery db, output]
-  have context := Connection.queryContext_of_calm db.raw.connection parameters query calm
+  have context := Connection.queryContext_of_quiet db.raw.connection parameters query calm.quiet
   have run := run_of_faultless (db.raw.connection.queryContext parameters query []) query (Resolved.sourceRows table)
     single distinct limitParameter offsetParameter (context ▸ noOverflow) calm.query_plain
     (calm.faultless_nil db.raw.connection parameters)
