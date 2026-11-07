@@ -50,7 +50,7 @@ theorem grind_route (rows : List Nat) (given : rows = [1, 2]) : rows.length = 2 
 /-- error: sql_auto did not close the goal. The routes failed:
 - sql_commute: sql_commute proves only a claim of Migration.PreservesAt or Migration.CommutesOn. Use another tactic for this goal.
 - sql_run: sql_run proves a check of a SQL program, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check.
-- sql_select: sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal with a hypothesis that a list is a result of a query (Resolved.Query.possibleResults) or a row of a table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a rule as a hint.
+- sql_select: sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal whose target or hypotheses read the results or a phase of a resolved query (Resolved) or the rows of a table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a rule as a hint.
 - grind: `grind` failed
 Run one of these tactics alone to see the goals that it leaves. -/
 #guard_msgs in
@@ -80,7 +80,7 @@ theorem second_goal_stays_after_auto (rows : List Nat) (given : rows = [1, 2]) :
 /-- error: sql_auto did not close the goal. The routes failed:
 - sql_commute: sql_commute proves only a claim of Migration.PreservesAt or Migration.CommutesOn. Use another tactic for this goal.
 - sql_run: it used the work limit of its share.
-- sql_select: sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal with a hypothesis that a list is a result of a query (Resolved.Query.possibleResults) or a row of a table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a rule as a hint.
+- sql_select: sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal whose target or hypotheses read the results or a phase of a resolved query (Resolved) or the rows of a table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a rule as a hint.
 - grind: failed to generate equation theorems for `rfl`
 Run one of these tactics alone to see the goals that it leaves. -/
 #guard_msgs in

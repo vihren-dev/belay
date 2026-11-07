@@ -147,14 +147,14 @@ def test_distinct_order_and_window_cases(runtime_root: Path, tmp_path: Path) -> 
 def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
     """The procedure `sql_select` (`Belay/Sqlite/SqlSelect.lean`) with its built-in rules and evaluation laws
     (`SqlSelectRules.lean`) proves the core set A01, A02, A03, A04, A08, A10, A13 and A14 over every database
-    with the catalog of the case, with the catalog fact as its only hint, at the default heartbeat limit.
-    `sql_auto` (`Belay/Sqlite/AutoSearch.lean`) proves the same claims through its route `sql_select` and
+    with the catalog of the case, with the catalog fact as its only hint, at the default heartbeat limit,
+    and a phase claim that has no run and no membership hypothesis. `sql_auto` (`Belay/Sqlite/AutoSearch.lean`) proves the same claims through its route `sql_select` and
     offers `sql_select [schema]` as the replacement, which the first module uses alone. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectFilterCases", 3),
                        ("SelectComparisonCases", 5), ("SelectCardinalityCases", 5), ("SelectGroupSupport", 0),
                        ("SelectGroupCases", 6), ("SelectCountCases", 5), ("SelectHavingCases", 6),
-                       ("SelectOrderCases", 4), ("SelectProcedureCases", 8), ("SelectAutoCases", 8)),
+                       ("SelectOrderCases", 4), ("SelectProcedureCases", 9), ("SelectAutoCases", 8)),
                        timeout=90)
 
 

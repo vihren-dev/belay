@@ -8,7 +8,8 @@ import SelectOrderCases
 set_option doc.verso true
 
 /-! The core set of the SELECT acceptance cases (A01, A02, A03, A04, A08, A10, A13 and A14), each proved
-by the procedure {lit}`sql_select` with the catalog fact as its only hint. The hint names no rule and
+by the procedure {lit}`sql_select` with the catalog fact as its only hint, and one phase claim without a
+run. The hint names no rule and
 no query: the procedure chooses the execution rule, the phase rules and the evaluation laws itself. The
 schemas and the scripts are those of the case modules, which prove the same cases by explicit steps. -/
 
@@ -90,6 +91,15 @@ theorem ids_window (db : Database) (env : Env) (schema : db.HasCatalog orders) :
         result = picked.map fun row => [row.getD 0 .null] := by
   sql_select [schema]
 
+/-- A phase claim without a run and without a membership hypothesis: for every context and rows, the
+records of the query of the ids by descending amount ({name}`SelectOrderCases.idsByAmount`) are, for
+each row in order, its id as the result row and its amount as the sort value. The goal reads the
+records of a resolved query, so the procedure accepts it; the hint unfolds the query. -/
+theorem ids_records (context : Resolved.EvalContext) (rows : List (List Value)) :
+    (SelectOrderCases.idsByAmount true 0 none).uniqueRecords context rows =
+      rows.map fun row => ([row.getD 0 .null], [row.getD 2 .null]) := by
+  sql_select [SelectOrderCases.idsByAmount]
+
 end SelectProcedureCases
 
 #print axioms SelectProcedureCases.customer_present
@@ -100,3 +110,4 @@ end SelectProcedureCases
 #print axioms SelectProcedureCases.repeat_customers
 #print axioms SelectProcedureCases.ids_descending
 #print axioms SelectProcedureCases.ids_window
+#print axioms SelectProcedureCases.ids_records

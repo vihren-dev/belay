@@ -97,20 +97,28 @@ partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String
 def explain (goal : MVarId) (phase : String) (reason : MessageData) : TacticM Unit :=
   logWarning m!"sql_select stopped in the {phase} phase: {reason} The goal stays open:{indentD (MessageData.ofGoal goal)}"
 
-/-- Whether the goal has a fact that the phase rules read: that a list is a result of a query or a row
-of a table. -/
-def hasPhaseFact (goal : MVarId) : MetaM Bool := goal.withContext do
+/-- Whether a term reads the query model: a declaration of the resolved query
+({lit}`Belay.Sqlite.Model.Resolved`), such as {lit}`Resolved.Query.results`, a phase function such as
+{lit}`Resolved.filtered`, or the scanned rows of a table ({lit}`Database.scanAt`). -/
+def readsQueryModel (term : Expr) : Bool :=
+  (term.find? fun part => match part.constName? with
+    | some name => (`Belay.Sqlite.Model.Resolved).isPrefixOf name || name == ``Belay.Sqlite.Database.scanAt
+    | none => false).isSome
+
+/-- Whether the goal is about a query: its target or one of its hypotheses reads the query model
+({name}`readsQueryModel`). -/
+def aboutQuery (goal : MVarId) : MetaM Bool := goal.withContext do
+  if readsQueryModel (← instantiateMVars (← goal.getType)) then return true
   (← getLCtx).anyM fun declaration => do
     if declaration.isImplementationDetail then return false
-    let type ← instantiateMVars declaration.type
-    return !(phasesOfFact type).contains .filter
+    return readsQueryModel (← instantiateMVars declaration.type)
 
 /-- The refusal of a goal that is no claim about the results of a query. -/
 def unknownShape : MessageData :=
   m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal \
-    with a hypothesis that a list is a result of a query (Resolved.Query.possibleResults) or a row of a table \
-    (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a \
-    rule as a hint."
+    whose target or hypotheses read the results or a phase of a resolved query (Resolved) or the rows of a \
+    table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or \
+    pass a rule as a hint."
 
 /-- The procedure on one goal; the result is the goals that stay open. A goal that is no claim about the
 results of a query, and to which no hint applies backward, is refused with an error. -/
@@ -119,7 +127,7 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
   let (_, goal) ← goal.intros
   let target ← goal.withContext do whnfR (← instantiateMVars (← goal.getType))
   let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult
-  let recognized := recognized || isRun || (← hasPhaseFact goal)
+  let recognized := recognized || isRun || (← aboutQuery goal)
   let phases := if isRun then [SelectPhase.execution] else []
   let mut refused : Option (Name × Expr) := none
   for rule in ← candidates hints phases do

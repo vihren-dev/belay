@@ -574,6 +574,12 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `SelectProcedureCases.lean` uses alone (B07). `S6AutoAuto.lean` shows the reason of the new route.
   Tests: `just dev-build`; locally `tests/surface_select_rules_test.py -k "core_set or registry"`,
   `tests/surface_s6_automation_test.py` and `tests/surface_s6_auto_editor_test.py`.
+- 2026-11-07: review finding of the route (refactor). `sql_select` accepts every goal whose target or
+  hypotheses read the resolved query model (`Resolved`) or `Database.scanAt`, so the standalone phase
+  claims of the acceptance contract (for example `Q (query.uniqueRecords context rows)`) are accepted
+  without a membership hypothesis; a plain fact is still refused. `SelectProcedureCases.ids_records` is
+  the regression case. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
+  `tests/surface_s6_automation_test.py` and `tests/surface_s6_auto_editor_test.py`.
 
 ## Working sequence
 
