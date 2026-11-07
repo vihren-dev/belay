@@ -72,10 +72,10 @@ def ruleKey : Sum Name (TSyntax `term) → String
 /-- Apply forward rules to the hypotheses until no rule gives a new fact or the fuel ends, splitting the
 facts after each step. Each rule applies at most once to a fact, so that a rule whose fact has a new
 witness does not repeat; for a membership the fact is the collection, which a substitution of the
-member does not change. -/
+member does not change. The result is the goal and whether the fuel ended. -/
 partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String × Expr)) (goal : MVarId) :
-    TacticM MVarId := do
-  if fuel == 0 then return goal
+    TacticM (MVarId × Bool) := do
+  if fuel == 0 then return (goal, true)
   let goal ← splitFacts goal
   let hypotheses ← goal.withContext do
     return (← getLCtx).foldl (init := #[]) fun found declaration =>
@@ -92,7 +92,7 @@ partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String
       let term ← goal.withContext (ruleTerm rule)
       if let .ok next ← applyForward hints goal term hypothesis.fvarId then
         return ← saturate hints (fuel - 1) (applied.insert key) next
-  return goal
+  return (goal, false)
 
 /-- Report where the procedure stopped and why; the goal stays open. -/
 def explain (goal : MVarId) (phase : String) (reason : MessageData) : TacticM Unit :=
@@ -114,6 +114,18 @@ def aboutQuery (goal : MVarId) : MetaM Bool := goal.withContext do
     if declaration.isImplementationDetail then return false
     return readsQueryModel (← instantiateMVars declaration.type)
 
+/-- The number of rule applications in one run of {lit}`sql_select`: the
+rules applied backward to the goal and forward to its hypotheses, together. Cyclic rules and hints stop
+at this limit. -/
+def selectFuel : Nat := 64
+
+/-- The explanation of a goal on which the procedure used all its rule applications ({name}`selectFuel`).
+The limit is no evidence that the goal is false. -/
+def exhausted : MessageData :=
+  m!"the procedure used its limit of {selectFuel} rule applications. Rules or hints that make new goals or \
+    facts without end use this limit. This does not show that the goal is false. Pass fewer hints, or \
+    prove the goal in steps."
+
 /-- The refusal of a goal that is no claim about the results of a query. -/
 def unknownShape : MessageData :=
   m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, the \
@@ -130,24 +142,28 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
   let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult ||
     (target.isAppOfArity ``Belay.Sqlite.Sql.check 4 && (target.getArg! 1).isAppOf ``Belay.Sqlite.query)
   let recognized := recognized || isRun || (← aboutQuery goal)
+  let phase := if isRun then "execution" else "result"
+  if fuel == 0 then
+    explain goal phase exhausted
+    return [goal]
   let phases := if isRun then [SelectPhase.execution] else []
-  let mut refused : Option (Name × Expr) := none
+  let mut refused : Option (MessageData × Expr) := none
   for rule in ← candidates hints phases do
     let term ← goal.withContext (ruleTerm rule)
     match ← applyBackward hints goal term with
     | .ok next => return ← selectGoal hints (fuel - 1) next true
     | .error (.premise type) =>
-      if refused.isNone then refused := some ((match rule with | .inl name => name | .inr _ => `hint), type)
+      if refused.isNone then refused := some ((match rule with | .inl name => m!"{name}" | .inr hint => m!"{hint}"), type)
     | .error .noMatch => pure ()
   unless recognized || refused.isSome do throwError unknownShape
-  let goal ← saturate hints fuel {} goal
+  let (goal, ended) ← saturate hints fuel {} goal
   if ← finishLeaf hints goal then return []
   match refused with
   | some (rule, type) =>
-    explain goal "execution" m!"the rule {rule} matches, but its premise{indentExpr type}\nis not proved."
+    explain goal phase m!"the rule {rule} matches, but its premise{indentExpr type}\nis not proved."
   | none =>
-    if isRun then
-      explain goal "execution" m!"no execution rule matches the run, and no hint applies."
+    if ended then explain goal "result" exhausted
+    else if isRun then explain goal "execution" m!"no execution rule matches the run, and no hint applies."
     else
       explain goal "result" m!"the facts that the rules give do not prove the goal. Prove it, or pass a rule or a \
         fact as a hint."
@@ -156,9 +172,6 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
 /-- The procedure of {lit}`sql_select` with the given hints, as a sequence of steps of
 {lit}`sql_select` on the main goal. -/
 syntax (name := sqlSelect) "sql_select" (" [" term,* "]")? : tactic
-
-/-- The number of rule applications in one run of {lit}`sql_select`. -/
-def selectFuel : Nat := 64
 
 /-- Run the procedure on the main goal; the goals that stay open replace it. -/
 @[tactic sqlSelect] def evalSqlSelect : Tactic := fun written => do

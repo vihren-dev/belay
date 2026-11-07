@@ -595,6 +595,18 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_automatic_editor_test.py`, `tests/surface_automatic_cancel_test.py`,
   `tests/surface_s6_rules_test.py`, `tests/surface_s6_check_programs_test.py` and
   `tests/surface_proof_cost_automatic_test.py`.
+- 2026-11-07: the explanations of `sql_select` (B04, B09). The procedure counts its rule applications
+  (`selectFuel`, 64) on the backward path too, so cyclic hints stop; when the fuel ends, the explanation
+  says that the limit was used and that this does not show the goal false, which differs from the
+  explanation of a goal that the facts do not prove. A rule whose premise is not proved is named by its
+  text when it is a hint, in the phase of the goal. A residual goal is the goal before the last
+  simplification: the simplified goal of a count claim was an existential that hid the arithmetic, while
+  the unsimplified goal is the claim with the facts of the rules. `tests/surface/SelectResidualCases.lean`
+  checks each explanation as text and proves each residual goal by hand; it is a module of the new
+  `tests/surface_select_procedure_test.py` (suite `surfaceS6`). Tests: `just dev-build`; locally
+  `tests/surface_select_procedure_test.py`, `tests/surface_select_rules_test.py`,
+  `tests/test_nix_test_targets.py`, `tests/surface_s6_automation_test.py` and
+  `tests/surface_s6_auto_editor_test.py`.
 
 ## Working sequence
 

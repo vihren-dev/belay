@@ -180,3 +180,4 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
     rule that matches. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
                        ("SelectRuleRegistry", 3)), timeout=90)
+
