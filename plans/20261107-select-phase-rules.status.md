@@ -679,6 +679,18 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `aa097c57`. The probes of the run observations stay. Checks for the commit: `tests/docs_test.py`,
   `tests/surface_select_rules_test.py::test_run_observations` and
   `tests/surface_select_automation_test.py`; Nix results at the end of the stage.
+- 2026-11-07: README section and measurement (stage 4). `packages/belay/README.md` has the section
+  "Prove claims about a SELECT": the three run observations, `sql_select` with the A01 example, its
+  warning when a goal stays open, the registration of a rule under a phase, the use by `sql_run`,
+  `sql_auto` and `#sql_check`, and the group row that the model chooses (issue #309). Net Lean change of
+  the implementation, from `02fac046` (the task file) to `61f4d0fa` (the deletion of the experiments),
+  counted with scc 3.7.0 (`Code` field) on the 225 changed `.lean` files, with the scope and exclusions
+  of the [Lean simplification goal](../docs/lean-simplification-goal.md): packages 6,516 → 7,456
+  (+940), tests 2,781 → 5,941 (+3,160), other unchanged; net +4,100 lines. The growth is the public
+  rule library (13 phases), the procedure, and the A and B fixtures that the task requires; the
+  retired query families (count, duplicate key, aggregate, `ColumnQuery`, `UniqueLookupQuery`, EXISTS,
+  no-FROM, may-fail, query cases) are deleted. No capability is lost. Checks for the commit:
+  `tests/docs_test.py`; Nix results at the end of the stage.
 
 ## Working sequence
 

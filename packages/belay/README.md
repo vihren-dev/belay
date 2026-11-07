@@ -314,6 +314,68 @@ the new name, the terms and filter resolve, and a unique index has no conflictin
 column key check. This direction is sufficient: repeated NULLs group together but do not
 conflict in a unique index. The grouping and index must use the same collation.
 
+## Prove claims about a SELECT
+
+Three observations state what a run returns:
+
+- `run.returnsResult property`: the run has one output, a result, and each result that
+  the model permits satisfies `property`.
+- `run.returnsRows property`: the run returns a result, and each of its rows satisfies
+  `property`. A result without rows satisfies it.
+- `run.returnsError property`: the run has one output, an error whose result code
+  satisfies `property`. Use `fun _ => True` for any error.
+
+`Holds`, `Empty` and `Fails` are these observations of the default run of a query. An
+unmodeled stop, no output and more than one output satisfy no observation.
+
+The tactic `sql_select` proves such claims for every database with a given catalog. It
+also proves `Sql.check` of a query at a context and claims about the results of a query.
+For example, with `schema : db.HasCatalog invoices` as the only hint:
+
+```lean
+theorem customer_present (db : Database) (env : Env) (schema : db.HasCatalog invoices) :
+    (db.run (query customerOfFirst customerOfFirst_one) env).returnsRows firstCellPresent := by
+  sql_select [schema]
+```
+
+Here `invoices` is the catalog of a table `invoices`, `customerOfFirst` is a script of one
+SELECT of the customer of the invoice with `id` 1, and `firstCellPresent row` says that the first
+cell of `row` is not NULL.
+
+The tactic applies an execution rule, which turns the claim into a claim about each result
+that the model permits. Then it applies the rules of the SELECT phases to the facts that it
+gets: sources, expressions, filter, grouping, aggregates, `HAVING`, projection,
+`DISTINCT`, order, window, compounds and subqueries. It closes the last goal with the
+`sql_select_simp` simp set and the hints. Hints apply first, in the given order. A hint can
+be a fact, a rule, or a definition of the claim that the simplifier must unfold.
+
+When `sql_select` cannot close a goal, the goal stays open with a warning that names the
+phase and the reason, for example:
+
+```text
+sql_select stopped in the result phase: the facts that the rules give do not prove the goal.
+```
+
+Prove the goal that stays open, or pass the rule or the fact that it needs as a hint.
+
+To add a rule, prove it as a theorem and register it under one of the phases `source`,
+`expression`, `filter`, `group`, `aggregate`, `having`, `project`, `distinct`, `order`,
+`window`, `compound`, `subquery` or `execution`:
+
+```lean
+attribute [local sql_select_rule filter] myFilterRule
+```
+
+Registered rules apply after the hints, in the order of their qualified names. Use `local`
+to limit a rule to the current section or file.
+
+`sql_run` gives the SELECT obligations of a `Sql.check` goal to `sql_select`. `sql_auto`
+and `#sql_check` try it in their search, so they also prove claims about the results of a
+query.
+
+The rules of a grouped query state the row of a group that the model chooses. Where
+SQLite's query plan chooses that row, native SQLite can return another permitted row.
+
 ## Check a claim before proving it
 
 `#sql_check P` tries checked proof automation, then searches for a valid database
