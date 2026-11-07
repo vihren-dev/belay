@@ -1,6 +1,6 @@
 # Compositional SELECT proofs: implementation of ADR 0027
 
-Created 2026-11-07. Status: IN PROGRESS.
+Created 2026-11-07. Status: DONE (2026-11-07).
 Audience: team. Status: [checkpoint](20261107-select-phase-rules.status.md).
 Specification: [ADR 0027](../docs/adr-0027-compositional-select-proofs.md) (accepted by the
 owner on 2026-11-07), its [acceptance contract](../docs/select-automation-acceptance.md),

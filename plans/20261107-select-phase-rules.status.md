@@ -1,6 +1,6 @@
 # Compositional SELECT proofs: task status
 
-Date: 2026-11-07. Status: IN PROGRESS (stage 4 of the working sequence).
+Date: 2026-11-07. Status: DONE (2026-11-07; all four stages of the working sequence).
 Audience: the implementation team.
 Task: [Compositional SELECT proofs](20261107-select-phase-rules.task.md).
 Specification: [ADR 0027](../docs/adr-0027-compositional-select-proofs.md),
@@ -691,6 +691,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   retired query families (count, duplicate key, aggregate, `ColumnQuery`, `UniqueLookupQuery`, EXISTS,
   no-FROM, may-fail, query cases) are deleted. No capability is lost. Checks for the commit:
   `tests/docs_test.py`; Nix results at the end of the stage.
+- 2026-11-07: stage 4 end checks at `2251a86c`. `just test-full` passed (377 tests) and
+  `just verdict` passed (5768 cases agree, 2100 are unsupported by the model, no disagreement), with no
+  prediction change.
+- 2026-11-07: task end checks at `2251a86c`. `just test-nix` passed (91 tests) and
+  `just test-scheduled-checks` passed (53 tests). The task is DONE; its pull request is stacked on PR 299.
 
 ## Working sequence
 
