@@ -617,6 +617,13 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   on `shop`. The replacement proofs of B07 are those of `SelectProcedureCases.lean`. The review findings of
   the residual explanations (wording of the status entry and of the fixture) are fixed here. Tests: locally
   `tests/surface_select_procedure_test.py`.
+- 2026-11-07: the work limit and the cancellation (B06). `tests/surface/SelectBudgetCases.lean` runs
+  `sql_auto` with a work limit of 300 thousand heartbeats, set in the Core context (a tactic-level
+  `set_option maxHeartbeats` does not change the limit that `Check.remainingUnits` reads), and with a set
+  cancellation token. The call fails, the claim and its sibling stay unchanged and unassigned, and the
+  proof closes them by other steps. An interruption passes through `try` and `tryCatchRuntimeEx`, so the
+  fixture observes it at the `EIO` level. The check of A08 shows that `sql_select` inside the route
+  `sql_run` runs out with that route's share. Tests: locally `tests/surface_select_procedure_test.py`.
 
 ## Working sequence
 
