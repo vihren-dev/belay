@@ -57,16 +57,17 @@ special-case theorem elsewhere can help prove them.
 | Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules] | Collection specifications for every source constructor and the source fold |
 | Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws]; `joinRows_inner`, `joinRows_left`, `joinRows_right`, `joinRows_full`, `joinRows_inner_length` in [SelectJoinRules][join-rules] | Matched/unmatched collection rules retaining multiplicity and outer cells |
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
+| Subqueries | `EvalContext.statement_subqueries`, `statement_one`, `Query.subqueryRun_clean`, `subqueryRun_of_faultless`, `results_eq_nil_iff_plain`, `results_plain_unordered`, `windowCertain_of_short` in [SelectSubqueryRules][subquery-rules] | Run rules for each outer row, with the emptiness, first-column and first-value facts that EXISTS, IN and a scalar subquery read |
 | Filter | `mem_filtered` in [QueryLaws][query-laws] | Complete-collection and cardinality rules, beyond unary membership |
 | Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
 | Aggregate | `Query.aggregateOf_possibleResults`, `aggregateOf_fails` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.Simple.results_eq` in [SimpleResultsLaws][simple-results] | Characterization of general `records`, including HAVING and hidden sort keys |
 | DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws] | Record DISTINCT and every compound operator, with certainty premises |
 | Sort | `stableSort_perm`, `sort_perm`, `sort_sorted` in [QueryLaws][query-laws] | Transfer of collection predicates and observable ordering facts |
-| Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas] | Parameter/error and tie-boundary rules, not only a representative list slice |
+| Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas]; `resolvedStepOutput_select_mismatch` in [SelectOverflowRule][overflow-rule]; `Run.query_mismatch` in [SelectOverflow][overflow-execution] | Parameter/error and tie-boundary rules, not only a representative list slice |
 | Alternatives | `Query.normalResult_mem`, `possibleResults_ne_nil`, `possibleResults_length` in [PossibleResultsLaws][possible-laws] | Transfer of arbitrary predicates to every permitted result |
 | Output construction | `Output.ofResults_listed`, `Output.listed_iff` in [OutputResultsLaws][output-laws] | Successful-result predicates and their nonempty-alternative bridges |
-| Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `resolvedStepOutput_selectOne` in [SelectOneOutput][select-one-output] (ADR 0026 D1, to be replaced); `Sql.check_query_select` in [ReadStepRule][read-rule] | General phase-to-execution adapters retaining actual readiness and context |
+| Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `resolvedStepOutput_selectOne` in [SelectOneOutput][select-one-output] (ADR 0026 D1, to be replaced); `Sql.check_query_select` in [ReadStepRule][read-rule]; `Connection.SelectReady.of_faultless` in [SelectCalmRule][calm-rule]; `Run.query_returnsResult_faultless` in [SelectCalmExecution][calm-execution] | General phase-to-execution adapters retaining actual readiness and context |
 
 The pure pipeline already exists: [QueryEval][query-eval] supplies filtering,
 grouping, aggregates and sorting; [QueryResults][query-results] supplies records,
@@ -125,6 +126,11 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [table-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableSourceLaws.lean
 [join-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoinLaws.lean
 [join-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectJoinRules.lean
+[subquery-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSubqueryRules.lean
+[calm-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean
+[calm-execution]: ../packages/belay/Belay/Sqlite/SelectCalmExecution.lean
+[overflow-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOverflowRule.lean
+[overflow-execution]: ../packages/belay/Belay/Sqlite/SelectOverflow.lean
 [expr-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprEvalLaws.lean
 [context-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
 [query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean
@@ -144,9 +150,7 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [query-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lean
 [query-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryRun.lean
 [joins]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoins.lean
-[compound-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRows.lean
 [subqueries]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Subqueries.lean
-[compound-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRun.lean
 [output-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputCases.lean
 [possible]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResults.lean
 [choices]: ../packages/belay/Belay/Sqlite/ExecutionBranches.lean

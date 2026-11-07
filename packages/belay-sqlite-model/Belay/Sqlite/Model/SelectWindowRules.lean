@@ -134,4 +134,24 @@ theorem Query.perm_of_mem_possibleResults {context : EvalContext} {query : Query
     simp [offset, Query.stop, limit, windowRows, sorted.length_eq]
   exact sublist.eq_of_length (by simp [← perm.length_eq, length]) ▸ perm
 
+/-- For every order that holds between any two items, inserting an item puts it at the end of the list. Proof
+sketch: induction on the list; each leading item is at most the new item. -/
+theorem insertStable_of_total {α : Type} (le : α → α → Bool) (always : ∀ a b, le a b = true) (item : α) :
+    ∀ items : List α, insertStable le item items = items ++ [item]
+  | [] => rfl
+  | head :: tail => by simp [insertStable, always, insertStable_of_total le always item tail]
+
+/-- For every order that holds between any two items, the stable sort keeps the list as it is. Proof sketch:
+each step of the fold appends the next item ({name}`insertStable_of_total`). -/
+theorem stableSort_of_total {α : Type} (le : α → α → Bool) (always : ∀ a b, le a b = true) (items : List α) :
+    stableSort le items = items := by
+  have step : ∀ (sorted items : List α), items.foldl (fun sorted item => insertStable le item sorted) sorted =
+      sorted ++ items := by
+    intro sorted items
+    induction items generalizing sorted with
+    | nil => simp
+    | cons head tail ih => rw [List.foldl_cons, insertStable_of_total le always, ih, List.append_assoc,
+        List.singleton_append]
+  simpa [stableSort] using step [] items
+
 end Belay.Sqlite.Model.Resolved

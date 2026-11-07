@@ -286,6 +286,31 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   Native SQLite 3.51.0 gives the same rows. Tests: `just dev-build`; locally
   `tests/surface_select_rules_test.py`, `tests/surface_success_test.py` and
   `tests/test_model_package.py` except its installed-package test.
+- 2026-11-07: stage 2 end checks, run again at `824f18e6` (the join commit, on the `fix:`
+  commit): `just test-full` passed and `just verdict` passed (5768 cases agree, 2100 are
+  unsupported by the model, no disagreement).
+- 2026-11-07: window parameters and subquery rules, A15, A18 and A19 (stage 3).
+  `Model/SelectSubqueryRules.lean`: the statement context runs each subquery in the context of the
+  values (`EvalContext.statement_subqueries`, `statement_one`), the run of a subquery without a
+  fault (`Query.subqueryRun_clean`, `subqueryRun_of_faultless`), the emptiness rule that `EXISTS`
+  reads (`results_eq_nil_iff_plain`), the rows of a plain query without `ORDER BY`
+  (`results_plain_unordered`) and the short window rule (`windowCertain_of_short`).
+  `Connection.SelectReady.of_faultless` (`SelectCalmRule.lean`) and
+  `Run.query_returnsResult_faultless` (`SelectCalmExecution.lean`, moved out of
+  `SelectExecution.lean`) take a window that binds to the values; the mismatch rules
+  `resolvedStepOutput_select_mismatch` and `Run.query_mismatch` give the error `datatype mismatch`
+  when it does not bind. `stableSort_of_total` moves to `SelectWindowRules.lean`. Fixtures: A15,
+  `SelectParameterWindowCases.lean`: `LIMIT ? OFFSET ?` with integer values returns `min limit
+  (n - offset)` ids in increasing amount order, and a `LIMIT` value that is no integer returns the
+  error and no result; instances: the text values `'+2'` and `' 1 '` read as integers, `OFFSET
+  'abc'` after `LIMIT 2` fails, `LIMIT 0` with `OFFSET NULL` gives no row. A18,
+  `SelectSubquerySupport.lean` and `SelectExistsCases.lean`: correlated `EXISTS` and `NOT EXISTS`
+  keep the customers with and without a witness order; contrast with two outer rows. A19,
+  `SelectInCases.lean`: `IN` and `NOT IN` over the `customer_id` of every order, with the NULL rule
+  of `inValue` (`2 NOT IN (1, 9, NULL)` is NULL); `SelectScalarCases.lean`: the scalar subquery
+  gives the amount of the first witness order, or NULL without one, when at most one order is a
+  witness. Native SQLite 3.51.0 gives the instance results. Tests: `just dev-build`; locally
+  `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 

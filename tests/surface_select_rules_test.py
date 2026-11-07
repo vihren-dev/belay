@@ -145,3 +145,27 @@ def test_join_cases(runtime_root: Path, tmp_path: Path) -> None:
     has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
                        ("SelectJoinCases", 3), ("SelectOuterJoinCases", 5)), timeout=90)
+
+
+def test_subquery_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases A18 and A19 through the subquery rules (`statement_one`, `subqueryRun_of_faultless`,
+    `results_eq_nil_iff_plain`, `results_plain_unordered`, `windowCertain_of_short`) and the faultless
+    execution rule: over every database with the catalog of `shop`, a correlated EXISTS keeps exactly the
+    customers with a witness order and NOT EXISTS the others; IN and NOT IN read the first column of every
+    order; a scalar subquery gives the amount of the one witness, or NULL. The instances show two outer rows
+    with different subquery runs, NOT IN over a NULL, and an empty scalar subquery. Every proof has only
+    logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
+                       ("SelectJoinCases", 3), ("SelectSubquerySupport", 0), ("SelectExistsCases", 5),
+                       ("SelectInCases", 4), ("SelectScalarCases", 2)), timeout=120)
+
+
+def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A15 through the faultless execution rule with a bound window and the mismatch rule
+    (`resolvedStepOutput_select_mismatch`, `Run.query_mismatch`): over every database with the catalog of
+    `orders`, LIMIT ? OFFSET ? with integer values gives the window of the sorted rows, and a LIMIT value
+    that is no integer gives the error `datatype mismatch` and no result. The instances show text values
+    that SQLite reads as integers, an OFFSET that fails after LIMIT 2, and LIMIT 0, which does not read the
+    OFFSET. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
+                       ("SelectParameterWindowCases", 4)), timeout=90)

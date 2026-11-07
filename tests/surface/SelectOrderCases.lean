@@ -22,14 +22,15 @@ def idsByAmount (descending : Bool) (offset : Nat) (limit : Option Nat) : Resolv
   { sources := [.first 0], filter := none, aggregate := false, groupBy := [], columns := [.scalar (.column 0)],
     names := ["id"], orderBy := [{ key := .expression (.column 2), descending, collation := .binary }], offset, limit }
 
-/-- Records rule of {name}`idsByAmount`: for every direction, offset, limit and rows, the records of
+/-- Records rule of {name}`idsByAmount`: for every context, direction, offset, limit and rows, the records of
 the query are, for each row in order, its id as the result row and its amount as the sort value.
 Proof sketch: the query has no {lit}`WHERE`, {lit}`DISTINCT`, compound or aggregate. -/
-theorem idsByAmount_records (descending : Bool) (offset : Nat) (limit : Option Nat) (rows : List (List Value)) :
-    (idsByAmount descending offset limit).uniqueRecords (Resolved.EvalContext.bound []) rows =
+theorem idsByAmount_records (context : Resolved.EvalContext) (descending : Bool) (offset : Nat) (limit : Option Nat)
+    (rows : List (List Value)) :
+    (idsByAmount descending offset limit).uniqueRecords context rows =
       rows.map fun row => ([cell 0 row], [cell 2 row]) := by
   have kept : rows.filter (fun _ => true) = rows := List.filter_eq_self.mpr fun _ _ => rfl
-  simp [Resolved.Query.uniqueRecords, idsByAmount, Resolved.records, Resolved.filtered, kept]
+  simp [Resolved.Query.uniqueRecords, idsByAmount, Resolved.records, Resolved.filtered, kept, Resolved.Expr.eval_column]
 
 /-- Order rule of {name}`idsByAmount`: for every direction, offset, limit, rows and result that the
 model permits, the result is the ids of some rows that are a permutation of a sublist of the rows,
@@ -38,8 +39,9 @@ at most the later one, or at least it when {lit}`descending` is true. Proof sket
 {name}`Resolved.Query.exists_sorted_of_mem_possibleResults` with {name}`idsByAmount_records`; a
 sublist of the mapped rows is the map of a sublist, and a permutation of it the map of a
 permutation ({name}`Resolved.exists_perm_map_eq`). -/
-theorem idsByAmount_sorted {descending : Bool} {offset : Nat} {limit : Option Nat} {rows result : List (List Value)}
-    (member : result ∈ (idsByAmount descending offset limit).possibleResults (Resolved.EvalContext.bound []) rows) :
+theorem idsByAmount_sorted {context : Resolved.EvalContext} {descending : Bool} {offset : Nat} {limit : Option Nat}
+    {rows result : List (List Value)}
+    (member : result ∈ (idsByAmount descending offset limit).possibleResults context rows) :
     ∃ picked : List (List Value), (∃ chosen, chosen.Sublist rows ∧ picked.Perm chosen) ∧
       picked.Pairwise (fun a b => (Resolved.compareTerm descending .binary (cell 2 a) (cell 2 b)).isLE) ∧
       result = picked.map fun row => [cell 0 row] := by
