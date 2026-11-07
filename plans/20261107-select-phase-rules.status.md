@@ -598,15 +598,25 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: the explanations of `sql_select` (B04, B09). The procedure counts its rule applications
   (`selectFuel`, 64) on the backward path too, so cyclic hints stop; when the fuel ends, the explanation
   says that the limit was used and that this does not show the goal false, which differs from the
-  explanation of a goal that the facts do not prove. A rule whose premise is not proved is named by its
+  explanation of a goal that the facts do not prove. A premise of a matching rule that is not proved
+  comes first: when the fuel also ends, the explanation names the premise. A rule whose premise is not proved is named by its
   text when it is a hint, in the phase of the goal. A residual goal is the goal before the last
   simplification: the simplified goal of a count claim was an existential that hid the arithmetic, while
   the unsimplified goal is the claim with the facts of the rules. `tests/surface/SelectResidualCases.lean`
-  checks each explanation as text and proves each residual goal by hand; it is a module of the new
+  checks each explanation as text and proves the residual goals of its six theorems by hand (the case of
+  the execution rule checks only the explanation); it is a module of the new
   `tests/surface_select_procedure_test.py` (suite `surfaceS6`). Tests: `just dev-build`; locally
   `tests/surface_select_procedure_test.py`, `tests/surface_select_rules_test.py`,
   `tests/test_nix_test_targets.py`, `tests/surface_s6_automation_test.py` and
   `tests/surface_s6_auto_editor_test.py`.
+- 2026-11-07: the trust boundaries (B03, B07). `tests/surface/SelectTrustCases.lean`: a triple with the
+  precondition `False` is proved and says nothing about a run, unlike A01, whose catalog premise has an
+  empty and a populated witness; the claim that the motivating query returns no row stays open under
+  `sql_select` and is refuted on `shop`; the attribute refuses an axiom as a rule; and a proof through a
+  rule proved with `sorry` depends on `sorryAx`, which `#print axioms` shows, and its false claim is refuted
+  on `shop`. The replacement proofs of B07 are those of `SelectProcedureCases.lean`. The review findings of
+  the residual explanations (wording of the status entry and of the fixture) are fixed here. Tests: locally
+  `tests/surface_select_procedure_test.py`.
 
 ## Working sequence
 

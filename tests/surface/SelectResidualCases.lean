@@ -7,7 +7,9 @@ and their explanations (B04, B09). Each kind of stop has its own explanation: a 
 is refused with an error; a premise of the execution rule that the procedure cannot prove stops it in the
 execution phase; a claim that the facts of the rules do not prove stops it in the result phase, with the
 claim of the user as the goal; and rules or hints without end stop it at its limit of rule applications.
-Each residual goal is then proved by hand, which shows that it is the goal that is left. -/
+Each residual goal of a theorem is then proved by hand, which shows that it is the goal that is left; the
+case of the execution rule checks only the explanation. A premise that the procedure cannot prove comes
+before the end of its fuel: when both occur, the explanation names the premise. -/
 
 namespace SelectResidualCases
 open Belay.Sqlite

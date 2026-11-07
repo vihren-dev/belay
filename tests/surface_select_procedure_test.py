@@ -20,6 +20,15 @@ def test_residual_goals(runtime_root: Path, tmp_path: Path) -> None:
     text: a goal of an unknown shape is refused; a premise of the execution rule that is not proved stops it
     in the execution phase; arithmetic of the user stops it in the result phase, with the claim as the goal;
     cyclic forward rules end; and a rule without end and cyclic hints stop it at its limit of rule
-    applications. A hint whose premise is not proved does not apply. Each residual goal is then proved by
-    hand, and every proof has only logical axioms."""
+    applications. A hint whose premise is not proved does not apply. The six residual theorems are then
+    proved by hand, and every proof has only logical axioms; the case of the execution rule checks only
+    the explanation."""
     check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("SelectResidualCases", 6)), timeout=90)
+
+
+def test_trust_boundaries(runtime_root: Path, tmp_path: Path) -> None:
+    """The trust boundaries of `sql_select` (`Belay/Sqlite/SqlSelect.lean`, B03, B07): a false precondition
+    proves a triple that says nothing about a run; a false claim that a valid database refutes stays open;
+    the attribute `sql_select_rule` refuses an axiom; and a proof that uses a rule proved with `sorry`
+    depends on `sorryAx`, which the axiom audit of the other proofs rejects."""
+    check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("SelectTrustCases", 3)), timeout=90)
