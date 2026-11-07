@@ -42,7 +42,7 @@ current ones on main `84c0d779`; the fifteen files total 1,328 lines.
 | --- | --- | --- |
 | `CountQuery.lean` (74) | A08 | Deleted: `ClaimsCount.lean`, `CustomerInsertQueries.lean`, `AccountSignupQueries.lean` and `ExpansionCountQueries.lean` prove their claims for every database through the subquery run rule, the ungrouped rule `Resolved.records_ungrouped` and `whereOne_claims`, with the support of `SelectCountWhereSupport.lean` |
 | `AggregateQuery.lean` (86) | A08, A09 | Deleted: `SelectCountCases.lean` and `SelectNullAggregateCases.lean` cover A08 and A09 through the aggregate rules |
-| `ColumnQuery.lean` | A19 | Required |
+| `ColumnQuery.lean` (95) | A19 | Deleted: `ClaimsIn.lean` proves its claims for every database through the subquery run rule, `Resolved.Query.results_plain_unordered` and `whereOne_claims`, with the support of `SelectColumnWhereSupport.lean` |
 | `SelectOneFrom.lean` (136) | A01, A02 | Deleted: `SelectExistenceCases.lean` proves the existence and emptiness claims through `Resolved.Query.forall_possibleResults_ne_nil_plain` and `Resolved.Query.forall_possibleResults_eq_nil_plain` |
 | `SelectNoFrom.lean` (91) | A20 | Deleted: `SelectSourceCases.lean` proves `SELECT 1 + 2` for every database, and `SelectFunctionFaultCases.lean` proves that `WHERE 0` gives no row for every database |
 | `ExistsQuery.lean`, `NotExistsQuery.lean` (123) | A18 | Deleted: `ClaimsExists.lean` and `CustomerInsertQueries.lean` prove their claims for every database through `Run.query_returnsResult_faultless` and the subquery run rule, with the support of `SelectOneWhereSupport.lean` |
@@ -75,7 +75,8 @@ per-family characterization. The owners are named as they exist on main.
 
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
-| `ScalarSubqueryOutput`, `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `DuplicateKeyOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `SelectOneOutput` | 676 | Required |
+| `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `DuplicateKeyOutput`, `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput`, `SelectOneOutput` | 549 | Required |
+| `ScalarSubqueryOutput` | 127 | Deleted, with `ColumnQuery.lean`; `Resolved.Statement.Calm.selectOne_scalar` became the general `Resolved.Statement.Calm.selectOne_subquery` in `SelectOneSubqueryContext`, and `Connection.queryContext_tableSubquery_zero`, which only this file used, is deleted |
 | `CountSubqueryOutput` | 116 | Deleted, with `CountQuery.lean`; `Resolved.Statement.Calm.selectOne_count` moved to `SelectOneSubqueryContext`, and the count query `Resolved.Query.countOf` with `Resolved.SubqueryRun.count` to `CountOf` |
 | `AggregateQueryOutput` | 62 | Deleted, with `AggregateQuery.lean` |
 | `SimpleTableOutput` | 67 | Deleted, with `SelectOneFrom.lean` |
@@ -114,9 +115,9 @@ needs its equation; the status file records each such deletion.
 
 | Location | Status |
 | --- | --- |
-| `tests/surface/Claims{In,DuplicateKeys,QueryCases}.lean` | Required: replaced by the A and B fixtures. A negative case that a fixture uniquely protects moves to the "required contrast" of its acceptance case before the fixture is deleted |
+| `tests/surface/Claims{DuplicateKeys,QueryCases}.lean` | Required: replaced by the A and B fixtures. A negative case that a fixture uniquely protects moves to the "required contrast" of its acceptance case before the fixture is deleted |
 | `tests/surface/ClaimsExists.lean`, `ClaimsMayFail.lean` | Retained: they keep the claims of the deleted EXISTS and may-fail forms, now proved through the phase rules. The acceptance fixtures are `SelectExistsCases.lean` for A18, whose subquery is correlated, and `SelectExecutionRules.lean` for B05 |
-| `tests/surface/ClaimsCount.lean`, `ClaimsUniqueLookup.lean` | Retained: they keep the claims of the deleted count and unique-lookup forms, now proved through the phase rules. The acceptance fixtures are `SelectCountCases.lean` for A08 and `SelectJoinCases.lean` for A05 |
+| `tests/surface/ClaimsCount.lean`, `ClaimsUniqueLookup.lean`, `ClaimsIn.lean` | Retained: they keep the claims of the deleted count, unique-lookup and column forms, now proved through the phase rules. The acceptance fixtures are `SelectCountCases.lean` for A08, `SelectJoinCases.lean` for A05, and `SelectInCases.lean` and `SelectScalarCases.lean` for A19 |
 | `tests/surface/ClaimsSelectOne.lean`, `ClaimsSum.lean`, `ClaimsAggregateLaws.lean` | Deleted, with `SelectOneFrom.lean` and `AggregateQuery.lean`: `SelectExistenceCases.lean`, `SelectCountCases.lean` and `SelectNullAggregateCases.lean` take their place |
 | `tests/surface/ClaimsNoFrom.lean`, `ClaimsScalarNoFrom.lean` | Deleted, with `SelectNoFrom.lean` and `ScalarNoFrom.lean`: `SelectSourceCases.lean` and `SelectFunctionFaultCases.lean` prove their claims and instances |
 | `tests/surface/ClaimsTableInfo*.lean`, `ClaimsView*.lean`, `ClaimsDerived.lean`, `ClaimsCommonTables.lean`, `ClaimsExpressionLaws.lean` | Retained unless their subject is a retired form; reconcile at assignment |

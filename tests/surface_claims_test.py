@@ -38,7 +38,7 @@ def test_no_row_or_some_row_satisfies_a_condition_in_a_subquery(runtime_root: Pa
     through the phase rules (`Run.query_returnsResult_faultless`, the subquery run rule) with the support of
     `SelectOneWhereSupport`, with instances on databases where `decide +kernel` checks both sides. The
     axiom audit shows that no proof is missing."""
-    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 2), ("ClaimsExists", 3)), timeout=90)
+    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 3), ("ClaimsExists", 3)), timeout=90)
 
 
 def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_path: Path) -> None:
@@ -60,11 +60,11 @@ def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root
 
 def test_a_parameter_is_in_a_column_of_a_table(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE $x IN (SELECT e FROM t [WHERE p])` over every database: `Holds` means that some stored
-    row has a value of `e` that equals `x` under the comparison of `IN`, proved with the lemmas and `sql_simp`,
-    with instances on one database where `decide +kernel` checks the claim for a true and for a false `x`."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsIn.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
+    row has a value of `e` that equals `x` under the comparison of `IN`, proved through the phase rules with the
+    support of `SelectColumnWhereSupport`, with instances on one database where `decide +kernel` checks the claim
+    for a true and for a false `x`. The axiom audit shows that no proof is missing."""
+    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 3), ("SelectColumnWhereSupport", 2),
+                                                ("ClaimsIn", 2)), timeout=90)
 
 
 def test_a_table_has_a_column_according_to_pragma_table_info(runtime_root: Path, tmp_path: Path) -> None:

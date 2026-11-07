@@ -6,7 +6,8 @@ set_option doc.verso true
 the phase rules of ADR 0027: the faultless execution rule ({lit}`Run.query_returnsResult_faultless`),
 the source rule of a query without a table ({lit}`Resolved.Query.source_none`), the plain existence
 and emptiness rules, and the subquery run rule ({lit}`Resolved.Query.subqueryRun_of_faultless`). The
-fixtures {lit}`ClaimsExists` and {lit}`CustomerInsertQueries` use it. -/
+fixtures {lit}`ClaimsExists` and {lit}`CustomerInsertQueries` and the supports {lit}`SelectCountWhereSupport` and
+{lit}`SelectColumnWhereSupport` use it. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -35,8 +36,8 @@ theorem tableOne_run (db : Database) (parameters : List Value) (name : Identifie
     ((tableOne position condition).subqueryRun (Resolved.EvalContext.bound parameters) db.raw []).fault = .none ∧
       ((tableOne position condition).subqueryRun (Resolved.EvalContext.bound parameters) db.raw []).rows.isEmpty =
         !someRow db parameters position table condition := by
-  have plain := (Resolved.Statement.Calm.selectOne_subquery position _ condition (Resolved.Expr.calm_exists 0)
-    calm).subquery_plain (List.mem_singleton_self _)
+  have plain := (Resolved.Statement.Calm.selectOne_subquery position _ condition (.literal (.integer 1)) ["1"]
+    (Resolved.Expr.calm_exists 0) calm (Resolved.Expr.calm_literal _)).subquery_plain (List.mem_singleton_self _)
   have run := Resolved.Query.subqueryRun_of_faultless (Resolved.EvalContext.bound parameters) db.raw [] none
     rfl rfl rfl
     (Resolved.Query.sourceAfter_first _ db.raw none _ position _ [] rfl
@@ -96,5 +97,14 @@ theorem whereOne_claims {script : Script} {isQuery : script.isQuery = true} (sta
   · exact Empty.not_fails (empty.2 truth)
   · exact Holds.not_fails (holds.2 truth)
 
+/-- For every values and rows, the context of the values with one subquery that gives these rows with no fault
+and certain rows is quiet ({name}`Resolved.EvalContext.Quiet`). A count ({name}`Resolved.SubqueryRun.count`) is
+such a run. Proof sketch: the run and the empty run past it have no fault and certain rows by definition. -/
+theorem withRows_quiet (parameters : List Value) (rows : List (List Value)) :
+    ((Resolved.EvalContext.bound parameters).withRuns [{ rows, fault := .none }]).Quiet := by
+  intro index row
+  cases index <;> exact ⟨rfl, rfl, rfl⟩
+
 #print axioms tableOne_run
 #print axioms whereOne_claims
+#print axioms withRows_quiet

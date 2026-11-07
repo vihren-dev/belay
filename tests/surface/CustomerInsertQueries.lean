@@ -35,8 +35,8 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
   have run := tableOne_run db [.integer id.toInt] (name! "customers") position table _ found calm
   have claims := whereOne_claims (script := noCustomerHasTheId id) (isQuery := rfl) _ [.integer id.toInt] rfl db
     (.not (.exists 0)) _ (resolveStatement_selectOne_notExists runContext _ _ _ position table _ rfl rfl rfl found resolves)
-    (Resolved.Statement.Calm.selectOne_subquery position _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
-      calm)
+    (Resolved.Statement.Calm.selectOne_subquery position _ _ _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
+      calm (Resolved.Expr.calm_literal _))
     (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, Resolved.EvalContext.statement_one]; exact run.1)
   rw [claims.1, Resolved.Expr.eval_not, Resolved.truthy_not, Resolved.Expr.eval_exists,
     Resolved.EvalContext.statement_one, run.2]

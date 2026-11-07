@@ -35,7 +35,7 @@ def lines_after(stdout: str, tag: str) -> list[object]:
     return [json.loads(line.removeprefix(tag)) for line in stdout.splitlines() if line.startswith(tag)]
 
 
-COUNT_SUPPORT = (("SelectOneWhereSupport", 2), ("SelectCountWhereSupport", 2))
+COUNT_SUPPORT = (("SelectOneWhereSupport", 3), ("SelectCountWhereSupport", 2))
 """The support fixtures of the claims about `SELECT 1 WHERE c` with one subquery, and with a count
 subquery, through the phase rules (ADR 0027), with their counts of `#print axioms` reports."""
 

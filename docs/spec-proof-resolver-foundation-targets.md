@@ -113,8 +113,8 @@ Already delivered: `LiteralData.generatedCells_plain` in [AdmittedCellLaws.lean]
 Reuse it in `assign_derived_append` (`DerivedColumnRows`), `LiteralData.inserted_copy_rows` (`CopyInsertFits`),
 and `PlainInsertRows`'s `LiteralData.inserted_plain`/`LiteralData.newCells_getElem?_of_plain`; the `NormalizedField` owners were deleted.
 
-Surface consumers under [Belay/Sqlite](../packages/belay/Belay/Sqlite): `ColumnQuery`, `FilteredDuplicateKeyQuery`.
-ADR 0027 removed `AggregateQuery`, `CountQuery`, `ExistsQuery`, `NotExistsQuery`, `SelectOneFrom`, `SelectOneMayFail`
+Surface consumers under [Belay/Sqlite](../packages/belay/Belay/Sqlite): `FilteredDuplicateKeyQuery`.
+ADR 0027 removed `AggregateQuery`, `ColumnQuery`, `CountQuery`, `ExistsQuery`, `NotExistsQuery`, `SelectOneFrom`, `SelectOneMayFail`
 and `UniqueLookupQuery`.
 D1 removed `FilteredDuplicateKeyEmpty`; the three baseline filtered endpoints are replaced by
 `Script.outputOn_noDuplicateKeysWhere` in `FilteredDuplicateKeyQuery`. The frozen endpoint inventory retains their names.

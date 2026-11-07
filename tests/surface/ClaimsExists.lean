@@ -55,8 +55,8 @@ theorem no_invoice_is_negative (db : Database) (position index : Nat) (table : C
     (script := sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices WHERE amount < 0)") (isQuery := rfl)
     _ [] rfl db (.not (.exists 0)) _
     (resolveStatement_selectOne_notExists runContext _ _ _ position table _ rfl rfl rfl found resolves)
-    (Resolved.Statement.Calm.selectOne_subquery position _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
-      calm)
+    (Resolved.Statement.Calm.selectOne_subquery position _ _ _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
+      calm (Resolved.Expr.calm_literal _))
     (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, Resolved.EvalContext.statement_one]; exact run.1)
   rw [claims.1, Resolved.Expr.eval_not, Resolved.truthy_not, Resolved.Expr.eval_exists,
     Resolved.EvalContext.statement_one, run.2]
@@ -79,7 +79,8 @@ theorem exists_invoice_observations (db : Database) (position : Nat) (table : Ca
   obtain ⟨holds, empty, notFails⟩ := whereOne_claims
     (script := sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") (isQuery := rfl) _ [] rfl db (.exists 0) _
     (resolveStatement_selectOne_exists runContext _ _ _ position table _ rfl rfl rfl found resolves)
-    (Resolved.Statement.Calm.selectOne_subquery position _ _ (Resolved.Expr.calm_exists _) (by simp))
+    (Resolved.Statement.Calm.selectOne_subquery position _ _ _ _ (Resolved.Expr.calm_exists _) (by simp)
+      (Resolved.Expr.calm_literal _))
     (by rw [Resolved.Expr.fault_exists, Resolved.EvalContext.statement_one]; exact run.1)
   rw [holds, empty, Resolved.Expr.eval_exists, Resolved.EvalContext.statement_one, run.2]
   refine ⟨?_, ?_, notFails⟩ <;> simp [someRow, List.any_eq_true, List.any_eq_false]
@@ -101,8 +102,8 @@ theorem not_exists_invoice_observations (db : Database) (position : Nat) (table 
   obtain ⟨holds, empty, notFails⟩ := whereOne_claims
     (script := sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") (isQuery := rfl) _ [] rfl db (.not (.exists 0)) _
     (resolveStatement_selectOne_notExists runContext _ _ _ position table _ rfl rfl rfl found resolves)
-    (Resolved.Statement.Calm.selectOne_subquery position _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
-      (by simp))
+    (Resolved.Statement.Calm.selectOne_subquery position _ _ _ _ ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists _))
+      (by simp) (Resolved.Expr.calm_literal _))
     (by rw [Resolved.Expr.fault_not, Resolved.Expr.fault_exists, Resolved.EvalContext.statement_one]; exact run.1)
   rw [holds, empty, Resolved.Expr.eval_not, Resolved.truthy_not, Resolved.Expr.eval_exists,
     Resolved.EvalContext.statement_one, run.2]

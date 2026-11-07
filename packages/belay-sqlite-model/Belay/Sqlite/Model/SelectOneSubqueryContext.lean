@@ -8,10 +8,9 @@ import Belay.Sqlite.Model.CountOf
 set_option doc.verso true
 
 /-! The context of a statement with one subquery (ADR 0017, S4): for a calm statement, subquery 0
-of its context is the run of the subquery in the context of the values, and for the simple query of a
-table that run has the result rows of the query over the table. The statement {lit}`SELECT 1 WHERE c`
-with the one subquery {lit}`SELECT 1 FROM t WHERE p` is calm when both conditions are calm, and quiet
-when both are quiet; with the count query {lit}`SELECT count(*) FROM t WHERE p` as its subquery, it is
+of its context is the run of the subquery in the context of the values. The statement
+{lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT e FROM t WHERE p` is calm when {lit}`c`,
+{lit}`p` and {lit}`e` are calm, and quiet when they are quiet; with the count query {lit}`SELECT count(*) FROM t WHERE p` as its subquery, it is
 calm when both conditions are calm. -/
 
 namespace Belay.Sqlite.Model
@@ -34,80 +33,56 @@ theorem Connection.queryContext_subquery_zero (connection : Connection) (paramet
   simp only [Connection.queryContext, calm.counterReads, Resolved.statementContext]
   rfl
 
-/-- For every connection, values, query and calm statement of the query with one subquery that is the
-simple query of the table at a position of the database, subquery 0 of the context for the outer row with no cells has the
-one result of the simple query over the rows of the table in scan order (rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table) as its rows, no fault and certain rows. Proof sketch:
-{name}`Connection.queryContext_subquery_zero` and {name}`Resolved.Query.subqueryRun_simple` with the source rows of
-{name}`Resolved.Query.source_first`; the context is quiet, so no expression has a fault. -/
-theorem Connection.queryContext_tableSubquery_zero (connection : Connection) (parameters : List Value)
-    (query : Resolved.Query) (position : Nat) (table : Table) (condition : Option Resolved.Expr)
-    (columns : List Resolved.Output) (names : List String)
-    (present : connection.state.database.table position = some table)
-    (calm : (Resolved.Statement.query query [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).Calm) :
-    (connection.queryContext parameters query [Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names]).subqueries 0 [] =
-      { rows := (Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names).results
-          (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table),
-        fault := .none,
-        firstCertain := (Resolved.Query.simple [Resolved.QuerySource.first position] condition columns names).windowCertain
-          (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table) (some 1),
-        rowsCertain := true, ending := .done } := by
-  have plain := calm.subquery_plain (List.mem_singleton_self _)
-  rw [connection.queryContext_subquery_zero parameters query _ calm]
-  refine Resolved.Query.subqueryRun_simple _ _ _ (Resolved.Query.simple_isSimple _ _ _ _) rfl _
-    (Resolved.Query.source_first _ _ _ position table rfl present) rfl plain fun row _ expression member => ?_
-  simp only [List.all_eq_true, Bool.not_eq_true'] at plain
-  exact Resolved.Expr.fault_of_plain _ (Resolved.EvalContext.bound_quiet parameters) row expression (plain expression member)
-
-/-- The expressions of the simple query of the first source of a table are its condition, if any, and
-the expressions of its result column {lit}`1`. Proof sketch: the definitions compute. -/
-theorem Resolved.Query.simple_first_expressions (position : Nat) (condition : Option Resolved.Expr) :
-    (Resolved.Query.simple [Resolved.QuerySource.first position] condition [.scalar (.literal (.integer 1))] ["1"]).expressions =
-      condition.toList ++ [.literal (.integer 1)] := by
+/-- For every position, condition, column expression and names, the expressions of the simple query of the first
+source of a table with that one result column are its condition, if any, and the expression of the column. Proof
+sketch: the definitions compute. -/
+theorem Resolved.Query.simple_first_expressions (position : Nat) (condition : Option Resolved.Expr)
+    (value : Resolved.Expr) (names : List String) :
+    (Resolved.Query.simple [Resolved.QuerySource.first position] condition [.scalar value] names).expressions =
+      condition.toList ++ [value] := by
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.QuerySource.first,
     Resolved.QuerySource.expressions, Resolved.Output.scalars, Resolved.Output.operands]
 
-/-- For every calm condition {lit}`c` and every calm condition of the subquery, the statement of
-{lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT 1 FROM t WHERE p` that resolution gives is calm
-({name}`Resolved.Statement.Calm`): the literal one is calm, and the first source of a table has no
-expression. Proof sketch: the expressions of the statement are the condition, the literal one of the
-statement's query, the subquery's condition and the literal one of the subquery. -/
+/-- For every calm condition {lit}`c`, every calm condition {lit}`p` of the subquery and every calm column
+expression {lit}`e`, the statement {lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT e FROM t WHERE p`
+that resolution gives is calm ({name}`Resolved.Statement.Calm`). For {lit}`EXISTS`, {lit}`e` is the literal one.
+Proof sketch: the expressions of the statement are {lit}`c`, the literal one of the statement's query, {lit}`p`
+and {lit}`e` ({name}`Resolved.Query.simple_first_expressions`); the first source of a table has no expression. -/
 theorem Resolved.Statement.Calm.selectOne_subquery (position : Nat) (main : Resolved.Expr)
-    (subCondition : Option Resolved.Expr) (mainCalm : main.Calm)
-    (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) :
+    (subCondition : Option Resolved.Expr) (value : Resolved.Expr) (names : List String) (mainCalm : main.Calm)
+    (subCalm : ∀ expression ∈ subCondition.toList, expression.Calm) (valueCalm : value.Calm) :
     (Resolved.Statement.query (Resolved.Query.selectOneWhere main)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition
-        [.scalar (.literal (.integer 1))] ["1"]]).Calm := by
-  have literal : (Resolved.Expr.literal (.integer 1)).Calm := Resolved.Expr.calm_literal _
+      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]).Calm := by
   intro expression member
   simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
     Resolved.Query.simple_first_expressions, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
+    List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with (rfl | rfl) | member | rfl
   · exact mainCalm
-  · exact literal
-  · exact subCalm expression (by simpa using member)
-  · exact literal
+  · exact Resolved.Expr.calm_literal _
+  · exact subCalm expression member
+  · exact valueCalm
 
-/-- For every quiet condition {lit}`c` and every quiet condition of the subquery, the statement of
-{lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT 1 FROM t WHERE p` that resolution gives is quiet
-({name}`Resolved.Statement.Quiet`). Proof sketch: as for {name}`Resolved.Statement.Calm.selectOne_subquery`. -/
+/-- For every quiet condition {lit}`c`, every quiet condition {lit}`p` of the subquery and every quiet column
+expression {lit}`e`, the statement {lit}`SELECT 1 WHERE c` with the one subquery {lit}`SELECT e FROM t WHERE p`
+that resolution gives is quiet ({name}`Resolved.Statement.Quiet`). Proof sketch: as for
+{name}`Resolved.Statement.Calm.selectOne_subquery`. -/
 theorem Resolved.Statement.Quiet.selectOne_subquery (position : Nat) (main : Resolved.Expr)
-    (subCondition : Option Resolved.Expr) (mainQuiet : main.Quiet)
-    (subQuiet : ∀ expression ∈ subCondition.toList, expression.Quiet) :
+    (subCondition : Option Resolved.Expr) (value : Resolved.Expr) (names : List String) (mainQuiet : main.Quiet)
+    (subQuiet : ∀ expression ∈ subCondition.toList, expression.Quiet) (valueQuiet : value.Quiet) :
     (Resolved.Statement.query (Resolved.Query.selectOneWhere main)
-      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition
-        [.scalar (.literal (.integer 1))] ["1"]]).Quiet := by
+      [Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar value] names]).Quiet := by
   have literal : (Resolved.Expr.literal (.integer 1)).Quiet := by
     simp [Resolved.Expr.Quiet, Resolved.Expr.any, Resolved.Expr.readsClockHere, Resolved.Expr.readsCounterHere]
   intro expression member
   simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
     Resolved.Query.simple_first_expressions, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
+    List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with (rfl | rfl) | member | rfl
   · exact mainQuiet
   · exact literal
-  · exact subQuiet expression (by simpa using member)
-  · exact literal
+  · exact subQuiet expression member
+  · exact valueQuiet
 
 /-- For every calm condition {lit}`c` and every calm condition of the subquery, the statement
 {lit}`SELECT 1 WHERE c` with the count query of the first source of a table as its one subquery is calm

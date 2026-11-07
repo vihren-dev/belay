@@ -404,7 +404,6 @@ import Belay.Sqlite.Model.InSubqueryStatementResolution
 import Belay.Sqlite.Model.CorrelatedExistsResolution
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput
-import Belay.Sqlite.Model.ScalarSubqueryOutput
 import Belay.Sqlite.Model.TableInfoResolution
 import Belay.Sqlite.Model.TableInfoLaws
 import Belay.Sqlite.Model.TableInfoColumnLaws

@@ -50,14 +50,6 @@ theorem countOne_run (db : Database) (parameters : List Value) (name : Identifie
     Resolved.Aggregate.eval, Resolved.countMatching, Resolved.filtered, Resolved.outerCells, Resolved.stableSort,
     Resolved.insertStable]
 
-/-- For every number, the context of the values with the run of a count ({name}`Resolved.SubqueryRun.count`)
-as its one subquery is quiet: each subquery gives no fault and certain rows. Proof sketch: the count and
-the empty run past it have no fault and certain rows by definition. -/
-theorem withCount_quiet (parameters : List Value) (count : Nat) :
-    ((Resolved.EvalContext.bound parameters).withRuns [Resolved.SubqueryRun.count count]).Quiet := by
-  intro index row
-  cases index <;> exact ⟨rfl, rfl, rfl⟩
-
 /-- For every script of one statement {lit}`SELECT 1 WHERE c` with values and the one subquery
 {lit}`SELECT count(*) FROM t WHERE p`, database with the table {lit}`t` at a position, and calm
 conditions {lit}`c` and {lit}`p` that resolve as for {name}`resolveStatement_selectOne_count`, with
@@ -103,7 +95,7 @@ theorem whereCount_claims {script : Script} {isQuery : script.isQuery = true} {d
   have value := congrArg Prod.fst same
   obtain ⟨holds, empty, notFails⟩ := whereOne_claims (isQuery := isQuery) _ parameters head db mainCondition _
     resolved (Resolved.Statement.Calm.selectOne_count position _ subCondition text mainCalm subCalm)
-    (by rw [same]; exact Resolved.Expr.fault_of_plain _ (withCount_quiet _ _) [] mainCondition mainCalm.1)
+    (by rw [same]; exact Resolved.Expr.fault_of_plain _ (withRows_quiet _ [[.integer _]]) [] mainCondition mainCalm.1)
   exact ⟨holds.trans (by rw [Resolved.Expr.eval, Resolved.Expr.eval, value]),
     empty.trans (by rw [Resolved.Expr.eval, Resolved.Expr.eval, value]), notFails⟩
 

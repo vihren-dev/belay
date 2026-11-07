@@ -24,8 +24,8 @@ Their current formulas and assumptions remain migration obligations.
 | Owning source | Exact name prefix | Exact suffixes to replace |
 | --- | --- | --- |
 | `AggregateQueryOutput` (removed by ADR 0027) | `resolvedStepOutput_aggregateTable_` | `hasRows`, `not_hasNoRows`, `isError` |
-| [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `resolvedStepOutput_scalar_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `resolvedStepOutput_count_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `ScalarSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_scalar_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `CountSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_count_` | `hasRows`, `hasNoRows`, `not_isError` |
 | `ExistsSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_exists_` | `hasRows`, `hasNoRows`, `not_isError` |
 | `NotExistsSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_notExists_` | `hasRows`, `hasNoRows`, `not_isError` |
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `resolvedStepOutput_notExists_duplicateKeys_` | `hasRows`, `hasNoRows`, `not_isError` |
@@ -41,7 +41,7 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 | Owning source | Exact declarations to replace | Resolver transport to retain |
 | --- | --- | --- |
 | `AggregateQuery` (removed by ADR 0027) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
-| [ColumnQuery](../packages/belay/Belay/Sqlite/ColumnQuery.lean) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
+| `ColumnQuery` (removed by ADR 0027) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
 | `CountQuery` (removed by ADR 0027) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
 | `ExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
 | `NotExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
@@ -69,9 +69,9 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 | [QueryOutputFacts](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
 | [SimpleQuerySteps](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
 | [SelectOneSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryOutput.lean) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
-| [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
-| [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
-| `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: [SelectOneSubqueryContext](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryContext.lean)) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`, `Connection.queryContext_tableSubquery_zero` |
+| `CountSubqueryOutput` (removed by ADR 0027; current owner of `Resolved.SubqueryRun.count` and `Resolved.countMatching`: [CountOf](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountOf.lean)) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
+| `ScalarSubqueryOutput` (removed by ADR 0027; the fixture `tests/surface/SelectColumnWhereSupport.lean` defines the rows as `columnValues`) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
+| `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: [SelectOneSubqueryContext](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryContext.lean)) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`; `Connection.queryContext_tableSubquery_zero` was removed by ADR 0027 |
 | [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `Connection.queryContext_duplicateKeys_zero` |
 | `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
 | [SimpleSubqueryRowsOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean) | `resolvedStepOutput_simple_rows_of_faultless`; reuse this current exact-output fact |

@@ -122,7 +122,8 @@ theorem abs_exists_unmodeled (db : Database) (env : Env) (position : Nat) (table
     (property : List (List Value) → Prop) (code : Nat → Prop) :
     ¬ (db.run absExists env).returnsResult property ∧ ¬ (db.run absExists env).returnsError code := by
   have quiet := Resolved.Statement.Quiet.selectOne_subquery position (.exists 0) (some absCondition)
-    (Resolved.Expr.calm_exists 0).quiet absCondition_quiet
+    (.literal (.integer 1)) ["1"] (Resolved.Expr.calm_exists 0).quiet absCondition_quiet
+    (Resolved.Expr.calm_literal _).quiet
   have resolved := resolveStatement_selectOne_exists runContext (db.raw.connection env.counters).resolveState
     { table := name! "t", alias := none } _ position table _ rfl rfl rfl found resolves
   exact Run.send_unready rfl db env resolved (value := 0) (by simp [statementClock, quiet.readsClock])

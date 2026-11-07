@@ -127,7 +127,6 @@ import Belay.Sqlite.SqlCommand
 import Belay.Sqlite.SqlSimp
 import Belay.Sqlite.SqlSimpLaws
 import Belay.Sqlite.NotInQuery
-import Belay.Sqlite.ColumnQuery
 import Belay.Sqlite.FilteredDuplicateKeyQuery
 import Belay.Sqlite.DuplicateKeyQuery
 import Belay.Sqlite.SqlRefute

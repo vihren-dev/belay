@@ -1,7 +1,8 @@
-import Belay
+import SelectColumnWhereSupport
 
 /-! A fixture of `tests/surface_claims_test.py`: the query form `SELECT 1 WHERE $x IN (SELECT e FROM t
-[WHERE p])` over every database (ADR 0017, S4; `Belay/Sqlite/ColumnQuery.lean`). Each claim is
+[WHERE p])` over every database, through the phase rules of ADR 0027 (`SelectColumnWhereSupport.lean`). Each
+claim is
 about every database; each claim has an instance on one database, where `decide +kernel` checks that
 its two sides agree, so that no claim is vacuous. -/
 
@@ -27,7 +28,7 @@ example : shop.raw.catalog.findTable (name! "invoices") = some invoices := by de
 at position `col`: the query holds exactly when some stored row has a value in that column that is equal to
 `x` under the comparison that `IN` uses (the affinity of the column, and its collation). Proof sketch: the
 script resolves with the lemmas and `sql_simp` (the column `id` resolves to the cell `col` of the table, the main
-condition to an `IN` of a parameter with the affinity and the collation of that column); `Script.outputOn_column`
+condition to an `IN` of a parameter with the affinity and the collation of that column); `whereColumn_claims`
 turns the claim into the truth of `IN` over the values of the column, `Resolved.truthy_inValue_eq_true` turns that into
 a statement about one candidate, and the membership of a row in the scan order is the membership in the stored rows
 (`Table.scanRows_perm`). -/
@@ -65,15 +66,14 @@ theorem x_is_an_invoice_id (db : Database) (x : Int64) (position col : Nat) (tab
     ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
-  rw [Holds.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
-    (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-    mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp)
-    (by simp [sql_simp]))]
-  simp only [Output.hasRows, apply_ite]
+  rw [(whereColumn_claims (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (isQuery := rfl)
+    (head := rfl) (reference := { table := name! "invoices", alias := none }) (by decide) (by decide) rfl rfl rfl found
+    operand subResolves mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp)
+    (by simp [sql_simp])).1]
   rw [Syntax.Expr.columnCollation_identifier_table column]
-  simp [sql_simp, Resolved.SubqueryRun.certain]
+  simp [sql_simp, columnRun]
   rw [Resolved.truthy_inValue_eq_true]
-  simp [Resolved.scalarRows, sql_simp]
+  simp [columnValues, sql_simp]
   have mem : ∀ r, r ∈ ({ shape := table, rows := db.raw.rows[position]?.getD [] } : Table).scanRows ↔
       r ∈ db.raw.rows[position]?.getD [] := fun r => (Table.scanRows_perm _).mem_iff
   simp [Resolved.sourceRows, boundValue, Value.isNull, mem]
@@ -101,7 +101,7 @@ set_option doc.verso true
 
 /-- Over every database with the invoices table and id column, IN is empty exactly when its resolved membership
 test is not true, and it never fails. Proof sketch: resolve the parameter and column with their comparison affinity
-and collation, then apply {name}`Script.outputOn_column`. -/
+and collation, then apply {name}`whereColumn_claims`. -/
 theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position col : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
     (column : columnPosition table.columns (name! "id") = some col) :
@@ -109,9 +109,8 @@ theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position 
       Resolved.truthy ((Resolved.Expr.inQuery (.parameter 1) 0
         (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
         ((table.columns[col]?.map (·.collation)).getD .binary) false).eval
-        ((Resolved.EvalContext.bound [.integer x.toInt]).withRuns [Resolved.SubqueryRun.certain
-          (Resolved.scalarRows (Resolved.EvalContext.bound [.integer x.toInt]) none (.column col)
-            { shape := table, rows := db.raw.rows.getD position [] })]) []) = false) ∧
+        ((Resolved.EvalContext.bound [.integer x.toInt]).withRuns [columnRun [.integer x.toInt] none (.column col)
+          { shape := table, rows := db.raw.rows.getD position [] }]) []) = false) ∧
     ¬ Fails (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") db := by
   have operand : resolveOperand runContext.profile.dqsDml
       (tableScope db.raw.catalog { table := name! "invoices", alias := none } position table) { current := some 0 } false
@@ -135,18 +134,11 @@ theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position 
     ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
       (reference := { table := name! "invoices", alias := none }) (position := position) column
       ({ current := some 0 } : SubqueryShapes)] at mainResolves
-  constructor
-  · rw [Empty.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
-      (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp]))]
-    simp only [Output.hasNoRows, apply_ite]
-    rw [Syntax.Expr.columnCollation_identifier_table column]
-    simp
-  · exact (by
-    rw [Fails.iff_of_outputOn (Script.outputOn_column (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
-      (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
-      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp]))]
-    simp [Output.isError])
+  have claims := whereColumn_claims (script := (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)")) (isQuery := rfl)
+    (head := rfl) (reference := { table := name! "invoices", alias := none }) (by decide) (by decide) rfl rfl rfl found
+    operand subResolves mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])
+  rw [Syntax.Expr.columnCollation_identifier_table column] at claims
+  exact ⟨claims.2.1, claims.2.2⟩
 
 example (x : Int64) (isFive : x = 5) : Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
   (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel)
@@ -157,3 +149,6 @@ example (x : Int64) (isTwo : x = 2) : ¬ Empty (sql r"SELECT 1 WHERE $x IN (SELE
   decide +kernel
 example (x : Int64) : ¬ Fails (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
   (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel) (by decide +kernel)).2
+
+#print axioms x_is_an_invoice_id
+#print axioms invoice_membership_empty_and_safe

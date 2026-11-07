@@ -437,6 +437,20 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_claims_test.py`, `surface_assertion_examples_test.py`,
   `surface_s6_automation_test.py`, `surface_layers_test.py`, `test_model_package.py` and
   `lean_packages_test.py`.
+- 2026-11-07: retirement of the column family (stage 3). `ColumnQuery.lean` and
+  `Model/ScalarSubqueryOutput.lean` are deleted, and with them `Connection.queryContext_tableSubquery_zero`,
+  which only that file used. `Resolved.Query.simple_first_expressions`,
+  `Resolved.Statement.Calm.selectOne_subquery` and `Resolved.Statement.Quiet.selectOne_subquery` now take
+  any column expression of the subquery; the calm law replaces `Resolved.Statement.Calm.selectOne_scalar`.
+  The new fixture `SelectColumnWhereSupport.lean` gives the run of `SELECT e FROM t WHERE p` as a
+  subquery (`columnOne_run`, through the subquery run rule and `Resolved.Query.results_plain_unordered`)
+  and the claims of `SELECT 1 WHERE c` with that subquery (`whereColumn_claims`, with
+  `Resolved.Expr.evaluate_certainFirst`). `ClaimsIn.lean` uses it. `withCount_quiet` becomes
+  `withRows_quiet` in `SelectOneWhereSupport.lean`, for every rows. The query observation targets no
+  longer link the deleted `CountSubqueryOutput`. Tests: `just dev-build`; locally
+  `tests/surface_claims_test.py`, `surface_assertion_examples_test.py`, `surface_s6_automation_test.py`,
+  `surface_select_rules_test.py`, `surface_select_sources_test.py`, `surface_layers_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 
