@@ -5,7 +5,7 @@ set_option doc.verso true
 /-! The rules of the filter and projection phases of a SELECT (ADR 0027 D1): {lit}`WHERE` keeps a
 sublist of the source rows, and a query without aggregation, {lit}`DISTINCT` or a compound gives
 one result row for each row that {lit}`WHERE` keeps ({lit}`Query.rowOutput`).
-With the result rules ({lit}`SelectWindowRules.lean`), every result that SQLite may give for such a
+With the result rules ({lit}`SelectWindowRules.lean`), every result that the model permits for such a
 query is a permutation of the result rows of a sublist of the kept rows, and of all of them without
 a window. -/
 
@@ -53,7 +53,7 @@ theorem Query.uniqueRecords_outputs_plain (context : EvalContext) {query : Query
   exact records_outputs_plain context plain _
 
 /-- Plain result rule: for every context, query that is no compound and has no {lit}`DISTINCT` and
-no aggregation, rows and result that SQLite may give ({name}`Query.possibleResults`), some sublist
+no aggregation, rows and result that the model permits ({name}`Query.possibleResults`), some sublist
 of the rows that {lit}`WHERE` keeps ({name}`filtered`) has result rows ({name}`Query.rowOutput`) of
 which the result is a permutation. This holds for every {lit}`ORDER BY`, {lit}`OFFSET` and
 {lit}`LIMIT`. Proof sketch: {name}`Query.exists_sublist_of_mem_possibleResults` with
@@ -68,7 +68,7 @@ theorem Query.exists_rows_of_mem_possibleResults_plain {context : EvalContext} {
   exact ⟨picked, pickedSublist, perm⟩
 
 /-- Plain row rule: for every context, query that is no compound and has no {lit}`DISTINCT` and no
-aggregation, rows, result that SQLite may give and row of the result, some source row is in the
+aggregation, rows, result that the model permits and row of the result, some source row is in the
 rows, the {lit}`WHERE` condition, if any, is true for it, and the row is its result row
 ({name}`Query.rowOutput`). Proof sketch: the row is the row of a record
 ({name}`Query.mem_of_mem_possibleResults`), which is the result row of a kept row
@@ -85,7 +85,7 @@ theorem Query.mem_possibleResults_plain {context : EvalContext} {query : Query} 
     ((mem_filtered context query rows source).mp kept).2, rfl⟩
 
 /-- Plain cardinality rule: for every context, query that is no compound and has no
-{lit}`DISTINCT`, aggregation, {lit}`OFFSET` or {lit}`LIMIT`, rows and result that SQLite may give,
+{lit}`DISTINCT`, aggregation, {lit}`OFFSET` or {lit}`LIMIT`, rows and result that the model permits,
 the result is a permutation of the result rows ({name}`Query.rowOutput`) of all the rows that
 {lit}`WHERE` keeps ({name}`filtered`): it has as many rows, and each row as often. Proof sketch:
 {name}`Query.perm_of_mem_possibleResults` with {name}`Query.uniqueRecords_outputs_plain`. -/

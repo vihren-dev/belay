@@ -4,7 +4,7 @@ set_option doc.verso true
 
 /-! The execution rule of a SELECT (ADR 0027, D5): the output of the step of a query statement
 that the model describes, with no fault and a bound window, is the output of every result that
-SQLite may give ({name}`Belay.Sqlite.Model.Resolved.Query.possibleResults`). Its premises are the
+the model permits ({name}`Belay.Sqlite.Model.Resolved.Query.possibleResults`). Its premises are the
 readiness conditions of the step: the source rows, no possible fault of the source or of a
 nested subquery, and a run without mismatch, overflow or fault. A pure-value proof cannot drop
 them: {name}`Belay.Sqlite.Model.Resolved.Query.outputOn_clean` alone permits a possible fault. -/
@@ -14,7 +14,7 @@ namespace Belay.Sqlite.Model
 /-- The readiness of a query statement on a connection at a clock value with the values bound to
 its parameters ({name}`Connection.queryContextAt`), with its source rows {lit}`source` and its
 bound query {lit}`bound`: each field is one condition under which the step outputs every result
-that SQLite may give. -/
+that the model permits. -/
 structure Connection.SelectReady (connection : Connection) (value : Int) (parameters : List Value)
     (query : Resolved.Query) (subqueries : List Resolved.Query) (source : Resolved.SourceRows)
     (bound : Resolved.Query) : Prop where
@@ -40,7 +40,7 @@ structure Connection.SelectReady (connection : Connection) (value : Int) (parame
 runs at a clock value ({name}`statementClock`) and that is ready there
 ({name}`Connection.SelectReady`) with source rows {lit}`source` and bound query {lit}`bound`, the
 output of the step ({name}`resolvedStepOutput`) is {name}`Output.ofResults` of every result that
-SQLite may give for {lit}`bound` over the source rows. Proof sketch:
+the model permits for {lit}`bound` over the source rows. Proof sketch:
 {name}`resolvedStepOutput_query_at`; the readiness gives {name}`Resolved.Query.described`, and
 {name}`Resolved.Query.outputOn_clean` the output. -/
 theorem resolvedStepOutput_select (clock : Option Clock) (index : Nat) (connection : Connection)
@@ -93,7 +93,7 @@ theorem resolvedStepOutput_select_unready (clock : Option Clock) (index : Nat) (
 /-- Execution rule of a step: for every resolution context, clock, index, connection, statement
 and values, when resolution gives a query statement ({name}`resolveStatement`) that the step runs
 at a clock value and that is ready there ({name}`Connection.SelectReady`), the output of the step
-({name}`runScriptStep`) is {name}`Output.ofResults` of every result that SQLite may give. Proof
+({name}`runScriptStep`) is {name}`Output.ofResults` of every result that the model permits. Proof
 sketch: {name}`runScriptStep_output` and {name}`resolvedStepOutput_select`. -/
 theorem runScriptStep_select (context : ResolveContext) (clock : Option Clock) (index : Nat)
     (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) {query : Resolved.Query}
@@ -110,7 +110,7 @@ theorem runScriptStep_select (context : ResolveContext) (clock : Option Clock) (
 /-- For every resolution context, clock, index, connection, statement, values and property
 {lit}`Q` of a result, under the premises of {name}`runScriptStep_select`: the output of the step
 returns a result with {lit}`Q` ({name}`Output.returnsResult`) exactly when every result that
-SQLite may give has {lit}`Q`. Proof sketch: {name}`Output.returnsResult_ofResults`; the list of
+the model permits has {lit}`Q`. Proof sketch: {name}`Output.returnsResult_ofResults`; the list of
 possible results is not empty ({name}`Resolved.Query.possibleResults_ne_nil`). -/
 theorem runScriptStep_select_returnsResult (context : ResolveContext) (clock : Option Clock) (index : Nat)
     (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) {query : Resolved.Query}

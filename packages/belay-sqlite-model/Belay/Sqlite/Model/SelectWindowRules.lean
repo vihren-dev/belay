@@ -3,13 +3,15 @@ import Belay.Sqlite.Model.QueryLaws
 
 set_option doc.verso true
 
-/-! The rules of the result phase of a SELECT (ADR 0027 D1): every result that SQLite may give
+/-! The rules of the result phase of a SELECT (ADR 0027 D1): every result that the model permits
 ({name}`Belay.Sqlite.Model.Resolved.Query.possibleResults`) is a permutation of a sublist of the
 rows of the query's records ({name}`Belay.Sqlite.Model.Resolved.Query.uniqueRecords`), whatever
 the {lit}`ORDER BY` terms and the window. So each row of a result is a row of a record, a row
 occurs in a result at most as often as in the records, and a result has at most as many rows.
 Without {lit}`OFFSET` and {lit}`LIMIT`, each result is a permutation of all the rows of the
-records. -/
+records. The alternatives are those that the model represents: where SQLite's plan chooses the
+row of a group, the model gives one row ({lit}`Query.groupRow`, ADR 0027 D4), so the rules do not
+cover the results of the other rows. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -25,7 +27,8 @@ theorem sublist_of_mem_choose : ∀ {count : Nat} {items chosen : List α}, chos
     · exact (sublist_of_mem_choose inner).cons_cons item
     · exact (sublist_of_mem_choose inner).cons item
 
-/-- For every rows, the normal form ({name}`normalForm`) is a permutation of the rows. -/
+/-- For every rows, the normal form ({name}`normalForm`) is a permutation of the rows. Proof sketch:
+the normal form is a stable sort, which permutes its list ({name}`stableSort_perm`). -/
 theorem normalForm_perm (rows : List (List Value)) : (normalForm rows).Perm rows := stableSort_perm _ _
 
 /-- For every window, position, group and choice of the group ({name}`groupChoices`), the choice
@@ -69,7 +72,7 @@ theorem Query.tieGroupRows_flatten (context : EvalContext) (query : Query) (rows
     (query.tieGroupRows context rows).flatten = (query.sortedRecords context rows).map Prod.fst := by
   rw [Query.tieGroupRows, ← List.map_flatten, tieGroups_flatten]
 
-/-- Result rule: for every context, query, rows and result that SQLite may give
+/-- Result rule: for every context, query, rows and result that the model permits
 ({name}`Query.possibleResults`), some sublist of the rows of the query's records
 ({name}`Query.uniqueRecords`) has the result as a permutation. This holds for every
 {lit}`ORDER BY`, {lit}`OFFSET` and {lit}`LIMIT`. Proof sketch: the result is a permutation of a
@@ -86,7 +89,7 @@ theorem Query.exists_sublist_of_mem_possibleResults {context : EvalContext} {que
   obtain ⟨other, otherPerm, otherSublist⟩ := List.exists_perm_sublist sublist (sorted.map Prod.fst)
   exact ⟨other, otherSublist, perm.trans otherPerm.symm⟩
 
-/-- For every context, query, rows, result that SQLite may give and row of the result, the row
+/-- For every context, query, rows, result that the model permits and row of the result, the row
 is the row of a record of the query ({name}`Query.uniqueRecords`). Proof sketch: a permutation keeps
 the members, and a sublist has only members of its list
 ({name}`Query.exists_sublist_of_mem_possibleResults`). -/
@@ -96,7 +99,7 @@ theorem Query.mem_of_mem_possibleResults {context : EvalContext} {query : Query}
   obtain ⟨picked, sublist, perm⟩ := Query.exists_sublist_of_mem_possibleResults member
   exact sublist.subset (perm.mem_iff.mp inResult)
 
-/-- For every context, query, rows, result that SQLite may give and row, the result has the row
+/-- For every context, query, rows, result that the model permits and row, the result has the row
 at most as often as the rows of the query's records ({name}`Query.uniqueRecords`). Proof sketch: a
 permutation keeps the counts, and a sublist has at most the counts of its list. -/
 theorem Query.count_le_of_mem_possibleResults {context : EvalContext} {query : Query} {rows result : List (List Value)}
@@ -105,7 +108,7 @@ theorem Query.count_le_of_mem_possibleResults {context : EvalContext} {query : Q
   obtain ⟨picked, sublist, perm⟩ := Query.exists_sublist_of_mem_possibleResults member
   exact perm.count_eq row ▸ sublist.count_le row
 
-/-- For every context, query, rows and result that SQLite may give, the result has at most as
+/-- For every context, query, rows and result that the model permits, the result has at most as
 many rows as the query has records ({name}`Query.uniqueRecords`). Proof sketch: a permutation keeps
 the length, and a sublist is at most as long as its list. -/
 theorem Query.length_le_of_mem_possibleResults {context : EvalContext} {query : Query} {rows result : List (List Value)}
@@ -115,7 +118,7 @@ theorem Query.length_le_of_mem_possibleResults {context : EvalContext} {query : 
   simpa [perm.length_eq] using sublist.length_le
 
 /-- Result rule without a window: for every context, query with {lit}`OFFSET` 0 and no
-{lit}`LIMIT`, rows and result that SQLite may give, the result is a permutation of the rows of
+{lit}`LIMIT`, rows and result that the model permits, the result is a permutation of the rows of
 all the query's records ({name}`Query.uniqueRecords`). This holds for every {lit}`ORDER BY`.
 Proof sketch: the result is a permutation of a sublist of the records' rows
 ({name}`Query.exists_sublist_of_mem_possibleResults`) and has as many rows as the model's one

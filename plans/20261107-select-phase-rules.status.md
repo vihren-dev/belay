@@ -70,8 +70,8 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: review fix (`refactor:`, review `20261107T031515Z-b7c6a717`): the progress
   entry of the execution rule names the obligations that `SelectReady.of_calm` discharges
   and the two that stay premises.
-- 2026-11-07: result, filter and projection rules (D1); A01. Every result that SQLite may
-  give is a permutation of a sublist of the rows of the query's records, for every
+- 2026-11-07: result, filter and projection rules (D1); A01. Every result that the model
+  permits is a permutation of a sublist of the rows of the query's records, for every
   `ORDER BY` and window (`Query.exists_sublist_of_mem_possibleResults`), with its membership,
   count and length corollaries, and a permutation of all of them without `OFFSET` and
   `LIMIT` (`Query.perm_of_mem_possibleResults`, `Model/SelectWindowRules.lean`). `WHERE` keeps
@@ -87,6 +87,10 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `tests/surface_select_rules_test.py` and `tests/surface_layers_test.py`;
   `tests/test_model_package.py` except its installed-package test, whose Nix build of the
   changed model package exceeds the local 120 s limit.
+- 2026-11-07: review fixes (`refactor:`, review `20261107T033220Z-001ee122`): the result
+  rules, the execution rule and their fixtures speak of the results that the model permits,
+  not of every result of SQLite, and the result rules name the group row that the model fixes
+  (ADR 0027 D4); `normalForm_perm` has a proof sketch. Tests: `just dev-build`.
 
 ## Working sequence
 

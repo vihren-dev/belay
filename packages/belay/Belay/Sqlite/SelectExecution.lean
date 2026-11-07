@@ -5,7 +5,7 @@ set_option doc.verso true
 /-! The execution rule of a SELECT for the run of a script (ADR 0027, D2 and D5): a script of one
 SELECT statement that resolves to a query that is ready
 ({lit}`Belay.Sqlite.Model.Connection.SelectReady`) returns a result with a property exactly when
-every result that SQLite may give for it has the property. The rule reads the clock and the
+every result that the model permits for it has the property. The rule reads the clock and the
 counters of the environment, so it holds for every environment, not only the default one. -/
 
 namespace Belay.Sqlite
@@ -17,7 +17,7 @@ open Belay.Sqlite.Model
 ({name}`resolveStatement`), the step runs it at a clock value ({name}`statementClock`), and the
 query is ready there ({name}`Connection.SelectReady`) with source rows {lit}`source` and bound
 query {lit}`bound`, the run of the script ({name}`send`) returns a result with {lit}`Q`
-({name}`Run.returnsResult`) exactly when every result that SQLite may give for {lit}`bound` over
+({name}`Run.returnsResult`) exactly when every result that the model permits for {lit}`bound` over
 the source rows ({name}`Resolved.Query.possibleResults`) has {lit}`Q`. Proof sketch:
 {name}`Run.send_returnsResult_iff` reads the step, and
 {name}`runScriptStep_select_returnsResult` its output. -/
@@ -43,7 +43,7 @@ theorem Run.send_returnsResult_select {script : Script} {statement : Syntax.Stat
 /-- For every script of one statement with its values, database, environment and property
 {lit}`Q` of a result, under the premises of {name}`Run.send_returnsResult_select`: the run of the
 program {name}`query` of the script returns a result with {lit}`Q` exactly when every result that
-SQLite may give has {lit}`Q`. Proof sketch: {name}`Run.query_returnsResult_iff` reads the same
+the model permits has {lit}`Q`. Proof sketch: {name}`Run.query_returnsResult_iff` reads the same
 step as {name}`Run.send_returnsResult_select`. -/
 theorem Run.query_returnsResult_select {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
@@ -69,7 +69,7 @@ the connection of the environment to a calm query ({name}`Resolved.Statement.Cal
 subqueries, whose sources are the first source at a catalog position where the database has a
 table, and which is no compound, has no window parameter, no overflow ({lit}`Query.fails`) and a
 certain {lit}`DISTINCT` over the scan of the table, then the run of the program {name}`query` of
-the script returns a result with {lit}`Q` exactly when every result that SQLite may give over the
+the script returns a result with {lit}`Q` exactly when every result that the model permits over the
 scan of the table ({name}`Resolved.sourceRows`) has {lit}`Q`. The context has only the values
 ({name}`Resolved.EvalContext.bound`): the clock and the counters of the environment do not matter.
 Proof sketch: {name}`Connection.SelectReady.of_calm` gives the readiness premises,

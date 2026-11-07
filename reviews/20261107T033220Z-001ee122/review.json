@@ -1,0 +1,59 @@
+{
+  "caller": "claude",
+  "commit": "001ee1223fffb27a4b21cd31eb0374901f43e70c",
+  "date": "2026-11-07T03:32:20+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/SelectExecution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectProjectionRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectWindowRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261107-select-phase-rules.status.md",
+    "tests/surface/SelectProjectionCases.lean",
+    "tests/surface_select_rules_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261107T033220Z-001ee122#1",
+      "line": 72,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectWindowRules.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring claims coverage of every SQLite result, but the theorem covers only `Query.possibleResults`, which omits plan-dependent group-row alternatives identified in ADR 0027 D4. Fix: qualify the new result-rule descriptions and corresponding status entry as claims about the model’s represented alternatives."
+    },
+    {
+      "id": "20261107T033220Z-001ee122#2",
+      "line": 28,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectWindowRules.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`normalForm_perm` has no proof sketch, although `exists_sublist_of_mem_groupChoices` uses it. Fix: add one sentence explaining that `normalForm` uses `stableSort`, so `stableSort_perm` applies."
+    }
+  ],
+  "id": "20261107T033220Z-001ee122",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -7,7 +7,7 @@ set_option maxRecDepth 8192
 /-! Checks of the execution rule of ADR 0027 D5 ({lit}`Run.send_returnsResult_select`) and of its
 unready contrast ({lit}`Run.send_unready`, acceptance case B05). The rule holds for every database
 and environment: a calm query of one table returns a result with a property exactly when every
-result that SQLite may give over the scan of the table has it. A possible fault blocks every claim,
+result that the model permits over the scan of the table has it. A possible fault blocks every claim,
 also when the output of the query alone ({lit}`Resolved.Query.outputOn`) gives a result. -/
 
 namespace SelectExecutionRules
@@ -18,7 +18,7 @@ open Belay.Sqlite.Model hiding Database
 statement resolves on the connection of the environment to a calm query of one table at a catalog
 position, with no subqueries, no compound and no window parameter, no failing aggregate and a
 certain {lit}`DISTINCT` over the scan of the table, the run returns a result with {lit}`Q` exactly
-when every result that SQLite may give over the scan has {lit}`Q`. The environment's clock and
+when every result that the model permits over the scan has {lit}`Q`. The environment's clock and
 counters do not matter, because the statement reads neither. -/
 theorem calm_table (script : Script) (db : Database) (env : Env) {statement : Syntax.Statement}
     {parameters : List Value} {query : Resolved.Query} {after : ResolveState} {position : Nat} {table : Table}
