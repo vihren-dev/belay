@@ -9,11 +9,13 @@ command that built them recorded.
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import subprocess
+import sys
 from uuid import uuid4
 
 import pytest
 
-from tests.observability_support import observation
+from tests.observability_support import environment, harness, observation
 from tools import observability_nix
 from tools.observability_logs import export_reports
 from tools.observability_nix import instantiation, run
@@ -142,3 +144,24 @@ def test_a_failed_link_farm_imports_the_suites_that_passed(tmp_path: Path, monke
     assert run(["nix-build", str(expression), "--no-out-link", "--option", "keep-going", "true",
                 "--extra-experimental-features", "nix-command flakes"], 100) != 0
     assert execution(tmp_path / "spool" / identity)["metadata"] == '{"event":"local"}'
+
+
+@pytest.mark.integration
+@pytest.mark.timeout(30)
+def test_a_host_session_records_its_provenance_and_a_builder_session_does_not(tmp_path: Path) -> None:
+    """`tools/observability_pytest.py` writes the provenance into the manifest of a session outside
+    a Nix builder, so a local host session differs from a CI one in ClickHouse; inside a builder
+    (`BELAY_OBSERVABILITY_BUILD=1`) the manifest keeps `{}`, which the host wrapper fills."""
+    root = harness(tmp_path / "repo")
+    for name, build in (("host", {}), ("builder", {"BELAY_OBSERVABILITY_BUILD": "1"})):
+        spool = tmp_path / name
+        child = {key: value for key, value in environment(spool).items() if not key.startswith("GITHUB_")}
+        result = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=root, env={**child, **build},
+                                capture_output=True, text=True, timeout=20)
+        assert result.returncode == 1, result.stdout + result.stderr
+        [manifest] = spool.glob("*/execution.json")
+        metadata = json.loads(manifest.read_text())["metadata"]
+        if build:
+            assert metadata == {}
+        else:
+            assert metadata["event"] == "local" and metadata["platform"], metadata

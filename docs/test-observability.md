@@ -124,10 +124,10 @@ not a passing result.
 
 ## Provenance
 
-The host runner adds these `metadata` fields to each execution that it imports.
+The host runner adds these `metadata` fields to each execution that it imports,
+and a pytest session outside a Nix builder writes them itself, without `suite`.
 A value that is not available is absent. Builders write `metadata: {}`, so the
-fields never change a Nix derivation. Pytest sessions outside the runner keep
-`metadata: {}`.
+fields never change a Nix derivation.
 
 | Field | Value |
 | --- | --- |

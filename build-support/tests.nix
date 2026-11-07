@@ -14,7 +14,7 @@ let
   parserSources = (import ./sources.nix { inherit (pkgs) lib; inherit root; }).parser;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
-    "tools/__init__.py" "tools/observability_pytest.py" "tools/observability_records.py"
+    "tools/__init__.py" "tools/observability_pytest.py" "tools/observability_provenance.py" "tools/observability_records.py"
     "tools/observability_spool.py" "tools/observability_upload.py" "tools/observability_logs.py"
   ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout
