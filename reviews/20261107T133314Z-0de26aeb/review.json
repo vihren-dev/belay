@@ -1,0 +1,48 @@
+{
+  "caller": "claude",
+  "commit": "0de26aebfdec4950204ac5f35d87baf7e7904753",
+  "date": "2026-11-07T13:33:14+00:00",
+  "exit": 0,
+  "files": [
+    "docs/select-automation-retirement.md",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryEqualityLink.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryRowidAlias.lean",
+    "plans/20261107-select-phase-rules.status.md",
+    "reviews/20261107T132832Z-38cfc1e0/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261107T133314Z-0de26aeb#1",
+      "line": 533,
+      "path": "plans/20261107-select-phase-rules.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status reports 27 declarations in the eight-file chain, but the parent commit contains 26 and this commit retains 23. Fix: change “27” to “26”."
+    }
+  ],
+  "id": "20261107T133314Z-0de26aeb",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
