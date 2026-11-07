@@ -15,7 +15,7 @@ open Belay.Sqlite.Model hiding Database
 single-statement SELECT gives one successful rows output, and every returned row has
 one non-NULL cell. The filter may discard every row; the table may be empty. The
 resolution, table presence and calmness assumptions are required.
-Proof sketch: the table-output law gives the exact output. Validity supplies each
+Proof sketch: {name}`resolvedStepOutput_calm_unordered` gives the exact output. Validity supplies each
 source cell and excludes NULL; filter membership and projection transport that fact. -/
 theorem schema_projection (script : Script) (db : Database)
     {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
@@ -35,13 +35,15 @@ theorem schema_projection (script : Script) (db : Database)
       ∀ row ∈ rows, ∃ value, row = [value] ∧ value ≠ .null := by
   fail_if_success sql_auto [db.notNull]
   have output := Script.outputOn_query script db statement parameters [] _ [] after head resolved
-  rw [resolvedStepOutput_simpleTable_rows none 0 position db.raw.connection parameters table filter
-    [.scalar (.column columnIndex)] [label] present calm] at output
+  rw [resolvedStepOutput_calm_unordered none 0 db.raw.connection parameters
+    (source := { rows := Resolved.sourceRows table, width := table.shape.columns.length, fault := .none }) calm
+    rfl rfl rfl rfl rfl rfl (Resolved.Query.source_first _ _ _ position table rfl present) (by simp) rfl rfl] at output
   rw [Script.query_outputs isQuery db, output]
   refine ⟨_, rfl, ?_⟩
   intro row member
-  have member := (Resolved.stableSort_perm _ _).mem_iff.mp member
-  rw [(Resolved.Query.simple_isSimple _ _ _ _).results_eq] at member
+  have member := (Resolved.normalForm_perm _).mem_iff.mp member
+  rw [Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl] at member
+  unfold Resolved.Query.rowOutput at member
   obtain ⟨source, kept, rfl⟩ := List.mem_map.mp member
   obtain ⟨original, _⟩ := (Resolved.mem_filtered _ _ _ source).mp kept
   obtain ⟨stored, storedIn, rfl⟩ := (mem_sourceRows_iff table source).mp original

@@ -500,6 +500,24 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   hint family that D6 replaces, but it is the traversal of SQL clauses that gives candidate
   schemas to the sample checker, unchanged since `84c0d779`; the proof hints of D6 do not
   replace it. The inventory row now says Retained.
+- 2026-11-07: retirement of the `Query.Simple` family (stage 3). `SimpleQueryLaws.lean`,
+  `SimpleResultsLaws.lean`, `SimpleQuerySteps.lean`, `SimpleSubqueryRun.lean`,
+  `SimpleTableRowsOutput.lean`, `SimpleSubqueryRowsOutput.lean` and `NoFromQuerySteps.lean` are
+  deleted with the predicate. The new `PlainQueryRules.lean` holds the queries `Resolved.Query.simple`
+  and `selectOneWhere` and the window laws of a query without order or window
+  (`Query.possibleResults_unordered`, `windowCertain_whole`, `sourceAfter_of_outer_zero`).
+  `Query.run_of_faultless` (`QueryPlainLaws`), `resolvedStepOutput_select_unordered`
+  (`SelectExecutionRule`), `resolvedStepOutput_calm_unordered` and
+  `resolvedStepOutput_not_isError_of_faultless` (`SelectCalmRule`) state the deleted laws with only
+  the field premises that their proofs read. The callers in the model and the fixtures
+  `SuccessBalanceObservation`, `SuccessBalanceSubqueries`, `SelectAutomationCore`,
+  `SelectAutomationSchema`, `InsertSelectExamples`, `RebuildCopyFacts` and `RebuildSucceedsCopy`
+  use them. `SimpleQueryAppend` and `SimpleTableCalm` stay: they are S6 read-certificate laws over
+  the query `Resolved.Query.simple`, without the predicate. `AggregateQueryLaws` remains Required.
+  Tests: `just dev-build`; locally `tests/surface_success_test.py`, `surface_select_automation_test.py`,
+  `surface_rebuild_test.py`, `surface_schema_script_test.py`, `guide_view_contract_test.py`,
+  `surface_select_rules_test.py`, `surface_select_sources_test.py`, `surface_s6_automation_test.py`,
+  `test_model_package.py` and `lean_packages_test.py`.
 
 ## Working sequence
 

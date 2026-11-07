@@ -13,7 +13,7 @@ namespace BalanceExample
 /-- For every simple SELECT 1 query with the given fault-free source and condition, no
 fallible call in the condition and no source expressions, the subquery has no fault and returns
 one literal row per matching source row.
-Proof sketch: apply the shared subquery execution and simple-result equations. -/
+Proof sketch: apply the fault-free subquery run law and the result law of a plain query without order or window. -/
 theorem one_run (context : Resolved.EvalContext) (database : Model.Database)
     (sources : List Resolved.QuerySource) (condition : Resolved.Expr) (source : Resolved.SourceRows)
     (found : (Resolved.Query.simple sources (some condition) [.scalar (.literal (.integer 1))] ["1"]).source context database = some source)
@@ -30,21 +30,20 @@ theorem one_run (context : Resolved.EvalContext) (database : Model.Database)
   have expressions : query.expressions = [condition, .literal (.integer 1)] := by
     simp [query, Resolved.Query.simple, Resolved.Query.expressions, Resolved.Query.keptExpressions,
       Resolved.Output.scalars, Resolved.Output.operands, sourceQuiet]
-  have run := Resolved.Query.subqueryRun_simple context database query
-    (Resolved.Query.simple_isSimple _ _ _ _) rfl source found clean
+  have run := Resolved.Query.subqueryRun_of_faultless context database [] none (query := query) rfl rfl rfl
+    (by rw [Resolved.Query.sourceAfter_of_outer_zero _ _ _ rfl]; exact found) clean
     (by simp [expressions, plain, Resolved.Expr.any, Resolved.Expr.isFallibleCall])
     (by
-      intro row member expression inside
+      intro row _ expression inside
       simp only [expressions, List.mem_cons, List.not_mem_nil, or_false] at inside
       rcases inside with rfl | rfl
       · exact quiet row
-      · rfl)
+      · rfl) rfl rfl
   constructor
   · rw [run]
-  · rw [run]
-    have results := (Resolved.Query.simple_isSimple sources (some condition)
-      [.scalar (.literal (.integer 1))] ["1"]).results_eq context source.rows
-    simpa [query, Resolved.Query.simple, Resolved.filtered, Resolved.Expr.eval_literal] using results
+  · rw [run, Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+    unfold Resolved.Query.rowOutput
+    simp [query, Resolved.Query.simple, Resolved.filtered, Resolved.Expr.eval_literal]
 
 /-- For every context and table found at the given position, the range query has no fault
 and returns one row for each cell that fails the SQL range condition.

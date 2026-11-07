@@ -15,11 +15,12 @@ def projection (condition : Option Expr := none) : Query :=
   Query.simple [] condition [.scalar (.column 0)] ["value"]
 
 /-- For every source list and condition, the projection has exactly one result row per
-retained source row, including duplicate and empty rows. Proof sketch: the existing length law. -/
+retained source row, including duplicate and empty rows. Proof sketch: the result law of a plain query without order or window maps each kept row to one result row. -/
 theorem collection_count (context : EvalContext) (rows : List (List Value)) (condition : Option Expr) :
     ((projection condition).results context rows).length =
-      (filtered context (projection condition) rows).length :=
-  (Query.simple_isSimple _ _ _ _).results_length context rows
+      (filtered context (projection condition) rows).length := by
+  rw [Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl]
+  simp
 
 /-- The pure projection retains two equal source rows; projection does not imply DISTINCT. -/
 theorem duplicates_remain :
@@ -28,13 +29,14 @@ theorem duplicates_remain :
 
 /-- Every projected row comes from a source row for which the exact SQL truth test passed.
 No condition on the input list is needed, and an empty result requires no row witness.
-Proof sketch: the simple-result equation, followed by membership in map and filter. -/
+Proof sketch: the result law of a plain query without order or window, followed by membership in map and filter. -/
 theorem where_fact (context : EvalContext) (condition : Expr) (rows : List (List Value))
     (row : List Value) (member : row ∈ (projection (some condition)).results context rows) :
     ∃ source ∈ rows, truthy (condition.eval context source) = true ∧
       row = [source.getD 0 .null] := by
   simp only [projection] at member
-  rw [(Query.simple_isSimple _ _ _ _).results_eq] at member
+  rw [Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl] at member
+  unfold Query.rowOutput at member
   obtain ⟨source, kept, rfl⟩ := List.mem_map.mp member
   obtain ⟨original, accepted⟩ := (mem_filtered context _ rows source).mp kept
   exact ⟨source, original, accepted, rfl⟩

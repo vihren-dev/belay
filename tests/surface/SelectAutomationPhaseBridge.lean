@@ -49,8 +49,8 @@ theorem ofResults_satisfies (property : List (List Value) → Prop) (results : L
 /-- Run rule: for every context, query that is no compound, has no {lit}`DISTINCT` and no window
 parameter, whose aggregates do not overflow over the rows ({name}`Resolved.Query.fails`), whose
 expressions have no fallible call and no fault over the rows, the run is the one result with no
-fault, no overflow and no mismatch. This is {name}`Resolved.Query.Simple.run_of_faultless` with
-only the premises that its proof reads. Proof sketch: unfold {name}`Resolved.Query.run`;
+fault, no overflow and no mismatch. The model law
+{name}`Resolved.Query.run_of_faultless` states the same rule. Proof sketch: unfold {name}`Resolved.Query.run`;
 {name}`Resolved.Query.bindWindow_literal`, {name}`Resolved.Query.mustFail_of_faultless` and
 {name}`Resolved.Query.mayFail_of_faultless` settle each field. -/
 theorem run_of_faultless (context : Resolved.EvalContext) (query : Resolved.Query) (rows : List (List Value))

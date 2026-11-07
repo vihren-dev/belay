@@ -75,7 +75,7 @@ per-family characterization. The owners are named as they exist on main.
 | File under `packages/belay-sqlite-model/Belay/Sqlite/Model/` | Lines | Status |
 | --- | --- | --- |
 | `SelectOneRowsOutput`, `SelectOneSubqueryOutput`, `SelectOneOutput` | 277 | Deleted: after the retirement of the surface forms no caller remained |
-| `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput` | 164 | Required |
+| `SimpleTableRowsOutput`, `SimpleSubqueryRowsOutput` | 164 | Deleted: the calm rule `resolvedStepOutput_calm_unordered` in `SelectCalmRule` gives the exact output of a calm query without order or window, and `resolvedStepOutput_select_unordered` in `SelectExecutionRule` that of a ready one |
 | `DuplicateKeyOutput` | 109 | Deleted, with `DuplicateKeyQuery.lean` and `FilteredDuplicateKeyQuery.lean`; the fixture `SelectDuplicateKeySupport.lean` proves the calmness of the statement and the run of the subquery |
 | `ScalarSubqueryOutput` | 127 | Deleted, with `ColumnQuery.lean`; `Resolved.Statement.Calm.selectOne_scalar` became the general `Resolved.Statement.Calm.selectOne_subquery` in `SelectOneSubqueryContext`, and `Connection.queryContext_tableSubquery_zero`, which only this file used, is deleted |
 | `CountSubqueryOutput` | 116 | Deleted, with `CountQuery.lean`; `Resolved.Statement.Calm.selectOne_count` moved to `SelectOneSubqueryContext`, and the count query `Resolved.Query.countOf` with `Resolved.SubqueryRun.count` to `CountOf` |
@@ -93,11 +93,13 @@ per-family characterization. The owners are named as they exist on main.
 | File | Lines | Status |
 | --- | --- | --- |
 | `CountQueryLaws` | 118 | Deleted: the ungrouped rule `Resolved.records_ungrouped` replaces its `Query.Count` laws |
-| `AggregateQueryLaws`, `NoFromQuerySteps` | 191 | Required: their content becomes the `group`, `aggregate`, `having` and `source` rules. A general law that a file holds moves to the rule library before the file is deleted |
+| `AggregateQueryLaws` | 127 | Required: its content becomes the `group`, `aggregate` and `having` rules. A general law that the file holds moves to the rule library before the file is deleted |
+| `NoFromQuerySteps` | 104 | Deleted: the query `Resolved.Query.selectOneWhere` and its laws moved to `PlainQueryRules`; the fixture `SuccessBalanceObservation.lean` reads the guard through `resolvedStepOutput_select_unordered` |
 | `DuplicateKeyQuery` | 176 | Reduced to 33 lines: it keeps the definitions `Resolved.Query.duplicateKeys`, which `DuplicateKeyResolution` gives, and `Resolved.keptRows`. Its laws are deleted; the fixture `SelectDuplicateKeySupport.lean` keeps their generality, expression keys under `key.Calm` (ADR 0030 D7) |
 | `DuplicateKeyGroupTerm` | 113 | Retained: the resolution of the grouping term (`GroupTermResolves`), which the premises of the support use |
 | `SimpleQueryFaults` | 95 | Deleted: `Resolved.Statement.Quiet.selectNoFrom` moves to `SelectSourceRules`, and no caller of its other laws remained |
-| `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQueryAppend`, `SimpleQuerySteps`, `SimpleSubqueryRun`, `SimpleTableCalm` | 514 | Required: `Query.Simple` is a phase decomposition of one shape. `Simple.results_eq` becomes the `project` rule, `results_length` the `filter` cardinality rule, and the predicate is deleted |
+| `SimpleQueryLaws`, `SimpleResultsLaws`, `SimpleQuerySteps`, `SimpleSubqueryRun` | 369 | Deleted, with the predicate `Query.Simple`. The query `Resolved.Query.simple` moved to `PlainQueryRules`. `Simple.results_eq` and `results_length` became `Query.results_plain_unordered` in `SelectSubqueryRules`, `Simple.run_of_faultless` became `Query.run_of_faultless` in `QueryPlainLaws`, `Simple.possibleResults_eq` became `Query.possibleResults_unordered`, and `resolvedStepOutput_simple_not_isError_of_faultless` became `resolvedStepOutput_not_isError_of_faultless` in `SelectCalmRule`, each with only the field premises that its proof reads |
+| `SimpleQueryAppend`, `SimpleTableCalm` | 145 | Retained: read-certificate laws of ADR 0017 (S6) over the query `Resolved.Query.simple`, with no `Query.Simple` premise. `CertifiedQueryOutputs` uses them |
 | `InSubqueryColumnLaw`, `InSubqueryEqualityLink`, `InSubqueryEvaluate`, `InSubqueryFilterLaw`, `InSubqueryQueryInLaw`, `InSubqueryQueryLaw`, `InSubqueryQueryRowidAlias`, `InSubqueryRowidAlias` | 863 | Candidate: `NotInQuery.lean` and the ADR 0026 D4 equivalences consume part of them. Keep what those consumers need; the rest becomes the `subquery` rule |
 | `SelectStepKeeps` | 133 | Retained: ADR 0025 preservation |
 

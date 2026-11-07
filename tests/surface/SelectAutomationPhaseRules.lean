@@ -162,8 +162,8 @@ theorem mem_uniqueRecords (context : Resolved.EvalContext) (query : Resolved.Que
   · exact member
 
 /-- Alternatives rule: for every context, query without {lit}`ORDER BY`, {lit}`OFFSET` and
-{lit}`LIMIT`, and rows, the possible results are the one result in normal form. This is
-{name}`Resolved.Query.Simple.possibleResults_eq` with only the premises that its proof reads.
+{lit}`LIMIT`, and rows, the possible results are the one result in normal form. The model
+law {name}`Resolved.Query.possibleResults_unordered` states the same rule.
 Proof sketch: the sort of no terms keeps the records; one tie group holds them all; the window
 takes all of it. -/
 theorem possibleResults_noWindow (context : Resolved.EvalContext) (query : Resolved.Query) (rows : List (List Value))

@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SelectRunRule
 import Belay.Sqlite.Model.StatementQuiet
 import Belay.Sqlite.Model.QueryPlainLaws
+import Belay.Sqlite.Model.QueryStatementOutput
 
 set_option doc.verso true
 
@@ -135,5 +136,60 @@ theorem Connection.SelectReady.of_calm (connection : Connection) (parameters : L
   exact Connection.SelectReady.of_faultless connection parameters calm single
     (Resolved.Query.bindWindow_literal parameters query limitParameter offsetParameter) found sourceCertain faultless
     noOverflow distinct
+
+/-- Calm unordered output rule: for every clock, index, connection, values and calm statement of a
+query without subqueries that is no compound and has no window parameter, no {lit}`ORDER BY`, no
+{lit}`OFFSET` and no {lit}`LIMIT`: when its source rows {lit}`source` in the context of the values
+({name}`Resolved.EvalContext.bound`) do not possibly fail, it has no failing aggregate over them
+({name}`Resolved.Query.fails`), and its {lit}`DISTINCT` is certain over them
+({name}`Resolved.Query.distinctCertain`), the output of its step is the result rows of the query
+over the source rows in normal form, whatever the clock. Proof sketch:
+{name}`Connection.SelectReady.of_calm` and {name}`resolvedStepOutput_select_unordered`; a calm
+statement runs at the clock value 0, in the context of the values
+({name}`Connection.queryContext_of_quiet`). -/
+theorem resolvedStepOutput_calm_unordered (clock : Option Clock) (index : Nat) (connection : Connection)
+    (parameters : List Value) {query : Resolved.Query} {source : Resolved.SourceRows}
+    (calm : (Resolved.Statement.query query []).Calm) (single : query.compound = none)
+    (limitParameter : query.limitParameter = none) (offsetParameter : query.offsetParameter = none)
+    (unordered : query.orderBy = []) (noOffset : query.offset = 0) (noLimit : query.limit = none)
+    (found : query.source (Resolved.EvalContext.bound parameters) connection.state.database = some source)
+    (sourceCertain : source.fault ≠ .may)
+    (noOverflow : query.fails (Resolved.EvalContext.bound parameters) source.rows = false)
+    (distinct : query.distinctCertain (Resolved.EvalContext.bound parameters) source.rows = true) :
+    resolvedStepOutput clock index connection parameters (.query query []) =
+      .rows (Resolved.normalForm (query.results (Resolved.EvalContext.bound parameters) source.rows)) := by
+  have ready := Connection.SelectReady.of_calm connection parameters calm single limitParameter offsetParameter
+    found sourceCertain noOverflow distinct
+  rw [resolvedStepOutput_select_unordered clock index connection parameters
+    (by simp [statementClock, calm.readsClock]) ready unordered noOffset noLimit]
+  have context := Connection.queryContext_of_quiet connection parameters query calm.quiet
+  exact congrArg (fun context => Output.rows (Resolved.normalForm (query.results context source.rows))) context
+
+/-- Error-free rule: for every connection, values and query statement that is calm
+({name}`Resolved.Statement.Calm`), whose query is no compound and has no window parameter, whose
+source {lit}`source` is found, whose expressions have no fault over the empty row and over each source
+row in the context of the statement, whose aggregates do not overflow over the source rows
+({name}`Resolved.Query.fails`) and whose {lit}`DISTINCT` is certain over them
+({name}`Resolved.Query.distinctCertain`), the output of its step is no error. The source rows may
+have a fault: the output is then no error, and it may be unmodeled. A query without aggregate and
+without {lit}`DISTINCT` meets the last two premises by {lit}`rfl`. Proof sketch:
+{name}`resolvedStepOutput_query_isError` with the run of {name}`Resolved.Query.run_of_faultless`, which
+has no fault, no overflow and no mismatch. -/
+theorem resolvedStepOutput_not_isError_of_faultless (index : Nat) (connection : Connection)
+    (parameters : List Value) {query : Resolved.Query} {subqueries : List Resolved.Query}
+    {source : Resolved.SourceRows} (calm : (Resolved.Statement.query query subqueries).Calm)
+    (single : query.compound = none) (limitParameter : query.limitParameter = none)
+    (offsetParameter : query.offsetParameter = none)
+    (found : query.source (connection.queryContext parameters query subqueries) connection.state.database = some source)
+    (faultless : ∀ row ∈ [] :: source.rows, ∀ expression ∈ query.expressions,
+      (expression.evaluate (connection.queryContext parameters query subqueries) row).2 = .none)
+    (noOverflow : query.fails (connection.queryContext parameters query subqueries) source.rows = false)
+    (distinct : query.distinctCertain (connection.queryContext parameters query subqueries) source.rows = true) :
+    (resolvedStepOutput none index connection parameters (.query query subqueries)).isError = false := by
+  have isError := resolvedStepOutput_query_isError index connection parameters query subqueries source
+    calm.readsClock (calm.firstUnknown _) found
+  rw [Resolved.Query.run_of_faultless _ single limitParameter offsetParameter calm.query_plain faultless
+    noOverflow distinct] at isError
+  simpa using isError
 
 end Belay.Sqlite.Model

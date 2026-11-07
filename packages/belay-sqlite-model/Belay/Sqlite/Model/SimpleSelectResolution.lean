@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.SimpleQueryLaws
+import Belay.Sqlite.Model.PlainQueryRules
 import Belay.Sqlite.Model.Resolution.Resolve
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.QuerySourceCopyLaws
@@ -8,7 +8,7 @@ set_option doc.verso true
 /-! The resolution of a simple {lit}`SELECT` (ADR 0017, S4): a statement with one query, without
 subqueries, joins, grouping, ordering, window, {lit}`HAVING`, {lit}`DISTINCT` and compound, and
 with result columns that call no aggregate. Resolution turns it into the simple query
-({name}`Belay.Sqlite.Model.Resolved.Query.Simple`) of its resolved sources, result columns and
+({name}`Belay.Sqlite.Model.Resolved.Query.simple`) of its resolved sources, result columns and
 {lit}`WHERE` condition. The lemma takes the resolved parts as hypotheses, because the catalog is
 free: a proof of a claim over every database gives them from the table that it assumes. -/
 

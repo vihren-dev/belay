@@ -68,9 +68,6 @@ def runContext' : Resolved.EvalContext :=
 /-- The rows that the query hands over: the pair of id and name of each row of the source. -/
 def selected : List (List Value) := [[.integer 1, .text [97]], [.integer 2, .text [98]]]
 
-/-- The query is simple. Proof sketch: it is {name}`Resolved.Query.simple`. -/
-theorem scan_simple : scanQuery.Simple := Resolved.Query.simple_isSimple _ _ _ _
-
 /-- The context of the query has no subquery, so it is quiet. Proof sketch: by definition, the context has no
 subquery fault. -/
 theorem context_quiet : runContext'.Quiet := fun _ _ => ⟨rfl, rfl, rfl⟩
@@ -84,7 +81,7 @@ theorem certain : scanQuery.productions runContext' begin.state.database
     Table.accessOrders_single _ _ _ (by decide +kernel)
   have rows : scanQuery.results runContext' (Resolved.sourceRows srcTable) = selected := by decide +kernel
   rw [scanQuery.productions_scan_single runContext' begin.state.database 0 srcTable _ rfl
-    scan_simple (by decide +kernel) context_quiet src_present single, rows]
+    rfl rfl rfl rfl rfl rfl rfl (by decide +kernel) context_quiet src_present single, rows]
 
 /-- The full rows that the INSERT writes for the rows of the query. -/
 def written : List (List Value) :=

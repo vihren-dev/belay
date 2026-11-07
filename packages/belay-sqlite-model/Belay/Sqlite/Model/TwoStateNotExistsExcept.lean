@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.TwoStateQuerySteps
-import Belay.Sqlite.Model.NoFromQuerySteps
+import Belay.Sqlite.Model.SelectSubqueryRules
 import Belay.Sqlite.Model.RowwiseExpr
 import Belay.Sqlite.Model.ExceptSubqueryRun
 import Belay.Sqlite.Model.ExceptCombineLaws
@@ -65,7 +65,7 @@ theorem Resolved.Query.simple_expressions_rowwise (sources : List Resolved.Query
 /-- For every simple query whose condition and columns are row-wise, every rows and two contexts with the same bound
 values, the one result is the same in both contexts. In plain words: a term of a compound gives the same rows in the
 context of the statement as in the plain context of the values. Proof sketch: the rows are the columns of the rows that
-{lit}`WHERE` keeps ({name}`Resolved.Query.Simple.results_eq`), and a row-wise expression evaluates in the same way in
+{lit}`WHERE` keeps ({name}`Resolved.Query.results_plain_unordered`), and a row-wise expression evaluates in the same way in
 both contexts ({name}`Resolved.Expr.Rowwise.evaluate_congr`). -/
 theorem Resolved.Query.simple_results_congr (sources : List Resolved.QuerySource) (filter : Option Resolved.Expr)
     (columns : List Resolved.Expr) (names : List String) (filterOk : ∀ e ∈ filter.toList, e.Rowwise)
@@ -75,7 +75,8 @@ theorem Resolved.Query.simple_results_congr (sources : List Resolved.QuerySource
       (Resolved.Query.simple sources filter (columns.map Resolved.Output.scalar) names).results second rows := by
   have each : ∀ e : Resolved.Expr, e.Rowwise → ∀ row, e.eval first row = e.eval second row := fun e rowwise row => by
     simp only [Resolved.Expr.eval, rowwise.evaluate_congr first second row same]
-  rw [(Resolved.Query.simple_isSimple _ _ _ _).results_eq, (Resolved.Query.simple_isSimple _ _ _ _).results_eq]
+  rw [Resolved.Query.results_plain_unordered first rfl rfl rfl rfl rfl rfl,
+    Resolved.Query.results_plain_unordered second rfl rfl rfl rfl rfl rfl]
   have kept : Resolved.filtered first (Resolved.Query.simple sources filter (columns.map Resolved.Output.scalar) names) rows =
       Resolved.filtered second (Resolved.Query.simple sources filter (columns.map Resolved.Output.scalar) names) rows := by
     unfold Resolved.filtered
@@ -87,7 +88,7 @@ theorem Resolved.Query.simple_results_congr (sources : List Resolved.QuerySource
       simp [each condition (filterOk condition (by simp)) row]
   rw [kept]
   refine List.map_congr_left fun row _ => ?_
-  dsimp only [Resolved.Query.simple]
+  dsimp only [Resolved.Query.rowOutput, Resolved.Query.simple]
   simp only [List.map_map, Function.comp_def]
   exact List.map_congr_left fun column member => by simp [each column (columnsOk column member) row]
 
@@ -96,7 +97,7 @@ theorem Resolved.Query.simple_results_congr (sources : List Resolved.QuerySource
 {name}`Resolved.notExistsExcept`, with every row of the first term a row of the second, and the rows of the first term
 identical where they compare equal, subquery 0 of the context of the statement for the empty outer row has no row and no
 fault. In plain words: the compound {lit}`q1 EXCEPT q2` is empty and quiet. Proof sketch: subquery 1 reads the initial
-table and subquery 2 the current table ({name}`Resolved.Query.subqueryRun_simple_fields`); their results in the context of
+table and subquery 2 the current table ({name}`Resolved.Query.subqueryRun_of_faultless`); their results in the context of
 the subqueries are the results in the context of the values ({name}`Resolved.Query.simple_results_congr`);
 {name}`Resolved.Query.PlainExcept.subqueryRun` gives the rows of the compound, which
 {name}`CompoundOperator.except_combine_eq_nil` shows empty. -/
@@ -132,14 +133,26 @@ theorem Resolved.notExistsExcept_context_zero (counters : Counters) (parameters 
       query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true := fun query rowwise => by
     simp only [List.all_eq_true, Bool.not_eq_true']
     exact fun e member => (rowwise e member).calm.1
-  have leftFields := Resolved.Query.subqueryRun_simple_fields ctx1 database (some initial)
-    (Resolved.initialTerm position condition columns names) (Resolved.Query.simple_isSimple _ _ _ _) rfl _
+  have fields : ∀ {query : Resolved.Query} {source : Resolved.SourceRows}, query.compound = none →
+      query.limitParameter = none → query.offsetParameter = none → query.outer = 0 →
+      query.source ctx1 database (some initial) = some source → source.fault = .none →
+      query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true →
+      (∀ row ∈ [] :: source.rows, ∀ e ∈ query.expressions, (e.evaluate ctx1 row).2 = .none) →
+      query.fails ctx1 source.rows = false → query.distinctCertain ctx1 source.rows = true →
+      (query.subqueryRun ctx1 database [] (some initial)).rows = query.results ctx1 source.rows ∧
+        (query.subqueryRun ctx1 database [] (some initial)).fault = .none ∧
+        (query.subqueryRun ctx1 database [] (some initial)).ending = .done := by
+    intro query source single limitParameter offsetParameter outer found clean plainQuery faultless noOverflow distinct
+    rw [Resolved.Query.subqueryRun_of_faultless ctx1 database [] (some initial) single limitParameter offsetParameter
+      (by rw [Resolved.Query.sourceAfter_of_outer_zero _ _ _ outer]; exact found) clean plainQuery faultless noOverflow
+      distinct]
+    exact ⟨rfl, rfl, rfl⟩
+  have leftFields := fields (query := Resolved.initialTerm position condition columns names) rfl rfl rfl rfl
     (Resolved.Query.source_initialTable ctx1 _ database initial position initialTable rfl presentInitial) rfl
-    (plain _ rowwise1) fun row _ e member => (rowwise1 e member).fault_none ctx1 row
-  have rightFields := Resolved.Query.subqueryRun_simple_fields ctx1 database (some initial)
-    (Resolved.currentTerm position columns names) (Resolved.Query.simple_isSimple _ _ _ _) rfl _
+    (plain _ rowwise1) (fun row _ e member => (rowwise1 e member).fault_none ctx1 row) rfl rfl
+  have rightFields := fields (query := Resolved.currentTerm position columns names) rfl rfl rfl rfl
     (Resolved.Query.source_first_from ctx1 _ database (some initial) position currentTable rfl presentCurrent) rfl
-    (plain _ rowwise2) fun row _ e member => (rowwise2 e member).fault_none ctx1 row
+    (plain _ rowwise2) (fun row _ e member => (rowwise2 e member).fault_none ctx1 row) rfl rfl
   rw [← leftRun] at leftFields
   rw [← rightRun] at rightFields
   have sameParameters : ctx1.parameters = (Resolved.EvalContext.bound parameters).parameters := rfl

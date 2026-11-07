@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleQueryAppend
-import Belay.Sqlite.Model.SimpleTableRowsOutput
+import Belay.Sqlite.Model.SelectCalmRule
+import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.QueryStepOutput
 import Belay.Sqlite.Model.TableByName
 
@@ -24,7 +25,8 @@ query of the table at a position, with a calm filter and calm result columns, an
 that table, then the output of its step is the rows of the query over the scan of the table, in normal
 form. In plain words, such a read has the one output that the model gives for its rows, and it does not
 depend on the clock or the index. Proof sketch: {name}`runScriptStep_output` gives the output of the
-resolved statement, which {name}`resolvedStepOutput_simpleTable_rows` computes. -/
+resolved statement, which {name}`resolvedStepOutput_calm_unordered` computes with the source rows of the
+table ({name}`Resolved.Query.source_first`). -/
 theorem runScriptStep_simpleTable_output (context : ResolveContext) (clock : Option Clock) (index : Nat)
     (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) (position : Nat)
     (table : Table) (filter : Option Expr) (columns : List Resolved.Output) (names : List String)
@@ -37,8 +39,9 @@ theorem runScriptStep_simpleTable_output (context : ResolveContext) (clock : Opt
       .rows (normalForm ((Query.simple [QuerySource.first position] filter columns names).results
         (EvalContext.bound parameters) (sourceRows table))) := by
   rw [runScriptStep_output, resolved]
-  exact resolvedStepOutput_simpleTable_rows clock index position connection parameters table filter columns names
-    present calm
+  exact resolvedStepOutput_calm_unordered clock index connection parameters
+    (source := { rows := sourceRows table, width := table.shape.columns.length, fault := .none }) calm rfl rfl rfl
+    rfl rfl rfl (Query.source_first _ _ _ position table rfl present) (by simp) rfl rfl
 
 /-- For every two connections, two statements and parameters that satisfy the premises below, the steps of
 the statements on the two connections give the same output, at any clocks and statement indexes. The

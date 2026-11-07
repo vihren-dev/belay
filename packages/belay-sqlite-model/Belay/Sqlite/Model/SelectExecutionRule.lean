@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.QueryOutputFacts
+import Belay.Sqlite.Model.PlainQueryRules
 
 set_option doc.verso true
 
@@ -62,6 +63,30 @@ theorem resolvedStepOutput_select (clock : Option Clock) (index : Nat) (connecti
   simp only [described, ite_true]
   exact Resolved.Query.outputOn_clean query value _ parameters connection.state.database subqueries source bound
     ready.found ready.window ready.mismatch ready.overflow (by rw [ready.fault]; decide)
+
+/-- For every result, the output of the only possible result is that result as rows. Proof sketch:
+one result has no repeat, and the sort of one item keeps it. -/
+theorem Output.ofResults_singleton (result : List (List Value)) : Output.ofResults [result] = .rows result := by
+  have erased : [result].eraseDups = [result] := by simp [List.eraseDups_cons]
+  simp [Output.ofResults, erased, Resolved.stableSort, Resolved.insertStable]
+
+/-- Unordered execution rule: for every clock, index, connection, values and query statement that
+is ready ({name}`Connection.SelectReady`) at its clock value with source rows {lit}`source` and a
+bound query {lit}`bound` without {lit}`ORDER BY`, {lit}`OFFSET` and {lit}`LIMIT`, the output of the
+step is the rows of {lit}`bound` over the source rows, in normal form. Proof sketch:
+{name}`resolvedStepOutput_select` with the one permitted result
+({name}`Resolved.Query.possibleResults_unordered`, {name}`Output.ofResults_singleton`). -/
+theorem resolvedStepOutput_select_unordered (clock : Option Clock) (index : Nat) (connection : Connection)
+    (parameters : List Value) {query : Resolved.Query} {subqueries : List Resolved.Query} {value : Int}
+    {source : Resolved.SourceRows} {bound : Resolved.Query}
+    (clocked : statementClock clock index (.query query subqueries) = some value)
+    (ready : connection.SelectReady value parameters query subqueries source bound)
+    (unordered : bound.orderBy = []) (noOffset : bound.offset = 0) (noLimit : bound.limit = none) :
+    resolvedStepOutput clock index connection parameters (.query query subqueries) =
+      .rows (Resolved.normalForm (bound.results (connection.queryContextAt value parameters query subqueries)
+        source.rows)) := by
+  rw [resolvedStepOutput_select clock index connection parameters clocked ready,
+    Resolved.Query.possibleResults_unordered _ unordered noOffset noLimit, Output.ofResults_singleton]
 
 /-- Unready rule: for every clock, index, connection, values and query statement that the step
 runs at a clock value ({name}`statementClock`), with known counters and source rows

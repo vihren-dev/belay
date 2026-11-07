@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.QueryFunctions
 import Belay.Sqlite.Model.StatementQuiet
-import Belay.Sqlite.Model.SimpleQueryLaws
+import Belay.Sqlite.Model.PlainQueryRules
 import Belay.Sqlite.Model.TableInfoResolution
 
 set_option doc.verso true

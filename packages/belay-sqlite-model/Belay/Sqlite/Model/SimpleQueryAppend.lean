@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.ExprAppendLaws
-import Belay.Sqlite.Model.SimpleResultsLaws
+import Belay.Sqlite.Model.SelectSubqueryRules
 
 set_option doc.verso true
 
@@ -45,7 +45,7 @@ query over the rows with their cells appended has the results of the first query
 words, the two filters may be different expressions, and the second may read the appended cells; the
 statement requires only that they keep the same rows. A missing filter keeps every row. The names of the
 result columns play no part. Proof sketch: a simple query keeps the rows whose filter is true and maps each kept
-row to its columns ({name}`Query.Simple.results_eq`); the kept rows agree by the premise, and each result
+row to its columns ({name}`Query.results_plain_unordered`); the kept rows agree by the premise, and each result
 column keeps its value under appended cells ({name}`Expr.eval_append`). -/
 theorem Query.simple_results_agree (context : EvalContext) (rowFree : context.RowFree)
     (rows : List (List Value)) (extra : List Value → List Value) (beforeSources afterSources : List QuerySource)
@@ -58,7 +58,9 @@ theorem Query.simple_results_agree (context : EvalContext) (rowFree : context.Ro
     (Query.simple afterSources afterFilter columns afterNames).results context
         (rows.map fun row => row ++ extra row) =
       (Query.simple beforeSources beforeFilter columns beforeNames).results context rows := by
-  rw [(Query.simple_isSimple ..).results_eq, (Query.simple_isSimple ..).results_eq]
+  rw [Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl,
+    Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl]
+  unfold Query.rowOutput
   simp only [filtered, Query.simple]
   rw [List.filter_map, List.map_map]
   have kept : rows.filter ((fun row => afterFilter.all fun condition => truthy (condition.eval context row)) ∘

@@ -80,8 +80,8 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {se
       (!Resolved.Statement.collectsSource 2 copyQuery [] [] none) =
       some [{ rows := Resolved.sourceRows customers, failure := none }] := by
     rw [copyQuery.productions_scan_single ctx c.state.database 0 customers _ rfl
-      copy_simple (by decide +kernel) quiet present single]
-    rw [Resolved.Query.results_copy copy_simple ctx 3 rfl rfl _ wide]
+      rfl rfl rfl rfl rfl rfl rfl (by decide +kernel) quiet present single]
+    rw [Resolved.Query.results_copy rfl rfl rfl rfl rfl rfl ctx 3 rfl rfl _ wide]
   have storedNew : ∀ row ∈ customers.scanRows, row.Stored strictShape.columns := fun row m =>
     Row.Stored.of_affinities (by rw [newAffinity, oldAffinity]) (admitted.rowsStored row (inRows row m))
   have fit : InsertFits (c.state.database.keys 2 ⟨strictShape, []⟩) ⟨strictShape, []⟩

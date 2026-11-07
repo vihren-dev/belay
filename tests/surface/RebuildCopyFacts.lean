@@ -23,9 +23,6 @@ def copyQuery : Resolved.Query :=
   Resolved.Query.simple [Resolved.QuerySource.first 0] none ((List.range 3).map fun position => .scalar (.column position))
     ["id", "name", "email"]
 
-/-- The query of the copy is simple. Proof sketch: it is {name}`Resolved.Query.simple`. -/
-theorem copy_simple : copyQuery.Simple := Resolved.Query.simple_isSimple _ _ _ _
-
 /-- The resolved copy: the table at position 2, the new customers, takes the three cells of the query in order. -/
 def copyStatement : Resolved.Statement :=
   .insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none

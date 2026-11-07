@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.CountOf
-import Belay.Sqlite.Model.SimpleSubqueryRun
+import Belay.Sqlite.Model.PlainQueryRules
 
 set_option doc.verso true
 

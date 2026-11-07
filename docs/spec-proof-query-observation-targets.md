@@ -69,20 +69,20 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 | Current owner | Exact definitions and facts to reuse below their consumers |
 | --- | --- |
 | [QueryOutputFacts](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
-| [SimpleQuerySteps](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
+| `SimpleQuerySteps` (removed by ADR 0027; current owner: [SelectCalmRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean)) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
 | `SelectOneSubqueryOutput` (removed by ADR 0027) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
 | `CountSubqueryOutput` (removed by ADR 0027; current owner of `Resolved.SubqueryRun.count` and `Resolved.countMatching`: [CountOf](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountOf.lean)) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
 | `ScalarSubqueryOutput` (removed by ADR 0027; the fixture `tests/surface/SelectColumnWhereSupport.lean` defines the rows as `columnValues`) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
 | `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: [SelectOneSubqueryContext](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryContext.lean)) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`; `Connection.queryContext_tableSubquery_zero` was removed by ADR 0027 |
 | `DuplicateKeyOutput` (removed by ADR 0027; the fixture `tests/surface/SelectDuplicateKeySupport.lean` gives the run as `duplicateKeysOne_run`) | `Connection.queryContext_duplicateKeys_zero` |
 | `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
-| [SimpleSubqueryRowsOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean) | `resolvedStepOutput_simple_rows_of_faultless`; reuse this current exact-output fact |
+| `SimpleSubqueryRowsOutput` (removed by ADR 0027; current owner: [SelectCalmRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean)) | `resolvedStepOutput_calm_unordered`; reuse this current exact-output fact |
 | [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; reuse different-filter agreement and named-table append semantics |
 | [SimpleTableCalm](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleTableCalm.lean) | `Resolved.Output.operands_of_readsBelow`, `Resolved.Statement.simpleTable_calm`; reuse the current shared calmness proof |
 
 The existing generic projections `resolvedStepOutput_query_isError` in
-`QueryStatementOutput` and `resolvedStepOutput_simple_not_isError_of_faultless`
-in `SimpleQuerySteps` identify important independent guarantees: the former
+`QueryStatementOutput` and `resolvedStepOutput_not_isError_of_faultless`
+in `SelectCalmRule` identify important independent guarantees: the former
 needs no bound-window premise; the latter needs no clean-source premise.
 They are outside the 45-endpoint deletion set. Preserve these strengths when
 reusing clean-source exact-output facts; generic projections are not automatically obsolete.
