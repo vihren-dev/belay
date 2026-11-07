@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ExprEvalLaws
+import Belay.Sqlite.Model.InValueEqualsLaws
 
 set_option doc.verso true
 
@@ -10,33 +11,6 @@ that are not NULL and whose converted values satisfy the operator. These are the
 filter gives to the rows that it keeps. -/
 
 namespace Belay.Sqlite.Model.Resolved
-
-/-- For every value, the numeric conversion of a comparison operand ({name}`numericOperand`) is
-NULL exactly when the value is NULL. Proof sketch: cases on the value; the conversion of a text
-gives a number or the text. -/
-theorem numericOperand_isNull (value : Value) : (numericOperand value).isNull = value.isNull := by
-  cases value with
-  | text bytes =>
-    simp only [numericOperand, numericText, textNumber]
-    split
-    · rfl
-    · split
-      · rfl
-      · simp only [Option.getD_some, integerAffinity]
-        cases wholeReal _ <;> rfl
-  | _ => rfl
-
-/-- For every affinity and two values, each operand that the affinity of a comparison gives
-({name}`comparisonOperands`) is NULL exactly when its value is NULL. Proof sketch: cases on the
-affinity; the numeric conversion keeps NULL and non-NULL ({name}`numericOperand_isNull`), and the
-text conversion of a stored value too. -/
-theorem comparisonOperands_isNull (affinity : Option Affinity) (left right : Value) :
-    (comparisonOperands affinity left right).1.isNull = left.isNull ∧
-      (comparisonOperands affinity left right).2.isNull = right.isNull := by
-  rcases affinity with _ | affinity
-  · simp [comparisonOperands]
-  · cases affinity <;> simp only [comparisonOperands, numericOperand_isNull, and_self]
-    split <;> cases left <;> cases right <;> simp_all [Value.store, Value.isNull]
 
 /-- {lit}`x IS NOT NULL`: for every affinity, collation and value, the comparison {lit}`IS NOT`
 of the value with NULL is true exactly when the value is not NULL. Proof sketch: the affinity
