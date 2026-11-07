@@ -158,6 +158,19 @@ def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
                        timeout=90)
 
 
+def test_run_delegation(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql_run` (`Belay/Sqlite/SqlRun.lean`) gives the check of one query to `sql_select`, whose
+    execution rule `Sql.check_query_ofCatalog` (`Belay/Sqlite/SelectCatalogCheck.lean`) proves the check at
+    a context with the connection of the database. Both tactics prove A04 and A08 as a check at the initial
+    context, and `sql_run` also as a Hoare triple, over every database with the catalog of the case. Every
+    proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectFilterCases", 3),
+                       ("SelectComparisonCases", 5), ("SelectCardinalityCases", 5), ("SelectGroupSupport", 0),
+                       ("SelectGroupCases", 6), ("SelectCountCases", 5), ("SelectHavingCases", 6),
+                       ("SelectOrderCases", 4), ("SelectProcedureCases", 9), ("SelectRunCases", 4)),
+                       timeout=90)
+
+
 def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
     """The registry of the attribute `sql_select_rule` (`Belay/Sqlite/SqlSelectRule.lean`) refuses a
     declaration that is no theorem, an unknown phase and a scoped registration, each with its message. A

@@ -1,5 +1,5 @@
 import Belay.Sqlite.SqlSelectRule
-import Belay.Sqlite.SelectCatalogExecution
+import Belay.Sqlite.SelectCatalogCheck
 import Belay.Sqlite.Model
 
 set_option doc.verso true
@@ -26,7 +26,7 @@ sketch: {name}`List.filter_eq_self`. -/
 theorem filter_const_true {α : Type} (items : List α) : items.filter (fun _ => true) = items :=
   List.filter_eq_self.mpr fun _ _ => rfl
 
-attribute [sql_select_rule execution] Run.query_returnsResult_ofCatalog
+attribute [sql_select_rule execution] Run.query_returnsResult_ofCatalog Sql.check_query_ofCatalog
 attribute [sql_select_rule source] Database.mem_scanAt
 attribute [sql_select_rule expression] exists_sublist_map_eq Resolved.exists_perm_map_eq
 attribute [sql_select_rule aggregate] Resolved.Query.mem_possibleResults_ungrouped

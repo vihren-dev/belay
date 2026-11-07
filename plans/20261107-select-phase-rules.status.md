@@ -580,6 +580,21 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   without a membership hypothesis; a plain fact is still refused. `SelectProcedureCases.ids_records` is
   the regression case. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py`,
   `tests/surface_s6_automation_test.py` and `tests/surface_s6_auto_editor_test.py`.
+- 2026-11-07: `sql_run` gives the check of a query of one SELECT to `sql_select` (D6). The new execution
+  rule `Sql.check_query_ofCatalog` (`SelectCatalogCheck.lean`) proves `(query script one).check post state`
+  when the connection of `state` is that of a database with the catalog; `sql_select` recognizes such a
+  check as a run. `runRead` of `SqlRun.lean` tries the procedure first and restores the state and the
+  messages when the procedure does not close the goal, so the step rule `Sql.check_query_select` still
+  applies. The rule telescope of `SqlSelectSteps.lean` no longer unfolds the conclusion of a rule
+  (`forallMetaTelescope`): the reducing form unfolded `Sql.check`, so the rule never matched.
+  `tests/surface/SelectRunCases.lean` proves A04 and A08 as a check with `sql_select` and `sql_run`, and A08
+  as a Hoare triple. `S6AutoPaths.query_keeps_connection` now closes with no obligation left, so
+  `second_goal_stays` puts the `single` check first, whose step rule leaves one obligation. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_s6_automation_test.py`,
+  `tests/surface_s6_auto_editor_test.py`, `tests/surface_rebuild_test.py`, `tests/surface_automatic_test.py`,
+  `tests/surface_automatic_editor_test.py`, `tests/surface_automatic_cancel_test.py`,
+  `tests/surface_s6_rules_test.py`, `tests/surface_s6_check_programs_test.py` and
+  `tests/surface_proof_cost_automatic_test.py`.
 
 ## Working sequence
 

@@ -44,6 +44,36 @@ theorem Database.resolveState_of_catalog (db catalog : Database) (schema : db.Ha
   simp only [Connection.resolveState, Database.Raw.connection]
   rw [show db.raw.catalog = catalog.raw.catalog from schema]
 
+/-- For every database {lit}`db`, database {lit}`catalog` whose catalog {lit}`db` has, counters,
+statement, query and subqueries: when the statement resolves on {lit}`catalog` to the query with the
+subqueries ({name}`Database.selectQuery?`), it resolves to them on the connection of {lit}`db` with the
+counters, with some state after it. Proof sketch: the resolution reads only the catalog
+({name}`Database.resolveState_of_catalog`); the cases of {name}`Database.selectQuery?`. -/
+theorem Database.resolve_of_selectQuery {db catalog : Database} (schema : db.HasCatalog catalog)
+    (counters : Counters) {statement : Syntax.Statement} {query : Resolved.Query}
+    {subqueries : List Resolved.Query} (resolved : catalog.selectQuery? statement = some (query, subqueries)) :
+    ∃ after, resolveStatement runContext (db.raw.connection counters).resolveState statement =
+      .ok (.query query subqueries, after) := by
+  rw [Database.resolveState_of_catalog db catalog schema]
+  unfold Database.selectQuery? at resolved
+  split at resolved
+  · cases resolved
+    exact ⟨_, ‹_›⟩
+  all_goals cases resolved
+
+/-- For every database {lit}`db`, database {lit}`catalog` whose catalog {lit}`db` has, and catalog
+position with the table {lit}`shape` in the catalog: {lit}`db` has at the position the table of
+{lit}`shape` with its stored rows, and the scanned rows at the position ({name}`Database.scanAt`) are
+the rows of that table ({name}`Resolved.sourceRows`). Proof sketch: the two databases have the same
+catalog. -/
+theorem Database.table_of_catalog {db catalog : Database} (schema : db.HasCatalog catalog) {position : Nat}
+    {shape : CatalogTable} (present : catalog.raw.catalog.tableAt position = some shape) :
+    db.raw.table position = some { shape, rows := db.raw.rows.getD position [] } ∧
+      db.scanAt position = Resolved.sourceRows { shape, rows := db.raw.rows.getD position [] } := by
+  have table : db.raw.table position = some { shape, rows := db.raw.rows.getD position [] } := by
+    simp [Database.table, show db.raw.catalog = catalog.raw.catalog from schema, present]
+  exact ⟨table, by simp [Database.scanAt, table]⟩
+
 /-- Catalog rule: for every script of one statement with its values, proof that it has one statement,
 database {lit}`db`, environment, database {lit}`catalog` whose catalog {lit}`db` has, query, catalog
 position, catalog table {lit}`shape` and property {lit}`Q` of a result, the run of the program
@@ -58,8 +88,8 @@ position, catalog table {lit}`shape` and property {lit}`Q` of a result, the run 
 * every result that the model permits for the query over these rows has {lit}`Q`.
 
 The clock and the counters of the environment do not matter. The rule requires no row: an empty table
-gives the results of the query over no rows. Proof sketch: the resolution reads only the catalog
-({name}`Database.resolveState_of_catalog`), the catalog gives the table of {lit}`db`, and
+gives the results of the query over no rows. Proof sketch: {name}`Database.resolve_of_selectQuery`
+and {name}`Database.table_of_catalog` give the resolution and the table of {lit}`db`, and
 {name}`Run.query_returnsResult_calmTable` gives the result. -/
 theorem Run.query_returnsResult_ofCatalog {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) {db : Database}
@@ -76,18 +106,8 @@ theorem Run.query_returnsResult_ofCatalog {script : Script} {statement : Syntax.
     (each : ∀ result ∈ query.possibleResults (Resolved.EvalContext.bound parameters) (db.scanAt position),
       property result) :
     (db.run (Belay.Sqlite.query script one) env).returnsResult property := by
-  obtain ⟨after, resolution⟩ : ∃ after, resolveStatement runContext (db.raw.connection env.counters).resolveState
-      statement = .ok (.query query [], after) := by
-    rw [Database.resolveState_of_catalog db catalog schema]
-    unfold Database.selectQuery? at resolved
-    split at resolved
-    · cases resolved
-      exact ⟨_, ‹_›⟩
-    all_goals cases resolved
-  have table : db.raw.table position = some { shape, rows := db.raw.rows.getD position [] } := by
-    simp [Database.table, show db.raw.catalog = catalog.raw.catalog from schema, present]
-  have scan : db.scanAt position = Resolved.sourceRows { shape, rows := db.raw.rows.getD position [] } := by
-    simp [Database.scanAt, table]
+  obtain ⟨after, resolution⟩ := Database.resolve_of_selectQuery schema env.counters resolved
+  obtain ⟨table, scan⟩ := Database.table_of_catalog schema present
   rw [scan] at noOverflow distinct each
   exact (Run.query_returnsResult_calmTable head one db env resolution sources table calm single limitParameter
     offsetParameter noOverflow distinct property).mpr each

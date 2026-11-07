@@ -118,11 +118,12 @@ def explicitPremises (arguments : Array Expr) (binders : Array BinderInfo) : Met
   return found
 
 /-- Apply a rule backward: its conclusion must match the goal; its last explicit premise becomes the new
-goal, and the procedure closes every other premise. -/
+goal, and the procedure closes every other premise. The premises are the binders of the stated type of
+the rule: a conclusion such as a check ({lit}`Sql.check`) is not unfolded into more premises. -/
 def applyBackward (hints : Hints) (goal : MVarId) (rule : Expr) : TacticM (Except Refusal MVarId) :=
   goal.withContext do
     let saved ← Tactic.saveState
-    let (arguments, binders, conclusion) ← forallMetaTelescopeReducing (← inferType rule)
+    let (arguments, binders, conclusion) ← forallMetaTelescope (← inferType rule)
     let some continuation := (← explicitPremises arguments binders).back? | return .error .noMatch
     unless ← isDefEq conclusion (← goal.getType) do
       saved.restore
@@ -141,7 +142,7 @@ conclusion that a hypothesis already states is not added again. -/
 def applyForward (hints : Hints) (goal : MVarId) (rule : Expr) (hypothesis : FVarId) :
     TacticM (Except Refusal MVarId) := goal.withContext do
   let saved ← Tactic.saveState
-  let (arguments, binders, conclusion) ← forallMetaTelescopeReducing (← inferType rule)
+  let (arguments, binders, conclusion) ← forallMetaTelescope (← inferType rule)
   let hypothesisType ← hypothesis.getType
   let mut taken : Option Nat := none
   for index in (← explicitPremises arguments binders).reverse do

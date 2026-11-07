@@ -7,7 +7,8 @@ set_option doc.verso true
 
 /-! The tactic {lit}`sql_select` (ADR 0027, D6): it proves a claim about the results of a SELECT by
 proved phase rules. The procedure introduces the binders of the goal, applies an execution rule backward,
-which turns a claim about a run into a claim about every result that the model permits for the query,
+which turns a claim about a run, or the check of a query ({lit}`Sql.check`), into a claim about every
+result that the model permits for the query,
 then applies the rules of the other phases forward to the hypotheses that it introduces, splits the
 facts that they give, and closes the last goal with the evaluation laws. The explicit hints run first,
 in the given order, then the registered rules of the phase ({lit}`sql_select_rule`), in qualified
@@ -115,10 +116,10 @@ def aboutQuery (goal : MVarId) : MetaM Bool := goal.withContext do
 
 /-- The refusal of a goal that is no claim about the results of a query. -/
 def unknownShape : MessageData :=
-  m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal \
-    whose target or hypotheses read the results or a phase of a resolved query (Resolved) or the rows of a \
-    table (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or \
-    pass a rule as a hint."
+  m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, the \
+    check of a query (Sql.check), or a goal whose target or hypotheses read the results or a phase of a \
+    resolved query (Resolved) or the rows of a table (Database.scanAt). This goal is none of these, and no \
+    hint applies to it. Use another tactic, or pass a rule as a hint."
 
 /-- The procedure on one goal; the result is the goals that stay open. A goal that is no claim about the
 results of a query, and to which no hint applies backward, is refused with an error. -/
@@ -126,7 +127,8 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
     TacticM (List MVarId) := do
   let (_, goal) ← goal.intros
   let target ← goal.withContext do whnfR (← instantiateMVars (← goal.getType))
-  let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult
+  let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult ||
+    (target.isAppOfArity ``Belay.Sqlite.Sql.check 4 && (target.getArg! 1).isAppOf ``Belay.Sqlite.query)
   let recognized := recognized || isRun || (← aboutQuery goal)
   let phases := if isRun then [SelectPhase.execution] else []
   let mut refused : Option (Name × Expr) := none
@@ -144,7 +146,7 @@ partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized 
   | some (rule, type) =>
     explain goal "execution" m!"the rule {rule} matches, but its premise{indentExpr type}\nis not proved."
   | none =>
-    if target.isAppOf ``Belay.Sqlite.Run.returnsResult then
+    if isRun then
       explain goal "execution" m!"no execution rule matches the run, and no hint applies."
     else
       explain goal "result" m!"the facts that the rules give do not prove the goal. Prove it, or pass a rule or a \
