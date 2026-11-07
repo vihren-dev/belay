@@ -119,6 +119,17 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   returns neither a result nor an error, although its value rule gives a value. Tests:
   `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_layers_test.py`
   and `tests/test_model_package.py` except its installed-package test.
+- 2026-11-07: B01, B02 and B11. The prepare-error rule (`Run.query_prepareError`): a one-statement
+  query that resolves to a prepare error returns no result and the error of its resolution, in
+  every environment; the prepare-error output law now holds for every clock. B01, B02 and B11
+  (`tests/surface/SelectOutcomeCases.lean`): a query of a missing table returns error code 1 and
+  no result over every database without that table, satisfies the matching error post of
+  `Sql.check` and neither another code nor a success post; a read of the clock satisfies no post
+  and returns nothing over every database and environment without a clock; on a concrete choice
+  of two results a post holds only when each alternative has it, the raw choice and each
+  alternative keep their own traces, and an empty choice returns no result. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_layers_test.py`
+  and `tests/test_model_package.py` except its installed-package test.
 
 ## Working sequence
 

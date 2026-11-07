@@ -62,3 +62,13 @@ def test_expression_cases(runtime_root: Path, tmp_path: Path) -> None:
     Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectExpressionCases", 4)),
                        timeout=60)
+
+
+def test_outcome_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases B01, B02 and B11 through the prepare-error rule (`Run.query_prepareError`), the
+    bridges of `Sql.check` and `Sql.check_stopped`: a query of a missing table returns error code 1 and no
+    result for every database without that table, satisfies the matching error post and no other post; a
+    read of the clock without a clock satisfies no post; a choice of results satisfies a post only when each
+    alternative does, and the raw choice and each alternative keep their own traces. Every proof has only
+    logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectOutcomeCases", 6),), timeout=60)

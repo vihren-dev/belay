@@ -6,7 +6,8 @@ set_option doc.verso true
 SELECT statement that resolves to a query that is ready
 ({lit}`Belay.Sqlite.Model.Connection.SelectReady`) returns a result with a property exactly when
 every result that the model permits for it has the property. The rule reads the clock and the
-counters of the environment, so it holds for every environment, not only the default one. -/
+counters of the environment, so it holds for every environment, not only the default one. A
+statement that SQLite refuses to prepare returns the error of its resolution and no result. -/
 
 namespace Belay.Sqlite
 
@@ -126,6 +127,35 @@ theorem Run.send_unready {script : Script} {statement : Syntax.Statement} {param
   rw [same, runScriptStep_output, resolved]
   dsimp only
   rw [resolvedStepOutput_select_unready env.clock 0 _ parameters clocked known found unready]
+  simp [Output.returnsResult, Output.returnsError]
+
+/-- Prepare-error rule: for every script of one statement with its values, proof that it has one
+statement, database, environment, property {lit}`Q` of a result and property {lit}`E` of a result
+code: when the statement resolves on the connection of the environment to a prepare error
+({name}`resolveStatement`), then
+
+* the run of the program {name}`query` of the script returns no result with {lit}`Q`
+  ({name}`Run.returnsResult`), and
+* it returns an error with {lit}`E` ({name}`Run.returnsError`) exactly when {lit}`E` holds of the
+  primary code of that prepare error ({name}`ExecutionError.primaryCode`).
+
+The rule holds for every environment: the statement reads no clock and no counter. Proof sketch:
+{name}`runScriptStep_output` reads the resolution, and {name}`resolvedStepOutput_prepareError`
+gives the error output. -/
+theorem Run.query_prepareError {script : Script} {statement : Syntax.Statement} {parameters : List Value}
+    (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
+    (env : Env) {error : PrepareError} {after : ResolveState}
+    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
+      .ok (.prepareError error, after))
+    (property : List (List Value) → Prop) (code : Nat → Prop) :
+    ¬ (db.run (Belay.Sqlite.query script one) env).returnsResult property ∧
+      ((db.run (Belay.Sqlite.query script one) env).returnsError code ↔
+        code (ExecutionError.prepare error).primaryCode) := by
+  rw [Run.query_returnsResult_iff one, Run.query_returnsError_iff one]
+  have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
+  rw [same, runScriptStep_output, resolved]
+  dsimp only
+  rw [resolvedStepOutput_prepareError]
   simp [Output.returnsResult, Output.returnsError]
 
 end Belay.Sqlite
