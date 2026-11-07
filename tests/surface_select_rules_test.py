@@ -75,3 +75,15 @@ def test_outcome_cases(runtime_root: Path, tmp_path: Path) -> None:
     alternative does, and the raw choice and each alternative keep their own traces. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectOutcomeCases", 6),), timeout=60)
+
+
+def test_group_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance cases A07 and A10 through the group, aggregate and order rules (`groups_partition`,
+    `records_aggregate`, `Query.groupRow_mem`, `Query.exists_sorted_perm_of_mem_possibleResults`): `GROUP BY`
+    with a column and with an expression term gives a partition by the key with the count of each group,
+    sorted by an output column, and `HAVING count(*) > 1` keeps exactly the groups of more than one row, over
+    every database with the catalog of `orders`; collated key equality is not value equality, a grouping key
+    that can fail blocks the claim, a NULL condition keeps no group, and a condition on the row of a group is
+    a model claim. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
+                       ("SelectHavingCases", 6)), timeout=90)

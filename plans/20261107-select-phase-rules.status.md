@@ -177,9 +177,22 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   one-query statement whose bound query has a failing aggregate (`Resolved.Query.fails`) and no
   certain or possible fault gives the error `integer overflow`. `Run.query_overflow_calmTable`
   (`Belay/Sqlite/SelectOverflow.lean`): a calm one-table script with such an aggregate returns no
-  result and exactly the error code of the overflow, in every environment. The `sum` claims of
-  A09 that fail use it. Tests: `just dev-build`; locally `tests/test_model_package.py` except
+  result and exactly the error code of the overflow, in every environment. The failing `sum`
+  claims of A09 are to use it (planned). Tests: `just dev-build`; locally `tests/test_model_package.py` except
   its installed-package test and `tests/surface_select_rules_test.py`.
+- 2026-11-07: A07 and A10 (`tests/surface/SelectGroupSupport.lean`, `SelectGroupCases.lean`,
+  `SelectHavingCases.lean`). Over every database with the catalog of `orders` (customer `NOCASE`),
+  `GROUP BY customer` and `GROUP BY amount > 5` with `count(*)` and `ORDER BY 2 DESC` return a
+  partition of the stored rows by the key (`KeyPartition`: each row in exactly one group, the rows
+  of a group with the key of its first row, the first rows of two groups with different keys), the
+  key of one row of each group and its count, the larger counts first; `HAVING count(*) > 1` keeps
+  exactly the groups of more than one row. The generic rules (`keyCounts_of_mem`,
+  `keptCounts_of_mem`) hold for every grouping term or column. Contrasts: `'acme'` and `'ACME'`
+  are one group but different values; a grouping key `abs(amount)` over the least integer leaves
+  the run undescribed; `HAVING NULL` keeps no group; `HAVING customer = 'ACME' COLLATE BINARY`
+  reads the model's row of the group, a model claim (issue #309: native SQLite keeps the group over
+  a full scan and keeps none over an index on `customer`). Resolution for the fixed catalog is
+  computed by `decide +kernel`. Tests: locally `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 
