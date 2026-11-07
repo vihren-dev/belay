@@ -182,11 +182,12 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
    their bridges, the `Holds`/`Empty`/`Fails` abbreviations; projection, filter and
    expression rules; A01 to A04, A11, B01, B02, B05, B11; retirement of
    `SelectOneFrom`, the `Simple*` laws and the outputs that only these cases cover.
-2. Group, aggregate, HAVING, DISTINCT, order and window rules; A07 to A10, A12 to
-   A14; retirement of the count, aggregate and duplicate-key families.
+2. Group, aggregate, HAVING, DISTINCT, order and window rules, and the overflow rule of
+   execution; A07 to A10, A12 to A14; retirement of the aggregate family.
 3. Source, join, compound, subquery and context rules; A05, A06, A15 to A22;
-   retirement of `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail,
-   query-case and hint families.
+   retirement of the count and duplicate-key families (see the decision of 2026-11-07),
+   `ColumnQuery`, `UniqueLookupQuery`, the EXISTS, no-FROM, may-fail, query-case and
+   hint families.
 4. `sql_select`, `sql_select_rule`, the `sql_run` delegation and the `sql_auto`
    route; automatic closure of the core set; B03, B04, B06 to B10; the end-to-end
    theorems; deletion of the experiments and migration witnesses; the measurement.

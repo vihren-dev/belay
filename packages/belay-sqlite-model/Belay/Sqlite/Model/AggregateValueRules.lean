@@ -14,7 +14,8 @@ joins the texts of its values with commas. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
-/-- For every value, the value is NULL when {name}`Value.isNull` is true. -/
+/-- For every value, the value is NULL when {name}`Value.isNull` is true. Proof sketch: by cases on
+the value; {name}`Value.isNull` is false for every value that is not NULL. -/
 theorem Value.eq_null_of_isNull {value : Value} (null : value.isNull = true) : value = .null := by
   cases value <;> simp_all [Value.isNull]
 

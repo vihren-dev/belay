@@ -15,8 +15,9 @@ group is the same as the first row ({lit}`same later first`). -/
 def GroupsFormed {α : Type} (same : α → α → Bool) (found : List (List α)) : Prop :=
   ∀ group ∈ found, ∃ first rest, group = first :: rest ∧ ∀ later ∈ rest, same later first = true
 
-/-- The groups are apart for a test {lit}`same`: for every two groups, the first row of the later
-group is not the same as the first row of the earlier group ({lit}`same later earlier = false`). -/
+/-- The groups are apart for a test {lit}`same`: for every two groups that each have a first row,
+the first row of the later group is not the same as the first row of the earlier group
+({lit}`same later earlier = false`). A pair in which a group is empty has no condition. -/
 def GroupsApart {α : Type} (same : α → α → Bool) (found : List (List α)) : Prop :=
   (found.map List.head?).Pairwise fun earlier later => ∀ e ∈ earlier, ∀ l ∈ later, same l e = false
 

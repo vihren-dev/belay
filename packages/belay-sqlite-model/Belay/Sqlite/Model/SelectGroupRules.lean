@@ -31,18 +31,21 @@ theorem groups_partition (context : EvalContext) (terms : List (Expr × Collatio
     (by simp [GroupsApart])
   exact ⟨by simpa using groupFold_flatten_perm (sameGroup context terms) rows [], formed, apart⟩
 
-/-- For every context and grouping terms, the rows of no row have no group. -/
+/-- For every context and grouping terms, the rows of no row have no group. Proof sketch:
+{name}`groups` of no row computes to no group. -/
 @[simp] theorem groups_nil (context : EvalContext) (terms : List (Expr × Collation)) : groups context terms [] = [] :=
   rfl
 
 /-- Ungrouped rule: for every context, query without {lit}`GROUP BY` terms and rows, the groups of
-the query are one group of all the rows, also when there is no row. -/
+the query are one group of all the rows, also when there is no row. Proof sketch:
+{name}`queryGroups` takes its branch without terms. -/
 theorem queryGroups_ungrouped (context : EvalContext) {query : Query} (ungrouped : query.groupBy = [])
     (rows : List (List Value)) : queryGroups context query rows = [rows] := by
   simp [queryGroups, ungrouped]
 
 /-- Grouped rule: for every context, query with {lit}`GROUP BY` terms and rows, the groups of the
-query are the groups of the rows by the terms ({name}`groups`). -/
+query are the groups of the rows by the terms ({name}`groups`). Proof sketch: {name}`queryGroups`
+takes its branch with terms. -/
 theorem queryGroups_grouped (context : EvalContext) {query : Query} (grouped : query.groupBy ≠ [])
     (rows : List (List Value)) : queryGroups context query rows = groups context query.groupBy rows := by
   simp [queryGroups, List.isEmpty_iff, grouped]

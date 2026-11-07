@@ -109,7 +109,8 @@ theorem distinctRecords_rules (collations : List Collation) (found : List Record
 /-- For every context, query that is no compound and has {lit}`DISTINCT` with collations, and rows,
 the records of the query ({name}`Query.uniqueRecords`) are the distinct records
 ({name}`distinctRecords`) of the records ({name}`records`) of the rows that {lit}`WHERE` keeps
-({name}`filtered`). -/
+({name}`filtered`). Proof sketch: {name}`Query.uniqueRecords` takes its branch of a query that is
+no compound and has {lit}`DISTINCT`. -/
 theorem Query.uniqueRecords_distinct (context : EvalContext) {query : Query} {collations : List Collation}
     (single : query.compound = none) (distinct : query.distinct = some collations) (rows : List (List Value)) :
     query.uniqueRecords context rows = distinctRecords collations (records context query (filtered context query rows)) := by
