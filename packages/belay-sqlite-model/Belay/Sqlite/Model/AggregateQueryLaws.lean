@@ -60,17 +60,6 @@ theorem Query.aggregateOf_filtered (sources : List QuerySource) (filter : Option
     filtered context (Query.aggregateOf sources filter aggregate name) rows =
       rows.filter fun row => filter.all fun condition => truthy (condition.eval context row) := rfl
 
-/-- For every whole-table aggregate query, over any rows, the one result is one row with one value, the value of the
-aggregate over the rows that {lit}`WHERE` keeps. Proof sketch: the window takes the one record
-({name}`Query.aggregateOf_uniqueRecords`), which the sort and the window keep. -/
-theorem Query.aggregateOf_results (sources : List QuerySource) (filter : Option Expr) (aggregate : Aggregate)
-    (name : String) (context : EvalContext) (rows : List (List Value)) :
-    (Query.aggregateOf sources filter aggregate name).results context rows =
-      [[aggregate.eval context (filtered context (Query.aggregateOf sources filter aggregate name) rows)]] := by
-  obtain ⟨_, _, _, _, noOrder, noOffset, noLimit, _, _, _⟩ := Query.aggregateOf_fields sources filter aggregate name
-  unfold Query.results
-  simp [Query.aggregateOf_uniqueRecords, noLimit, noOffset, stableSort, insertStable]
-
 /-- Every whole-table aggregate query has exactly one possible result: one row with the
 aggregate value of the kept rows, including empty input. Proof sketch: its one record forms
 one complete tie group, so the window has one choice. -/
@@ -83,14 +72,6 @@ theorem Query.aggregateOf_possibleResults (sources : List QuerySource) (filter :
   simp [Query.aggregateOf, stableSort, insertStable, tieGroups, windowChoices, Query.stop,
     groupChoices, groupSlice, windowRows, choiceResults, distinctLists, normalForm]
 
-/-- For every whole-table aggregate query, the window binds to the query itself, for any values. Proof sketch:
-{name}`Query.bindWindow_literal`; the query has no window parameter. -/
-theorem Query.aggregateOf_bindWindow (sources : List QuerySource) (filter : Option Expr) (aggregate : Aggregate)
-    (name : String) (parameters : List Value) :
-    (Query.aggregateOf sources filter aggregate name).bindWindow parameters =
-      some (Query.aggregateOf sources filter aggregate name) :=
-  Query.bindWindow_literal parameters _ rfl rfl
-
 /-- For every whole-table aggregate query, over any rows, the query fails ({name}`Query.fails`) exactly when the aggregate
 fails ({name}`Aggregate.fails`) over the rows that {lit}`WHERE` keeps. Proof sketch: the one group is the kept rows,
 and the query has no other aggregate. -/
@@ -101,27 +82,5 @@ theorem Query.aggregateOf_fails (sources : List QuerySource) (filter : Option Ex
   obtain ⟨isAggregate, noGroup, columns, noAggregates, _, _, noLimit, _, _, _⟩ :=
     Query.aggregateOf_fields sources filter aggregate name
   simp [Query.fails, isAggregate, noLimit, noGroup, noAggregates, columns, queryGroups]
-
-/-- For every whole-table aggregate query whose expressions have no fallible call ({name}`Expr.isFallibleCall`), in a
-context in which its expressions have no fault over the empty row and over each of the rows ({name}`Expr.evaluate`), the
-run over those rows gives the one result ({name}`Query.aggregateOf_results`), no fault, no window mismatch, and an
-overflow exactly when the aggregate fails. Proof sketch: the window binds to the query
-({name}`Query.aggregateOf_bindWindow`); there is no {lit}`DISTINCT`; and no expression has a fault, so the query neither
-certainly nor possibly fails ({name}`Query.mustFail_of_faultless`, {name}`Query.mayFail_of_faultless`). -/
-theorem Query.aggregateOf_run_of_faultless (sources : List QuerySource) (filter : Option Expr) (aggregate : Aggregate)
-    (name : String) (context : EvalContext)
-    (plain : (Query.aggregateOf sources filter aggregate name).expressions.all (!·.any Expr.isFallibleCall) = true)
-    (rows : List (List Value))
-    (faultless : ∀ row ∈ [] :: rows, ∀ expression ∈ (Query.aggregateOf sources filter aggregate name).expressions,
-      (expression.evaluate context row).2 = .none) :
-    (Query.aggregateOf sources filter aggregate name).run context rows =
-      { rows := (Query.aggregateOf sources filter aggregate name).results context rows, fault := .none,
-        overflow := aggregate.fails context (filtered context (Query.aggregateOf sources filter aggregate name) rows),
-        mismatch := false } := by
-  obtain ⟨_, _, _, _, _, _, _, _, notDistinct, noCompound⟩ := Query.aggregateOf_fields sources filter aggregate name
-  unfold Query.run
-  simp [noCompound, Query.aggregateOf_bindWindow, Query.mustFail_of_faultless context _ rows faultless,
-    Query.mayFail_of_faultless context _ rows plain faultless, Query.distinctCertain, notDistinct,
-    Query.aggregateOf_fails]
 
 end Belay.Sqlite.Model.Resolved

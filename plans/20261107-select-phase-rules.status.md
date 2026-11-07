@@ -178,7 +178,7 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   certain or possible fault gives the error `integer overflow`. `Run.query_overflow_calmTable`
   (`Belay/Sqlite/SelectOverflow.lean`): a calm one-table script with such an aggregate returns no
   result and exactly the error code of the overflow, in every environment. The failing `sum`
-  claims of A09 are to use it (planned). Tests: `just dev-build`; locally `tests/test_model_package.py` except
+  claims of A09 are to use it (planned; done in the A09 entry below). Tests: `just dev-build`; locally `tests/test_model_package.py` except
   its installed-package test and `tests/surface_select_rules_test.py`.
 - 2026-11-07: A07 and A10 (`tests/surface/SelectGroupSupport.lean`, `SelectGroupCases.lean`,
   `SelectHavingCases.lean`). Over every database with the catalog of `orders` (customer `NOCASE`),
@@ -236,6 +236,30 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
 
 ## Candidate decisions (at assignment, 2026-11-07)
 
+- 2026-11-07: A09 and the retirement of the aggregate family. `tests/surface/SelectSumCases.lean`:
+  over every database whose catalog has a table `ledger` with a column `cents`,
+  `SELECT sum(cents) FROM ledger` returns the one row of the sum when the sum does not fail, and
+  otherwise no result and exactly the error code of `integer overflow`
+  (`Run.query_overflow_calmTable`); `Fails` holds exactly when the sum fails, `Holds` exactly when
+  it does not, and `Empty` never. `SelectSumInstances.lean` keeps the kernel instances and the
+  `sql_simp` and `grind` laws of `ClaimsSum` and `ClaimsAggregateLaws`.
+  `SelectExtremumCases.lean`: over every database with the catalog of `orders`, `min(amount)` is
+  NULL exactly when there is no row, else the amount of a row and at most every amount under
+  `BINARY`; `group_concat(customer)` joins the customers of the scan with commas; contrast: the
+  row of a grouped `min` is its deciding row (`ACME|5`, `zeta|7` on `mixed`).
+  `SelectNullAggregateCases.lean`: over no row, `min`, `max`, `sum`, `avg` and `group_concat` are
+  NULL and `total` is 0.0; over only NULL customers (catalog of `nullable`) `count(customer)` is 0
+  and `count(*)` counts the rows. Native SQLite 3.51.0 gives the same results for each query.
+  `SuccessBalanceSuccess.balance_of_bounds` now proves its `Holds` claim through
+  `resolveStatement_select_aggregate` and `Run.query_returnsResult_calmTable`.
+  `Resolved.Statement.Calm.aggregateOf_first` moves to `Model/AggregateSelectResolution.lean`.
+  Deleted: `Belay/Sqlite/AggregateQuery.lean` (86 lines), `Model/AggregateQueryOutput.lean` (62),
+  `tests/surface/ClaimsSum.lean` (143), `tests/surface/ClaimsAggregateLaws.lean` (57), and from
+  `Model/AggregateQueryLaws.lean` the laws that only the deleted output file used
+  (`aggregateOf_results`, `aggregateOf_bindWindow`, `aggregateOf_run_of_faultless`, 41 lines).
+  The rest of `AggregateQueryLaws` stays for the sum fixture and for `ClaimsQueryCases`. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`, `tests/surface_claims_test.py`
+  and `tests/surface_success_test.py -k balance`.
 - `TableInfoQuery.lean` and `Model/TableInfoOutput.lean`: delete. The only consumer of
   `Script.outputOn_tableInfo` is `tests/surface/ClaimsTableInfo.lean`, which moves to
   the pragma source rule of A20. `Resolved.Query.source_pragma_fixed`, a general

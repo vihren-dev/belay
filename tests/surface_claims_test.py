@@ -96,30 +96,12 @@ def test_no_two_rows_of_a_table_have_equal_keys(runtime_root: Path, tmp_path: Pa
     assert result.returncode == 0, result.diagnostic()
 
 
-def test_a_sum_over_a_table_fails_when_it_overflows(runtime_root: Path, tmp_path: Path) -> None:
-    """`SELECT sum(c) FROM t` over every database: `Fails` means that the sum of the stored values leaves the
-    64-bit range, and `Holds` means that it does not, proved with the lemmas and `sql_simp`, with instances on
-    databases where `decide +kernel` checks the claim: two rows of 2 to the power 62, two small rows, no row, and
-    eleven texts that `sum` reads as integers."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsSum.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-
-
 def test_a_unique_lookup_matches_at_most_one_row(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 WHERE (SELECT count(*) FROM t WHERE c = $v) <= 1` over every database whose table has `c` under a
     `UNIQUE` constraint or as its `PRIMARY KEY`: the claim holds, proved with the lemmas and `sql_simp`, with instances
     on databases where `decide +kernel` checks it: a stored and an unknown address, the affinity of an `INTEGER`
     column, and a `NOCASE` column with a `BINARY` unique index, where the bound fails because the collations differ."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsUniqueLookup.lean", tmp_path), cwd=tmp_path,
-                         timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-
-
-def test_aggregate_laws_describe_values_and_prefix_overflow(runtime_root: Path, tmp_path: Path) -> None:
-    """The SUM and COUNT laws in `sql_simp` and `grind` reduce free inputs to integer prefix sums,
-    with kernel examples for NULL, a fitting sum, and overflow that later cancellation cannot clear."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsAggregateLaws.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 

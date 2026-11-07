@@ -98,3 +98,25 @@ def test_count_cases(runtime_root: Path, tmp_path: Path) -> None:
     customer is not counted. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
                        ("SelectCountCases", 5)), timeout=90)
+
+
+def test_sum_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A09 for `sum` through the aggregate rules and the overflow rule
+    (`Run.query_overflow_calmTable`): over every database whose catalog has a table `ledger` with a column
+    `cents`, `SELECT sum(cents) FROM ledger` returns the one row of the sum when the sum does not fail, and
+    the `integer overflow` error when it fails; `Fails`, `Holds` and `Empty` follow. Kernel instances check
+    an overflow, a fitting sum, no row, a cancellation that comes too late and texts that `sum` reads as
+    integers. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectSumCases", 4), ("SelectSumInstances", 3)), timeout=90)
+
+
+def test_extremum_and_null_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A09 for `min`, `group_concat` and the empty and NULL inputs through the aggregate
+    rules (`Resolved.extremum_spec`, `Aggregate.eval_allNull`): over every database with the catalog of
+    `orders`, `min(amount)` is NULL exactly for no row and else the least amount of a row, `group_concat`
+    joins the customers with commas, the row of a grouped `min` is the deciding row, and over no row or
+    only NULL operands `min`, `max`, `sum`, `avg` and `group_concat` are NULL, `total` is 0.0 and
+    `count` is 0. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectGroupCases", 6),
+                       ("SelectCountCases", 5), ("SelectExtremumCases", 4), ("SelectNullAggregateCases", 3)),
+                       timeout=90)

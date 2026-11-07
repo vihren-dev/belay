@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.CountSelectResolution
 import Belay.Sqlite.Model.SubquerySelectResolution
 import Belay.Sqlite.Model.Resolution.QueryBodyArms
 import Belay.Sqlite.Model.Resolution.ResultColumnArms
+import Belay.Sqlite.Model.StatementCalm
 
 set_option doc.verso true
 
@@ -125,5 +126,25 @@ theorem resolveStatement_select_aggregate (context : ResolveContext) (state : Re
     none [] [] _ (some reference) filter name operand alias text build named resolved affinity operandOk noJson condition
     _ (by simpa using resolves) (resolvePendingSources_table _ _ position)
   exact body
+
+/-- For every condition and aggregate whose expressions are calm ({name}`Resolved.Expr.Calm`) and every position, the
+statement of the whole-table aggregate query of the first source of a table is calm
+({name}`Resolved.Statement.Calm`): the first source of a table has no expression, so the expressions of the
+statement are the condition and the operands of the aggregate. Proof sketch: list the expressions of the query. -/
+theorem Resolved.Statement.Calm.aggregateOf_first (position : Nat) (condition : Option Resolved.Expr)
+    (aggregate : Resolved.Aggregate) (name : String) (conditionCalm : ∀ expression ∈ condition.toList, expression.Calm)
+    (operandsCalm : ∀ expression ∈ (Resolved.Output.aggregate aggregate).operands, expression.Calm) :
+    (Resolved.Statement.query
+      (Resolved.Query.aggregateOf [Resolved.QuerySource.first position] condition aggregate name) []).Calm := by
+  intro expression member
+  simp only [Resolved.Statement.clockExpressions, Resolved.Query.expressions, Resolved.Query.keptExpressions,
+    Resolved.Query.aggregateOf, Resolved.QuerySource.first, Resolved.QuerySource.expressions, List.mem_append,
+    List.mem_flatMap, List.flatMap_nil, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false] at member
+  simp only [Resolved.Output.scalars, List.map_nil, List.not_mem_nil, or_false] at member
+  rcases member with (member | ⟨_, rfl, member | member⟩) | member
+  · exact conditionCalm expression member
+  · simp at member
+  · simp at member
+  · simp_all
 
 end Belay.Sqlite.Model

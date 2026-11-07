@@ -136,7 +136,6 @@ import Belay.Sqlite.ColumnQuery
 import Belay.Sqlite.TableInfoQuery
 import Belay.Sqlite.FilteredDuplicateKeyQuery
 import Belay.Sqlite.DuplicateKeyQuery
-import Belay.Sqlite.AggregateQuery
 import Belay.Sqlite.UniqueLookupQuery
 import Belay.Sqlite.SqlRefute
 import Belay.Sqlite.SampleShrink

@@ -59,7 +59,7 @@ special-case theorem elsewhere can help prove them.
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
 | Filter | `mem_filtered` in [QueryLaws][query-laws] | Complete-collection and cardinality rules, beyond unary membership |
 | Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
-| Aggregate | `Query.aggregateOf_results`, `aggregateOf_fails`, `aggregateOf_run_of_faultless` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
+| Aggregate | `Query.aggregateOf_possibleResults`, `aggregateOf_fails` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.Simple.results_eq` in [SimpleResultsLaws][simple-results] | Characterization of general `records`, including HAVING and hidden sort keys |
 | DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws] | Record DISTINCT and every compound operator, with certainty premises |
 | Sort | `stableSort_perm`, `sort_perm`, `sort_sorted` in [QueryLaws][query-laws] | Transfer of collection predicates and observable ordering facts |
