@@ -290,8 +290,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   commit): `just test-full` passed and `just verdict` passed (5768 cases agree, 2100 are
   unsupported by the model, no disagreement).
 - 2026-11-07: window parameters and subquery rules, A15, A18 and A19 (stage 3).
-  `Model/SelectSubqueryRules.lean`: the statement context runs each subquery in the context of the
-  values (`EvalContext.statement_subqueries`, `statement_one`), the run of a subquery without a
+  `Model/SelectSubqueryRules.lean`: the statement context runs each subquery in the subquery
+  context of the values at depth `subqueries.length - 1` (`EvalContext.statement_subqueries`), and
+  in the context of the values alone when the statement has one subquery (`statement_one`); the run of a subquery without a
   fault (`Query.subqueryRun_clean`, `subqueryRun_of_faultless`), the emptiness rule that `EXISTS`
   reads (`results_eq_nil_iff_plain`), the rows of a plain query without `ORDER BY`
   (`results_plain_unordered`) and the short window rule (`windowCertain_of_short`).
@@ -311,6 +312,24 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   gives the amount of the first witness order, or NULL without one, when at most one order is a
   witness. Native SQLite 3.51.0 gives the instance results. Tests: `just dev-build`; locally
   `tests/surface_select_rules_test.py`.
+- 2026-11-07: compound and derived-source rules, A16 and A17 (stage 3).
+  `Model/SelectCompoundRules.lean`: the end of a compound whose terms end
+  (`Compound.ending_done`) and the rows of `UNION ALL` (`Compound.rows_unionAll`).
+  `Model/SelectCompoundMembership.lean`: the membership rules of `UNION`, `INTERSECT` and `EXCEPT`
+  (`mem_union_combine`, `mem_intersect_combine`, `mem_except_combine`) when equal rows are the same
+  values, and their rows without duplicates. `Model/SelectCompoundReady.lean`:
+  `Connection.SelectReady.of_compound`; `Run.query_returnsResult_compound`
+  (`SelectCalmExecution.lean`). `Model/SelectDerivedRules.lean`: the source of a derived table, a
+  CTE or a view that is one subquery (`Query.source_derived`), no source when the subquery is
+  uncertain (`source_derived_uncertain`), and the window rule without a window
+  (`windowCertain_unwindowed`). Fixtures: A16, `SelectCompoundSupport.lean` and
+  `SelectCompoundCases.lean`: the ids of `customers` and the `customer_id` of `orders` under the four
+  operators, with the multiplicity of `UNION ALL` and the members of the other three; A17,
+  `SelectDerivedSupport.lean` and `SelectDerivedCases.lean`: a derived table, a CTE and a view of the
+  orders with an amount above 5 give the same `customer_id` rows; contrast on `partial_`: the NULL
+  of an outer join comes through a derived table, and the model describes no result for a derived
+  table with `LIMIT` and no `ORDER BY`. Native SQLite 3.51.0 gives the instance results. Tests:
+  `just dev-build`; locally `tests/surface_select_rules_test.py`.
 
 ## Working sequence
 

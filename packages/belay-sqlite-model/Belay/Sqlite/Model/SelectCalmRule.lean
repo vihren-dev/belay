@@ -6,9 +6,11 @@ set_option doc.verso true
 
 /-! The readiness of a calm query statement (ADR 0027, D5): a statement whose expressions have no
 fallible call and read no clock and no counter ({lit}`Resolved.Statement.Calm`) evaluates in the
-context of its values alone, its expressions have no fault, and it is ready
-({lit}`Connection.SelectReady`) when its source does not possibly fail, it does not overflow, and
-its {lit}`DISTINCT` is certain. -/
+statement context of its values and subqueries ({lit}`Resolved.EvalContext.statement`), which is
+the context of its values alone when it has no subqueries. Without subqueries its expressions have
+no fault, and it is ready ({lit}`Connection.SelectReady`) when its source does not possibly fail,
+it does not overflow, and its {lit}`DISTINCT` is certain. With subqueries it is ready under an
+explicit premise that its expressions have no fault, when its window binds to the values. -/
 
 namespace Belay.Sqlite.Model
 

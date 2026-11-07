@@ -54,7 +54,7 @@ special-case theorem elsewhere can help prove them.
 
 | Phase | Existing reusable declarations | Required extension |
 | --- | --- | --- |
-| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules] | Collection specifications for every source constructor and the source fold |
+| Source lookup | `Database.table_of_findTable`, `Query.source_first` in [TableSourceLaws][table-laws]; `Query.source_none` in [QueryJoinLaws][join-laws]; `Query.source_two_tables` in [SelectJoinRules][join-rules]; `Query.source_derived`, `source_derived_uncertain`, `windowCertain_unwindowed` in [SelectDerivedRules][derived-rules] | Collection specifications for every source constructor and the source fold |
 | Joins | `sourceRows_width`, `joinMatches_width`, `joinRow_width`, `joinRows_width`, `joinRows_left_keeps`, `joinRows_right_keeps` in [QueryJoinLaws][join-laws]; `joinRows_inner`, `joinRows_left`, `joinRows_right`, `joinRows_full`, `joinRows_inner_length` in [SelectJoinRules][join-rules] | Matched/unmatched collection rules retaining multiplicity and outer cells |
 | Expressions | `Expr.eval_column`, `eval_parameter`, logic and nested-query equations in [ExprEvalLaws][expr-laws]; `Expr.evaluate_withSubqueries` in [ExprContextLaws][context-laws] | Value/fault rules for each constructor with explicit context premises |
 | Subqueries | `EvalContext.statement_subqueries`, `statement_one`, `Query.subqueryRun_clean`, `subqueryRun_of_faultless`, `results_eq_nil_iff_plain`, `results_plain_unordered`, `windowCertain_of_short` in [SelectSubqueryRules][subquery-rules] | Run rules for each outer row, with the emptiness, first-column and first-value facts that EXISTS, IN and a scalar subquery read |
@@ -62,7 +62,8 @@ special-case theorem elsewhere can help prove them.
 | Group | `groups_eq_fold`, `groups_short_iff_pairwise`, `groups_long_iff_repeated` in [GroupsPairwise][group-laws]; `Query.groupRow`, `Aggregate.decidingRow`, `groupRow_none` in [GroupRow][group-row] | Partition, multiplicity and group-row rules for arbitrary group predicates and expression keys |
 | Aggregate | `Query.aggregateOf_possibleResults`, `aggregateOf_fails` in [AggregateQueryLaws][aggregate-laws]; `aggregateOf` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.Simple.results_eq` in [SimpleResultsLaws][simple-results] | Characterization of general `records`, including HAVING and hidden sort keys |
-| DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws] | Record DISTINCT and every compound operator, with certainty premises |
+| DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws]; `distinctRows_rules`, `mem_distinctRows_iff`, `combine_pairwise`, `mem_union_combine`, `mem_intersect_combine`, `mem_except_combine` in [SelectCompoundMembership][compound-membership] | Record DISTINCT and every compound operator, with certainty premises |
+| Compound runs | `Compound.ending_done`, `chainEnd_done`, `stepEnd_done`, `Compound.rows_unionAll` in [SelectCompoundRules][compound-rules]; `Query.perm_of_mem_possibleResults_compound`, `Connection.SelectReady.of_compound` in [SelectCompoundReady][compound-ready]; `Run.query_returnsResult_compound` in [SelectCalmExecution][calm-execution] | Ending, readiness and result rules of a compound statement |
 | Sort | `stableSort_perm`, `sort_perm`, `sort_sorted` in [QueryLaws][query-laws] | Transfer of collection predicates and observable ordering facts |
 | Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas]; `resolvedStepOutput_select_mismatch` in [SelectOverflowRule][overflow-rule]; `Run.query_mismatch` in [SelectOverflow][overflow-execution] | Parameter/error and tie-boundary rules, not only a representative list slice |
 | Alternatives | `Query.normalResult_mem`, `possibleResults_ne_nil`, `possibleResults_length` in [PossibleResultsLaws][possible-laws] | Transfer of arbitrary predicates to every permitted result |
@@ -129,6 +130,10 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [subquery-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSubqueryRules.lean
 [calm-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean
 [calm-execution]: ../packages/belay/Belay/Sqlite/SelectCalmExecution.lean
+[compound-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundRules.lean
+[derived-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean
+[compound-ready]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundReady.lean
+[compound-membership]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundMembership.lean
 [overflow-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOverflowRule.lean
 [overflow-execution]: ../packages/belay/Belay/Sqlite/SelectOverflow.lean
 [expr-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprEvalLaws.lean
@@ -150,7 +155,9 @@ it does not add SQL syntax or turn an unsupported observation into successful ro
 [query-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lean
 [query-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryRun.lean
 [joins]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoins.lean
+[compound-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRows.lean
 [subqueries]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Subqueries.lean
+[compound-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRun.lean
 [output-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputCases.lean
 [possible]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResults.lean
 [choices]: ../packages/belay/Belay/Sqlite/ExecutionBranches.lean

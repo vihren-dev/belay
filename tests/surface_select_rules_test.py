@@ -160,6 +160,29 @@ def test_subquery_cases(runtime_root: Path, tmp_path: Path) -> None:
                        ("SelectInCases", 4), ("SelectScalarCases", 2)), timeout=120)
 
 
+def test_compound_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A16 through the compound rules (`Compound.ending_done`, `SelectReady.of_compound`,
+    `perm_of_mem_possibleResults_compound`, the membership rules of UNION, INTERSECT and EXCEPT) and the
+    compound execution rule: over every database with the catalog of `shop`, UNION ALL of the customer ids
+    and the order customer ids keeps the count of each row, and UNION, INTERSECT and EXCEPT give each row
+    once with the members of their rules. The instances show a row that UNION ALL keeps twice and UNION
+    once. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
+                       ("SelectJoinCases", 3), ("SelectCompoundSupport", 4), ("SelectCompoundCases", 4)),
+                       timeout=120)
+
+
+def test_derived_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A17 through the derived source rule (`Query.source_derived`,
+    `Query.windowCertain_unwindowed`) and the faultless execution rule: over every database with its
+    catalog, a derived table, a common table expression and a view over the big orders return the
+    `customer_id` of each big order, through one rule for the inner query. The instances show a derived
+    column that is NULL although its source column is NOT NULL, and a derived table with LIMIT 1 and no
+    ORDER BY, for which the model describes no result. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectDerivedCases", 4)),
+                       timeout=120)
+
 def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance case A15 through the faultless execution rule with a bound window and the mismatch rule
     (`resolvedStepOutput_select_mismatch`, `Run.query_mismatch`): over every database with the catalog of

@@ -54,6 +54,45 @@ theorem Run.query_returnsResult_faultless {script : Script} {statement : Syntax.
   rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
     property, context]
 
+/-- Compound rule: for every script of one statement with its values, proof that it has one
+statement, database, environment, source rows {lit}`source`, query {lit}`bound` and property
+{lit}`Q` of a result: when the statement resolves on the connection of the environment to a calm
+query ({name}`Resolved.Statement.Calm`) that is the compound {lit}`compound`, with subqueries, the
+query's sources give {lit}`source` over the database in the statement context
+({name}`Resolved.EvalContext.statement`), {lit}`source` has no possible fault, the window binds to
+{lit}`bound`, the run of each term ({name}`Resolved.Compound.terms`) in the statement context for
+the first source row ends with {lean}`Resolved.RunEnd.done`, and each operator keeps certain rows
+({name}`Resolved.Compound.combined`), then the run of the program {name}`query` of the script returns
+a result with {lit}`Q` exactly when every result that the model permits for {lit}`bound` over the
+source rows in the statement context has {lit}`Q`. The clock and the counters of the environment do
+not matter. Proof sketch: {name}`Connection.SelectReady.of_compound` and
+{name}`Run.query_returnsResult_select`. -/
+theorem Run.query_returnsResult_compound {script : Script} {statement : Syntax.Statement} {parameters : List Value}
+    (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
+    (env : Env) {query bound : Resolved.Query} {subqueries : List Resolved.Query} {after : ResolveState}
+    {source : Resolved.SourceRows} {compound : Resolved.Compound}
+    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
+      .ok (.query query subqueries, after))
+    (calm : (Resolved.Statement.query query subqueries).Calm) (shape : query.compound = some compound)
+    (found : query.source (Resolved.EvalContext.statement parameters db.raw subqueries) db.raw = some source)
+    (sourceCertain : source.fault ≠ .may) (window : query.bindWindow parameters = some bound)
+    (done : ∀ index ∈ compound.terms,
+      ((Resolved.EvalContext.statement parameters db.raw subqueries).subqueries index (source.rows.headD [])).ending =
+        .done)
+    (certain : (compound.combined (Resolved.EvalContext.statement parameters db.raw subqueries)
+      (source.rows.headD [])).2 = true)
+    (property : List (List Value) → Prop) :
+    (db.run (Belay.Sqlite.query script one) env).returnsResult property ↔
+      ∀ result ∈ bound.possibleResults (Resolved.EvalContext.statement parameters db.raw subqueries) source.rows,
+        property result := by
+  have ready := Connection.SelectReady.of_compound (db.raw.connection env.counters) parameters calm shape found
+    sourceCertain window done certain
+  have context : (db.raw.connection env.counters).queryContextAt 0 parameters query subqueries =
+      Resolved.EvalContext.statement parameters db.raw subqueries :=
+    Connection.queryContext_calm _ parameters query subqueries calm
+  rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
+    property, context]
+
 /-- Calm rule: for every script of one statement with its values, proof that it has one statement,
 database, environment, source rows {lit}`source` and property {lit}`Q` of a result: when the
 statement resolves on the connection of the environment to a calm query

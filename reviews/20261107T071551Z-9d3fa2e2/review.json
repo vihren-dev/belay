@@ -1,0 +1,73 @@
+{
+  "caller": "claude",
+  "commit": "9d3fa2e2c43130f40785c94f9c9642e82df4a173",
+  "date": "2026-11-07T07:15:51+00:00",
+  "exit": 0,
+  "files": [
+    "docs/select-automation-source-map.md",
+    "packages/belay/Belay/Sqlite/SelectCalmExecution.lean",
+    "packages/belay/Belay/Sqlite/SelectExecution.lean",
+    "packages/belay/Belay/Sqlite/SelectOverflow.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/lakefile.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOverflowRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSubqueryRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectWindowRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleResultsLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261107-select-phase-rules.status.md",
+    "reviews/20261107T062634Z-824f18e6/review.json",
+    "tests/surface/SelectExistsCases.lean",
+    "tests/surface/SelectInCases.lean",
+    "tests/surface/SelectOrderCases.lean",
+    "tests/surface/SelectParameterWindowCases.lean",
+    "tests/surface/SelectScalarCases.lean",
+    "tests/surface/SelectSubquerySupport.lean",
+    "tests/surface_select_rules_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261107T071551Z-9d3fa2e2#1",
+      "line": 9,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The module summary still says calmness makes expressions faultless in a values-only context, but the new subquery rule requires a statement context, an explicit faultless premise and successful window binding. Fix: update the summary to state these requirements."
+    },
+    {
+      "id": "20261107T071551Z-9d3fa2e2#2",
+      "line": 293,
+      "path": "plans/20261107-select-phase-rules.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status says each subquery runs in the context of values alone, but `statement_subqueries` retains nested subquery evaluation at depth `subqueries.length - 1`. Fix: describe the reduced-depth context and restrict the values-only statement to `statement_one`."
+    }
+  ],
+  "id": "20261107T071551Z-9d3fa2e2",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "uqoksztl",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
