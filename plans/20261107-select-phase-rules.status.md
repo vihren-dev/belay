@@ -371,6 +371,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `SuccessBalanceSubqueries.lean` uses `Resolved.Query.source_pragma` in place of
   `source_pragma_fixed`. Tests: `just dev-build`; locally `tests/surface_claims_test.py` and the
   success-balance tests.
+- 2026-11-07: retirement of model examples (stage 3). `Model/SubqueryExamples.lean` is deleted:
+  the contrasts of A18 and A19 replace its EXISTS, IN and scalar-subquery examples.
+  `Model/PossibleResultsExamples.lean` keeps only its two `Resolved.normalForm` examples; A12 and
+  A14 replace the `possible` examples. The query examples of `Model/QueryWindowExamples.lean` go
+  with `ClaimsQueryCases.lean`, which still uses them. Tests: `just dev-build`.
 
 ## Working sequence
 
