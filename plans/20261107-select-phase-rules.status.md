@@ -566,6 +566,14 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   theorem, an unknown phase and a scoped registration; a local user rule that ends with its section; and
   the name order of the rules. Tests: `just dev-build`; locally `tests/surface_select_rules_test.py` and
   `tests/surface_layers_test.py`.
+- 2026-11-07: the route `sql_select` of `sql_auto` (`AutoSearch.lean`), between `sql_run` and `grind`.
+  `sql_select` refuses with an error a goal that is no claim about the results of a query (no
+  `returnsResult` target, no hypothesis of `possibleResults` or `scanAt` membership) when no hint applies
+  to it, so a plain fact still goes to `grind`. `tests/surface/SelectAutoCases.lean` proves the core set
+  with `sql_auto [schema]`, and its info messages offer `sql_select [schema]`, which
+  `SelectProcedureCases.lean` uses alone (B07). `S6AutoAuto.lean` shows the reason of the new route.
+  Tests: `just dev-build`; locally `tests/surface_select_rules_test.py -k "core_set or registry"`,
+  `tests/surface_s6_automation_test.py` and `tests/surface_s6_auto_editor_test.py`.
 
 ## Working sequence
 

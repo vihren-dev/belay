@@ -11,8 +11,8 @@ goal again without a search. -/
 namespace Belay.Sqlite.Run
 open Lean Meta Elab Term Tactic
 
-/-- Try the routes {lit}`sql_commute`, {lit}`sql_run` and {lit}`grind` in this order on the main goal, with the
-hints of the call. The routes are explicit tactics too, so a user can run each one alone. The tactic fails
+/-- Try the routes {lit}`sql_commute`, {lit}`sql_run`, {lit}`sql_select` and {lit}`grind` in this order on the main
+goal, with the hints of the call. The routes are explicit tactics too, so a user can run each one alone. The tactic fails
 with the reason of each route when none closes the goal, and the goal and the other goals stay as they were.
 When a route closes the goal, the editor offers the steps of that route as a replacement of this call. -/
 syntax (name := sqlAuto) "sql_auto" (" [" term,* "]")? : tactic

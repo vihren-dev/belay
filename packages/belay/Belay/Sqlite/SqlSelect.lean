@@ -97,19 +97,39 @@ partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String
 def explain (goal : MVarId) (phase : String) (reason : MessageData) : TacticM Unit :=
   logWarning m!"sql_select stopped in the {phase} phase: {reason} The goal stays open:{indentD (MessageData.ofGoal goal)}"
 
-/-- The procedure on one goal; the result is the goals that stay open. -/
-partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) : TacticM (List MVarId) := do
+/-- Whether the goal has a fact that the phase rules read: that a list is a result of a query or a row
+of a table. -/
+def hasPhaseFact (goal : MVarId) : MetaM Bool := goal.withContext do
+  (← getLCtx).anyM fun declaration => do
+    if declaration.isImplementationDetail then return false
+    let type ← instantiateMVars declaration.type
+    return !(phasesOfFact type).contains .filter
+
+/-- The refusal of a goal that is no claim about the results of a query. -/
+def unknownShape : MessageData :=
+  m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, or a goal \
+    with a hypothesis that a list is a result of a query (Resolved.Query.possibleResults) or a row of a table \
+    (Database.scanAt). This goal is none of these, and no hint applies to it. Use another tactic, or pass a \
+    rule as a hint."
+
+/-- The procedure on one goal; the result is the goals that stay open. A goal that is no claim about the
+results of a query, and to which no hint applies backward, is refused with an error. -/
+partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized : Bool := false) :
+    TacticM (List MVarId) := do
   let (_, goal) ← goal.intros
   let target ← goal.withContext do whnfR (← instantiateMVars (← goal.getType))
-  let phases := if target.isAppOf ``Belay.Sqlite.Run.returnsResult then [SelectPhase.execution] else []
+  let isRun := target.isAppOf ``Belay.Sqlite.Run.returnsResult
+  let recognized := recognized || isRun || (← hasPhaseFact goal)
+  let phases := if isRun then [SelectPhase.execution] else []
   let mut refused : Option (Name × Expr) := none
   for rule in ← candidates hints phases do
     let term ← goal.withContext (ruleTerm rule)
     match ← applyBackward hints goal term with
-    | .ok next => return ← selectGoal hints (fuel - 1) next
+    | .ok next => return ← selectGoal hints (fuel - 1) next true
     | .error (.premise type) =>
       if refused.isNone then refused := some ((match rule with | .inl name => name | .inr _ => `hint), type)
     | .error .noMatch => pure ()
+  unless recognized || refused.isSome do throwError unknownShape
   let goal ← saturate hints fuel {} goal
   if ← finishLeaf hints goal then return []
   match refused with

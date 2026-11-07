@@ -1,12 +1,14 @@
 import Belay.Sqlite.SqlRun
 import Belay.Sqlite.SqlCommute
+import Belay.Sqlite.SqlSelect
 import Belay.Sqlite.CheckBudget
 import Belay.Sqlite.SqlSimpLaws
 
 set_option doc.verso true
 
-/-! The search of {lit}`sql_auto` (ADR 0017, S6). The search tries three routes in a fixed order:
-{lit}`sql_commute`, {lit}`sql_run` with the finishing steps of the SQL simp set, and {lit}`grind`. Each route runs
+/-! The search of {lit}`sql_auto` (ADR 0017, S6; ADR 0027, D6). The search tries four routes in a fixed
+order: {lit}`sql_commute`, {lit}`sql_run` with the finishing steps of the SQL simp set, {lit}`sql_select`
+and {lit}`grind`. Each route runs
 on the goal alone, with the work limit of its share, and without error recovery, so a failed step never
 becomes a hidden {lit}`sorry`. A route that fails leaves the goal and the state as they were. The result is
 the list of explicit tactic steps of the route that closed the goal, so a caller can offer them as a proof
@@ -21,6 +23,9 @@ inductive Route where
   | commute
   /-- The step rules, with the hints of the call, then one finishing step for each goal that stays. -/
   | run
+  /-- The procedure of a SELECT, with the hints of the call: a claim about the results of a query, such as
+  {lit}`returnsResult` or {lit}`returnsRows` of a run. -/
+  | select
   /-- The grind tactic, with the hints of the call that name a declaration. Grind uses the local hypotheses by
   itself, so a hint that names one is left out. -/
   | grind
@@ -29,10 +34,11 @@ inductive Route where
 def Route.label : Route → String
   | .commute => "sql_commute"
   | .run => "sql_run"
+  | .select => "sql_select"
   | .grind => "grind"
 
 /-- The routes in the order of the search. -/
-def Route.all : List Route := [.commute, .run, .grind]
+def Route.all : List Route := [.commute, .run, .select, .grind]
 
 /-- A closed search: the route that won and the explicit steps of its proof. -/
 structure Found where
@@ -78,6 +84,10 @@ def runRoute (hints : Array (TSyntax `term)) (goal : MVarId) : Route → TermEla
         | throwError "it left a goal that rfl, trivial, simp [sql_simp] and decide do not close."
       steps := steps.push finish
     return steps
+  | .select => do
+    let step ← `(tactic| sql_select [$hints,*])
+    unless (← runStrict goal step).isEmpty do throwError "it left a goal open."
+    return #[step]
   | .grind => do
     let local_ ← goal.withContext getLCtx
     let lemmas := hints.filter fun hint => hint.raw.isIdent && (local_.findFromUserName? hint.raw.getId).isNone
