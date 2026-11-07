@@ -25,8 +25,9 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   (`Model/QueryOutputs.lean`), `Run.returnsResult`, `Run.returnsRows` and
   `Run.returnsError` (`RunResults.lean`), each decidable by a term that the kernel
   reduces. `Run.returnsError` is the "matching error observation" of D2 that `Fails`
-  needs. A SELECT step gives rows, an error or a choice of at least two results
-  (`Model/SelectOutputShape.lean`), so the bridges to `Sql.check` (`RunResultSteps.lean`,
+  needs. A SELECT step that continues the run gives rows, an error or a choice of at
+  least two results (`Model/SelectOutputShape.lean`); a step that ends the run gives no
+  value, which no claim accepts. So the bridges to `Sql.check` (`RunResultSteps.lean`,
   `SelectResultBridge.lean`, `SelectErrorBridge.lean`) hold for raw and concrete choices
   without a vacuous empty choice. `Holds`, `Empty` and `Fails` are abbreviations of the
   observations of the default run; `QueryObservations.lean` relates them to
@@ -40,6 +41,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `guide_view_contract_test.py` and `surface_migration_examples_test.py`.
   Follow-up: `Output.hasRows_ofResults` and `hasNoRows_ofResults` are special cases of
   `Output.returnsResult_ofResults`.
+- 2026-11-07: review fixes (`refactor:`, review `20261107T030127Z-a5cf1ccf`):
+  `Syntax.Statement.select_of_asQuery` moves to the model package; the plain words of
+  `Holds.iff_of_outputOn` and `Empty.iff_of_outputOn` name the error, done and
+  unmodeled outputs; the SELECT shape claim names the step that continues the run.
+  Tests: `just dev-build`.
 
 ## Working sequence
 

@@ -89,7 +89,8 @@ theorem Script.returnsError_of_outputOn {script : Script} (query : script.isQuer
   simp [Script.returnsError_iff_outputOn query, found]
 
 /-- For every query script, database and output of the script on the database: {name}`Holds` of the
-script holds exactly when the output has a row in each result ({name}`Output.hasRows`). Proof sketch:
+script holds exactly when the output is rows that are not empty, or a nonempty choice of results of
+which none is empty ({name}`Output.hasRows`); an error, done or unmodeled output gives false. Proof sketch:
 {name}`Script.returnsResult_of_outputOn` and {name}`Output.hasRows_iff_returnsResult`. -/
 theorem Holds.iff_of_outputOn {script : Script} {db : Database} {output : Output}
     (found : script.outputOn db = some output) (query : script.isQuery = true := by check_query) :
@@ -97,7 +98,8 @@ theorem Holds.iff_of_outputOn {script : Script} {db : Database} {output : Output
   rw [Holds, Script.returnsResult_of_outputOn query found, Output.hasRows_iff_returnsResult]
 
 /-- For every query script, database and output of the script on the database: {name}`Empty` of the
-script holds exactly when no result of the output has a row ({name}`Output.hasNoRows`). Proof sketch:
+script holds exactly when the output is empty rows, or a nonempty choice of results of which each is
+empty ({name}`Output.hasNoRows`); an error, done or unmodeled output gives false. Proof sketch:
 {name}`Script.returnsResult_of_outputOn` and {name}`Output.hasNoRows_iff_returnsResult`. -/
 theorem Empty.iff_of_outputOn {script : Script} {db : Database} {output : Output}
     (found : script.outputOn db = some output) (query : script.isQuery = true := by check_query) :

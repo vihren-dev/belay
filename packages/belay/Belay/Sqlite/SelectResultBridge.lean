@@ -7,20 +7,14 @@ set_option doc.verso true
 
 /-! The successful-result bridge of a SELECT (ADR 0027, D2): for a script of one SELECT, the
 observation {lit}`returnsResult` of a run is the claim {lit}`Sql.check` that every branch returns a
-successful result with the property. Both read the same step; a SELECT step gives rows, an error,
-or a choice of at least two results ({name}`Belay.Sqlite.Model.runScriptStep_select_output`), so a
-universal claim over the choices is never true without a result. -/
+successful result with the property. Both read the same step. A SELECT step that continues the run
+gives rows, an error, or a choice of at least two results
+({name}`Belay.Sqlite.Model.runScriptStep_select_output`), so a universal claim over the choices is
+never true without a result; a step that ends the run makes both sides false. -/
 
 namespace Belay.Sqlite
 
 open Belay.Sqlite.Model
-
-/-- For every statement whose form {name}`Model.Syntax.Statement.asQuery?` reads as a query, the
-statement is a SELECT with some parts. Proof sketch: by the cases of the statement. -/
-theorem Model.Syntax.Statement.select_of_asQuery {statement : Syntax.Statement} (query : statement.asQuery?.isSome = true) :
-    ∃ columns source joins filter groupBy orderBy limit offset subqueries having distinct compound,
-      statement = .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound := by
-  cases statement <;> simp_all [Syntax.Statement.asQuery?]
 
 /-- For every script that is one SELECT ({name}`Script.isSelect`), the statements of the script are one
 SELECT statement with its values. Proof sketch: the definition of {name}`Script.isSelect` and

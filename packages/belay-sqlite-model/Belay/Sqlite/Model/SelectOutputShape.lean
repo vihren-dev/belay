@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SelectStepKeeps
 import Belay.Sqlite.Model.OutputResultsLaws
 import Belay.Sqlite.Model.PrepareErrorOutput
+import Belay.Sqlite.Model.TwoStateQuery
 
 set_option doc.verso true
 
@@ -89,5 +90,12 @@ theorem runScriptStep_select_output {context : ResolveContext} {clock : Option C
   · unfold Output.ofStep
     rw [advanceRun_prepareError_halts]
     exact .inr (.inl ⟨_, rfl⟩)
+
+/-- For every statement whose form {name}`Syntax.Statement.asQuery?` reads as a query, the
+statement is a SELECT with some parts. Proof sketch: by the cases of the statement. -/
+theorem Syntax.Statement.select_of_asQuery {statement : Syntax.Statement} (query : statement.asQuery?.isSome = true) :
+    ∃ columns source joins filter groupBy orderBy limit offset subqueries having distinct compound,
+      statement = .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound := by
+  cases statement <;> simp_all [Syntax.Statement.asQuery?]
 
 end Belay.Sqlite.Model
