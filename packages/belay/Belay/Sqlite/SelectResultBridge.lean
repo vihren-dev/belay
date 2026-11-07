@@ -1,7 +1,7 @@
 import Belay.Sqlite.RunResultSteps
 import Belay.Sqlite.Queries
 import Belay.Sqlite.ExecutionSpecifications
-import Belay.Sqlite.Model.SelectOutputShape
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 

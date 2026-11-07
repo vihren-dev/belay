@@ -46,6 +46,26 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `Holds.iff_of_outputOn` and `Empty.iff_of_outputOn` name the error, done and
   unmodeled outputs; the SELECT shape claim names the step that continues the run.
   Tests: `just dev-build`.
+- 2026-11-07: execution rule (D5). `resolvedStepOutput_query_at` gives the output of a
+  query step at every clock value; `resolvedStepOutput_query` is its special case.
+  `Connection.SelectReady` collects the readiness premises (known counters, source rows,
+  plain nested subqueries, no possible source fault, a bound window, a run without
+  mismatch, overflow or fault). Under them `resolvedStepOutput_select` and
+  `runScriptStep_select` give `Output.ofResults` of `possibleResults`
+  (`Model/SelectExecutionRule.lean`), and `Run.send_returnsResult_select` and
+  `Run.query_returnsResult_select` the iff with "every possible result has `Q`" for every
+  environment (`SelectExecution.lean`). The unready rule (`resolvedStepOutput_select_unready`,
+  `Run.send_unready`) is case B05. The run rule (`Query.run_single`, `Query.run_clean_iff`,
+  `SelectReady.of_phases`, `Model/SelectRunRule.lean`) splits the run into the
+  `fails`, `mustFail`, `mayFail` and `distinctCertain` obligations; `SelectReady.of_calm`
+  (`Model/SelectCalmRule.lean`) discharges them for a calm statement. The general calm
+  laws (`EvalContext.bound`, `Connection.queryContext_of_calm`, `Calm.faultless_nil`) move
+  from `SimpleQuerySteps.lean` to that file. The model library lists
+  `SelectOutputShape`, which the run observations commit left out of `lakefile.toml`, and
+  the surface imports the model root instead of two model modules. Fixture:
+  `tests/surface/SelectExecutionRules.lean`. Tests: `just dev-build`; locally
+  `tests/surface_select_rules_test.py`, `tests/test_model_package.py`,
+  `tests/surface_layers_test.py` and the source checks.
 
 ## Working sequence
 

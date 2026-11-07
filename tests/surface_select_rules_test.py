@@ -16,3 +16,11 @@ def test_run_observations(runtime_root: Path, tmp_path: Path) -> None:
     keep their earlier truth values (migration witnesses); the successful-result bridge applies to a
     concrete SELECT. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectRunObservations", 9),), timeout=60)
+
+
+def test_execution_rule(runtime_root: Path, tmp_path: Path) -> None:
+    """The execution rule (`Run.send_returnsResult_select`) and its readiness premises
+    (`Connection.SelectReady.of_calm`) prove a universal theorem over every database and environment;
+    a possible fault blocks success and error claims (`Run.send_unready`, case B05), also where the
+    query output alone has an empty result. Every proof has only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectExecutionRules", 3),), timeout=60)

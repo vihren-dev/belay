@@ -1,7 +1,7 @@
 import Belay.Sqlite.RunResults
 import Belay.Sqlite.ProgramQueries
 import Belay.Sqlite.ProgramLaws
-import Belay.Sqlite.Model.ScriptRunIndex
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
