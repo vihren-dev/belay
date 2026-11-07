@@ -82,20 +82,28 @@ theorem metadata_run (context : Resolved.EvalContext) (database : Model.Database
   · exact quiet
 
 /-- For every context and table found at the given position, COUNT returns its source-row
-length as a certain singleton result. Apply the COUNT law with the identity filter.
-Proof sketch: Apply the COUNT execution law and remove its always-true row filter. -/
+length as a certain singleton result.
+Proof sketch: {name}`Resolved.Query.subqueryRun_of_faultless` with the scan of the table; the one
+group of all the rows ({name}`Resolved.records_ungrouped`) gives one record, which every order and
+window keep. -/
 theorem count_run (context : Resolved.EvalContext) (database : Model.Database)
     (position : Nat) (table : Table) (found : database.table position = some table) :
     (Resolved.Query.countOf [Resolved.QuerySource.first position] none "count(*)").subqueryRun context database [] =
       Resolved.SubqueryRun.count (Resolved.sourceRows table).length := by
-  have count := Resolved.Query.countOf_isCount [Resolved.QuerySource.first position] none "count(*)"
-  have run := count.subqueryRun context database rfl _
-    (Resolved.Query.source_first context _ database position table rfl found) rfl
-    (by simp [Resolved.Query.countOf, Resolved.Query.expressions, Resolved.QuerySource.first,
-      Resolved.QuerySource.expressions, Resolved.Query.keptExpressions, Resolved.Output.scalars, Resolved.Output.operands])
-    (by simp [Resolved.Query.countOf, Resolved.Query.expressions, Resolved.QuerySource.first,
-      Resolved.QuerySource.expressions, Resolved.Query.keptExpressions, Resolved.Output.scalars, Resolved.Output.operands])
-  have kept : (Resolved.sourceRows table).filter (fun _ => true) = Resolved.sourceRows table := List.filter_eq_self.mpr (by intros; rfl)
-  simpa [Resolved.Query.countOf, Resolved.filtered, Resolved.SubqueryRun.count, kept] using run
+  have empty : (Resolved.Query.countOf [Resolved.QuerySource.first position] none "count(*)").expressions = [] := by
+    simp [Resolved.Query.countOf_expressions, Resolved.QuerySource.first, Resolved.QuerySource.expressions]
+  have run := Resolved.Query.subqueryRun_of_faultless context database [] none rfl rfl rfl
+    (Resolved.Query.sourceAfter_first _ database none _ position _ [] rfl found) rfl (by rw [empty]; rfl)
+    (fun _ _ expression member => by simp [empty] at member)
+    (by simp [Resolved.Query.fails, Resolved.Query.countOf, Resolved.Aggregate.fails])
+    (by simp [Resolved.Query.distinctCertain, Resolved.Query.countOf])
+  have records := fun rows => Resolved.records_ungrouped context
+    (query := Resolved.Query.countOf [.first position] none "count(*)") rfl rfl rfl rows
+  have kept : (Resolved.sourceRows table).filter (fun _ => true) = Resolved.sourceRows table :=
+    List.filter_eq_self.mpr fun _ _ => rfl
+  rw [run]
+  simp only [Resolved.Query.results, Resolved.Query.uniqueRecords, Resolved.Query.windowCertain, records]
+  simp [Resolved.SubqueryRun.count, Resolved.certainCut, Resolved.Query.groupRecord, Resolved.Query.countOf,
+    Resolved.Aggregate.eval, Resolved.filtered, Resolved.outerCells, Resolved.stableSort, Resolved.insertStable, kept]
 
 end BalanceExample
