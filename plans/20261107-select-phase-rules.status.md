@@ -70,6 +70,23 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: review fix (`refactor:`, review `20261107T031515Z-b7c6a717`): the progress
   entry of the execution rule names the obligations that `SelectReady.of_calm` discharges
   and the two that stay premises.
+- 2026-11-07: result, filter and projection rules (D1); A01. Every result that SQLite may
+  give is a permutation of a sublist of the rows of the query's records, for every
+  `ORDER BY` and window (`Query.exists_sublist_of_mem_possibleResults`), with its membership,
+  count and length corollaries, and a permutation of all of them without `OFFSET` and
+  `LIMIT` (`Query.perm_of_mem_possibleResults`, `Model/SelectWindowRules.lean`). `WHERE` keeps
+  a sublist (`filtered_sublist`), all rows without a condition; a query without aggregation,
+  `DISTINCT` or compound gives `Query.rowOutput` of each kept row
+  (`Query.uniqueRecords_outputs_plain`), so each result row comes from a kept source row
+  (`Query.mem_possibleResults_plain`), and without a window the result is a permutation of
+  all of them (`Model/SelectProjectionRules.lean`). `Run.query_returnsResult_calmTable`
+  (`SelectExecution.lean`) is the calm one-table form of the execution rule. A01
+  (`tests/surface/SelectProjectionCases.lean`): the motivating query with generic table and
+  column premises, with `db.HasCatalog invoices`, and as a `Sql.check` claim; the empty and
+  populated witnesses and the nullable contrast. Tests: `just dev-build`; locally
+  `tests/surface_select_rules_test.py` and `tests/surface_layers_test.py`;
+  `tests/test_model_package.py` except its installed-package test, whose Nix build of the
+  changed model package exceeds the local 120 s limit.
 
 ## Working sequence
 

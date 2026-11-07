@@ -24,3 +24,12 @@ def test_execution_rule(runtime_root: Path, tmp_path: Path) -> None:
     a possible fault blocks success and error claims (`Run.send_unready`, case B05), also where the
     query output alone has an empty result. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectExecutionRules", 3),), timeout=60)
+
+
+def test_projection_cases(runtime_root: Path, tmp_path: Path) -> None:
+    """Acceptance case A01 through the result, filter and projection rules
+    (`Query.mem_possibleResults_plain`, `Run.query_returnsResult_calmTable`): the motivating invoices query
+    over every database, with generic table and column premises and with `db.HasCatalog invoices`, as a
+    `Sql.check` claim, with an empty and a populated witness and the nullable contrast. Every proof has
+    only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6),), timeout=60)
