@@ -1,0 +1,77 @@
+{
+  "caller": "claude",
+  "commit": "a91b4bdb4d1cd65d234d87e7e115796d2ef4af3a",
+  "date": "2026-11-07T07:20:36+00:00",
+  "exit": 1,
+  "files": [
+    "docs/select-automation-source-map.md",
+    "packages/belay/Belay/Sqlite/SelectCalmExecution.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundMembership.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundReady.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261107-select-phase-rules.status.md",
+    "reviews/20261107T071551Z-9d3fa2e2/resolution-1-20261107T071617Z.json",
+    "reviews/20261107T071551Z-9d3fa2e2/resolution-2-20261107T071617Z.json",
+    "reviews/20261107T071551Z-9d3fa2e2/review.json",
+    "tests/surface/SelectCompoundCases.lean",
+    "tests/surface/SelectCompoundSupport.lean",
+    "tests/surface/SelectDerivedCases.lean",
+    "tests/surface/SelectDerivedSupport.lean",
+    "tests/surface_select_rules_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261107T072036Z-a91b4bdb#1",
+      "line": 22,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring claims that each returned row has `width` cells, but the theorem only sets the width field and imposes no constraint on row lengths. Fix: describe the width field assignment and state that row lengths are not proved."
+    },
+    {
+      "id": "20261107T072036Z-a91b4bdb#2",
+      "line": 38,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundMembership.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`eq_of_equalRowsIdentical` is a public library theorem used by `mem_distinctRows_iff`, but its docstring has no proof sketch. Fix: explain that the proof specializes the two nested row checks and simplifies using the comparison premise."
+    },
+    {
+      "id": "20261107T072036Z-a91b4bdb#3",
+      "line": 87,
+      "path": "tests/surface/SelectCompoundCases.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "`unionScript`, `intersectScript` and `exceptScript` have no individual docstrings because the preceding docstring attaches only to `unionAllScript`. Fix: add a docstring to each declaration explaining its acceptance-test purpose."
+    }
+  ],
+  "id": "20261107T072036Z-a91b4bdb",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "qvymzkml",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

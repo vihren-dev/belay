@@ -19,8 +19,9 @@ the run of the subquery for the empty outer row ({name}`EvalContext.subqueries`)
 * ends with {lean}`RunEnd.done`, and
 * has certain complete rows ({name}`SubqueryRun.sourceCertain`),
 
-then the source rows of the query ({name}`Query.source`) are the rows of the run, {lit}`width`
-cells wide, without a fault. Proof sketch: the one join of the empty row with each row of the run
+then the source rows of the query ({name}`Query.source`) are the rows of the run, with the width
+field {lit}`width` and no fault. The rule does not prove that each row has {lit}`width` cells.
+Proof sketch: the one join of the empty row with each row of the run
 keeps the row, because a join without a condition matches every row. -/
 theorem Query.source_derived (context : EvalContext) (database : Database) (initial : Option Database)
     (query : Query) (index width : Nat)

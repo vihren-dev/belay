@@ -82,10 +82,13 @@ theorem except_members (script : Script) (one : script.statements.length = 1) (s
     ⟨nodup_of_perm (by decide) db perm,
       fun row => perm.mem_iff.trans (Resolved.mem_except_combine identical _ row)⟩
 
-/-- The scripts of the four operators. -/
+/-- The A16 script of {lit}`UNION ALL`, which keeps the rows of both terms with their multiplicity. -/
 def unionAllScript : Script := sql r"SELECT c.id FROM customers c UNION ALL SELECT o.customer_id FROM orders o"
+/-- The A16 script of {lit}`UNION`, which keeps each row of either term once. -/
 def unionScript : Script := sql r"SELECT c.id FROM customers c UNION SELECT o.customer_id FROM orders o"
+/-- The A16 script of {lit}`INTERSECT`, which keeps each row of the left term that the right term has, once. -/
 def intersectScript : Script := sql r"SELECT c.id FROM customers c INTERSECT SELECT o.customer_id FROM orders o"
+/-- The A16 script of {lit}`EXCEPT`, which keeps each row of the left term that the right term does not have, once. -/
 def exceptScript : Script := sql r"SELECT c.id FROM customers c EXCEPT SELECT o.customer_id FROM orders o"
 
 /-- The scripts resolve to {name}`compoundQuery` with its {name}`terms` on {name}`shop`. -/

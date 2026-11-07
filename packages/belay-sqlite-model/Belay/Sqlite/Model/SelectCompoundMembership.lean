@@ -34,7 +34,8 @@ theorem distinctRows_rules (collations : List Collation) (rows : List (List Valu
 
 /-- For every collations and rows whose equal rows are the same values
 ({name}`equalRowsIdentical`), two of the rows that compare equal ({name}`sameOutput`) are the same
-row. -/
+row. Proof sketch: {name}`equalRowsIdentical` checks every pair of the rows; the check of the pair
+of the two rows, with the premise that they compare equal, gives their equality. -/
 theorem eq_of_equalRowsIdentical {collations : List Collation} {rows : List (List Value)}
     (identical : equalRowsIdentical collations rows = true) {first second : List Value} (firstMember : first ∈ rows)
     (secondMember : second ∈ rows) (same : sameOutput collations first second = true) : first = second := by
