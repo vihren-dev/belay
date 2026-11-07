@@ -89,4 +89,5 @@ def test_background_checking(runtime_root: Path, tmp_path: Path) -> None:
         assert blocks[name].startswith("SQL check: unknown;") and "Database:" not in blocks[name], blocks[name]
     assert ("the kernel refutes the claim on a database, but the checker could not build its SQLite replay"
             in blocks["replay-unknown"]), blocks["replay-unknown"]
+    assert "sql_refute (db := database)" in blocks["replay-unknown"], blocks["replay-unknown"]
     assert "excluded rule: unknown" in output and "cancelled search: interrupted" in output, output

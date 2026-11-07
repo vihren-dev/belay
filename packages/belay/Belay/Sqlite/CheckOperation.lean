@@ -66,7 +66,9 @@ def check (proposition : Expr) (heartbeats : Nat) (samples : SampleConfig := {})
         let reports ← try replayClaim proposition witness excluded excludedLocals
           catch error =>
             recordReason s!"the kernel refutes the claim on a database, but the checker could not build its SQLite \
-              replay ({← error.toMessageData.toString}), so it reports no counterexample"
+              replay ({← error.toMessageData.toString}), so it reports no counterexample. State the claim about \
+              a query, a script or a run of a query to get a replay, or prove the negation on a database with \
+              `sql_refute (db := database)`"
             throw error
         let observation ← observeFailure proposition witness excluded excludedLocals
         let text ← describeWitness witness excluded excludedLocals

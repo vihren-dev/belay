@@ -648,8 +648,13 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   the arithmetic claim and, with the reason, for a run of `Sql.run`, which has no replay; an excluded
   execution rule removes the proof; and a cancellation in the search reaches the caller. A claim passed by
   its name (`#sql_check claim`) stays unknown, because the opening (`intros`) does not unfold the name; the
-  fixture states its claims in place. Tests: `just dev-build`; locally the SELECT, checker, counterexample,
-  replay and S6 automation tests (list in the commit).
+  fixture states its claims in place. Checks for the commit: `just dev-build` and the SELECT, checker,
+  counterexample, replay and S6 automation tests (list in the commit); their Nix results come with
+  `just test-full` at the end of the stage.
+- B10 review fix (`refactor:`): the reason of a refuted candidate without a replay names the next step
+  (state the claim about a query, a script or a run of a query, or use `sql_refute (db := database)`).
+  The status entry of B10 names its checks and no local results. Checks for the commit:
+  `tests/surface_select_procedure_test.py`; Nix results at the end of the stage.
 
 ## Working sequence
 
