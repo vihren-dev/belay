@@ -376,6 +376,13 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
   `Model/PossibleResultsExamples.lean` keeps only its two `Resolved.normalForm` examples; A12 and
   A14 replace the `possible` examples. The query examples of `Model/QueryWindowExamples.lean` go
   with `ClaimsQueryCases.lean`, which still uses them. Tests: `just dev-build`.
+- 2026-11-07: refactor after the review of the model-example retirement (R19, must, two
+  findings): the acceptance cases do not cover all deleted examples. `Model/SubqueryExamples.lean`
+  and `Model/PossibleResultsExamples.lean` are restored in full: A18 and A19 do not check a
+  correlation at depth two or the fault contrasts of a scalar subquery and of `IN` over a window,
+  and A12 and A14 do not check the exact alternatives of `LIMIT` without `ORDER BY`, of a window
+  across tie groups, or of `DISTINCT` and `GROUP BY` with `LIMIT`. The candidate decisions below
+  for these two files are withdrawn. Tests: `just dev-build`.
 
 ## Working sequence
 
@@ -410,13 +417,13 @@ Each stage ends with the checks of a slice end (`just test-full`, `just verdict`
   `subquery` rule exists.
 - `Model/QueryExamples.lean`: retain. The conformance package
   (`VerifierConformance/QueryOutputs.lean`) and the other example files import it.
-- `Model/SubqueryExamples.lean`: delete. Its correlated EXISTS, IN-with-NULL and
+- `Model/SubqueryExamples.lean`: delete (withdrawn 2026-11-07, see the progress log). Its correlated EXISTS, IN-with-NULL and
   scalar-subquery examples are the contrasts of A18 and A19, which replace them.
 - `Model/QueryWindowExamples.lean`: delete the examples of the queries `windowed` and
   `empty` (parameter LIMIT/OFFSET results and the mismatch error); A15 replaces them.
   Retain the `windowInteger` conversion examples (integer, real, text, blob and NULL
   values of a window parameter): no acceptance case covers that conversion table.
-- `Model/PossibleResultsExamples.lean`: delete the `possible` examples (window ties,
+- `Model/PossibleResultsExamples.lean` (withdrawn 2026-11-07, see the progress log): delete the `possible` examples (window ties,
   DISTINCT and LIMIT over the guide's tables); A12 and A14 replace them. Retain the two
   `Resolved.normalForm` examples (NaN against NULL, and real 1.0 against integer 1):
   no case covers the order of output normalization.
