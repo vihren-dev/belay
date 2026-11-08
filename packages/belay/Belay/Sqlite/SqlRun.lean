@@ -1,12 +1,15 @@
 import Belay.Sqlite.SqlRunGoals
 import Belay.Sqlite.ExecutionSpecifications
+import Belay.Sqlite.SqlSelect
 
 set_option doc.verso true
 
 /-! The tactic {lit}`sql_run` (ADR 0017, S6). It reduces the check of a SQL program to the obligations
 that the public step rules leave: for each sent statement the resolution, the table, the model's
 coverage, and the goals for the success and the failure of the step, then the check of the rest of the
-program at the reached connection. Every rule is a theorem; the tactic only applies them, so a proof it
+program at the reached connection. The check of a query of one SELECT goes first to the procedure of
+{lit}`sql_select`, which proves it from the catalog of the database; when that procedure does not close
+it, the step rule of the read applies. Every rule is a theorem; the tactic only applies them, so a proof it
 builds is checked by the kernel like any other proof. -/
 
 namespace Belay.Sqlite.Run
@@ -48,13 +51,16 @@ partial def runGoal (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) 
       runGoal hints first (fuel - 1) goal
 where
   /-- Apply the rule of a read to a goal whose program is a single or a query of one SELECT statement. The
-  goals of the rule are the model coverage and the post for every selected output. -/
+  procedure of {lit}`sql_select` proves the check of a query first; when it does not close it, the goals of
+  the rule are the model coverage and the post for every selected output. -/
   runRead (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) (single : Bool) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
       | stuck first goal "the script is not a list of statements that Lean can read."
     unless ← isLast rest do return ← stuck first goal "a query reads one statement, and the script has more."
     unless (← statementKind? statement) == some ``Model.Syntax.Statement.select do
       return ← stuck first goal "only a SELECT statement has a rule for its rows."
+    unless single do
+      if ← closesBySelect hints goal then return []
     let (statement, values) := (← exprToSyntax statement, ← exprToSyntax values)
     setGoals [goal]
     if single then
@@ -62,6 +68,15 @@ where
     else
       evalTactic (← `(tactic| refine Sql.check_query_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
     processPremises hints fuel ``Model.Syntax.Statement.select (← getGoals)
+  /-- Whether the procedure of {lit}`sql_select` closes the check of a query. When it does not, the state,
+the goal and the messages stay as they were, and the step rule of the read applies. -/
+  closesBySelect (hints : Hints) (goal : MVarId) : TacticM Bool := do
+    let saved ← Tactic.saveState
+    try
+      if (← Select.selectGoal hints Select.selectFuel goal).isEmpty then return true
+    catch _ => pure ()
+    saved.restore
+    return false
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
   statement, so that each statement gets its own rule at the context that the earlier ones reach. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do

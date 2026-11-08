@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.StatementCalm
 import Belay.Sqlite.Model.SimpleQueryAppend
+import Belay.Sqlite.Model.ExprCalmLaws
 
 set_option doc.verso true
 
@@ -35,6 +36,25 @@ theorem Statement.simpleTable_calm (position : Nat) (filter : Option Expr) (colu
     rw [scalar column columnMember] at member
     simp at member
   · simp at member
+
+/-- For every table position, optional filter, column position and names: if every expression of the
+filter is calm, the statement of the simple query that reads the one column at that position of the table,
+with no subquery, is calm. Plain words: a one-column read of one table with a calm {lit}`WHERE` is calm.
+Proof sketch: {name}`Statement.simpleTable_calm`; a column is calm ({name}`Expr.calm_column`) and has no
+other operand. -/
+theorem Statement.simpleColumn_calm (position : Nat) (filter : Option Expr) (index : Nat) (names : List String)
+    (calm : ∀ expression ∈ filter.toList, expression.Calm) :
+    (Statement.query (Query.simple [QuerySource.first position] filter [.scalar (.column index)] names) []).Calm := by
+  apply Statement.simpleTable_calm
+  · intro expression member
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, Output.scalars, List.mem_append,
+      List.mem_singleton] at member
+    rcases member with member | rfl
+    · exact calm expression member
+    · exact Expr.calm_column index
+  · intro column member
+    cases List.mem_singleton.mp member
+    rfl
 
 /-- For every aggregate-free result column list whose columns read only columns below a width, no column
 has an operand other than its scalar. Proof sketch: a column that reads below a width is scalar, and a

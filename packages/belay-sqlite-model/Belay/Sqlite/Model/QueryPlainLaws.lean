@@ -117,4 +117,40 @@ theorem Query.mayFail_of_plain (context : EvalContext) (quiet : context.Quiet) (
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   exact Expr.fault_of_plain context quiet row expression (plain expression member)
 
+/-- Faultless run rule: for every context, query that is no compound and has no window parameter,
+and rows, when no expression of the query has a fallible call, its expressions have no fault over
+the empty row and over each of the rows, it has no failing aggregate over the rows
+({name}`Query.fails`) and its {lit}`DISTINCT` is certain over them ({name}`Query.distinctCertain`),
+the run of the query ({name}`Query.run`) gives its result rows, no fault, no overflow and no window
+mismatch. A query without aggregation has no failing aggregate, and a query without
+{lit}`DISTINCT` has a certain one. Proof sketch: the window binds to the query
+({name}`Query.bindWindow_literal`), and expressions without a fault give no certain or possible
+failure ({name}`Query.mustFail_of_faultless`, {name}`Query.mayFail_of_faultless`). -/
+theorem Query.run_of_faultless (context : EvalContext) {query : Query} (single : query.compound = none)
+    (limitParameter : query.limitParameter = none) (offsetParameter : query.offsetParameter = none)
+    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) {rows : List (List Value)}
+    (faultless : ∀ row ∈ [] :: rows, ∀ expression ∈ query.expressions, (expression.evaluate context row).2 = .none)
+    (noOverflow : query.fails context rows = false) (distinct : query.distinctCertain context rows = true) :
+    query.run context rows =
+      { rows := query.results context rows, fault := .none, overflow := false, mismatch := false } := by
+  unfold Query.run
+  simp [single, Query.bindWindow_literal context.parameters query limitParameter offsetParameter,
+    Query.mustFail_of_faultless context query rows faultless,
+    Query.mayFail_of_faultless context query rows plain faultless, noOverflow, distinct]
+
+/-- Quiet run rule: {name}`Query.run_of_faultless` in a context whose subqueries have no fault
+({name}`EvalContext.Quiet`), where no expression has a fault over any row. Proof sketch:
+{name}`Expr.fault_of_plain` gives each expression no fault. -/
+theorem Query.run_quiet (context : EvalContext) (quiet : context.Quiet) {query : Query}
+    (single : query.compound = none) (limitParameter : query.limitParameter = none)
+    (offsetParameter : query.offsetParameter = none)
+    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) {rows : List (List Value)}
+    (noOverflow : query.fails context rows = false) (distinct : query.distinctCertain context rows = true) :
+    query.run context rows =
+      { rows := query.results context rows, fault := .none, overflow := false, mismatch := false } := by
+  refine Query.run_of_faultless context single limitParameter offsetParameter plain
+    (fun row _ expression member => ?_) noOverflow distinct
+  simp only [List.all_eq_true, Bool.not_eq_true'] at plain
+  exact Expr.fault_of_plain context quiet row expression (plain expression member)
+
 end Belay.Sqlite.Model.Resolved

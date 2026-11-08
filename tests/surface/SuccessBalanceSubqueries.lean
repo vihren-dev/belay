@@ -13,7 +13,7 @@ namespace BalanceExample
 /-- For every simple SELECT 1 query with the given fault-free source and condition, no
 fallible call in the condition and no source expressions, the subquery has no fault and returns
 one literal row per matching source row.
-Proof sketch: apply the shared subquery execution and simple-result equations. -/
+Proof sketch: apply the fault-free subquery run law and the result law of a plain query without order or window. -/
 theorem one_run (context : Resolved.EvalContext) (database : Model.Database)
     (sources : List Resolved.QuerySource) (condition : Resolved.Expr) (source : Resolved.SourceRows)
     (found : (Resolved.Query.simple sources (some condition) [.scalar (.literal (.integer 1))] ["1"]).source context database = some source)
@@ -30,21 +30,20 @@ theorem one_run (context : Resolved.EvalContext) (database : Model.Database)
   have expressions : query.expressions = [condition, .literal (.integer 1)] := by
     simp [query, Resolved.Query.simple, Resolved.Query.expressions, Resolved.Query.keptExpressions,
       Resolved.Output.scalars, Resolved.Output.operands, sourceQuiet]
-  have run := Resolved.Query.subqueryRun_simple context database query
-    (Resolved.Query.simple_isSimple _ _ _ _) rfl source found clean
+  have run := Resolved.Query.subqueryRun_of_faultless context database [] none (query := query) rfl rfl rfl
+    (by rw [Resolved.Query.sourceAfter_of_outer_zero _ _ _ rfl]; exact found) clean
     (by simp [expressions, plain, Resolved.Expr.any, Resolved.Expr.isFallibleCall])
     (by
-      intro row member expression inside
+      intro row _ expression inside
       simp only [expressions, List.mem_cons, List.not_mem_nil, or_false] at inside
       rcases inside with rfl | rfl
       · exact quiet row
-      · rfl)
+      · rfl) rfl rfl
   constructor
   · rw [run]
-  · rw [run]
-    have results := (Resolved.Query.simple_isSimple sources (some condition)
-      [.scalar (.literal (.integer 1))] ["1"]).results_eq context source.rows
-    simpa [query, Resolved.Query.simple, Resolved.filtered, Resolved.Expr.eval_literal] using results
+  · rw [run, Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+    unfold Resolved.Query.rowOutput
+    simp [query, Resolved.Query.simple, Resolved.filtered, Resolved.Expr.eval_literal]
 
 /-- For every context and table found at the given position, the range query has no fault
 and returns one row for each cell that fails the SQL range condition.
@@ -75,27 +74,35 @@ theorem metadata_run (context : Resolved.EvalContext) (database : Model.Database
       ((rows.map (· ++ [.text (bytes! "ledger"), .null])).filter
         (fun row => Resolved.truthy (condition.eval context row))).map (fun _ => [.integer 1]) := by
   apply one_run (source := {rows := rows.map (· ++ [.text (bytes! "ledger"), .null]), width := 8, fault := .none})
-  · exact Resolved.Query.source_pragma_fixed context _ database 8 _ rfl
+  · exact Resolved.Query.source_pragma context database none _ (.fixed 8 _) _ rfl rfl
   · rfl
   · rfl
   · exact plain
   · exact quiet
 
 /-- For every context and table found at the given position, COUNT returns its source-row
-length as a certain singleton result. Apply the COUNT law with the identity filter.
-Proof sketch: Apply the COUNT execution law and remove its always-true row filter. -/
+length as a certain singleton result.
+Proof sketch: {name}`Resolved.Query.subqueryRun_of_faultless` with the scan of the table; the one
+group of all the rows ({name}`Resolved.records_ungrouped`) gives one record, which every order and
+window keep. -/
 theorem count_run (context : Resolved.EvalContext) (database : Model.Database)
     (position : Nat) (table : Table) (found : database.table position = some table) :
     (Resolved.Query.countOf [Resolved.QuerySource.first position] none "count(*)").subqueryRun context database [] =
       Resolved.SubqueryRun.count (Resolved.sourceRows table).length := by
-  have count := Resolved.Query.countOf_isCount [Resolved.QuerySource.first position] none "count(*)"
-  have run := count.subqueryRun context database rfl _
-    (Resolved.Query.source_first context _ database position table rfl found) rfl
-    (by simp [Resolved.Query.countOf, Resolved.Query.expressions, Resolved.QuerySource.first,
-      Resolved.QuerySource.expressions, Resolved.Query.keptExpressions, Resolved.Output.scalars, Resolved.Output.operands])
-    (by simp [Resolved.Query.countOf, Resolved.Query.expressions, Resolved.QuerySource.first,
-      Resolved.QuerySource.expressions, Resolved.Query.keptExpressions, Resolved.Output.scalars, Resolved.Output.operands])
-  have kept : (Resolved.sourceRows table).filter (fun _ => true) = Resolved.sourceRows table := List.filter_eq_self.mpr (by intros; rfl)
-  simpa [Resolved.Query.countOf, Resolved.filtered, Resolved.SubqueryRun.count, kept] using run
+  have empty : (Resolved.Query.countOf [Resolved.QuerySource.first position] none "count(*)").expressions = [] := by
+    simp [Resolved.Query.countOf_expressions, Resolved.QuerySource.first, Resolved.QuerySource.expressions]
+  have run := Resolved.Query.subqueryRun_of_faultless context database [] none rfl rfl rfl
+    (Resolved.Query.sourceAfter_first _ database none _ position _ [] rfl found) rfl (by rw [empty]; rfl)
+    (fun _ _ expression member => by simp [empty] at member)
+    (by simp [Resolved.Query.fails, Resolved.Query.countOf, Resolved.Aggregate.fails])
+    (by simp [Resolved.Query.distinctCertain, Resolved.Query.countOf])
+  have records := fun rows => Resolved.records_ungrouped context
+    (query := Resolved.Query.countOf [.first position] none "count(*)") rfl rfl rfl rows
+  have kept : (Resolved.sourceRows table).filter (fun _ => true) = Resolved.sourceRows table :=
+    List.filter_eq_self.mpr fun _ _ => rfl
+  rw [run]
+  simp only [Resolved.Query.results, Resolved.Query.uniqueRecords, Resolved.Query.windowCertain, records]
+  simp [Resolved.SubqueryRun.count, Resolved.certainCut, Resolved.Query.groupRecord, Resolved.Query.countOf,
+    Resolved.Aggregate.eval, Resolved.filtered, Resolved.outerCells, Resolved.stableSort, Resolved.insertStable, kept]
 
 end BalanceExample

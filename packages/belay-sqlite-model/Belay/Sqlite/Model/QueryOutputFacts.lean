@@ -22,12 +22,39 @@ def Resolved.Query.described (query : Resolved.Query) (clock : Int) (counters : 
     (query.runOn clock counters parameters database subqueries).all fun (source, run) =>
       source.fault != .may && run.fault != .may
 
+/-- For every clock, index, query statement and connection, and every clock value that the step gives
+the statement ({name}`statementClock`), when the statement reads no unknown counter: the output of
+its step ({name}`resolvedStepOutput`) is the output of the query ({name}`Resolved.Query.outputOn`)
+at that clock value if the model describes the statement ({name}`Resolved.Query.described`), and
+{name}`Output.unmodeled` otherwise. The query reads the counters of the statement. Proof sketch:
+unfold the step at the clock value; {name}`Output.ofStep_query` gives the output. -/
+theorem resolvedStepOutput_query_at (clock : Option Clock) (index : Nat) (connection : Connection)
+    (parameters : List Value) (query : Resolved.Query) (subqueries : List Resolved.Query) {value : Int}
+    (clocked : statementClock clock index (.query query subqueries) = some value)
+    (known : connection.state.counters.firstUnknown (Resolved.Statement.query query subqueries).counterReads = none) :
+    resolvedStepOutput clock index connection parameters (.query query subqueries) =
+      if query.described value (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
+          parameters connection.state.database subqueries then
+        query.outputOn value (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
+          parameters connection.state.database subqueries
+      else .unmodeled unmodeledHere := by
+  unfold resolvedStepOutput
+  simp only [clocked, known]
+  simp only [SqlState.statementRun, runStatement, Resolved.Query.described, Option.isNone, known]
+  by_cases ready : (Resolved.subqueriesPlain (query.nestedSubqueries subqueries) &&
+      (query.runOn value (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
+        parameters connection.state.database subqueries).all fun (source, run) =>
+        source.fault != .may && run.fault != .may) = true
+  · simp only [ready, Bool.and_true, Bool.not_true, ite_true]
+    exact Output.ofStep_query query subqueries value index parameters connection.state _ rfl
+  · simp [ready]
+
 /-- For every query statement, the output of its step in a run without a clock
 ({name}`resolvedStepOutput`) is, when the statement reads no clock and no unknown counter, the output
 of the query ({name}`Resolved.Query.outputOn`) if the model describes the statement
 ({name}`Resolved.Query.described`) and {name}`Output.unmodeled` otherwise. The query runs at the clock
-value 0 with the counters that it reads. Proof sketch: unfold the step; the clock value of a
-statement that reads no clock is 0, and {name}`Output.ofStep_query` gives the output. -/
+value 0 with the counters that it reads. Proof sketch: {name}`resolvedStepOutput_query_at`; the clock
+value of a statement that reads no clock is 0. -/
 theorem resolvedStepOutput_query (index : Nat) (connection : Connection) (parameters : List Value)
     (query : Resolved.Query) (subqueries : List Resolved.Query)
     (noClock : (Resolved.Statement.query query subqueries).readsClock = false)
@@ -37,25 +64,24 @@ theorem resolvedStepOutput_query (index : Nat) (connection : Connection) (parame
           parameters connection.state.database subqueries then
         query.outputOn 0 (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
           parameters connection.state.database subqueries
-      else .unmodeled unmodeledHere := by
-  unfold resolvedStepOutput
-  simp only [statementClock, noClock, Bool.false_eq_true, ite_false, known]
-  simp only [SqlState.statementRun, runStatement, Resolved.Query.described, Option.isNone, known]
-  by_cases ready : (Resolved.subqueriesPlain (query.nestedSubqueries subqueries) &&
-      (query.runOn 0 (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
-        parameters connection.state.database subqueries).all fun (source, run) =>
-        source.fault != .may && run.fault != .may) = true
-  · simp only [ready, Bool.and_true, Bool.not_true, ite_true]
-    exact Output.ofStep_query query subqueries 0 index parameters connection.state _ rfl
-  · simp [ready]
+      else .unmodeled unmodeledHere :=
+  resolvedStepOutput_query_at none index connection parameters query subqueries
+    (by simp [statementClock, noClock]) known
+
+/-- The context in which a query statement evaluates its query on the connection at a clock value:
+the counters that the statement reads, the values bound to its parameters, the database of the
+connection and the subqueries ({name}`Resolved.statementContext`). -/
+abbrev Connection.queryContextAt (connection : Connection) (value : Int) (parameters : List Value)
+    (query : Resolved.Query) (subqueries : List Resolved.Query) : Resolved.EvalContext :=
+  Resolved.statementContext value
+    (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
+    parameters connection.state.database subqueries
 
 /-- The context in which a query statement evaluates its query on the connection, without a clock:
-the clock value 0, the counters that the statement reads, the values bound to its parameters, the
-database of the connection and the subqueries ({name}`Resolved.statementContext`). -/
+{name}`Connection.queryContextAt` at the clock value 0. -/
 abbrev Connection.queryContext (connection : Connection) (parameters : List Value) (query : Resolved.Query)
     (subqueries : List Resolved.Query) : Resolved.EvalContext :=
-  Resolved.statementContext 0 (connection.state.counters.view (Resolved.Statement.query query subqueries).counterReads)
-    parameters connection.state.database subqueries
+  connection.queryContextAt 0 parameters query subqueries
 
 /-- For every query statement whose query has source rows {lit}`source`, the run of the query on the
 connection is the run over these rows. Proof sketch: unfold {name}`Resolved.Query.runOn` and rewrite

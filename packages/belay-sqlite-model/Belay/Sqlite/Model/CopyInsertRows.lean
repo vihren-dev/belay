@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.SimpleResultsLaws
+import Belay.Sqlite.Model.SelectSubqueryRules
 import Belay.Sqlite.Model.InsertSelectRun
 import Belay.Sqlite.Model.DatabaseFacts
 
@@ -30,18 +30,22 @@ private theorem getElem?_eq_some_getD (row : List Value) (position : Nat) (insid
   rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem inside]
   rfl
 
-/-- For every simple query without {lit}`WHERE` whose result columns are the first {lit}`width` columns of its
+/-- For every query that is no compound and has no {lit}`WHERE`, {lit}`DISTINCT`, aggregation,
+{lit}`ORDER BY`, {lit}`OFFSET` or {lit}`LIMIT`, whose result columns are the first {lit}`width` columns of its
 source, in order, every context and every rows that have {lit}`width` cells: the result rows of the query are
 the rows. In plain words, {lit}`SELECT a, b, c FROM t` hands over the rows of {lit}`t` when {lit}`t` has these
-three columns. Proof sketch: {name}`Resolved.Query.Simple.results_eq`; a row maps to the list of its own cells. -/
-theorem Resolved.Query.results_copy {query : Resolved.Query} (simple : query.Simple) (context : Resolved.EvalContext)
+three columns. Proof sketch: {name}`Resolved.Query.results_plain_unordered` with every row kept
+({name}`Resolved.filtered_of_filter_none`); a row maps to the list of its own cells. -/
+theorem Resolved.Query.results_copy {query : Resolved.Query} (single : query.compound = none)
+    (noDistinct : query.distinct = none) (plain : query.aggregate = false) (unordered : query.orderBy = [])
+    (noOffset : query.offset = 0) (noLimit : query.limit = none) (context : Resolved.EvalContext)
     (width : Nat) (noFilter : query.filter = none)
     (copies : query.columns = (List.range width).map fun position => .scalar (.column position))
     (rows : List (List Value)) (wide : ∀ row ∈ rows, row.length = width) : query.results context rows = rows := by
-  rw [simple.results_eq, copies]
-  have unfiltered : Resolved.filtered context query rows = rows := by
-    simp [Resolved.filtered, noFilter]
-  rw [unfiltered]
+  rw [query.results_plain_unordered context single noDistinct plain unordered noOffset noLimit,
+    Resolved.filtered_of_filter_none context noFilter]
+  unfold Resolved.Query.rowOutput
+  rw [copies]
   conv => rhs; rw [← List.map_id rows]
   apply List.map_congr_left
   intro row member

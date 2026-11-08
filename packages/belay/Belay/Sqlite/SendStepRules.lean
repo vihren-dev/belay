@@ -12,14 +12,6 @@ statement, not one proof for the whole program.
 namespace Belay.Sqlite
 open Belay.Sqlite Model
 
-/-- The connection after a statement that changes the stored database and the counters and nothing else:
-the connection with the database, and with the counters after the counts of the statement. The snapshot of
-an open transaction, the clock assignment and the settings stay. A successful plain write and a failed
-write both give this connection. -/
-def Model.Connection.afterWrite (connection : Connection) (database : Model.Database) (counts : Counts) : Connection :=
-  { connection with state := { connection.state with
-      database, counters := connection.state.counters.apply counts } }
-
 /-- For every context, statement, values and post: a program that sends the one statement checks the post when
 all of these hold.
 - The statement resolves, at the connection of the context, to no INSERT from a query without rules (premise

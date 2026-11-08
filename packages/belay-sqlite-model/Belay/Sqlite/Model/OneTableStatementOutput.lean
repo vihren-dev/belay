@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.InSubqueryEqualityLink
-import Belay.Sqlite.Model.SimpleSubqueryRowsOutput
-import Belay.Sqlite.Model.ExistsSubqueryOutput
+import Belay.Sqlite.Model.SelectSubqueryRules
+import Belay.Sqlite.Model.SelectOneSubqueryContext
 
 set_option doc.verso true
 
@@ -36,8 +36,9 @@ context of the statement, the output of the step of {name}`Resolved.Query.oneTab
 index, is the rows of the table that the condition keeps, with the values of the result expressions, sorted into normal form
 ({name}`Resolved.normalForm`).
 The condition and the result expressions are evaluated in the context of the statement. Proof sketch:
-{name}`resolvedStepOutput_simple_rows_of_faultless` with the source rows of the table
-({name}`Resolved.Query.source_first`) and the one result of {name}`Resolved.Query.Simple.results_eq`. -/
+{name}`resolvedStepOutput_select_unordered`, ready by {name}`Connection.SelectReady.of_faultless` with the source
+rows of the table ({name}`Resolved.Query.source_first`), and the result rows of
+{name}`Resolved.Query.results_plain_unordered`. -/
 theorem resolvedStepOutput_oneTable_rows (clock : Option Clock) (index position : Nat) (connection : Connection)
     (parameters : List Value) (table : Table) (condition : Option Resolved.Expr) (projections : List Resolved.Expr)
     (names : List String) (inner : Resolved.Query)
@@ -57,18 +58,19 @@ theorem resolvedStepOutput_oneTable_rows (clock : Option Clock) (index position 
           (Resolved.Query.oneTable position 0 condition projections names) [inner]) row)) := by
   have calm := Resolved.Query.oneTable_calm position condition projections names inner conditionCalm projectionsCalm
     innerCalm
-  have simple := Resolved.Query.oneTable_simple position 0 condition projections names
-  rw [resolvedStepOutput_simple_rows_of_faultless clock index connection parameters
-    (Resolved.Query.oneTable position 0 condition projections names) [inner] simple
-    { rows := Resolved.sourceRows table, width := table.shape.columns.length, fault := .none } calm
-    (Resolved.Query.source_first _ _ _ position table rfl present) rfl ?_]
-  · rw [simple.results_eq]
-    simp [Resolved.filtered, Resolved.Query.oneTable, Resolved.Query.simple,
-      Function.comp_def]
-    rfl
-  · intro row member expression inside
-    rw [Resolved.Query.oneTable_expressions] at inside
-    exact faultless row member expression inside
+  have context := Connection.queryContext_calm connection parameters _ [inner] calm
+  have ready := Connection.SelectReady.of_faultless connection parameters calm rfl
+    (Resolved.Query.bindWindow_literal _ _ rfl rfl) (Resolved.Query.source_first _ _ _ position table rfl present)
+    (by simp) (fun row member expression inside => by
+      rw [Resolved.Query.oneTable_expressions] at inside
+      rw [← context]
+      exact faultless row member expression inside) rfl rfl
+  rw [resolvedStepOutput_select_unordered clock index connection parameters
+    (by simp [statementClock, calm.readsClock]) ready rfl rfl rfl,
+    Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+  unfold Resolved.Query.rowOutput
+  simp [Resolved.filtered, Resolved.Query.oneTable, Resolved.Query.simple, Function.comp_def]
+  rfl
 
 /-- **Same rows, same output.** The conclusion has a list of rows that both outputs equal. For every connection, values, table at a position of the database, two optional
 conditions, positions of result columns, and two subqueries, when the expressions of both statements are calm and have

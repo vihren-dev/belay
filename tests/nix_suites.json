@@ -235,6 +235,12 @@
     "tests/surface_sql_check_roots_test.py",
     "tests/surface_automatic_cancel_test.py"
   ],
+  "surfaceSelect": [
+    "tests/surface_select_automation_test.py",
+    "tests/surface_select_procedure_test.py",
+    "tests/surface_select_rules_test.py",
+    "tests/surface_select_sources_test.py"
+  ],
   "theoremDependencies": [
     "tests/test_theorem_dependency_exporter.py",
     "tests/test_theorem_dependency_report.py",

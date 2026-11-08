@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.SubquerySelectResolution
 import Belay.Sqlite.Model.SelectOneResolution
-import Belay.Sqlite.Model.NoFromQuerySteps
+import Belay.Sqlite.Model.PlainQueryRules
 
 set_option doc.verso true
 

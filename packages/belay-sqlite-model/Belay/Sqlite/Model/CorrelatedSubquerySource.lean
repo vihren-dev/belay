@@ -71,25 +71,4 @@ theorem Query.sourceAfter_first (context : EvalContext) (database : Database) (i
   simp [Query.sourceAfter, outerCells, sources, List.foldlM, QuerySource.join, QuerySource.first,
     QuerySource.joinTable, joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure, present]
 
-
-/-- For every simple query, every outer row, and every source of the query for that outer row without fault
-({name}`Query.sourceAfter`), whose expressions have no fallible call and no fault over the empty row and over each source
-row, the run as a subquery for the outer row ({name}`Query.subqueryRun`) has the one result of the query as its rows, no
-fault, and certain rows; it ends done. It is {name}`Query.subqueryRun_simple` for a subquery that may read the
-cells of the outer row. Proof sketch: as for {name}`Query.subqueryRun_simple`, with the source given for the outer row. -/
-theorem Query.subqueryRun_simple_after (context : EvalContext) (database : Database) (initial : Option Database)
-    (outerRow : List Value) (query : Query) (simple : query.Simple) (source : SourceRows)
-    (found : query.sourceAfter context outerRow database initial = some source)
-    (clean : source.fault = .none) (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true)
-    (faultless : ∀ row ∈ [] :: source.rows, ∀ expression ∈ query.expressions,
-      (expression.evaluate context row).2 = .none) :
-    query.subqueryRun context database outerRow initial =
-      { rows := query.results context source.rows, fault := .none,
-        firstCertain := query.windowCertain context source.rows (some 1), rowsCertain := true, ending := .done } := by
-  unfold Query.subqueryRun
-  rw [found]
-  simp only [simple.bindWindow context.parameters, simple.run_of_faultless context plain source.rows faultless, clean]
-  simp [Fault.join, Fault.soften, Query.windowCertain, certainCut, simple.limit, simple.offset]
-
-
 end Belay.Sqlite.Model.Resolved

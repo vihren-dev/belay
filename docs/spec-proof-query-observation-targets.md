@@ -23,13 +23,13 @@ Their current formulas and assumptions remain migration obligations.
 
 | Owning source | Exact name prefix | Exact suffixes to replace |
 | --- | --- | --- |
-| [AggregateQueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/AggregateQueryOutput.lean) | `resolvedStepOutput_aggregateTable_` | `hasRows`, `not_hasNoRows`, `isError` |
-| [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `resolvedStepOutput_scalar_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `resolvedStepOutput_count_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `resolvedStepOutput_exists_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [NotExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/NotExistsSubqueryOutput.lean) | `resolvedStepOutput_notExists_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `resolvedStepOutput_notExists_duplicateKeys_` | `hasRows`, `hasNoRows`, `not_isError` |
-| [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `resolvedStepOutput_simplePragma_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `AggregateQueryOutput` (removed by ADR 0027) | `resolvedStepOutput_aggregateTable_` | `hasRows`, `not_hasNoRows`, `isError` |
+| `ScalarSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_scalar_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `CountSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_count_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `ExistsSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_exists_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `NotExistsSubqueryOutput` (removed by ADR 0027) | `resolvedStepOutput_notExists_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `DuplicateKeyOutput` (removed by ADR 0027) | `resolvedStepOutput_notExists_duplicateKeys_` | `hasRows`, `hasNoRows`, `not_isError` |
+| `TableInfoOutput` (removed by ADR 0027) | `resolvedStepOutput_simplePragma_` | `hasRows`, `hasNoRows`, `not_isError` |
 
 The three `DuplicateKeyOutput` names now quantify over a filter, result column
 and column name. They describe groups of `Resolved.keptRows`, not all source rows.
@@ -40,22 +40,24 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 
 | Owning source | Exact declarations to replace | Resolver transport to retain |
 | --- | --- | --- |
-| [AggregateQuery](../packages/belay/Belay/Sqlite/AggregateQuery.lean) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
-| [ColumnQuery](../packages/belay/Belay/Sqlite/ColumnQuery.lean) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
-| [CountQuery](../packages/belay/Belay/Sqlite/CountQuery.lean) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
-| [ExistsQuery](../packages/belay/Belay/Sqlite/ExistsQuery.lean) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
-| [NotExistsQuery](../packages/belay/Belay/Sqlite/NotExistsQuery.lean) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
-| [DuplicateKeyQuery](../packages/belay/Belay/Sqlite/DuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
-| [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
-| `FilteredDuplicateKeyEmpty` (removed; current owner: [FilteredDuplicateKeyQuery](../packages/belay/Belay/Sqlite/FilteredDuplicateKeyQuery.lean)) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
-| [TableInfoQuery](../packages/belay/Belay/Sqlite/TableInfoQuery.lean) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
+| `AggregateQuery` (removed by ADR 0027) | `Holds.iff_selectAggregate`, `Empty.not_selectAggregate`, `Fails.iff_selectAggregate` | `Script.outputOn_selectAggregate` |
+| `ColumnQuery` (removed by ADR 0027) | `Holds.iff_selectOne_column`, `Empty.iff_selectOne_column`, `Fails.not_selectOne_column` | `Script.outputOn_selectOne_column` |
+| `CountQuery` (removed by ADR 0027) | `Holds.iff_selectOne_count`, `Empty.iff_selectOne_count`, `Fails.not_selectOne_count` | `Script.outputOn_selectOne_count` |
+| `ExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_exists`, `Empty.iff_selectOne_exists`, `Fails.not_selectOne_exists` | `Script.outputOn_selectOne_exists` |
+| `NotExistsQuery` (removed by ADR 0027) | `Holds.iff_selectOne_notExists`, `Empty.iff_selectOne_notExists`, `Fails.not_selectOne_notExists` | `Script.outputOn_selectOne_notExists` |
+| `DuplicateKeyQuery` (removed by ADR 0027) | `Holds.iff_selectOne_noDuplicateKeys`, `Empty.iff_selectOne_noDuplicateKeys`, `Fails.not_selectOne_noDuplicateKeys` | `Script.outputOn_selectOne_noDuplicateKeys` |
+| `FilteredDuplicateKeyQuery` (removed by ADR 0027) | `Holds.iff_selectOne_noDuplicateKeysWhere` | `Script.outputOn_selectOne_noDuplicateKeysWhere` |
+| `FilteredDuplicateKeyEmpty` (removed) | `Empty.iff_selectOne_noDuplicateKeysWhere`, `Fails.not_selectOne_noDuplicateKeysWhere` | Uses the filtered transport above |
+| `TableInfoQuery` (removed by ADR 0027) | `Holds.iff_selectOne_tableInfo`, `Empty.iff_selectOne_tableInfo`, `Fails.not_selectOne_tableInfo` | `Script.outputOn_selectOne_tableInfo` |
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and
-`Empty.iff_selectOne_noDuplicateKeys_repeated` in `DuplicateKeyQuery`, and
-`Holds.selectOne_count_unique_lookup` in
-[UniqueLookupQuery](../packages/belay/Belay/Sqlite/UniqueLookupQuery.lean).
+`Empty.iff_selectOne_noDuplicateKeys_repeated` in `DuplicateKeyQuery` (removed by ADR 0027; the fixture
+`tests/surface/SelectDuplicateKeySupport.lean` proves them as `noDuplicateKeys_claims` and
+`keyGroupsShort_iff_pairwise`), and
+`Holds.selectOne_count_unique_lookup` in `UniqueLookupQuery` (removed by ADR 0027; the fixture
+`tests/surface/ClaimsUniqueLookup.lean` proves the bound as `unique_lookup_holds`).
 Also retain the mathematical consequence `Holds.iff_selectOne_noDuplicateKeysWhere_pairwise` in
-`FilteredDuplicateKeyQuery`. Preserve result-column resolution/groupedness,
+`FilteredDuplicateKeyQuery` (removed by ADR 0027; the same fixture proves it with a filter). Preserve result-column resolution/groupedness,
 aggregate-feed restrictions, `GroupTermResolvesIn`, filter/column/key calmness,
 and NULL grouping. False/NULL filters exclude rows; fallible filters are outside
 the calm contract. The filtered resolver transport itself needs no calmness.
@@ -67,20 +69,20 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 | Current owner | Exact definitions and facts to reuse below their consumers |
 | --- | --- |
 | [QueryOutputFacts](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
-| [SimpleQuerySteps](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_calm`, `Resolved.Statement.Calm.faultless_nil` |
-| [SelectOneSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryOutput.lean) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
-| [CountSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountSubqueryOutput.lean) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
-| [ScalarSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScalarSubqueryOutput.lean) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
-| [ExistsSubqueryOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExistsSubqueryOutput.lean) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`, `Connection.queryContext_tableSubquery_zero` |
-| [DuplicateKeyOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/DuplicateKeyOutput.lean) | `Connection.queryContext_duplicateKeys_zero` |
-| [TableInfoOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/TableInfoOutput.lean) | `Resolved.Query.source_pragma_fixed` |
-| [SimpleSubqueryRowsOutput](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleSubqueryRowsOutput.lean) | `resolvedStepOutput_simple_rows_of_faultless`; reuse this current exact-output fact |
+| `SimpleQuerySteps` (removed by ADR 0027; current owner: [SelectCalmRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean)) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
+| `SelectOneSubqueryOutput` (removed by ADR 0027) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
+| `CountSubqueryOutput` (removed by ADR 0027; current owner of `Resolved.SubqueryRun.count` and `Resolved.countMatching`: [CountOf](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountOf.lean)) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
+| `ScalarSubqueryOutput` (removed by ADR 0027; the fixture `tests/surface/SelectColumnWhereSupport.lean` defines the rows as `columnValues`) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
+| `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: [SelectOneSubqueryContext](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryContext.lean)) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`; `Connection.queryContext_tableSubquery_zero` was removed by ADR 0027 |
+| `DuplicateKeyOutput` (removed by ADR 0027; the fixture `tests/surface/SelectDuplicateKeySupport.lean` gives the run as `duplicateKeysOne_run`) | `Connection.queryContext_duplicateKeys_zero` |
+| `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
+| `SimpleSubqueryRowsOutput` (removed by ADR 0027; current owner: [SelectExecutionRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectExecutionRule.lean)) | `resolvedStepOutput_select_unordered`, for any subqueries, with readiness from `Connection.SelectReady.of_faultless`; reuse this current exact-output fact |
 | [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; reuse different-filter agreement and named-table append semantics |
 | [SimpleTableCalm](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleTableCalm.lean) | `Resolved.Output.operands_of_readsBelow`, `Resolved.Statement.simpleTable_calm`; reuse the current shared calmness proof |
 
 The existing generic projections `resolvedStepOutput_query_isError` in
-`QueryStatementOutput` and `resolvedStepOutput_simple_not_isError_of_faultless`
-in `SimpleQuerySteps` identify important independent guarantees: the former
+`QueryStatementOutput` and `resolvedStepOutput_not_isError_of_faultless`
+in `SelectCalmRule` identify important independent guarantees: the former
 needs no bound-window premise; the latter needs no clean-source premise.
 They are outside the 45-endpoint deletion set. Preserve these strengths when
 reusing clean-source exact-output facts; generic projections are not automatically obsolete.

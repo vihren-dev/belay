@@ -1,4 +1,5 @@
 import SignupInvariantClaims
+import SelectDuplicateKeySupport
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the global form of the signup invariant of the
 guide (ADR 0017, S6). The query `SELECT 1 WHERE NOT EXISTS (SELECT email FROM accounts WHERE deleted_at IS NULL GROUP BY
@@ -27,9 +28,9 @@ structure GlobalSignupSite (db : Database) (e : String) extends AccountSignupSit
 /-- Over every database with a table {lit}`accounts` that has the columns {lit}`email` and {lit}`deleted_at`:
 {name}`oneLive` holds exactly when no two live accounts have emails that compare equal under the collation of the
 email column. Plain words: among the rows of the table in scan order for which {lit}`deleted_at IS NULL` is true, no
-row has an email equal to the email of a row before it. Proof sketch: {name}`Holds.iff_selectOne_noDuplicateKeysWhere_pairwise`
-with the resolution of the column {lit}`email` as result column and grouping term, and of the filter by
-{name}`resolveOperand_column_is_null`. -/
+row has an email equal to the email of a row before it. Proof sketch: {name}`noDuplicateKeys_claims` and
+{name}`keyGroupsShort_iff_pairwise` with the resolution of the column {lit}`email` as result column and grouping
+term, and of the filter by {name}`resolveOperand_column_is_null`. -/
 theorem one_live_iff (db : Database) (position emailIx deletedIx : Nat)
     (table : CatalogTable) (emailCell deletedCell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "accounts") = some (position, table))
@@ -50,18 +51,19 @@ theorem one_live_iff (db : Database) (position emailIx deletedIx : Nat)
     (term := .compare .is (.identifier (name! "deleted_at") .none) .null) (by simp [namesAlias])
     (result := (liveCondition deletedCell deletedIx, none))
     (resolveOperand_column_is_null _ _ _ _ _ _ _ deletedColumn deletedAt)
-  have whereCalm : ∀ condition, some (liveCondition deletedCell deletedIx) = some condition → condition.Calm := by
-    intro condition same
-    obtain rfl := Option.some.inj same
+  have whereCalm : ∀ condition ∈ (some (liveCondition deletedCell deletedIx)).toList, condition.Calm := by
+    intro condition member
+    obtain rfl : condition = liveCondition deletedCell deletedIx := by simpa using member
     simp [liveCondition, Resolved.Expr.Calm, Resolved.Expr.any, Resolved.Expr.isFallibleCall,
       Resolved.Expr.readsClockHere, Resolved.Expr.readsCounterHere]
-  refine Iff.trans (Holds.iff_selectOne_noDuplicateKeysWhere_pairwise (script := oneLive) (isQuery := by check_query)
+  refine Iff.trans (noDuplicateKeys_claims (script := oneLive) (isQuery := by check_query)
     (head := rfl) (count := rfl) (namedSource := rfl) (current := rfl) (arguments := rfl) (found := found)
     (notCall := rfl) (noCalls := rfl) (columnResolves := columns) (columnGrouped := by simp [Resolved.Expr.grouped])
     (columnFeeds := by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) (filterResolves := filterResolves)
     (groupResolves := GroupTermResolvesIn.identifier_table (quote := .none) emailColumn) (whereCalm := whereCalm)
-    (columnCalm := Resolved.Expr.calm_column _) (keyCalm := Resolved.Expr.calm_column _)) ?_
-  simp [emailAt, Resolved.Expr.eval_column]
+    (columnCalm := Resolved.Expr.calm_column _) (keyCalm := Resolved.Expr.calm_column _)).1 ?_
+  rw [keyGroupsShort_iff_pairwise]
+  simp [keptTableRows, emailAt, Resolved.Expr.eval_column]
 
 /-- Over every admitted database with a site of the signup and NOT NULL on the email, and every email: if no email has two
 live accounts and the signup runs without an error, no email has two live accounts afterwards. Plain words: the global

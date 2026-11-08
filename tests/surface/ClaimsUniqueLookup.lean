@@ -1,13 +1,49 @@
-import Belay
+import SelectCountWhereSupport
 
 /-! A fixture of `tests/surface_claims_test.py`: the bound of a unique lookup, `SELECT 1 WHERE (SELECT count(*) FROM
-t WHERE c = $v) <= 1` (ADR 0017, S4; `Belay/Sqlite/UniqueLookupQuery.lean`). The claim is about every database whose
-table has the column `c` under a `UNIQUE` constraint. The instances are on databases, where `decide +kernel` checks
+t WHERE c = $v) <= 1`, through the phase rules of ADR 0027 (`SelectCountWhereSupport.lean`). The claim is about every
+database whose table has the column `c` under a `UNIQUE` constraint. The instances are on databases, where `decide +kernel` checks
 the claim, and the last one shows that the collation of the key matters: a `NOCASE` column with a `BINARY` unique index
 can hold two rows that one value matches. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
+
+set_option doc.verso true in
+/-- For every script {lit}`SELECT 1 WHERE (SELECT count(*) FROM t WHERE c = $v) <= 1` of one statement with values,
+where the catalog of the database has the table {lit}`t` at a position, {lit}`c = $v` resolves in the scope of the
+table to the comparison of the cell at position {lit}`index` with a parameter, with the affinity of the column and a
+collation, and {lit}`<= 1` resolves to the comparison of the subquery value with the integer 1: if the table has a
+unique key without filter whose one term is the column at {lit}`index` under that same collation, the script holds
+on the database. The table reference names no schema and has no indexed query and no arguments. The collation of
+the comparison must be the collation of the key: {lit}`twoCases` below shows a table where the bound fails
+otherwise. Proof sketch: {name}`whereCount_claims` turns the claim into the truth of {lit}`n <= 1` for the number
+{lit}`n` of matching rows ({name}`Resolved.truthy_count_le_one`); {name}`Table.KeysUnique.countMatching_le_one`
+bounds that number with the unique keys and the stored cells of the valid database. -/
+theorem unique_lookup_holds {script : Script} {db : Database} {isQuery : script.isQuery = true}
+    {reference : Syntax.TableReference} {subFilter mainFilter : Syntax.Expr} {parameters : List Value}
+    {position : Nat} {table : CatalogTable} {name text : String} {index slot : Nat} {descending : Bool}
+    {collation : Collation} {column : CatalogColumn} {key : UniqueKey}
+    (head : script.statements = [(.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none
+      none [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] (some subFilter) [] []
+        none none none none false none none] none false none, parameters)])
+    (count : normalizeIdentifier name = "count") (namedSource : reference.query = none)
+    (current : reference.schema = none) (arguments : reference.arguments = none)
+    (found : db.raw.catalog.findTable reference.table = some (position, table))
+    (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
+      (some subFilter) (some (.compare .eq (some column.affinity) (.column index) (.parameter slot) collation))
+      { current := some 0 })
+    (mainResolves : ∀ lowest : Option Nat, FilterResolves runContext.profile.dqsDml [] [] (some mainFilter)
+      (some (.compare .le none (.subquery 0) (.literal (.integer 1)) .binary)) { later := [countShape lowest] })
+    (member : key ∈ db.raw.catalog.uniqueKeys position table) (columnAt : table.columns[index]? = some column)
+    (noFilter : key.filter = none) (oneTerm : key.terms = [{ term := .column index, descending, collation }]) :
+    Holds script db isQuery := by
+  have present := Database.table_of_findTable db.raw _ position table found
+  rw [(whereCount_claims head count namedSource current arguments found subResolves mainResolves
+    (by simp [sql_simp]) (by simp [sql_simp])).1, Resolved.truthy_count_le_one]
+  exact decide_eq_true (Table.KeysUnique.countMatching_le_one (db.valid.unique position _ present)
+    (db.valid.admitted.rowsStored position _ present) member columnAt noFilter oneTerm
+    (Resolved.EvalContext.bound parameters) (.parameter slot) (parameterValue parameters slot) fun _ => rfl)
 
 /-- Over every database that has a table `users` with a column `email` at position `col` under a `UNIQUE` constraint:
 at most one user has the address `v`. -/
@@ -29,7 +65,7 @@ theorem an_email_matches_at_most_one_user (db : Database) (v : String) (position
     (term := .compare .eq (.identifier (name! "email") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (.compare .eq (some cell.affinity) (.column col) (.parameter 1) cell.collation, none))
     (by simp [sql_simp, column, columnAt]; rfl)
-  exact Holds.selectOne_count_unique_lookup (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+  exact unique_lookup_holds (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
     mainResolves (key := UniqueKey.ofColumns table.columns [col]) (descending := false)
     (Catalog.ofColumns_mem_uniqueKeys_of_unique _ _ _ declaredUnique) columnAt rfl (by simp [UniqueKey.ofColumns, columnAt])
 
@@ -53,7 +89,7 @@ theorem an_id_matches_at_most_one_user (db : Database) (v : Int64) (position col
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (.compare .eq (some cell.affinity) (.column col) (.parameter 1) cell.collation, none))
     (by simp [sql_simp, column, columnAt]; rfl)
-  refine Holds.selectOne_count_unique_lookup (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+  refine unique_lookup_holds (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
     mainResolves (key := UniqueKey.ofColumns table.columns table.primaryKey) (descending := false)
     (Catalog.ofColumns_mem_uniqueKeys_of_primaryKey _ _ _ (by simp [primary])) columnAt rfl ?_
   simp [UniqueKey.ofColumns, primary, columnAt]
@@ -129,3 +165,5 @@ def twoCases : Database := db! r"
 theorem the_bound_fails_for_a_binary_key_of_a_nocase_column (v : String) (isText : v = "a@x.org") :
     ¬ Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM users WHERE email = $v) <= 1") twoCases := by
   subst isText; decide +kernel
+
+#print axioms unique_lookup_holds

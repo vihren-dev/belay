@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.SelectCalmRule
 import Belay.Sqlite.Model.AdmittedCellLaws
 import Belay.Sqlite.Model.QueryEval
 import Belay.Sqlite.Model.ExprFault
@@ -6,9 +7,9 @@ import Belay.Sqlite.Model.Arithmetic
 import Belay.Sqlite.Model.LiteralData
 import Belay.Sqlite.Model.StatementClock
 import Belay.Sqlite.Model.QueryLaws
-import Belay.Sqlite.Model.CountSubqueryOutput
+import Belay.Sqlite.Model.CountOf
 import Belay.Sqlite.Model.Subqueries
-import Belay.Sqlite.Model.SimpleQuerySteps
+import Belay.Sqlite.Model.SelectExecutionRule
 import Belay.Sqlite.Model.ComparisonLaws
 import Belay.Sqlite.Model.Resolution.CatalogSpec
 

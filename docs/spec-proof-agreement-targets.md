@@ -107,8 +107,8 @@ not an extra deletion inventory.
 | --- | --- |
 | [TwoStateStatementLaws.lean][statement] | `runStatement_initial_irrelevant`; `SqlState.statementRun_initial_irrelevant`; `possibleOutput_initial_irrelevant`; `Output.ofStep_initial_irrelevant`; `resolvedStepOutput_initial_irrelevant` |
 | [TwoStateQuery.lean][twostate] | `observeTwoState_initial_irrelevant` uses the output independence law. |
-| [SelectOneSubqueryOutput.lean][selectone] | `Connection.queryContext_selectOne` uses subquery-context replacement. |
-| [SelectOneRowsOutput.lean][selectrows] | `Connection.queryContext_selectOne_rows` uses both strengthened context laws. |
+| `SelectOneSubqueryOutput.lean` (removed by ADR 0027) | `Connection.queryContext_selectOne` used subquery-context replacement. |
+| `SelectOneRowsOutput.lean` (removed by ADR 0027) | `Connection.queryContext_selectOne_rows` used both strengthened context laws. |
 | [TwoStateNotExistsExcept.lean][except] | `Resolved.Query.simple_results_congr` uses rowwise congruence. |
 | [KeysUniqueAddColumn.lean][keys] | `LiteralData.termValue_append`; `LiteralData.keyEqual_append` use `Resolved.Expr.eval_append`. |
 | [RowLocalAddColumnTheorems.lean][rowlocal] | `Table.ChecksHold.appendColumn` uses `Resolved.Expr.eval_append`. |
@@ -176,8 +176,6 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [rowwise]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowwiseExpr.lean
 [queryform]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryForm.lean
 [twostate]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateQuery.lean
-[selectone]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryOutput.lean
-[selectrows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneRowsOutput.lean
 [except]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateNotExistsExcept.lean
 [keys]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueAddColumn.lean
 [rowlocal]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean

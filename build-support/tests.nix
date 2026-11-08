@@ -211,7 +211,8 @@ let
   # automatic checks and the SQL-file checks) and `surface` (the rest). The first full run after the
   # split took 817 s (377 tests), 398 s (15) and 591 s (59). The sums of the per-test times of the
   # earlier report predicted 692 s, 676 s and 608 s; the tests of `surfaceChecks` had been slowed by
-  # parallel load then. Keep each suite below about 840 s, 70% of its limit.
+  # parallel load then. Keep each suite below about 840 s, 70% of its limit. The SELECT tests of
+  # ADR 0027 are in `surfaceSelect`: with them, `surfaceS6` took 959 s of its limit (98 tests).
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
@@ -321,6 +322,7 @@ in {
   surface = surfaceSuite "surface";
   surfaceChecks = surfaceSuite "surfaceChecks";
   surfaceS6 = surfaceSuite "surfaceS6";
+  surfaceSelect = surfaceSuite "surfaceSelect";
   packages = suite "packages" {
     inputs = [ ];
     runtime = packageRoot;

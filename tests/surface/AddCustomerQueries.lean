@@ -97,8 +97,10 @@ structure AddCustomerSite (db : Database) (name email : String) where
         [next, .text name.toUTF8.toList, .text email.toUTF8.toList]).continues) = true
 
 /-- For every database with a table {lit}`customers` whose second column is {lit}`name`: a customer with the
-name exists exactly when one row of the table has the cell equal to the name. Proof sketch: apply
-{name}`Holds.iff_selectOne` to the resolved condition. -/
+name exists exactly when one row of the table has the cell equal to the name. Proof sketch:
+{name}`resolveStatement_select_one_from` resolves the query, {name}`Run.query_returnsResult_calmTable` reduces
+the claim to the results over the scan, and {name}`Resolved.Query.forall_possibleResults_ne_nil_plain` to a
+kept row. -/
 theorem a_customer_named_iff (db : Database) (name : String) (position : Nat) (table : CatalogTable)
     (nameCell : CatalogColumn)
     (found : db.raw.catalog.findTable (name! "customers") = some (position, table))
@@ -113,8 +115,14 @@ theorem a_customer_named_iff (db : Database) (name : String) (position : Nat) (t
     (term := .compare .eq (.identifier (name! "name") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter nameCell 1 1, none))
     (by simp [sql_simp, nameAt, nameCellAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
-  · simp [sql_simp, equalsParameter]
-  · simp [sql_simp]
+  have resolved := resolveStatement_select_one_from runContext (db.raw.connection Env.default.counters).resolveState
+    { table := name! "customers", alias := none } _ position table _ rfl rfl rfl found resolves
+  rw [Holds, Run.send_returnsResult_iff_query (script := customerNamed name) rfl,
+    Run.query_returnsResult_calmTable (script := customerNamed name) rfl rfl db Env.default resolved rfl
+      (Database.table_of_findTable _ _ _ _ found)
+      (Resolved.Statement.Calm.selectOne position _ (by simp [sql_simp, equalsParameter])) rfl rfl rfl
+      (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
+    Resolved.Query.forall_possibleResults_ne_nil_plain rfl rfl rfl rfl rfl]
+  simp [Resolved.Query.simple]
 
 end AssertionExamples

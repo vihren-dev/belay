@@ -69,4 +69,19 @@ theorem Output.isError_ofResults (rs : List (List (List Value))) : (Output.ofRes
   | [result] => simp [Output.isError]
   | first :: second :: rest => simp [Output.isError]
 
+/-- For every list of results {lit}`rs` and every property {lit}`Q` of a result:
+{name}`Output.ofResults` of {lit}`rs` returns a result with {lit}`Q`
+({name}`Output.returnsResult`) exactly when {lit}`rs` is not empty and each result in it
+satisfies {lit}`Q`. With no result, the output is {name}`Output.unmodeled`, which returns
+nothing. Proof sketch: the output lists the same results ({name}`Output.ofResults_listed`);
+one case for each shape of the list. -/
+theorem Output.returnsResult_ofResults (rs : List (List (List Value))) (property : List (List Value) → Prop) :
+    (Output.ofResults rs).returnsResult property ↔ rs ≠ [] ∧ ∀ result ∈ rs, property result := by
+  obtain ⟨listed, mem, eq⟩ := Output.ofResults_listed rs
+  rw [eq, Output.listed_iff rs listed mem]
+  match listed with
+  | [] => simp [Output.returnsResult]
+  | [result] => simp [Output.returnsResult]
+  | first :: second :: rest => simp [Output.returnsResult]
+
 end Belay.Sqlite.Model

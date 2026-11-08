@@ -1,6 +1,7 @@
+import Belay.Sqlite.Model.SelectCalmRule
 import Belay.Sqlite.Model.ForeignKeyCheckLaws
 import Belay.Sqlite.Model.ForeignKeyPrepareLaws
-import Belay.Sqlite.Model.SimpleQuerySteps
+import Belay.Sqlite.Model.SelectSubqueryRules
 
 set_option doc.verso true
 
@@ -9,13 +10,6 @@ Preparation remains a separate condition; empty generated rows do not establish 
 parent schemas. -/
 
 namespace Belay.Sqlite.Model
-
-/-- For every table choice, the query of the foreign-key pragma is simple ({name}`Resolved.Query.Simple`): it selects
-its four columns without grouping, order or window. Proof sketch: each field of the structure is a field of the
-generated query, which {name}`pragmaQuery` sets by definition. -/
-theorem keyCheckQuery_simple (table : Option Nat) :
-    (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames).Simple :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The foreign-key pragma reads only columns, so no expression fails or reads external state. -/
 theorem keyCheckQuery_calm (table : Option Nat) : (keyCheckQuery table).Calm := by
@@ -40,8 +34,8 @@ theorem keyCheckQuery_source (context : Resolved.EvalContext) (database : Databa
 /-- For every connection, table choice, statement index and bound values, the resolved
 foreign-key pragma has no rows exactly when its generated rows are the empty list. A missing
 generation result is unmodeled and does not count as empty. This concerns the prepared query;
-the catalog mismatch check is separate. Proof sketch: the pragma is a calm simple query;
-its source is exactly the generated rows, and it has no WHERE condition. -/
+the catalog mismatch check is separate. Proof sketch: the pragma is a calm query without order or window
+({name}`resolvedStepOutput_calm_unordered`); its source is exactly the generated rows, and it has no WHERE condition. -/
 theorem resolvedStepOutput_keyCheck_hasNoRows (index : Nat) (connection : Connection)
     (parameters : List Value) (table : Option Nat) :
     (resolvedStepOutput none index connection parameters (keyCheckQuery table)).hasNoRows = true ↔
@@ -62,10 +56,11 @@ theorem resolvedStepOutput_keyCheck_hasNoRows (index : Nat) (connection : Connec
     simp only [Resolved.Query.described, Resolved.Query.outputOn, ran]
     split <;> simp [Output.hasNoRows]
   | some rows =>
-    have source := keyCheckQuery_source (connection.queryContext parameters query []) connection.state.database table rows found
-    have empty := resolvedStepOutput_simple_hasNoRows index connection parameters query (keyCheckQuery_simple table)
-      { rows, width := 4, fault := .none } calm source rfl
-    simpa [query, pragmaQuery, found, List.eq_nil_iff_forall_not_mem] using empty
+    have source := keyCheckQuery_source (Resolved.EvalContext.bound parameters) connection.state.database table rows found
+    rw [resolvedStepOutput_calm_unordered none index connection parameters calm rfl rfl rfl rfl rfl rfl source
+      (by simp) rfl rfl, Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+    simp [Output.hasNoRows, pragmaQuery, Resolved.filtered, (Resolved.normalForm_perm _).isEmpty_eq,
+      List.eq_nil_iff_forall_not_mem]
 
 /-- Canonical result output collapses any nonempty list of empty alternatives to one empty result. -/
 private theorem ofResults_empty (results : List (List (List Value)))

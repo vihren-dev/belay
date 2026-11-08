@@ -12,7 +12,7 @@ set_option belay.proofCosts true
 
 /-- A constant SELECT succeeds for every database and complete environment. -/
 theorem constant_success : (sql r"SELECT 1" succeeds) :=
-  Succeeds.of_holds (query := by rfl) fun _ _ => rfl
+  Succeeds.of_holds (query := by rfl) fun _ _ => (Holds.iff_of_outputOn rfl).mpr rfl
 
 /-- A successful default run supplies success in any other environment. -/
 theorem supplied_success (db : Database) (script : Script) (env : Env)

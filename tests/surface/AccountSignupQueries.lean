@@ -1,4 +1,4 @@
-import Belay
+import SelectCountWhereSupport
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the live-account invariant of the guide's
 signup example (ADR 0017, S6). The query `SELECT 1 WHERE (SELECT count(*) FROM accounts WHERE deleted_at IS NULL
@@ -44,7 +44,7 @@ theorem resolveOperand_column_is_null {dqs : Bool} (catalog : Catalog) (referenc
 
 /-- Over every database with a table {lit}`accounts` that has the columns {lit}`email` and {lit}`deleted_at`: at most
 one live account has the email {lit}`f` exactly when the count of the rows that are live and equal to {lit}`f` in the
-email is at most one. Proof sketch: apply {name}`Script.outputOn_count` to the resolved conditions; the main
+email is at most one. Proof sketch: apply {name}`whereCount_claims` to the resolved conditions; the main
 condition is {name}`Resolved.truthy_count_le_one`. -/
 theorem at_most_one_live_account_iff (db : Database) (f : Value) (position emailIx deletedIx : Nat)
     (table : CatalogTable) (emailCell deletedCell : CatalogColumn)
@@ -73,9 +73,8 @@ theorem at_most_one_live_account_iff (db : Database) (f : Value) (position email
       rw [resolveOperand_and, resolveOperand_column_is_null _ _ _ _ _ _ _ deletedColumn deletedAt]
       simp [sql_simp, emailColumn, emailAt, equalsParameter, Except.mapError]
       rfl)
-  rw [Holds, Script.outputOn_count (script := (atMostOneLiveAccountWithEmail f)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
-    (arguments := rfl) found subResolves mainResolves (by simp [sql_simp]) (by simp [equalsParameter, liveCondition, sql_simp])]
-  simp only [Option.any_some, Output.hasRows, apply_ite]
+  rw [(whereCount_claims (script := (atMostOneLiveAccountWithEmail f)) (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
+    (arguments := rfl) found subResolves mainResolves (by simp [sql_simp]) (by simp [equalsParameter, liveCondition, sql_simp])).1]
   rw [Resolved.truthy_count_le_one]
   simp
 

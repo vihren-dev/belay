@@ -1,4 +1,4 @@
-import Belay.Sqlite.Queries
+import Belay.Sqlite.QueryObservations
 
 set_option doc.verso true
 
@@ -12,39 +12,34 @@ namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Holds` of {lit}`q` on {lit}`db`
-holds, then {name}`Empty` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
-and {name}`Output.hasRows_not_hasNoRows`. -/
+holds, then {name}`Empty` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output
+({name}`Script.returnsResult_iff_outputOn`), and the cases of the output. -/
 theorem Holds.not_empty {q : Script} {db : Database} {query : q.isQuery = true}
     (holds : Holds q db query) : ¬ Empty q db query := by
-  unfold Holds Empty at *
-  cases output : q.outputOn db with
-  | none => simp [output] at holds
-  | some value =>
-    simp only [output, Option.any_some] at holds ⊢
-    simp [Output.hasRows_not_hasNoRows value holds]
+  obtain ⟨output, found, holds⟩ :=
+    (Script.returnsResult_iff_outputOn query db _).mp holds
+  rw [Empty, Script.returnsResult_of_outputOn query found]
+  cases output <;> simp_all [Output.returnsResult]
+  exact List.exists_mem_of_ne_nil _ holds.1
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Holds` of {lit}`q` on {lit}`db`
-holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
-and {name}`Output.hasRows_not_isError`. -/
+holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output
+({name}`Script.returnsResult_iff_outputOn`), and the cases of the output. -/
 theorem Holds.not_fails {q : Script} {db : Database} {query : q.isQuery = true}
     (holds : Holds q db query) : ¬ Fails q db query := by
-  unfold Holds Fails at *
-  cases output : q.outputOn db with
-  | none => simp [output] at holds
-  | some value =>
-    simp only [output, Option.any_some] at holds ⊢
-    simp [Output.hasRows_not_isError value holds]
+  obtain ⟨output, found, holds⟩ :=
+    (Script.returnsResult_iff_outputOn query db _).mp holds
+  rw [Fails, Script.returnsError_of_outputOn query found]
+  cases output <;> simp_all [Output.returnsResult, Output.returnsError]
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Empty` of {lit}`q` on {lit}`db`
-holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
-and {name}`Output.hasNoRows_not_isError`. -/
+holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output
+({name}`Script.returnsResult_iff_outputOn`), and the cases of the output. -/
 theorem Empty.not_fails {q : Script} {db : Database} {query : q.isQuery = true}
     (empty : Empty q db query) : ¬ Fails q db query := by
-  unfold Empty Fails at *
-  cases output : q.outputOn db with
-  | none => simp [output] at empty
-  | some value =>
-    simp only [output, Option.any_some] at empty ⊢
-    simp [Output.hasNoRows_not_isError value empty]
+  obtain ⟨output, found, empty⟩ :=
+    (Script.returnsResult_iff_outputOn query db _).mp empty
+  rw [Fails, Script.returnsError_of_outputOn query found]
+  cases output <;> simp_all [Output.returnsResult, Output.returnsError]
 
 end Belay.Sqlite

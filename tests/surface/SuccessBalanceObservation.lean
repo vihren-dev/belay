@@ -129,10 +129,21 @@ theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable
     (db.raw.connection.queryContext [] query queries) guardCondition ran.1
   have output := Script.outputOn_query balanceGuard db _ [] [] query queries _ rfl
     (guard_statement db position index table cell found notTable notView column atIndex)
+  have calm := guard_calm position index table cell
+  have context := Connection.queryContext_calm db.raw.connection [] query queries calm
+  have ready := Connection.SelectReady.of_faultless db.raw.connection [] calm rfl
+    (Resolved.Query.bindWindow_literal _ _ rfl rfl) (Resolved.Query.source_none _ _ _ rfl) (by simp)
+    (fun row member expression inside => by
+      have empty : row = [] := by simpa using member
+      subst empty
+      rw [← context]
+      exact faultless expression inside) rfl rfl
   refine ⟨inner, ?_⟩
-  unfold Holds
-  rw [output, Option.any_some, resolvedStepOutput_noFrom_hasRows 0 db.raw.connection []
-    (some guardCondition) [.scalar (.literal (.integer 1))] ["1"] queries (guard_calm _ _ _ _) faultless]
+  rw [Holds.iff_of_outputOn output, resolvedStepOutput_select_unordered none 0 _ _
+    (by simp [statementClock, calm.readsClock]) ready rfl rfl rfl,
+    Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+  unfold Resolved.Query.rowOutput
+  simp [Output.hasRows, Resolved.filtered, (Resolved.normalForm_perm _).isEmpty_eq]
   exact ran.2
 
 end BalanceExample

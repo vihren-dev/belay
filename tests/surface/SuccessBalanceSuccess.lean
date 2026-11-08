@@ -13,7 +13,8 @@ namespace BalanceExample
 
 /-- For every database and account value, if the ledger has both needed columns, all
 cents values make direct NOT BETWEEN false and the table has fewer than one million rows, SUM
-returns a row. Proof sketch: resolve the account filter and cents aggregate, then bound every
+returns a row. Proof sketch: resolve the account filter and cents aggregate
+({name}`resolveStatement_select_aggregate`), apply {name}`Run.query_returnsResult_calmTable`, then bound every
 integer prefix of its filtered input; retained REAL and NULL cells remain safe. -/
 theorem balance_of_bounds (db : Database) (a : Value) (position cents account : Nat)
     (table : CatalogTable) (collation : Collation)
@@ -33,14 +34,20 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     (term := .compare .eq (.identifier (name! "account") .none) (.parameter 1))
     (result := (predicate, none)) (by simp [namesAlias])
     (by simp [sql_simp, accountColumn, accountAt, predicate]; rfl)
-  rw [Holds, Script.outputOn_aggregate (script := balance a) (operand := .identifier (name! "cents") .none) (alias := none) (text := "sum(cents)") (namedSource := rfl) (current := rfl) (head := rfl)
-    (reference := {table := name! "ledger", alias := none}) (build := .sum) (name := "sum")
-    (resolved := .column cents) (condition := some predicate) (aggregate := .sum (.column cents))
-    rfl rfl found (resolveOperand_identifier_table centsColumn) rfl (by simpa [resultAliases] using resolves) rfl
+  have resolved := resolveStatement_select_aggregate runContext (db.raw.connection Env.default.counters).resolveState
+    {table := name! "ledger", alias := none} _ "sum" (.identifier (name! "cents") .none) none "sum(cents)" .sum rfl
+    position table (.column cents) _ (some predicate) rfl rfl rfl found (resolveOperand_identifier_table centsColumn) rfl
+    (by simp only [resultAliases]; exact resolves)
+  have calm := Resolved.Statement.Calm.aggregateOf_first position (some predicate) (.sum (.column cents)) "sum(cents)"
     (by simp [predicate, Resolved.Expr.calm_compare, Resolved.Expr.calm_column, Resolved.Expr.calm_parameter])
-    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])]
-  simp [Output.hasRows, apply_ite, Resolved.Query.aggregateOf_possibleResults,
-    Output.ofResults_singleton]
+    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])
+  refine (Run.send_returnsResult_iff_query (script := balance a) rfl db _ _).mpr
+    ((Run.query_returnsResult_calmTable (script := balance a) rfl rfl db Env.default resolved rfl
+      (Database.table_of_findTable db.raw _ _ _ found) calm rfl rfl rfl ?_ rfl _).mpr ?_)
+  rotate_left
+  · simp [Resolved.Query.possibleResults_ungrouped, Resolved.Query.aggregateOf]
+  rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf])]
+  simp only [Resolved.Query.aggregateOf, List.any_cons, List.any_nil, Bool.false_or, Bool.or_false]
   change (sumOf (((Resolved.sourceRows {shape := table, rows := db.raw.rows.getD position []}).filter
       (fun row => Resolved.truthy (predicate.eval (Resolved.EvalContext.bound [a]) row))).map
       (fun row => row[cents]?.getD .null))).sumValue.isNone = false
@@ -77,12 +84,14 @@ theorem shadowed_pragma (db : Database) (position : Nat) (table : CatalogTable)
     | .error restriction => .unmodeled restriction.reason
     | .ok (resolved, _) => resolvedStepOutput none 0 db.raw.connection [] resolved) at output
   rw [resolved] at output
+  rw [Holds.iff_of_outputOn output] at holds
   by_cases view : (db.raw.catalog.findView pragmaRef.table).isSome = true <;>
-    simp [Holds, output, view, resolvedStepOutput_prepareError, Output.hasRows] at holds
+    simp [view, resolvedStepOutput_prepareError, Output.hasRows] at holds
 
 /-- For every database with the ledger and unshadowed pragma but without cents, the guard
 does not hold because resolution gives a prepare error.
-Proof sketch: The missing-column preparation error contradicts the row-bearing query claim. -/
+Proof sketch: the missing-column preparation error gives no result ({name}`Run.query_prepareError`), so the
+row-bearing query claim fails. -/
 theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
@@ -93,7 +102,8 @@ theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries
       rfl rfl _ (guard_select_missing_cents db.raw.catalog position table found notTable notView missing)
   intro holds
-  exact holds.not_fails (Fails.of_prepareError (script := balanceGuard) (isQuery := by rfl) rfl resolved)
+  exact (Run.query_prepareError (script := balanceGuard) rfl rfl db Env.default resolved _ (fun _ => True)).1
+    ((Run.send_returnsResult_iff_query rfl db Env.default _).mp holds)
 
 /-- For every account value, the balance query succeeds in every complete environment on
 every database with a physical ledger table where the corrected SQL guard holds.

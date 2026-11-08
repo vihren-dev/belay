@@ -113,10 +113,12 @@ Already delivered: `LiteralData.generatedCells_plain` in [AdmittedCellLaws.lean]
 Reuse it in `assign_derived_append` (`DerivedColumnRows`), `LiteralData.inserted_copy_rows` (`CopyInsertFits`),
 and `PlainInsertRows`'s `LiteralData.inserted_plain`/`LiteralData.newCells_getElem?_of_plain`; the `NormalizedField` owners were deleted.
 
-Surface consumers under [Belay/Sqlite](../packages/belay/Belay/Sqlite): `AggregateQuery`, `ColumnQuery`, `CountQuery`,
-`FilteredDuplicateKeyQuery`, `ExistsQuery`, `NotExistsQuery`, `SelectOneFrom`, `SelectOneMayFail`, `UniqueLookupQuery`.
-D1 removed `FilteredDuplicateKeyEmpty`; the three baseline filtered endpoints are replaced by
-`Script.outputOn_noDuplicateKeysWhere` in `FilteredDuplicateKeyQuery`. The frozen endpoint inventory retains their names.
+Surface consumers under [Belay/Sqlite](../packages/belay/Belay/Sqlite): none. ADR 0027 removed `AggregateQuery`,
+`ColumnQuery`, `CountQuery`, `DuplicateKeyQuery`, `ExistsQuery`, `FilteredDuplicateKeyQuery`, `NotExistsQuery`,
+`SelectOneFrom`, `SelectOneMayFail` and `UniqueLookupQuery`.
+D1 removed `FilteredDuplicateKeyEmpty`; the three baseline filtered endpoints were replaced by
+`Script.outputOn_noDuplicateKeysWhere`, which ADR 0027 removed with `FilteredDuplicateKeyQuery`. The frozen endpoint
+inventory retains their names.
 Coordinate with query migration; relocation need not rename a theorem. Keep no aliases.
 Preserve public aggregation in [Belay.Sqlite.Model](../packages/belay-sqlite-model/Belay/Sqlite/Model.lean).
 

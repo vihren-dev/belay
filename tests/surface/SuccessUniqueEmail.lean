@@ -1,4 +1,4 @@
-import Belay
+import SelectDuplicateKeySupport
 
 set_option doc.verso true
 
@@ -81,10 +81,8 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
   have output := Script.outputOn_eq_step noDuplicateEmails db _ [] [] rfl
   change noDuplicateEmails.outputOn db = some (match resolveStatement runContext db.raw.connection.resolveState noDuplicateEmails.statements[0].1 with | .error restriction => .unmodeled restriction.reason | .ok (resolved, _) => resolvedStepOutput none 0 db.raw.connection [] resolved) at output
   rw [failed] at output
-  have noRows : (Resolved.Statement.prepareError error).returnsRows = false := rfl
-  simp only [Holds, output, Output.hasRows, resolvedStepOutput, statementClock, Output.ofStep, noRows] at holds
-  repeat' split at holds
-  all_goals simp_all [Output.hasRows]
+  rw [Holds.iff_of_outputOn output] at holds
+  simp [resolvedStepOutput_prepareError, Output.hasRows] at holds
 
 /-- The unique email index of the guide. -/
 def uniqueEmail : Script := sql r"CREATE UNIQUE INDEX customers_email ON customers (email COLLATE NOCASE)"
@@ -107,12 +105,14 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     cases column : columnPosition table.columns (name! "email") with
     | none => exact False.elim (missing_email db position table found column holds)
     | some index =>
-      have groups := holds
-      rw [Holds, Script.outputOn_noDuplicateKeys (script := noDuplicateEmails) (head := rfl) (count := rfl)
-        (namedSource := rfl) (current := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
-        (keyCalm := Resolved.Expr.calm_column index)] at groups
-      simp only [Option.any_some, apply_ite, Output.hasRows] at groups
-      simp at groups
+      obtain ⟨notCall, noCalls, columns, grouped, feeds⟩ := resultColumn_one_facts runContext.profile.dqsDml
+        (tableScope db.raw.catalog { table := name! "customers", alias := none } position table)
+        { current := some 0, aggregates := [.callStar "count"] } (.column index)
+      have groups := (noDuplicateKeys_claims (script := noDuplicateEmails) (head := rfl) (count := rfl)
+        (namedSource := rfl) (current := rfl) (arguments := rfl) found notCall noCalls columns grouped feeds
+        (FilterResolves.of_none _ _ _ _) (group_nocase column db position).toIn (by simp) (Resolved.Expr.calm_literal _)
+        (Resolved.Expr.calm_column index)).1.mp holds
+      simp [Resolved.keptRows_none, List.all_eq_true] at groups
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
         found, by decide, by decide, freeName, ?_, rfl, ?_⟩
       · have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl

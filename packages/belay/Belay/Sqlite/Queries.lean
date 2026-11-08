@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.ResolveStatementSingle
 import Belay.Sqlite.Model.TwoStateQuery
 import Lean.Elab.Tactic.Basic
 import Belay.Sqlite.Run
+import Belay.Sqlite.RunResults
 
 set_option doc.verso true
 
@@ -102,33 +103,36 @@ elab "check_query" : tactic => do
     throwError "the query has a source that names a schema, such as before.t: a one-state assertion has no initial database to read it from; use holdsSince or holdsInContextSince with the initial database, or the ensuresFrom claim, or remove the schema name"
 
 /-- {lit}`Holds q db`: query {lit}`q` runs on {lit}`db` without error and gives at least one row,
-for every result that SQLite may give for it. In terms of the formula: the output of
-{lit}`q` on {lit}`db` ({name}`Script.outputOn`) is {name}`Output.rows` with at least one row, or
-{name}`Output.oneOf` in which each result has at least one row. It does not hold when the
-output is {name}`Output.unmodeled`, for example for a query that reads the clock. For example,
-on a table {lit}`invoices` with a row of amount 0, {lit}`Holds (sql r"SELECT 1 FROM invoices WHERE amount = 0") db`. -/
-def Holds (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
-  (q.outputOn db).any Output.hasRows = true
+for every result that SQLite may give for it. In terms of the formula: the run of {lit}`q` on
+{lit}`db` in the default environment returns a result that is not empty ({name}`Run.returnsResult`):
+the run does not stop, and its one output is {name}`Output.rows` with at least one row, or a
+nonempty {name}`Output.oneOf` in which each result has at least one row. It does not hold when the
+output is {name}`Output.unmodeled`, for example for a query that reads the clock. For example, on a
+table {lit}`invoices` with a row of amount 0, {lit}`Holds (sql r"SELECT 1 FROM invoices WHERE amount = 0") db`. -/
+abbrev Holds (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
+  (db.run q).returnsResult (· ≠ [])
 
 /-- {lit}`Empty q db`: query {lit}`q` runs on {lit}`db` without error and gives no row, for every
-result that SQLite may give for it. In terms of the formula: the output of {lit}`q` on
-{lit}`db` is {name}`Output.rows` without rows, or {name}`Output.oneOf` in which each result has no
-row. It does not hold when the output is {name}`Output.unmodeled`. -/
-def Empty (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
-  (q.outputOn db).any Output.hasNoRows = true
+result that SQLite may give for it. In terms of the formula: the run of {lit}`q` on {lit}`db` in the
+default environment returns an empty result ({name}`Run.returnsResult`): the run does not stop, and
+its one output is {name}`Output.rows` without rows, or a nonempty {name}`Output.oneOf` in which each
+result has no row. It does not hold when the output is {name}`Output.unmodeled`. -/
+abbrev Empty (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
+  (db.run q).returnsResult (· = [])
 
-/-- {lit}`Fails q db`: query {lit}`q` fails on {lit}`db`: its output is {name}`Output.error`, with any
-result code. It does not hold when the output is {name}`Output.unmodeled`. -/
-def Fails (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
-  (q.outputOn db).any Output.isError = true
+/-- {lit}`Fails q db`: query {lit}`q` fails on {lit}`db`: the run of {lit}`q` on {lit}`db` in the
+default environment does not stop, and its one output is {name}`Output.error`, with any result code
+({name}`Run.returnsError`). It does not hold when the output is {name}`Output.unmodeled`. -/
+abbrev Fails (q : Script) (db : Database) (_query : q.isQuery = true := by check_query) : Prop :=
+  (db.run q).returnsError fun _ => True
 
 instance (q : Script) (db : Database) (query : q.isQuery = true) : Decidable (Holds q db query) :=
-  inferInstanceAs (Decidable (_ = true))
+  inferInstanceAs (Decidable ((db.run q).returnsResult (· ≠ [])))
 
 instance (q : Script) (db : Database) (query : q.isQuery = true) : Decidable (Empty q db query) :=
-  inferInstanceAs (Decidable (_ = true))
+  inferInstanceAs (Decidable ((db.run q).returnsResult (· = [])))
 
 instance (q : Script) (db : Database) (query : q.isQuery = true) : Decidable (Fails q db query) :=
-  inferInstanceAs (Decidable (_ = true))
+  inferInstanceAs (Decidable ((db.run q).returnsError fun _ => True))
 
 end Belay.Sqlite

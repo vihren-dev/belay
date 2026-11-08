@@ -1,5 +1,4 @@
-import Belay.Sqlite.Model.SimpleResultsLaws
-import Belay.Sqlite.Model.SimpleSubqueryRun
+import Belay.Sqlite.Model.PlainQueryRules
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.CompoundRun
 
@@ -47,41 +46,6 @@ theorem Query.source_noFrom_from (context : EvalContext) (query : Query) (databa
     query.source context database initial = some { rows := [[]], width := 0, fault := .none } := by
   simp only [Query.source, none_, List.foldlM]
   rfl
-
-/-- For every simple query that reads no cell of an outer query, with source rows in a context, database and
-optional initial database, without fault, and with expressions that have no fallible call and no fault: the run as
-a subquery has the one result as its rows, no fault and certain rows, and ends done. It is
-{name}`Query.subqueryRun_simple` for a source that may read the initial database. Proof sketch: as
-{name}`Query.subqueryRun_simple`; the source rows after the empty outer row are the source rows. -/
-theorem Query.subqueryRun_simple_from (context : EvalContext) (database : Database) (initial : Option Database)
-    (query : Query) (simple : query.Simple) (outer : query.outer = 0) (source : SourceRows)
-    (found : query.source context database initial = some source)
-    (clean : source.fault = .none) (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true)
-    (faultless : ∀ row ∈ [] :: source.rows, ∀ expression ∈ query.expressions,
-      (expression.evaluate context row).2 = .none) :
-    query.subqueryRun context database [] initial =
-      { rows := query.results context source.rows, fault := .none,
-        firstCertain := query.windowCertain context source.rows (some 1), rowsCertain := true, ending := .done } := by
-  have after : query.sourceAfter context [] database initial = some source := by
-    simpa [Query.sourceAfter, outer, Query.source] using found
-  unfold Query.subqueryRun
-  rw [after]
-  simp only [simple.bindWindow context.parameters, simple.run_of_faultless context plain source.rows faultless, clean]
-  simp [Fault.join, Fault.soften, Query.windowCertain, certainCut, simple.limit, simple.offset]
-
-/-- For every simple query as in {name}`Query.subqueryRun_simple_from`, the rows of the run as a subquery are the one
-result, it has no fault, and it ends done. Proof sketch: read the three fields of {name}`Query.subqueryRun_simple_from`. -/
-theorem Query.subqueryRun_simple_fields (context : EvalContext) (database : Database) (initial : Option Database)
-    (query : Query) (simple : query.Simple) (outer : query.outer = 0) (source : SourceRows)
-    (found : query.source context database initial = some source)
-    (clean : source.fault = .none) (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true)
-    (faultless : ∀ row ∈ [] :: source.rows, ∀ expression ∈ query.expressions,
-      (expression.evaluate context row).2 = .none) :
-    (query.subqueryRun context database [] initial).rows = query.results context source.rows ∧
-      (query.subqueryRun context database [] initial).fault = .none ∧
-      (query.subqueryRun context database [] initial).ending = .done := by
-  rw [Query.subqueryRun_simple_from context database initial query simple outer source found clean plain faultless]
-  exact ⟨rfl, rfl, rfl⟩
 
 /-- The shape of the compound subquery {lit}`q1 EXCEPT q2`: it has no source and no expression, no ordering and no
 window, no cell of an outer query, and the compound of the term {lit}`first` and the one operator {lit}`EXCEPT` with the term

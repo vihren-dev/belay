@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
+from tests.surface_assertion_examples_test import DUPLICATE_KEY_SUPPORT, check_module_chain
 from tests.surface_support import FIXTURES, module_setup, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -90,11 +91,8 @@ def test_guide_email_success_uses_exact_corrected_precondition(runtime_root: Pat
     """The guide's uniqueEmail claim requires a physical table and a free index name, then
     derives its email column and uniqueness from Holds. Kernel cases include the complete
     precondition and retain the original name collision and ASCII-only NOCASE trap."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessUniqueEmail.lean", tmp_path),
-                         cwd=tmp_path, timeout=60)
-    assert result.returncode == 0, result.diagnostic()
-    assert result.stdout.count("depends on axioms") == 1, result.stdout
-    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+    check_module_chain(runtime_root, tmp_path, (("SelectOneWhereSupport", 3), *DUPLICATE_KEY_SUPPORT,
+                                                ("SuccessUniqueEmail", 1)), timeout=90)
 
 
 def test_guide_balance_success_derives_schema_and_numeric_bounds(runtime_root: Path, tmp_path: Path) -> None:

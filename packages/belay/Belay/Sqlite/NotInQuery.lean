@@ -8,8 +8,7 @@ u.c = x)` as {lit}`Sql.EquivAt` (ADR 0017, S4 and S6), and of {lit}`x IN (SELECT
 {lit}`EXISTS`. The lemmas are general over the tables, the columns, the names and the syntax of the two statements:
 they take the resolution of each statement as a hypothesis, in the form that the resolution laws of the model give
 ({lit}`resolveStatement_selectFrom_inQuery` and {lit}`resolveStatement_selectFrom_existsTest`), and the structural
-premises as facts about the tables of the connection. The statements are in {lit}`NotExistsQuery.lean` and
-{lit}`ExistsQuery.lean` for the uncorrelated forms. -/
+premises as facts about the tables of the connection. -/
 
 namespace Belay.Sqlite
 

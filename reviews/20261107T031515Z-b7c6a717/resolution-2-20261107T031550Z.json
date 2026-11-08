@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-07T03:15:50+00:00",
+  "finding": "20261107T031515Z-b7c6a717#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The helper's only use is the B05 theorem, which requires some output with no rows; a none from any other constructor makes that theorem false, so decide fails loudly. Enumerating every resolved statement constructor would add lines without a check."
+}

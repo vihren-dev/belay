@@ -1,6 +1,9 @@
 import Belay.Sqlite.Model.UniqueLookupCompare
 import Belay.Sqlite.Model.KeysUniqueLookup
 import Belay.Sqlite.Model.CountMatchingLaws
+import Belay.Sqlite.Model.SelectCalmRule
+import Belay.Sqlite.Model.ExprEvalLaws
+import Belay.Sqlite.Model.EvalContextLaws
 
 set_option doc.verso true
 

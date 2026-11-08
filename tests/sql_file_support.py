@@ -6,6 +6,7 @@ and linked entries. The text package's lakefile reaches the parser's C at `../..
 mirror links `parser` too."""
 
 import json
+import os
 from pathlib import Path
 
 from tests.runtime_support import CommandResult, run_command
@@ -44,8 +45,11 @@ def write_package(folder: Path, name: str, installed: Path, extra: str = "") -> 
 
 
 def toolchain_environment(installed: Path) -> dict[str, str]:
-    """The environment of a Lake process: the installed toolchain and nothing else; Lake compiles the parser itself."""
-    return {"PATH": str(installed / "lean/bin")}
+    """The environment of a Lake process: the installed toolchain, and the deployment target when the caller sets one; Lake compiles the parser itself."""
+    environment = {"PATH": str(installed / "lean/bin")}
+    if "MACOSX_DEPLOYMENT_TARGET" in os.environ:
+        environment["MACOSX_DEPLOYMENT_TARGET"] = os.environ["MACOSX_DEPLOYMENT_TARGET"]
+    return environment
 
 
 def lake_build(installed: Path, package: Path, target: str) -> CommandResult:

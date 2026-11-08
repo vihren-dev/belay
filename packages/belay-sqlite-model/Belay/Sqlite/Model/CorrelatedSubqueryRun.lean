@@ -1,4 +1,6 @@
 import Belay.Sqlite.Model.CorrelatedSubquerySource
+import Belay.Sqlite.Model.SelectSubqueryRules
+import Belay.Sqlite.Model.PlainQueryRules
 
 set_option doc.verso true
 
@@ -29,12 +31,6 @@ def Query.oneTable (table outer : Nat) (condition : Option Expr) (projections : 
     Query :=
   { Query.simple [QuerySource.first table] condition (projections.map .scalar) names with outer }
 
-/-- For every table position, width, condition, result expressions and names, the query {name}`Query.oneTable` is
-simple ({name}`Query.Simple`). Proof sketch: it is {name}`Query.simple` with another width of the outer row. -/
-theorem Query.oneTable_simple (table outer : Nat) (condition : Option Expr) (projections : List Expr)
-    (names : List String) : (Query.oneTable table outer condition projections names).Simple :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-
 /-- The expressions of the query {name}`Query.oneTable` are its condition and its result expressions. Proof sketch:
 unfold the expressions of the query; the one source has no condition and no argument. -/
 theorem Query.oneTable_expressions (table outer : Nat) (condition : Option Expr) (projections : List Expr)
@@ -50,8 +46,8 @@ has no fault, and its rows are certain. The expressions read the outer cells fol
 The outer row can have any length: the subquery sees it cut or filled with NULL to the width {lit}`outer`. The premises
 are that no expression has a fallible call ({lit}`plain`) and that none has a fault over the empty row and over each
 joined row ({lit}`faultless`); a premise that fails is not assumed. Proof sketch: the source rows are the joined rows
-({name}`Query.sourceAfter_first`); the simple query has no fault ({name}`Query.subqueryRun_simple_after`); its result is
-the filtered rows with the result expressions ({name}`Query.Simple.results_eq`). -/
+({name}`Query.sourceAfter_first`); the query has no fault ({name}`Query.subqueryRun_of_faultless`); its result is
+the filtered rows with the result expressions ({name}`Query.results_plain_unordered`). -/
 theorem Query.oneTable_subqueryRun (context : EvalContext) (database : Database) (initial : Option Database)
     (position outer : Nat) (condition : Option Expr) (projections : List Expr) (names : List String) (table : Table)
     (outerRow : List Value) (present : database.table position = some table)
@@ -67,17 +63,17 @@ theorem Query.oneTable_subqueryRun (context : EvalContext) (database : Database)
         initial).rowsCertain = true := by
   have found := Query.sourceAfter_first context database initial (Query.oneTable position outer condition projections names)
     position table outerRow rfl present
-  have run := Query.subqueryRun_simple_after context database initial outerRow _
-    (Query.oneTable_simple position outer condition projections names) _ found rfl
+  have run := Query.subqueryRun_of_faultless context database outerRow initial rfl rfl rfl found rfl
     (List.all_eq_true.mpr fun expression inside => by
       rw [Query.oneTable_expressions] at inside
       simp [plain expression inside])
     (fun row member expression inside => by
       rw [Query.oneTable_expressions] at inside
-      exact faultless row member expression inside)
+      exact faultless row member expression inside) rfl rfl
   rw [run]
-  refine ⟨?_, rfl, rfl⟩
-  rw [(Query.oneTable_simple position outer condition projections names).results_eq]
+  refine ⟨?_, rfl, by dsimp only; exact Query.windowCertain_whole context rfl _ _⟩
+  rw [Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl]
+  unfold Query.rowOutput
   simp [filtered, joinedRows, Query.oneTable, Query.simple, Function.comp_def]
   rfl
 

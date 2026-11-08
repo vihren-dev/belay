@@ -273,16 +273,17 @@ When every prefix fits, `sumOf_value_of_fits` gives NULL for no integer inputs a
 integer sum otherwise. These laws require integer or NULL inputs; text and REAL inputs use
 the general aggregate equations and SQLite's conversion rules.
 
-`Holds.iff_step`, `Empty.iff_step` and `Fails.iff_step` expose every resolution branch for
-any query. `Fails.of_prepareError` covers a missing table or column, and
-`Fails.select_body_prepareError` lifts an expression-resolution error without repeating the
-statement interpreter. `Script.not_claims_query_of_undescribed` covers a query that may fail
-or has an unsupported subquery. Keep those cases in proofs: a row satisfying a filter does
-not imply `Holds` if another row can make evaluation fail.
+`Run.query_prepareError` covers a query whose statement resolves to a preparation error,
+such as a missing table or column: the run returns that error and no result.
+`resolveStatement_select_body_prepareError` gives the error of an expression in the body of a
+SELECT without repeating the statement interpreter. `Run.send_unready` covers a query that may
+fail or has a nested subquery with a fallible call: the run returns neither a result nor an
+error. Keep those cases in proofs: a row satisfying a filter does not imply `Holds` if another
+row can make evaluation fail.
 
 For a scalar call without `FROM`, `resolveStatement_selectNoFrom_columns` admits a resolved
-scalar column, including a fallible function. `Holds.iff_noFrom_scalar`,
-`Empty.iff_noFrom_scalar` and `Fails.iff_noFrom_scalar` retain the run's fault and the filter.
+scalar column, including a fallible function. `Connection.SelectReady.of_phases` and
+`Run.send_mustFail` take a quiet statement, so they keep the run's fault and the filter.
 Thus `SELECT abs(1)` holds, `SELECT abs(-9223372036854775808)` fails, and adding `WHERE 0`
 skips that failing projection and makes the result empty, for every database.
 
@@ -312,6 +313,68 @@ the new name, the terms and filter resolve, and a unique index has no conflictin
 `LiteralData.uniqueRows_of_column_groups` connects a no-duplicate GROUP BY claim to the
 column key check. This direction is sufficient: repeated NULLs group together but do not
 conflict in a unique index. The grouping and index must use the same collation.
+
+## Prove claims about a SELECT
+
+Three observations state what a run returns:
+
+- `run.returnsResult property`: the run has one output, a result, and each result that
+  the model permits satisfies `property`.
+- `run.returnsRows property`: the run returns a result, and each of its rows satisfies
+  `property`. A result without rows satisfies it.
+- `run.returnsError property`: the run has one output, an error whose result code
+  satisfies `property`. Use `fun _ => True` for any error.
+
+`Holds`, `Empty` and `Fails` are these observations of the default run of a query. An
+unmodeled stop, no output and more than one output satisfy no observation.
+
+The tactic `sql_select` proves such claims for every database with a given catalog. It
+also proves `Sql.check` of a query at a context and claims about the results of a query.
+For example, with `schema : db.HasCatalog invoices` as the only hint:
+
+```lean
+theorem customer_present (db : Database) (env : Env) (schema : db.HasCatalog invoices) :
+    (db.run (query customerOfFirst customerOfFirst_one) env).returnsRows firstCellPresent := by
+  sql_select [schema]
+```
+
+Here `invoices` is the catalog of a table `invoices`, `customerOfFirst` is a script of one
+SELECT of the customer of the invoice with `id` 1, and `firstCellPresent row` says that the first
+cell of `row` is not NULL.
+
+The tactic applies an execution rule, which turns the claim into a claim about each result
+that the model permits. Then it applies the rules of the SELECT phases to the facts that it
+gets: sources, expressions, filter, grouping, aggregates, `HAVING`, projection,
+`DISTINCT`, order, window, compounds and subqueries. It closes the last goal with the
+`sql_select_simp` simp set and the hints. Hints apply first, in the given order. A hint can
+be a fact, a rule, or a definition of the claim that the simplifier must unfold.
+
+When `sql_select` cannot close a goal, the goal stays open with a warning that names the
+phase and the reason, for example:
+
+```text
+sql_select stopped in the result phase: the facts that the rules give do not prove the goal.
+```
+
+Prove the goal that stays open, or pass the rule or the fact that it needs as a hint.
+
+To add a rule, prove it as a theorem and register it under one of the phases `source`,
+`expression`, `filter`, `group`, `aggregate`, `having`, `project`, `distinct`, `order`,
+`window`, `compound`, `subquery` or `execution`:
+
+```lean
+attribute [local sql_select_rule filter] myFilterRule
+```
+
+Registered rules apply after the hints, in the order of their qualified names. Use `local`
+to limit a rule to the current section or file.
+
+`sql_run` gives the SELECT obligations of a `Sql.check` goal to `sql_select`. `sql_auto`
+and `#sql_check` try it in their search, so they also prove claims about the results of a
+query.
+
+The rules of a grouped query state the row of a group that the model chooses. Where
+SQLite's query plan chooses that row, native SQLite can return another permitted row.
 
 ## Check a claim before proving it
 

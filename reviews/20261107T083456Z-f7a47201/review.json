@@ -1,0 +1,57 @@
+{
+  "caller": "claude",
+  "commit": "f7a4720102767ea84476f84e5cb5620c91e0b737",
+  "date": "2026-11-07T08:34:56+00:00",
+  "exit": 1,
+  "files": [
+    "docs/select-automation-retirement.md",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SubqueryExamples.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261107-select-phase-rules.status.md",
+    "reviews/20261107T082719Z-903ae663/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261107T083456Z-f7a47201#1",
+      "line": 112,
+      "path": "docs/select-automation-retirement.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The inventory assumes A18/A19 replace all `SubqueryExamples` coverage, but their fixtures omit the deleted depth-two correlation and windowed IN-versus-EXISTS fault contrasts. Fix: retain those examples until equivalent acceptance contrasts exist."
+    },
+    {
+      "id": "20261107T083456Z-f7a47201#2",
+      "line": 376,
+      "path": "plans/20261107-select-phase-rules.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status assumes A12/A14 replace all `possible` examples, but A12 has no LIMIT and A14 does not check the deleted DISTINCT/GROUP BY-with-LIMIT alternatives or exact alternatives across tie boundaries. Fix: retain those examples until equivalent checks replace them and correct the retirement record."
+    }
+  ],
+  "id": "20261107T083456Z-f7a47201",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "rrqolrko",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

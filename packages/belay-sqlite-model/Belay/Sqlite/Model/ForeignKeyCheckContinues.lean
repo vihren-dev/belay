@@ -61,30 +61,19 @@ theorem Database.foreignKeyCheckRows_isSome (database : Database) (only : Nat)
 /-- For every connection, values and table choice, if the pragma gives rows
 ({lit}`rowsOn` is {lit}`some`, so exactly one table gives rows or none does), the output of the resolved
 pragma is no error and no stop of the model. In plain words, a foreign-key check whose rows the model
-generates has rows or none, and never fails. Proof sketch: without rows the output is the empty result
-({name}`resolvedStepOutput_keyCheck_empty`); with rows it has rows
-({name}`resolvedStepOutput_simple_hasRows`), which are neither an error nor a stop. -/
+generates has rows or none, and never fails. Proof sketch: the output is the rows of the calm query
+({name}`resolvedStepOutput_calm_unordered`), which are neither an error nor a stop. -/
 theorem resolvedStepOutput_keyCheck_rows (index : Nat) (connection : Connection) (parameters : List Value)
     (table : Option Nat) (rows : List (List Value))
     (found : (Resolved.PragmaRows.foreignKeyCheck table).rowsOn connection.state.database = some rows) :
     (resolvedStepOutput none index connection parameters (keyCheckQuery table)).isError = false ∧
       ∀ reason, resolvedStepOutput none index connection parameters (keyCheckQuery table) ≠ .unmodeled reason := by
-  by_cases empty : rows = []
-  · subst empty
-    rw [(resolvedStepOutput_keyCheck_empty index connection parameters table).mpr found]
-    exact ⟨rfl, fun _ => nofun⟩
-  · let query := pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames
-    have source := keyCheckQuery_source (connection.queryContext parameters query []) connection.state.database table
-      rows found
-    obtain ⟨row, inRows⟩ := List.exists_mem_of_ne_nil rows empty
-    have hasRows := (resolvedStepOutput_simple_hasRows index connection parameters query (keyCheckQuery_simple table)
-      { rows, width := 4, fault := .none } (keyCheckQuery_calm table) source rfl).mpr
-      ⟨row, inRows, by simp [query, pragmaQuery]⟩
-    exact ⟨Output.hasRows_not_isError _ hasRows, fun reason same => by
-      rw [show resolvedStepOutput none index connection parameters (keyCheckQuery table) =
-        resolvedStepOutput none index connection parameters (.query query []) from rfl] at same
-      rw [same] at hasRows
-      simp [Output.hasRows] at hasRows⟩
+  have source := keyCheckQuery_source (Resolved.EvalContext.bound parameters) connection.state.database table rows
+    found
+  rw [show keyCheckQuery table = .query (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames) [] from rfl,
+    resolvedStepOutput_calm_unordered none index connection parameters (keyCheckQuery_calm table) rfl rfl rfl rfl
+      rfl rfl source (by simp) rfl rfl]
+  exact ⟨rfl, fun _ => nofun⟩
 
 /-- For every context, clock, index, connection and values, if no catalog position has a foreign-key mismatch
 and the pragma gives rows ({lit}`rowsOn` is {lit}`some`), the step of the database-wide

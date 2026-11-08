@@ -70,7 +70,7 @@ set_option sql.checkBudget 0 in
 measured_sql "disabled" in #sql_check ∀ db : Database, Empty (sql "SELECT 1") db
 set_option sql.checkCandidates 0 in
 measured_sql "no-candidates" in #sql_check ∀ db : Database, Empty (sql "SELECT 1") db
-set_option sql.checkRecursionLimit 128 in
+set_option sql.checkRecursionLimit 16 in
 set_option sql.checkCandidates 1 in
 measured_sql "low-depth" in #sql_check ∀ db : Database, Empty (sql "SELECT 1") db
   with (db := Database.empty)

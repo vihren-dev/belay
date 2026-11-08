@@ -55,7 +55,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     assert set(scripts) == set(ownership) == mutant_suites | {
         'model', 'columnDefaults', 'schemaChanges', 'queries', 'coverageStatements', 'coverageFeatures', 'frozen',
         'corpora', 'harness', 'observability', 'sample', 'upstream', 'parserLibrary', 'packages', 'documentation', 'theoremDependencies',
-        'surface', 'surfaceChecks', 'surfaceS6', 'writers'}
+        'surface', 'surfaceChecks', 'surfaceS6', 'surfaceSelect', 'writers'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
