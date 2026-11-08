@@ -1,7 +1,8 @@
 """The provenance of the test executions that a host command runs (#332).
 
-The host Nix wrapper adds these values to the `metadata` of each execution whose builder ran
-during the command, so a query can separate CI from local runs, platforms, commits and suites.
+A pytest session outside a Nix builder writes these values into its own `metadata`, and the
+host Nix wrapper adds them to each execution whose builder ran during the command, so a query
+can separate CI from local runs, platforms, commits and suites.
 The values come from an allowlist of GitHub Actions variables and, locally, from jj. They are
 never derivation inputs: builders write `metadata: {}`, and the host adds the values on import.
 """

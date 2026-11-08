@@ -1,5 +1,6 @@
 """Enable native reportlog for every repository session and finalize outside Nix builders."""
 
+from collections.abc import Mapping
 from datetime import datetime, timezone
 import fcntl
 import os
@@ -8,6 +9,7 @@ from uuid import uuid4
 
 import pytest
 
+from tools.observability_provenance import provenance
 from tools.observability_records import diagnostic, encode
 from tools.observability_spool import attempt_upload, spool
 
@@ -18,6 +20,13 @@ PRODUCER = pytest.StashKey[BinaryIO]()
 def pytest_addoption(pluginmanager: pytest.PytestPluginManager) -> None:
     """Explicitly load the dependency even when Nix disables plugin autoloading."""
     pluginmanager.import_plugin("pytest_reportlog", consider_entry_points=True)
+
+
+def host_metadata(environment: Mapping[str, str]) -> dict[str, str]:
+    """The provenance of a session outside a Nix builder, so a query can separate local, pull
+    request and main sessions. A builder writes nothing: the host Nix wrapper adds the values
+    when it imports the execution, and a store output must not depend on them."""
+    return {} if environment.get("BELAY_OBSERVABILITY_BUILD") == "1" else provenance(environment)
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -36,7 +45,7 @@ def pytest_configure(config: pytest.Config) -> None:
         config.stash[PRODUCER] = handle
         (directory / "execution.json").write_text(encode({
             "execution_id": identity, "started_at": datetime.now(timezone.utc).isoformat(),
-            "metadata": {},
+            "metadata": host_metadata(os.environ),
         }) + "\n")
         config.option.report_log = str(directory / "report.jsonl")
     except OSError as error:
