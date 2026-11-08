@@ -706,6 +706,11 @@ Relevant files: `tests/surface/SelectAutomation*.lean` (experiments),
 - 2026-11-07: `just test-full` on the suite split (`09bad6fb`) passed: 1,474 tests, no failure. Summed
   per-test times: `surface` 919 s (377 tests), `surfaceChecks` 310 s (30), `surfaceS6` 531 s (66),
   `surfaceSelect` 419 s (32). The review of the commit has no findings.
+- 2026-11-08: on PR #357 (`ca7d9568`), the `Verdict` job failed before it built anything: the
+  evaluation of `integrity/judge.nix` could not download the pinned nixpkgs tarball from
+  `api.github.com` (HTTP 429, rate limit). The `Verdict` run of the previous push of the branch passed,
+  and no file that the judge reads changed. The agent token cannot rerun or dispatch the job, so this
+  commit starts CI again.
 
 ## Working sequence
 
