@@ -213,6 +213,9 @@ let
   # earlier report predicted 692 s, 676 s and 608 s; the tests of `surfaceChecks` had been slowed by
   # parallel load then. Keep each suite below about 840 s, 70% of its limit. The SELECT tests of
   # ADR 0027 are in `surfaceSelect`: with them, `surfaceS6` took 959 s of its limit (98 tests).
+  # The proof-cost tests are in `surfaceProofCost`: with them, `surface` took 982 s on main CI
+  # (377 tests), and a pull request run ended at the limit. `surface_proof_cost_layers_test.py`
+  # stays in `surface`: it imports `surface_layers_test.py`.
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
@@ -323,6 +326,7 @@ in {
   surfaceChecks = surfaceSuite "surfaceChecks";
   surfaceS6 = surfaceSuite "surfaceS6";
   surfaceSelect = surfaceSuite "surfaceSelect";
+  surfaceProofCost = surfaceSuite "surfaceProofCost";
   packages = suite "packages" {
     inputs = [ ];
     runtime = packageRoot;
