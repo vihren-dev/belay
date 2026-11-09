@@ -11,9 +11,19 @@ and that the check restores the caller's state, without timing assertions. -/
 
 namespace SearchBudgetFixture
 
+/-- The sum of the numbers below {lean}`count`: costly in time, but constant in stack and memory.
+The time limit and the cancellation stop only the wait, so the computation runs on until Lean
+exits. A non-tail-recursive fold, such as {name}`List.sum` over {lean}`List.range count`, then
+overflows the stack (seen on macOS CI); this loop cannot. -/
+def costlySum (count : Nat) : Nat := go count 0 where
+  /-- Adds the numbers below the first argument to the total. -/
+  go : Nat → Nat → Nat
+    | 0, total => total
+    | rest + 1, total => go rest (total + rest)
+
 /-- This is a finite but deliberately costly computation in a raw script-data projection. -/
-def allocationScript (count : Nat) : Script :=
-  ⟨[(.commit, [.integer (Int.ofNat (((List.range count).map (· + 1)).sum))])]⟩
+def costlyScript (count : Nat) : Script :=
+  ⟨[(.commit, [.integer (Int.ofNat (costlySum count))])]⟩
 
 /-- The compiled implementation deliberately returns different statement data. -/
 def differentImplementation : Script := ⟨[(.rollback, [])]⟩
@@ -61,7 +71,7 @@ def canceledAttempt : TermElabM Unit := do
         -- loop, after it starts the task: the interrupt comes from the wait. The count is a
         -- runtime value, so that the sum is computed in the task.
         let count ← (pure 100000000 : IO Nat)
-        discard <| Check.awaitCompiled fun _ => (List.range count).sum
+        discard <| Check.awaitCompiled fun _ => costlySum count
         returned.set true
     pure false
   catch error =>
@@ -139,7 +149,7 @@ elab "check_bounded_search_data" : command => Command.liftTermElabM do
   let started ← IO.monoMsNow
   let stopped ← Check.withCompiledLimit 20 do
     let result ← Check.attempt
-      (Check.scriptValue (mkApp (mkConst ``allocationScript) (toExpr (100000000 : Nat))))
+      (Check.scriptValue (mkApp (mkConst ``costlyScript) (toExpr (100000000 : Nat))))
     pure (result.isNone && (← Check.compiledLimitExpired))
   unless stopped do throwError "expensive data escaped the time limit of compiled work"
   -- Only the waits for compiled work count: time in the elaborator does not use up the limit.
