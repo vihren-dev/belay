@@ -84,6 +84,13 @@ def prove_batch(terms: list[str], runtime: Path, destination: Path, *, cases: li
     return output
 
 
+KERNEL_TIMEOUT_SECONDS = 300
+"""Hang limit for one Lean process of `kernel_check`. On the macOS CI runner, when many Nix
+suites run at once, the proofs of one coverage case set took up to five times as long as in an
+earlier run: the 5 cases of `conformance.authored_printf` took more than 120 s, the old limit,
+after 38 s the day before (CI runs 42629591010 and 42476420644, 2026-11-09 and 2026-11-08)."""
+
+
 PROOF_BATCH = 8
 """Cases per kernel proof file of `prove_all`: Lean loads the imports once for each file, about
 0.7 s, which is most of the time of a one-case proof."""
@@ -104,7 +111,7 @@ def kernel_check(runtime: Path, destination: Path) -> str:
     """Run the pinned Lean on a proof file over the runtime's modules and audit its axioms."""
     checked = subprocess.run([str(runtime / "lean/bin/lean"), str(destination)],
                              env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
-                             capture_output=True, text=True, timeout=120)
+                             capture_output=True, text=True, timeout=KERNEL_TIMEOUT_SECONDS)
     if checked.returncode:
         raise AssertionError(checked.stdout + checked.stderr)
     audit_axioms(checked.stdout)
