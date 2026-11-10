@@ -81,14 +81,8 @@ that breaks the claim, and every statement of the migration reported success.
 Two rules of SQLite cause it: a pragma inside a transaction does nothing, so
 foreign keys stay on; and `DROP TABLE` with foreign keys on deletes the parent
 rows one by one, which cascades into `sessions`. The editor prints the whole
-block, with the SQL that builds the database and a script for the `sqlite3`
-shell that replays the answer on native SQLite. The search fills only the
-tables that the claim touches, respects NOT NULL, keys and foreign keys, and
-has refuted a claim on a schema of real size: six tables, triggers, CHECK
-constraints and foreign keys
-([`CheckConsumerSize.lean`](tests/surface/CheckConsumerSize.lean)). The check
-above answers in about nine seconds on the development machine, after the
-import.
+block. Paste the replay script into the `sqlite3` shell and watch native SQLite
+do the same.
 
 ### The fact, in the kernel
 
@@ -109,8 +103,8 @@ example : (found.run makeStrictWrongEnforced).outputs.allOk = true ∧
 ```
 
 Every statement of the migration succeeds, and the session is gone. Lean's
-kernel ran SQLite's semantics and certified both, in about one second, and does
-so again on every build.
+kernel ran SQLite's semantics and certified both, and does so again on every
+build.
 
 ### The fix and the proof
 
@@ -139,11 +133,16 @@ theorem makeStrict_preserves_allSessions :
     Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog shop)
 ```
 
-Where the fixed migration succeeds, the sessions read the same before and after
-it, on every database with the schema `shop` and with any rows. The
-repository proves it in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean),
-in about 470 lines over four files, and Lean's kernel checks the proof on every
-build.
+Every database with this schema keeps its sessions through the fixed
+migration. The proof is in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean);
+you or a coding agent write it, and Lean's kernel checks it on every build.
+
+## Try it on your schema
+
+Put your `CREATE TABLE` statements in `db!`, your migration in `sql`, and state
+`preserves` for the reads you care about. `#sql_check` answers `false` with the
+rows and a replay script, `proved`, or `unknown`. A counterexample becomes a
+test with `sql_refute (db := found)`.
 
 ## What you can state
 
@@ -154,23 +153,17 @@ build.
 | 3 | What does it do to the data? | `ensures`, `≈`, `preserves` | `#sql_check` and tactics, or a proof |
 | 4 | Does the whole application behave the same? | `simulates` | A proof that you or an agent write |
 
-You can stop at the level you need. `#sql_check` answers `proved`, `false` with
-a replayable counterexample, or `unknown`; `unknown` is not evidence.
+You can stop at the level you need.
 
-## What a proof means
+## Why trust it
 
-- The model follows SQLite 3.51.0 under a stated
-  [execution profile](docs/execution-profile.md): foreign keys and recursive
-  triggers off on a new connection, the documented limits.
-- The model is checked against SQLite's own test suite and the project's
-  corpora: 5,525 cases, replayed against native SQLite and against the model,
-  with no disagreement allowed. Unsupported SQL is refused with a reason, never
-  approximated.
-- A proved claim holds for SQLite 3.51.0 if the model is faithful. The
-  conformance evidence is how you can check that condition yourself.
-- A proof covers the semantics of the statements. It does not cover locks,
-  query plans, concurrency, durability, extensions, or which database file a
-  statement reaches.
+The model is SQLite 3.51.0 as it runs the statements, and it is checked
+against SQLite's own test suite and the project's corpora: 5,525 cases,
+replayed against native SQLite and against the model, with no disagreement
+allowed. SQL outside the model is refused with a reason, never guessed. A
+proof is about the statements, not about locks, query plans or concurrency;
+the [execution profile](docs/execution-profile.md) states the connection
+settings it assumes.
 
 ## Supported SQL
 
@@ -178,12 +171,10 @@ Tables with constraints, generated columns, `STRICT` and `WITHOUT ROWID`;
 indexes, views and triggers; `ALTER TABLE`; transactions; `INSERT`, `UPDATE`
 and `DELETE` with `RETURNING` and upserts; `SELECT` with joins, grouping,
 ordering, limits, subqueries, common table expressions and compound queries;
-the foreign-key and recursive-trigger pragmas. The rest is refused at its byte
-range when the file compiles, or ends a run as `Output.unmodeled`; neither is
-ever a wrong answer. The exact list is in the
+the foreign-key and recursive-trigger pragmas. The exact list is in the
 [supported subset](docs/semantic-subset.md).
 
-## Install and try
+## Install
 
 Install [elan](https://github.com/leanprover/elan), then add Belay to a Lake
 project:
@@ -217,11 +208,8 @@ files, and the options of the check.
 ## With a coding agent
 
 An agent writes SQL, states claims, runs `#sql_check`, fixes the SQL when a
-counterexample appears, and writes the proofs. The kernel accepts or rejects
-every proof and cannot be argued with. The kernel checks the proof, not the
-claim: you review the claim, and `#explain` prints a claim in plain words. A
-proof of a weak claim is still a proof, so read the guards and the schema
-premise. A counterexample stays in the file as a `sql_refute` test.
+counterexample appears, and writes the proofs. The kernel checks the proof;
+you review the claim, and `#explain` prints a claim in plain words.
 
 ## Documentation
 
@@ -231,23 +219,14 @@ premise. A counterexample stays in the file as a `sql_refute` test.
   [execution profile](docs/execution-profile.md).
 - The [checked Lean API reference](docs/api-reference.md) of the model.
 - The examples under [`tests/surface`](tests/surface), which CI compiles.
-- The design records under [`docs`](docs), `adr-NNNN-*.md`, for the reasons
-  behind the library.
 
 ## Community and support
 
 Ask questions in [Discussions](https://github.com/vihren-dev/belay/discussions).
 Report a case where the model and native SQLite disagree in
-[Issues](https://github.com/vihren-dev/belay/issues); it is the most valuable
-report you can send. Include the SQL, the output of the `sqlite3` shell with
-its version, and the block that Belay printed.
-
-## Repository layout
-
-The model is `packages/belay-sqlite-model`, the parser `packages/belay-sqlite-text`,
-and the surface that you import `packages/belay`. The conformance evidence is
-under `conformance/` and `judge/`. [CONTRIBUTING.md](CONTRIBUTING.md) explains
-how to build and test the repository.
+[Issues](https://github.com/vihren-dev/belay/issues), with the SQL, the output
+of the `sqlite3` shell and the block that Belay printed. To build and change
+the repository, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
