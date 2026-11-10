@@ -1,7 +1,33 @@
 # Contributing to Belay
 
-This page is for people who build and change the repository itself. To use the
-library in a Lean project, read the [README](README.md).
+This page says which contributions the project accepts and how to build the
+repository. To use the library in a Lean project, read the [README](README.md).
+
+## What the project accepts
+
+For security reasons, the project does not accept pull requests that change
+code. The team closes such a pull request and does not merge it. If you find a
+defect or need a feature, open an issue.
+
+The project accepts these contributions, each as an
+[issue](https://github.com/vihren-dev/belay/issues):
+
+- **A bug report or a request.** Say what you did, what you expected and what
+  occurred.
+- **A reproduction of a bug.** Give the smallest SQL that shows the bug, the
+  output of the `sqlite3` shell for that SQL with the SQLite version, and the
+  block that Belay printed. If Belay refuses the SQL or a Lean file does not
+  compile, give the file and the error message.
+- **A new test case.** Give SQL statements that the conformance evidence does
+  not cover, and the output of the `sqlite3` shell. The team adds the case to
+  the corpora, where each build replays it against native SQLite and against
+  the model.
+
+Ask questions in
+[Discussions](https://github.com/vihren-dev/belay/discussions).
+
+The sections that follow describe the build and the layout of the repository.
+Use them to reproduce a bug or to read the code.
 
 ## Build the repository
 

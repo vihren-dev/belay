@@ -234,8 +234,10 @@ you review the claim, and `#explain` prints a claim in plain words.
 Ask questions in [Discussions](https://github.com/vihren-dev/belay/discussions).
 Report a case where the model and native SQLite disagree in
 [Issues](https://github.com/vihren-dev/belay/issues), with the SQL, the output
-of the `sqlite3` shell and the block that Belay printed. To build and change
-the repository, read [CONTRIBUTING.md](CONTRIBUTING.md).
+of the `sqlite3` shell and the block that Belay printed. The project accepts
+issues, reproductions of bugs and new test cases, and does not accept pull
+requests that change code; [CONTRIBUTING.md](CONTRIBUTING.md) has the details
+and the build instructions.
 
 ## License
 
