@@ -19,13 +19,11 @@ rebuilt a table and SQLite deleted every row of a child table
 import Belay
 open Belay.Sqlite
 
-def sample : Database := db! r"
+def shop : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
   CREATE TABLE sessions (id INTEGER PRIMARY KEY,
     customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    expires_at INTEGER NOT NULL);
-  INSERT INTO customers VALUES (1, 'ada', 'ada@x.io');
-  INSERT INTO sessions VALUES (10, 1, 100);"
+    expires_at INTEGER NOT NULL);"
 
 def makeStrictWrongEnforced : Script := sql r"
   PRAGMA foreign_keys = ON;
@@ -41,27 +39,14 @@ def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessio
 ```
 
 SQL is SQL, in raw strings, and `db!` runs the schema when the file compiles.
+The schema has no rows: you do not know which data breaks the migration.
 
-### The fact, in the kernel
+### The counterexample
 
-```lean
-example : (sample.run makeStrictWrongEnforced).outputs.allOk = true ∧
-    ((sample.run makeStrictWrongEnforced).db.run allSessions).outputs.getLast? = some (.rows []) := by
-  decide +kernel
-```
-
-Every statement of the migration succeeds, and the session is gone. Lean's
-kernel ran SQLite's semantics and certified both. Two rules of SQLite cause it:
-a pragma inside a transaction does nothing, so foreign keys stay on; and
-`DROP TABLE` with foreign keys on deletes the parent rows one by one, which
-cascades into `sessions`.
-
-### The same fact as a counterexample
-
-State what must stay true and let Belay show the rows:
+State what must stay true, and let Belay find the rows:
 
 ```lean
-#sql_check makeStrictWrongEnforced preserves allSessions with (db := sample)
+#sql_check makeStrictWrongEnforced preserves allSessions with (schema := shop)
 ```
 
 ```text
@@ -72,8 +57,8 @@ customers:
   1  | NULL | ''
 sessions:
   id | customer_id | expires_at
-  10 | 1           | 0
-allSessions: rows [[10, 1, 0]]
+  1  | 1           | 0
+allSessions: rows [[1, 1, 0]]
 makeStrictWrongEnforced, statement 1: done 0
 makeStrictWrongEnforced, statement 2: done 0
 makeStrictWrongEnforced, statement 3: done 0
@@ -91,15 +76,41 @@ CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
 …
 ```
 
-The search started from `sample` and shrank it: a customer with no name and an
-empty email loses the session too. The editor prints the whole block, with the
-SQL that builds the database and a script for the `sqlite3` shell that replays
-the answer on native SQLite. The search fills only the tables that the claim
-touches, respects NOT NULL, keys and foreign keys, and has refuted a claim on a
-schema of real size: six tables, triggers, CHECK constraints and foreign keys
+Belay wrote one customer and one session, the smallest database of the schema
+that breaks the claim, and every statement of the migration reported success.
+Two rules of SQLite cause it: a pragma inside a transaction does nothing, so
+foreign keys stay on; and `DROP TABLE` with foreign keys on deletes the parent
+rows one by one, which cascades into `sessions`. The editor prints the whole
+block, with the SQL that builds the database and a script for the `sqlite3`
+shell that replays the answer on native SQLite. The search fills only the
+tables that the claim touches, respects NOT NULL, keys and foreign keys, and
+has refuted a claim on a schema of real size: six tables, triggers, CHECK
+constraints and foreign keys
 ([`CheckConsumerSize.lean`](tests/surface/CheckConsumerSize.lean)). The check
-above answers in about eight seconds on the development machine, after the
+above answers in about nine seconds on the development machine, after the
 import.
+
+### The fact, in the kernel
+
+Keep the rows that Belay found, and state the fact as a theorem of the file:
+
+```lean
+def found : Database := db! r"
+  CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
+  CREATE TABLE sessions (id INTEGER PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL);
+  INSERT INTO customers VALUES (1, NULL, '');
+  INSERT INTO sessions VALUES (1, 1, 0);"
+
+example : (found.run makeStrictWrongEnforced).outputs.allOk = true ∧
+    ((found.run makeStrictWrongEnforced).db.run allSessions).outputs.getLast? = some (.rows []) := by
+  decide +kernel
+```
+
+Every statement of the migration succeeds, and the session is gone. Lean's
+kernel ran SQLite's semantics and certified both, in about one second, and does
+so again on every build.
 
 ### The fix and the proof
 
@@ -115,21 +126,21 @@ def makeStrict : Script := sql r"
   COMMIT;
   PRAGMA foreign_keys = ON;"           -- on again after the commit
 
-example : (sample.run makeStrict).outputs.allOk = true ∧
-    ((sample.run makeStrict).db.run allSessions).outputs.getLast? = some (.rows [[10, 1, 100]]) := by
+example : (found.run makeStrict).outputs.allOk = true ∧
+    ((found.run makeStrict).db.run allSessions).outputs.getLast? = some (.rows [[1, 1, 0]]) := by
   decide +kernel
 ```
 
-A fact about the sample is one line. A fact about every database of the schema
-is a theorem:
+A fact about one database is one line. A fact about every database of the
+schema is a theorem:
 
 ```lean
 theorem makeStrict_preserves_allSessions :
-    Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog sample)
+    Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog shop)
 ```
 
 Where the fixed migration succeeds, the sessions read the same before and after
-it, on every database with the sample's catalog and with any rows. The
+it, on every database with the schema `shop` and with any rows. The
 repository proves it in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean),
 in about 470 lines over four files, and Lean's kernel checks the proof on every
 build.
