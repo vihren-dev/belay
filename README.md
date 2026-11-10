@@ -1,19 +1,15 @@
 # Belay
 
 Belay is a Lean library to prove facts about SQLite databases, statements and
-migrations. You write SQL as SQL, state what must hold, and Lean checks it:
+migrations. You write SQL, state what must hold, and Lean checks it:
 with a search that finds the rows that break a claim, or with a proof that
 Lean's kernel verifies.
 
-## A migration that passes its tests and loses data
+## An Exammple
 
-The task: make `customers` a STRICT table, so that SQLite refuses a value of the
-wrong type. No version of SQLite can do that in place. The migration copies the
-table, drops the old one and renames the copy, as the recipe on sqlite.org says.
-The migration below follows the recipe and has a bug that deletes the rows of
-another table. The same bug hit a Rails application when `add_foreign_key`
-rebuilt a table and SQLite deleted every row of a child table
-([write-up](https://kyrylo.org/software/2025/09/27/a-mere-add-foreign-key-can-wipe-out-your-whole-rails-sqlite-production-table.html)).
+Here's an example of a migration that can lose data. It's taken from ([here](https://kyrylo.org/software/2025/09/27/a-mere-add-foreign-key-can-wipe-out-your-whole-rails-sqlite-production-table.html)). We want to convert a table to a strict table.
+
+Suppose we have a database with the following schema:
 
 ```lean
 import Belay
@@ -25,6 +21,12 @@ def shop : Database := db! r"
     customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL);"
 
+```
+
+We wwite the following migration to convert `customers` to a STRICT table. This cannot be done in-place so we recreate the table and drop the old one.
+
+
+```lean
 def makeStrictWrongEnforced : Script := sql r"
   PRAGMA foreign_keys = ON;
   BEGIN;
@@ -34,21 +36,25 @@ def makeStrictWrongEnforced : Script := sql r"
   DROP TABLE customers;
   ALTER TABLE customers_new RENAME TO customers;
   COMMIT;"
-
-def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessions"
 ```
 
-SQL is SQL, in raw strings, and `db!` runs the schema when the file compiles.
-The schema has no rows: you do not know which data breaks the migration.
+There is a mistake which is difficult to spot: PRAGMA doesn't work in a transaction. So when we run `DROP TABLE customers`, all rows in the table `sessions` will also be deleted due to the `ON DELETE CASCADE` clause. 
 
 ### The counterexample
 
-State what must stay true, and let Belay find the rows:
+The migration will be correct if it preserves the behaviour of the following query
+
+```lean
+def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessions"
+```
+
+The following statement will try to prove it or find a counterexample:
 
 ```lean
 #sql_check makeStrictWrongEnforced preserves allSessions with (schema := shop)
 ```
 
+The output would show:
 ```text
 SQL check: false.
 Database:
@@ -125,17 +131,14 @@ example : (found.run makeStrict).outputs.allOk = true ∧
   decide +kernel
 ```
 
-A fact about one database is one line. A fact about every database of the
-schema is a theorem:
+The following claims that for **every database** with the given `shop` schema, the behaviour of the `allSessions` query will be preserved after the correct migration.
 
 ```lean
 theorem makeStrict_preserves_allSessions :
     Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog shop)
 ```
 
-Every database with this schema keeps its sessions through the fixed
-migration. The proof is in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean);
-you or a coding agent write it, and Lean's kernel checks it on every build.
+This is a claim which your coding agent can prove and the Lean proof checker can verify. You can see one proof in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean).
 
 ## Try it on your schema
 
@@ -157,12 +160,10 @@ You can stop at the level you need.
 
 ## Why trust it
 
-The model is SQLite 3.51.0 as it runs the statements, and it is checked
+We currently model a part of SQLite 3.51.0 semantics which are checked
 against SQLite's own test suite and the project's corpora: 5,525 cases,
 replayed against native SQLite and against the model, with no disagreement
-allowed. SQL outside the model is refused with a reason, never guessed. A
-proof is about the statements, not about locks, query plans or concurrency;
-the [execution profile](docs/execution-profile.md) states the connection
+allowed. SQL outside the model is refused. A proof is about the statements, not about locks, query plans or concurrency; the [execution profile](docs/execution-profile.md) states the connection
 settings it assumes.
 
 ## Supported SQL
