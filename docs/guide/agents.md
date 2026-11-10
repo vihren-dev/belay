@@ -67,11 +67,17 @@ after the migration. […]
 ## Set up the project
 
 Add Belay to a Lake project as the [README](../../README.md#install) shows.
-Then tell Lake about the SQL files, so that a change of a file rebuilds the
-claims that read it:
+Then make the library of the claims a default target, so that `lake build`
+compiles it, and tell Lake about the SQL files, so that a change of a file
+rebuilds the claims that read it:
 
 ```toml
-# lakefile.toml, after the [[require]] block
+# lakefile.toml
+name = "shop"
+defaultTargets = ["Claims"]
+
+# Here: the [[require]] block of the README.
+
 [[input_dir]]
 name = "sqlFiles"
 path = "db"
