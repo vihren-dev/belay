@@ -10,8 +10,10 @@ Lean's kernel verifies.
 The task: make `customers` a STRICT table, so that SQLite refuses a value of the
 wrong type. No version of SQLite can do that in place. The migration copies the
 table, drops the old one and renames the copy, as the recipe on sqlite.org says.
-The migration below follows the recipe and has a bug that has deleted data in
-production.
+The migration below follows the recipe and has a bug that deletes the rows of
+another table. The same bug hit a Rails application when `add_foreign_key`
+rebuilt a table and SQLite deleted every row of a child table
+([write-up](https://kyrylo.org/software/2025/09/27/a-mere-add-foreign-key-can-wipe-out-your-whole-rails-sqlite-production-table.html)).
 
 ```lean
 import Belay
