@@ -5,11 +5,15 @@ migrations. You write SQL, state what must hold, and Lean checks it:
 with a search that finds the rows that break a claim, or with a proof that
 Lean's kernel verifies.
 
-## An Exammple
+## An example
 
-Here's an example of a migration that can lose data. It's taken from ([here](https://kyrylo.org/software/2025/09/27/a-mere-add-foreign-key-can-wipe-out-your-whole-rails-sqlite-production-table.html)). We want to convert a table to a strict table.
+This example is a migration that can lose data. The same mistake deleted a
+table of a Rails application
+([write-up](https://kyrylo.org/software/2025/09/27/a-mere-add-foreign-key-can-wipe-out-your-whole-rails-sqlite-production-table.html)).
+The task is to make a table a STRICT table.
 
-Suppose we have a database with the following schema:
+The database has this schema. It has no rows: you do not know which data
+breaks a migration.
 
 ```lean
 import Belay
@@ -20,11 +24,11 @@ def shop : Database := db! r"
   CREATE TABLE sessions (id INTEGER PRIMARY KEY,
     customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL);"
-
 ```
 
-We wwite the following migration to convert `customers` to a STRICT table. This cannot be done in-place so we recreate the table and drop the old one.
-
+This migration makes `customers` a STRICT table. SQLite cannot do that in
+place, so the migration copies the table, drops the old one and renames the
+copy.
 
 ```lean
 def makeStrictWrongEnforced : Script := sql r"
@@ -38,23 +42,27 @@ def makeStrictWrongEnforced : Script := sql r"
   COMMIT;"
 ```
 
-There is a mistake which is difficult to spot: PRAGMA doesn't work in a transaction. So when we run `DROP TABLE customers`, all rows in the table `sessions` will also be deleted due to the `ON DELETE CASCADE` clause. 
+The migration has a mistake that is difficult to see: `PRAGMA foreign_keys`
+does nothing inside a transaction, so foreign keys stay on. `DROP TABLE
+customers` then deletes the customers row by row, and `ON DELETE CASCADE`
+deletes the sessions of each customer.
 
 ### The counterexample
 
-The migration will be correct if it preserves the behaviour of the following query
+A correct migration must keep the result of this query:
 
 ```lean
 def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessions"
 ```
 
-The following statement will try to prove it or find a counterexample:
+This command tries to prove that claim or to find a counterexample:
 
 ```lean
 #sql_check makeStrictWrongEnforced preserves allSessions with (schema := shop)
 ```
 
-The output would show:
+The output is:
+
 ```text
 SQL check: false.
 Database:
@@ -84,11 +92,8 @@ CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
 
 Belay wrote one customer and one session, the smallest database of the schema
 that breaks the claim, and every statement of the migration reported success.
-Two rules of SQLite cause it: a pragma inside a transaction does nothing, so
-foreign keys stay on; and `DROP TABLE` with foreign keys on deletes the parent
-rows one by one, which cascades into `sessions`. The editor prints the whole
-block. Paste the replay script into the `sqlite3` shell and watch native SQLite
-do the same.
+The editor prints the whole block. Paste the replay script into the `sqlite3`
+shell and watch native SQLite do the same.
 
 ### The fact, in the kernel
 
@@ -131,14 +136,16 @@ example : (found.run makeStrict).outputs.allOk = true ∧
   decide +kernel
 ```
 
-The following claims that for **every database** with the given `shop` schema, the behaviour of the `allSessions` query will be preserved after the correct migration.
+This theorem claims that on **every database** with the schema `shop`, the
+query `allSessions` gives the same result after the fixed migration:
 
 ```lean
 theorem makeStrict_preserves_allSessions :
     Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog shop)
 ```
 
-This is a claim which your coding agent can prove and the Lean proof checker can verify. You can see one proof in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean).
+Your coding agent can prove such a claim, and Lean's kernel checks the proof.
+One proof is in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean).
 
 ## Try it on your schema
 
@@ -160,11 +167,12 @@ You can stop at the level you need.
 
 ## Why trust it
 
-We currently model a part of SQLite 3.51.0 semantics which are checked
-against SQLite's own test suite and the project's corpora: 5,525 cases,
-replayed against native SQLite and against the model, with no disagreement
-allowed. SQL outside the model is refused. A proof is about the statements, not about locks, query plans or concurrency; the [execution profile](docs/execution-profile.md) states the connection
-settings it assumes.
+Belay models a part of SQLite 3.51.0. The model is checked against SQLite's
+own test suite and the project's corpora: 5,525 cases, replayed against native
+SQLite and against the model, with no disagreement allowed. SQL outside the
+model is refused. A proof is about the statements, not about locks, query
+plans or concurrency; the [execution profile](docs/execution-profile.md)
+states the connection settings it assumes.
 
 ## Supported SQL
 
