@@ -4,9 +4,12 @@ Created 2026-11-10. DONE 2026-11-11 (status: `20261110-ownership-reorganization.
 
 ## Problem
 
-The directories of the packages did not show which part of the product a file belongs to. One file
-often had declarations of unrelated parts, and an import could go from a basic part to a part that
-uses it. A developer could not see from a path who owns the code.
+Owner request, 2026-11-10: put the code in directories by the approved chart of divisions and teams.
+The chart gives each of the 14,636 declarations and commands of `packages/` and `tests/surface` a
+division and a team, but the files did not follow it: 561 of 1,503 files had declarations of more
+than one division (a local measure of 2026-11-10 on main `d9e10661`), and the directories of the
+packages did not show the divisions. A developer could not see from a path which team owns the
+code, and an import could go from a low division to a high one.
 
 ## What must be true when the task is done
 
@@ -16,14 +19,17 @@ uses it. A developer could not see from a path who owns the code.
 
   | Division | Teams |
   | --- | --- |
-  | Tooling | Conformance, Counterexamples, ProofCost, SqlCommands |
-  | Programs | Automation, Claims, Clock, Reasoning, Scripts |
+  | Tooling | Conformance, Counterexamples, ProofCost, SqlCommands, Tests |
+  | Programs | Automation, Claims, Clock, Reasoning, Scripts, StatementRunLaws |
   | Schema | Columns, Ddl, Dispatch, ForeignKeys, Rows, Triggers, Writes |
   | Queries | Automation, Evaluation, Fixtures, Preparation, Select |
   | Frontend | Codecs, Embedding, Grammar |
   | Values | DateTime, Json, Scalar |
   | Shared | Catalog, Execution, Resolved, Syntax, Values |
 
+  The table gives the teams with code in `packages/` (corrected 2026-11-11: `Tests` of Tooling and
+  `StatementRunLaws` of Programs were missing). Programs, Schema, Queries and Frontend also have a
+  team `Tests`, with files of `tests/surface` only.
 - A module that only collects imports, such as `Belay` and `Belay.Sqlite`, keeps its name.
 - Each declaration of `packages/` is in a file of its division. A file with declarations of more than
   one division is divided, and each part keeps the file name.
@@ -31,7 +37,7 @@ uses it. A developer could not see from a path who owns the code.
   declarations. A smaller part stays with the main part of that file in the division. Parts of one
   file that refer to each other in a cycle stay together, and a `mutual` block is not divided.
 - Each file of `tests/surface` moves, as a whole, to the directory of the team that has most of its
-  declarations (a team directory, or `Tests` of the division). It keeps its module name, the file name
+  declarations. It keeps its module name, the file name
   without `.lean`: the Python harness finds the file by its name below `tests/surface`. A data
   directory moves with the files that read it.
 - No module of `packages/` imports a module of a higher division.
