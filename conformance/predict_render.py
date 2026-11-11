@@ -2,7 +2,7 @@
 
 The judge compares predictions with recorded observations in SQLite's catalog terms. This
 module is the subject's side of that agreement. Lean writes each table of the model as
-`PRAGMA table_xinfo` and `index_list` metadata (`VerifierConformance.Predict`); this module
+`PRAGMA table_xinfo` and `index_list` metadata (`VerifierConformance.Tooling.Conformance.Predict`); this module
 states the PRAGMA rows that SQLite reports for it, including the indexes that SQLite makes
 for keys, and writes rows and cells as the recordings do.
 """

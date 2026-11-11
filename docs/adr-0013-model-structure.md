@@ -44,10 +44,10 @@ Two facts measured on 2026-10-17 bound the risk of every change here:
 catalog. The database (`Database := Nat → Option Table`, `Model.lean`) stores a
 `Table.shape` in every table. Each `INSERT`, `UPDATE` and `UPSERT` statement carries a
 copy of the table's keys and conflict policy, taken at resolution
-(`Resolution/Resolved.lean`, `Resolution/Writes.lean`). Execution never reads the catalog.
+(`Shared/Resolved/Resolved.lean`, `{Queries/Preparation,Schema/Dispatch}/Writes.lean`). Execution never reads the catalog.
 Consequences:
 
-- The conformance classifier (`verifier-conformance/VerifierConformance/Case.lean`)
+- The conformance classifier (`verifier-conformance/VerifierConformance/Tooling/Conformance/Case.lean`)
   resolves the script a second time, statement by statement (`resolveStates`), to know
   which catalog to observe, and runs the script three times: the support check, the
   observation trace and the output trace. Measured on a three-statement case,
@@ -80,7 +80,7 @@ to decide whether it is admitted, and execution runs it again.
 **3. The Syntax IR mirrors the parser, not SQL.**
 
 - A function call is five constructors (`callStar`, `callEmpty`, `call`, `callPair`,
-  `more`; `Resolution/SyntaxExpr.lean`) that encode an argument list as a binary chain.
+  `more`; `Shared/Syntax/SyntaxExpr.lean`) that encode an argument list as a binary chain.
   The chain forces the carrier `Resolved.Expr.arguments`, whose docstring says a resolved
   statement never contains it, the helpers `argumentsOf` and `moreArguments`, two issue
   functions, and an arm for each of the five in about 16 exhaustive matches.
@@ -98,12 +98,12 @@ to decide whether it is admitted, and execution runs it again.
   six default forms.
 
 **4. The resolver refuses what the evaluator could decide.** `Operand :=
-Resolved.Expr × Option Affinity` (`Resolution/QueryAffinity.lean`) exists because
+Resolved.Expr × Option Affinity` (`Queries/Select/QueryAffinity.lean`) exists because
 `Resolved.Expr` cannot represent `+x`, which drops affinity. The resolver then refuses
 every comparison in which SQLite would convert a value (`textToNumber`, `numberToText`,
 `mixedAffinityComparison`) and every bare value used as a condition
 (`valueAsCondition`, so `WHERE active` is a restriction). The header of
-`Resolution/QueryForm.lean` says the affinity rules are "already applied to literal
+`Queries/Evaluation/QueryForm.lean` says the affinity rules are "already applied to literal
 operands"; they are refused, not applied. Of the 38 `RestrictionKind` constructors, 8 are
 the resolver refusing what the evaluator could do, 5 are SQLite behaviour the model
 cannot decide (implementation order), and the rest are scope.
@@ -111,7 +111,7 @@ cannot decide (implementation order), and the rest are scope.
 ### Smaller findings
 
 - `USING` and `NATURAL` joins are resolved by generating Syntax text (`qualified` names
-  and a `coalesce` call) and resolving it again (`Resolution/JoinUsing.lean`,
+  and a `coalesce` call) and resolving it again (`Queries/Preparation/JoinUsing.lean`,
   `MergedLeft.lean`), so generated conditions inherit the affinity restrictions and get
   paths into text that has no source. `json_each` is a second join algorithm grafted
   after the tables (`Query.functions` beside `Query.joins`, `splitSources`, hidden
@@ -123,11 +123,11 @@ cannot decide (implementation order), and the rest are scope.
   and the field `clock : Int` of `Resolved.Expr.date`, which resolution sets to 0 and
   execution overwrites.
 - Two ports of SQLite's `computeHMS` and time formatting exist (`ClockText.lean` from
-  slice 6e2, `Date/DateTime.lean` and `Date/Functions.lean` from slice 6f); two printf
-  front ends (`RealText.lean` over `String`, `Date/Printf.lean` over bytes) share one
+  slice 6e2, `Values/DateTime/DateTime.lean` and `Values/DateTime/Functions.lean` from slice 6f); two printf
+  front ends (`RealText.lean` over `String`, `Values/Scalar/Date/Printf.lean` over bytes) share one
   digit core; `json_valid` parses its text twice with two grammars
-  (`Json/Validity.lean`); `lookupStep` and `locateStep` (`Json/Path.lean`,
-  `Json/JsonbOffset.lean`) are twins.
+  (`Json/Validity.lean`); `lookupStep` and `locateStep` (`Values/Json/Path.lean`,
+  `Values/Json/JsonbOffset.lean`) are twins.
 - `Value.real` can hold NaN bits: `IS NULL` says yes (`Comparison.isNull`), `COALESCE`
   says no (`Arithmetic.isNullCell`). The state is unreachable today; the type allows it.
 - `normalizeIdentifier` and `affinityOf` (a substring search) run on kernel-visible paths

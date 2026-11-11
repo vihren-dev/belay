@@ -1,10 +1,10 @@
 """The translation records the name tokens of the text of a result column in the body of a stored view
-(`packages/belay-sqlite-text/Belay/Sqlite/Translation/NameTokens.lean`, through the text package's program).
+(`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Embedding/NameTokens.lean`, through the text package's program).
 
 SQLite names an unaliased view column by the text of its expression, and a rename rewrites the name tokens of
 that text. These tests check the JSON that Lean's `Syntax.SourceText` decoder reads: where each name stands
 in the text, how it was quoted, its node paths, and the subquery that holds it. A text without a name, and the
-text of a result column outside a view, stay plain strings. `tests/surface/NameTokenPaths.lean` checks that the
+text of a result column outside a view, stay plain strings. `tests/surface/Frontend/Tests/NameTokenPaths.lean` checks that the
 paths are those of the name trace.
 """
 

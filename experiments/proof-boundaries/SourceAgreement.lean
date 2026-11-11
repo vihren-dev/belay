@@ -1,5 +1,4 @@
-import Belay.Sqlite.Model.Execution
-import Belay.Sqlite.Model.PossibleResults
+import Belay.Sqlite.Model.Schema.Dispatch.PossibleResults
 
 set_option doc.verso true
 

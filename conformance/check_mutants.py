@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_checks`.
 
 from conformance.resolve_mutants import SQLITE
 
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The CHECK of a row and the constraints of a stored table."""
-UPSERT_RUN = SQLITE + "UpsertRun.lean"
+UPSERT_RUN = SQLITE + "Schema/Writes/UpsertRun.lean"
 """The rows of an INSERT with clauses or conflict algorithms."""
 
 CHECK_STEP = ("    if !checksHold table.shape proposed then failedConstraint table policy.check else\n"

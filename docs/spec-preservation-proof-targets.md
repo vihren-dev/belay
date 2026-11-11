@@ -31,7 +31,7 @@ The former reverse paths through `RowLocalFrame` and `RowLocalWrites` are remove
 | Current file and declaration | Replacement proof source | Preserve |
 | --- | --- | --- |
 | [TableAtomFrames][frame]: `Database.EachTable.setRows` | `Database.Every.setRows`, ignoring catalog/position | No extra `RowsShaped` assumption. |
-| [KeysUniqueFrame](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueFrame.lean): `Database.KeysUnique.setRows` | `Database.Every.setRows`, using catalog-selected keys | Selection depends on catalog and table position. |
+| [KeysUniqueFrame](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/KeysUniqueFrame.lean): `Database.KeysUnique.setRows` | `Database.Every.setRows`, using catalog-selected keys | Selection depends on catalog and table position. |
 | Removed `checkedWrite_rowLocal` | `checkedWrite_satisfies` and `RowLocalAtom.constraints` | Success and carried constraint FAIL. |
 | Removed `insertOutcome_rowLocal` | `insertOutcome_satisfies` and `RowLocalAtom.constraints` | Same shape and original write assumptions. |
 | Removed `Database.EachTable.append` | `Database.EachTable.appendEmpty` with the shared table contract | Original empty-table assumptions. |
@@ -49,8 +49,8 @@ to the 84 endpoint deletion count as measured savings.
 | Current file | Target declaration | Intended change |
 | --- | --- | --- |
 | [AdmittedTableAtomStatement][dispatch] | `runStatement_tableAtom` | Own the single complete constructor dispatch for these table-atom families. |
-| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD/DROP COLUMN, INSERT-query and write evidence. |
-| [AdmittedDistinctStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedDistinctStatement.lean) | `runStatement_rowidsDistinct` | Derive from that dispatch using distinct-rowid evidence. |
+| [RowLocalStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/RowLocalStatement.lean) | `runStatement_rowLocal` | Derive from that dispatch using row-local constraints, ADD/DROP COLUMN, INSERT-query and write evidence. |
+| [AdmittedDistinctStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/AdmittedDistinctStatement.lean) | `runStatement_rowidsDistinct` | Derive from that dispatch using distinct-rowid evidence. |
 
 Retain the independent leaf evidence used by those applications:
 
@@ -63,26 +63,26 @@ Retain the independent leaf evidence used by those applications:
 - [AdmittedPlainWrites][plain]: `passed_rowidsDistinct`; [TableAtomWrites][table-writes]
   owns the generic `runStatement_insert_atom`, `runStatement_update_atom`,
   `runStatement_delete_tableAtom` operation facts.
-- [AdmittedSchemaStatements](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedSchemaStatements.lean):
-  `runStatement_create_tableAtom`; [RowLocalSchema](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalSchema.lean):
+- [AdmittedSchemaStatements](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/AdmittedSchemaStatements.lean):
+  `runStatement_create_tableAtom`; RowLocalSchema ([Schema/Rows](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowLocalSchema.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RowLocalSchema.lean)):
   `Database.EachTable.drop`, `runStatement_drop_rowLocal`.
-- [RowLocalAddColumnTheorems](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean):
+- [RowLocalAddColumnTheorems](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowLocalAddColumnTheorems.lean):
   the generic ADD COLUMN fact and distinct atom extension facts listed in the
   companion inventory. Placement changes may be needed to remove wrapper imports.
-- [StatementRewrite](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRewrite.lean):
+- StatementRewrite ([Schema/Ddl](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/StatementRewrite.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/StatementRewrite.lean)):
   `runStatement_rewrite_satisfies` and
   `runStatement_rewrite_tableAtom` supply rename evidence with unchanged rows
   and equal `blankNames` shapes. `runStatement_rewrite_satisfies` now assumes
   only outline equality; FK selection equality must come from its caller.
-- [StatementDropColumn](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementDropColumn.lean):
+- StatementDropColumn ([Schema/Ddl](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/StatementDropColumn.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/StatementDropColumn.lean)):
   `runStatement_dropColumn_satisfies`, `runStatement_dropColumn_eachTable`
   use the execution guard and the independent `dropped`/`renamed` evidence.
   The shared `dropped` field requires `CatalogTable.DropsCleanly index` and
   yields the atom of `Table.dropColumn index`. Retain its distinct supporting
   facts in `DropColumnFactLaws` and `DropColumnAdmittedLaws`; do not add
   `Database.Valid`, `RowsShaped` or readiness to the whole-statement formulas.
-- [InsertSelectLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectLaws.lean):
-  `runStatement_insertSelect_none_satisfies`; [InsertSelectOutcomeLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectOutcomeLaws.lean):
+- [InsertSelectLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/InsertSelectLaws.lean):
+  `runStatement_insertSelect_none_satisfies`; [InsertSelectOutcomeLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/InsertSelectOutcomeLaws.lean):
   `runStatement_insertSelect_some_satisfies` supply the dispatch's `selects`
   premise and rule-bearing case. Preserve source failures, upsert behavior
   and carried constraint FAIL.
@@ -100,23 +100,23 @@ dispatches are outside this table-atom consolidation.
 | [RunHolds][raw] | `advance_holds`, `runSqlFrom_holds`, `runSql_holds`; `RunConditionsWith.of_unconditioned` | One raw induction and its entry/condition laws use the richer condition. |
 | Removed `RunHoldsReady` | `StatementKeepsReady`, `StatementKeeps.toReady`, `advance_holds_ready`, `runSqlFrom_holds_ready`, `runSql_holds_ready` | These names and their parallel traversal are deleted. Readiness is part of the common condition in [RunHolds][raw]. |
 | [RunHolds][raw] | `StatementKeeps.and`, `RunConditionsWith.always`, `RunConditionsWith.with_ready`, `SqlState.Holds.mono` | Unified conjunction, unconditional conditions, supported-run readiness and state monotonicity. |
-| [ScriptConditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptConditions.lean) | `ScriptStepCondition`, `ScriptConditionsWith`, `.of_invariant` | Guarded conditions follow every reached execution's next connection, selected clock, counters and database. Invariant-derived obligations use the same traversal. |
+| [ScriptConditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptConditions.lean) | `ScriptStepCondition`, `ScriptConditionsWith`, `.of_invariant` | Guarded conditions follow every reached execution's next connection, selected clock, counters and database. Invariant-derived obligations use the same traversal. |
 | [ScriptRunHolds][surface] | `runScriptStep_holds`, `runScriptAllFrom_holds`, `runScriptFrom_holds` | One continuing-step proof and all-execution surface induction; derive the canonical-run result by membership. |
 | [ScriptRunDerived][derived] | `runScriptAllFrom_holds_derived`, `runScriptFrom_holds_derived` | Thin applications of the shared proof; the old `runScriptStep_holds_ready` and repeated preservation inductions are deleted. |
-| [InsertSelectKeeps](../packages/belay-sqlite-model/Belay/Sqlite/Model/InsertSelectKeeps.lean) | `StatementKeeps.ofOwnRun` | The unified bridge retains INSERT-query-to-upsert condition compatibility at the actual inputs, including the selected execution's readiness implication. The ready-only bridge is deleted. |
+| [InsertSelectKeeps](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/InsertSelectKeeps.lean) | `StatementKeeps.ofOwnRun` | The unified bridge retains INSERT-query-to-upsert condition compatibility at the actual inputs, including the selected execution's readiness implication. The ready-only bridge is deleted. |
 
 Keep these transport facts, adapting only their applications/imports:
 [RunHoldsStep][step] `SqlState.finish_holds`, `SqlState.failed_holds`,
 `SqlState.publish_holds`, `advanceWith_holds`, `SqlTransition.counted_holds`;
 [ScriptRunHolds][surface] `Connection.afterStep_holds`.
 
-The actual inputs come from [SqlAdvance](../packages/belay-sqlite-model/Belay/Sqlite/Model/SqlAdvance.lean)
-and [StatementStep](../packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean).
+The actual inputs come from SqlAdvance ([Shared/Execution](../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/SqlAdvance.lean), [Schema/Dispatch](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SqlAdvance.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/SqlAdvance.lean))
+and StatementStep ([Schema/Dispatch](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/StatementStep.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/StatementStep.lean)).
 Their executable behavior is unchanged. Ordinary runs use `initial := none`;
 state readiness includes counter knowledge beyond raw evaluator readiness.
 Surface runs use `statementClock`. Conditions follow reached states, with the
 halt/ended and discarded-error behavior specified in ADR 0025 D4.
-`runScriptFrom_mem_runScriptAllFrom` in [ScriptRunAll](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunAll.lean)
+`runScriptFrom_mem_runScriptAllFrom` in [ScriptRunAll](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunAll.lean)
 already supplies canonical-run membership. Migrate `ScriptRunSingleton`'s
 condition clients too. Do not infer an input-dependent upsert condition merely
 from the INSERT-query condition: preserve an explicit compatibility premise,
@@ -130,15 +130,15 @@ interface. The listed propositions keep their meanings and distinct premises.
 
 | Current owner | Exact declarations |
 | --- | --- |
-| [ValidAtomsRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsRuns.lean) | `notNull_statementKeeps`, `typesFit_statementKeeps`, `checksHold_statementKeeps` |
-| [KeysUniqueRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueRuns.lean) | `keysUnique_statementKeeps` |
-| [ValidAtomsTogether](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsTogether.lean) | `constraintAtoms_statementKeeps` |
+| [ValidAtomsRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ValidAtomsRuns.lean) | `notNull_statementKeeps`, `typesFit_statementKeeps`, `checksHold_statementKeeps` |
+| [KeysUniqueRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/KeysUniqueRuns.lean) | `keysUnique_statementKeeps` |
+| [ValidAtomsTogether](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ValidAtomsTogether.lean) | `constraintAtoms_statementKeeps` |
 | [AdmittedStatementKeeps][admitted] | `catalogSupported_statementKeeps`, `rowsShaped_statementKeeps`, `rowidsDistinct_statementKeeps`, `rowidsInRange_statementKeeps`, `rowsWide_statementKeeps`, `rowsStored_statementKeeps`, `rowsAliased_statementKeeps`, `admitted_statementKeeps` |
 | [AdmittedStatementKeeps][admitted] | Retain propositions `Database.CatalogSupported`, `Database.RowsStoredWide`, `Database.RowsAliasedSupported`, `Resolved.Statement.AppliedValid`. |
-| [ForeignKeyRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyRuns.lean) | `rowReferences_statementKeeps`, `foreignKeyAtoms_statementKeeps` |
-| [ForeignKeySchemaRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySchemaRuns.lean) | `parentSchemasCompatibleKeeps` |
-| [ForeignKeySelectedRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySelectedRuns.lean) | `parentSchemasCompatibleSelectedKeeps`, `foreignKeyAtomsSelected_statementKeeps` |
-| [AtomsConditionsOfLink](../packages/belay-sqlite-model/Belay/Sqlite/Model/AtomsConditionsOfLink.lean) | `Resolved.Statement.runCondition_of_link`, `.notNullCondition_of_admitted`, `.typesFitCondition_of_link`, `.checksHoldCondition_of_admitted`, `.atomsCondition_of_link` |
+| [ForeignKeyRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/ForeignKeyRuns.lean) | `rowReferences_statementKeeps`, `foreignKeyAtoms_statementKeeps` |
+| [ForeignKeySchemaRuns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ForeignKeySchemaRuns.lean) | `parentSchemasCompatibleKeeps` |
+| ForeignKeySelectedRuns ([Programs/StatementRunLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ForeignKeySelectedRuns.lean), [Tooling/Counterexamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/ForeignKeySelectedRuns.lean)) | `parentSchemasCompatibleSelectedKeeps`, `foreignKeyAtomsSelected_statementKeeps` |
+| [AtomsConditionsOfLink](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/AtomsConditionsOfLink.lean) | `Resolved.Statement.runCondition_of_link`, `.notNullCondition_of_admitted`, `.typesFitCondition_of_link`, `.checksHoldCondition_of_admitted`, `.atomsCondition_of_link` |
 
 The resolver bridge formulas stay available; adjust their use in
 `runScriptAllFrom_admittedWith` instead of repeating resolution reasoning at clients.
@@ -166,17 +166,18 @@ their previous successful builds do not validate the changed contracts.
 These inventories are review guides, not permanent CI manifests or promised
 net source/build savings.
 
-[frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableAtomFrames.lean
-[effect]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/EffectSatisfies.lean
-[table-writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableAtomWrites.lean
-[atom-frames]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedAtomFrames.lean
-[atoms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAtoms.lean
-[engine-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowEngineFacts.lean
-[plain]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedPlainWrites.lean
-[writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalWrites.lean
-[step]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHoldsStep.lean
-[dispatch]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedTableAtomStatement.lean
-[raw]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHolds.lean
-[surface]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunHolds.lean
-[derived]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunDerived.lean
-[admitted]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedStatementKeeps.lean
+[frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/TableAtomFrames.lean
+[effect]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/EffectSatisfies.lean
+[table-writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/TableAtomWrites.lean
+[atom-frames]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/AdmittedAtomFrames.lean
+[atoms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowLocalAtoms.lean
+[engine-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowEngineFacts.lean
+[plain]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/AdmittedPlainWrites.lean
+[writes-schema-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowLocalWrites.lean
+[writes-programs-scripts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RowLocalWrites.lean
+[step]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RunHoldsStep.lean
+[dispatch]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/AdmittedTableAtomStatement.lean
+[raw]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RunHolds.lean
+[surface]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunHolds.lean
+[derived]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunDerived.lean
+[admitted]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/AdmittedStatementKeeps.lean

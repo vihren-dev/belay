@@ -1,5 +1,5 @@
 """The translation maps CHECK, CONSTRAINT names, foreign keys and generated columns
-(`packages/belay-sqlite-text/Belay/Sqlite/Translation/Constraints.lean`, through the text package's program).
+(`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Constraints.lean`, through the text package's program).
 
 These tests check, against the pinned parser library, the label that the translation gives
 each CHECK, as SQLite's parser tracks the constraint name in effect, and the column lists

@@ -8,13 +8,13 @@ from typing import cast
 import pytest
 
 from tests.runtime_support import CommandResult, run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 Record = dict[str, str | int | None]
 
 MARKERS = ("PROOF_COSTS", "DECLARATIONS", "WINDOW_HEARTBEATS", "INCREMENTAL")
 """The first words of the lines that the reader fixture prints; they are not compiler output."""
-COLLECTOR_IMPORT = "import Belay.Sqlite.ProofCost\n"
+COLLECTOR_IMPORT = "import Belay.Sqlite.Tooling.ProofCost.ProofCost\n"
 """The line that installs the collector."""
 
 
@@ -98,7 +98,7 @@ class Compiler:
 
     def compile_fixture(self, name: str) -> CommandResult:
         """Compile the Lean file `tests/surface/NAME.lean` as module NAME."""
-        return self.compile(name, (FIXTURES / f"{name}.lean").read_text())
+        return self.compile(name, fixture_file(f"{name}.lean").read_text())
 
     def artifact(self, name: str) -> Path:
         """The compiled file of a module, which exists only after a successful compile."""

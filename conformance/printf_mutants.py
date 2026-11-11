@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_printf`.
 
 from conformance.resolve_mutants import SQLITE
 
-NUMBERS = SQLITE + "Functions/PrintfNumbers.lean"
+NUMBERS = SQLITE + "Values/Scalar/PrintfNumbers.lean"
 """The number fields of printf."""
-TEXT = SQLITE + "Functions/PrintfText.lean"
+TEXT = SQLITE + "Values/Scalar/PrintfText.lean"
 """The text fields of printf."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

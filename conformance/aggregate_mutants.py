@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_aggregates`.
 
 from conformance.resolve_mutants import SQLITE
 
-EVAL = SQLITE + "QueryEval.lean"
+EVAL = SQLITE + "Queries/Evaluation/QueryEval.lean"
 """The values of the aggregates."""
-SUMMATION = SQLITE + "Summation.lean"
+SUMMATION = SQLITE + "Queries/Evaluation/Summation.lean"
 """The summation of SUM, AVG and TOTAL."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

@@ -1,7 +1,7 @@
 import Lake
 import Lake.Load
-import Belay.Sqlite.SqlCheckReport
-import Belay.Sqlite.ProofCostRun
+import Belay.Sqlite.Frontend.Embedding.SqlCheckReport
+import Belay.Sqlite.Tooling.ProofCost.ProofCostRun
 
 set_option doc.verso true
 

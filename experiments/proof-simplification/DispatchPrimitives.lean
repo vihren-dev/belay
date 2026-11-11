@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.AdmittedPlainWrites
+import Belay.Sqlite.Model.Schema.Rows.AdmittedPlainWrites
 
 set_option doc.verso true
 

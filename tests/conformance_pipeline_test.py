@@ -121,7 +121,7 @@ def test_preserved_schema_metadata(runtime_root: Path, tmp_path: Path) -> None:
 def test_catalog_comparison_catches_metadata_drift(runtime_root: Path) -> None:
     """Lean compares the resolved catalog with the native PRAGMA metadata; any drift disagrees.
 
-    This checks `VerifierConformance.Native.tablesMatch`, which replaced the Python
+    This checks `VerifierConformance.Tooling.Conformance.Native.tablesMatch`, which replaced the Python
     cross-check of the translated schema: each native metadata field is changed in a
     recorded case, and the compiled classifier must refuse the initial state.
     """

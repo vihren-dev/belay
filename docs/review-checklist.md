@@ -195,6 +195,6 @@ No findings.
 Example:
 
 ```
-- R1 must packages/verifier-conformance/VerifierConformance/Trace.lean:38 The allowed statement kinds are a literal inside the traversal of `trace`. Fix: define `tracedKinds` with a docstring and use it in `trace`.
+- R1 must packages/verifier-conformance/VerifierConformance/Programs/Scripts/Trace.lean:38 The allowed statement kinds are a literal inside the traversal of `trace`. Fix: define `tracedKinds` with a docstring and use it in `trace`.
 - R9 should conformance/predict.py:25 `predict` has no reason in its docstring. Fix: say why the inputs are read before the runner starts.
 ```

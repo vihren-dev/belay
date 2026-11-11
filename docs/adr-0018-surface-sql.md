@@ -49,7 +49,7 @@ What the code has today:
 
 - **Expressions are evaluated over one row.** `Expr.evaluate clock row` has no database
   and no outer row, so an expression cannot read a table. A query is a separate type
-  (`Resolution/QueryForm.lean`) that holds expressions; expressions do not hold queries.
+  (`Shared/Resolved/QueryForm.lean`) that holds expressions; expressions do not hold queries.
   `Source.subquery` exists as a placeholder that resolution never gives.
 - **An aggregate is a whole result column.** An aggregate inside an expression is the
   restriction `aggregate-in-expression`, so `HAVING count(*) > 1` and `count(*) + 1` are

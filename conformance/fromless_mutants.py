@@ -10,10 +10,10 @@ gives an aggregate over zero rows no row (`empty_aggregate_no_row`).
 from conformance.resolve_mutants import SQLITE
 from conformance.mutation_edits import Guard, Mutation, MutationGroup
 
-FUNCTIONS = SQLITE + "QueryFunctions.lean"
+FUNCTIONS = SQLITE + "Schema/Dispatch/QueryFunctions.lean"
 """The source rows of a query, joined from the one row with no cells."""
-QUERIES = SQLITE + "Resolution/ResultColumnTraced.lean"
-QUERY_BODY = SQLITE + "Resolution/QueryBodyTraced.lean"
+QUERIES = SQLITE + "Queries/Select/ResultColumnTraced.lean"
+QUERY_BODY = SQLITE + "Queries/Select/QueryBodyTraced.lean"
 """The resolution of a SELECT."""
 
 MUTANTS: dict[str, Mutation] = {
@@ -27,7 +27,7 @@ MUTANTS: dict[str, Mutation] = {
     "fromless_star_accepted": MutationGroup((
         (QUERIES, "  | .star => if !(scope.inner.any (·.namesVisible)) then throw (.prepare .noTablesSpecified) else",
          "  | .star => if false then throw (.prepare .noTablesSpecified) else"),
-        (SQLITE + "Resolution/CompoundTerms.lean",
+        (SQLITE + "Queries/Select/CompoundTerms.lean",
          "    | .star => if !(scope.inner.any (·.namesVisible)) then some (.prepare .noTablesSpecified) else none",
          "    | .star => if false then some (.prepare .noTablesSpecified) else none"),
     )),

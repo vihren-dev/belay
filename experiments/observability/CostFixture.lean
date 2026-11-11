@@ -1,4 +1,4 @@
-import Belay.Sqlite.ProofCost
+import Belay.Sqlite.Tooling.ProofCost.ProofCost
 
 /-! Exercise the existing optional collector without adding another Lean hook. -/
 

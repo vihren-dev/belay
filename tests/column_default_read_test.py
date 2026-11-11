@@ -57,8 +57,8 @@ def test_added_default_readback(version: str, tmp_path: Path,
         connection.close()
     inputs = ", ".join(f"⟨({expression}), {quoted_string(literal)}⟩" for literal, expression in READ_CASES)
     affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
-    source = f'''import Belay.Sqlite.Model.Codec
-import Belay.Sqlite.Model.Resolution.ReadDefaults
+    source = f'''import Belay.Sqlite.Model.Frontend.Codecs.Codec
+import Belay.Sqlite.Model.Schema.Columns.ReadDefaults
 open Belay.Sqlite.Model Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{inputs}]

@@ -34,7 +34,7 @@ Measured on `main` after ADR 0015 (2026-10-20):
 
 - **What the model already gives a surface.** `Database` (a catalog and rows, with the
   invariant `Database.Valid` as a separate proposition), the model's syntax
-  (`Syntax.Statement`), the resolver (`resolve` in `Resolution/Resolve.lean`), the
+  (`Syntax.Statement`), the resolver (`resolve` in `Schema/Dispatch/Resolve.lean`), the
   resolved statements, and `runSql` over them. The kernel reduces all of it: every case
   of the frozen corpora that agrees, 2,045 of corpus v5 and all of the authored corpora,
   is a proof by `decide +kernel` over these definitions.
@@ -42,7 +42,7 @@ Measured on `main` after ADR 0015 (2026-10-20):
   (`parser/library.h`, `sqlite_verifier_parser_parse`) gives a parse tree; a Python
   translation of 1,480 lines (`belay/sqlite/syntax*.py`, `sql_tree.py`,
   `parser_library.py`, `located.py`) turns it into the model's syntax, as JSON that the
-  Lean codec reads (`Codec/Resolution.lean`, derived `FromJson`). No Lean code calls
+  Lean codec reads (`{Values/Json,Frontend/Codecs,Queries/Preparation}/Resolution.lean`, derived `FromJson`). No Lean code calls
   native code.
 - **The guide's claims need SQL that the model does not describe.** The guide states a
   fact as a query, and most of its facts are `NOT EXISTS` subqueries. Its lead examples,
@@ -95,7 +95,7 @@ measurement overhead and count variation. The prototype measured about 9%
 heartbeat overhead in its sample (commit `489b22f6`,
 `docs/s7-proof-cost-findings.md`); this is not a general bound. Production
 collection, native mutual coverage and the baseline comparison are implemented
-(`import Belay.Sqlite.ProofCost`, `lake exe belay-sql-check --costs`).
+(`import Belay.Sqlite.Tooling.ProofCost.ProofCost`, `lake exe belay-sql-check --costs`).
 
 S6 clarification, accepted by the owner on 2026-10-24 after the checked
 foundations prototype:
@@ -227,7 +227,7 @@ The guide's run needs model work that this decision did not name, and S2 does it
 
 - **Outputs in the model.** The output of each statement (its rows, its number of changes and
   its result code) is computed today only in the conformance package
-  (`VerifierConformance/Outputs.lean`, `PossibleOutputs.lean`, `primaryCode` in `Case.lean`).
+  (`VerifierConformance/Tooling/Conformance/Outputs.lean`, `PossibleOutputs.lean`, `primaryCode` in `Case.lean`).
   It moves into the model, and the conformance package uses it from there. The rows of a query
   come from `Resolved.Query.possibleOn`: one result gives `Output.rows`, in the normal form of
   the guide, and more than one gives `Output.oneOf`.

@@ -24,7 +24,7 @@ PREDICT_TIMEOUT_SECONDS = 300
 
 
 def test_conditional_creation_verdicts_of_the_judge(runtime_root: Path) -> None:
-    """The subject's prediction of every case (`Resolution/ConditionalCreation.lean` and the translation of the
+    """The subject's prediction of every case (`{Queries/Preparation,Schema/Ddl}/ConditionalCreation.lean` and the translation of the
     clause), judged as the judge does it: every case agrees with native SQLite, and the no-op cases stop SQLite
     before it reads the rest of the statement."""
     records = authored_conditional_creation.records()

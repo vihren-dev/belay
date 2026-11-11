@@ -1,0 +1,126 @@
+import Belay.Sqlite.Model.Schema.Ddl.DatabaseDropColumn
+import Belay.Sqlite.Model.Schema.Columns.ReadDefaults
+import Belay.Sqlite.Model.Schema.Dispatch.Subqueries
+import Belay.Sqlite.Model.Shared.Execution.Execution
+
+set_option doc.verso true
+
+/-! Errors, outcomes and the definition steps of the execution semantics, which
+runs resolved statements. Resource failures and crashes are outside this model. -/
+
+namespace Belay.Sqlite.Model
+
+/-- A query over a database at a clock value, with the connection counters that it reads and the
+values bound to the parameters and the
+subqueries of its statement: its source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
+both in the statement's context ({name}`Resolved.statementContext`); none when a table is
+missing. The optional {lit}`initial` database is the one that the sources of the initial origin read in a
+two-state observation; use none otherwise. -/
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
+    (subqueries : List Resolved.Query) (initial : Option Database := none) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
+  let context := Resolved.statementContext clock counters parameters database subqueries initial
+  (query.source context database initial).map fun source => (source, query.run context source.rows)
+
+/-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
+fails with {lean}`ExecutionError.datatypeMismatch` when a value of its window is not an integer
+({name}`Resolved.QueryRun.mismatch`), else with {lean}`ExecutionError.integerOverflow` when it
+overflows, else with
+{lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
+otherwise succeeds, also without a run. -/
+def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.QueryRun) → Effect
+  | some (_, run) =>
+    if run.mismatch then .error (.datatypeMismatch, database)
+    else if run.overflow then .error (.integerOverflow, database)
+    else if run.fault == .must then .error (.functionError, database)
+    else .ok database
+  | none => .ok database
+
+/-- The effect of CREATE TABLE, ADD COLUMN, DROP, RENAME, a query or a prepare error, without a position
+(ADR 0006): the database after it, or the error with the database that it keeps, the
+input database for every error here. SQLite refuses a statement with its prepare error. CREATE
+TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no rows. ADD COLUMN reads
+the literal default and appends its affinity-applied value to each existing row. A statement that
+resolution marked {lit}`refusesPopulated` fails first on a table with
+rows, with {lean}`ExecutionError.referenceColumnDefault`, as SQLite compiles that check before the
+others. A NOT NULL column with a NULL default fails with {lean}`ExecutionError.nullColumnDefault`
+when rows exist, one with a time default with {lean}`ExecutionError.nonConstantColumnDefault`, and
+one whose CHECK constraint an existing row with the default fails with
+{lean}`ExecutionError.checkColumnDefault`; an empty table succeeds. Unsupported default readback
+returns {lean}`ExecutionError.unmodeled`, which the support check excludes.
+CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
+key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
+{lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
+to the catalog ({name}`Catalog.createTrigger`) with no rows; CREATE VIEW stores an unresolved definition the same way.
+RENAME replaces the catalog by the rewritten catalog of its statement and keeps every row; it fails with
+{lean}`ExecutionError.unmodeled` unless the rewritten catalog is the catalog after a change of names
+({name}`Catalog.sameOutline`). DROP COLUMN stores the catalog of its statement and removes the cell of the column from each
+row of the table ({name}`Database.dropColumn`); it fails with {lean}`ExecutionError.unmodeled` unless
+{name}`Database.runsDropColumn`. DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
+not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
+the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.
+CREATE TABLE, VIEW, INDEX or TRIGGER at a position other than the end of the catalog (or over
+rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
+COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
+{lit}`resolve` gives no such statement for a conforming database. A query changes nothing: its run over its source rows
+({name}`Resolved.Query.run`, {name}`Resolved.Query.source`) fails with
+{lean}`ExecutionError.datatypeMismatch` when a value of its window is not an integer, else with
+{lean}`ExecutionError.integerOverflow` when it overflows, else with
+{lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
+otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
+separately. {lit}`clock` is the statement's clock value, {lit}`counters` are the counters that its
+expressions read ({name}`Counters.view`) and {lit}`parameters` are the values
+bound to its parameters, which a query's expressions may read; use {lean}`([] : List Value)` for a statement
+that binds none. -/
+def step (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database) : Effect :=
+  match statement with
+  | .createTable target name table =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .addColumn target column refusesPopulated => match database.table target with
+    | none => .error (.unmodeled, database)
+    | some table =>
+      if refusesPopulated && !table.rows.isEmpty then .error (.referenceColumnDefault, database)
+      else if column.clockDefault then
+        if table.rows.isEmpty then .ok (database.addColumn target column .null)
+        else .error (.nonConstantColumnDefault, database)
+      else match readDefaultValue column with
+      | .error _ => .error (.unmodeled, database)
+      | .ok value =>
+        if column.notNull && value == .null && !table.rows.isEmpty then
+          .error (.nullColumnDefault, database)
+        else if !table.rows.all (fun row => column.checks.all
+            (LiteralData.checkHolds { row with values := row.values ++ [value] })) then
+          .error (.checkColumnDefault, database)
+        else .ok (database.addColumn target column value)
+  | .createIndex target name index =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      match database.table index.table with
+      | none => .error (.unmodeled, database)
+      | some table =>
+        if index.unique && !LiteralData.uniqueRows index.uniqueKey table.rows then
+          .error (.constraintViolation, database)
+        else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .createView target name view =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createView name view, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .createTrigger target name trigger =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createTrigger name trigger, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .drop positions _ => .ok (database.drop positions)
+  | .rewrite renamed =>
+    if database.catalog.sameOutline renamed then .ok { database with catalog := renamed }
+    else .error (.unmodeled, database)
+  | .dropColumn target index stored =>
+    if database.runsDropColumn target index stored then .ok (database.dropColumn target index stored)
+    else .error (.unmodeled, database)
+  | .setting .. => .ok database
+  | .prepareError error => .error (.prepare error, database)
+  | .query query subqueries => queryEffect database (query.runOn clock counters parameters database subqueries)
+  | .begin | .commit | .rollback | .insert .. | .upsert .. | .insertSelect .. | .update .. | .delete .. =>
+    .error (.unmodeled, database)
+
+end Belay.Sqlite.Model

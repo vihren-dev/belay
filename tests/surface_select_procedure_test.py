@@ -21,7 +21,7 @@ CORE_CASES = (("SelectProjectionCases", 6), ("SelectFilterCases", 3), ("SelectCo
 
 
 def test_residual_goals(runtime_root: Path, tmp_path: Path) -> None:
-    """The explanations of `sql_select` (`Belay/Sqlite/SqlSelect.lean`) when it stops (B04, B09), checked as
+    """The explanations of `sql_select` (`Belay/Sqlite/{Queries/Automation,Schema/Dispatch,Programs/Automation}/SqlSelect.lean`) when it stops (B04, B09), checked as
     text: a goal of an unknown shape is refused; a premise of the execution rule that is not proved stops it
     in the execution phase; arithmetic of the user stops it in the result phase, with the claim as the goal;
     cyclic forward rules end; and a rule without end and cyclic hints stop it at its limit of rule
@@ -32,7 +32,7 @@ def test_residual_goals(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_trust_boundaries(runtime_root: Path, tmp_path: Path) -> None:
-    """The trust boundaries of `sql_select` (`Belay/Sqlite/SqlSelect.lean`, B03, B07): a false precondition
+    """The trust boundaries of `sql_select` (`Belay/Sqlite/{Queries/Automation,Schema/Dispatch,Programs/Automation}/SqlSelect.lean`, B03, B07): a false precondition
     proves a triple that says nothing about a run; a false claim that a valid database refutes stays open;
     the attribute `sql_select_rule` refuses an axiom; and a proof that uses a rule proved with `sorry`
     depends on `sorryAx`, which the axiom audit of the other proofs rejects."""
@@ -40,7 +40,7 @@ def test_trust_boundaries(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_work_limit_and_cancellation(runtime_root: Path, tmp_path: Path) -> None:
-    """The work limit and the cancellation of `sql_auto` (`Belay/Sqlite/AutoSearch.lean`) on SELECT claims
+    """The work limit and the cancellation of `sql_auto` (`Belay/Sqlite/{Programs/Automation,Tooling/Tests}/AutoSearch.lean`) on SELECT claims
     (B06): a call that runs out of a work limit of 300 thousand heartbeats, or that is cancelled by a hint
     that the route `sql_select`, or the procedure inside the route `sql_run`, reads, fails, and the claim
     and its sibling goal stay unchanged and unassigned. The interruption reaches the caller. The procedure
@@ -57,12 +57,12 @@ REPLAYED_FALSE = ("convenience-screened", "run-schema-false", "run-witness-false
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
 def test_background_checking(runtime_root: Path, tmp_path: Path) -> None:
     """Background checking of SELECT claims (B10): `#sql_check` proves the A01 claim through the route
-    `sql_select` of its search (`Belay/Sqlite/CheckAutoProof.lean`). It refutes false claims about a run with
+    `sql_select` of its search (`Belay/Sqlite/{Programs/Automation,Tooling/Counterexamples}/CheckAutoProof.lean`). It refutes false claims about a run with
     a database from the schema, an explicit database, the database that the claim names and the empty
     database, and a convenience claim with its screen, each with a replay that native SQLite runs to the same
     rows, or to the same missing table. It answers unknown for a true claim with arithmetic that the procedure
     cannot prove, and, with the reason, for a refutation whose run has no script to replay
-    (`Belay/Sqlite/CheckClaim.lean`). An excluded execution rule removes the proof, and a cancellation in the
+    (`Belay/Sqlite/{Programs/Claims,Tooling/Counterexamples}/CheckClaim.lean`). An excluded execution rule removes the proof, and a cancellation in the
     search reaches the caller with no result."""
     output = check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("S6CheckLabels", 0), ("SelectCheckCases", 0)),
                                 timeout=CHAIN_TIMEOUT_SECONDS)

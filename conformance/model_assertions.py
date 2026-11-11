@@ -11,7 +11,7 @@ def audit_axioms(output: str) -> None:
         raise AssertionError(output)
 
 
-HEADER = ("import VerifierConformance.Json\n"
+HEADER = ("import VerifierConformance.Tooling.Conformance.Json\n"
           "open Belay.Sqlite.Model.Conformance\n"
           "set_option maxRecDepth 100000\nset_option maxHeartbeats 30000000\n")
 """The imports and options of a proof file."""

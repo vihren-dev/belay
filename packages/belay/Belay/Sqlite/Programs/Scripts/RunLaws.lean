@@ -1,0 +1,84 @@
+import Belay.Sqlite.Programs.Scripts.ProgramLaws
+
+set_option doc.verso true
+
+/-! How the surface's runs compose ({lit}`Run.lean`). Running is an action of the monoid of
+scripts: {lit}`Script.runOn_append` and {lit}`Database.Raw.run_append` state the run of
+{lit}`p ++ q` over the state of the connection, and {lit}`Script.run_append` states the guide's
+form over {lit}`(db.run p).db`, for a {lit}`p` that ends outside a transaction, leaves foreign
+keys off as it found them, and has no {lit}`Output.unmodeled`. -/
+
+namespace Belay.Sqlite
+
+/-- For every connection and all scripts {lit}`p` and {lit}`q`: the run of {lit}`p ++ q` on the
+connection is the run of {lit}`p`, then ({name}`ScriptRun.andThen`) the run of {lit}`q` on the
+connection that {lit}`p` left. When the run of {lit}`p` ends with {name}`Output.unmodeled`, it is
+the run of {lit}`p` alone. Proof sketch: the model's
+{name}`Belay.Sqlite.Model.runScriptFrom_append_constant`, for a run without a clock. -/
+theorem Script.runOn_append (connection : Connection) (p q : Script) :
+    (p ++ q).runOn connection = (p.runOn connection).andThen (q.runOn ·) :=
+  Belay.Sqlite.Model.runScriptFrom_append_constant runContext none 0 connection p.statements q.statements
+    (fun _ none => nomatch none)
+
+/-- For every plain database and all scripts {lit}`p` and {lit}`q`: the run of {lit}`p ++ q` is the
+run of {lit}`p`, then ({name}`ScriptRun.andThen`) the run of {lit}`q` on the connection that
+{lit}`p` left: with its database, a transaction that {lit}`p` began and did not end, and its
+setting of {lit}`PRAGMA foreign_keys`. When the run of {lit}`p` ends with
+{name}`Output.unmodeled`, it is the run of {lit}`p` alone. Proof sketch:
+{name}`Script.runOn_append` on the idle connection. -/
+theorem Database.Raw.run_append (raw : Database.Raw) (p q : Script) :
+    raw.run (p ++ q) = (raw.run p).andThen (q.runOn ·) :=
+  Script.runOn_append raw.connection p q
+
+/-- For every connection: if no transaction is open, foreign keys and recursive triggers are
+off, and the clock is 0 at every position, the idle connection to its database
+({name}`Database.Raw.connection`), which knows no counter, is the connection with fewer known
+counters ({name}`Belay.Sqlite.Model.Connection.LessKnown`). Proof sketch: split the connection
+into its database, snapshot, clock and settings; the hypotheses fix all of them except the
+database and the counters, and the idle connection knows no counter. -/
+theorem Connection.lessKnown_idle {connection : Connection} (outside : connection.state.snapshot = none)
+    (setting : connection.foreignKeys = false) (recursive : connection.recursiveTriggers = false)
+    (clock : connection.state.clock = fun _ => 0) :
+    (Database.Raw.connection connection.state.database).LessKnown connection := by
+  rcases connection with ⟨⟨database, snapshot, clockOf, counters⟩, foreignKeys, recursiveTriggers⟩
+  simp_all [Database.Raw.connection, Belay.Sqlite.Model.Connection.LessKnown,
+    Belay.Sqlite.Model.SqlState.LessKnown, Belay.Sqlite.Model.Counters.LessKnown]
+
+/-- The guide's form of {lit}`run_append`. For every database and all scripts {lit}`p` and
+{lit}`q`: if the run of {lit}`p` ends with no open transaction, with foreign keys and recursive
+triggers off as at the start of a run, and with no output {name}`Output.unmodeled` ({name}`Output.endsRun`),
+and the run of {lit}`q` on the database that the run of {lit}`p` gives has no such output either,
+then the outputs of the run of {lit}`p ++ q` are the outputs of the run of {lit}`p`, then the
+outputs of the run of {lit}`q` on that database. The second condition is needed because the run
+of {lit}`q` starts on a connection that knows no counter, while the run in {lit}`p ++ q` starts on
+the connection that {lit}`p` left: a statement of {lit}`q` that reads a counter ends the first run
+and not the second. Proof sketch: the first run leaves a connection related to an idle connection on its
+resulting database. The later run has no unknown-counter output, so the counter comparison
+theorem identifies its outputs on both connections. The model's script concatenation law
+then gives the output append equation. -/
+theorem Script.run_append (db : Database) (p q : Script) (outside : (db.run p).transaction = none)
+    (setting : (db.run p).foreignKeys = false) (recursive : (db.run p).recursiveTriggers = false)
+    (modeled : ∀ output ∈ (db.run p).outputs, output.endsRun = false)
+    (modeledLater : ∀ output ∈ ((db.run p).db.run q).outputs, output.endsRun = false) :
+    (db.run (p ++ q)).outputs = (db.run p).outputs ++ ((db.run p).db.run q).outputs := by
+  simp only [Database.run_script_default, Run.ofValid, SqlRun.ofScript_toScriptRun]
+    at outside setting recursive modeled modeledLater ⊢
+  have quiet : (db.raw.run p).ended = false := by
+    simpa [ScriptRun.ended] using modeled
+  have idle := Connection.lessKnown_idle outside setting recursive
+    ((Belay.Sqlite.Model.runScriptFrom_clock runContext none 0 db.raw.connection p.statements).trans rfl)
+  have noUnknown : ∀ output ∈ (Script.runOn (Database.Raw.connection
+      (Script.runOn db.raw.connection p).connection.state.database) q).outputs,
+      output.endsAtUnknownCounter = false := by
+    intro output member
+    cases ends : output.endsAtUnknownCounter
+    · rfl
+    · have endsRun := Belay.Sqlite.Model.Output.endsRun_of_endsAtUnknownCounter ends
+      rw [modeledLater output member] at endsRun
+      exact absurd endsRun (by decide)
+  have same := Belay.Sqlite.Model.runScriptFrom_counters runContext none q.statements 0 idle noUnknown
+  simp only [Database.Raw.run_append, ScriptRun.andThen, quiet, Bool.false_eq_true, ite_false]
+  simpa only [Database.Raw.run, Script.runOn] using
+    congrArg ((db.raw.run p).outputs ++ ·) same.1.symm
+
+end Belay.Sqlite

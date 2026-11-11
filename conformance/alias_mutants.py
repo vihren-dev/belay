@@ -9,11 +9,11 @@ treats `INTEGER PRIMARY KEY DESC` as an alias (`desc_rowid_alias`).
 
 from conformance.resolve_mutants import SQLITE
 
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The rows that INSERT writes."""
-ROW_UPDATE = SQLITE + "RowUpdate.lean"
+ROW_UPDATE = SQLITE + "Schema/Writes/RowUpdate.lean"
 """The rows that UPDATE writes."""
-DEFINITIONS = SQLITE + "Resolution/Definitions.lean"
+DEFINITIONS = SQLITE + "Schema/Columns/Definitions.lean"
 """The resolution of table definitions, which finds the alias."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

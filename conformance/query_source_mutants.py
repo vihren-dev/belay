@@ -3,22 +3,22 @@
 from conformance.resolve_mutants import SQLITE
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "cte_outer_scope_ignored": (SQLITE + "Resolution/CommonTableScope.lean",
+    "cte_outer_scope_ignored": (SQLITE + "Queries/Select/CommonTableScope.lean",
         "        | some query => findCommonTable queries name fuel query.parent\n",
         "        | some query => none\n"),
-    "cte_recursion_not_registered": (SQLITE + "Resolution/CommonTableExpansion.lean",
+    "cte_recursion_not_registered": (SQLITE + "Queries/Preparation/CommonTableExpansion.lean",
         "            recursive := state.recursive ++ [(index, copiedTerms.map Prod.snd)] }\n",
         "            recursive := state.recursive }\n"),
-    "source_sibling_binding": (SQLITE + "Resolution/SubqueryScopes.lean",
+    "source_sibling_binding": (SQLITE + "Queries/Select/SubqueryScopes.lean",
         "  let derived := around.sourceIndexes.contains index\n",
         "  let derived := false\n"),
-    "source_affinity_lost": (SQLITE + "Resolution/DerivedColumns.lean",
+    "source_affinity_lost": (SQLITE + "Queries/Select/DerivedColumns.lean",
         "    affinities := some (columns.map (·.affinity)),\n",
         "    affinities := some (columns.map (fun _ => none)),\n"),
-    "source_collation_lost": (SQLITE + "Resolution/DerivedColumns.lean",
+    "source_collation_lost": (SQLITE + "Queries/Select/DerivedColumns.lean",
         "      { name := Identifier.ofString column.name, declaredType := column.declaredType, collation := column.collation },\n",
         "      { name := Identifier.ofString column.name, declaredType := column.declaredType, collation := .binary },\n"),
-    "source_uncertainty_ignored": (SQLITE + "Subqueries.lean",
+    "source_uncertainty_ignored": (SQLITE + "Schema/Dispatch/Subqueries.lean",
         "        sourceCertain := bound.windowCertain context source.rows bound.limit true,\n",
         "        sourceCertain := true,\n"),
 }

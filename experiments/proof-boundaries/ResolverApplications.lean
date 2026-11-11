@@ -1,5 +1,5 @@
 import ResolverDispatch
-import Belay.Sqlite.Model.ResolveStatementApplied
+import Belay.Sqlite.Model.Schema.Ddl.ResolveStatementApplied
 
 set_option doc.verso true
 

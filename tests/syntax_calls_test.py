@@ -1,4 +1,4 @@
-"""The translation maps function calls to statement syntax (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Queries.lean`,
+"""The translation maps function calls to statement syntax (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Queries.lean`,
 through the text package's program).
 
 These tests check the JSON that Lean's `Syntax.Expr` decoder reads for calls without

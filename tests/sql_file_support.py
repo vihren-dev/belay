@@ -10,9 +10,9 @@ import os
 from pathlib import Path
 
 from tests.runtime_support import CommandResult, run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
-PROBE = (FIXTURES / "SqlFileProbe.lean").read_text()
+PROBE = fixture_file("SqlFileProbe.lean").read_text()
 """The probe module that exposes `file_probe`, a form that reads an SQL file through `loadSqlFileSource`."""
 OUTER_SQL, NESTED_SQL = "SELECT $x, 7", "SELECT $x, 99"
 """The texts of `sql/query.sql` in the outer package and in its nested project of the same name."""

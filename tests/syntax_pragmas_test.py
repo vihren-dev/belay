@@ -1,5 +1,5 @@
 """The mapping of the pragmas of the model to Syntax JSON (`pragma` in
-`packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean`, through the text package's program).
+`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Schema.lean`, through the text package's program).
 
 ADR 0018, D4 and ADR 0019, D2: the translation maps the query forms of `PRAGMA foreign_keys` and
 `PRAGMA recursive_triggers` and each value that SQLite's `sqlite3GetBoolean` reads as on or off,

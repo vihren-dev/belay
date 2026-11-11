@@ -1,4 +1,4 @@
-"""The ON CONFLICT clauses and the conflict algorithm of INSERT in `packages/belay-sqlite-text/Belay/Sqlite/Translation/Conflicts.lean`,
+"""The ON CONFLICT clauses and the conflict algorithm of INSERT in `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Conflicts.lean`,
 through the text package's program.
 
 These tests check the JSON that Lean's `Syntax.ConflictClause` decoder reads: the

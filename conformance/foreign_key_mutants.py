@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_foreign_keys`.
 
 from conformance.resolve_mutants import SQLITE
 
-MATCH = SQLITE + "ForeignKeyMatch.lean"
+MATCH = SQLITE + "Schema/ForeignKeys/ForeignKeyMatch.lean"
 """How a child row finds its parent row and a parent row its child rows."""
-ROWS = SQLITE + "ForeignKeyRows.lean"
+ROWS = SQLITE + "Schema/Writes/ForeignKeyRows.lean"
 """The rows of a write that checks foreign keys, with the actions."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

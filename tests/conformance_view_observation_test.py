@@ -172,7 +172,7 @@ def test_a_failing_view_body_stays_out_of_scope(runtime_root: Path) -> None:
 def test_view_observation_output_boundaries(runtime_root: Path, tmp_path: Path) -> None:
     """The kernel checks multiset alternatives, empty alternatives and SQL-error retention."""
     source = tmp_path / "ViewObservationBoundaries.lean"
-    source.write_text('''import VerifierConformance.ViewObservation
+    source.write_text('''import VerifierConformance.Tooling.Conformance.ViewObservation
 open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 def rowsOf : Except ViewObservationIssue (List (List Value)) → Option (List (List Value))
   | .ok rows => some rows

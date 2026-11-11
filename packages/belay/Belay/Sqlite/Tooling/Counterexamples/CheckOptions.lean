@@ -1,0 +1,69 @@
+import Belay.Sqlite.Tooling.Counterexamples.CheckOperation
+
+set_option doc.verso true
+
+/-! Explicit commands, searched tactics and automatic checks share these finite controls. Heartbeats bound
+elaborator and kernel work, and the time limit bounds compiled work. The programmatic checker accepts
+custom policies directly. -/
+
+/-- A finite Lean heartbeat budget for SQL checks; zero returns unknown without searching.
+Automatic checking shares it across discovery, all declarations in one command and the
+suggested examples. The default permits small independently rechecked SQL refutations. -/
+register_option sql.checkBudget : Nat := {
+  defValue := 100000
+  descr := "SQL checking budget in Lean heartbeat units (zero disables checking)" }
+
+/-- Reduction depth for a SQL check; zero disables it. The caller's depth is restored. -/
+register_option sql.checkRecursionLimit : Nat := {
+  defValue := Belay.Sqlite.Check.defaultRecursionLimit
+  descr := "finite reduction depth for SQL checking" }
+
+/-- Seed for the shared Plausible proposals; leave zero for reproducible defaults. -/
+register_option sql.checkSeed : Nat := {
+  defValue := 0
+  descr := "seed for SQL counterexample sampling" }
+
+/-- Size parameter for the shared sampler; row and candidate bounds still apply. -/
+register_option sql.checkSize : Nat := {
+  defValue := 2
+  descr := "size parameter for SQL counterexample sampling" }
+
+/-- Maximum rows in each sampled table; explicit witnesses retain their own rows. -/
+register_option sql.checkMaxRows : Nat := {
+  defValue := 2
+  descr := "maximum generated rows per SQL table" }
+
+/-- Seeded proposals after the small table contents. -/
+register_option sql.checkRandomSamples : Nat := {
+  defValue := 4
+  descr := "random SQL database proposals per parameter value" }
+
+/-- Maximum candidates, including supplied witnesses and screened candidates; zero skips all candidates. -/
+register_option sql.checkCandidates : Nat := {
+  defValue := 10000
+  descr := "maximum SQL counterexample candidates" }
+
+/-- Time limit of the compiled work of one SQL check (screen, candidates, data), in milliseconds. -/
+register_option sql.checkTimeLimit : Nat := {
+  defValue := Belay.Sqlite.Check.defaultTimeLimit
+  descr := "time limit in milliseconds of the compiled work of one SQL check" }
+
+/-- Maximum shrink attempts after a checked witness; zero retains that witness directly. -/
+register_option sql.checkShrinkAttempts : Nat := {
+  defValue := 16
+  descr := "maximum SQL counterexample shrink steps; the checker certifies only the smallest result" }
+
+namespace Belay.Sqlite.Check
+open Lean
+
+/-- Read the shared sampling controls. Explicit terms can then extend this configuration;
+programmatic callers can instead construct {name}`SampleConfig` themselves. -/
+def configuredSamples (options : Options) : SampleConfig := {
+  seed := sql.checkSeed.get options
+  size := sql.checkSize.get options
+  maxRows := sql.checkMaxRows.get options
+  randomSamples := sql.checkRandomSamples.get options
+  candidates := sql.checkCandidates.get options
+  timeLimit := sql.checkTimeLimit.get options }
+
+end Belay.Sqlite.Check

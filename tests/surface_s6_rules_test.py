@@ -6,7 +6,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -20,7 +20,7 @@ FIXTURE_TIMEOUT_SECONDS = 400
 def check_fixture(runtime_root: Path, tmp_path: Path, name: str, reports_expected: int) -> None:
     """Elaborate one fixture under `tests/surface`. It must succeed without errors, report the expected
     number of `#print axioms` results, and every report must list only ordinary logical axioms."""
-    result = run_command(surface_command(runtime_root, FIXTURES / name, tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file(name), tmp_path), cwd=tmp_path,
                          timeout=FIXTURE_TIMEOUT_SECONDS)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)

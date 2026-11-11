@@ -9,7 +9,7 @@ from tests.lean_server_support import LeanServer, compile_helper_module, positio
 from tests.runtime_support import run_command
 from tests.surface_automatic_editor_test import diagnostics, offset
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -66,7 +66,7 @@ def test_sql_auto_action_replaces_the_call_with_its_steps(runtime_root: Path, tm
     body, name, call, steps = CASES[case]
     source = HEADER + body + "end S6RulesEffects\n"
     extra = compile_helper_module(runtime_root, tmp_path, "S6RulesEffects",
-                                  (FIXTURES / "S6RulesEffects.lean").read_text())
+                                  fixture_file("S6RulesEffects.lean").read_text())
     server = LeanServer(runtime_root, tmp_path, module="EditorFixture", extra_modules=extra)
     try:
         uri = server.open(source, wait=False)
@@ -101,7 +101,7 @@ def test_sql_auto_offers_no_action_when_no_route_closes_the_goal(runtime_root: P
     to replace the call, so the editor never suggests an unchecked script."""
     source = HEADER + "theorem editorFalse : (1 : Nat) = 2 := by\n  sql_auto\nend S6RulesEffects\n"
     extra = compile_helper_module(runtime_root, tmp_path, "S6RulesEffects",
-                                  (FIXTURES / "S6RulesEffects.lean").read_text())
+                                  fixture_file("S6RulesEffects.lean").read_text())
     server = LeanServer(runtime_root, tmp_path, module="EditorFixture", extra_modules=extra)
     try:
         uri = server.open(source, wait=False)

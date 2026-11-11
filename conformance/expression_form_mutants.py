@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_expression_form
 
 from conformance.resolve_mutants import SQLITE
 
-EXPRESSIONS = SQLITE + "Resolution/OperandForms.lean"
+EXPRESSIONS = SQLITE + "Queries/Select/OperandForms.lean"
 """The resolution of query expressions, with the forms of slice 2."""
-SCALAR = SQLITE + "Functions/Scalar.lean"
+SCALAR = SQLITE + "Queries/Evaluation/Scalar.lean"
 """The scalar functions, with the operator ||."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

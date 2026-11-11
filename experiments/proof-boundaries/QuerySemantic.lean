@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.SimpleQueryLaws
-import Belay.Sqlite.Model.QueryStatementOutput
-import Belay.Sqlite.Model.StatementCalm
+import Belay.Sqlite.Model.Programs.StatementRunLaws.QueryStatementOutput
+import Belay.Sqlite.Model.Tooling.Counterexamples.QueryStatementOutput
+import Belay.Sqlite.Model.Programs.Scripts.StatementCalm
 
 set_option doc.verso true
 

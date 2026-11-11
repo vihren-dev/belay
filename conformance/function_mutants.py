@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_text_functions`
 
 from conformance.resolve_mutants import SQLITE
 
-SCALAR = SQLITE + "Functions/Scalar.lean"
+SCALAR = SQLITE + "Queries/Evaluation/Scalar.lean"
 """The values of the scalar functions."""
-TEXT = SQLITE + "Functions/Text.lean"
+TEXT = SQLITE + "Values/Scalar/Text.lean"
 """The text functions."""
-PATTERN = SQLITE + "Functions/Pattern.lean"
+PATTERN = SQLITE + "Values/Scalar/Pattern.lean"
 """The pattern dialects of LIKE and GLOB."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

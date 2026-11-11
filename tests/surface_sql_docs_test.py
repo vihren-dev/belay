@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -15,7 +15,7 @@ def test_sql_doc_observations(runtime_root: Path, tmp_path: Path) -> None:
     actual-run adapter uses bindings, fresh databases and explicit clock environments."""
     setup = module_setup(runtime_root, tmp_path)
     result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                          str(FIXTURES / "SqlDocObservation.lean")], cwd=tmp_path, timeout=120)
+                          str(fixture_file("SqlDocObservation.lean"))], cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     assert "SQL doc observation checks passed" in result.stdout, result.diagnostic()
 
@@ -31,6 +31,6 @@ def test_sql_doc_pure_helpers(runtime_root: Path, tmp_path: Path, fixture: str, 
     file) or `SqlDocBindings` (the parameter plans and their problems)."""
     setup = module_setup(runtime_root, tmp_path)
     result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                          str(FIXTURES / f"{fixture}.lean")], cwd=tmp_path, timeout=120)
+                          str(fixture_file(f"{fixture}.lean"))], cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     assert message in result.stdout, result.diagnostic()

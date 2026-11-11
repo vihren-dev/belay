@@ -1,9 +1,10 @@
 # belay
 
 The surface: the library that Lean developers import, `Belay`, with the SQLite surface under
-`Belay.Sqlite` (ADR 0016). It imports the model only through its roots, `Belay.Sqlite.Model`,
-`Belay.Sqlite.Model.Codec` and `Belay.Sqlite.Model.Codec.Resolution` (the terms of statement
-syntax that `sql r"..."` gives), and reads SQL text with the text package below it,
+`Belay.Sqlite` (ADR 0016). It imports the model only through the roots of the model's Lake
+libraries, such as `Belay.Sqlite.Model`, `Belay.Sqlite.Model.Frontend.Codecs.Codec` and
+`Belay.Sqlite.Model.Queries.Preparation.Resolution` (the terms of statement syntax that
+`sql r"..."` gives), and reads SQL text with the text package below it,
 `packages/belay-sqlite-text`.
 
 The text package calls the SQLite parser library while a file elaborates, so the modules of
@@ -144,7 +145,7 @@ row joined by ` | `, and the rows joined by newlines. A block that does not retu
 an error at the block. A named header argument binds the parameter of the same name, for example
 `(v := 5)` for `:v`. `(values := lists)` binds every parameter by number, `(env := environment)`
 gives the clock, `(expected := outputs)` states the exact `List Output`, and `+error` expects the
-first SQL failure. `Belay.Sqlite.SqlDocGuide` explains each option with checked examples.
+first SQL failure. `Belay.Sqlite.Tooling.SqlCommands.SqlDocGuide` explains each option with checked examples.
 
 
 ## Proof costs
@@ -160,7 +161,7 @@ The collector is a separate module. `import Belay` does not install it. Import i
 option `belay.proofCosts`, which is false by default:
 
 ```lean
-import Belay.Sqlite.ProofCost
+import Belay.Sqlite.Tooling.ProofCost.ProofCost
 
 set_option belay.proofCosts true
 

@@ -22,8 +22,23 @@ MUTANTS = {
 }
 
 
+SHADOWED = (*(f"packages/belay-sqlite-model/Belay/Sqlite/Model/{name}.lean" for name in (
+    "Schema/Dispatch/Execution", "Values/Scalar/LiteralData", "Schema/Rows/LiteralData", "Shared/Execution/StatementRun",
+    "Schema/Writes/StatementRun", "Schema/Writes/InsertSelectRun", "Schema/Dispatch/StatementStep",
+    "Programs/Scripts/StatementStep", "Shared/Execution/SqlAdvance", "Schema/Dispatch/SqlAdvance",
+    "Programs/Scripts/SqlAdvance", "Shared/Execution/SqlExecution", "Programs/Clock/SqlExecution",
+    "Shared/Execution/StatementOutput", "Schema/Columns/StatementOutput", "Programs/Scripts/StatementOutput",
+    "Programs/Scripts/PossibleOutput")),
+            *(f"packages/verifier-conformance/VerifierConformance/{name}.lean" for name in (
+                "Programs/Scripts/Trace", "Tooling/Conformance/Outputs", "Tooling/Conformance/PossibleOutputs",
+                "Tooling/Conformance/Pass", "Schema/Columns/Native", "Tooling/Conformance/Native",
+                "Tooling/Conformance/Case")))
+"""The files that each mutant copies into its own namespace, in an order that compiles: the files of one
+old module from the lowest division up. Of `Execution` only the schema part, which has `step`; the mutants
+use the production types of `Shared/Execution/Execution.lean`."""
+
 def schema_step_source(module: str) -> str:
-    """Copy `def step` up to the last `end Belay.Sqlite.Model` from Execution.lean.
+    """Copy `def step` up to the last `end Belay.Sqlite.Model` from Schema/Dispatch/Execution.lean.
 
     `step` must remain this namespace's final declaration; later declarations
     would also be copied into mutants. Docstrings do not determine either boundary.
@@ -39,20 +54,17 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
     answers = compiled_many(cases, runtime, emit_lean=True)
     admitted = [(case, answer) for case, answer in zip(cases, answers, strict=True) if answer["verdict"] == "AGREE"]
     terms = ",\n".join(answer["caseLean"] for _, answer in admitted)
-    source = ("import VerifierConformance.Case\nset_option maxRecDepth 100000\n"
+    source = ("import VerifierConformance.Tooling.Conformance.Case\nset_option maxRecDepth 100000\n"
               "set_option maxHeartbeats 100000000\n"
               "def originals : List Belay.Sqlite.Model.Conformance.Case := [\n" + terms + "\n]\n")
     hashes: dict[str, str] = {}
     for name, (target, before, after) in MUTANTS.items():
-        for filename in (*(f"packages/belay-sqlite-model/Belay/Sqlite/Model/{name}.lean"
-                           for name in ("Execution", "LiteralData", "StatementRun", "InsertSelectRun", "StatementStep", "SqlAdvance", "SqlExecution",
-                                        "StatementOutput", "PossibleOutput")),
-                         *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                           for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):
+        assert sum((root / filename).read_text().count(before) for filename in SHADOWED
+                   if Path(filename).stem == target) == 1, (name, before)
+        for filename in SHADOWED:
             text = (root / filename).read_text()
             hashes[filename] = hashlib.sha256(text.encode()).hexdigest()
             if Path(filename).stem == target:
-                assert text.count(before) == 1, (name, before)
                 text = text.replace(before, after)
             if Path(filename).stem == "Execution":
                 # Reuse production statement/outcome types; only the step definition is shadowed.

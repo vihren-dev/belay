@@ -7,7 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -30,7 +30,7 @@ def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_pat
         setup_path.write_text(json.dumps(setup))
         artifact = tmp_path / f"{name}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup_path}",
-                              "-o", str(artifact), str(FIXTURES / f"{name}.lean")],
+                              "-o", str(artifact), str(fixture_file(f"{name}.lean"))],
                              cwd=tmp_path, timeout=90)
         assert result.returncode == 0, result.diagnostic()
         assert all(term not in result.stdout for term in ("sorryAx", "ofReduceBool", "_native")), result.stdout

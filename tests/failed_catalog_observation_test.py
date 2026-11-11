@@ -2,7 +2,7 @@
 
 The execution state carries the catalog (ADR 0013, D1), so an observation's visible and
 committed databases each name their catalog. `compareSteps` and `stepJson`
-(`VerifierConformance/Case.lean`, `Predict.lean`) must use that catalog for each view,
+(`VerifierConformance/Tooling/Conformance/Case.lean`, `Predict.lean`) must use that catalog for each view,
 also after a failed statement inside a transaction.
 """
 
@@ -16,7 +16,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 CHECKS = """
-import VerifierConformance.Predict
+import VerifierConformance.Tooling.Conformance.Predict
 open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def shape : CatalogTable := { columns := [{ name := name! "id", declaredType := none }] }

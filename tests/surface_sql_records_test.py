@@ -6,7 +6,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.sql_file_support import installed_layout, lake_build, write_package
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -23,8 +23,8 @@ sql_module Named from "sql/named.sql"
 
 PROBE = '''import Lean
 import SqlRecords.Queries
-import Belay.Sqlite.SqlSourceRecord
-import Belay.Sqlite.SqlCheckReport
+import Belay.Sqlite.Frontend.Embedding.SqlSourceRecord
+import Belay.Sqlite.Frontend.Embedding.SqlCheckReport
 open Belay.Sqlite Lean Elab Command
 
 /-- The text of each file with `\n` line ends, as Lake would hash it. -/
@@ -55,7 +55,7 @@ check_imported_records
 
 def test_pure_record_checks(runtime_root: Path, tmp_path: Path) -> None:
     """`sqlTextHash` and `dedupeSqlSourceUses` (`SqlSourceRecord.lean`), and `groupSources` (`SqlCheckReport.lean`), over small values."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "SqlSourceRecordChecks.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("SqlSourceRecordChecks.lean"), tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
 

@@ -15,15 +15,20 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
 
 
 def test_laws_kernel(runtime_root: Path) -> None:
-    """Compile the actual universal proofs and reject all forbidden proof-oracle axioms."""
-    source = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model/Laws.lean"
-    checked = subprocess.run([str(runtime_root / "lean/bin/lean"), str(source)],
-        env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
-        capture_output=True, text=True, timeout=30)
-    assert checked.returncode == 0, checked.stdout + checked.stderr
-    audit_axioms(checked.stdout)
+    """Compile the actual universal proofs and reject all forbidden proof-oracle axioms.
+
+    The proofs are in the two parts of the laws module; each part prints the axioms of its own theorems."""
+    model = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model"
+    printed = ""
+    for part in ("Programs/Scripts/Laws.lean", "Tooling/Conformance/Laws.lean"):
+        checked = subprocess.run([str(runtime_root / "lean/bin/lean"), str(model / part)],
+            env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
+            capture_output=True, text=True, timeout=30)
+        assert checked.returncode == 0, checked.stdout + checked.stderr
+        printed += checked.stdout
+    audit_axioms(printed)
     for name in ("rollback", "statement_atomicity", "constraint_rollback", "add_column_shape"):
-        assert f"Belay.Sqlite.Model.Conformance.{name}' depends on axioms" in checked.stdout
+        assert f"Belay.Sqlite.Model.Conformance.{name}' depends on axioms" in printed
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])

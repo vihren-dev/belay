@@ -8,7 +8,7 @@ import pytest
 from tests.runtime_support import run_command
 from tests.s6_check_support import split_blocks
 from tests.surface_replay_test import native_replay
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -24,7 +24,7 @@ def test_claims_on_real_schemas_are_false(runtime_root: Path, tmp_path: Path) ->
     every claim of the fixture is false at the default budget. With (db := twoChecked) alone, the
     counterexample has the supplied schema and row. Native SQLite builds the table from the replay and
     fails on the unique index."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CheckRealSchemas.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CheckRealSchemas.lean"), tmp_path),
                          cwd=tmp_path, timeout=380)
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)
@@ -48,7 +48,7 @@ def test_altered_schema_replay_inserts_rows_with_the_triggers_off(runtime_root: 
     text with a trigger and an ALTER TABLE is built from the text without its INSERT, then its rows with
     `.dbconfig enable_trigger off`. Native SQLite builds the same rows, so the trigger adds no audit row, and
     the replay fails on the unique index."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CheckRealSchemas.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CheckRealSchemas.lean"), tmp_path),
                          cwd=tmp_path, timeout=380)
     assert result.returncode == 0, result.diagnostic()
     block = split_blocks(result.stdout)["altered"]

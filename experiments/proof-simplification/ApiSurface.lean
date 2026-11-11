@@ -1,5 +1,5 @@
-import Belay.Sqlite.Model.ScriptRunConstraints
-import Belay.Sqlite.Model.ForeignKeyRuns
+import Belay.Sqlite.Model.Programs.Scripts.ScriptRunConstraints
+import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyRuns
 import Belay.Sqlite.Model.ScriptRunAdmittedRows
 
 set_option doc.verso true

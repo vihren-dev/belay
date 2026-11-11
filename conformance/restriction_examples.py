@@ -1,6 +1,6 @@
 """One example script for each model restriction of the registry.
 
-Every restriction id of `RestrictionKind.id` (`Resolution/RestrictionText.lean`) has
+Every restriction id of `RestrictionKind.id` (`Queries/Preparation/RestrictionText.lean`) has
 an example here: a schema and a migration that the resolver refuses with that id.
 The examples show that each restriction can be reached from SQL, and they show users
 what each restriction refuses. `resolve_example` runs one example through the frontend and the

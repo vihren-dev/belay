@@ -21,8 +21,8 @@ every module under {lit}`Belay`, the model's too, as part of this package. -/
 @[default_target]
 lean_lib BelaySqliteText where
   roots := #[]
-  globs := #[.one `Belay.Sqlite.Grammar, .one `Belay.Sqlite.Parse, .one `Belay.Sqlite.ParserLibrary,
-    .one `Belay.Sqlite.ParseTree, .andSubmodules `Belay.Sqlite.Translation, .one `Belay.Sqlite.TranslationRequest]
+  globs := #[.one `Belay.Sqlite.Frontend.Grammar.Grammar, .one `Belay.Sqlite.Frontend.Grammar.Parse, .one `Belay.Sqlite.Frontend.Grammar.ParserLibrary,
+    .one `Belay.Sqlite.Frontend.Grammar.ParseTree, .one `Belay.Sqlite.Translation, .one `Belay.Sqlite.Frontend.Grammar.Columns, .one `Belay.Sqlite.Frontend.Grammar.CommonTables, .one `Belay.Sqlite.Frontend.Grammar.CompoundSelect, .one `Belay.Sqlite.Frontend.Grammar.Conflicts, .one `Belay.Sqlite.Frontend.Grammar.Constraints, .one `Belay.Sqlite.Frontend.Grammar.Expressions, .one `Belay.Sqlite.Frontend.Grammar.Forms, .one `Belay.Sqlite.Frontend.Grammar.Located, .one `Belay.Sqlite.Frontend.Grammar.Mappers, .one `Belay.Sqlite.Frontend.Embedding.NameTokens, .one `Belay.Sqlite.Frontend.Grammar.Parameters, .one `Belay.Sqlite.Frontend.Grammar.Queries, .one `Belay.Sqlite.Frontend.Grammar.QueryExpression, .one `Belay.Sqlite.Frontend.Grammar.Renames, .one `Belay.Sqlite.Frontend.Grammar.Schema, .one `Belay.Sqlite.Frontend.Grammar.Select, .one `Belay.Sqlite.Frontend.Grammar.Shapes, .one `Belay.Sqlite.Frontend.Grammar.Sources, .one `Belay.Sqlite.Frontend.Grammar.Statements, .one `Belay.Sqlite.Frontend.Grammar.Subqueries, .one `Belay.Sqlite.Frontend.Grammar.Tables, .one `Belay.Sqlite.Frontend.Grammar.Tree, .one `Belay.Sqlite.Frontend.Grammar.Triggers, .one `Belay.Sqlite.Frontend.Grammar.Views, .one `Belay.Sqlite.Frontend.Grammar.Writes, .one `Belay.Sqlite.Frontend.Grammar.TranslationRequest]
   precompileModules := true
 
 /-- A parser or a tokenizer of the parser library, as {lit}`parser/generated/manifest.json` lists it. -/

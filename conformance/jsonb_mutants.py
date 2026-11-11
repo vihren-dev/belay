@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_jsonb`.
 
 from conformance.resolve_mutants import SQLITE
 
-JSONB = SQLITE + "Json/Jsonb.lean"
+JSONB = SQLITE + "Values/Json/Jsonb.lean"
 """The JSONB encoder and reader."""
-BUILD = SQLITE + "Json/Build.lean"
+BUILD = SQLITE + "Values/Json/Build.lean"
 """The SQL values that the JSON functions store."""
-EXTRACT = SQLITE + "Json/Extract.lean"
+EXTRACT = SQLITE + "Values/Json/Extract.lean"
 """The JSON argument of a function."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

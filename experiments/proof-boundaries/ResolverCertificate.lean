@@ -1,6 +1,4 @@
-import Belay.Sqlite.Model.ResolveStatementFacts
-import Belay.Sqlite.Model.ResolveStatementValid
-import Belay.Sqlite.Model.Resolution.ResolveStateSpec
+import Belay.Sqlite.Model.Schema.Dispatch.ResolveStatementValid
 
 set_option doc.verso true
 

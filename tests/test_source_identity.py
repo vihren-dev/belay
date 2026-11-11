@@ -17,17 +17,17 @@ PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "publ
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
 COMPONENTS: set[str] = {"model", "surface", "text", "parser", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
-    "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
-    "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Catalog/Database.lean": {"model"},
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Frontend/Codecs/Codec.lean": {"model"},
     "packages/belay/Belay.lean": {"surface"}, "packages/belay/lakefile.lean": {"surface"},
-    "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
+    "packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Parse.lean": {"text"},
     "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
     "parser/generated/parsers/0123456789abcdef/syntax.c": {"parser"},
     "parser/generated/tokenizers/0123456789abcdef/sqlite3_tokenizer.c": {"parser"}, "parser/generated/library_metadata.inc": {"parser"},
     "parser/generated/manifest.json": {"parser"},
     "parser/c-headers/string.h": {"parser"}, "parser/c-headers/stdio.h": {"parser"},
-    "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
+    "packages/verifier-conformance/VerifierConformance/Programs/Scripts/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
     "packages/public-doc-tools/PublicDocSyntax.lean": {"docTools"},
     "belay/sqlite/sql_model.py": set(), "tests/test_input.py": set(),
@@ -172,7 +172,7 @@ def test_model_change_reaches_the_conformance_runtime(
     assert changed['modelPackage'] == before['modelPackage']
     assert changed['conformanceRuntime'] != before['conformanceRuntime']
     runner.write_bytes(original)
-    model = root / 'packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean'
+    model = root / 'packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Catalog/Database.lean'
     model.write_bytes(model.read_bytes()+b'\nmodel change\n')
     changed = derivations()
     assert all(changed[name] != before[name] for name in before)

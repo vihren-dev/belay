@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Resolution.OperandProjection
+import Belay.Sqlite.Model.Queries.Select.OperandProjection
 
 set_option doc.verso true
 

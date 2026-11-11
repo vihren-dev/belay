@@ -7,7 +7,7 @@ notation (`catalog.find`), so a copy of single definitions in a private namespac
 would still call the originals. Each mutant is therefore a real copy of the
 `belay-sqlite-model` and `verifier-conformance` packages with one logical fault, which Lake
 rebuilds from one shared base build. A test process builds that base once, for all of its tests. The build covers only the import closure of
-`VerifierConformance.Classify`, which does not import the law modules, so a mutant that
+`VerifierConformance.Tooling.Conformance.Classify`, which does not import the law modules, so a mutant that
 breaks a law still builds. The Lean interpreter then classifies the cases, given as the
 Lean terms that the conformance runner emits, with the mutant's `classifyCase`.
 
@@ -32,25 +32,25 @@ SQLITE = "belay-sqlite-model/Belay/Sqlite/Model/"
 """The model sources, relative to `packages/`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "non_ascii_fold": (SQLITE + "Identifier.lean",
+    "non_ascii_fold": (SQLITE + "Shared/Values/Identifier.lean",
         "def Identifier.folded (name : Identifier) : List UInt8 := name.bytes.map lowerAscii",
         "def Identifier.folded (name : Identifier) : List UInt8 :=\n"
         "  name.bytes.map fun byte => if 0x80 ≤ byte && byte ≤ 0x9e && byte != 0x97 then byte + 32 else lowerAscii byte"),
-    "affinity_order": (SQLITE + "Resolution/TypeAffinity.lean",
+    "affinity_order": (SQLITE + "Shared/Catalog/TypeAffinity.lean",
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
-    "desc_rowid_alias": (SQLITE + "Resolution/Definitions.lean",
+    "desc_rowid_alias": (SQLITE + "Schema/Columns/Definitions.lean",
         "aliasesRowid (reportedType definition.declaredType) && !descending", "aliasesRowid (reportedType definition.declaredType)"),
-    "rollback_keeps_catalog": (SQLITE + "Resolution/ResolveStatement.lean",
+    "rollback_keeps_catalog": (SQLITE + "Schema/Dispatch/ResolveStatement.lean",
         "| .rollback => pure (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none })",
         "| .rollback => pure (.rollback, { state with catalog := state.catalog, saved := none })"),
-    "table_index_same_name": (SQLITE + "Resolution/Definitions.lean",
+    "table_index_same_name": (SQLITE + "Schema/Columns/Definitions.lean",
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .trigger _, .. }) | none =>",
         "  | some (_, { entry := .index _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
-    "constant_column_limit": (SQLITE + "Resolution/AddColumn.lean",
+    "constant_column_limit": (SQLITE + "Schema/Columns/AddColumn.lean",
         "table.columns.length + 1 > context.profile.limits.columns", "table.columns.length + 1 > 2000"),
-    "no_table_exists": (SQLITE + "Resolution/Definitions.lean",
+    "no_table_exists": (SQLITE + "Schema/Columns/Definitions.lean",
         "  | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)\n"
         "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
@@ -58,18 +58,18 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
-    "no_too_many_columns": (SQLITE + "Resolution/AddColumn.lean",
+    "no_too_many_columns": (SQLITE + "Schema/Columns/AddColumn.lean",
         "    else if table.columns.length + 1 > context.profile.limits.columns then\n"
         "      prepareError catalog (.expression (.tooManyColumns tableName))\n", ""),
-    "no_duplicate_column": (SQLITE + "Resolution/AddColumn.lean",
+    "no_duplicate_column": (SQLITE + "Schema/Columns/AddColumn.lean",
         "    else if (columnPosition table.columns definition.name).isSome then\n"
         "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
-    "no_such_table": (SQLITE + "Resolution/AddColumn.lean",
+    "no_such_table": (SQLITE + "Schema/Columns/AddColumn.lean",
         "    else prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
         "    else restrict [] .engineTable\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))"),
-    "commit_without_transaction": (SQLITE + "SqlAdvance.lean",
+    "commit_without_transaction": (SQLITE + "Shared/Execution/SqlAdvance.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
         "    | some _ => .next { state with snapshot := none }",
         "    | none => .next state\n    | some _ => .next { state with snapshot := none }"),
@@ -110,7 +110,7 @@ def classifier(terms: list[str]) -> str:
     definitions = "".join(f"def case{index} : Case :=\n  " + term.replace("\n", "\n  ") + "\n"
                           for index, term in enumerate(terms))
     names = ", ".join(f"case{index}" for index in range(len(terms)))
-    return ("import VerifierConformance.Classify\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
+    return ("import VerifierConformance.Tooling.Conformance.Classify\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")

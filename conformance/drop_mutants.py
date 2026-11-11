@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_drops`.
 
 from conformance.resolve_mutants import SQLITE
 
-DROPS = SQLITE + "Resolution/Drops.lean"
+DROPS = SQLITE + "Schema/Ddl/Drops.lean"
 """The resolution of DROP TABLE and DROP INDEX."""
-CATALOG_DROP = SQLITE + "Resolution/CatalogDrop.lean"
+CATALOG_DROP = SQLITE + "Shared/Catalog/CatalogDrop.lean"
 """The catalog function of a DROP."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

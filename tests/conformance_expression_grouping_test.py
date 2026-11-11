@@ -22,7 +22,7 @@ PREDICT_TIMEOUT_SECONDS = 300
 
 def test_expression_grouping_verdicts_of_the_judge(runtime_root: Path) -> None:
     """The subject's prediction of every case (`resolveGroupTermTraced` and `resolveGroupExpressionTraced` of
-    `Resolution/QueryAggregates.lean`, and the association of `Resolution/GroupAssociation.lean`), judged as the
+    `Queries/Select/QueryAggregates.lean`, and the association of `Queries/Select/GroupAssociation.lean`), judged as the
     judge does it: every case agrees with native SQLite, so expression terms group, collate, number and give the
     values of a group as SQLite does."""
     records = authored_expression_grouping.records()

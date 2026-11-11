@@ -8,7 +8,7 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The key equality of the execution semantics."""
 
 BODY = "  first != .null && second != .null && collation.compare first second == .eq"

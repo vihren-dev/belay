@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_date_modifiers`
 
 from conformance.resolve_mutants import SQLITE
 
-ARITHMETIC = SQLITE + "Date/ModifierArithmetic.lean"
+ARITHMETIC = SQLITE + "Values/DateTime/ModifierArithmetic.lean"
 """Amounts of time units."""
-FUNCTIONS = SQLITE + "Date/Functions.lean"
+FUNCTIONS = SQLITE + "Values/DateTime/Functions.lean"
 """The modifier loop of the functions."""
-MODIFIER = SQLITE + "Date/Modifier.lean"
+MODIFIER = SQLITE + "Values/DateTime/Modifier.lean"
 """The keyword modifiers."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

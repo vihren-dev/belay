@@ -40,8 +40,8 @@ of the pinned release (`src/func.c`, `src/insert.c`, `src/vdbe.c`, `src/vdbeaux.
 What the code has today:
 
 - **Resolution.** The catalog of built-in functions gives the five functions their numbers of
-  arguments (`builtinFunction?`, `Resolution/FunctionCatalog.lean`): none, and one for
-  `randomblob`. `scalarCall` (`Resolution/FunctionCalls.lean`) has no form for them, so each
+  arguments (`builtinFunction?`, `Queries/Select/FunctionCatalog.lean`): none, and one for
+  `randomblob`. `scalarCall` (`Queries/Select/FunctionCalls.lean`) has no form for them, so each
   call is the restriction `unmodeled-function`. A run ends at such a statement with the
   restriction's reason (`ScriptRunExamples.lean`, the example of `random()`).
 - **The connection.** `SqlState` (`SqlState.lean`) holds the database, the snapshot of an open
@@ -212,7 +212,7 @@ unknown counter), the run is the same under every environment.
   and the row for which the model evaluates it. `random()` converts eight bytes as
   `randomFunc` does. `randomblob(N)` takes N bytes, or 1 when N is less than 1, with N from the
   model's integer conversion of a value. A size above the model's limit for a computed blob is
-  not described, as for `zeroblob` above `zeroblobLimit` (4,096 bytes, `Functions/Scalar.lean`).
+  not described, as for `zeroblob` above `zeroblobLimit` (4,096 bytes, `Values/Scalar/Scalar.lean`).
 - **The claims.** The execution relation relates a script to the outcome of every clock
   assignment and every source, so a claim holds for every source. A law says that a statement
   that calls neither function runs the same under every source, as `runSqlAt_of_readsClock`

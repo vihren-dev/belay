@@ -10,7 +10,7 @@ from tests.sql_file_support import installed_layout, lake_build, run_checker, wr
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
-MEASURED = '''import Belay.Sqlite.ProofCost
+MEASURED = '''import Belay.Sqlite.Tooling.ProofCost.ProofCost
 
 /-- A cheap proof. -/
 theorem cheap : True := True.intro
