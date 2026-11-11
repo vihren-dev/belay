@@ -23,6 +23,10 @@ Created 2026-11-10. Task: `20261110-ownership-reorganization.task.md`. DONE 2026
   - `{name}` became `{lit}` in two comments whose declaration is now in another module.
   - The change of #366 to `CounterexampleSearchBudget.lean` is applied to the moved file,
     `tests/surface/Tooling/Tests/CounterexampleSearchBudget.lean`.
+- A `README.md` in each division directory and each team directory of the four libraries and of
+  `tests/surface` (104 files; owner request, 2026-11-11). It tells in plain words which code belongs
+  in the directory. The Nix sources of the packages include only `.lean` and `.toml` files, so the
+  files change no package build.
 - The judge is unchanged, so `integrity/judge.lock.json` is unchanged.
 - Lean code lines (scc 3.7.0, the scope of `docs/lean-simplification-goal.md`, a local count): 93,451
   before the move, 94,728 after it, +1,277 lines (packages +1,323, tests -46). The new lines are the
