@@ -229,7 +229,7 @@ For each JUnit report it gives the tests, failures and time, and whether the sui
 ran in this job or Nix reused it from an earlier build, by the report's timestamp. It
 also lists the ten slowest test cases that ran in this job. Individual subprocess and whole-command deadlines remain
 bounded: a timed-out command's process group is killed, and the output read before
-the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes, including the reference phase, runtime,
+the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes on Linux and 120 minutes on macOS, including the reference phase, runtime,
 complete checks, setup and artifact retention. Child limits
 are individual upper bounds; their sum is not a promised job duration. Individual suite and command limits remain unchanged.
 Superseded ordinary runs are cancelled; manual and scheduled runs are not.
