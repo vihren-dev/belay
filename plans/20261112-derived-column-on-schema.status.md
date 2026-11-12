@@ -1,7 +1,7 @@
 # Status: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12. Task: `20261112-derived-column-on-schema.task.md`. Issue #376.
-Status: in progress; reads (a), success (b), example (c) and the test of the page with a fresh agent done; the end checks are pending.
+Status: DONE (2026-11-12, PR #390).
 
 ## References
 
@@ -66,3 +66,6 @@ Status: in progress; reads (a), success (b), example (c) and the test of the pag
 - Success (b): `tests/surface_derived_column_test.py -k "success_of_the or boundaries"`.
 - Example (c): `tests/surface_derived_column_test.py` (the consumer test needs the runtime of
   `just build`).
+- 2026-11-12: end checks on the top of stack 374, rebased on main with #381: `just test-full` passed,
+  `just verdict` gave no disagreement, `just test-nix` (94 passed) and `just test-scheduled-checks`
+  (53 passed) passed. PR #390. DONE.

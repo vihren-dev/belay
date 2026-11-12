@@ -1,7 +1,7 @@
 # Task: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12 (status: `20261112-derived-column-on-schema.status.md`). Issue #376, launch blocker.
-Status: specified; implementation pending.
+Status: DONE (2026-11-12, PR #390).
 
 ## Problem
 
