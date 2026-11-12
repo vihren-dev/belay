@@ -32,6 +32,16 @@ def test_derived_column_law_with_a_schema_premise(runtime_root: Path, tmp_path: 
     check_module_chain(runtime_root, tmp_path, (("DerivedColumnSchemaPremise", 4),))
 
 
+def test_boundaries_of_the_computed_derived_column_check(runtime_root: Path, tmp_path: Path) -> None:
+    """Fixture DerivedColumnCheckBoundaries checks the boundaries of the computed check
+    `DerivedColumnMigration.preservesCheck` of the package: the kernel evaluates it to false for a read with
+    `SELECT *`, a column name that exists, a value with a parameter or the clock, a new column with a
+    constraint and a trigger that the UPDATE fires. On a second schema, whose migrated table is not the
+    first, the check proves a read with an INTEGER filter for every bound value. The theorem uses only
+    logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("DerivedColumnCheckBoundaries", 1),), timeout=60)
+
+
 @pytest.mark.requires_native("sqlite3")
 def test_other_derived_expressions_and_the_failing_affinity_premise(runtime_root: Path, tmp_path: Path) -> None:
     """The general laws apply to the concatenation of two columns stored in a TEXT column (fixtures
