@@ -1,7 +1,7 @@
 # Status: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12. Task: `20261112-derived-column-on-schema.task.md`. Issue #376.
-Status: in progress; reads (a), success (b) and example (c) done; the test of the page with a fresh agent and the end checks are pending.
+Status: in progress; reads (a), success (b), example (c) and the test of the page with a fresh agent done; the end checks are pending.
 
 ## References
 
@@ -52,6 +52,11 @@ Status: in progress; reads (a), success (b) and example (c) done; the test of th
   model modules, the skill templates had no Lean file category (from the page for agents, #373), and the
   test of #371 was in no Nix suite, so it ran on the host with the wrong runtime. Fix commits are after the
   commits of each issue.
+- 2026-11-12: the second `just test-full` failed in `surfaceSelect`: `test_background_checking` gave
+  unknown for a claim that it proves. Bisection found the #371 commit: the check of a command had only nine
+  tenths of the budget, so that the reason of an unknown result stays. A fix commit after the #371 commits
+  gives the check the whole budget again and keeps the unknown outcome, with its reason, when the end of
+  the budget aborts the command.
 
 ## Tests of each commit
 
