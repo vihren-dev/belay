@@ -47,8 +47,8 @@ def elaborateInputs (inputs : Array (TSyntax `sqlCheckInput)) : TermElabM Sample
     { database, environment := samples.environment, named := samples.named } }
 
 /-- Run the common checker with frontend options and optional supplied terms. Input elaboration
-and checking share one heartbeat budget; the check uses at most {name}`commandCheckShare` of what the
-inputs leave, so an unknown result keeps its reason. Type errors retain their input locations; exhaustion
+and checking share one heartbeat budget. When the check uses the whole budget, its unknown result keeps
+its reason. Type errors retain their input locations; exhaustion
 is unknown and cancellation propagates. A displayed proof script is printed, parsed and
 checked again against the original proposition inside that budget. Exclusions apply to both
 the returned certificate and the printed script. Custom generators can use {name}`check` and
@@ -59,13 +59,15 @@ def configuredCheck (proposition : Expr) (inputs : Array (TSyntax `sqlCheckInput
   let options ← getOptions
   let recursionLimit := sql.checkRecursionLimit.get options
   if recursionLimit == 0 then return {}
+  -- The end of the budget aborts the command after the check; this keeps the reason of its unknown result.
+  let unknown ← IO.mkRef ({} : Outcome)
   let result ← withOptions (maxRecDepth.set · recursionLimit) <|
     withinBudget (sql.checkBudget.get options) do
       let samples ← elaborateInputs inputs
-      let remaining := commandCheckShare.units (← remainingUnits)
-      let outcome ← check proposition remaining samples (sql.checkShrinkAttempts.get options)
+      let outcome ← check proposition (← remainingUnits) samples (sql.checkShrinkAttempts.get options)
         (excluded := excluded) (excludedLocals := excludedLocals)
         (recursionLimit := recursionLimit)
+      if outcome.result matches .unknown then unknown.set outcome
       match outcome.result with
       | .proved proof =>
         let printed ← attempt do
@@ -76,6 +78,6 @@ def configuredCheck (proposition : Expr) (inputs : Array (TSyntax `sqlCheckInput
           proveWith proposition tactic excluded excludedLocals
         return printed.map (fun proof => { outcome with result := .proved proof }) |>.getD {}
       | .refuted .. | .unknown => return outcome
-  return result.getD {}
+  return result.getD (← unknown.get)
 
 end Belay.Sqlite.Check

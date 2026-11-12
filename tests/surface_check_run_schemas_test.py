@@ -2,8 +2,8 @@
 
 The test checks `CheckData.schemaText?` and `CheckData.runParts?`, which recover the SQL text of such
 a schema; `CheckClaim.querySites`, which gives a `Database.HasCatalog` premise no query; the reason
-that `CheckSamples.visitCandidates` records for a schema without SQL text; and `commandCheckShare`,
-which keeps that reason when the search uses its budget. Each schema of the fixture has an index, so
+that `CheckSamples.visitCandidates` records for a schema without SQL text; and
+`CheckInputs.configuredCheck`, which keeps that reason when the search uses the whole budget. Each schema of the fixture has an index, so
 a counterexample is replayable only when the replay builds the schema from its text.
 """
 

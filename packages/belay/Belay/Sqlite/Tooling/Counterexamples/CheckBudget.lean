@@ -80,11 +80,6 @@ def searchShare : Share := ⟨1, 3⟩
 of the operation, so an explanation that runs out of its share does not lose the refutation. -/
 def explanationShare : Share := ⟨9, 10⟩
 
-/-- The check of a claim by a command may use nine tenths of the budget that is left after the command
-elaborates its inputs. The rest stays for the end of the command, so a check that runs out of its share keeps
-its unknown result with the reason of the search, and a proof keeps the budget to print its script. -/
-def commandCheckShare : Share := ⟨9, 10⟩
-
 /-- Run a checking attempt with a fresh heartbeat origin and a finite Lean heartbeat budget.
 Zero disables work, rather than using Lean's unlimited zero convention. Check again after
 the action so a compiled computation cannot return an accepted result after exhausting its
