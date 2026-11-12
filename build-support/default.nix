@@ -25,6 +25,7 @@ in rec {
   # The standalone model and its separate transport codec, without application inputs.
   modelPackage = leanPackage {
     pname = "belay-sqlite-model";
+    failOnWarnings = true;
     directory = "packages/belay-sqlite-model";
     source = sources.model;
     # Downstream precompiled modules replay these objects and shared libraries.
@@ -83,6 +84,7 @@ in rec {
   # (ADR 0016, D2, amended). Lake compiles the parser's C from `parser/` (ADR 0023).
   textPackage = leanPackage {
     pname = "belay-sqlite-text";
+    failOnWarnings = true;
     directory = "packages/belay-sqlite-text";
     source = sources.text;
     # The shared libraries are what Lake loads for a file that imports the translation.
@@ -113,6 +115,7 @@ in rec {
   in assert sampler.type == "git" && sampler.url == url && sampler.rev == plausiblePackage.revision;
   (leanPackage {
     pname = "belay";
+    failOnWarnings = true;
     directory = "packages/belay";
     source = sources.surface;
     # The shared library is what Lake loads for a file that imports `Belay`, after the text package's.

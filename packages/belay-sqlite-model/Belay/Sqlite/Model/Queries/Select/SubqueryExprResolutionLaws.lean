@@ -43,12 +43,12 @@ theorem SubqueryShapes.find_only {shape : SubqueryShape} (parentless : shape.par
     ({ later := [shape] } : SubqueryShapes).find 0 = some shape := by
   simp [SubqueryShapes.find, SubqueryShapes.base, parentless]
 
-/-- For a statement with one subquery whose shape has no parent, no derived column and one result
-column, the shapes of the statement's query give that shape for the result column. Proof sketch:
-{name}`SubqueryShapes.find_only` and the two tests of the column. -/
+/-- For a statement with one subquery whose shape has no parent and one result column, the
+shapes of the statement's query give that shape for result column 0. The shape can have a
+derived column. Proof sketch: {name}`SubqueryShapes.find_only` and the test of the column count. -/
 theorem SubqueryShapes.column_only {shape : SubqueryShape} (parentless : shape.parent = none)
-    (plain : shape.derived = false) (one : shape.columns = 1) :
+    (one : shape.columns = 1) :
     ({ later := [shape] } : SubqueryShapes).column 0 = .ok shape := by
-  simp [SubqueryShapes.column, SubqueryShapes.find_only parentless, plain, one]
+  simp [SubqueryShapes.column, SubqueryShapes.find_only parentless, one]
 
 end Belay.Sqlite.Model

@@ -79,7 +79,7 @@ theorem Resolved.Statement.Calm.selectOne_count (position : Nat) (main : Resolve
   simp only [Resolved.Statement.clockExpressions, Resolved.Query.selectOneWhere_expressions,
     Resolved.Query.countOf_expressions, Resolved.QuerySource.first, Resolved.QuerySource.expressions,
     List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_append,
-    List.mem_cons, List.not_mem_nil, Option.toList_none, false_or, or_false] at member
+    List.mem_cons, List.not_mem_nil, Option.toList_none, or_false] at member
   rcases member with (rfl | rfl) | member
   · exact mainCalm
   · exact Resolved.Expr.calm_literal _

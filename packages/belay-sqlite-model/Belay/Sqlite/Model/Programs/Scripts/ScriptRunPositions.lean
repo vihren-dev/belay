@@ -100,17 +100,17 @@ theorem List.mapM_except_map {α β γ : Type} (f : α → Except String β) (g 
     have later := List.mapM_except_map f g rest
     simp only [List.mapM_cons]
     cases first : f argument with
-    | error reason => simp [first, bind, Except.bind, Except.map]
+    | error reason => simp [bind, Except.bind, Except.map]
     | ok head =>
       cases others : rest.mapM f with
       | error reason =>
         rw [others] at later
         simp only [Except.map] at later ⊢
-        simp [first, bind, Except.bind, Except.map, ← later]
+        simp [bind, Except.bind, ← later]
       | ok tail =>
         rw [others] at later
         simp only [Except.map] at later ⊢
-        simp [first, bind, Except.bind, Except.map, ← later, pure, Except.pure]
+        simp [bind, Except.bind, ← later, pure, Except.pure]
 
 /-- For every two indexes, values, connection, resolved statement, resolution state, clock value and run, the
 executions of the alternatives of the run ({name}`StatementExecution.ofAlternatives`) are the same at both

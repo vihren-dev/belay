@@ -23,7 +23,7 @@ theorem filterMap_length_le_one (only : Nat) (items : Nat → Option (List (List
         rw [List.filterMap_eq_nil_iff]
         intro other member
         exact quiet other (List.mem_cons_of_mem _ member) (fun equal => (List.nodup_cons.mp nodup).1 (equal ▸ member))
-      cases found : items position <;> simp [List.filterMap_cons, found, none]
+      cases found : items position <;> simp [found, none]
     · rw [List.filterMap_cons, quiet position (List.mem_cons_self ..) same]
       exact filterMap_length_le_one only items rest (List.nodup_cons.mp nodup).2
         (fun other member => quiet other (List.mem_cons_of_mem _ member))
