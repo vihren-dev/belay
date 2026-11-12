@@ -227,12 +227,13 @@ An agent writes SQL, states claims, runs `#sql_check`, fixes the SQL when a
 counterexample appears, and writes the proofs. The kernel checks the proof;
 you review the claim, and `#explain` prints a claim in plain words.
 [Use Belay with a coding agent](docs/guide/agents.md) has the loop, the checks
-of the agent's work, and instructions to paste into your `AGENTS.md`.
+of the agent's work. To start, tell your agent to set up Belay with the
+[skill](skills/belay/SKILL.md) of this repository.
 
 ## Documentation
 
 - [Use Belay with a coding agent](docs/guide/agents.md), with
-  [instructions for the agent](docs/guide/AGENTS-snippet.md).
+  the [skill for the agent](skills/belay/SKILL.md).
 - The [surface library](packages/belay/README.md): programs and runs, SQL in
   separate files, claims and the check.
 - The [supported subset](docs/semantic-subset.md) and the

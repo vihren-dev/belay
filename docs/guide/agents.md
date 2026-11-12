@@ -3,9 +3,8 @@
 This page is for a developer who has an SQLite project and a coding agent, such
 as Claude Code, Codex or Cursor. The agent writes the SQL, the claims and the
 proofs. You read the claims. The page gives the review that stays with you, the
-loop, three checks of the agent's work, and
-[instructions to paste](AGENTS-snippet.md) into the `AGENTS.md` or `CLAUDE.md`
-of your project.
+loop and three checks of the agent's work. The agent gets its instructions
+from a [skill](../../skills/belay/SKILL.md) that comes with the library.
 
 ## Who does what
 
@@ -66,17 +65,28 @@ after the migration. […]
 
 ## Set up the project
 
-Add Belay to a Lake project as the [README](../../README.md#install) shows.
-Then make the library of the claims a default target, so that `lake build`
-compiles it, and tell Lake about the SQL files, so that a change of a file
-rebuilds the claims that read it:
+Give the agent this instruction:
+
+```text
+Set up Belay in this project. Follow
+https://github.com/vihren-dev/belay/blob/main/skills/belay/SKILL.md
+```
+
+The skill is a file of instructions with templates. The agent adds Belay to a
+Lake project, writes the schema as a Lean file, and adds a short section to
+the `AGENTS.md` or `CLAUDE.md` of the project. The rest of this section shows
+what the agent makes, so that you can review it.
+
+The lakefile makes the library of the claims a default target, so that
+`lake build` compiles it, and tells Lake about the SQL files, so that a change
+of a file rebuilds the claims that read it:
 
 ```toml
 # lakefile.toml
 name = "shop"
 defaultTargets = ["Claims"]
 
-# Here: the [[require]] block of the README.
+# Here: the [[require]] block of the README's Install section.
 
 [[input_dir]]
 name = "sqlFiles"
@@ -117,8 +127,14 @@ about a migration is about the schema before it. When the migration is in
 production and you update `db/schema.sql` and `shop`, give the claims of that
 migration their own copy of the old schema, or delete them.
 
-Then paste the [instructions](AGENTS-snippet.md) into the `AGENTS.md` of the
-project, and change the paths and the name `shop` to yours.
+The section in `AGENTS.md` names the directory of the SQL files, the directory
+of the claims and the schema database. It tells the agent to read the skill
+before each change of the SQL, and it repeats the rules that the agent must
+not forget: a claim for each change, no weaker claim, and `unknown` is not
+`proved`. The agent reads the skill at
+`.lake/packages/belay/skills/belay/SKILL.md`, in the copy of Belay that Lake
+downloads. The skill thus has the version of the library that the project
+builds with.
 
 ## The loop
 
@@ -183,7 +199,7 @@ library Claims: 1 modules, 2 SQL sources, 0 stale
    files that the compiled claims read with the files on disk, and exits with 1
    when a file changed after the build.
 3. **No proof has a hole.** A proof with `sorry` gives only a warning,
-   `` declaration uses `sorry` ``. The instructions tell the agent to end each
+   `` declaration uses `sorry` ``. The skill tells the agent to end each
    file with `#print axioms` for its theorems, and the command of step 3 of
    the loop prints the lines:
 
@@ -273,9 +289,11 @@ theorem named_read_preserved :
   DerivedColumnMigration.queryPreserves … siteOf namedKept
 ```
 
-In two tests of the instructions of this page, an agent found the broken read
-and wrote this proof without help. It reported three things, and each is yours
-to review:
+The complete proof is in
+[`DerivedColumnSchemaPremise.lean`](../../tests/surface/Schema/Tests/DerivedColumnSchemaPremise.lean),
+which CI compiles, and the skill sends the agent to it. In three tests, an
+agent found the broken read and wrote such a proof without help. It reported
+three things, and each is yours to review:
 
 - The claim about `allCustomers` is `false`, with the theorem
   `star_read_changes`. The agent changed the read of the application to named

@@ -22,6 +22,16 @@ def test_guide_lookup_is_preserved_for_every_database_of_a_site(runtime_root: Pa
         *LOWERCASE_LIBRARY[:4], ("S6RulesQueryPattern", 8), ("S6ColumnLookups", 0), ("S6RulesQuerySites", 6)))
 
 
+def test_derived_column_law_with_a_schema_premise(runtime_root: Path, tmp_path: Path) -> None:
+    """Fixture DerivedColumnSchemaPremise applies the general derived-column law of the package
+    (`DerivedColumnMigration.queryPreserves`) to a migration that adds a lowercase column, with the catalog
+    of a schema as the premise of the claims, the form that the skill `skills/belay` tells an agent to
+    state. The fixture gives the site of the law for every database of the premise and proves that two
+    reads keep their results. It also keeps the counterexample of the read with `SELECT *`. Every theorem
+    uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("DerivedColumnSchemaPremise", 4),))
+
+
 @pytest.mark.requires_native("sqlite3")
 def test_other_derived_expressions_and_the_failing_affinity_premise(runtime_root: Path, tmp_path: Path) -> None:
     """The general laws apply to the concatenation of two columns stored in a TEXT column (fixtures
