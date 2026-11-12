@@ -8,3 +8,7 @@ build/
 /lean
 # Tool-owned parts of proofs projects (ADR 0010): the runtime link and generated modules.
 .belay/
+# Lean module setup files that tests/surface_support.py writes when a local probe gives it the
+# repository root or tests/surface instead of a temporary directory (issue #360).
+/setup.json
+/tests/surface/setup.json
