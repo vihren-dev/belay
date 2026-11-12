@@ -2,6 +2,7 @@
 import Claims.Schema
 open Belay.Sqlite
 
+/-- The migration, read from its SQL file, so that the claims are about the SQL that the project runs. -/
 def addEmailLower : Script := sql_file "db/migrations/0003_email_lower.sql"
 
 /-- A read of the application. State one claim for each read. -/
