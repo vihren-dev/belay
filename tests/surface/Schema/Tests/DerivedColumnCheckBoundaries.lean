@@ -6,7 +6,7 @@ set_option doc.verso true
 {lit}`DerivedColumnMigration.preservesCheck`. The kernel evaluates the check to false for each case that the
 check does not cover: a read with {lit}`SELECT *`, a new column with a name that the table has, a written value
 that reads a parameter or the clock, a new column with a constraint, and a trigger that an UPDATE of the
-table fires. A second schema, whose migrated table is the second table of its catalog and whose read filters
+table fires. The checks also hold on a schema that {lit}`db!` gives. A second schema, whose migrated table is the second table of its catalog and whose read filters
 an INTEGER column by a bound value, gives a theorem for every bound value
 ({lit}`big_entries_preserved`). -/
 
@@ -41,6 +41,14 @@ def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 def allCustomers : Script := sql r"SELECT * FROM customers"
 
 example : checked shop addEmailLower namedCustomers = true := by decide +kernel
+
+/-- The schema of {name}`shop` as a {lit}`db!` database, with one row. -/
+def shopWithRow : Database := db! r"
+  CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
+  INSERT INTO customers VALUES (1, 'Ann', 'ann@x.io');"
+
+example : checked shopWithRow addEmailLower namedCustomers = true := by decide +kernel
+example : succeedsCheck shopWithRow addEmailLower = true := by decide +kernel
 example : checked shop addEmailLower allCustomers = false := by decide +kernel
 example : checked shop (sql r"
   ALTER TABLE customers ADD COLUMN email TEXT;

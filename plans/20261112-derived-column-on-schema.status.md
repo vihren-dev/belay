@@ -1,7 +1,7 @@
 # Status: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12. Task: `20261112-derived-column-on-schema.task.md`. Issue #376.
-Status: in progress; reads (a) and success (b) done, example (c) pending.
+Status: in progress; reads (a), success (b) and example (c) done; the test of the page with a fresh agent and the end checks are pending.
 
 ## References
 
@@ -21,7 +21,9 @@ Status: in progress; reads (a) and success (b) done, example (c) pending.
   `runScriptStep_ordinary_ok` (`Programs/Scripts/OrdinaryStepOk.lean`), `runStatement_backfill_ok`
   (`Schema/Writes/DerivedColumnUpdateRun.lean`) and `Table.appendCells_checked`
   (`Schema/Writes/DerivedColumnConstraints.lean`).
-- Hand proof to replace: `tests/surface/Schema/Tests/DerivedColumnSchemaPremise.lean`.
+- Example (c): `tests/surface/Schema/Tests/DerivedColumnOnSchema.lean` with `db/schema.sql` and
+  `db/migrations/0003_email_lower.sql` beside it. It replaces the hand proof
+  `DerivedColumnSchemaPremise.lean`, which is deleted.
 - Page for agents: `docs/guide/agents.md`.
 
 ## Progress
@@ -37,8 +39,14 @@ Status: in progress; reads (a) and success (b) done, example (c) pending.
   without a fallible call, clock or counter. `succeeds_of_check` gives `Succeeds M (·.HasCatalog schema)`.
   Fixture `DerivedColumnSuccessBoundaries`: success on `shop` and on a second schema; false checks for a
   STRICT INTEGER column and a fallible value; `#sql_check` gives `false` for the STRICT case.
+- 2026-11-12: example (c). `DerivedColumnOnSchema` proves the two reads and the success claim in one line
+  each, from the SQL files. Its test builds it in a consumer Lake project that requires only `belay`.
+  `docs/guide/agents.md`, `skills/belay/SKILL.md` and the template `MigrationClaims.lean` name the laws.
+  The boundary fixture also checks a `db!` schema.
 
 ## Tests of each commit
 
 - Reads (a): `tests/surface_derived_column_test.py -k boundaries`.
 - Success (b): `tests/surface_derived_column_test.py -k "success_of_the or boundaries"`.
+- Example (c): `tests/surface_derived_column_test.py` (the consumer test needs the runtime of
+  `just build`).

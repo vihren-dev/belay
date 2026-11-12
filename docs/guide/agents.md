@@ -159,9 +159,9 @@ which Lake prints again in each run
 | A false claim about every database of a schema | `#sql_check` finds the rows when a small database shows the failure. |
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
-| A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | The law `DerivedColumnMigration.queryPreserves`. The agent proves the facts about the table and about each read: 150 to 180 lines for two reads in the tests of this page. |
+| A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: one line each, with a check that the kernel evaluates on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
 | A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../tests/surface/Schema/Tests/RebuildKeeps.lean). |
-| `Succeeds` for every database of a schema | A proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
+| `Succeeds` for every database of a schema | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
 
 Two rules make the answers useful. Write the claim out in `#sql_check`; the
 name of a definition that holds the claim gives `unknown`
@@ -270,30 +270,36 @@ theorem named_read_kept_on_found :
 
 `unknown` is not the end. `sql_auto` does not close this claim, but the
 migration has the shape of a law of the library: `ADD COLUMN`, then an
-`UPDATE` that fills the column from the other columns. The agent proves the
-facts that the law needs about `customers` and about the read, and the law
-gives the theorem:
+`UPDATE` that fills the column from the other columns. Each law takes a check
+that the kernel evaluates on the catalog of `shop`, so each proof is one line:
 
 ```lean
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.queryPreserves … siteOf namedKept
+  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+
+theorem email_lower_succeeds :
+    Succeeds addEmailLower (·.HasCatalog shop) :=
+  DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 ```
 
-The complete proof is in
-[`DerivedColumnSchemaPremise.lean`](../../tests/surface/Schema/Tests/DerivedColumnSchemaPremise.lean),
-which CI compiles, and the skill sends the agent to it. In three tests, an
-agent found the broken read and wrote such a proof without help. It reported
-three things, and each is yours to review:
+The checks cover a column without constraints, a value that reads only the
+old columns of the row, and a read of one table that names old columns. When
+a check is false, `decide` fails, and the claim stays `unknown`. The complete
+example is
+[`DerivedColumnOnSchema.lean`](../../tests/surface/Schema/Tests/DerivedColumnOnSchema.lean),
+with the schema and the migration as SQL files; CI compiles it in a project
+that requires only the `belay` package, and the skill sends the agent to it.
+The agent reports three things, and each is yours to review:
 
 - The claim about `allCustomers` is `false`, with the theorem
   `star_read_changes`. The agent changed the read of the application to named
   columns. That is a change of your code and of the claim.
 - The claim about `namedCustomers` is `proved`, with the theorem
   `named_read_preserved`. Its premise is the schema `shop`.
-- `Succeeds addEmailLower (·.HasCatalog shop)` is `unknown`. No theorem states
-  it, so `named_read_preserved` says nothing about a database on which the
-  migration fails.
+- `Succeeds addEmailLower (·.HasCatalog shop)` is `proved`, with the theorem
+  `email_lower_succeeds`. Together with `named_read_preserved`, it says that
+  the migration runs on every database of `shop` and keeps the read.
 
 ## Where to go next
 

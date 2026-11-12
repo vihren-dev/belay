@@ -33,6 +33,15 @@ def customerByEmail (email : Value) : Script :=
 --     (found.run newRead).outputs = ((found.run addEmailLower).db.run newRead).outputs := by
 --   decide +kernel
 
+-- When an answer is `unknown` and the migration is `ADD COLUMN` with an `UPDATE` that fills
+-- the column: the laws of `DerivedColumnMigration` take a check that the kernel evaluates.
+--
+-- theorem named_read_preserved : addEmailLower preserves namedCustomers on shop :=
+--   DerivedColumnMigration.preserves_of_check (by decide +kernel)
+--
+-- theorem email_lower_succeeds : Succeeds addEmailLower (·.HasCatalog shop) :=
+--   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
+
 -- Before you finish: replace each `#sql_check` with its theorem, or with a comment
 -- that gives the claim and its answer. End the file with one line for each theorem:
 --

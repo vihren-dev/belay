@@ -95,7 +95,7 @@ evidence for the claim.
    option.
 3. Look for a library law for the shape of the migration. For `ADD COLUMN`
    with an `UPDATE` that fills the column, see
-   [The law for a filled column](#the-law-for-a-filled-column).
+   [The laws for a filled column](#the-laws-for-a-filled-column).
 4. For a claim about the rows that one `SELECT` returns, or about the result
    of an insert or a delete, the tactics `sql_select` and `sql_run` are in
    `.lake/packages/belay/packages/belay/README.md`. They do not prove
@@ -106,40 +106,51 @@ evidence for the claim.
 6. If you find no proof, report `unknown`. Do not change the claim to get a
    proof.
 
-`Succeeds` for a migration with `ADD COLUMN` and `UPDATE` stays `unknown`
-today: the library has no law for it, and the rebuild pattern does not apply.
-Report it as `unknown`.
+### The laws for a filled column
 
-### The law for a filled column
+A migration that adds a column and fills it from the other columns of the row
+has three laws in `Belay.Sqlite.DerivedColumnMigration`. Each one takes a
+check that the kernel evaluates on the catalog of the schema, so the proof is
+one line. The migration must be exactly two statements:
+`ALTER TABLE t ADD COLUMN c …` and `UPDATE t SET c = value`, with no filter.
 
-`Belay.Sqlite.DerivedColumnMigration.queryPreserves` proves
-`Migration.QueryPreserves` for a migration that adds a column and fills it
-from the other columns of the row, and a read of the old columns. A complete
-proof with the schema as the premise is
-`.lake/packages/belay/tests/surface/Schema/Tests/DerivedColumnSchemaPremise.lean`.
-Read it first and follow its structure:
+```lean
+open Belay.Sqlite
 
-1. Open the namespaces with `open Belay.Sqlite` and
-   `open Belay.Sqlite.Model hiding Database`.
-2. Write the migration and each read as Lean syntax, and prove with `rfl` that
-   the SQL file is `DerivedColumnMigration.migration …`.
-   `#eval addEmailLower.statements` prints the syntax of a script. The printed
-   form leaves out arguments that have a default value, so take the full form
-   of a `SELECT` from the example.
-3. Give the site of the law for each database of the premise (`siteOf`).
-   Rewrite the catalog of the database to the catalog of `shop` with the fact
-   `db.HasCatalog shop`. Then each field is a fact about a closed term, and
-   `dsimp only; decide +kernel` proves it. Without `dsimp only`, `decide` fails
-   with `Expected type must not contain free variables`.
-4. Give the description of each read (`namedKept`, `lookupKept`): the read
-   resolves to the same query before and after the migration, and it does not
-   read the clock or the counters.
-5. The theorem is the law, applied to the site and the description.
+theorem named_read_preserved :
+    addEmailLower preserves namedCustomers on shop :=
+  DerivedColumnMigration.preserves_of_check (by decide +kernel)
 
-The law is in
-`.lake/packages/belay/packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnQueries.lean`,
-and `Site` and `ReadPreserved` are in
-`.lake/packages/belay/packages/belay/Belay/Sqlite/Schema/Columns/`.
+theorem lookup_read_preserved : ∀ email : Value,
+    addEmailLower preserves (customerIdByEmail email) on shop :=
+  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null
+    (fun _ => rfl) (by decide +kernel)
+
+theorem email_lower_succeeds :
+    Succeeds addEmailLower (·.HasCatalog shop) :=
+  DerivedColumnMigration.succeeds_of_check (by decide +kernel)
+```
+
+- `preserves_of_check` proves a read of the old columns of the table: one
+  `SELECT` of the table, with no join, subquery, `*`, grouping, ordering or
+  limit. `preserves_of_check_forall` does the same for a read with a value of
+  a Lean variable. The third argument proves that the read has the same
+  statements for every value; it is `fun _ => rfl` when the variable is only
+  a bound value.
+- `succeeds_of_check` proves `Succeeds`. Its check is false when the new
+  column has a type in a `STRICT` table, or when the value can fail, for
+  example with a JSON function.
+- The new column has no constraint, and the value reads only old columns of
+  the row: no parameter, clock, counter or subquery. A trigger that an
+  `UPDATE` of the table fires makes each check false.
+
+When `decide` fails, the check is false. The claim can still be true: it is
+outside the laws. Use `#sql_check` for an answer, and report `unknown` if it
+gives none. The complete example is
+`.lake/packages/belay/tests/surface/Schema/Tests/DerivedColumnOnSchema.lean`.
+For a read outside the check, the law `queryPreserves` of the same namespace
+takes a `Site` and a `Site.ReadPreserved`. `Site.ofCheck` gives the site, and
+you prove the facts of the read by hand.
 
 ## Before you finish
 
