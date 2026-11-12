@@ -42,6 +42,16 @@ def test_boundaries_of_the_computed_derived_column_check(runtime_root: Path, tmp
     check_module_chain(runtime_root, tmp_path, (("DerivedColumnCheckBoundaries", 1),), timeout=60)
 
 
+def test_success_of_the_derived_column_migration_from_the_computed_check(runtime_root: Path, tmp_path: Path) -> None:
+    """Fixture DerivedColumnSuccessBoundaries checks the success law `DerivedColumnMigration.succeeds_of_check`
+    and its check `succeedsCheck` of the package: the check proves the success of the migration on two schemas
+    with only logical axioms, and it is false for a new INTEGER column of a STRICT table and for a value with a
+    fallible call. `#sql_check` finds a database on which the STRICT migration fails, so the boundary is real."""
+    output = check_module_chain(runtime_root, tmp_path, (("DerivedColumnSuccessBoundaries", 2),), timeout=60)
+    assert "SQL check: false." in output, output
+    assert "UPDATE customers SET n = email" in output, output
+
+
 @pytest.mark.requires_native("sqlite3")
 def test_other_derived_expressions_and_the_failing_affinity_premise(runtime_root: Path, tmp_path: Path) -> None:
     """The general laws apply to the concatenation of two columns stored in a TEXT column (fixtures
