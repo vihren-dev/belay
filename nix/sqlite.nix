@@ -3,7 +3,7 @@
 let
   # Profiles include SQLite's compiler identity; both CI platforms use this pin.
   sqliteRelease = version: year: number: sha256: pkgs.clangStdenv.mkDerivation {
-    pname = "sqlite-verifier-native";
+    pname = "belay-sqlite-native";
     inherit version;
     src = pkgs.fetchurl {
       url = "https://sqlite.org/${year}/sqlite-autoconf-${number}.tar.gz";
