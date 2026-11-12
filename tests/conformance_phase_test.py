@@ -1,7 +1,7 @@
 """The error phase of case version 5 (ADR 0008, "How `resolve` is tested").
 
 `conformance.native_trace.record` records whether each native error came from
-`sqlite3_prepare_v2` or from `sqlite3_step`, and `VerifierConformance.Case`
+`sqlite3_prepare_v2` or from `sqlite3_step`, and `VerifierConformance.Tooling.Conformance.Case`
 requires a resolution prepare error to be a prepare error and every other modeled
 error to be a step error. A case with a changed phase therefore disagrees.
 """
@@ -41,7 +41,7 @@ def test_recorded_phase_must_match_the_model(runtime_root: Path, migration: str,
 
 
 def test_phase_without_an_error_is_a_harness_error(runtime_root: Path) -> None:
-    """`VerifierConformance.Json.decodeCase` refuses a phase on a successful observation and names it."""
+    """`VerifierConformance.Tooling.Conformance.Json.decodeCase` refuses a phase on a successful observation and names it."""
     case = record(Fixture(SCHEMA, "INSERT INTO t(id) VALUES(2);", ROWS, "phase"), default_parser(runtime_root))
     case["nativeTrace"][1]["phase"] = "step"
     result = compiled(case, runtime_root)

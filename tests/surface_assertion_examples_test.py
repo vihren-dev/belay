@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 ALLOWED_PROOF_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 """Ordinary logical axioms; unchecked evaluation and assumed execution soundness are excluded."""
@@ -57,8 +57,8 @@ def check_module_chain(runtime_root: Path, tmp_path: Path, modules: tuple[tuple[
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                              "-R", str(FIXTURES), "-o", str(artifact),
-                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=timeout)
+                              "-R", str(fixture_file(f"{module}.lean").parent), "-o", str(artifact),
+                              str(fixture_file(f"{module}.lean"))], cwd=tmp_path, timeout=timeout)
         assert result.returncode == 0, result.diagnostic()
         reports = axiom_reports(result.stdout)
         assert len(reports) == count, result.diagnostic()

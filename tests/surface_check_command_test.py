@@ -10,7 +10,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.surface_replay_test import native_replay, native_rows
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 FORBIDDEN_DEPENDENCIES: tuple[str, ...] = ("sorryAx", "ofReduceBool", "ofReduceNat", "trustCompiler", "_native")
 """Admission and native-computation dependencies forbidden in the exported theorem audits."""
@@ -23,7 +23,7 @@ def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
     """SqlCheckCommand covers all outcomes with default inference, original data premises,
     explicit inputs and native replay; its printed proof checks against the original claim."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleCheckCommand.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleCheckCommand.lean"), tmp_path),
                          cwd=tmp_path, timeout=240)
     assert result.returncode == 0, result.diagnostic()
     blocks = dict(re.findall(r"SQL-COMMAND-BEGIN ([\w-]+)\n(.*?)\nSQL-COMMAND-END \1:",
@@ -71,7 +71,7 @@ def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
 def test_sql_refute_search_and_explicit_modes(runtime_root: Path, tmp_path: Path) -> None:
     """SqlRefuteSearch preserves explicit witnesses, custom candidates, failed goals and the
     command cancellation context; all resulting theorem dependencies remain kernel-safe."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleCheckTactic.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleCheckTactic.lean"), tmp_path),
                          cwd=tmp_path, timeout=180)
     assert result.returncode == 0, result.diagnostic()
     assert "custom candidates certify the original plain predicate" in result.stdout, result.stdout
@@ -104,7 +104,7 @@ def test_sql_check_reports_input_errors_at_terms(runtime_root: Path, tmp_path: P
 def test_sql_check_sampling_options(runtime_root: Path, tmp_path: Path) -> None:
     """CheckOptions changes seeded search, row/sample limits and checked shrinking;
     configured size reaches a real size-sensitive custom generator."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleCheckOptions.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleCheckOptions.lean"), tmp_path),
                          cwd=tmp_path, timeout=240)
     assert result.returncode == 0, result.diagnostic()
     blocks = dict(re.findall(r"OPTION-BEGIN ([\w-]+)\n(.*?)\nOPTION-END \1", result.stdout, re.DOTALL))

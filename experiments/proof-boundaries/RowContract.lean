@@ -1,5 +1,5 @@
-import Belay.Sqlite.Model.RowEngineResultLaws
-import Belay.Sqlite.Model.RowEngineTriggers
+import Belay.Sqlite.Model.Schema.Writes.RowEngineResultLaws
+import Belay.Sqlite.Model.Schema.Writes.RowEngineTriggers
 
 set_option doc.verso true
 

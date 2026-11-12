@@ -38,7 +38,7 @@ def workload(runtime: Path, generated: Path) -> tuple[list[dict[str, Json]], dic
 
 def constructors(declaration: str) -> list[str]:
     """Derive constructor denominators from the measured source, including future model additions."""
-    source = Path("packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean").read_text()
+    source = Path("packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/Execution.lean").read_text()
     body = source.split(f"inductive {declaration} where\n", 1)[1].split("  deriving", 1)[0]
     names = re.findall(r"^  \| (\w+)", body, re.MULTILINE)
     if not names:

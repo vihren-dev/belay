@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_subqueries`.
 
 from conformance.resolve_mutants import SQLITE
 
-EVALUATION = SQLITE + "ExprEval.lean"
+EVALUATION = SQLITE + "Queries/Evaluation/ExprEval.lean"
 """The evaluation of expressions, with `IN` of a subquery and the scalar subquery."""
-SUBQUERIES = SQLITE + "Subqueries.lean"
+SUBQUERIES = SQLITE + "Schema/Dispatch/Subqueries.lean"
 """The run of a subquery for an outer row."""
-SCOPE = SQLITE + "Resolution/ScopeNames.lean"
+SCOPE = SQLITE + "Queries/Preparation/ScopeNames.lean"
 """The resolution of names over the scopes of a query and the queries around it."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

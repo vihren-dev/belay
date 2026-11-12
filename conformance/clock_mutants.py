@@ -8,11 +8,11 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-EXECUTION = SQLITE + "SqlExecution.lean"
+EXECUTION = SQLITE + "Programs/Clock/SqlExecution.lean"
 """The clock assignment with which a script runs."""
-FUNCTIONS = SQLITE + "Date/Functions.lean"
+FUNCTIONS = SQLITE + "Values/DateTime/Functions.lean"
 """The date and time functions, which give the time keywords their text."""
-STATEMENT = SQLITE + "StatementClock.lean"
+STATEMENT = SQLITE + "Queries/Evaluation/StatementClock.lean"
 """The cells of INSERT rows at a clock value."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

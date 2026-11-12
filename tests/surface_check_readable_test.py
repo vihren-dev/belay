@@ -8,7 +8,7 @@ import pytest
 from tests.runtime_support import run_command
 from tests.s6_check_support import split_blocks
 from tests.surface_replay_test import native_replay
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -37,7 +37,7 @@ def test_counterexample_is_one_readable_block(runtime_root: Path, tmp_path: Path
     as tables of SQL literals, one line for each statement, one construction and one replay script, with no
     environment line for the default candidate. Native SQLite runs the one script: the query gives 1 and
     the index fails on the two emails. A non-default environment shows its clock and counters."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleReadable.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleReadable.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)

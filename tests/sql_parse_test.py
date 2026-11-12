@@ -2,7 +2,7 @@
 (`conformance/sql_text.py`), and quoted Lean text.
 
 These tests check how the harness classifies parser failures, independently of the statement
-mapping. `tests/surface/TranslationChecks.lean` checks that the binding refuses a parse document
+mapping. `tests/surface/Frontend/Tests/TranslationChecks.lean` checks that the binding refuses a parse document
 for another grammar.
 """
 

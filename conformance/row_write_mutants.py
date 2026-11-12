@@ -7,15 +7,17 @@ builds and runs against its target case of `conformance.authored_row_writes`.
 
 from conformance.resolve_mutants import SQLITE
 
-ROW_UPDATE = SQLITE + "RowUpdate.lean"
+ROW_UPDATE = SQLITE + "Schema/Writes/RowUpdate.lean"
 """The execution of UPDATE."""
-STORE = SQLITE + "StoreValue.lean"
+STORE = SQLITE + "Values/Scalar/StoreValue.lean"
 """Store-time affinity."""
-ROWS = SQLITE + "Resolution/InsertCells.lean"
+REAL_READ = SQLITE + "Shared/Values/StoreValue.lean"
+"""The read of a value of a REAL column."""
+ROWS = SQLITE + "Schema/Writes/InsertCells.lean"
 """The rows of INSERT, which store each value."""
-UPDATES = SQLITE + "Resolution/Updates.lean"
+UPDATES = SQLITE + "Schema/Dispatch/Updates.lean"
 """The resolution of UPDATE, which stores each constant value."""
-EXECUTION = SQLITE + "StatementStep.lean"
+EXECUTION = SQLITE + "Schema/Dispatch/StatementStep.lean"
 """The checked write of INSERT and UPDATE."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
@@ -31,7 +33,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "cast_as_store_affinity": (ROWS,
         "  | .value written => .value (Value.store affinity written)",
         "  | .value written => .value (castValue affinity written)"),
-    "real_column_keeps_integer": (STORE,
+    "real_column_keeps_integer": (REAL_READ,
         "  | .integer whole => .real (positiveZero (Float.ofInt whole).toBits)", "  | .integer whole => .integer whole"),
     "text_column_keeps_number": (STORE,
         "  | .text, .integer _ | .text, .real _ => .text value.textBytes", "  | .text, .integer _ | .text, .real _ => value"),

@@ -1,5 +1,5 @@
-"""Claims over every database (ADR 0017, S4; `Belay/Sqlite/QueryBridge.lean`,
-`Belay/Sqlite/SqlSimpLaws.lean` and the model's laws of the expressions of a condition). Each fixture proves its claims for an arbitrary database and checks
+"""Claims over every database (ADR 0017, S4; `Belay/Sqlite/{Programs/Scripts,Tooling/Counterexamples}/QueryBridge.lean`,
+`Belay/Sqlite/Queries/Evaluation/SqlSimpLaws.lean` and the model's laws of the expressions of a condition). Each fixture proves its claims for an arbitrary database and checks
 each claim on a concrete database, so that no lemma is vacuous. The fixture fails to elaborate
 when a proof or an instance does not hold.
 """
@@ -10,7 +10,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.surface_assertion_examples_test import COUNT_SUPPORT, DUPLICATE_KEY_SUPPORT, check_module_chain
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -19,7 +19,7 @@ def test_view_catalog_keeps_unresolved_definitions_and_refuses_unexpanded_uses(r
     """The view catalog stores written queries, owns no rows, distinguishes FK mismatch,
     a write or schema change of a view is a prepare error, and a table-valued metadata function of
     a view is refused instead of fabricating an empty result."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsViewCatalog.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsViewCatalog.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
@@ -28,7 +28,7 @@ def test_expression_laws_turn_a_condition_into_logic(runtime_root: Path, tmp_pat
     """The simp set `sql_simp` resolves a written condition (`BETWEEN`, `AND`, `NOT`, `OR`, `IS NULL`,
     a parameter) to the resolved expression with the affinity and collation of its columns, shows
     that the expression is calm, and turns the truth of `AND`, `OR` and `IS NULL` into Booleans."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExpressionLaws.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsExpressionLaws.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
@@ -72,7 +72,7 @@ def test_a_table_has_a_column_according_to_pragma_table_info(runtime_root: Path,
     has a column that is not generated with the name `c` as bytes, so the table lookup ignores ASCII case and the
     name test does not, proved with the pragma source rule of a SELECT and `sql_simp`, with instances on one
     database where `decide +kernel` checks the claim for a true and for a false name."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsTableInfo.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsTableInfo.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
@@ -101,7 +101,7 @@ def test_derived_sources_reach_public_query_predicates(runtime_root: Path, tmp_p
     """SQL quotations resolve derived tables into the existing query evaluator: metadata,
     compound columns, enclosing scope, empty sources, prepare errors and uncertain membership.
     Named-table and pragma laws also accept arbitrary source callbacks and nested prefixes."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsDerived.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsDerived.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
@@ -109,7 +109,7 @@ def test_derived_sources_reach_public_query_predicates(runtime_root: Path, tmp_p
 def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_path: Path) -> None:
     """CommonTableExpansion preserves names, scope, errors and the values of CTE-backed writes
     through sql/db! quotations and kernel-checked public query predicates."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCommonTables.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsCommonTables.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
@@ -117,7 +117,7 @@ def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_p
 def test_expression_congruence_preserves_observations(runtime_root: Path, tmp_path: Path) -> None:
     """ExprCongruence and its context/append laws keep faults, subtype and distinct
     certainty observations under their independent locality and row-width premises."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExpressionCongruence.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimsExpressionCongruence.lean"), tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]

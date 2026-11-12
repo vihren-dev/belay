@@ -7,15 +7,15 @@ target case of `conformance.authored_compound`.
 
 from conformance.resolve_mutants import SQLITE
 
-ROWS = SQLITE + "CompoundRows.lean"
+ROWS = SQLITE + "Queries/Evaluation/CompoundRows.lean"
 """The duplicate rule and the rows of each operator of a compound."""
-RUN = SQLITE + "CompoundRun.lean"
+RUN = SQLITE + "Queries/Evaluation/CompoundRun.lean"
 """The end of the run of a compound: the terms that SQLite runs and where it reads the window."""
-TERMS = SQLITE + "Resolution/CompoundTerms.lean"
+TERMS = SQLITE + "Queries/Select/CompoundTerms.lean"
 """The collations of the columns of a compound from the collations of its terms."""
-ORDER = SQLITE + "Resolution/CompoundOrderBy.lean"
+ORDER = SQLITE + "Queries/Select/CompoundOrderBy.lean"
 """The terms of the ORDER BY of a compound, with their collations."""
-RESOLUTION = SQLITE + "Resolution/CompoundResolution.lean"
+RESOLUTION = SQLITE + "Queries/Select/CompoundResolution.lean"
 """The resolution of a compound query: its column collations, and the shape that IN and a scalar
 subquery read."""
 

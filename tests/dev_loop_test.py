@@ -59,7 +59,7 @@ def test_local_loop_builds_incrementally_and_runs_the_judge(tmp_path: Path) -> N
         started = subprocess.run([str(program)], input="", capture_output=True, text=True, timeout=60, check=False)
         assert started.returncode == 0, f"{program}: {started.returncode} {started.stderr[-2000:]}"
     source = tmp_path / "Metadata.lean"
-    source.write_text("import Belay.Sqlite.ParserLibrary\n#eval do IO.println (← Belay.Sqlite.ParserLibrary.metadata)\n",
+    source.write_text("import Belay.Sqlite.Frontend.Grammar.ParserLibrary\n#eval do IO.println (← Belay.Sqlite.ParserLibrary.metadata)\n",
                       encoding="utf-8")
     printed = subprocess.run(["lake", "lean", str(source)], cwd=TEXT_PACKAGE, capture_output=True, text=True,
                              timeout=300, check=False)

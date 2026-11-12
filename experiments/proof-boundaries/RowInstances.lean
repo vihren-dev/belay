@@ -1,5 +1,5 @@
 import RowControl
-import Belay.Sqlite.Model.ForeignKeyWorkConditions
+import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyWorkConditions
 
 set_option doc.verso true
 

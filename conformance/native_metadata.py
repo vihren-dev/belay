@@ -2,7 +2,7 @@
 
 Native SQLite is the oracle: the PRAGMA inventories are only decoded here, never
 compared with a Python translation. Lean compares them with the catalog that
-resolution computes (`VerifierConformance.Native.tablesMatch`).
+resolution computes (`VerifierConformance.Tooling.Conformance.Native.tablesMatch`).
 """
 
 from belay.sqlite.located import Json

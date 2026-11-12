@@ -21,8 +21,8 @@ PREDICT_TIMEOUT_SECONDS = 300
 
 
 def test_group_values_verdicts_of_the_judge(runtime_root: Path) -> None:
-    """The subject's prediction of every case (`GroupRow.lean`, `Resolution/GroupAssociation.lean` and the
-    deciding call of `Resolution/QueryBodyTraced.lean`), judged as the judge does it: every case agrees with
+    """The subject's prediction of every case (`GroupRow.lean`, `Queries/Select/GroupAssociation.lean` and the
+    deciding call of `Queries/Select/QueryBodyTraced.lean`), judged as the judge does it: every case agrees with
     native SQLite, so the row of a group and the associated result columns give SQLite's values."""
     records = authored_group_values.records()
     assert [record["name"] for record in records] == [case.name for case in authored_group_values.definitions()]

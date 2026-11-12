@@ -1,6 +1,6 @@
 """Layer rule 7 (ADR 0017, S7): `import Belay` does not import the proof-cost collector.
 
-The collector installs command handlers, so a user imports `Belay.Sqlite.ProofCost` to opt in. The
+The collector installs command handlers, so a user imports `Belay.Sqlite.Tooling.ProofCost.ProofCost` to opt in. The
 other rules are in `surface_layers_test.py`."""
 
 import pytest
@@ -9,7 +9,7 @@ from tests.surface_layers_test import SURFACE, import_closure, imports, lean_fil
 
 pytestmark = pytest.mark.unit
 
-COLLECTOR_MODULE = "Belay.Sqlite.ProofCost"
+COLLECTOR_MODULE = "Belay.Sqlite.Tooling.ProofCost.ProofCost"
 """The module that registers the handlers of the collector."""
 
 

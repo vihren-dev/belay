@@ -1,4 +1,4 @@
-"""S7 proof-cost collector (`Belay.Sqlite.ProofCost`): records, attribution, coverage and persistence."""
+"""S7 proof-cost collector (`Belay.Sqlite.Tooling.ProofCost.ProofCost`): records, attribution, coverage and persistence."""
 
 from collections.abc import Callable
 from decimal import Decimal
@@ -11,7 +11,7 @@ import pytest
 from tests.proof_cost_support import (ASYNCHRONOUS, COLLECTOR_IMPORT, EXPECTED, Compiler, checked,  # noqa: F401
                                       compiler, counts, pair, payload, records, runtime_modules)
 from tests.runtime_support import CommandResult
-from tests.surface_support import FIXTURES
+from tests.surface_support import fixture_file
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -52,7 +52,7 @@ def test_option_works_from_the_command_line(compiler: Compiler) -> None:
 @ASYNCHRONOUS
 def test_coverage_table(compiler: Compiler, asynchronous: bool) -> None:
     """The collector records each named proof of the fixture once, with its kind and identity."""
-    source = (FIXTURES / "ProofCostCases.lean").read_text()
+    source = fixture_file("ProofCostCases.lean").read_text()
     result = compiler.compile("ProofCostCases", source, asynchronous=asynchronous)
     checked(result)
     found = {str(value["declaration"]): (value["kind"], value["identity"]) for value in records(result)}
@@ -92,6 +92,6 @@ def test_records_survive_import_diamond_and_relocation(runtime_root: Path, tmp_p
 def test_float_edges_of_the_trace_reader(compiler: Compiler) -> None:
     """`exactCount` and `bodyNodes` (`ProofCostTrace.lean`) turn only exactly representable counters
     into counts; a zero count is a completed zero and an inexact one is not a count."""
-    result = compiler.compile("Edges", (FIXTURES / "ProofCostTraceChecks.lean").read_text())
+    result = compiler.compile("Edges", fixture_file("ProofCostTraceChecks.lean").read_text())
     checked(result)
     assert cast(object, payload(result, "EDGES")) == "passed", result.diagnostic()

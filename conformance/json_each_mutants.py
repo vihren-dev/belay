@@ -8,11 +8,11 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-EACH = SQLITE + "Json/Each.lean"
+EACH = SQLITE + "Values/Json/Each.lean"
 """The rows of `json_each`."""
-FUNCTIONS = SQLITE + "QueryFunctions.lean"
+FUNCTIONS = SQLITE + "Schema/Dispatch/QueryFunctions.lean"
 """The `json_each` sources of a query."""
-SCOPE = SQLITE + "Resolution/Scope.lean"
+SCOPE = SQLITE + "Queries/Preparation/Scope.lean"
 """The names in scope."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

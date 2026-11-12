@@ -7,7 +7,7 @@ partial unique index; a constant key term; an UPDATE into equal expression keys;
 INDEX in a migration over existing rows, unique and not, with and without a filter; sort
 orders; and the prepare errors of index terms and filters, except the time keywords,
 which the recorder refuses outside a controlled clock (the Lean examples of
-`Resolution/IndexExamples.lean` cover them). Native SQLite is the only
+`Schema/Dispatch/IndexExamples.lean` cover them). Native SQLite is the only
 source of outcomes. The cases use `conformance.authored_queries.QueryCase` and its
 recorder.
 """

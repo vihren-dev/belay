@@ -10,7 +10,7 @@ import pytest
 from tests.runtime_support import run_command
 from tests.surface_assertion_examples_test import LOWERCASE_LIBRARY, check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -143,7 +143,7 @@ def test_interface_mistakes_are_diagnosed_where_they_are_written(runtime_root: P
     outside the interface, an argument of the wrong type, a missing entry, an entry with another
     argument type, and a pairing over another signature. The type of a signature is what makes a
     partner exist with the same argument type, so no separate pairing check runs."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ApplicationInterfaceErrors.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("ApplicationInterfaceErrors.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode != 0, result.diagnostic()
     errors = re.findall(r"ApplicationInterfaceErrors\.lean:(\d+):\d+: error[^:]*: (.*)", result.stdout)

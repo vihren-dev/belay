@@ -1,4 +1,4 @@
-/* The parser library's C API with Lean's calling convention, for Belay.Sqlite.ParserLibrary.
+/* The parser library's C API with Lean's calling convention, for Belay.Sqlite.Frontend.Grammar.ParserLibrary.
 ** Each function returns an IO result: the JSON document as a string, or an IO error with the
 ** library's result code. The SQL is a byte array, so that text that is not UTF-8 reaches the
 ** library, which refuses it. */

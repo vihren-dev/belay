@@ -7,10 +7,10 @@ that the task names: an error treated as `OR ROLLBACK`, the exception of `OR ROL
 resolution that assumes that earlier statements succeed.
 """
 
-RUN = "belay-sqlite-model/Belay/Sqlite/Model/ScriptRun.lean"
+RUN = "belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRun.lean"
 """The model's run of a script, with the connection after each statement."""
 
-CONNECTION = "belay-sqlite-model/Belay/Sqlite/Model/Connection.lean"
+CONNECTION = "belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/Connection.lean"
 """The connection after a statement that halted, with its transaction and counters."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

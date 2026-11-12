@@ -1,6 +1,6 @@
-import Belay.Sqlite.Model.ValidAtomsRuns
-import Belay.Sqlite.Model.AdmittedStatementKeeps
-import Belay.Sqlite.Model.ForeignKeyRuns
+import Belay.Sqlite.Model.Programs.StatementRunLaws.ValidAtomsRuns
+import Belay.Sqlite.Model.Programs.StatementRunLaws.AdmittedStatementKeeps
+import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyRuns
 import Belay.Sqlite.Model.AdmittedSqlRunsRows
 
 set_option doc.verso true

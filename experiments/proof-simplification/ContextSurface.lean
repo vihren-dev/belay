@@ -1,5 +1,5 @@
 import ContextCore
-import Belay.Sqlite.Model.ScriptRunDerived
+import Belay.Sqlite.Model.Programs.Scripts.ScriptRunDerived
 
 set_option doc.verso true
 

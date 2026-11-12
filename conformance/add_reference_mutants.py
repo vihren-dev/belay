@@ -6,9 +6,9 @@ builds and runs against its target cases of `conformance.authored_add_references
 
 from conformance.resolve_mutants import SQLITE
 
-EXECUTION = SQLITE + "Execution.lean"
+EXECUTION = SQLITE + "Schema/Dispatch/Execution.lean"
 """The step of ADD COLUMN, which refuses a populated table."""
-ADD_COLUMN = SQLITE + "Resolution/AddColumn.lean"
+ADD_COLUMN = SQLITE + "Schema/Columns/AddColumn.lean"
 """The resolver of ADD COLUMN, which decides when the statement refuses a populated table."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

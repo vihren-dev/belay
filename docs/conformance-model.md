@@ -69,7 +69,7 @@ resolution (ADR 0008). Each mutant is a copy of the `belay-sqlite-model` and
 `verifier-conformance` packages with one change, such as folding non-ASCII
 letters, keeping the catalog after ROLLBACK, a constant column limit of 2,000, or
 one removed prepare-error condition. Lake builds only the import closure of
-`VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
+`VerifierConformance.Tooling.Conformance.Case`, which has no proof modules, so a mutant that breaks a
 proof still builds. A mutant is killed when any case gets a verdict other than
 AGREE; three mutants move a case out of the model's scope instead of making it
 disagree. The `mutants` Nix suite requires every mutant to be killed.

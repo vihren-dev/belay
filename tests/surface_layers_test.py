@@ -99,8 +99,8 @@ def test_the_surface_and_the_text_package_have_modules() -> None:
     """The rules below read the packages' files and the model's roots; an empty set would make
     them pass vacuously."""
     assert {"Belay", "Belay.Sqlite"} <= modules(SURFACE)
-    assert {"Belay.Sqlite.Parse", "Belay.Sqlite.Translation"} <= modules(TEXT)
-    assert {"Belay.Sqlite.Model", "Belay.Sqlite.Model.Codec", "Belay.Sqlite.Model.Codec.SyntaxJson"} <= MODEL_ROOTS
+    assert {"Belay.Sqlite.Frontend.Grammar.Parse", "Belay.Sqlite.Translation"} <= modules(TEXT)
+    assert {"Belay.Sqlite.Model", "Belay.Sqlite.Model.Frontend.Codecs.Codec", "Belay.Sqlite.Model.Frontend.Codecs.SyntaxJson"} <= MODEL_ROOTS
 
 
 @pytest.mark.parametrize("upper", [SURFACE, TEXT], ids=["surface", "text"])

@@ -8,7 +8,7 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-JSON = SQLITE + "Json/"
+JSON = SQLITE + "Values/Json/"
 """The JSON functions."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
@@ -30,7 +30,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "else if byteAt path stop == 93 then some (some (back - 1, stop))"),
     "json_missing_path_error": (JSON + "Extract.lean", "  | .notFound => .ok none",
         "  | .notFound => .error .malformed"),
-    "json_error_ignored": (SQLITE + "Execution.lean",
+    "json_error_ignored": (SQLITE + "Schema/Dispatch/Execution.lean",
         "    else if run.fault == .must then .error (.functionError, database)",
         "    else if false then .error (.functionError, database)"),
 }

@@ -7,7 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import CommandResult, run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3")]
@@ -22,7 +22,7 @@ def replay_reports(runtime_root: Path, tmp_path: Path) -> dict[str, dict[str, ob
         setup_path.write_text(json.dumps(setup))
         artifact = tmp_path / f"{name}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup_path}",
-                              "-o", str(artifact), str(FIXTURES / f"{name}.lean")],
+                              "-o", str(artifact), str(fixture_file(f"{name}.lean"))],
                              cwd=tmp_path, timeout=180)
         assert result.returncode == 0, result.diagnostic()
         setup["importArts"][name] = [[str(artifact)]]

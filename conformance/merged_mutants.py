@@ -8,11 +8,11 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-SCOPE = SQLITE + "Resolution/ScopeNames.lean"
+SCOPE = SQLITE + "Queries/Preparation/ScopeNames.lean"
 """The resolution of unqualified names over the sources."""
-MERGED_NAMES = SQLITE + "Resolution/MergedNames.lean"
+MERGED_NAMES = SQLITE + "Queries/Preparation/MergedNames.lean"
 """The operands of merged names and the expansion of `*`."""
-MERGED_LEFT = SQLITE + "Resolution/MergedLeft.lean"
+MERGED_LEFT = SQLITE + "Queries/Preparation/MergedLeft.lean"
 """The left side of a generated condition."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

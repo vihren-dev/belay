@@ -1,7 +1,5 @@
-import Belay.Sqlite.Model.Comparison
-import Belay.Sqlite.Model.AdmittedCellLaws
-import Belay.Sqlite.Model.DatabaseFacts
-import Belay.Sqlite.Model.Resolution.CatalogSpec
+import Belay.Sqlite.Model.Schema.Writes.AdmittedCellLaws
+import Belay.Sqlite.Model.Schema.Ddl.CatalogSpec
 
 set_option doc.verso true
 

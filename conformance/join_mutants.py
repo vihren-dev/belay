@@ -7,13 +7,13 @@ builds and runs against its target case of `conformance.authored_joins`.
 
 from conformance.resolve_mutants import SQLITE
 
-QUERY_JOINS = SQLITE + "QueryJoins.lean"
+QUERY_JOINS = SQLITE + "Queries/Select/QueryJoins.lean"
 """The rows of joins."""
-SCOPE = SQLITE + "Resolution/ScopeNames.lean"
+SCOPE = SQLITE + "Queries/Preparation/ScopeNames.lean"
 """The resolution of unqualified names over the sources."""
-SOURCES = SQLITE + "Resolution/TableReference.lean"
+SOURCES = SQLITE + "Queries/Preparation/TableReference.lean"
 """The resolution of the tables of FROM and their names."""
-QUERIES = SQLITE + "Resolution/ResultColumnTraced.lean"
+QUERIES = SQLITE + "Queries/Select/ResultColumnTraced.lean"
 """The resolution of SELECT and its result columns."""
 
 PADDED = "    if (joinMatches context row join candidates).isEmpty then [row ++ List.replicate width .null]"

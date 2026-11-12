@@ -1,10 +1,10 @@
-import Belay.Sqlite.Model.AdmittedTableAtomStatement
-import Belay.Sqlite.Model.AdmittedEngineLaws
-import Belay.Sqlite.Model.AdmittedInsertAtoms
-import Belay.Sqlite.Model.AdmittedUpdateAtoms
-import Belay.Sqlite.Model.AdmittedUpsertAtoms
-import Belay.Sqlite.Model.AdmittedAddColumnLaws
-import Belay.Sqlite.Model.RowLocalUpsert
+import Belay.Sqlite.Model.Programs.StatementRunLaws.AdmittedTableAtomStatement
+import Belay.Sqlite.Model.Schema.Rows.AdmittedInsertAtoms
+import Belay.Sqlite.Model.Programs.Scripts.AdmittedUpdateAtoms
+import Belay.Sqlite.Model.Schema.Rows.AdmittedUpdateAtoms
+import Belay.Sqlite.Model.Schema.Writes.AdmittedUpsertAtoms
+import Belay.Sqlite.Model.Schema.Rows.AdmittedAddColumnLaws
+import Belay.Sqlite.Model.Schema.Writes.RowLocalUpsert
 
 set_option doc.verso true
 

@@ -8,7 +8,7 @@ on this page.
 ## The profile in Lean
 
 A profile is a value of `Belay.Sqlite.Model.Profile`
-(`packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Profile.lean`).
+(`packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Resolved/Profile.lean`).
 It has these fields:
 
 | Field | Meaning | Default |

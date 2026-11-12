@@ -1,27 +1,12 @@
-import Belay.Sqlite.Model.Resolution.Profile
-import Belay.Sqlite.Model.Resolution.Syntax
-import Belay.Sqlite.Model.Resolution.Catalog
-import Belay.Sqlite.Model.Resolution.Resolved
-import Belay.Sqlite.Model.Resolution.RestrictionRegistry
-import Belay.Sqlite.Model.Resolution.Values
-import Belay.Sqlite.Model.Resolution.ReadDefaults
-import Belay.Sqlite.Model.Resolution.Context
-import Belay.Sqlite.Model.Resolution.Definitions
-import Belay.Sqlite.Model.Resolution.AddColumn
-import Belay.Sqlite.Model.Resolution.Writes
-import Belay.Sqlite.Model.Resolution.Resolve
-import Belay.Sqlite.Model.Resolution.ColumnSpec
-import Belay.Sqlite.Model.Resolution.RowSpec
-import Belay.Sqlite.Model.Resolution.CatalogSpec
-import Belay.Sqlite.Model.Resolution.NamesSpec
-import Belay.Sqlite.Model.Resolution.NamesSpecScript
-import Belay.Sqlite.Model.Resolution.PrepareSpec
-import Belay.Sqlite.Model.Resolution.UpdateSpec
-import Belay.Sqlite.Model.Resolution.DefinitionSpec
-import Belay.Sqlite.Model.Resolution.TransactionSpec
-import Belay.Sqlite.Model.Resolution.Messages
-import Belay.Sqlite.Model.Resolution.ErrorNames
-import Belay.Sqlite.Model.Resolution.SchemaScript
+import Belay.Sqlite.Model.Queries.Preparation.RestrictionRegistry
+import Belay.Sqlite.Model.Schema.Writes.RowSpec
+import Belay.Sqlite.Model.Schema.Dispatch.NamesSpecScript
+import Belay.Sqlite.Model.Schema.Ddl.PrepareSpec
+import Belay.Sqlite.Model.Schema.Triggers.UpdateSpec
+import Belay.Sqlite.Model.Schema.Ddl.DefinitionSpec
+import Belay.Sqlite.Model.Schema.Dispatch.TransactionSpec
+import Belay.Sqlite.Model.Queries.Preparation.ErrorNames
+import Belay.Sqlite.Model.Schema.Dispatch.SchemaScript
 
 /-! Name resolution: statement syntax, the execution profile, the catalog, the resolved
 statements and {lit}`resolve`, the resolution of a schema and a script, with the declarative specification of resolution and the

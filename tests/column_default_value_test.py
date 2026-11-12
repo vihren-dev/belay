@@ -58,9 +58,9 @@ def test_omitted_default_values(version: str, tmp_path: Path,
         connection.close()
     expressions = ", ".join(f"⟨({expression}), {quoted_string(sql)}⟩" for sql, expression in CASES)
     affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
-    source = f'''import Belay.Sqlite.Model.Codec
-import Belay.Sqlite.Model.Resolution.InsertCells
-import Belay.Sqlite.Model.Resolution.ReadDefaults
+    source = f'''import Belay.Sqlite.Model.Frontend.Codecs.Codec
+import Belay.Sqlite.Model.Schema.Writes.InsertCells
+import Belay.Sqlite.Model.Schema.Columns.ReadDefaults
 open Belay.Sqlite.Model Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{expressions}]
@@ -101,9 +101,9 @@ def test_oversized_hex_default_prepare_error(version: str, negated: bool, tmp_pa
     if negated:
         expression = f".negate ({expression})"
     source = f'''import Lean
-import Belay.Sqlite.Model.Resolution.InsertCells
-import Belay.Sqlite.Model.Resolution.ReadDefaults
-import Belay.Sqlite.Model.Resolution.Messages
+import Belay.Sqlite.Model.Schema.Writes.InsertCells
+import Belay.Sqlite.Model.Schema.Columns.ReadDefaults
+import Belay.Sqlite.Model.Queries.Preparation.Messages
 open Belay.Sqlite.Model Lean
 #eval do
   let some resolved := resolveColumnDefault (affinityOf none) ⟨({expression}), {quoted_string(sql)}⟩

@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_strict`.
 
 from conformance.resolve_mutants import SQLITE
 
-STRICT_TYPES = SQLITE + "Resolution/StrictTypes.lean"
+STRICT_TYPES = SQLITE + "Schema/Rows/StrictTypes.lean"
 """Which values each strict type stores."""
-CATALOG = SQLITE + "Resolution/Catalog.lean"
+CATALOG = SQLITE + "Shared/Catalog/Catalog.lean"
 """The affinity of a catalog column."""
-UPSERT_RUN = SQLITE + "UpsertRun.lean"
+UPSERT_RUN = SQLITE + "Schema/Writes/UpsertRun.lean"
 """The checks of one row of an INSERT with an `OR` algorithm or clauses."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

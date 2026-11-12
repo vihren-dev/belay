@@ -9,7 +9,7 @@ import pytest
 from tests.runtime_support import run_command
 from tests.s6_check_support import split_blocks
 from tests.surface_replay_test import native_replay
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -33,7 +33,7 @@ def test_consumer_size_claim_is_false_and_replays(runtime_root: Path, tmp_path: 
     the default options, with at most two rows in each table. The construction inserts the rows
     with the triggers off; native SQLite rebuilds them and fails on the same CHECK. A
     counterexample supplied with `db!` is also reported."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CheckConsumerSize.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CheckConsumerSize.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
     nodes = int(re.search(r"consumer schema nodes: (\d+)", result.stdout).group(1))

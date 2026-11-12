@@ -1,6 +1,6 @@
 import ExpressionAgreement
-import Belay.Sqlite.Model.ExprAppendLaws
-import Belay.Sqlite.Model.ExprContextLaws
+import Belay.Sqlite.Model.Queries.Evaluation.ExprAppendLaws
+import Belay.Sqlite.Model.Queries.Evaluation.ExprContextLaws
 
 set_option doc.verso true
 

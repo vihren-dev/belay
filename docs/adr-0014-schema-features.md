@@ -216,7 +216,7 @@ Each slice works in this way:
 ### Implementation notes
 
 - Slice 1 (2026-10-19): the key forms and the catalog index live in
-  `Resolution/Keys.lean`, and `Catalog.uniqueKeys` gives every key as terms with an optional
+  `Shared/Catalog/Keys.lean`, and `Catalog.uniqueKeys` gives every key as terms with an optional
   filter. An index may repeat a column, as SQLite allows. The time keywords in an index
   are covered by Lean examples only: the recorder refuses them outside a controlled clock.
 - Slice 2 (2026-10-19), a change of D4's representation: the rows of a `WITHOUT ROWID`

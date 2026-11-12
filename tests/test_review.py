@@ -137,7 +137,7 @@ def run_review(stubs: Path, extra: dict[str, str]) -> subprocess.CompletedProces
 @pytest.mark.integration
 def test_claude_caller_gets_isolated_codex_review(tmp_path: Path) -> None:
     """A Claude Code caller is reviewed by Codex, which sees no Claude markers and gets the checklist."""
-    stubs = stub_tools(tmp_path / "bin", "- R2 must Belay/Sqlite/Model/Database.lean:10 no plain words")
+    stubs = stub_tools(tmp_path / "bin", "- R2 must Belay/Sqlite/Model/Shared/Catalog/Database.lean:10 no plain words")
     result = run_review(stubs, {"CLAUDECODE": "1", "AI_AGENT": "claude-code"})
     call = json.loads((stubs / "call.json").read_text())
     assert result.returncode == 1, result.stderr

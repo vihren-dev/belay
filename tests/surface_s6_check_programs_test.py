@@ -12,7 +12,7 @@ from tests.runtime_support import run_command
 from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
 from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3"), pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)]
@@ -158,7 +158,7 @@ def test_printed_proof_checks_again_with_ordinary_axioms(runtime_root: Path, tmp
     proof = blocks[name].split("Checked proof: by ", 1)[1]
     assert "sql_auto" not in proof, proof
     extra = compile_helper_module(runtime_root, tmp_path, "S6RulesEffects",
-                                  (FIXTURES / "S6RulesEffects.lean").read_text())
+                                  fixture_file("S6RulesEffects.lean").read_text())
     file = tmp_path / "Printed.lean"
     file.write_text(f"""import S6RulesEffects
 set_option maxRecDepth 8192

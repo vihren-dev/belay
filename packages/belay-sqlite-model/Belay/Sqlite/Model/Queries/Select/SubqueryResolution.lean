@@ -1,0 +1,172 @@
+import Belay.Sqlite.Model.Queries.Select.CompoundResolution
+import Belay.Sqlite.Model.Queries.Select.SubqueryScopes
+import Belay.Sqlite.Model.Queries.Evaluation.QueryRun
+
+set_option doc.verso true
+
+/-! Resolution of the subqueries of a statement (ADR 0018, D1). The scopes go outward-in:
+the statement's query or write, then each subquery in the order in which SQLite finds its tables
+({name}`Belay.Sqlite.Model.scopeOrder`), enclosed by the scope of the query around it
+({name}`Belay.Sqlite.Model.Scope.enclose`), with its cells after the outer cells. The bodies follow their dependencies, derived sources before the containing query
+and each expression subquery before its containing expressions,
+because an expression needs the shapes of the subqueries that it names
+({name}`Belay.Sqlite.Model.SubqueryShape`). A compound subquery (ADR 0019, D3) has its terms after
+it, so their bodies come before its own; the terms of a compound go from right to left, as
+SQLite resolves them. An issue of subquery {lit}`i` is at the path
+{lit}`[field, i]` and the path within its clauses, where {lit}`field` is the child of the
+statement's syntax that holds its subqueries: 8 for {lit}`SELECT`. -/
+
+namespace Belay.Sqlite.Model
+
+/-- The shape of a resolved subquery ({name}`SubqueryShape`): the query around it, its number
+of result columns, the affinity, FLEXNUM flag, collations and declared-type origin of its first result
+column, and the lowest cell that it or a subquery that it names reads. -/
+def subqueryShape (scope : Scope) (shapes : SubqueryShapes) (subquery : Syntax.Subquery) (query : Resolved.Query)
+    (affinity : Option Affinity) : SubqueryShape :=
+  let (explicitCollation, columnCollation) := firstCollations scope subquery.columns
+  { parent := subquery.parent, columns := query.columns.length, affinity, explicitCollation, columnCollation,
+    originType := (resultOriginTypes scope shapes subquery.columns).head?.join,
+    flexibleNumeric := (resultFlexibleNumerics scope shapes subquery.columns).head?.getD false,
+    lowest := query.expressions.foldl (fun lowest expression => minPosition lowest (expression.lowestRead shapes))
+      (query.sources.foldl (fun lowest source => match source.source with
+        | .subquery index _ => minPosition lowest ((shapes.find index).bind (·.lowest))
+        | .table _ | .initialTable _ | .each .. | .pragma _ => lowest) none) }
+
+/-- The order of body resolution: derived sources in FROM order, then expression subqueries
+in written order, each after its own children; compound terms go right to left. The bounded
+walk follows the existing indexed parent relation and does not change evaluation order. -/
+def subqueryBodyOrder (main : QueryScope) (compound : Option Syntax.Compound)
+    (scopes : List QueryScope) (subqueries : List Syntax.Subquery) : Nat → Option Nat → List Nat
+  | 0, _ => []
+  | fuel + 1, parent =>
+    let children := (List.range subqueries.length).filter fun index =>
+      (subqueries[index]?.map (·.parent)) == some parent
+    if children.isEmpty then [] else
+    let sources := ((parent.bind (scopes[·]?)).getD main).sourceIndexes
+    let ordered := match compoundOf compound subqueries parent with
+      | some terms => terms.terms.reverse
+      | none => (sources ++ children).eraseDups
+    ordered.flatMap fun child =>
+      subqueryBodyOrder main compound scopes subqueries fuel (some child) ++ [child]
+
+/-- Refresh a query scope after its derived sources resolve. Their column types also rebuild
+USING/NATURAL equalities. The outer sources retain their existing cell positions and depths. A
+refreshed scope records the occurrences of its sources again, now with the columns of the derived
+sources; the later record of a path replaces the earlier one ({name}`NameTrace.settled`). -/
+def QueryScope.refreshTraced (catalog : Catalog) (shapes : List SubqueryShape) (query : Syntax.Subquery)
+    (around : QueryScope) (initial : Option Catalog := none) : Traced ValueIssue QueryScope := do
+  let scope := around.scope.refreshSources shapes
+  if scope = around.scope then pure around else do
+    let callback := fun index => match shapes[index]?.bind (·.source) with
+      | some source => Except.ok source
+      | none => Except.error (SourceIssue.value (.restriction [] .subqueryHere))
+    let sources := resolveSourcesTraced catalog query.source query.joins around.outer callback [] initial
+    let (pending, inner) ← sources.mapError fun
+      | .value issue => issue
+      | .noSuchTable name => .prepare (.noSuchSource name)
+    pure { around with pending, scope := scope.filter (·.depth > 0) ++ inner }
+
+/-- Refresh a query scope after its derived sources resolve: {name}`QueryScope.refreshTraced`
+without its occurrences. -/
+def QueryScope.refresh (catalog : Catalog) (shapes : List SubqueryShape) (query : Syntax.Subquery)
+    (around : QueryScope) (initial : Option Catalog := none) : Except ValueIssue QueryScope :=
+  (around.refreshTraced catalog shapes query initial).drop
+
+/-- Resolve each body after its dependencies, using the existing query and compound resolvers.
+Returned queries and shapes retain their syntax indexes. A FROM source adds the metadata of
+all its output columns to its shape; expression subqueries keep first-column metadata only.
+Each body issue is located at its subquery's syntax path. Optional {lit}`columnNames`
+retain explicit CTE/view names without changing the expressions inside the body.
+For {lit}`viewRoots`, resolve the expressions before checking the declared column count.
+The optional {lit}`initial` is the catalog of the initial database of a two-state query. -/
+def resolveSubqueryBodiesTraced (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
+    (compound : Option Syntax.Compound) (scopes : List QueryScope) (subqueries : List Syntax.Subquery)
+    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) :
+    Traced ValueIssue (List Resolved.Query × List SubqueryShape) := do
+  let missing : SubqueryShape :=
+    { parent := some subqueries.length, columns := 0,
+      affinity := none, explicitCollation := none, columnCollation := none, lowest := none }
+  let emptyQuery : Resolved.Query :=
+    { sources := [], filter := none, aggregate := false,
+      groupBy := [], columns := [], names := [], orderBy := [], offset := 0, limit := none }
+  let found ← Traced.foldAll
+    (fun found index => do
+      let shapes := (List.range subqueries.length).map fun index =>
+        ((List.lookup index found).map Prod.snd).getD missing
+      let queries := (List.range subqueries.length).map fun index =>
+        ((List.lookup index found).map Prod.fst).getD emptyQuery
+      let refreshed := scopes.map fun scope => { scope with scope := scope.scope.refreshSources shapes }
+      let body : Traced ValueIssue (Resolved.Query × SubqueryShape) := do
+        let some subquery := subqueries[index]? | throw (.restriction [] .subqueryHere)
+        let some around := scopes[index]? | throw (.restriction [] .subqueryHere)
+        let around ← around.refreshTraced catalog shapes subquery initial
+        let current : SubqueryShapes :=
+          { current := some index, later := shapes.drop (index + 1), outer := around.outer }
+        let (query, shape, columns) ← match subquery.compound with
+          | some compound => do
+            let terms ← compoundTerms 0 (some index) compound (refreshed.map QueryScope.scope)
+              subqueries queries shapes
+            let (query, shape) ← resolveCompoundBodyTraced dqs around.outer subquery compound terms
+            pure (query, shape, compoundSourceColumns (terms.map fun term =>
+              resultSourceColumns term.scope term.shapes term.written.columns term.query.names))
+          | none => do
+            let (query, affinity) ← resolveQueryBodyTraced dqs around.scope current around.outerAliases around.pending subquery
+            pure (query, subqueryShape around.scope current subquery query affinity,
+              resultSourceColumns around.scope current subquery.columns query.names)
+        if let some name := viewRoots.lookup index then
+          if let some names := columnNames.lookup index then
+            if shape.columns != names.length then
+              throw (.prepare (.view (.columns name names.length shape.columns)))
+        let isSource := match subquery.parent with
+          | none => main.sourceIndexes.contains index
+          | some parent => (scopes[parent]?).any (·.sourceIndexes.contains index)
+        let shape ← if !isSource then pure shape else do
+          let expanded : ScopeSource ← Traced.lift ((sourceExpansion catalog field subqueries subquery.parent index
+              columnNames initial).mapError fun
+            | .value issue => issue
+            | .noSuchTable name => .prepare (.noSuchSource name))
+          let columns := (columns.zip expanded.columns).map fun (column, named) =>
+            { column with name := named.name.text }
+          pure { shape with source := some (derivedScopeSource index none columns) }
+        if let some issue := compoundColumnsIssue (compoundOf compound subqueries subquery.parent)
+            index shape.columns 0 shapes then throw issue
+        pure (query, shape)
+      let resolved ← Traced.under [field, index] body
+      pure ((index, resolved) :: found)) []
+    (subqueryBodyOrder main compound scopes subqueries (subqueries.length + 1) none)
+  let resolved ← Traced.mapAll (fun index =>
+    match List.lookup index found with
+    | some resolved => pure resolved
+    | none => throw (.restriction [field, index] .subqueryHere)) (List.range subqueries.length)
+  pure (resolved.map Prod.fst, resolved.map Prod.snd)
+
+/-- Resolve each body after its dependencies: {name}`resolveSubqueryBodiesTraced` without its
+occurrences. -/
+def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
+    (compound : Option Syntax.Compound) (scopes : List QueryScope) (subqueries : List Syntax.Subquery)
+    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) : Except ValueIssue (List Resolved.Query × List SubqueryShape) :=
+  (resolveSubqueryBodiesTraced dqs catalog field main compound scopes subqueries columnNames viewRoots initial).drop
+
+/-- Resolve the subqueries of a statement around whose own expressions is {lit}`main`: their
+scopes ({name}`subqueryScopesTraced`), then their bodies ({name}`resolveSubqueryBodiesTraced`), with the
+statement's syntax holding them at child {lit}`field`. Explicit CTE names use
+{lit}`columnNames`; its empty default keeps ordinary derived-source names.
+The optional {lit}`viewRoots` identify stored definitions for scope and count checks. -/
+def resolveSubqueriesTraced (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
+    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) :
+    Traced SourceIssue (List Resolved.Query × List SubqueryShape) := do
+  let scopes ← subqueryScopesTraced catalog field main none subqueries columnNames viewRoots initial
+  (resolveSubqueryBodiesTraced dqs catalog field main none scopes subqueries columnNames viewRoots initial).mapError .value
+
+/-- The queries and shapes of the subqueries of a statement: {name}`resolveSubqueriesTraced`
+without its occurrences. -/
+def resolveSubqueries (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
+    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := [])
+    (initial : Option Catalog := none) :
+    Except SourceIssue (List Resolved.Query × List SubqueryShape) :=
+  (resolveSubqueriesTraced dqs catalog field main subqueries columnNames viewRoots initial).drop
+
+end Belay.Sqlite.Model

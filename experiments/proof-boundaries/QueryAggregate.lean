@@ -1,7 +1,7 @@
 import QuerySemantic
 import Belay.Sqlite.Model.AggregateQueryLaws
 import Belay.Sqlite.Model.SimpleQuerySteps
-import Belay.Sqlite.Model.TableSourceLaws
+import Belay.Sqlite.Model.Schema.Dispatch.TableSourceLaws
 
 set_option doc.verso true
 

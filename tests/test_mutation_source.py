@@ -7,7 +7,7 @@ import pytest
 
 from conformance.mutation_check import schema_step_source
 
-EXECUTION = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean"
+EXECUTION = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/Execution.lean"
 
 
 @pytest.mark.parametrize("documentation", ["", "/-- Replacement documentation. -/"])

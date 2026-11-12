@@ -143,6 +143,7 @@ allowed; measure its completed result. Source reduction implies no speedup.
 | --- | ---: | ---: | ---: | ---: | --- |
 | Baseline `ad5684bb`, 2026-10-28 | 72,199 | 15,608 | 223 | 88,030 | 30/30 by baseline definition; all essential groups present; no approved losses. Nix source count above. |
 | ADR25/26 `23a3427b`, 2026-10-28 | 70,876 | 15,919 | 223 | 87,018 | Net -1,012 lines; 30/30 retained. Unknown: none. Lost: none. All essential groups retained; no approved losses. |
+| Directories by division and team, on main `d9e10661`, 2026-11-11 | 74,278 | 20,205 | 245 | 94,728 | Net +1,277 lines from main `d9e10661` (72,955 / 20,251 / 245 / 93,451): header lines of 399 new files. The move changes no declaration, so no group changes. A local count; [status](../plans/20261110-ownership-reorganization.status.md). |
 
 The ADR25/26 count uses the same Nix-pinned scc 3.7.0 executable and the same
 31 byte-identical historical exclusions as the baseline. Its revision, counter

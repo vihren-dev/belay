@@ -309,7 +309,7 @@ it as a starting point and searches again.
   parameter of `module_setup` and `surface_command` in `tests/surface_support.py`, and
   `pkgs.patchelf` in the tools of the surface suites if nothing else there uses it.
 - **Stale text.** The message `grammarAdvice` in
-  `packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean` tells the user to rebuild the parser
+  `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Grammar.lean` tells the user to rebuild the parser
   library; it says instead that a new dialect goes into `parser/dialects.json` and
   `just parser-sources`, and names no ADR. The message of an unusable parse document in
   `packages/belay-sqlite-text/TranslationProgram.lean` tells the user to rebuild the conformance

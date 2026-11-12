@@ -1,4 +1,4 @@
-"""The mapping of the CREATE TABLE options to Syntax JSON (`tableOptions` in `packages/belay-sqlite-text/Belay/Sqlite/Translation/Tables.lean`,
+"""The mapping of the CREATE TABLE options to Syntax JSON (`tableOptions` in `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Tables.lean`,
 through the text package's program).
 
 ADR 0014 adds `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6). SQLite's grammar reads each

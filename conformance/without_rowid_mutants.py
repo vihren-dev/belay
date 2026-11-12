@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_without_rowid`.
 
 from conformance.resolve_mutants import SQLITE
 
-QUERY_EVAL = SQLITE + "QueryEval.lean"
+QUERY_EVAL = SQLITE + "Queries/Evaluation/QueryEval.lean"
 """The scan order of a table."""
-TABLE_OPTIONS = SQLITE + "Resolution/TableOptions.lean"
+TABLE_OPTIONS = SQLITE + "Schema/Columns/TableOptions.lean"
 """The catalog rules of the table options, such as `WITHOUT ROWID`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

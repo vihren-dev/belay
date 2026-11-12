@@ -10,7 +10,7 @@ from tests.surface_support import module_setup
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean("compiler")]
 
 CHECKS = """
-import Belay.Sqlite.QuerySuccess
+import Belay.Sqlite.Programs.Claims.QuerySuccess
 open Belay.Sqlite
 example {α : Type} (p : Sql α) (predicate : Database → Prop) :
     Succeeds p predicate ↔ ∀ db, predicate db → ∀ env : Env, env.Complete →

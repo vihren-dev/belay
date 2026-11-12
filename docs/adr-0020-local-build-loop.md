@@ -51,7 +51,7 @@ definition to a module, then the build runs:
 | --- | --- | --- |
 | None (no-op) | | 0.1 s, 0 jobs |
 | `VerifierConformance.Json` (runner) | | 4.0 s, 5 jobs |
-| `Belay.Sqlite.Model.QueryLaws` (proofs) | | 0.1 s, 0 jobs |
+| `Belay.Sqlite.Model.Queries.Evaluation.QueryLaws` (proofs) | | 0.1 s, 0 jobs |
 | `Belay.Sqlite.Model.QueryFunctions` (middle) | 133.2 s | 13.5 s, 30 jobs |
 | `Belay.Sqlite.Model.Identifier` (many dependents) | | 40.6 s, 165 jobs |
 

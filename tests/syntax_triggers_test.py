@@ -1,4 +1,4 @@
-"""The mapping of CREATE TRIGGER, DROP TRIGGER and RAISE to Syntax JSON (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Triggers.lean`,
+"""The mapping of CREATE TRIGGER, DROP TRIGGER and RAISE to Syntax JSON (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Triggers.lean`,
 through the text package's program).
 
 ADR 0018, D5: the translation keeps a trigger's name, time, event, table, `WHEN` condition and

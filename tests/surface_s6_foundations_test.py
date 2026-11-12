@@ -7,7 +7,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 ALLOWED_PROOF_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 """Ordinary Lean logical axioms; execution assumptions and unchecked reduction are excluded."""
@@ -27,8 +27,8 @@ def test_s6_transformer_agrees_with_execution(runtime_root: Path, tmp_path: Path
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                              "-R", str(FIXTURES), "-o", str(artifact),
-                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=120)
+                              "-R", str(fixture_file(f"{module}.lean").parent), "-o", str(artifact),
+                              str(fixture_file(f"{module}.lean"))], cwd=tmp_path, timeout=120)
         assert result.returncode == 0, result.diagnostic()
         reports = re.findall(r"depends on axioms: \[([^]]*)\]", result.stdout)
         assert len(reports) == count, result.diagnostic()

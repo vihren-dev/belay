@@ -8,13 +8,13 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-ROW_DELETE = SQLITE + "RowDelete.lean"
+ROW_DELETE = SQLITE + "Schema/Columns/RowDelete.lean"
 """The execution of DELETE."""
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The rowid of an inserted row."""
-OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
+OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/StatementOutput.lean"
 """The outputs of statements, with the RETURNING rows."""
-STEP = SQLITE + "StatementStep.lean"
+STEP = SQLITE + "Schema/Dispatch/StatementStep.lean"
 """The run of a statement, with the counts of its changes."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

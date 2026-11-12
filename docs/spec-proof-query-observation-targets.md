@@ -52,10 +52,10 @@ Preserve each resolver-only transport with its weaker premises; 45 includes thre
 
 Retain and migrate `Holds.iff_selectOne_noDuplicateKeys_pairwise` and
 `Empty.iff_selectOne_noDuplicateKeys_repeated` in `DuplicateKeyQuery` (removed by ADR 0027; the fixture
-`tests/surface/SelectDuplicateKeySupport.lean` proves them as `noDuplicateKeys_claims` and
+`tests/surface/Queries/Tests/SelectDuplicateKeySupport.lean` proves them as `noDuplicateKeys_claims` and
 `keyGroupsShort_iff_pairwise`), and
 `Holds.selectOne_count_unique_lookup` in `UniqueLookupQuery` (removed by ADR 0027; the fixture
-`tests/surface/ClaimsUniqueLookup.lean` proves the bound as `unique_lookup_holds`).
+`tests/surface/Schema/Tests/ClaimsUniqueLookup.lean` proves the bound as `unique_lookup_holds`).
 Also retain the mathematical consequence `Holds.iff_selectOne_noDuplicateKeysWhere_pairwise` in
 `FilteredDuplicateKeyQuery` (removed by ADR 0027; the same fixture proves it with a filter). Preserve result-column resolution/groupedness,
 aggregate-feed restrictions, `GroupTermResolvesIn`, filter/column/key calmness,
@@ -68,17 +68,17 @@ Keep used helpers outside the 45-name list; mixed owners are not wholesale delet
 
 | Current owner | Exact definitions and facts to reuse below their consumers |
 | --- | --- |
-| [QueryOutputFacts](../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
-| `SimpleQuerySteps` (removed by ADR 0027; current owner: [SelectCalmRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean)) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
+| QueryOutputFacts ([Queries/Evaluation](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryOutputFacts.lean), [Schema/Dispatch](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/QueryOutputFacts.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/QueryOutputFacts.lean)) | `Resolved.Query.described`, `Connection.queryContext`, `resolvedStepOutput_query`, `Connection.runOn_of_found` |
+| `SimpleQuerySteps` (removed by ADR 0027; current owner: SelectCalmRule ([Queries/Evaluation](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SelectCalmRule.lean), [Schema/Dispatch](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectCalmRule.lean), [Programs/StatementRunLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/SelectCalmRule.lean))) | `Resolved.EvalContext.bound`, `Resolved.EvalContext.bound_parameters`, `Connection.queryContext_of_quiet`, `Resolved.Statement.Calm.faultless_nil` |
 | `SelectOneSubqueryOutput` (removed by ADR 0027) | `Resolved.SubqueryRun.Quiet`, `Connection.queryContext_eq_bound`, `Connection.queryContext_selectOne` |
-| `CountSubqueryOutput` (removed by ADR 0027; current owner of `Resolved.SubqueryRun.count` and `Resolved.countMatching`: [CountOf](../packages/belay-sqlite-model/Belay/Sqlite/Model/CountOf.lean)) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
-| `ScalarSubqueryOutput` (removed by ADR 0027; the fixture `tests/surface/SelectColumnWhereSupport.lean` defines the rows as `columnValues`) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
-| `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: [SelectOneSubqueryContext](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOneSubqueryContext.lean)) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`; `Connection.queryContext_tableSubquery_zero` was removed by ADR 0027 |
-| `DuplicateKeyOutput` (removed by ADR 0027; the fixture `tests/surface/SelectDuplicateKeySupport.lean` gives the run as `duplicateKeysOne_run`) | `Connection.queryContext_duplicateKeys_zero` |
-| `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
-| `SimpleSubqueryRowsOutput` (removed by ADR 0027; current owner: [SelectExecutionRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectExecutionRule.lean)) | `resolvedStepOutput_select_unordered`, for any subqueries, with readiness from `Connection.SelectReady.of_faultless`; reuse this current exact-output fact |
-| [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; reuse different-filter agreement and named-table append semantics |
-| [SimpleTableCalm](../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleTableCalm.lean) | `Resolved.Output.operands_of_readsBelow`, `Resolved.Statement.simpleTable_calm`; reuse the current shared calmness proof |
+| `CountSubqueryOutput` (removed by ADR 0027; current owner of `Resolved.SubqueryRun.count` and `Resolved.countMatching`: [CountOf](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CountOf.lean)) | `Resolved.SubqueryRun.count`, `Resolved.SubqueryRun.count_quiet`, `Resolved.countMatching`, `Connection.queryContext_countSubquery_zero`, `Connection.queryContext_countSubquery_runs` |
+| `ScalarSubqueryOutput` (removed by ADR 0027; the fixture `tests/surface/Queries/Tests/SelectColumnWhereSupport.lean` defines the rows as `columnValues`) | `Resolved.SubqueryRun.certain`, `Resolved.SubqueryRun.certain_quiet`, `Resolved.scalarRows`, `Connection.queryContext_scalarSubquery_zero`, `Connection.queryContext_scalarSubquery_runs` |
+| `ExistsSubqueryOutput` (renamed by ADR 0027; current owner: SelectOneSubqueryContext ([Queries/Evaluation](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SelectOneSubqueryContext.lean), [Programs/StatementRunLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/SelectOneSubqueryContext.lean))) | `Resolved.EvalContext.bound_quiet`, `Connection.queryContext_subquery_zero`; `Connection.queryContext_tableSubquery_zero` was removed by ADR 0027 |
+| `DuplicateKeyOutput` (removed by ADR 0027; the fixture `tests/surface/Queries/Tests/SelectDuplicateKeySupport.lean` gives the run as `duplicateKeysOne_run`) | `Connection.queryContext_duplicateKeys_zero` |
+| `TableInfoOutput` (removed by ADR 0027; current owner: [SelectSourceRules](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectSourceRules.lean), `Resolved.Query.source_pragma`) | `Resolved.Query.source_pragma_fixed` |
+| `SimpleSubqueryRowsOutput` (removed by ADR 0027; current owner: [SelectExecutionRule](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Claims/SelectExecutionRule.lean)) | `resolvedStepOutput_select_unordered`, for any subqueries, with readiness from `Connection.SelectReady.of_faultless`; reuse this current exact-output fact |
+| [CertifiedQueryOutputs](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/CertifiedQueryOutputs.lean) | `runScriptStep_simpleTable_output`, `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append`; reuse different-filter agreement and named-table append semantics |
+| [SimpleTableCalm](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SimpleTableCalm.lean) | `Resolved.Output.operands_of_readsBelow`, `Resolved.Statement.simpleTable_calm`; reuse the current shared calmness proof |
 
 The existing generic projections `resolvedStepOutput_query_isError` in
 `QueryStatementOutput` and `resolvedStepOutput_not_isError_of_faultless`
@@ -98,17 +98,17 @@ predicate of possible observations. Preserve each `actual`/`branches` meaning.
 
 | Owning source | Exact relation targets | Observer retained |
 | --- | --- | --- |
-| [ExecutionEquivalence](../packages/belay/Belay/Sqlite/ExecutionEquivalence.lean) | `Sql.EquivAt` | Complete `SqlRun`, including connection and trace |
-| [ExecutionObservations](../packages/belay/Belay/Sqlite/ExecutionObservations.lean) | `Sql.ObservationEquivAt` | `SqlRun.observation` |
-| [ExecutionViewEquivalence](../packages/belay/Belay/Sqlite/ExecutionViewEquivalence.lean) | `Sql.View.EquivAt`, `Sql.View.ObservationEquivAt` | `Sql.View.fullObservation`, `Sql.View.observation`, respectively |
+| [ExecutionEquivalence](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionEquivalence.lean) | `Sql.EquivAt` | Complete `SqlRun`, including connection and trace |
+| [ExecutionObservations](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionObservations.lean) | `Sql.ObservationEquivAt` | `SqlRun.observation` |
+| [ExecutionViewEquivalence](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewEquivalence.lean) | `Sql.View.EquivAt`, `Sql.View.ObservationEquivAt` | `Sql.View.fullObservation`, `Sql.View.observation`, respectively |
 
 Remove these nine fixed-context wrappers; ordinary equality supplies their laws:
 
 | Owning source | Exact prefix | Exact suffixes |
 | --- | --- | --- |
-| [ExecutionEquivalenceLaws](../packages/belay/Belay/Sqlite/ExecutionEquivalenceLaws.lean) | `Sql.EquivAt.` | `refl`, `symm`, `trans` |
-| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/ExecutionViewEquivalenceLaws.lean) | `Sql.View.EquivAt.` | `refl`, `symm`, `trans` |
-| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/ExecutionViewEquivalenceLaws.lean) | `Sql.View.ObservationEquivAt.` | `refl`, `symm`, `trans` |
+| [ExecutionEquivalenceLaws](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionEquivalenceLaws.lean) | `Sql.EquivAt.` | `refl`, `symm`, `trans` |
+| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewEquivalenceLaws.lean) | `Sql.View.EquivAt.` | `refl`, `symm`, `trans` |
+| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewEquivalenceLaws.lean) | `Sql.View.ObservationEquivAt.` | `refl`, `symm`, `trans` |
 
 `Sql.EquivOn`, `Sql.Equiv`, `Sql.ReturnsIn` in `ExecutionEquivalence` and
 `Sql.View.ObservationEquivOn`, `Sql.View.EquivOn`, `Sql.View.ObservationEquiv`,
@@ -116,11 +116,11 @@ Remove these nine fixed-context wrappers; ordinary equality supplies their laws:
 Migrate `Sql.Equiv.refl`, `Sql.Equiv.symm`, `Sql.Equiv.trans` and `sqlSetoid` in
 `ExecutionEquivalenceLaws` to the new representation; they are not part of the
 nine fixed-context removals. Preserve the existing `≈` notation and its meaning.
-Current [ExecutionBranches](../packages/belay/Belay/Sqlite/ExecutionBranches.lean)
+Current [ExecutionBranches](../packages/belay/Belay/Sqlite/Programs/Claims/ExecutionBranches.lean)
 selects a `RunStep.executions` member before `OutputChoice`: preserve each
 member's next connection. `Sql.hasOneBranch` also requires `others.isEmpty`;
 absence of `.oneOf` alone no longer establishes a singleton execution.
-In [MigrationPatternAfter](../packages/belay/Belay/Sqlite/MigrationPatternAfter.lean),
+In [MigrationPatternAfter](../packages/belay/Belay/Sqlite/Programs/Reasoning/MigrationPatternAfter.lean),
 `Migration.afterView_observation_actual`, `Migration.afterView_observation_branches`
 and `Migration.translatesAt_of_observations` preserve the actual result separately
 from the union over all migration end states and their shifted raw indexes.
@@ -129,10 +129,10 @@ from the union over all migration end states and their shifted raw indexes.
 
 | Owning source | Exact claims whose proof reasoning is consolidated |
 | --- | --- |
-| [ExecutionObservations](../packages/belay/Belay/Sqlite/ExecutionObservations.lean) | `Sql.EquivAt.observation` |
-| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/ExecutionViewEquivalenceLaws.lean) | `Sql.View.EquivAt.observation` |
-| [ExecutionViewFrames](../packages/belay/Belay/Sqlite/ExecutionViewFrames.lean) | `Sql.View.EquivAt.with_outputs`, `Sql.View.ObservationEquivAt.full_of_frames` |
-| [ExecutionDeterministic](../packages/belay/Belay/Sqlite/ExecutionDeterministic.lean) | `Sql.EquivAt.of_one_branch`, `Sql.View.EquivAt.of_one_branch`, `Sql.View.ObservationEquivAt.of_one_branch` |
+| [ExecutionObservations](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionObservations.lean) | `Sql.EquivAt.observation` |
+| [ExecutionViewEquivalenceLaws](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewEquivalenceLaws.lean) | `Sql.View.EquivAt.observation` |
+| [ExecutionViewFrames](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewFrames.lean) | `Sql.View.EquivAt.with_outputs`, `Sql.View.ObservationEquivAt.full_of_frames` |
+| [ExecutionDeterministic](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionDeterministic.lean) | `Sql.EquivAt.of_one_branch`, `Sql.View.EquivAt.of_one_branch`, `Sql.View.ObservationEquivAt.of_one_branch` |
 
 Derive these claims through common branch transport or singleton reasoning;
 delete duplicate implementations after caller migration. Keep `Sql.branch_iff_actual` and `Sql.hasOneBranch` as the facts
@@ -141,17 +141,17 @@ that supply singleton premises. Keep the full-to-weak projection fact
 `Sql.View.fullObservation_eq_iff` in their listed owners, or suitable lower owners.
 Migrate `Sql.View.identity_observation_iff`, `Sql.View.identity_full_eq_iff` and
 `Sql.View.identity_equiv_iff` in
-[ExecutionViewIdentity](../packages/belay/Belay/Sqlite/ExecutionViewIdentity.lean).
+[ExecutionViewIdentity](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewIdentity.lean).
 
-Observers in [ExecutionViewProjection](../packages/belay/Belay/Sqlite/ExecutionViewProjection.lean)
+Observers in [ExecutionViewProjection](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewProjection.lean)
 keep full connection/raw index distinct from weak observations and actual runs
-distinct from possible images. [ScopedAgreement](../packages/belay/Belay/Sqlite/ScopedAgreement.lean)
+distinct from possible images. [ScopedAgreement](../packages/belay/Belay/Sqlite/Programs/Reasoning/ScopedAgreement.lean)
 owns `RunsAgree` and `Sql.ScopedAt`; retain their relation-based meaning and
 `Sql.ScopedAt.of_one_branch` independently of profile equality.
 
 ## Retain NOT IN and correlated EXISTS equivalences
 
-[NotInQuery](../packages/belay/Belay/Sqlite/NotInQuery.lean) adds meaningful consumers:
+NotInQuery ([Queries/Evaluation](../packages/belay/Belay/Sqlite/Queries/Evaluation/NotInQuery.lean), [Programs/StatementRunLaws](../packages/belay/Belay/Sqlite/Programs/StatementRunLaws/NotInQuery.lean)) adds meaningful consumers:
 `Sql.EquivAt.notIn_notExists_of_rowidAlias`, `Sql.EquivAt.in_exists_of_rowidAlias`
 and the singleton bridge `Sql.EquivAt.of_select_steps`. Retain `IsSelectStatement`
 and `IsSelectStatement.step_of_rows`: SELECT rows imply no further execution.
@@ -160,35 +160,35 @@ Both equivalences require table presence, key bounds, outer rowid alias and
 collations are independent. Only NOT IN requires non-NULL inner cells. Reuse
 `resolvedStepOutput_notIn_eq_notExists_of_rowidAlias` and
 `resolvedStepOutput_in_eq_exists_of_rowidAlias` in
-[InSubqueryQueryRowidAlias](../packages/belay-sqlite-model/Belay/Sqlite/Model/InSubqueryQueryRowidAlias.lean).
+[InSubqueryQueryRowidAlias](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/InSubqueryQueryRowidAlias.lean).
 
 ## Migrate actual clients and existing tests
 
 | Source | Required migration or retained coverage |
 | --- | --- |
-| [ExecutionEquivalenceLaws](../packages/belay/Belay/Sqlite/ExecutionEquivalenceLaws.lean) | `Sql.EquivAt.check_iff`, `Sql.EquivAt.andOk_iff`, `Sql.EquivAt.ifOk_iff`, `Sql.Equiv.transformer`, `Sql.Equiv.fresh_iff`, `Sql.Equiv.succeeds_iff` retain their guarantees |
-| [ExecutionEquivalenceBind](../packages/belay/Belay/Sqlite/ExecutionEquivalenceBind.lean) | `Sql.EquivOn.bind`, `Sql.Equiv.bind`, `Sql.Equiv.bind_right`, `Sql.Equiv.bind_left`, `Sql.Equiv.map`, `send_append_equiv` |
-| [ExecutionViewBindFrames](../packages/belay/Belay/Sqlite/ExecutionViewBindFrames.lean), [ExecutionViewEquivalenceBind](../packages/belay/Belay/Sqlite/ExecutionViewEquivalenceBind.lean) | `Sql.View.EquivAt.bind_branch`, `Sql.View.EquivOn.bind`, `Sql.View.Equiv.bind` |
-| [ExecutionViewObservationBind](../packages/belay/Belay/Sqlite/ExecutionViewObservationBind.lean) | `Sql.View.observation_bind_return_eq`, `Sql.View.observation_bind_branch`, `Sql.View.ObservationEquivOn.bind_same` |
-| [CounterexampleActual](../packages/belay/Belay/Sqlite/CounterexampleActual.lean), [CheckProof](../packages/belay/Belay/Sqlite/CheckProof.lean) | Migrate `refuteByActualRun?` from relation-field projection to profile equality; remove the quoted `Sql.EquivAt.refl` tactic alternative and retain ordinary reflexivity and proof certification. |
-| [MigrationPatternFrames](../packages/belay/Belay/Sqlite/MigrationPatternFrames.lean) | `TranslatesAt.commutes_of_frames`, `TranslatesOn.commutes_of_frames`; retain connection/step frames |
-| [ReadCertificate](../packages/belay/Belay/Sqlite/ReadCertificate.lean), [ReadCertificatePreservation](../packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean) | Retain `ReadCertificate.moved`, `ReadCertificate.Valid.moved`, `ReadCertificate.Obligations`, `ReadCertificate.output_eq`, `ReadCertificate.preservesAt`, `ReadCertificate.preservesAt_send`: named tables can move, and general preservation requires obligations at every branch without a uniform-end-state premise |
-| [CertifiedQueryCommutation](../packages/belay/Belay/Sqlite/CertifiedQueryCommutation.lean) | Retain `ReadCertificate.step_keeps`, `sendStatements_single_keeps`, `ReadCertificate.commutesOn`, `ReadCertificate.commutesOn_send`: full commutation keeps uniform connection/count, constant-clock and admitted-context premises; sent shortcuts exclude INSERT from a query |
-| [DerivedColumnReads](../packages/belay/Belay/Sqlite/DerivedColumnReads.lean), [DerivedColumnQueries](../packages/belay/Belay/Sqlite/DerivedColumnQueries.lean) | Under `DerivedColumnMigration`, retain `Site.LookupMove`, `Site.ReadPreserved`, `Site.LookupMove.outputs`, `Site.LookupMove.rows`, `Site.ReadPreserved.outputs`, `translatesAt_of_outputs`, `queryTranslates`, `queryPreserves`: general expressions, stored affinity and filter agreement |
-| [SchemaStepRules](../packages/belay/Belay/Sqlite/SchemaStepRules.lean), [ControlStepRules](../packages/belay/Belay/Sqlite/ControlStepRules.lean) | Retain `Sql.check_send_createTable`, `Sql.check_send_dropPlain`, `Sql.check_send_rewrite`, `Sql.check_send_setting`, `Sql.check_send_begin`, `Sql.check_send_commit` with their connection/error premises; not query endpoint deletions |
+| [ExecutionEquivalenceLaws](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionEquivalenceLaws.lean) | `Sql.EquivAt.check_iff`, `Sql.EquivAt.andOk_iff`, `Sql.EquivAt.ifOk_iff`, `Sql.Equiv.transformer`, `Sql.Equiv.fresh_iff`, `Sql.Equiv.succeeds_iff` retain their guarantees |
+| [ExecutionEquivalenceBind](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionEquivalenceBind.lean) | `Sql.EquivOn.bind`, `Sql.Equiv.bind`, `Sql.Equiv.bind_right`, `Sql.Equiv.bind_left`, `Sql.Equiv.map`, `send_append_equiv` |
+| [ExecutionViewBindFrames](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewBindFrames.lean), [ExecutionViewEquivalenceBind](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewEquivalenceBind.lean) | `Sql.View.EquivAt.bind_branch`, `Sql.View.EquivOn.bind`, `Sql.View.Equiv.bind` |
+| [ExecutionViewObservationBind](../packages/belay/Belay/Sqlite/Programs/Reasoning/ExecutionViewObservationBind.lean) | `Sql.View.observation_bind_return_eq`, `Sql.View.observation_bind_branch`, `Sql.View.ObservationEquivOn.bind_same` |
+| [CounterexampleActual](../packages/belay/Belay/Sqlite/Tooling/Counterexamples/CounterexampleActual.lean), [CheckProof](../packages/belay/Belay/Sqlite/Tooling/Counterexamples/CheckProof.lean) | Migrate `refuteByActualRun?` from relation-field projection to profile equality; remove the quoted `Sql.EquivAt.refl` tactic alternative and retain ordinary reflexivity and proof certification. |
+| [MigrationPatternFrames](../packages/belay/Belay/Sqlite/Programs/Reasoning/MigrationPatternFrames.lean) | `TranslatesAt.commutes_of_frames`, `TranslatesOn.commutes_of_frames`; retain connection/step frames |
+| ReadCertificate ([Queries/Evaluation](../packages/belay/Belay/Sqlite/Queries/Evaluation/ReadCertificate.lean), [Schema/Dispatch](../packages/belay/Belay/Sqlite/Schema/Dispatch/ReadCertificate.lean), [Programs/StatementRunLaws](../packages/belay/Belay/Sqlite/Programs/StatementRunLaws/ReadCertificate.lean)), [ReadCertificatePreservation](../packages/belay/Belay/Sqlite/Programs/Reasoning/ReadCertificatePreservation.lean) | Retain `ReadCertificate.moved`, `ReadCertificate.Valid.moved`, `ReadCertificate.Obligations`, `ReadCertificate.output_eq`, `ReadCertificate.preservesAt`, `ReadCertificate.preservesAt_send`: named tables can move, and general preservation requires obligations at every branch without a uniform-end-state premise |
+| [CertifiedQueryCommutation](../packages/belay/Belay/Sqlite/Programs/Reasoning/CertifiedQueryCommutation.lean) | Retain `ReadCertificate.step_keeps`, `sendStatements_single_keeps`, `ReadCertificate.commutesOn`, `ReadCertificate.commutesOn_send`: full commutation keeps uniform connection/count, constant-clock and admitted-context premises; sent shortcuts exclude INSERT from a query |
+| DerivedColumnReads ([Schema/Columns](../packages/belay/Belay/Sqlite/Schema/Columns/DerivedColumnReads.lean), [Programs/StatementRunLaws](../packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnReads.lean)), [DerivedColumnQueries](../packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnQueries.lean) | Under `DerivedColumnMigration`, retain `Site.LookupMove`, `Site.ReadPreserved`, `Site.LookupMove.outputs`, `Site.LookupMove.rows`, `Site.ReadPreserved.outputs`, `translatesAt_of_outputs`, `queryTranslates`, `queryPreserves`: general expressions, stored affinity and filter agreement |
+| [SchemaStepRules](../packages/belay/Belay/Sqlite/Programs/Scripts/SchemaStepRules.lean), [ControlStepRules](../packages/belay/Belay/Sqlite/Programs/Scripts/ControlStepRules.lean) | Retain `Sql.check_send_createTable`, `Sql.check_send_dropPlain`, `Sql.check_send_rewrite`, `Sql.check_send_setting`, `Sql.check_send_begin`, `Sql.check_send_commit` with their connection/error premises; not query endpoint deletions |
 | [surface_claims_test.py](../tests/surface_claims_test.py) | Existing `ClaimsCount`, `ClaimsExists`, `ClaimsIn`, `ClaimsDuplicateKeys`, `ClaimsTableInfo`, `ClaimsSum`, `ClaimsUniqueLookup` fixtures use the new query facts |
 | [surface_execution_test.py](../tests/surface_execution_test.py), [surface_migration_patterns_test.py](../tests/surface_migration_patterns_test.py) | Existing `ExecutionEquivalence`, `ExecutionComposition`, `ExecutionViewComparisons`, `ExecutionViewChoices` protect branches, state, raw steps and actual choices |
 | [surface_s6_check_programs_test.py](../tests/surface_s6_check_programs_test.py) | Preserve full, weak and view actual-run refutations, migration weak-view claims, native replay and independently certified printed proofs after the relation representation changes. |
 | [surface_assertion_examples_test.py](../tests/surface_assertion_examples_test.py) | `FilteredDuplicateKeyExamples`, `GlobalSignupInvariant`: filtered/NULL/collated groups and the generic application |
 | [surface_s6_not_blocked_test.py](../tests/surface_s6_not_blocked_test.py) | `S6NotBlocked`, `S6NotBlockedLaw`: equivalence premises and NULL/collation counterexamples |
-| [InsertSelectExecutions](../tests/surface/InsertSelectExecutions.lean) | Existing execution driver: alternative next databases and failures despite actual success |
+| [InsertSelectExecutions](../tests/surface/Programs/Tests/InsertSelectExecutions.lean) | Existing execution driver: alternative next databases and failures despite actual success |
 | [surface_schema_script_test.py](../tests/surface_schema_script_test.py), [surface_rebuild_test.py](../tests/surface_rebuild_test.py) | `CertificateAfterDrop` protects named-table moves; `RebuildGuide.makeStrict_preserves_allSessions` in `RebuildKeeps` uses every migration branch; schema/control examples retain state/error cases |
 | [surface_derived_column_test.py](../tests/surface_derived_column_test.py), [surface_migration_examples_test.py](../tests/surface_migration_examples_test.py), [surface_application_test.py](../tests/surface_application_test.py) | `S6RulesQuerySites`, `DerivedColumnExamples`, `NormalizedFieldLaws`, `NormalizedFieldExpansionLaws`, `ApplicationExpansion` now use general derived-column laws; retain affinity counterexamples and scoped simulation through the shared `LOWERCASE_LIBRARY` fixture chain |
 
-Other direct query clients: [ExpansionCountQueries](../tests/surface/ExpansionCountQueries.lean),
-[AccountSignupQueries](../tests/surface/AccountSignupQueries.lean), [CustomerInsertQueries](../tests/surface/CustomerInsertQueries.lean),
-[SuccessBalanceSuccess](../tests/surface/SuccessBalanceSuccess.lean),
-[SuccessUniqueEmail](../tests/surface/SuccessUniqueEmail.lean).
+Other direct query clients: [ExpansionCountQueries](../tests/surface/Queries/Tests/ExpansionCountQueries.lean),
+[AccountSignupQueries](../tests/surface/Queries/Tests/AccountSignupQueries.lean), [CustomerInsertQueries](../tests/surface/Schema/Tests/CustomerInsertQueries.lean),
+[SuccessBalanceSuccess](../tests/surface/Queries/Tests/SuccessBalanceSuccess.lean),
+[SuccessUniqueEmail](../tests/surface/Schema/Tests/SuccessUniqueEmail.lean).
 Production `NormalizedField*` owners were removed; their lowercase instances now live in fixtures.
 Check implicit uses, exports, simp registrations, docs and builds. Preserve continuation/domain/frame assumptions.
 

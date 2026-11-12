@@ -1,10 +1,10 @@
-"""The translation lifts the subqueries of a statement into its list (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Subqueries.lean`,
+"""The translation lifts the subqueries of a statement into its list (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Subqueries.lean`,
 through the text package's program).
 
 These tests check the JSON that Lean's `Syntax.Subquery` decoder reads: the forms that name
 a subquery by its index, the order of the list and the query around each subquery, the
 subqueries of writes, and the refusal of a subquery where the model does not place it (ADR 0018,
-D1). `tests/surface/TranslationChecks.lean` checks the source range of a subquery's clauses.
+D1). `tests/surface/Frontend/Tests/TranslationChecks.lean` checks the source range of a subquery's clauses.
 """
 
 from collections.abc import Callable

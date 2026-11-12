@@ -1,7 +1,7 @@
 """Both engine profiles use default DQS; resolution applies the double-quoted-string fallback.
 
 The translation keeps whether a name was written in double quotes (`identifier` in
-`packages/belay-sqlite-text/Belay/Sqlite/Translation/Expressions.lean`); Lean resolution applies
+`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Expressions.lean`); Lean resolution applies
 SQLite's fallback under the profile's DQS settings. Native SQLite is the oracle here.
 """
 

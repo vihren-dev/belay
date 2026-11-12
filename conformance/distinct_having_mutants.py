@@ -7,7 +7,7 @@ builds and runs against its target case of `conformance.authored_distinct_having
 
 from conformance.resolve_mutants import SQLITE
 
-RESULTS = SQLITE + "QueryResults.lean"
+RESULTS = SQLITE + "Queries/Evaluation/QueryResults.lean"
 """The records of a query, with its groups, HAVING and DISTINCT."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

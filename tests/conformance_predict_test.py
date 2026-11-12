@@ -55,7 +55,7 @@ def predict(runtime_root: Path, *records: dict[str, object]) -> list[dict[str, o
 
 @pytest.mark.parametrize("name", DECLARATIONS)
 def test_predicted_catalog_equals_native(name: str, runtime_root: Path) -> None:
-    """`VerifierConformance.Predict` and `conformance.predict_render`: the predicted initial
+    """`VerifierConformance.Tooling.Conformance.Predict` and `conformance.predict_render`: the predicted initial
     catalog of a declaration is the catalog that native SQLite records."""
     record = record_sql(DECLARATIONS[name], "", name=name)
     [prediction] = predict(runtime_root, record)
@@ -98,7 +98,7 @@ def profiled(runtime_root: Path, name: str, setup: str = "CREATE TABLE t(a INTEG
 
 
 def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> None:
-    """`conformance.profile_scope.modeled_profile` and `VerifierConformance.Predict`: a record
+    """`conformance.profile_scope.modeled_profile` and `VerifierConformance.Tooling.Conformance.Predict`: a record
     whose profile uses only the default execution settings is predicted under its recorded
     limits, with the error phase; one with foreign keys on is predicted with them on (ADR 0018,
     D4), so its write without a parent row fails; one with recursive triggers on is predicted
@@ -125,7 +125,7 @@ def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> Non
 
 
 def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:
-    """`VerifierConformance.Predict.predict` resolves under the recorded limits: ADD COLUMN on a
+    """`VerifierConformance.Tooling.Conformance.Predict.predict` resolves under the recorded limits: ADD COLUMN on a
     table with 5 columns is a prepare error under the recorded limit of 5, which the default
     limit of 2,000 would accept."""
     record = profiled(runtime_root, "narrow", "CREATE TABLE t(a, b, c, d, e);", "ALTER TABLE t ADD f;")
@@ -136,7 +136,7 @@ def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:
 
 
 def test_version_6_input_predicts_the_run_that_continues(runtime_root: Path) -> None:
-    """`conformance.predict.mapped` and `VerifierConformance.Predict.predictRun`: the input of a
+    """`conformance.predict.mapped` and `VerifierConformance.Tooling.Conformance.Predict.predictRun`: the input of a
     native record of version 6, whose recorder runs on after an SQL error, is predicted with the
     model's run that continues: one step after each statement of the migration. A constraint
     failure inside a transaction keeps it open, `OR ROLLBACK` closes it, `COMMIT` then fails at

@@ -7,15 +7,15 @@ builds and runs against its target case of `conformance.authored_date_functions`
 
 from conformance.resolve_mutants import SQLITE
 
-EVALUATION = SQLITE + "ExprEval.lean"
+EVALUATION = SQLITE + "Queries/Evaluation/ExprEval.lean"
 """The value of an expression at the statement's clock value."""
-FUNCTIONS = SQLITE + "Date/Functions.lean"
+FUNCTIONS = SQLITE + "Values/DateTime/Functions.lean"
 """The values of the six functions."""
-STRFTIME = SQLITE + "Date/Strftime.lean"
+STRFTIME = SQLITE + "Values/DateTime/Strftime.lean"
 """The specifiers of `strftime`."""
-PARSE = SQLITE + "Date/Parse.lean"
+PARSE = SQLITE + "Values/DateTime/Parse.lean"
 """The text time values."""
-DATE_TIME = SQLITE + "Date/DateTime.lean"
+DATE_TIME = SQLITE + "Values/DateTime/DateTime.lean"
 """Numeric time values."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

@@ -14,6 +14,18 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/surface"
 """The Lean files that the tests elaborate."""
+
+
+def fixture_file(file_name: str) -> Path:
+    """Return the Lean file of `tests/surface` with the name `file_name`, such as `ViewsSupport.lean`.
+
+    The files are in the directories of the teams that own them, and each file name occurs once. The
+    module of a file is its file name without `.lean`, wherever the file is.
+    """
+    found = sorted(FIXTURES.rglob(file_name))
+    if len(found) != 1:
+        raise FileNotFoundError(f"tests/surface has {len(found)} files with the name {file_name}; it must have one.")
+    return found[0]
 SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 """The file suffix of a shared library on this platform."""
 

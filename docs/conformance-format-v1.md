@@ -8,10 +8,10 @@ profile, and no error phase. The runner refuses all older versions. Frozen
 corpus records are not cases: they keep SQL text and native observations, and
 replay builds a version 4 case from them each time.
 
-`packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean` and
-`packages/belay-sqlite-model/Belay/Sqlite/Model/Codec/Resolution.lean` own the codecs for
+`packages/belay-sqlite-model/Belay/Sqlite/Model/Frontend/Codecs/Codec.lean` and
+`packages/belay-sqlite-model/Belay/Sqlite/Model/{Values/Json,Frontend/Codecs,Queries/Preparation}/Resolution.lean` own the codecs for
 values, statement syntax and catalogs.
-`packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
+`packages/verifier-conformance/VerifierConformance/Tooling/Conformance/Json.lean` adds the case
 and observation records. Statement syntax comes from the text package's translation program
 (`packages/belay-sqlite-text`, called by `conformance/sql_text.py`); the Python side is
 `conformance/native_metadata.py` for native tables and `conformance/case_format.py` for values
@@ -90,7 +90,7 @@ visible and the committed catalog:
 
 - each catalog table with the native table of the same folded name: its name as
   written, its columns, primary key, UNIQUE constraint keys and explicit indexes
-  (`VerifierConformance.Native.tablesMatch`);
+  (`VerifierConformance.Tooling.Conformance.Native.tablesMatch`);
 - the rows of the model table at that catalog position with the native rows, in
   rowid order;
 - that no native table is outside the catalog.

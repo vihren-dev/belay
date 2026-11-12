@@ -31,7 +31,7 @@ order in which the user surface needs them.
 
 Measured on this tree on 2026-10-22:
 
-- **Today's invariant.** `Database.Valid` (`Model/Database.lean:148`) requires a supported
+- **Today's invariant.** `Database.Valid` (`Model/Shared/Catalog/Database.lean:148`) requires a supported
   catalog (`Catalog.Valid`), one row list for each catalog object, no rows at an index's
   position, and for each table: distinct rowids, each in the signed 64-bit range, one cell for
   each column, each cell in its stored form, and the rowid in the cell of a rowid alias. Its
@@ -41,14 +41,14 @@ Measured on this tree on 2026-10-22:
   `PRAGMA ignore_check_constraints`, after a write to the schema with `writable_schema`, in a file
   that another program wrote, or after writes with foreign keys off.
 - **The model checks the constraints already.** `LiteralData.constraints`
-  (`Model/LiteralData.lean:90`) checks NOT NULL, the types of a `STRICT` table, CHECK and the
+  (`Model/Schema/Rows/LiteralData.lean:88`) checks NOT NULL, the types of a `STRICT` table, CHECK and the
   unique keys of the catalog (`Catalog.uniqueKeys`). INSERT, UPDATE and upsert store a table only
   after it passes this check. Plain INSERT and UPDATE check their whole result once
-  (`checkedWrite`, `Model/StatementRun.lean:19`). Upsert, and the writes that check foreign keys
-  or run triggers, check the table after each row (`checkedRow`, `Model/Upsert.lean:57`), and a
+  (`checkedWrite`, `Model/Schema/Writes/StatementRun.lean:13`). Upsert, and the writes that check foreign keys
+  or run triggers, check the table after each row (`checkedRow`, `Model/Schema/Writes/Upsert.lean:57`), and a
   FAIL failure keeps the rows that the write stored before it. The model describes these writes
   only when the table passes the check before (`tableReady`). DELETE uses neither check: it
-  removes the selected rows from any table (`runStatement`, `Model/StatementStep.lean`), also
+  removes the selected rows from any table (`runStatement`, `Model/Schema/Dispatch/StatementStep.lean`), also
   from a table whose constraints fail.
 - **No statement has a preservation theorem.** The model has lemmas for single operations
   (`Conforms.setRows`, `Conforms.addColumn`, `Conforms.createTable`,

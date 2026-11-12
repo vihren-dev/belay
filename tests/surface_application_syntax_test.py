@@ -7,7 +7,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.surface_assertion_examples_test import ALLOWED_PROOF_AXIOMS
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -18,7 +18,7 @@ def test_simulation_syntax_elaborates_to_the_claims_and_explains_the_difference(
     (Simulation, or ScopedClaim with a relation), the guard becomes the context predicate, and the
     actual #explain command tells the two claims apart: the full-state claim compares complete final
     contexts, and the scoped claim names the relation and never claims equal final contexts."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ApplicationSyntaxExamples.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("ApplicationSyntaxExamples.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"depends on axioms: \[([^]]*)\]", result.stdout)

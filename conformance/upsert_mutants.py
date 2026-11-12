@@ -8,11 +8,11 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-UPSERT = SQLITE + "Upsert.lean"
+UPSERT = SQLITE + "Schema/Writes/Upsert.lean"
 """The ON CONFLICT clauses of INSERT."""
-RUN = SQLITE + "UpsertRun.lean"
+RUN = SQLITE + "Schema/Writes/UpsertRun.lean"
 """The rows of an INSERT with ON CONFLICT clauses."""
-COUNTS = SQLITE + "PlainCounts.lean"
+COUNTS = SQLITE + "Schema/Writes/PlainCounts.lean"
 """The counts of the changes of a write."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

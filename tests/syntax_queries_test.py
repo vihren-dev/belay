@@ -1,4 +1,4 @@
-"""The translation maps a single-table SELECT to statement syntax (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Select.lean` and the
+"""The translation maps a single-table SELECT to statement syntax (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Select.lean` and the
 modules that it uses, through the text package's program).
 
 These tests check the JSON that Lean's `Syntax.Statement.select` decoder reads, the

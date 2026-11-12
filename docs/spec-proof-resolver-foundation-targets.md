@@ -21,7 +21,7 @@ Check branch drift at assignment; this is not a permanent inventory gate.
 
 | Fixed declaration to replace | Current file | Guarantee retained by the certificate |
 | --- | --- | --- |
-| `resolveStatement_after` | [Resolution/ResolveStateSpec.lean][state-spec] | Successful resolution determines the entire next state, without validity or mode premises. |
+| `resolveStatement_after` | [Queries/Preparation/ResolveStateSpec.lean][state-spec] | Successful resolution determines the entire next state, without validity or mode premises. |
 | `resolveStatement_schemaLink` | [ResolveStatementFacts.lean][statement-facts] | Input-catalog validity at any supplied limits gives `SchemaLink`; no saved-catalog or execution-mode premise. |
 | `resolveStatement_valid` | [ResolveStatementValid.lean][statement-valid] | Execution mode and validity of the current and saved catalogs at the context profile's limits give full next-state validity. |
 
@@ -35,9 +35,9 @@ Required coverage includes `Syntax.Statement.renameTable`, `renameColumn`, `drop
 and `insertSelect`; retain resolved `rewrite`/`dropColumn`/`insertSelect`, transactions, settings,
 prepare errors and write rules. The old prototype has not validated these additions.
 Reuse the projection `resolveStatementRun` → `resolveStatementTraced` →
-`resolveStatement` in [Resolution/ResolveStatement.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveStatement.lean)
-and `resolveStatementTraced_fst`/`statement_arms` in [Resolution/StatementArms.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/StatementArms.lean); preserve name traces and registrations.
-Preserve PR #292: executable [Resolution/Resolve.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Resolve.lean) imports `ResolveStatement`, not `StatementArms`.
+`resolveStatement` in [Schema/Dispatch/ResolveStatement.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ResolveStatement.lean)
+and `resolveStatementTraced_fst`/`statement_arms` in [Schema/Dispatch/StatementArms.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/StatementArms.lean); preserve name traces and registrations.
+Preserve PR #292: executable [Schema/Dispatch/Resolve.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/Resolve.lean) imports `ResolveStatement`, not `StatementArms`.
 Proof clients import equations explicitly; certificate placement must keep them out of executable/mutant dependencies.
 
 ## Separate prerequisites from their consumers
@@ -48,29 +48,29 @@ split its owner to put it below the dispatch; an existing suitable owner can sta
 | Declaration | Current owner | Required boundary |
 | --- | --- | --- |
 | `ResolveState.Valid` | [ResolveStatementValid.lean][statement-valid] | Current and optional saved catalog validity must be available without importing the script validity proof. |
-| `ResolveState.after`, `ResolveState.after_of_isControl` | [Resolution/ResolveStateSpec.lean][state-spec] | Exact transaction/settings/catalog transition and its ordinary-statement reduction sit below certificate consumers. |
+| `ResolveState.after`, `ResolveState.after_of_isControl` | [Queries/Preparation/ResolveStateSpec.lean][state-spec] | Exact transaction/settings/catalog transition and its ordinary-statement reduction sit below certificate consumers. |
 | `Resolved.Statement.SchemaLink` | [ResolveStatementForms.lean][forms] | ADD COLUMN strict-default fit, DROP closure, and vacuous other cases (including `rewrite`/`dropColumn`/`insertSelect`) stay independently usable. |
 
 `ResolveStatementValid.lean` also owns `resolve_valid`: split that dependency
 without copying `ResolveState.Valid` before its script proof imports the certificate.
-Reuse `ResolveState.withWrite_cases` in [Resolution/ResolveState.lean][resolve-state],
+Reuse `ResolveState.withWrite_cases` in [Schema/Triggers/ResolveState.lean][resolve-state],
 and `Resolved.Statement.schemaLink_withRules`/`ResolveState.withWrite_schemaLink` in [ResolveStatementLink.lean][statement-link].
 
 ## Migrate resolver consumers and preserve downstream claims
 
 | Current file | Exact declaration or source use | Required change or check |
 | --- | --- | --- |
-| [ResolveStatementApplied.lean][applied] | `resolveStatement_applyCatalog_valid` | Use the certificate; keep the formula for controls too, using `Resolved.Statement.applyCatalog_of_control`. |
+| ResolveStatementApplied.lean ([Queries/Preparation][applied-queries-preparation], [Schema/Ddl][applied-schema-ddl]) | `resolveStatement_applyCatalog_valid` | Use the certificate; keep the formula for controls too, using `Resolved.Statement.applyCatalog_of_control`. |
 | [ResolveStatementValid.lean][statement-valid] | `resolve_valid` | Use the conditional validity field in the script induction; preserve execution mode, profile limits and saved-state reasoning. |
-| [Resolution/ResolveFoldSpec.lean][fold] | `resolveFrom_after` | Use the unconditional state field in the fold proof. Recompile the derived `resolve_after` claim. |
+| [Schema/Dispatch/ResolveFoldSpec.lean][fold] | `resolveFrom_after` | Use the unconditional state field in the fold proof. Recompile the derived `resolve_after` claim. |
 | [ScriptRunLaws.lean][script-laws] | `Connection.resolveState_after_next` | Replace the state-equation call; retain arbitrary resolution context. Update the old-name references in `runScriptFrom_agrees` documentation and recompile it. |
 | [ScriptRunConstraints.lean][script-constraints] | `runScriptAllFrom_admittedWith` | Replace the schema-link call; retain the guarantee for every complete execution, not just `runScriptFrom`. Coordinate with ADR 0025. |
 | [SuccessfulScriptEffects.lean][effects] | `runScriptStep_effect` | Keep non-control/success premises and `.continued output next others`, with separate actual result and `others : List StatementExecution`. |
-| [FailedStepFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/FailedStepFrame.lean) | `runScriptStep_failed_frame` | Replace its state-equation call; retain the explicit failed-effect/frame premises. |
-| [PlainWriteFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/PlainWriteFrame.lean); [ReadOnlyFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/ReadOnlyFrame.lean) | `runScriptStep_plainWrite_frame`; `runScriptStep_readOnly_keeps` | Replace state-equation calls; retain each form premise that establishes `others = []` and its connection frame. |
-| [ControlStepLaws.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/ControlStepLaws.lean) | `runScriptStep_begin_idle`, `runScriptStep_begin_active`, `runScriptStep_commit_active`, `runScriptStep_commit_idle` | Replace state-equation calls; preserve distinct snapshot and transaction cases. |
-| [PragmaStepLaws.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/PragmaStepLaws.lean); [ExecutionEffects.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/ExecutionEffects.lean) | `runScriptStep_setting`; `runScriptStep_execution_effects` | Replace state-equation calls. The latter covers every successful execution with a listed effect, not a unique corresponding run. |
-| [AdmittedRunsConditionExamples.lean][condition-examples] | Anonymous DROP TABLE schema-link example | Migrate the direct `resolveStatement_schemaLink` use; retain its focused catalog-link coverage. |
+| [FailedStepFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/FailedStepFrame.lean) | `runScriptStep_failed_frame` | Replace its state-equation call; retain the explicit failed-effect/frame premises. |
+| [PlainWriteFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainWriteFrame.lean); [ReadOnlyFrame.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ReadOnlyFrame.lean) | `runScriptStep_plainWrite_frame`; `runScriptStep_readOnly_keeps` | Replace state-equation calls; retain each form premise that establishes `others = []` and its connection frame. |
+| [ControlStepLaws.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ControlStepLaws.lean) | `runScriptStep_begin_idle`, `runScriptStep_begin_active`, `runScriptStep_commit_active`, `runScriptStep_commit_idle` | Replace state-equation calls; preserve distinct snapshot and transaction cases. |
+| [PragmaStepLaws.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PragmaStepLaws.lean); [ExecutionEffects.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ExecutionEffects.lean) | `runScriptStep_setting`; `runScriptStep_execution_effects` | Replace state-equation calls. The latter covers every successful execution with a listed effect, not a unique corresponding run. |
+| AdmittedRunsConditionExamples.lean ([Queries/Preparation][condition-examples-queries-preparation], [Schema/Ddl][condition-examples-schema-ddl], [Programs/Scripts][condition-examples-programs-scripts]) | Anonymous DROP TABLE schema-link example | Migrate the direct `resolveStatement_schemaLink` use; retain its focused catalog-link coverage. |
 | [ScriptRunApplied.lean][script-applied] | `Connection.resolveState_valid`, `resolveStatement_appliedValid` | Recompile/migrate imports after prerequisite moves; preserve the database/snapshot bridge and equality of profile limits. These are not nominated deletions. |
 
 Compile downstream `SchemaStepRules`, `ControlStepRules`, `SendStatementsInvariant`
@@ -86,17 +86,17 @@ These reused families are not all edit targets. Retain their independent premise
 
 | Existing owner | Reused declarations |
 | --- | --- |
-| [Resolution/ApplyCatalogSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ApplyCatalogSpec.lean) | `resolveCreateTable_applyCatalog`, `resolveCreateIndex_applyCatalog`, `resolveAddColumn_applyCatalog` (moved from `ResolveStateSpec`) |
-| [Resolution/RenameSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/RenameSpec.lean) | `RenameOutcome`, `resolveRenameTable_outcome`, `resolveRenameColumn_outcome`, `RenameOutcome.applyCatalog`, `RenameOutcome.valid`; reuse these existing certificates. |
-| [Resolution/DropColumnOutcome.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/DropColumnOutcome.lean) | `DropOutcome`, `resolveDropColumn_outcome`, `DropOutcome.applyCatalog`, `DropOutcome.valid`; retain the prepare-error branch and successful-drop droppable/output-supported evidence. |
-| [Resolution/DropSpec.lean][drop-spec] | `resolveDropTable_applyCatalog`, `resolveDropIndex_applyCatalog`, `resolveDropView_applyCatalog` |
-| [Resolution/TriggerDefinitionSpec.lean][trigger-spec]; [Resolution/ViewDefinitionSpec.lean][view-spec] | `resolveCreateTrigger_applyCatalog`, `resolveDropTrigger_applyCatalog`; `resolveCreateView_applyCatalog` |
-| [Resolution/WriteCatalogSpec.lean][write-spec]; [Resolution/SelectResolution.lean][select-resolution] | `resolveInsert_same`, `resolveUpdate_same`, `resolveDelete_same`, `resolveCommonTableWrite_same`; new `resolveInsertQuery_form`/`resolveInsertQuery_same` use success of `resolveInsertQueryTraced(...).drop`; `resolveSelect_same` retains its existing role. |
+| [Schema/Columns/ApplyCatalogSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/ApplyCatalogSpec.lean) | `resolveCreateTable_applyCatalog`, `resolveCreateIndex_applyCatalog`, `resolveAddColumn_applyCatalog` (moved from `ResolveStateSpec`) |
+| [Schema/Ddl/RenameSpec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/RenameSpec.lean) | `RenameOutcome`, `resolveRenameTable_outcome`, `resolveRenameColumn_outcome`, `RenameOutcome.applyCatalog`, `RenameOutcome.valid`; reuse these existing certificates. |
+| [Schema/Ddl/DropColumnOutcome.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/DropColumnOutcome.lean) | `DropOutcome`, `resolveDropColumn_outcome`, `DropOutcome.applyCatalog`, `DropOutcome.valid`; retain the prepare-error branch and successful-drop droppable/output-supported evidence. |
+| [Schema/Ddl/DropSpec.lean][drop-spec] | `resolveDropTable_applyCatalog`, `resolveDropIndex_applyCatalog`, `resolveDropView_applyCatalog` |
+| [Schema/Triggers/TriggerDefinitionSpec.lean][trigger-spec]; [Queries/Preparation/ViewDefinitionSpec.lean][view-spec] | `resolveCreateTrigger_applyCatalog`, `resolveDropTrigger_applyCatalog`; `resolveCreateView_applyCatalog` |
+| [{Queries/Preparation,Schema/Writes}/WriteCatalogSpec.lean][write-spec]; [Queries/Select/SelectResolution.lean][select-resolution] | `resolveInsert_same`, `resolveUpdate_same`, `resolveDelete_same`, `resolveCommonTableWrite_same`; new `resolveInsertQuery_form`/`resolveInsertQuery_same` use success of `resolveInsertQueryTraced(...).drop`; `resolveSelect_same` retains its existing role. |
 | [ResolveStatementForms.lean][forms] | `resolveCreateTable_schemaLink`, `resolveCreateIndex_schemaLink`, `resolveCreateTrigger_schemaLink`, `resolveInsert_schemaLink`, `resolveUpdate_schemaLink`, `resolveDelete_schemaLink`, `resolveSelect_schemaLink`, `resolveCommonTableWrite_schemaLink` |
 | [ResolveStatementLink.lean][statement-link] | `resolveCreateView_schemaLink`, `resolveAddColumn_schemaLink`, `resolveDropTable_schemaLink`, `resolveDropIndex_schemaLink`, `resolveDropTrigger_schemaLink`, `resolveDropView_schemaLink` |
 | [ResolveCreateTableCatalog.lean][create-table]; [ResolveCreateIndexCatalog.lean][create-index]; [ResolveCreateTriggerCatalog.lean][create-trigger]; [ResolveCreateViewCatalog.lean][create-view]; [ResolveAddColumnCatalog.lean][add-column] | Respectively `resolveCreateTable_valid`, `resolveCreateIndex_valid`, `resolveCreateTrigger_valid`, `resolveCreateView_valid`, `resolveAddColumn_valid` |
 | [ResolveDropValid.lean][drop-valid] | `resolveDropTable_valid`, `resolveDropIndex_valid`, `resolveDropTrigger_valid`, `resolveDropView_valid` |
-| [Resolution/ViewTableInfo.lean][pragma-cases]; [ResolveStatementPragmaLink.lean][pragma-link] | `resolveStatementPragma_cases`; `resolveStatementPragma_schemaLink` |
+| [Schema/Dispatch/ViewTableInfo.lean][pragma-cases]; [ResolveStatementPragmaLink.lean][pragma-link] | `resolveStatementPragma_cases`; `resolveStatementPragma_schemaLink` |
 
 ## Relocate three primitives; reuse the delivered fourth
 
@@ -163,43 +163,46 @@ Use the specification's checks; this inventory creates no checker or CI snapshot
 Keep unique witness coverage until clients/regressions supply it; retire redundant
 witnesses after final Nix acceptance and record retirement in the existing status.
 
-[state-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveStateSpec.lean
-[statement-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementFacts.lean
-[statement-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementValid.lean
-[forms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementForms.lean
-[resolve-state]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveState.lean
-[statement-link]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementLink.lean
-[applied]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementApplied.lean
-[fold]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolveFoldSpec.lean
-[script-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunLaws.lean
-[script-constraints]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunConstraints.lean
-[effects]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SuccessfulScriptEffects.lean
-[condition-examples]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedRunsConditionExamples.lean
-[script-applied]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunApplied.lean
-[drop-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/DropSpec.lean
-[trigger-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/TriggerDefinitionSpec.lean
-[view-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ViewDefinitionSpec.lean
-[write-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/WriteCatalogSpec.lean
-[select-resolution]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/SelectResolution.lean
-[create-table]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateTableCatalog.lean
-[create-index]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateIndexCatalog.lean
-[create-trigger]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateTriggerCatalog.lean
-[create-view]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveCreateViewCatalog.lean
-[add-column]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveAddColumnCatalog.lean
-[drop-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveDropValid.lean
-[pragma-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ViewTableInfo.lean
-[pragma-link]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ResolveStatementPragmaLink.lean
-[self-lookup]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySelfLookup.lean
-[cell-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedCellLaws.lean
-[add-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/AddColumnFromValid.lean
-[table-source]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableSourceLaws.lean
-[values]: ../packages/belay/Belay/Sqlite/Values.lean
-[script]: ../packages/belay/Belay/Sqlite/Script.lean
-[display]: ../packages/belay/Belay/Sqlite/ValueDisplay.lean
-[row-triggers]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowEngineTriggers.lean
-[fk-triggers]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCounterTriggers.lean
-[work-conditions]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyWorkConditions.lean
-[engine-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyEngineFacts.lean
-[row-writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowEngineWrites.lean
-[fk-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCounterRows.lean
-[fk-delete]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCounterDelete.lean
+[state-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Preparation/ResolveStateSpec.lean
+[statement-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveStatementFacts.lean
+[statement-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ResolveStatementValid.lean
+[forms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ResolveStatementForms.lean
+[resolve-state]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Triggers/ResolveState.lean
+[statement-link]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveStatementLink.lean
+[applied-queries-preparation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Preparation/ResolveStatementApplied.lean
+[applied-schema-ddl]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveStatementApplied.lean
+[fold]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ResolveFoldSpec.lean
+[script-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunLaws.lean
+[script-constraints]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunConstraints.lean
+[effects]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/SuccessfulScriptEffects.lean
+[condition-examples-queries-preparation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Preparation/AdmittedRunsConditionExamples.lean
+[condition-examples-schema-ddl]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/AdmittedRunsConditionExamples.lean
+[condition-examples-programs-scripts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/AdmittedRunsConditionExamples.lean
+[script-applied]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ScriptRunApplied.lean
+[drop-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/DropSpec.lean
+[trigger-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Triggers/TriggerDefinitionSpec.lean
+[view-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Preparation/ViewDefinitionSpec.lean
+[write-spec]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/WriteCatalogSpec.lean
+[select-resolution]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/SelectResolution.lean
+[create-table]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/ResolveCreateTableCatalog.lean
+[create-index]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveCreateIndexCatalog.lean
+[create-trigger]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Triggers/ResolveCreateTriggerCatalog.lean
+[create-view]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveCreateViewCatalog.lean
+[add-column]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/ResolveAddColumnCatalog.lean
+[drop-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ResolveDropValid.lean
+[pragma-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ViewTableInfo.lean
+[pragma-link]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/ResolveStatementPragmaLink.lean
+[self-lookup]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeySelfLookup.lean
+[cell-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/AdmittedCellLaws.lean
+[add-valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/AddColumnFromValid.lean
+[table-source]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/TableSourceLaws.lean
+[values]: ../packages/belay/Belay/Sqlite/Queries/Evaluation/Values.lean
+[script]: ../packages/belay/Belay/Sqlite/Shared/Execution/Script.lean
+[display]: ../packages/belay/Belay/Sqlite/Tooling/Counterexamples/ValueDisplay.lean
+[row-triggers]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/RowEngineTriggers.lean
+[fk-triggers]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Triggers/ForeignKeyCounterTriggers.lean
+[work-conditions]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeyWorkConditions.lean
+[engine-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeyEngineFacts.lean
+[row-writes]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/RowEngineWrites.lean
+[fk-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeyCounterRows.lean
+[fk-delete]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/ForeignKeyCounterDelete.lean
