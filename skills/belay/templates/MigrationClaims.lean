@@ -13,9 +13,9 @@ def customerByEmail (email : Value) : Script :=
   sql r"SELECT id, name FROM customers WHERE email = ?1" email
 
 -- While you work: check each claim. Write the claim itself after `#sql_check`.
-#sql_check Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop)
+#sql_check addEmailLower preserves namedCustomers on shop
 #sql_check ∀ email : Value,
-  Migration.QueryPreserves (send addEmailLower) (customerByEmail email) (·.HasCatalog shop)
+  addEmailLower preserves (customerByEmail email) on shop
 #sql_check Succeeds addEmailLower (·.HasCatalog shop)
 
 -- When an answer is `false`: keep its database, with the statements that the answer
@@ -26,7 +26,7 @@ def customerByEmail (email : Value) : Script :=
 --   INSERT INTO … VALUES (…);"
 --
 -- theorem old_read_changes :
---     ¬ Migration.QueryPreserves (send addEmailLower) oldRead (·.HasCatalog shop) := by
+--     ¬ (addEmailLower preserves oldRead on shop) := by
 --   sql_refute (db := found)
 --
 -- theorem new_read_kept_on_found :

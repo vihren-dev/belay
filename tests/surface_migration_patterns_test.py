@@ -38,13 +38,13 @@ def test_migration_patterns_keep_original_domains_and_full_effects(runtime_root:
 
 
 def test_pattern_syntax_explains_checked_primitives(runtime_root: Path, tmp_path: Path) -> None:
-    """MigrationPatternSyntax expands all eight forms, bound values and quiet descriptors;
+    """MigrationPatternSyntax expands all ten forms, with and without a schema, bound values and quiet descriptors;
     the actual #explain command distinguishes weak/full scope and original-success vacuity."""
     result = run_command(surface_command(runtime_root, fixture_file("MigrationPatternSyntaxExamples.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
-    assert len(reports) == 10, result.diagnostic()
+    assert len(reports) == 12, result.diagnostic()
     for report in reports:
         assert set(filter(None, map(str.strip, report.split(",")))) <= {
             "propext", "Classical.choice", "Quot.sound"}, result.diagnostic()

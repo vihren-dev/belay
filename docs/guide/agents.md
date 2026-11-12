@@ -23,12 +23,12 @@ that the migration `addEmailLower` keeps the result of the read
 `namedCustomers` on every database of the schema `shop`:
 
 ```lean
-Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop)
+addEmailLower preserves namedCustomers on shop
 ```
 
 Such a claim can be weaker than it looks in four ways:
 
-1. **The premise is not your schema.** `(·.HasCatalog shop)` limits the claim
+1. **The premise is not your schema.** `on shop` limits the claim
    to the databases that have the tables, indexes, views and triggers of
    `shop`, with any rows. The claim says nothing about production when `shop`
    is an old copy of the schema. Keep a theorem that ties `shop` to the schema
@@ -49,11 +49,11 @@ Such a claim can be weaker than it looks in four ways:
 reading Lean:
 
 ```lean
-#explain Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop)
+#explain addEmailLower preserves namedCustomers on shop
 ```
 
 ```text
-Claim: Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop)
+Claim: addEmailLower preserves namedCustomers on shop
 
 For every valid bundled database admitted by the claim's predicate, and every
 complete fresh environment, compare only when the migration succeeds at that
@@ -175,8 +175,8 @@ which Lake prints again in each run
 Two rules make the answers useful. Write the claim out in `#sql_check`; the
 name of a definition that holds the claim gives `unknown`
 ([#358](https://github.com/vihren-dev/belay/issues/358)). State the schema in
-the claim, as the premise `(·.HasCatalog shop)`. The short form
-`addEmailLower preserves namedCustomers` covers every database, and
+the claim with `on shop`. The form without it,
+`addEmailLower preserves namedCustomers`, covers every database, and
 `with (schema := shop)` after it only tells the search where to look. That
 claim is false: on a database where `customers` has a trigger that deletes the
 rows after an update, the migration empties the table. No proof of it exists,
@@ -231,7 +231,7 @@ open Belay.Sqlite
 def addEmailLower : Script := sql_file "db/migrations/0003_email_lower.sql"
 def allCustomers : Script := sql r"SELECT * FROM customers"
 
-#sql_check Migration.QueryPreserves (send addEmailLower) allCustomers (·.HasCatalog shop)
+#sql_check addEmailLower preserves allCustomers on shop
 ```
 
 ```text
@@ -257,7 +257,7 @@ its columns, keeps the fact about the old read, and checks the new read:
 ```lean
 def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 
-#sql_check Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop)
+#sql_check addEmailLower preserves namedCustomers on shop
 -- SQL check: unknown; no proof or replayable counterexample was found within the budget.
 
 def found : Database := db! r"
@@ -268,7 +268,7 @@ CREATE TABLE sessions (id INTEGER PRIMARY KEY,
 INSERT INTO customers VALUES (1, NULL, '');"
 
 theorem star_read_changes :
-    ¬ Migration.QueryPreserves (send addEmailLower) allCustomers (·.HasCatalog shop) := by
+    ¬ (addEmailLower preserves allCustomers on shop) := by
   sql_refute (db := found)
 
 theorem named_read_kept_on_found :
@@ -285,7 +285,7 @@ gives the theorem:
 
 ```lean
 theorem named_read_preserved :
-    Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop) :=
+    addEmailLower preserves namedCustomers on shop :=
   DerivedColumnMigration.queryPreserves … siteOf namedKept
 ```
 

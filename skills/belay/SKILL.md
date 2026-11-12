@@ -39,9 +39,9 @@ If the project has no claims directory with a `Schema.lean`, do
   same change as the migration.
 - **State a claim for each SQL change, with the schema in the claim.** For a
   migration `M` and each read `Q` of the application:
-  `Migration.QueryPreserves (send M) Q (·.HasCatalog shop)`, and
-  `Succeeds M (·.HasCatalog shop)`. The short form `M preserves Q` is about
-  every database, also one with other tables and triggers. For a read with a
+  `M preserves Q on shop`, and `Succeeds M (·.HasCatalog shop)`. The form
+  `M preserves Q`, without `on shop`, is about every database, also one with
+  other tables and triggers. For a read with a
   parameter, write `def q (email : Value) : Script := sql r"… ?1" email` and
   the claim `∀ email : Value, …`.
 - **Do not make a claim weaker to pass the check.** A `where` guard, a smaller

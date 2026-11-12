@@ -49,7 +49,7 @@ CREATE TABLE sessions (id INTEGER PRIMARY KEY,
 
 /-- The migration changes the result of {lit}`SELECT * FROM customers`: each row gets one cell more. -/
 theorem star_read_changes :
-    ¬ Migration.QueryPreserves (send addEmailLower) allCustomers (·.HasCatalog shop) := by
+    ¬ (addEmailLower preserves allCustomers on shop) := by
   sql_refute (db := found)
 
 /-- On the database of the counterexample, the read with named columns gives the same rows before and
@@ -209,14 +209,14 @@ def lookupKept (db : Database) (schema : db.HasCatalog shop) :
 /-- On every database with the catalog of {lit}`shop` where the migration succeeds, the read of all customers
 with named columns gives the same result after the migration as before it. -/
 theorem named_read_preserved :
-    Migration.QueryPreserves (send addEmailLower) namedCustomers (·.HasCatalog shop) :=
+    addEmailLower preserves namedCustomers on shop :=
   DerivedColumnMigration.queryPreserves (name! "customers") emailLowerDefinition lowerEmail [] [] []
     namedStatement [] rfl rfl (·.HasCatalog shop) siteOf namedKept
 
 /-- For every email, on every database with the catalog of {lit}`shop` where the migration succeeds, the
 lookup of a customer id by email gives the same result after the migration as before it. -/
 theorem lookup_read_preserved : ∀ email : Value,
-    Migration.QueryPreserves (send addEmailLower) (customerIdByEmail email) (·.HasCatalog shop) :=
+    addEmailLower preserves (customerIdByEmail email) on shop :=
   fun email => DerivedColumnMigration.queryPreserves (name! "customers") emailLowerDefinition lowerEmail [] [] []
     lookupStatement [email] rfl rfl (·.HasCatalog shop) siteOf lookupKept
 

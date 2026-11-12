@@ -13,9 +13,13 @@ to mark a segment explicitly, or {name}`Sql.View.identity` to retain all outputs
 def quiet {σ α : Type} [Runnable σ α] (program : σ) : Sql.View (Runnable.toSql program) :=
   Sql.View.quiet (Runnable.toSql program)
 
-/-- Fresh query preservation, with an optional SQL guard interpreted by default
-{name}`Holds`. Read-only query admission is checked when the term elaborates. -/
-syntax:20 (name := migrationPreserves) term:21 " preserves " term:21 (" where " term:21)? : term
+/-- Fresh query preservation, with an optional schema and an optional SQL guard. Without
+{lit}`on`, the claim covers every database. With {lit}`on shop`, it covers every database with
+the catalog of the database {lit}`shop` ({name}`Database.HasCatalog`), for example
+{lit}`addEmailLower preserves namedCustomers on shop`. The guard uses the default
+{name}`Holds`. Read-only query admission is checked when the term elaborates. Use the form
+without {lit}`on` when the claim must hold whatever the schema is. -/
+syntax:20 (name := migrationPreserves) term:21 " preserves " term:21 (" on " term:21)? (" where " term:21)? : term
 
 /-- Fresh query translation, retaining both queries' return values and observations.
 The optional SQL guard uses default {name}`Holds`; both queries must be read-only. -/
@@ -35,6 +39,14 @@ use the explicit context predicates in {name}`Migration.TranslatesOn` or
 @[term_elab migrationPreserves, term_elab migrationTranslates, term_elab migrationCommutes]
 def elabMigrationPattern : TermElab := fun term expectedType => do
   let expanded ← match term with
+    | `($migration preserves $query on $schema where $guard) =>
+      let admitted ← withRef query `(by check_query)
+      let guarded ← withRef guard `(by check_query)
+      `(Migration.QueryPreserves (Runnable.toSql $migration) $query
+        (fun db => Database.HasCatalog db $schema ∧ Holds $guard db $guarded) $admitted)
+    | `($migration preserves $query on $schema) =>
+      let admitted ← withRef query `(by check_query)
+      `(Migration.QueryPreserves (Runnable.toSql $migration) $query (fun db => Database.HasCatalog db $schema) $admitted)
     | `($migration preserves $query where $guard) =>
       let admitted ← withRef query `(by check_query)
       let guarded ← withRef guard `(by check_query)
