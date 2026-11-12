@@ -5,9 +5,17 @@ repository. To use the library in a Lean project, read the [README](README.md).
 
 ## What the project accepts
 
-For security reasons, the project does not accept pull requests that change
-code. The team closes such a pull request and does not merge it. If you find a
-defect or need a feature, open an issue.
+The project does not accept pull requests that change code. The team closes
+such a pull request and does not merge it. If you find a defect or need a
+feature, open an issue.
+
+The reason is the trust in the model. A proof with Belay is only as good as
+the model of SQLite, and one wrong rule in the model can make a false claim
+provable. Coding agents make pull requests easy to write, so the project
+expects many of them. The team cannot review each one in enough detail to be
+sure that it puts no such error into the model, by accident or on purpose.
+When you send an issue with your analysis, the team writes the change itself
+and knows where each line of the code comes from.
 
 The project accepts these contributions, each as an
 [issue](https://github.com/vihren-dev/belay/issues):
@@ -18,6 +26,9 @@ The project accepts these contributions, each as an
   output of the `sqlite3` shell for that SQL with the SQLite version, and the
   block that Belay printed. If Belay refuses the SQL or a Lean file does not
   compile, give the file and the error message.
+- **An analysis.** Say which rule of SQLite the model has wrong or does not
+  have, and where the SQLite documentation or source code states it. A good
+  analysis makes the change quick to write.
 - **A new test case.** Give SQL statements that the conformance evidence does
   not cover, and the output of the `sqlite3` shell. The team adds the case to
   the corpora, where each build replays it against native SQLite and against
