@@ -21,10 +21,14 @@ def Table.appendCells (table : Table) (column : CatalogColumn) (cell : Row → V
   { shape := { table.shape with columns := table.shape.columns ++ [column] },
     rows := table.rows.map fun row => row.appendValues [cell row] }
 
-/-- For every table with wide rows, column, cell function, row of the table with the cells appended and
-position at which both a column and a cell exist: the position is below the old width with the old column
-and the old cell, or it is the old width with the new column. Proof sketch: split the appended lists at
-the width. -/
+/-- For every table with wide rows, column, cell function, row of the table with the cells appended, and
+position at which the appended shape has a column and the row has a cell: there is an old row of the table
+such that the row is the old row with one value appended, and one of these holds:
+
+* the old shape has the same column at the position, and the old row has the same cell there;
+* the column at the position is the appended column.
+
+Proof sketch: split the appended lists at the width. -/
 theorem Table.appendCells_cases {table : Table} (wide : table.RowsWide) {column : CatalogColumn}
     {cell : Row → Value} {row : Row} (member : row ∈ (table.appendCells column cell).rows)
     {position : Nat} {atColumn : CatalogColumn} {atValue : Value}
