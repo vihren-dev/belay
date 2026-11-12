@@ -21,7 +21,7 @@ STORE = "/nix/store/"
 """Only store paths in the output of the Nix command are read as outputs."""
 QUERY_SECONDS = 60
 """One Nix query for the outputs of a failed build."""
-SUITE_OUTPUT = re.compile(r"[0-9a-z]{32}-sqlite-verifier-test-(.+)-1")
+SUITE_OUTPUT = re.compile(r"[0-9a-z]{32}-belay-test-(.+)-1")
 """The store path name of a Nix test suite output (`build-support/tests.nix`), with the suite name."""
 
 

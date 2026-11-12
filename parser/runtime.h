@@ -1,6 +1,6 @@
 /* Shared syntax-tree representation; indexes keep generated reductions small. */
-#ifndef SQLITE_VERIFIER_RUNTIME_H
-#define SQLITE_VERIFIER_RUNTIME_H
+#ifndef BELAY_SQLITE_RUNTIME_H
+#define BELAY_SQLITE_RUNTIME_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

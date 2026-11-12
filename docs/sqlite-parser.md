@@ -3,7 +3,7 @@
 The surface and the conformance harness parse SQL with SQLite's own grammar and
 tokenizer, compiled from C that Lake builds into the text package's programs and
 shared libraries. The Nix derivation `parserLibrary.library` in
-`build-support/default.nix` builds the same C as `libsqlite-verifier-parser.so`
+`build-support/default.nix` builds the same C as `libbelay-sqlite-parser.so`
 (`.dylib` on macOS) for the tests of the library only. No database is opened and no SQL is executed,
 prepared, or schema-resolved.
 
@@ -145,14 +145,14 @@ code exactly when it is the same. Each symbol has the prefix of its identity,
 SQLite's own symbols stay internal, and the build fails unless the library
 exports exactly the API of `parser/library.h`:
 
-- `sqlite_verifier_parser_metadata` gives a JSON document with `api` (the API
+- `belay_sqlite_parser_metadata` gives a JSON document with `api` (the API
   version, 1), `releases` (version, `sourceId`, `grammarOptions`), `dialects`
   (version, `grammarOptions`, `grammar`) and `grammars` (`grammar`,
   `productions`, `tokens`).
-- `sqlite_verifier_parser_parse` takes a grammar identity and SQL bytes. It
+- `belay_sqlite_parser_parse` takes a grammar identity and SQL bytes. It
   gives the parse document above. An unknown identity gives result code 1 and
   no document.
-- `sqlite_verifier_parser_free` releases either document.
+- `belay_sqlite_parser_free` releases either document.
 
 The library makes no promise for concurrent calls. The generation checks that
 the production count in the metadata equals Lemon's grammar export.

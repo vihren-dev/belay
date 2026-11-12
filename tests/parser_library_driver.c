@@ -72,9 +72,9 @@ int main(int argc, char **argv){
   }
   void *library = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
   if(!library){ fprintf(stderr, "%s\n", dlerror()); return 2; }
-  Metadata metadata = (Metadata)dlsym(library, "sqlite_verifier_parser_metadata");
-  Parse parse = (Parse)dlsym(library, "sqlite_verifier_parser_parse");
-  Release release = (Release)dlsym(library, "sqlite_verifier_parser_free");
+  Metadata metadata = (Metadata)dlsym(library, "belay_sqlite_parser_metadata");
+  Parse parse = (Parse)dlsym(library, "belay_sqlite_parser_parse");
+  Release release = (Release)dlsym(library, "belay_sqlite_parser_free");
   if(!metadata || !parse || !release){ fputs("The library lacks a public API function\n", stderr); return 2; }
   int result = 0;
   if(!strcmp(argv[2], "metadata")){

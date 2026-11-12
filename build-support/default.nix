@@ -140,7 +140,7 @@ in rec {
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs leanToolchain root; };
   verifierConformance = leanPackage {
-    pname = "sqlite-verifier-conformance-package";
+    pname = "belay-conformance-package";
     directory = "packages/verifier-conformance";
     source = sources.verifierConformance;
     targets = [ "VerifierConformance" "conformance-runner" ];
@@ -154,20 +154,20 @@ in rec {
   };
   # The documentation inventory's Lean part; publicDocumentation and tests.documentation use it.
   docTools = leanPackage {
-    pname = "sqlite-verifier-doc-tools";
+    pname = "belay-doc-tools";
     directory = "packages/public-doc-tools";
     source = sources.docTools;
     targets = [ "PublicDocSyntax" "PublicDocInventory" ];
   };
   # The conformance runner and its library modules, and the translation program, which the harness
   # and the judge's subject run. The program finds the parser library by its path in the Nix store.
-  conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''
+  conformanceRuntime = pkgs.runCommand "belay-conformance-runtime" { } ''
     mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
     cp -R ${verifierConformance}/.lake/build/lib/lean "$out/.lake/build/lib/"
     cp ${verifierConformance}/.lake/build/bin/conformance-runner "$out/.lake/build/bin/"
     cp ${textPackage}/.lake/build/bin/belay-sqlite-translate "$out/.lake/build/bin/"
   '';
-  conformance = pkgs.runCommand "sqlite-verifier-conformance" {} ''
+  conformance = pkgs.runCommand "belay-conformance" {} ''
     mkdir -p "$out"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${conformanceRuntime}/.lake "$out/.lake"

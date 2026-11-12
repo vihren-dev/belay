@@ -61,7 +61,7 @@ def test_missing_jj_leaves_the_commit_absent(monkeypatch: pytest.MonkeyPatch) ->
 
 def output(store: Path, suite: str, started: str) -> Path:
     """A Nix suite output with one execution that started at `started`, linked from a link farm."""
-    folder = store / f"{'0' * 32}-sqlite-verifier-test-{suite}-1"
+    folder = store / f"{'0' * 32}-belay-test-{suite}-1"
     directory = observation(folder / "observability")
     manifest = json.loads((directory / "execution.json").read_text())
     (directory / "execution.json").write_text(json.dumps({**manifest, "started_at": started}))

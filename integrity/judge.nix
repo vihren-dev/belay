@@ -51,9 +51,9 @@ let
   # Python bytecode is generated during local runs and is not a source input.
   subjectSources = fs.toSource { inherit root; fileset = fs.unions
     (map (fs.fileFilter (file: file.hasExt "py")) [ ../belay ../conformance ]); };
-  inputs = checked (pkgs.runCommand "sqlite-verifier-judge-inputs" {} (judge "inputs" ''--out "$out"''));
+  inputs = checked (pkgs.runCommand "belay-judge-inputs" {} (judge "inputs" ''--out "$out"''));
   # The subject sees only its inputs: the corpora are not inputs of this build.
-  predictions = pkgs.runCommand "sqlite-verifier-predictions" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+  predictions = pkgs.runCommand "belay-predictions" { nativeBuildInputs = [ pkgs.python3 ]; } ''
     mkdir -p "$out"
     cd "$TMPDIR"
     for given in ${inputs}/*.jsonl; do
@@ -68,7 +68,7 @@ in {
   locked = checked true;
   inherit inputs predictions;
   # The verdict: the locked judge's check of the subject's predictions.
-  verdict = checked (pkgs.runCommand "sqlite-verifier-verdict" {} ''
+  verdict = checked (pkgs.runCommand "belay-verdict" {} ''
     mkdir -p "$out"
     ${judge "verdict" ''--predictions ${predictions} --report "$out/report.json" > "$out/counts.json"''}
     cat "$out/counts.json"

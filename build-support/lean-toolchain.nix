@@ -17,7 +17,7 @@ let
 in
 assert builtins.readFile ../lean-toolchain == "leanprover/lean4:v${version}\n";
 pkgs.stdenv.mkDerivation {
-  pname = "sqlite-verifier-lean";
+  pname = "belay-lean";
   inherit version;
   src = pkgs.fetchurl {
     url = "https://github.com/leanprover/lean4/releases/download/v${version}/lean-${version}-${archive.platform}.tar.zst";
