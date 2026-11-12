@@ -1,6 +1,7 @@
 # Task: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12 (status: `20261112-derived-column-on-schema.status.md`). Issue #376, launch blocker.
+Status: specified; implementation pending.
 
 ## Problem
 
@@ -45,14 +46,18 @@ derived-column migration, and (c) a compiled example that the page for agents li
   each covered read. A user can use them with `queryPreserves`, `queryTranslates`,
   `Site.run_state` and `Site.branch_database`, and can still build a `Site` or a `ReadPreserved`
   by hand for a case that the check does not cover.
-- The check is general: it is not about `shop`, `customers` or `lower`. It covers each table,
-  column definition, written value and simple read (one table, no join, no subquery, a filter and
-  result columns of old columns) for which a `Site` and a `ReadPreserved` exist with a calm query.
-  The docstrings of the public declarations state what the check does not cover.
-- When a fact does not hold, the check is false, so the proof fails. It does not give a theorem
-  that is false. Examples: `SELECT *` (the result gets the new column), a column name that the
-  table already has, a trigger that an UPDATE of the new column fires, and a value that reads
-  the clock or a parameter.
+- The check is general: it is not about `shop`, `customers` or `lower`. It is a sufficient
+  condition on a syntactic subset, not a decision of whether a `Site` exists. The subset is at
+  least: any table of the catalog at any position; a column definition without constraints; a
+  written value whose resolved expression reads only old columns and has no parameter, clock or
+  counter read and no subquery (so it is context-free by its form); and a simple read of that table
+  (one table, no join, no subquery, no `*`, a filter and result columns of old columns) with a calm
+  query. The docstrings of the public declarations state the subset.
+- Outside the subset, or when a fact does not hold, the check is false, so the proof fails. It
+  never gives a false theorem. A case outside the subset that still has a `Site`, such as the
+  value `coalesce(0, ?1)`, keeps the door of the hand-built `Site`. Examples of a false check:
+  `SELECT *` (the result gets the new column), a column name that the table already has, a trigger
+  that an UPDATE of the new column fires, and a value that reads the clock or a parameter.
 
 ### Success (b)
 

@@ -1,6 +1,7 @@
 # Status: short proofs of the derived-column migration on a schema
 
 Created 2026-11-12. Task: `20261112-derived-column-on-schema.task.md`. Issue #376.
+Status: specification complete; implementation pending.
 
 ## References
 
