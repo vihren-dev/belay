@@ -145,7 +145,7 @@ theorem makeStrict_preserves_allSessions :
 ```
 
 Your coding agent can prove such a claim, and Lean's kernel checks the proof.
-One proof is in [`RebuildKeeps.lean`](tests/surface/RebuildKeeps.lean).
+One proof is in [`RebuildKeeps.lean`](tests/surface/Schema/Tests/RebuildKeeps.lean).
 
 ## Try it on your schema
 
@@ -227,7 +227,9 @@ you review the claim, and `#explain` prints a claim in plain words.
 - The [supported subset](docs/semantic-subset.md) and the
   [execution profile](docs/execution-profile.md).
 - The [checked Lean API reference](docs/api-reference.md) of the model.
-- The examples under [`tests/surface`](tests/surface), which CI compiles.
+- The examples under [`tests/surface`](tests/surface), which CI compiles. The
+  migration examples are in
+  [`tests/surface/Schema/Tests`](tests/surface/Schema/Tests).
 
 ## Community and support
 

@@ -94,6 +94,11 @@ retained reports and CI setup.
   code while a file elaborates; see [the SQLite parser](docs/sqlite-parser.md).
 - **The surface**, `packages/belay` (`Belay`, with `Belay.Sqlite`): the library that Lean
   developers import; see [its README](packages/belay/README.md).
+- **Divisions and teams.** Each library and `tests/surface` have one directory for each
+  division in which they have code (`Tooling`, `Programs`, `Schema`, `Queries`, `Frontend`,
+  `Values`, `Shared`) and in it one directory for each team. The `README.md` of a directory tells
+  which code belongs there; start at the
+  [surface's directories](packages/belay/Belay/Sqlite).
 - **The conformance evidence**: the frozen corpora under `conformance/`, which the
   conformance runner predicts with the model and the pinned native SQLite checks. The
   verdict job grades the claims in `judge/claims.json` against them.
