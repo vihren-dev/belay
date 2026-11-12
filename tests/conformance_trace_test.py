@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
 def test_production_trace(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
     """Snapshots preserve writes, commits, rollbacks, failure positions and stop-on-error."""
     proof = tmp_path / "TraceChecks.lean"
-    proof.write_text('''import VerifierConformance.Pass
+    proof.write_text('''import VerifierConformance.Tooling.Conformance.Pass
 open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def columns : List CatalogColumn := [{ name := name! "value", declaredType := some "INTEGER" }]
@@ -72,7 +72,7 @@ theorem prepare_error_halts : trace (bindValues [.begin, .prepareError (.noSuchT
 def test_statement_outputs(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
     """Native groups allow tie permutations and cuts while rejecting corrupted outputs."""
     proof = tmp_path / "OutputChecks.lean"
-    proof.write_text('''import VerifierConformance.Outputs
+    proof.write_text('''import VerifierConformance.Tooling.Conformance.Outputs
 open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def a : ResultRow := [.integer 1]

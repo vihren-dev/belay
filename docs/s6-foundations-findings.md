@@ -68,7 +68,7 @@ The same full-context requirement applies to recursive-trigger settings.
 `Connection.resolveState` uses both settings and the snapshot catalog. Ordinary
 rowids are in stored rows; they are already part of raw-database equality.
 `last_insert_rowid` is separate connection state. AUTOINCREMENT is rejected by
-`Translation/Tables.lean`; a checked negative fixture records that scope limit.
+`Frontend/Grammar/Tables.lean`; a checked negative fixture records that scope limit.
 There is no current high-water-mark semantics to certify. A future implementation
 must include its sequence state in observations or in the continuation relation.
 
@@ -115,8 +115,8 @@ observations. These production definitions and proofs remain future work.
 ## The fixed start database in postconditions
 
 The checked `before.t EXCEPT t` fixture is rejected at its schema-qualified
-source. `Translation/Sources.lean` rejects a schema name and
-`Translation/QueryExpression.lean` rejects a three-part column name. In this
+source. `Frontend/Grammar/Sources.lean` rejects a schema name and
+`Frontend/Grammar/QueryExpression.lean` rejects a three-part column name. In this
 base, `Resolved.Source.table` holds one catalog position, and query evaluation
 reads one database. EXCEPT itself is already modeled; its input lookup is the
 gap. A database alias alone cannot fix it.

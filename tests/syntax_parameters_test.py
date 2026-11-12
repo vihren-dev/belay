@@ -1,5 +1,5 @@
 """The translation numbers the parameters of each statement as SQLite does
-(`packages/belay-sqlite-text/Belay/Sqlite/Translation/Parameters.lean`, through the text
+(`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Parameters.lean`, through the text
 package's program).
 
 These tests check the numbers that the JSON of `Syntax.Expr.parameter` carries for each token

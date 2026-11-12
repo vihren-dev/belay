@@ -14,7 +14,8 @@ PACKAGE = ROOT / "packages/belay-sqlite-model"
 ROOT_MODULE = "Belay.Sqlite.Model"
 CORE_LIBRARY = "Belay.Sqlite.Model"
 """The Lake library of `lakefile.toml` whose modules, except the examples, form the core."""
-CODEC_PREFIX = "Belay.Sqlite.Model.Codec"
+CODEC_LIBRARY = "Belay.Sqlite.Model.Codec"
+"""The Lake library of `lakefile.toml` whose roots are the codec modules, in the directories of their divisions."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
 ALLOWED_EXTERNAL_IMPORT_MODULES = {"Lean.Meta.Tactic.Simp.RegisterCommand"}
@@ -47,6 +48,12 @@ def is_example_module(module: str) -> bool:
     """Compiled examples and their helpers: Lake builds and checks them, and the root does not import them."""
     name = module.rsplit(".", 1)[-1]
     return name.endswith("Examples") or name == "ExampleSupport"
+
+
+def codec_root_modules() -> set[str]:
+    """The roots of the codec library in `lakefile.toml`."""
+    configuration = tomllib.loads((PACKAGE / "lakefile.toml").read_text())
+    return set(next(entry for entry in configuration["lean_lib"] if entry["name"] == CODEC_LIBRARY)["roots"])
 
 
 def core_library_modules() -> set[str]:
@@ -95,7 +102,7 @@ def test_root_imports_the_core_and_only_the_prelude() -> None:
     assert not outside_prelude, f"core modules import more than Lean's prelude: {outside_prelude}"
     examples = sorted(module for module in reached if is_example_module(module))
     assert not examples, f"the root imports compiled examples: {examples}"
-    codec = sorted(module for module in reached if module.startswith(CODEC_PREFIX))
+    codec = sorted(reached & codec_root_modules())
     assert not codec, f"the root imports the codec: {codec}"
     core = core_library_modules()
     assert not reached - core, f"the root imports modules outside the core library: {sorted(reached - core)}"
@@ -121,7 +128,7 @@ def test_installed_core_and_codec_consumer(model_artifact: Path, lean_sysroot: P
     """An unrelated consumer imports both libraries and checks a syntax roundtrip and a refusal."""
     source = tmp_path / "Consumer.lean"
     source.write_text('''import Belay.Sqlite.Model
-import Belay.Sqlite.Model.Codec.Resolution
+import Belay.Sqlite.Model.Frontend.Codecs.Resolution
 open Belay.Sqlite.Model
 #check Conforms.setRows
 #check TableExtends.project

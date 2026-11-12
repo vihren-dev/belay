@@ -135,7 +135,7 @@ review findings up to 2026-10-11.
 **The judge is large and unprotected.** The code that decides AGREE or
 DISAGREE for a frozen corpus starts at `conformance/replay_tiers.py`, which
 imports 45 of the 79 modules in `conformance/`. The verdict function
-`classifyCase` is in `VerifierConformance/Case.lean`. No owner approval is
+`classifyCase` is in `VerifierConformance/Tooling/Conformance/Case.lean`. No owner approval is
 needed to change any of them.
 
 **Owner approval is not enforced.** On 2026-10-12, the `main` ruleset

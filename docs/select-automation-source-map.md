@@ -10,7 +10,7 @@ It makes no new claim about agreement with native SQLite.
 
 ## Resolved constructor inventory
 
-[QueryForm][query-form] defines the query, sources and joins.
+QueryForm ([Shared/Resolved][query-form-shared-resolved], [Queries/Evaluation][query-form-queries-evaluation]) defines the query, sources and joins.
 [ResolvedExprForm][expr-form] defines expressions, aggregates and output columns.
 Surface CASE, aliases, USING, NATURAL, views and CTEs are resolved into these
 forms; they are not additional constructors of `Resolved.Expr` or `Source`.
@@ -63,14 +63,14 @@ special-case theorem elsewhere can help prove them.
 | Aggregate | `Query.possibleResults_ungrouped`, `Query.fails_ungrouped` in [UngroupedQueryRules][ungrouped-rules]; `Resolved.Query.aggregateOf` in `AggregateSelectResolution` sets the deciding call | Grouped, multi-output and aggregate-expression composition for every aggregate |
 | Projection | `Query.results_plain_unordered` in [SelectSubqueryRules][subquery-rules] | Characterization of general `records`, including HAVING and hidden sort keys |
 | DISTINCT/compound rows | `Resolved.mem_of_mem_distinctRows`, `CompoundOperator.except_combine_eq_nil` in [ExceptCombineLaws][except-laws]; `distinctRows_rules`, `mem_distinctRows_iff`, `combine_pairwise`, `mem_union_combine`, `mem_intersect_combine`, `mem_except_combine` in [SelectCompoundMembership][compound-membership] | Record DISTINCT and every compound operator, with certainty premises |
-| Compound runs | `Compound.ending_done`, `chainEnd_done`, `stepEnd_done`, `Compound.rows_unionAll` in [SelectCompoundRules][compound-rules]; `Query.perm_of_mem_possibleResults_compound`, `Connection.SelectReady.of_compound` in [SelectCompoundReady][compound-ready]; `Run.query_returnsResult_compound` in [SelectCalmExecution][calm-execution] | Ending, readiness and result rules of a compound statement |
+| Compound runs | `Compound.ending_done`, `chainEnd_done`, `stepEnd_done`, `Compound.rows_unionAll` in [SelectCompoundRules][compound-rules]; `Query.perm_of_mem_possibleResults_compound`, `Connection.SelectReady.of_compound` in SelectCompoundReady ([Queries/Evaluation][compound-ready-queries-evaluation], [Programs/StatementRunLaws][compound-ready-programs-statementrunlaws]); `Run.query_returnsResult_compound` in [SelectCalmExecution][calm-execution] | Ending, readiness and result rules of a compound statement |
 | Sort | `stableSort_perm`, `sort_perm`, `sort_sorted` in [QueryLaws][query-laws] | Transfer of collection predicates and observable ordering facts |
 | Window | `Query.bindWindow_literal`, `bindWindow_some` in [QueryWindow][window]; `windowRows_sublist` in [PossibleResultsLemmas][possible-lemmas]; `resolvedStepOutput_select_mismatch` in [SelectOverflowRule][overflow-rule]; `Run.query_mismatch` in [SelectOverflow][overflow-execution] | Parameter/error and tie-boundary rules, not only a representative list slice |
 | Alternatives | `Query.normalResult_mem`, `possibleResults_ne_nil`, `possibleResults_length` in [PossibleResultsLaws][possible-laws] | Transfer of arbitrary predicates to every permitted result |
-| Output construction | `Output.ofResults_listed`, `Output.listed_iff` in [OutputResultsLaws][output-laws] | Successful-result predicates and their nonempty-alternative bridges |
+| Output construction | `Output.ofResults_listed`, `Output.listed_iff` in OutputResultsLaws ([Programs/Claims][output-laws-programs-claims], [Tooling/Counterexamples][output-laws-tooling-counterexamples]) | Successful-result predicates and their nonempty-alternative bridges |
 | Execution | `resolvedStepOutput_query`, `resolvedStepOutput_query_source` and `Query.described` in [QueryOutputFacts][output-facts]; `Sql.check_query_select` in [ReadStepRule][read-rule]; `Connection.SelectReady.of_faultless` in [SelectCalmRule][calm-rule]; `Run.query_returnsResult_faultless` in [SelectCalmExecution][calm-execution]; `check_query_select_at`, `check_query_select_faultless` in [SelectContextExecution][context-execution], with `Connection.resolveState_afterWrite` in [Connection][model-connection] for a read after a write | General phase-to-execution adapters retaining actual readiness and context |
 
-The pure pipeline already exists: [QueryEval][query-eval] supplies filtering,
+The pure pipeline already exists: QueryEval ([Shared/Execution][query-eval-shared-execution], [Queries/Evaluation][query-eval-queries-evaluation]) supplies filtering,
 grouping, aggregates and sorting; [QueryResults][query-results] supplies records,
 DISTINCT and results. [QueryRun][query-run] supplies faults and window binding.
 New characterization lemmas can expose fused phases without replacing evaluators.
@@ -93,7 +93,7 @@ New characterization lemmas can expose fused phases without replacing evaluators
   [CompoundRows][compound-rows] has corresponding `keepsCertain` checks.
   Uncertain representatives become `.may`; pure chosen rows do not certify
   a successful statement.
-- [Subqueries][subqueries] distinguishes first-cell certainty, first-column
+- Subqueries ([Queries/Evaluation][subqueries-queries-evaluation], [Schema/Dispatch][subqueries-schema-dispatch]) distinguishes first-cell certainty, first-column
   multiset certainty and complete-row multiset certainty. Scalar, IN and FROM
   consumers use different conditions. A derived source also needs no fault and
   `RunEnd.done`. `EvalContext.Quiet` omits complete-row certainty and the ending.
@@ -106,7 +106,7 @@ New characterization lemmas can expose fused phases without replacing evaluators
   `run.fault ≠ .must`; this permits `.may`. Execution also needs statement
   readiness, including plain nested subqueries and no `.may` source/run faults.
   Missing source rows and missing bound windows require their actual branches.
-- [PossibleResults][possible] normalizes tie groups and enumerates window
+- PossibleResults ([Shared/Execution][possible-shared-execution], [Queries/Evaluation][possible-queries-evaluation], [Schema/Dispatch][possible-schema-dispatch]) normalizes tie groups and enumerates window
   choices. The normal representative belongs to the alternatives, and all have
   its length. Neither fact transfers arbitrary collection predicates by itself.
   These observations do not enumerate every physical row permutation.
@@ -118,50 +118,58 @@ New characterization lemmas can expose fused phases without replacing evaluators
 Resolver restrictions remain separate from proof-search limits. Examples are
 bare aggregate columns, fallible calls consuming aggregate values, a subquery or an
 alias inside a grouping term, and grouped SUM with a window. See
-[QueryBodyTraced][query-body], [QueryTerms][query-terms] and the
+[QueryBodyTraced][query-body], QueryTerms ([Values/Scalar][query-terms-values-scalar], [Queries/Select][query-terms-queries-select]) and the
 [supported subset](semantic-subset.md). Rule coverage must retain those branches;
 it does not add SQL syntax or turn an unsupported observation into successful rows.
 
-[query-form]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryForm.lean
-[expr-form]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ResolvedExprForm.lean
-[table-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TableSourceLaws.lean
-[join-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoinLaws.lean
-[join-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectJoinRules.lean
-[subquery-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSubqueryRules.lean
-[calm-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCalmRule.lean
-[calm-execution]: ../packages/belay/Belay/Sqlite/SelectCalmExecution.lean
-[context-execution]: ../packages/belay/Belay/Sqlite/SelectContextExecution.lean
-[model-connection]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Connection.lean
-[compound-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundRules.lean
-[derived-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectDerivedRules.lean
-[source-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectSourceRules.lean
-[compound-ready]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundReady.lean
-[compound-membership]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectCompoundMembership.lean
-[overflow-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SelectOverflowRule.lean
-[overflow-execution]: ../packages/belay/Belay/Sqlite/SelectOverflow.lean
-[expr-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprEvalLaws.lean
-[context-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
-[query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean
-[group-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupsPairwise.lean
-[group-row]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/GroupRow.lean
-[ungrouped-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/UngroupedQueryRules.lean
-[except-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExceptCombineLaws.lean
-[window]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryWindow.lean
-[possible-lemmas]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsLemmas.lean
-[possible-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResultsLaws.lean
-[output-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/OutputResultsLaws.lean
-[output-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputFacts.lean
-[read-rule]: ../packages/belay/Belay/Sqlite/ReadStepRule.lean
-[query-eval]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryEval.lean
-[query-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryResults.lean
-[query-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryRun.lean
-[joins]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoins.lean
-[compound-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRows.lean
-[subqueries]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Subqueries.lean
-[compound-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CompoundRun.lean
-[output-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/QueryOutputCases.lean
-[possible]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleResults.lean
-[choices]: ../packages/belay/Belay/Sqlite/ExecutionBranches.lean
-[run]: ../packages/belay/Belay/Sqlite/ProgramRun.lean
-[query-body]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryBodyTraced.lean
-[query-terms]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryTerms.lean
+[query-form-shared-resolved]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Resolved/QueryForm.lean
+[query-form-queries-evaluation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryForm.lean
+[expr-form]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Resolved/ResolvedExprForm.lean
+[table-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/TableSourceLaws.lean
+[join-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/QueryJoinLaws.lean
+[join-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/SelectJoinRules.lean
+[subquery-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectSubqueryRules.lean
+[calm-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/SelectCalmRule.lean
+[calm-execution]: ../packages/belay/Belay/Sqlite/Tooling/Counterexamples/SelectCalmExecution.lean
+[context-execution]: ../packages/belay/Belay/Sqlite/Tooling/Counterexamples/SelectContextExecution.lean
+[model-connection]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/Connection.lean
+[compound-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SelectCompoundRules.lean
+[derived-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectDerivedRules.lean
+[source-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectSourceRules.lean
+[compound-ready-queries-evaluation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SelectCompoundReady.lean
+[compound-ready-programs-statementrunlaws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/SelectCompoundReady.lean
+[compound-membership]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SelectCompoundMembership.lean
+[overflow-rule]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/SelectOverflowRule.lean
+[overflow-execution]: ../packages/belay/Belay/Sqlite/Programs/Claims/SelectOverflow.lean
+[expr-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExprEvalLaws.lean
+[context-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExprContextLaws.lean
+[query-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryLaws.lean
+[group-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/GroupsPairwise.lean
+[group-row]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/GroupRow.lean
+[ungrouped-rules]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/UngroupedQueryRules.lean
+[except-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExceptCombineLaws.lean
+[window]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryWindow.lean
+[possible-lemmas]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/PossibleResultsLemmas.lean
+[possible-laws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/PossibleResultsLaws.lean
+[output-laws-programs-claims]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Claims/OutputResultsLaws.lean
+[output-laws-tooling-counterexamples]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/OutputResultsLaws.lean
+[output-facts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/QueryOutputFacts.lean
+[read-rule]: ../packages/belay/Belay/Sqlite/Programs/Claims/ReadStepRule.lean
+[query-eval-shared-execution]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/QueryEval.lean
+[query-eval-queries-evaluation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryEval.lean
+[query-results]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryResults.lean
+[query-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryRun.lean
+[joins]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/QueryJoins.lean
+[compound-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CompoundRows.lean
+[subqueries-queries-evaluation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/Subqueries.lean
+[subqueries-schema-dispatch]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/Subqueries.lean
+[compound-run]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CompoundRun.lean
+[output-cases]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Claims/QueryOutputCases.lean
+[possible-shared-execution]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/PossibleResults.lean
+[possible-queries-evaluation]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/PossibleResults.lean
+[possible-schema-dispatch]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/PossibleResults.lean
+[choices]: ../packages/belay/Belay/Sqlite/Programs/Claims/ExecutionBranches.lean
+[run]: ../packages/belay/Belay/Sqlite/Programs/Scripts/ProgramRun.lean
+[query-body]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/QueryBodyTraced.lean
+[query-terms-values-scalar]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Values/Scalar/QueryTerms.lean
+[query-terms-queries-select]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Select/QueryTerms.lean

@@ -3,7 +3,7 @@
 These tests check `packages/belay-sqlite-text/Belay/Sqlite/Translation` through the text
 package's program: the JSON that Lean's `Syntax.Statement` decoder reads, the lexical decoding of
 names and literals, and the refusal of syntax without a constructor at its range.
-`tests/surface/TranslationChecks.lean` checks the range that a Lean node path selects and the
+`tests/surface/Frontend/Tests/TranslationChecks.lean` checks the range that a Lean node path selects and the
 lexical helpers.
 """
 
@@ -54,7 +54,7 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
 
 
 def test_conditional_creation_records_the_clause(parse_sql: Callable[..., Translation]) -> None:
-    """`Translation/Tables.lean` and `Translation/Schema.lean` record IF NOT EXISTS as the flag
+    """`Frontend/Grammar/Tables.lean` and `Frontend/Grammar/Schema.lean` record IF NOT EXISTS as the flag
     `ifNotExists` of CREATE TABLE and CREATE [UNIQUE] INDEX, and the statement is otherwise as
     without the clause."""
     sql = ("CREATE TABLE IF NOT EXISTS t(a) WITHOUT ROWID; CREATE TABLE t(a) WITHOUT ROWID;"

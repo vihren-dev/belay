@@ -1,0 +1,108 @@
+import Belay.Sqlite.Model.Schema.Rows.PragmaRun
+import Belay.Sqlite.Model.Queries.Evaluation.QueryFunctions
+
+set_option doc.verso true
+
+/-! The source rows of a query (ADR 0013, D5): its sources joined in written order, as
+SQLite's nested loop does, from the one row with no cells. A table, also one of the initial database, gives its rows in rowid
+order; {lit}`json_each` gives its rows over the values of its arguments on each row so far
+(ADR 0012, amendment 5, slice 6d). A {lit}`json_each` call that fails gives no rows here,
+and makes the fault of the source {lit}`may`: SQLite reports it when it scans the
+source, so the supported-subset check refuses a statement in which it may fail. -/
+
+namespace Belay.Sqlite.Model.Resolved
+
+/-- The rows so far joined with one more source ({name}`QuerySource.joinTable`); none for a table that
+the database does not have, a table of the optional initial database {lit}`initial` that it does not have
+(none outside a two-state observation), a derived source whose run fails or has uncertain complete rows,
+and a pragma whose rows the model does not give ({name}`PragmaRows.rowsOn`). A table of the
+initial database never reads {lit}`database`, and a table of {lit}`database` never reads {lit}`initial`. A derived source
+uses the statement's indexed evaluator with the enclosing query's cells. The rows of
+a {lit}`json_each` source are its rows over each row so far ({name}`joinRow`); resolution
+refuses it as the right operand of a right or full join, where this gives the rows of an
+inner or left join. -/
+def QuerySource.join (context : EvalContext) (database : Database) (initial : Option Database) (state : SourceRows)
+    (join : QuerySource) : Option SourceRows :=
+  match join.source with
+  | .table position => (database.table position).map (QuerySource.joinTable context state join)
+  | .initialTable position => (initial.bind (·.table position)).map (QuerySource.joinTable context state join)
+  | .each json path =>
+    let results := state.rows.map fun row => (row, Json.eachRows (json.eval context row) (path.map (·.eval context row)))
+    let failed := results.any fun (_, result) => match result with
+      | .ok _ => false
+      | .error _ => true
+    some { state with
+      rows := results.flatMap (fun (row, result) => joinRow context join eachWidth (result.toOption.getD []) row),
+      width := state.width + eachWidth,
+      fault := if failed then state.fault.join .may else state.fault }
+  | .subquery index width =>
+    let run := context.subqueries index state.outer
+    if run.fault != .none || run.ending != .done || !run.sourceCertain then none
+    else some { state with
+      rows := joinRows context state.width state.rows join width run.rows state.outer,
+      width := state.width + width }
+  | .pragma pragma => (pragma.rowsOn database).map fun rows =>
+    { state with
+      rows := joinRows context state.width state.rows join pragma.width rows state.outer,
+      width := state.width + pragma.width }
+
+/-- The source rows of a query over a database: its sources joined in written order
+({name}`QuerySource.join`) from the one row with no cells, which is the source of a query
+without {lit}`FROM`; none when a table is missing. The optional {lit}`initial` database is the one that the
+sources of the initial origin read; use none outside a two-state observation. -/
+def Query.source (context : EvalContext) (query : Query) (database : Database) (initial : Option Database := none) :
+    Option SourceRows :=
+  query.sources.foldlM (QuerySource.join context database initial) { rows := [[]], width := 0, fault := .none }
+
+/-- For every context, current database, optional initial database, list of sources without a
+{lit}`json_each` source and state whose
+fault is {lean}`Fault.none`, a successful fold of {name}`QuerySource.join` ends with the fault
+{lean}`Fault.none`. Proof sketch: induction on the sources; a table source keeps the fault,
+a pragma keeps the fault, and a subquery either stops the fold or keeps the fault. -/
+theorem source_fault_of_plain (context : EvalContext) (database : Database) (initial : Option Database) :
+    ∀ (sources : List QuerySource) (state result : SourceRows), sources.all (!·.source.isEach) = true →
+      state.fault = .none → sources.foldlM (QuerySource.join context database initial) state = some result → result.fault = .none
+  | [], state, result, _, clean, done => by
+    simp only [List.foldlM, pure] at done
+    cases done
+    exact clean
+  | join :: rest, state, result, plain, clean, done => by
+    simp only [List.all_cons, Bool.and_eq_true] at plain
+    simp only [List.foldlM, bind, Option.bind] at done
+    obtain ⟨kind, source, condition⟩ := join
+    cases source with
+    | table position =>
+      simp only [QuerySource.join] at done
+      cases found : database.table position with
+      | none => simp [found] at done
+      | some table =>
+        simp only [found, Option.map_some] at done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
+        exact clean
+    | initialTable position =>
+      simp only [QuerySource.join] at done
+      cases found : initial.bind (·.table position) with
+      | none => simp [found] at done
+      | some table =>
+        simp only [found, Option.map_some] at done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
+        exact clean
+    | each json path => simp [Source.isEach] at plain
+    | subquery index width =>
+      by_cases refused : ((context.subqueries index state.outer).fault != .none ||
+          (context.subqueries index state.outer).ending != .done ||
+          !(context.subqueries index state.outer).sourceCertain) = true
+      · simp [QuerySource.join, refused] at done
+      · simp only [QuerySource.join, refused, ↓reduceIte, Option.bind_some] at done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
+        exact clean
+    | pragma pragma =>
+      simp only [QuerySource.join] at done
+      cases found : pragma.rowsOn database with
+      | none => simp [found] at done
+      | some rows =>
+        simp only [found, Option.map_some] at done
+        refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
+        exact clean
+
+end Belay.Sqlite.Model.Resolved

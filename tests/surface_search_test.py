@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 def test_shared_search_certifies_and_restores_failed_attempts(runtime_root: Path, tmp_path: Path) -> None:
     """CheckCandidates rejects false proofs, CheckBudget restores state, and CheckReplayData's
     internal reifiers preserve ordinary imported Except display."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearchCore.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleSearchCore.lean"), tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     assert "shared checker certificates and rollback passed" in result.stdout, result.stdout
@@ -29,7 +29,7 @@ def test_shared_search_certifies_and_restores_failed_attempts(runtime_root: Path
 def test_shared_search_reuses_samples_and_original_replays(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
     """Check.check finds intended SQL data boundaries and keeps unavailable observations inconclusive."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearch.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleSearch.lean"), tmp_path),
                          cwd=tmp_path, timeout=240)
     assert result.returncode == 0, result.diagnostic()
     assert result.stdout.count(": certified; heartbeats=") == 9, result.stdout
@@ -61,7 +61,7 @@ def test_shared_search_bounds_compiled_data(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
     """CheckData computes data with compiled code under the time limit and cancellation, refuses
     compiled overrides and opaque constants, and retains logical data and reconstruction errors."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearchBudget.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CounterexampleSearchBudget.lean"), tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     assert "bounded data, original definitions, bytes and construction passed" in result.stdout, result.stdout
@@ -74,7 +74,7 @@ def test_candidates_fill_touched_tables_with_constrained_rows(runtime_root: Path
     """SampleTouched and SampleConstraints: the search fills only the tables that the claim's
     statements touch through triggers and foreign keys, and its rows satisfy NOT NULL, UNIQUE
     and foreign keys by construction."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateConstraints.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CandidateConstraints.lean"), tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     assert "candidate constraints passed" in result.stdout, result.stdout
@@ -85,7 +85,7 @@ def test_search_screens_while_generating_with_a_share_per_value(runtime_root: Pa
     first candidate that the screen accepts, continues after a rejected certificate, screens the
     last candidate within the time limit, and gives each parameter value a share of the
     candidate count, so that NULL does not use the count of the value 1."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CandidateShares.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CandidateShares.lean"), tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     assert "candidate shares passed" in result.stdout, result.stdout

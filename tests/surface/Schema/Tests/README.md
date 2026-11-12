@@ -1,0 +1,9 @@
+# Schema / Tests
+
+Put a file here when it holds tests of constraints, table rebuilds, migrations and foreign keys,
+through the public interface.
+
+This tree is the surface tests. Each file here is a Lean test file that a Python test of `tests/`
+compiles.
+
+[The division](../README.md) lists the other teams of Schema.

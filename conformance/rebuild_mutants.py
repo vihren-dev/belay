@@ -4,7 +4,7 @@ children name (ADR 0019, D4, part 3)."""
 from conformance.resolve_mutants import SQLITE
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "rename_keeps_selected_parents": (SQLITE + "Execution.lean",
+    "rename_keeps_selected_parents": (SQLITE + "Schema/Dispatch/Execution.lean",
         "    if database.catalog.sameOutline renamed then .ok { database with catalog := renamed }",
         "    if database.catalog.keepsOutline renamed then .ok { database with catalog := renamed }"),
 }

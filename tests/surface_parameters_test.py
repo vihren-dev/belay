@@ -8,31 +8,31 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 
 def test_guide_parameters_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
-    """The section "Parameters" (`Belay/Sqlite/SqlParameters.lean`, `Belay/Sqlite/SqlTerm.lean`,
-    the coercions of `Belay/Sqlite/Values.lean`, `check_query` of `Belay/Sqlite/Queries.lean`):
+    """The section "Parameters" (`Belay/Sqlite/Frontend/Embedding/SqlParameters.lean`, `Belay/Sqlite/Frontend/Embedding/SqlTerm.lean`,
+    the coercions of `Belay/Sqlite/Queries/Evaluation/Values.lean`, `check_query` of `Belay/Sqlite/Programs/Claims/Queries.lean`):
     the guide's `nameOf` and `setAmount` with its `#check` and named call; `$x` of `Value`,
     `String` and `Int64`; the numbers and the order of the arguments; one argument for a name in
     two statements; `Script.withValues` over the term; and `Holds` and `Empty` of a query with
     parameters, which the kernel decides."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "GuideParameters.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("GuideParameters.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
 
 def test_parameter_errors_are_at_the_parameter(runtime_root: Path, tmp_path: Path) -> None:
-    """A wrong parameter of `sql r"..."` (`planParameters` of `Belay/Sqlite/SqlParameters.lean`,
-    `variableValue` of `Belay/Sqlite/SqlTerm.lean`) and each parameter of `db!`
-    (`Belay/Sqlite/DbBang.lean`) is an error at the parameter in the SQL text, with a message
+    """A wrong parameter of `sql r"..."` (`planParameters` of `Belay/Sqlite/Frontend/Embedding/SqlParameters.lean`,
+    `variableValue` of `Belay/Sqlite/Frontend/Embedding/SqlTerm.lean`) and each parameter of `db!`
+    (`Belay/Sqlite/{Frontend/Embedding,Schema/Rows,Tooling/SqlCommands}/DbBang.lean`) is an error at the parameter in the SQL text, with a message
     that says what to do: `$x` without a variable, `$x` of a type without a coercion to `Value`,
     a `$` name that is not a Lean identifier, two parameters that give one Lean name, and two
     parameters of one statement with one number and two Lean names."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ParameterErrors.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("ParameterErrors.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 1, result.diagnostic()
     expected = [

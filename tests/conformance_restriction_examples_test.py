@@ -1,6 +1,6 @@
 """Each example of `conformance.restriction_examples` reaches its restriction.
 
-The registry of model restrictions (`Resolution/Restrictions.lean`) must not keep a
+The registry of model restrictions (`Shared/Resolved/Restrictions.lean`) must not keep a
 restriction that no SQL reaches: such a restriction is dead code that the
 documentation table would still show to users. Each example runs through the
 pinned frontend and the `conformance-runner` of the conformance runtime, whose

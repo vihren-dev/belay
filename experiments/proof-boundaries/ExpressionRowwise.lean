@@ -1,5 +1,5 @@
 import ExpressionAgreement
-import Belay.Sqlite.Model.RowwiseExpr
+import Belay.Sqlite.Model.Queries.Evaluation.RowwiseExpr
 
 set_option doc.verso true
 

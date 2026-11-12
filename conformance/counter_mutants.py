@@ -12,26 +12,26 @@ MODEL = "belay-sqlite-model/Belay/Sqlite/Model/"
 """The folder of the model's sources, under `packages/`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "replace_deletes_are_counted": (MODEL + "RowInsert.lean",
+    "replace_deletes_are_counted": (MODEL + "Schema/Writes/RowInsert.lean",
         "KeyResult.mapState (fun deleted => { deleted with own := state.own })",
         "KeyResult.mapState (fun deleted => deleted)"),
-    "program_rows_count_in_changes": (MODEL + "ForeignKeyWrites.lean",
+    "program_rows_count_in_changes": (MODEL + "Schema/Writes/ForeignKeyWrites.lean",
         "{ changes := some state.own, total := state.own + state.credited, lastRowid := state.inserted }",
         "{ changes := some (state.own + state.credited), total := state.own + state.credited, lastRowid := state.inserted }"),
-    "program_rows_are_not_in_total_changes": (MODEL + "RowCredit.lean",
+    "program_rows_are_not_in_total_changes": (MODEL + "Schema/Writes/RowCredit.lean",
         "  | .ok reached => .ok { restore reached with credited := reached.credited + reached.own }",
         "  | .ok reached => .ok { restore reached with credited := reached.credited }"),
-    "drop_table_leaves_changes": (MODEL + "ForeignKeyWrites.lean",
+    "drop_table_leaves_changes": (MODEL + "Schema/Writes/ForeignKeyWrites.lean",
         "    | .ok after => { run with effect := .ok (after.drop positions) }",
         "    | .ok after => { run with effect := .ok (after.drop positions), counts := { run.counts with changes := none } }"),
-    "changes_kept_after_a_failure": (MODEL + "PlainCounts.lean",
+    "changes_kept_after_a_failure": (MODEL + "Schema/Writes/PlainCounts.lean",
         "  | .error _ => { changes := some 0, lastRowid := stored (insertedBefore keys table rows) }",
         "  | .error _ => { lastRowid := stored (insertedBefore keys table rows) }"),
-    "rollback_takes_back_the_last_rowid": (MODEL + "SqlAdvance.lean",
+    "rollback_takes_back_the_last_rowid": (MODEL + "Shared/Execution/SqlAdvance.lean",
         "    | some original => .next { state with database := original, snapshot := none }",
         "    | some original => .next { state with database := original, snapshot := none, "
         "counters := { state.counters with lastInsertRowid := some 0 } }"),
-    "failure_loses_the_rows_of_programs": (MODEL + "ForeignKeyWrites.lean",
+    "failure_loses_the_rows_of_programs": (MODEL + "Schema/Writes/ForeignKeyWrites.lean",
         "{ changes := some 0, total := state.credited, lastRowid := state.inserted }",
         "{ changes := some 0, total := 0, lastRowid := state.inserted }"),
 }

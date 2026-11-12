@@ -1,11 +1,11 @@
-"""The translation maps a compound SELECT (`packages/belay-sqlite-text/Belay/Sqlite/Translation/CompoundSelect.lean`,
+"""The translation maps a compound SELECT (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/CompoundSelect.lean`,
 through the text package's program; ADR 0019, D3).
 
 These tests check the JSON that Lean's `Syntax.Statement.select` and `Syntax.Subquery` decoders
 read for a compound: each operator, the terms as subqueries whose parent is the compound's query,
 the compound's ORDER BY and LIMIT, which the parser puts on the last term, and the refusals: the
 errors of SQLite's parser actions as `INPUT_ERROR` with SQLite's message, and the forms that the
-model does not place. `tests/surface/TranslationChecks.lean` checks the ranges of a compound's
+model does not place. `tests/surface/Frontend/Tests/TranslationChecks.lean` checks the ranges of a compound's
 paths.
 """
 

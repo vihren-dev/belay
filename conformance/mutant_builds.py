@@ -1,7 +1,7 @@
 """Lake builds and classifications of the mutant copies of the model.
 
 `conformance.resolve_mutants.measure` copies the `belay-sqlite-model` and `verifier-conformance`
-packages, builds the import closure of `VerifierConformance.Classify` in each copy, and runs a
+packages, builds the import closure of `VerifierConformance.Tooling.Conformance.Classify` in each copy, and runs a
 classification program with the copy. This module runs those commands with the pinned Lean
 toolchain and keeps one built base for each test process.
 """
@@ -31,7 +31,7 @@ def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
 
 def build(packages: Path, lean: Path) -> None:
     """Build the case classification of the copy."""
-    run(["lake", "build", "VerifierConformance.Classify"], packages / "verifier-conformance", lean, BUILD_TIMEOUT_SECONDS)
+    run(["lake", "build", "VerifierConformance.Tooling.Conformance.Classify"], packages / "verifier-conformance", lean, BUILD_TIMEOUT_SECONDS)
 
 
 def classify(packages: Path, lean: Path, program: str) -> list[str]:

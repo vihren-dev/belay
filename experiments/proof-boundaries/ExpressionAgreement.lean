@@ -1,5 +1,5 @@
-import Belay.Sqlite.Model.ExprEval
-import Belay.Sqlite.Model.Resolution.ExprAny
+import Belay.Sqlite.Model.Queries.Evaluation.ExprEval
+import Belay.Sqlite.Model.Queries.Evaluation.ExprAny
 
 set_option doc.verso true
 

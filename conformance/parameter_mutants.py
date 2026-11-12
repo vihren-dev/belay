@@ -4,17 +4,17 @@ The task lists the changes that the conformance suite must notice. Each mutant i
 in a copy of the model, which `conformance.resolve_mutants.measure` builds and runs against its
 target case of `conformance.authored_parameters`. The two mutants of the numbering (`?` numbered
 from the count of earlier parameters, and one number for `:a` and `@a`) change the frontend
-(`Translation/Parameters.lean`), which numbers the parameters before the model sees them; the
+(`Frontend/Grammar/Parameters.lean`), which numbers the parameters before the model sees them; the
 measurement copies only the model and the conformance runner, so they are not in this table.
 """
 
 from conformance.resolve_mutants import SQLITE
 
-OPERANDS = SQLITE + "Resolution/OperandTraced.lean"
+OPERANDS = SQLITE + "Queries/Select/OperandTraced.lean"
 """The resolution of the operands of an expression, with their affinities."""
-TERMS = SQLITE + "Resolution/QueryTerms.lean"
+TERMS = SQLITE + "Queries/Select/QueryTerms.lean"
 """The result column that an `ORDER BY` or `GROUP BY` term names."""
-WINDOW = SQLITE + "QueryWindow.lean"
+WINDOW = SQLITE + "Queries/Evaluation/QueryWindow.lean"
 """The integer that SQLite reads from a bound `LIMIT` or `OFFSET` value."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

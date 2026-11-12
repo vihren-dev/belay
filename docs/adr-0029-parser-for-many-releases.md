@@ -88,7 +88,7 @@ repository's own code (`parser/grammar_sources.py`, `parser/dialect_table.py`,
    numbers too. With the numbers, there are six tokenizers; with the parsers, eight distinct
    pairs of parser and tokenizer.
 7. **The repository assumes two releases in a few places.** `grammarAdvice` in
-   `packages/belay-sqlite-text/Belay/Sqlite/Grammar.lean` names "3.51.0 or 3.46.0";
+   `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Grammar.lean` names "3.51.0 or 3.46.0";
    `tests/parser_library_test.py` (`RAISE_ACCEPTED`) and `tests/test_parser_library_build.py`
    list the two releases; `build-support/sources.nix` and `parser-library.nix` read each
    release's folder. The grammar selection of `Grammar.lean` and the metadata of

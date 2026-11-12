@@ -1,4 +1,4 @@
-import Belay.Sqlite.ProofCostRun
+import Belay.Sqlite.Tooling.ProofCost.ProofCostRun
 
 /-! Call the existing report function with one explicitly selected fixture module. -/
 

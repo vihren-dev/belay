@@ -56,7 +56,7 @@ def predict(runtime_root: Path, *records: dict[str, object]) -> list[dict[str, o
 
 
 def test_version_7_input_starts_from_the_counters(runtime_root: Path) -> None:
-    """`conformance.predict.mapped` and `VerifierConformance.Predict.predictRun`: the input of a
+    """`conformance.predict.mapped` and `VerifierConformance.Tooling.Conformance.Predict.predictRun`: the input of a
     version 7 record is predicted from its counters, so the reads of the three counters give the
     values of the record. The same input as version 6 has unknown counters: the model's run ends at
     the first read, and the case is out of the model's scope. A counter that differs from the
@@ -72,7 +72,7 @@ def test_version_7_input_starts_from_the_counters(runtime_root: Path) -> None:
 
 
 def test_version_7_case_starts_from_the_counters(runtime_root: Path, tmp_path: Path) -> None:
-    """`conformance.native_replay.model_case` and `VerifierConformance.Classify.classifyRunCase`: a
+    """`conformance.native_replay.model_case` and `VerifierConformance.Tooling.Conformance.Classify.classifyRunCase`: a
     version 7 record gives a case with the record's counters; the compiled classifier and a kernel
     proof agree with it. The same record as version 6 has no counters, and the model does not
     support the case. A changed counter disagrees with the native output."""

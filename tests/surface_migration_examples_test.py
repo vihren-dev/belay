@@ -9,7 +9,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.surface_assertion_examples_test import LOWERCASE_LIBRARY, check_module_chain
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
               pytest.mark.requires_native("sqlite3")]
@@ -54,7 +54,7 @@ def test_expansion_counter_refutes_full_commutation(runtime_root: Path, tmp_path
     public execution orders, but its maintenance trigger changes total_changes.
     Kernel proofs establish original success and refute full commutation; native
     SQLite runs the fixture's retained SQL and independently checks both totals."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "MigrationExpansionCounter.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("MigrationExpansionCounter.lean"), tmp_path),
                          cwd=tmp_path, timeout=180)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)

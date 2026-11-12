@@ -1,4 +1,4 @@
-"""The public `sql` documentation block (`Belay/Sqlite/SqlDocBlock.lean`) checks SQL examples while a
+"""The public `sql` documentation block (`Belay/Sqlite/{Frontend/Embedding,Programs/Claims,Tooling/SqlCommands}/SqlDocBlock.lean`) checks SQL examples while a
 file that imports `Belay` elaborates (ADR 0017, checked SQL documentation).
 
 Each fixture under `tests/surface` holds cases. A case starts with a line `--! case NAME`, and the
@@ -15,7 +15,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -81,13 +81,13 @@ def results(request: pytest.FixtureRequest, runtime_root: Path,
     """The diagnostics of each fixture, with the line ends of the file as Unix or as Windows."""
     found: dict[str, list[tuple[int, int, str]]] = {}
     for name in FIXTURE_NAMES:
-        text = (FIXTURES / f"{name}.lean").read_text()
+        text = fixture_file(f"{name}.lean").read_text()
         text = text.replace("\n", "\r\n") if request.param else text
         found[name] = elaborate(runtime_root, tmp_path_factory.mktemp(name), text, name)
     return found
 
 
-CASES = [(name, case) for name in FIXTURE_NAMES for case in read_cases((FIXTURES / f"{name}.lean").read_text())]
+CASES = [(name, case) for name in FIXTURE_NAMES for case in read_cases(fixture_file(f"{name}.lean").read_text())]
 
 
 @pytest.mark.parametrize(("fixture", "case"), CASES, ids=[f"{name}-{case.name}" for name, case in CASES])
@@ -114,7 +114,7 @@ def test_no_error_is_outside_a_case(results: dict[str, list[tuple[int, int, str]
 
 def case_text(fixture: str, name: str) -> tuple[str, str]:
     """The lines before the first case of a fixture, and the lines of the named case."""
-    text = (FIXTURES / f"{fixture}.lean").read_text()
+    text = fixture_file(f"{fixture}.lean").read_text()
     parts = re.split(r"(?m)^(?=--! case )", text)
     return parts[0], next(part for part in parts[1:] if part.startswith(f"--! case {name}\n"))
 

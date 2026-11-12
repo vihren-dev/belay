@@ -10,26 +10,28 @@ restriction or lets the query run, so the case no longer agrees.
 
 from conformance.resolve_mutants import SQLITE
 
-COMPARISON = SQLITE + "Comparison.lean"
+COMPARISON = SQLITE + "Shared/Execution/Comparison.lean"
 """The Values level: the comparison of two values."""
-EVALUATION = SQLITE + "QueryEval.lean"
+OPERATORS = SQLITE + "Queries/Evaluation/Comparison.lean"
+"""The Expressions level: the comparison operators and the collations."""
+EVALUATION = SQLITE + "Queries/Evaluation/QueryEval.lean"
 """The Expressions and Queries levels: evaluation and the query steps."""
-EXPRESSIONS = SQLITE + "Resolution/OperandForms.lean"
+EXPRESSIONS = SQLITE + "Queries/Select/OperandForms.lean"
 """The resolution of query expressions."""
-FORMS = SQLITE + "Resolution/ExprForms.lean"
+FORMS = SQLITE + "Queries/Select/ExprForms.lean"
 """The call and condition forms of expression resolution."""
-TABLE_REFERENCES = SQLITE + "Resolution/TableReference.lean"
+TABLE_REFERENCES = SQLITE + "Queries/Preparation/TableReference.lean"
 """The resolution of the tables of FROM."""
-ORDER_TERMS = SQLITE + "Resolution/QueryBodyTraced.lean"
+ORDER_TERMS = SQLITE + "Queries/Select/QueryBodyTraced.lean"
 """The resolution of the ORDER BY terms of a query."""
 
-RESULTS = SQLITE + "QueryResults.lean"
+RESULTS = SQLITE + "Queries/Evaluation/QueryResults.lean"
 """The records, the sort and the window of a query."""
-GROUPING = SQLITE + "Resolution/QueryAggregates.lean"
+GROUPING = SQLITE + "Queries/Select/QueryAggregates.lean"
 """The aggregates and the grouping terms of a query."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "null_equals_null": (COMPARISON,
+    "null_equals_null": (OPERATORS,
         "  | .is | .isNot =>\n    if left.isNull || right.isNull then truth ((left.isNull && right.isNull) == (operator == .is))\n"
         "    else truth (operator.holds (collation.compare left right))\n  | .eq | .ne",
         "  | .is | .isNot | .eq =>\n    if left.isNull || right.isNull then truth ((left.isNull && right.isNull) == (operator != .isNot))\n"

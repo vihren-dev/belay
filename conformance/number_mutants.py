@@ -8,17 +8,17 @@ cases of `conformance.authored_numbers`, together with the query cases of slice 
 
 from conformance.resolve_mutants import SQLITE
 
-ARITHMETIC = SQLITE + "Arithmetic.lean"
+ARITHMETIC = SQLITE + "Values/Scalar/Arithmetic.lean"
 """Arithmetic and CAST of values."""
-SUMMATION = SQLITE + "Summation.lean"
+SUMMATION = SQLITE + "Queries/Evaluation/Summation.lean"
 """SUM and AVG."""
-NUMBER_TEXT = SQLITE + "NumberText.lean"
+NUMBER_TEXT = SQLITE + "Values/Scalar/NumberText.lean"
 """The parse of text to numbers."""
-VALUES = SQLITE + "ExprEval.lean"
+VALUES = SQLITE + "Queries/Evaluation/ExprEval.lean"
 """The value and fault of an expression over one row."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """Resolution of query expressions."""
-CALLS = SQLITE + "Resolution/FunctionCalls.lean"
+CALLS = SQLITE + "Queries/Select/FunctionCalls.lean"
 """The catalog checks of a call: the number of arguments of each function (ADR 0015)."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

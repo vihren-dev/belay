@@ -1,5 +1,5 @@
 """The translation maps the schema name `before` of a source and of a qualified column to the `schema` field
-(`sourceSchema` in `packages/belay-sqlite-text/Belay/Sqlite/Translation/Sources.lean` and `queryExpressionWith` in
+(`sourceSchema` in `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Sources.lean` and `queryExpressionWith` in
 `QueryExpression.lean`, ADR 0017, S6), and refuses every other schema name at its byte range."""
 
 from collections.abc import Callable

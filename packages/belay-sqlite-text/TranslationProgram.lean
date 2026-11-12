@@ -1,5 +1,4 @@
-import Belay.Sqlite.Parse
-import Belay.Sqlite.TranslationRequest
+import Belay.Sqlite.Frontend.Grammar.TranslationRequest
 
 /-! The translation program of the conformance harness: it reads one request on each line of
 standard input and writes one answer line for each ({lit}`Belay/Sqlite/TranslationRequest.lean`

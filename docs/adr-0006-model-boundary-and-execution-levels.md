@@ -16,7 +16,7 @@ Amended 2026-10-26 (owner decision): the core may import the one module
 `Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of `Lean` or `Std`. The module gives
 `register_simp_attr`, which defines the named simp sets (`traced_drop`, `traced_arms`,
 `statement_arms`) that the proofs about the name trace need. Two core modules import it:
-`Resolution/TracedAttr.lean` and `Resolution/StatementAttr.lean`. The cost: every importer of the
+`Frontend/Codecs/TracedAttr.lean` and `Frontend/Codecs/StatementAttr.lean`. The cost: every importer of the
 model also loads the `Lean.Meta` modules that this import pulls in. `tests/test_model_package.py`
 allows exactly this module.
 
@@ -30,8 +30,8 @@ but model lemmas in `Library`, `LiteralPreservation`, `SchemaExtension` and
 through `NullableProjection`. SQL translation and application Lean generation
 share normalized types in `sql_model.py` (replaced by ADR 0008).
 
-[Execution](../packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean) and
-[SqlExecution](../packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean) dispatch through `advance`,
+Execution ([Shared/Execution](../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/Execution.lean), [Schema/Dispatch](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/Execution.lean)) and
+SqlExecution ([Shared/Execution](../packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/SqlExecution.lean), [Programs/Clock](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Clock/SqlExecution.lean)) dispatch through `advance`,
 `literalStep` and `step`. Their catch-all cases let an added constructor escape
 an explicit domain or effect decision. Positions travel through every level,
 and data atomicity and constraints are tied to literal writes.
@@ -55,7 +55,7 @@ application modules. `Std` is excluded because the model does not use it and
 every importer, including the kernel gates, pays its import cost. A separate `Belay.Sqlite.Codec` library in the same
 package may import `Lean` and the core. The core never imports the codec.
 The codec contains the model-value/statement/profile transport currently in
-[packages/belay-sqlite/Belay/Sqlite/Codec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean). Construction of the application's
+[packages/belay-sqlite/Belay/Sqlite/Codec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Frontend/Codecs/Codec.lean). Construction of the application's
 `Generated` declarations stays with the application, using those codecs.
 
 | Owner | Contents |

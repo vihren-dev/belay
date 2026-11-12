@@ -1,4 +1,4 @@
-import Belay.Sqlite.Translation.Statements
+import Belay.Sqlite.Frontend.Grammar.Statements
 
 set_option doc.verso true
 

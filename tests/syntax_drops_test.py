@@ -1,4 +1,4 @@
-"""The mapping of DROP TABLE, DROP VIEW and DROP INDEX to Syntax JSON (`drop` in `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean`,
+"""The mapping of DROP TABLE, DROP VIEW and DROP INDEX to Syntax JSON (`drop` in `packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Schema.lean`,
 through the text package's program).
 
 ADR 0014, slice 7: the translation keeps the name as written and `IF EXISTS` as a flag, and

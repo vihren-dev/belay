@@ -6,7 +6,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.s6_check_support import split_blocks
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -18,7 +18,7 @@ def test_rebuild_claim_is_false_at_the_default_budget(runtime_root: Path, tmp_pa
     fixture show that the record does not change a result: a use of the excluded declaration through a
     lemma is rejected after other constants were accepted, and a record made with other exclusions is
     not used."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CheckDefaultBudget.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CheckDefaultBudget.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
     assert "audit record checks passed" in result.stdout, result.diagnostic()

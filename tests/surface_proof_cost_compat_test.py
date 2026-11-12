@@ -1,4 +1,4 @@
-"""S7 proof-cost collector (`Belay.Sqlite.ProofCost`): the option, other handlers, failures and overhead."""
+"""S7 proof-cost collector (`Belay.Sqlite.Tooling.ProofCost.ProofCost`): the option, other handlers, failures and overhead."""
 
 from collections.abc import Callable
 from typing import cast
@@ -9,7 +9,7 @@ import pytest
 
 from tests.proof_cost_support import (ASYNCHRONOUS, COLLECTOR_IMPORT, EXPECTED, Compiler, checked,  # noqa: F401
                                       compiler, compiler_output, counts, payload, records, runtime_modules)
-from tests.surface_support import FIXTURES
+from tests.surface_support import fixture_file
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -18,10 +18,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 def test_option_off_and_missing_collector_change_nothing(compiler: Compiler, asynchronous: bool) -> None:
     """With the option off, or without the collector module, the compile has the same output and
     declarations as a measured one, and no records; the measured compile adds no trace line."""
-    source = (FIXTURES / "ProofCostCases.lean").read_text()
+    source = fixture_file("ProofCostCases.lean").read_text()
     variants = {"on": source,
                 "off": source.replace("belay.proofCosts true", "belay.proofCosts false", 1),
-                "absent": source.replace(COLLECTOR_IMPORT, "import Belay.Sqlite.ProofCostPending\n", 1)}
+                "absent": source.replace(COLLECTOR_IMPORT, "import Belay.Sqlite.Tooling.ProofCost.ProofCostPending\n", 1)}
     results = {name: compiler.compile("ProofCostCases", text, asynchronous=asynchronous)
                for name, text in variants.items()}
     for result in results.values():
@@ -90,7 +90,7 @@ def test_handlers_keep_incremental_elaboration(compiler: Compiler) -> None:
 def test_overhead_sample(compiler: Compiler, record_testsuite_property: Callable[[str, object], None]) -> None:
     """Compile three surface proof patterns with the collector on and off. The window counts go to the
     test report for the README; the test asserts that records exist, not a bound."""
-    source = (FIXTURES / "ProofCostSurface.lean").read_text()
+    source = fixture_file("ProofCostSurface.lean").read_text()
     observations: dict[str, list[dict[str, object]]] = {"off": [], "on": []}
     snapshots = []
     # The first pair warms the imports; the next four are measured in balanced order.

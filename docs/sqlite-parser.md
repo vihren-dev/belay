@@ -9,7 +9,7 @@ prepared, or schema-resolved.
 
 The text package (`packages/belay-sqlite-text`) is the only caller of the
 library's C API outside the library's own tests. Its binding
-(`Belay.Sqlite.ParserLibrary`, `c/parser_shim.c`) calls the library, which Lake
+(`Belay.Sqlite.Frontend.Grammar.ParserLibrary`, `c/parser_shim.c`) calls the library, which Lake
 compiles from the C in `parser/` and links into the package's programs and
 shared libraries, and passes the SQL as bytes. `Belay.Sqlite.selectGrammar` selects the grammar of a profile from its
 release, its SQLite source id and the grammar options among its compile

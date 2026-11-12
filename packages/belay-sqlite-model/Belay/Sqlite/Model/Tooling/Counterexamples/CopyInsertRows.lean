@@ -1,0 +1,77 @@
+import Belay.Sqlite.Model.Queries.Evaluation.SelectSubqueryRules
+import Belay.Sqlite.Model.Schema.Dispatch.SelectSubqueryRules
+
+set_option doc.verso true
+
+/-! The rows of a copying INSERT from a query (ADR 0017, S6). A query that selects every column of a table in order
+hands over the rows of the table, and an INSERT that takes these columns in order writes the same cells when they
+are already in the stored form of the target. -/
+
+namespace Belay.Sqlite.Model
+
+/-- A cell at a position inside a row is the cell that {name}`List.getD` reads there. -/
+private theorem getElem?_eq_some_getD (row : List Value) (position : Nat) (inside : position < row.length) :
+    row[position]? = some (row.getD position .null) := by
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem inside]
+  rfl
+
+/-- For every query that is no compound and has no {lit}`WHERE`, {lit}`DISTINCT`, aggregation,
+{lit}`ORDER BY`, {lit}`OFFSET` or {lit}`LIMIT`, whose result columns are the first {lit}`width` columns of its
+source, in order, every context and every rows that have {lit}`width` cells: the result rows of the query are
+the rows. In plain words, {lit}`SELECT a, b, c FROM t` hands over the rows of {lit}`t` when {lit}`t` has these
+three columns. Proof sketch: {name}`Resolved.Query.results_plain_unordered` with every row kept
+({name}`Resolved.filtered_of_filter_none`); a row maps to the list of its own cells. -/
+theorem Resolved.Query.results_copy {query : Resolved.Query} (single : query.compound = none)
+    (noDistinct : query.distinct = none) (plain : query.aggregate = false) (unordered : query.orderBy = [])
+    (noOffset : query.offset = 0) (noLimit : query.limit = none) (context : Resolved.EvalContext)
+    (width : Nat) (noFilter : query.filter = none)
+    (copies : query.columns = (List.range width).map fun position => .scalar (.column position))
+    (rows : List (List Value)) (wide : ∀ row ∈ rows, row.length = width) : query.results context rows = rows := by
+  rw [query.results_plain_unordered context single noDistinct plain unordered noOffset noLimit,
+    Resolved.filtered_of_filter_none context noFilter]
+  unfold Resolved.Query.rowOutput
+  rw [copies]
+  conv => rhs; rw [← List.map_id rows]
+  apply List.map_congr_left
+  intro row member
+  simp only [List.map_map, id]
+  have same : (List.range width).map (fun position => row.getD position .null) = row := by
+    apply List.ext_getElem?
+    intro position
+    have length := wide row member
+    by_cases inside : position < width
+    · have cell := getElem?_eq_some_getD row position (by omega)
+      simp only [List.getElem?_map, List.getElem?_range inside, Option.map_some]
+      exact cell.symm
+    · have outside : row.length ≤ position := by omega
+      simp [inside, List.getElem?_eq_none outside]
+  exact same
+
+/-- For every rows that have as many cells as the target columns and that are stored in the form of the
+columns ({name}`Row.Stored`): the full rows of an INSERT from a query whose cells are the result columns in
+order ({name}`insertSelectRows`) are the rows. In plain words, an INSERT that selects every column in order
+changes no cell when the cells are already in the stored form of the target. Proof sketch: each cell is
+{name}`Value.store` of the result cell with the affinity of its column, which is the cell. -/
+theorem insertSelectRows_copy (context : Resolved.EvalContext) (columns : List CatalogColumn) (rows : List (List Value))
+    (wide : ∀ row ∈ rows, row.length = columns.length)
+    (stored : ∀ row ∈ rows, (⟨0, row⟩ : Row).Stored columns) :
+    insertSelectRows context columns ((List.range columns.length).map Resolved.SourceCell.source) rows = rows := by
+  unfold insertSelectRows
+  conv => rhs; rw [← List.map_id rows]
+  apply List.map_congr_left
+  intro row member
+  apply List.ext_getElem?
+  intro position
+  have length := wide row member
+  by_cases inside : position < columns.length
+  · have atRow := getElem?_eq_some_getD row position (by omega)
+    have atColumn : columns[position]? = some columns[position] := List.getElem?_eq_getElem inside
+    have fixed := stored row member position columns[position] _ atColumn atRow
+    simp only [List.getElem?_map, List.getElem?_zipIdx, List.getElem?_range inside, Option.map_some,
+      Nat.zero_add, atColumn, Resolved.SourceCell.valueOver]
+    simp only [Option.getD_some, id_eq, fixed]
+    exact atRow.symm
+  · have outside : row.length ≤ position := by omega
+    simp [inside, List.getElem?_eq_none outside]
+
+end Belay.Sqlite.Model

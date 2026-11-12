@@ -6,7 +6,7 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.s6_check_support import split_blocks
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -18,7 +18,7 @@ def test_screen_proposes_and_certification_decides(runtime_root: Path, tmp_path:
     with the reason, and its supplied database still certifies; a slow screen stops at
     sql.checkTimeLimit with the time-limit reason and no error. CheckOperation.check shrinks with the
     screen and certifies only the result: a shrink that the kernel rejects keeps the original witness."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "CheckScreenFixture.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("CheckScreenFixture.lean"), tmp_path),
                          cwd=tmp_path, timeout=180)
     assert result.returncode == 0, result.diagnostic()
     assert "accept-all screen: unknown" in result.stdout, result.stdout

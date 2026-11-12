@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_collations`.
 
 from conformance.resolve_mutants import SQLITE
 
-COMPARISON = SQLITE + "Comparison.lean"
+COMPARISON = SQLITE + "Queries/Evaluation/Comparison.lean"
 """The comparison operators."""
-COLLATIONS = SQLITE + "Resolution/Collations.lean"
+COLLATIONS = SQLITE + "Queries/Select/Collations.lean"
 """The collation that resolution decides for a comparison."""
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The key equality of the execution semantics."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

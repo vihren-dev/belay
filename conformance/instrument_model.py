@@ -5,8 +5,9 @@ from pathlib import Path
 import re
 import sys
 
-SCOPE = {"Execution.lean": {"step"}, "StatementStep.lean": {"SqlState.finish", "literalStep", "statementReady"},
-         "SqlAdvance.lean": {"advance", "runSqlFrom", "supportedSqlFrom"}}
+SCOPE = {"Schema/Dispatch/Execution.lean": {"step"}, "Schema/Dispatch/StatementStep.lean": {"SqlState.finish", "literalStep"},
+         "Programs/Scripts/StatementStep.lean": {"statementReady"}, "Schema/Dispatch/SqlAdvance.lean": {"advance", "runSqlFrom"},
+         "Programs/Scripts/SqlAdvance.lean": {"supportedSqlFrom"}}
 
 
 def instrument(root: Path) -> None:

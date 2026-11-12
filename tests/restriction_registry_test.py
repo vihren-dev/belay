@@ -1,7 +1,7 @@
 """The registry of model restrictions and its documentation table.
 
-`Resolution/Restrictions.lean` lists every model restriction of name resolution as a
-constructor of `RestrictionKind`, and `Resolution/RestrictionText.lean` gives each one
+`Shared/Resolved/Restrictions.lean` lists every model restriction of name resolution as a
+constructor of `RestrictionKind`, and `Queries/Preparation/RestrictionText.lean` gives each one
 its stable id. `docs/semantic-subset.md` must list every id in its restriction table,
 so that the documentation cannot drift from the registry, and
 `conformance/restriction_examples.py` must have an example script for every id, so that
@@ -18,19 +18,19 @@ from conformance.restriction_examples import EXAMPLES
 
 pytestmark = [pytest.mark.unit]
 ROOT = Path(__file__).resolve().parents[1]
-RESOLUTION = ROOT / "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution"
+MODEL = ROOT / "packages/belay-sqlite-model/Belay/Sqlite/Model"
 
 
 def registry_ids() -> dict[str, str]:
     """The id of each constructor, read from `RestrictionKind.id`."""
-    text = (RESOLUTION / "RestrictionText.lean").read_text()
-    section = text.split("def RestrictionKind.id", 1)[1].split("def RestrictionKind.message", 1)[0]
+    text = (MODEL / "Queries/Preparation/RestrictionText.lean").read_text()
+    section = text.split("def RestrictionKind.id", 1)[1].split("def RestrictionKind.all", 1)[0]
     return dict(re.findall(r'\| \.(\w+) => "([^"]*)"', section))
 
 
 def constructors() -> list[str]:
     """The constructors of `RestrictionKind`, in order."""
-    return re.findall(r"^  \| (\w+)$", (RESOLUTION / "Restrictions.lean").read_text(), re.MULTILINE)
+    return re.findall(r"^  \| (\w+)$", (MODEL / "Shared/Resolved/Restrictions.lean").read_text(), re.MULTILINE)
 
 
 def documented_ids() -> list[str]:
@@ -56,7 +56,7 @@ def test_documentation_lists_every_id_once() -> None:
 
 def registries() -> dict[str, str]:
     """The registry of each constructor, read from `RestrictionKind.registry`."""
-    text = (RESOLUTION / "RestrictionRegistry.lean").read_text().split("def RestrictionKind.registry", 1)[1]
+    text = (MODEL / "Queries/Preparation/RestrictionRegistry.lean").read_text().split("def RestrictionKind.registry", 1)[1]
     return {name: registry for names, registry in re.findall(r"((?:\s*\|\s*\.\w+)+)\s*=>\s*\.(\w+)", text)
             for name in re.findall(r"\.(\w+)", names)}
 

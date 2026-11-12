@@ -7,7 +7,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup, surface_command
+from tests.surface_support import fixture_file, module_setup, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -27,8 +27,8 @@ def test_migration_patterns_keep_original_domains_and_full_effects(runtime_root:
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                              "-R", str(FIXTURES), "-o", str(artifact),
-                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=120)
+                              "-R", str(fixture_file(f"{module}.lean").parent), "-o", str(artifact),
+                              str(fixture_file(f"{module}.lean"))], cwd=tmp_path, timeout=120)
         assert result.returncode == 0, result.diagnostic()
         reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)
         assert len(reports) == count, result.diagnostic()
@@ -40,7 +40,7 @@ def test_migration_patterns_keep_original_domains_and_full_effects(runtime_root:
 def test_pattern_syntax_explains_checked_primitives(runtime_root: Path, tmp_path: Path) -> None:
     """MigrationPatternSyntax expands all eight forms, bound values and quiet descriptors;
     the actual #explain command distinguishes weak/full scope and original-success vacuity."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "MigrationPatternSyntaxExamples.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("MigrationPatternSyntaxExamples.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"(?:depends on axioms: \[([^]]*)\]|does not depend on any axioms)", result.stdout)

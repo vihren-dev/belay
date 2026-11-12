@@ -7,7 +7,7 @@ runs against its target case of `conformance.authored_possible_results`.
 
 from conformance.resolve_mutants import SQLITE
 
-RESULTS = SQLITE + "PossibleResults.lean"
+RESULTS = SQLITE + "Queries/Evaluation/PossibleResults.lean"
 """The list of the results that SQLite may give."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

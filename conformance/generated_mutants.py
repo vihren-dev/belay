@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_generated`.
 
 from conformance.resolve_mutants import SQLITE
 
-ROW_UPDATE = SQLITE + "RowUpdate.lean"
+ROW_UPDATE = SQLITE + "Schema/Writes/RowUpdate.lean"
 """The new row of an UPDATE."""
-NATIVE = "verifier-conformance/VerifierConformance/Native.lean"
+NATIVE = "verifier-conformance/VerifierConformance/Schema/Columns/Native.lean"
 """The `hidden` value that the harness compares with `PRAGMA table_xinfo`."""
-WRITES = SQLITE + "Resolution/Writes.lean"
+WRITES = SQLITE + "Queries/Preparation/Writes.lean"
 """The column list of an INSERT."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

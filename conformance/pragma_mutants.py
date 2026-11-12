@@ -7,13 +7,13 @@ target cases of `conformance.authored_pragmas`.
 
 from conformance.resolve_mutants import SQLITE
 
-KEY_CHECK = SQLITE + "ForeignKeyCheck.lean"
+KEY_CHECK = SQLITE + "Schema/Rows/ForeignKeyCheck.lean"
 """The rows of `PRAGMA foreign_key_check` for one table."""
-SATISFIED = SQLITE + "ForeignKeySatisfied.lean"
+SATISFIED = SQLITE + "Schema/Rows/ForeignKeySatisfied.lean"
 """Whether a child row has the parent row that its foreign key requires."""
-PRAGMA_ROWS = SQLITE + "Resolution/PragmaRows.lean"
+PRAGMA_ROWS = SQLITE + "Queries/Preparation/PragmaRows.lean"
 """The rows of `PRAGMA table_info` and `PRAGMA foreign_key_list`."""
-INSERT = SQLITE + "RowInsert.lean"
+INSERT = SQLITE + "Schema/Writes/RowInsert.lean"
 """The insert of one row, with the rows that REPLACE deletes."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

@@ -16,11 +16,11 @@ constraint, and its filter has SQLite's comparison rules, so it adds no conjunct
 
 from conformance.resolve_mutants import SQLITE
 
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The admission obligations of literal writes."""
-EXECUTION = SQLITE + "StatementStep.lean"
+EXECUTION = SQLITE + "Schema/Dispatch/StatementStep.lean"
 """The admission obligation of each statement."""
-ROW_UPDATE = SQLITE + "RowUpdate.lean"
+ROW_UPDATE = SQLITE + "Schema/Writes/RowUpdate.lean"
 """The admission obligation of UPDATE."""
 
 OBLIGATIONS: dict[str, tuple[str, str, str]] = {

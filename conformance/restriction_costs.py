@@ -6,7 +6,7 @@ predictions of the claimed corpora, one `CORPUS.jsonl` file per corpus, as
 of scope by their cause:
 
 - `restrictions`: the id of a model restriction of name resolution (the registry in
-  `Resolution/Restrictions.lean`);
+  `Shared/Resolved/Restrictions.lean`);
 - `frontend`: syntax that the frontend refuses before resolution, by the first clause
   of its message;
 - `undeclared`: predicted cases that the subject declares out of scope without a

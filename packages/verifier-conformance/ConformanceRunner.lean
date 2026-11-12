@@ -1,4 +1,4 @@
-import VerifierConformance.Predict
+import VerifierConformance.Tooling.Conformance.Predict
 
 /-! Bounded-by-caller JSON-lines transport for the ADR 0004 compiled model.
 --emit-lean serializes the decoded case as a closed term for kernel regression checks.

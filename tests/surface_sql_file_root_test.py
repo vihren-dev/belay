@@ -10,7 +10,7 @@ import pytest
 from tests.runtime_support import run_command
 from tests.sql_file_support import (OUTER_SQL, PROBE, configured_command, installed_layout, lake_build,
                                     write_same_name_projects)
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 def test_explicit_root_primitive(runtime_root: Path, tmp_path: Path) -> None:
     """readSqlFileSourceAtRoot keeps text and relative identity and rejects unsafe roots and paths."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "SqlFileRoot.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("SqlFileRoot.lean"), tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "explicit root checks passed" in result.stdout, result.diagnostic()

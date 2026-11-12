@@ -114,7 +114,7 @@ def test_row_codec_golden(tmp_path: Path, lean_sysroot: Path, lean_libraries: tu
     """Our codec preserves every row, rowid and typed cell, and refuses a byte above 255."""
     invalid = [{"rowid": 0, "values": [{"blob": {"bytes": [256]}}]}, {"rowid": 0}, {"values": []}]
     invalid_terms = ", ".join(lean_string(json.dumps(record)) for record in invalid)
-    source = "import Belay.Sqlite.Model.Codec\n"
+    source = "import Belay.Sqlite.Model.Frontend.Codecs.Codec\n"
     source += f"""
 open Belay.Sqlite.Model Lean
 def golden := {lean_string(json.dumps(GOLDEN))}

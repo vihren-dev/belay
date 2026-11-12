@@ -84,13 +84,13 @@ Names below have the prefix `Belay.Sqlite.Model.Resolved`.
 
 | Current owner | Exact declarations | Disposition |
 | --- | --- | --- |
-| [Resolution/QueryForm.lean][queryform] | `Query.readsInitial`; `Query.readsCurrent` | Moved below the source agreement/origin adapters; meanings unchanged. |
+| [Queries/Evaluation/QueryForm.lean][queryform] | `Query.readsInitial`; `Query.readsCurrent` | Moved below the source agreement/origin adapters; meanings unchanged. |
 | [EvalContextLaws.lean][evalcontext] | `EvalContext.RowFree` | Moved below its congruence adapter; meaning unchanged. |
 | [EvalContextLaws.lean][evalcontext] | `EvalContext.plain_rowFree` | Plain-context evidence remains with the predicate. |
 | [EvalContextLaws.lean][evalcontext] | `SubqueryRun.certainFirst` | Moved below the certainty adapter; record update unchanged. |
 
 `Source.isInitial` and `Source.readsCurrent` already live in
-[Resolution/QueryForm.lean][queryform]. Retain them there unless another concrete
+[Queries/Evaluation/QueryForm.lean][queryform]. Retain them there unless another concrete
 ownership requirement arises. `Resolved.Statement.readsInitial` and
 `Resolved.Statement.readsInitial_query` in [TwoStateStatementLaws.lean][statement]
 remain useful statement-level classification facts; they are not duplicated
@@ -117,7 +117,7 @@ not an extra deletion inventory.
 | [ReadCertificatePreservation.lean][readcertificate] | `Belay.Sqlite.ReadCertificate.preservesAt` and `.preservesAt_send`; retain per-branch obligations without requiring all branches to reach one connection. |
 | [DerivedColumnRows.lean][derivedrows] | `assign_derived_append`, `updated_derived_append` use the append congruence for general derived expressions. |
 | [DerivedLookupRows.lean][derivedlookup] | `Resolved.Expr.eval_compare_stored_left`, `.eval_compare_stored_right` use `Expr.eval_append` for probes. |
-| [Resolution/ColumnDropExprLaws.lean][drop-expr] | `Resolved.Expr.evaluate_dropColumn`, `.eval_dropColumn` consume `RowFree`; retain their separate expression-reindexing guarantees. |
+| [Schema/Ddl/ColumnDropExprLaws.lean][drop-expr] | `Resolved.Expr.evaluate_dropColumn`, `.eval_dropColumn` consume `RowFree`; retain their separate expression-reindexing guarantees. |
 
 Retain `Resolved.Expr.Rowwise`, `Resolved.Expr.Rowwise.fault_none` and
 `Resolved.Expr.Rowwise.calm` in [RowwiseExpr.lean][rowwise], including their
@@ -166,29 +166,29 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 
 [adr]: adr-0026-semantic-proof-boundaries.md
 [spec]: spec-proof-agreement.md
-[agreement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SourceAgreement.lean
+[agreement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SourceAgreement.lean
 [reads]: https://github.com/vihren-dev/belay/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateReads.lean
 [current]: https://github.com/vihren-dev/belay/blob/3e2212ed6983f36144b7fc5bdce9b263f939e50f/packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateCurrentLaws.lean
-[statement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateStatementLaws.lean
-[append]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprAppendLaws.lean
-[context]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ExprContextLaws.lean
-[evalcontext]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/EvalContextLaws.lean
-[rowwise]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowwiseExpr.lean
-[queryform]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/QueryForm.lean
-[twostate]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateQuery.lean
-[except]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/TwoStateNotExistsExcept.lean
-[keys]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueAddColumn.lean
-[rowlocal]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean
-[simpleappend]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQueryAppend.lean
-[certified]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/CertifiedQueryOutputs.lean
-[readcertificate]: ../packages/belay/Belay/Sqlite/ReadCertificatePreservation.lean
-[derivedrows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/DerivedColumnRows.lean
-[derivedlookup]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/DerivedLookupRows.lean
-[drop-expr]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ColumnDropExprLaws.lean
+[statement]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TwoStateStatementLaws.lean
+[append]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExprAppendLaws.lean
+[context]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExprContextLaws.lean
+[evalcontext]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/EvalContextLaws.lean
+[rowwise]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/RowwiseExpr.lean
+[queryform]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryForm.lean
+[twostate]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TwoStateQuery.lean
+[except]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/TwoStateNotExistsExcept.lean
+[keys]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/KeysUniqueAddColumn.lean
+[rowlocal]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowLocalAddColumnTheorems.lean
+[simpleappend]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SimpleQueryAppend.lean
+[certified]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/CertifiedQueryOutputs.lean
+[readcertificate]: ../packages/belay/Belay/Sqlite/Programs/Reasoning/ReadCertificatePreservation.lean
+[derivedrows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/DerivedColumnRows.lean
+[derivedlookup]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/DerivedLookupRows.lean
+[drop-expr]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/ColumnDropExprLaws.lean
 [twotest]: ../tests/surface_two_state_test.py
 [claimtest]: ../tests/surface_claims_test.py
 [asserttest]: ../tests/surface_assertion_examples_test.py
-[existsfixture]: ../tests/surface/ClaimsExists.lean
-[infixture]: ../tests/surface/ClaimsIn.lean
-[failfixture]: ../tests/surface/ClaimsMayFail.lean
-[purgefixture]: ../tests/surface/PurgeFrameQueries.lean
+[existsfixture]: ../tests/surface/Queries/Tests/ClaimsExists.lean
+[infixture]: ../tests/surface/Queries/Tests/ClaimsIn.lean
+[failfixture]: ../tests/surface/Programs/Tests/ClaimsMayFail.lean
+[purgefixture]: ../tests/surface/Queries/Evaluation/PurgeFrameQueries.lean

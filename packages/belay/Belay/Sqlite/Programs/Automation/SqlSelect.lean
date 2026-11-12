@@ -1,0 +1,128 @@
+import Belay.Sqlite.Programs.StatementRunLaws.SelectCatalogExecution
+import Belay.Sqlite.Programs.Automation.SqlSelectSteps
+import Belay.Sqlite.Programs.Claims.ProgramQueries
+import Belay.Sqlite.Programs.Claims.RunResults
+import Belay.Sqlite.Programs.Reasoning.ExecutionWP
+import Belay.Sqlite.Queries.Automation.SqlSelect
+import Belay.Sqlite.Schema.Dispatch.SqlSelect
+
+set_option doc.verso true
+
+/-! The tactic {lit}`sql_select` (ADR 0027, D6): it proves a claim about the results of a SELECT by
+proved phase rules. The procedure introduces the binders of the goal, applies an execution rule backward,
+which turns a claim about a run, or the check of a query ({lit}`Sql.check`), into a claim about every
+result that the model permits for the query,
+then applies the rules of the other phases forward to the hypotheses that it introduces, splits the
+facts that they give, and closes the last goal with the evaluation laws. The explicit hints run first,
+in the given order, then the registered rules of the phase ({lit}`sql_select_rule`), in qualified
+declaration-name order. A goal that the procedure cannot close stays open, with an explanation. -/
+
+namespace Belay.Sqlite.Select
+open Lean Meta Elab Tactic
+
+/-- Split a hypothesis that is an existential or a conjunction into its parts, and a hypothesis that a
+list variable has a fixed length into its elements, until none is left; then substitute each variable
+that a hypothesis equates to a term. The length can be any closed term, which the kernel computes. -/
+partial def splitFacts (goal : MVarId) : MetaM MVarId := goal.withContext do
+  for declaration in ← getLCtx do
+    if declaration.isImplementationDetail then continue
+    let type ← whnfR (← instantiateMVars declaration.type)
+    if type.isAppOf ``Exists || type.isAppOf ``And then
+      let #[split] ← goal.cases declaration.fvarId | return goal
+      return ← splitFacts split.mvarId
+    if let some (_, left, right) := type.eq? then
+      if left.isAppOfArity ``List.length 2 && left.appArg!.isFVar then
+        let some length ← evaluateNatural? right | continue
+        if length == 0 then continue
+        let stated ← mkEq left (mkNatLit length)
+        let proof ← mkExpectedTypeHint (.fvar declaration.fvarId) stated
+        let proof ← mkAppM ``cons_of_length_succ #[proof]
+        let next ← goal.assert `cells (← inferType proof) proof
+        let next ← next.clear declaration.fvarId
+        let (_, next) ← next.intro1P
+        return ← splitFacts next
+  substVars goal
+
+/-- Apply forward rules to the hypotheses until no rule gives a new fact or the fuel ends, splitting the
+facts after each step. Each rule applies at most once to a fact, so that a rule whose fact has a new
+witness does not repeat; for a membership the fact is the collection, which a substitution of the
+member does not change. The result is the goal and whether the fuel ended. -/
+partial def saturate (hints : Hints) (fuel : Nat) (applied : Std.HashSet (String × Expr)) (goal : MVarId) :
+    TacticM (MVarId × Bool) := do
+  if fuel == 0 then return (goal, true)
+  let goal ← splitFacts goal
+  let hypotheses ← goal.withContext do
+    return (← getLCtx).foldl (init := #[]) fun found declaration =>
+      if declaration.isImplementationDetail then found else found.push declaration
+  for hypothesis in hypotheses do
+    let type ← instantiateMVars hypothesis.type
+    let rules ← goal.withContext do candidates hints (phasesOfFact type)
+    let fact := match type.getAppFnArgs with
+      | (``Membership.mem, #[_, _, _, collection, _]) => collection
+      | _ => type
+    for rule in rules do
+      let key := (ruleKey rule, fact)
+      if applied.contains key then continue
+      let some term ← goal.withContext (ruleTerm rule) | continue
+      if let .ok next ← applyForward hints goal term hypothesis.fvarId then
+        return ← saturate hints (fuel - 1) (applied.insert key) next
+  return (goal, false)
+
+/-- The refusal of a goal that is no claim about the results of a query. -/
+def unknownShape : MessageData :=
+  m!"sql_select proves a claim about the results of a query: returnsResult or returnsRows of a run, the \
+    check of a query (Sql.check), or a goal whose target or hypotheses read the results or a phase of a \
+    resolved query (Resolved) or the rows of a table (Database.scanAt). This goal is none of these, and no \
+    hint applies to it. Use another tactic, or pass a rule as a hint."
+
+/-- Whether a goal target in weak head normal form is a claim about the run of a query: an observation of the
+result of a run ({lit}`Run.returnsResult`, which {lit}`returnsRows` unfolds to), or the check of a query
+({lit}`Sql.check`). The execution rules apply to these goals. -/
+def isQueryRun (target : Expr) : Bool :=
+  target.isAppOf ``Belay.Sqlite.Run.returnsResult ||
+    (target.isAppOfArity ``Belay.Sqlite.Sql.check 4 && (target.getArg! 1).isAppOf ``Belay.Sqlite.query)
+
+/-- The procedure on one goal; the result is the goals that stay open. A goal that is no claim about the
+results of a query, and to which no hint applies backward, is refused with an error. -/
+partial def selectGoal (hints : Hints) (fuel : Nat) (goal : MVarId) (recognized : Bool := false) :
+    TacticM (List MVarId) := do
+  let (_, goal) ← goal.intros
+  let target ← goal.withContext do whnfR (← instantiateMVars (← goal.getType))
+  let isRun := isQueryRun target
+  let recognized := recognized || isRun || (← aboutQuery goal)
+  let phase := if isRun then "execution" else "result"
+  if fuel == 0 then
+    explain goal phase exhausted
+    return [goal]
+  let phases := if isRun then [SelectPhase.execution] else []
+  let mut refused : Option (MessageData × Expr) := none
+  for rule in ← candidates hints phases do
+    let some term ← goal.withContext (ruleTerm rule) | continue
+    match ← applyBackward hints goal term with
+    | .ok next => return ← selectGoal hints (fuel - 1) next true
+    | .error (.premise type) =>
+      if refused.isNone then refused := some ((match rule with | .inl name => m!"{name}" | .inr hint => m!"{hint}"), type)
+    | .error .noMatch => pure ()
+  unless recognized || refused.isSome do throwError unknownShape
+  let (goal, ended) ← saturate hints fuel {} goal
+  if ← finishLeaf hints goal then return []
+  match refused with
+  | some (rule, type) =>
+    explain goal phase m!"the rule {rule} matches, but its premise{indentExpr type}\nis not proved."
+  | none =>
+    if ended then explain goal "result" exhausted
+    else if isRun then explain goal "execution" m!"no execution rule matches the run, and no hint applies."
+    else
+      explain goal "result" m!"the facts that the rules give do not prove the goal. Prove it, or pass a rule or a \
+        fact as a hint."
+  return [goal]
+
+/-- Run the procedure on the main goal; the goals that stay open replace it. -/
+@[tactic sqlSelect] def evalSqlSelect : Tactic := fun written => do
+  let hints : Hints := match written with
+    | `(tactic| sql_select [$hints,*]) => hints.getElems
+    | _ => #[]
+  let goal ← getMainGoal
+  replaceMainGoal (← selectGoal hints selectFuel goal)
+
+end Belay.Sqlite.Select

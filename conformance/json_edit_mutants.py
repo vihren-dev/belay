@@ -7,11 +7,11 @@ builds and runs against its target case of `conformance.authored_json_edits`.
 
 from conformance.resolve_mutants import SQLITE
 
-EDIT = SQLITE + "Json/Edit.lean"
+EDIT = SQLITE + "Values/Json/Edit.lean"
 """The edits at a path."""
-BUILD = SQLITE + "Json/Build.lean"
+BUILD = SQLITE + "Values/Json/Build.lean"
 """The functions that build or edit JSON text."""
-PATCH = SQLITE + "Json/PatchPretty.lean"
+PATCH = SQLITE + "Values/Json/PatchPretty.lean"
 """The merge patch, the pretty text and the error position."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

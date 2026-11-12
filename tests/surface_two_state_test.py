@@ -7,7 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 from tests.two_state_support import HEADER, INT, NATIVE_SECONDS, example, expectation, gather, lean, native, setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
@@ -104,6 +104,6 @@ def test_two_state_theorems_use_no_forbidden_axioms(runtime_root: Path, tmp_path
 def test_source_agreement_contract(runtime_root: Path, tmp_path: Path) -> None:
     """SourceAgreement keeps absence, shape and pragma observations, and its context law
     accepts arbitrary nesting depth independently of the query-list length."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "SourceAgreement.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("SourceAgreement.lean"), tmp_path),
                          cwd=tmp_path, timeout=600)
     assert result.returncode == 0, result.diagnostic()

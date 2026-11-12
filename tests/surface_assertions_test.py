@@ -7,7 +7,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, module_setup, surface_command
+from tests.surface_support import fixture_file, module_setup, surface_command
 
 ALLOWED_PROOF_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 """Ordinary logical axioms; unchecked evaluation and assumed execution soundness are excluded."""
@@ -34,8 +34,8 @@ def test_assertion_kernel_fixtures(runtime_root: Path, tmp_path: Path) -> None:
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"
         result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup}",
-                              "-R", str(FIXTURES), "-o", str(artifact),
-                              str(FIXTURES / f"{module}.lean")], cwd=tmp_path, timeout=120)
+                              "-R", str(fixture_file(f"{module}.lean").parent), "-o", str(artifact),
+                              str(fixture_file(f"{module}.lean"))], cwd=tmp_path, timeout=120)
         assert result.returncode == 0, result.diagnostic()
         reports = axiom_reports(result.stdout)
         assert len(reports) == count, result.diagnostic()
@@ -47,7 +47,7 @@ def test_assertion_kernel_fixtures(runtime_root: Path, tmp_path: Path) -> None:
 def test_fresh_notation_expands_to_primitives(runtime_root: Path, tmp_path: Path) -> None:
     """The installed ensures notation expands to FreshEnsures for scripts, programs, bound values and
     guards, equals the success notation, and reports an invalid guard at its source."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "FreshNotationExamples.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("FreshNotationExamples.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     reports = axiom_reports(result.stdout)
@@ -61,7 +61,7 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
     """The actual #explain command states entry assumptions, the captured start, the error policy and
     the observation context of fresh, ordinary and success claims. It takes the policy from the
     postcondition itself, not from a constant nested in it, and gives no invented meaning."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimExplanationExamples.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("ClaimExplanationExamples.lean"), tmp_path),
                          cwd=tmp_path, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     expected = {

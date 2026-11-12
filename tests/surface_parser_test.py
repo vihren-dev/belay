@@ -10,14 +10,14 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 def test_accepted_sql_shows_its_command_count(runtime_root: Path, tmp_path: Path) -> None:
-    """`#sql_parse` (`Belay/Sqlite/ParseCommand.lean`) parses valid SQL in the Lean process and
+    """`#sql_parse` (`Belay/Sqlite/Frontend/Grammar/ParseCommand.lean`) parses valid SQL in the Lean process and
     shows the number of commands that SQLite's grammar accepts, also under `EXPLAIN`."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "Accepted.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("Accepted.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "SQLite's grammar accepts 3 commands" in result.stdout, result.diagnostic()
@@ -26,25 +26,25 @@ def test_accepted_sql_shows_its_command_count(runtime_root: Path, tmp_path: Path
 def test_grammar_error_is_at_its_position_in_the_text(runtime_root: Path, tmp_path: Path) -> None:
     """A grammar error of the parser library is an error at the byte of the SQL text where SQLite's
     grammar rejects it: `FORM` in `#sql_parse "SELECT * FORM t;"` is line 6, column 21."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "Rejected.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("Rejected.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 1, result.diagnostic()
     assert "Rejected.lean:6:21: error: SQLite's grammar rejects the SQL here" in result.stdout, result.diagnostic()
 
 
 def test_grammar_selection_checks_elaborate(runtime_root: Path, tmp_path: Path) -> None:
-    """The `#guard` checks of `selectGrammar` (`Belay/Sqlite/Grammar.lean`) hold: it finds the
+    """The `#guard` checks of `selectGrammar` (`Belay/Sqlite/Frontend/Grammar/Grammar.lean`) hold: it finds the
     dialect without grammar options, and its errors end with what the user can do."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "GrammarChecks.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("GrammarChecks.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
 
 
 def test_bytes_that_are_not_utf8_are_a_grammar_error(runtime_root: Path, tmp_path: Path) -> None:
-    """The binding (`Belay/Sqlite/ParserLibrary.lean`, `c/parser_shim.c` of the text package) passes
+    """The binding (`Belay/Sqlite/Frontend/Grammar/ParserLibrary.lean`, `c/parser_shim.c` of the text package) passes
     the SQL as bytes: a byte 0xFF inside a string literal reaches the parser library, which checks
     that the whole text is UTF-8 before it tokenizes, and the result is a grammar error at offset 0."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "InvalidUtf8.lean", tmp_path), cwd=tmp_path,
+    result = run_command(surface_command(runtime_root, fixture_file("InvalidUtf8.lean"), tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "invalid UTF-8: Belay.Sqlite.ParseResult.inputError 0" in result.stdout, result.diagnostic()

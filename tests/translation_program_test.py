@@ -1,5 +1,5 @@
 """The translation program of the text package (`packages/belay-sqlite-text/TranslationProgram.lean`
-and `Belay/Sqlite/TranslationRequest.lean`) answers a batch of requests, one JSON line for each,
+and `Belay/Sqlite/Frontend/Grammar/TranslationRequest.lean`) answers a batch of requests, one JSON line for each,
 in one process: the harness sends all SQL texts of a corpus through it, with its client
 `conformance/sql_text.py`.
 """

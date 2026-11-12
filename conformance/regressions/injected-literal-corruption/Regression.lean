@@ -1,4 +1,4 @@
-import VerifierConformance.Json
+import VerifierConformance.Tooling.Conformance.Json
 open Belay.Sqlite.Model.Conformance
 set_option maxRecDepth 100000
 set_option maxHeartbeats 30000000

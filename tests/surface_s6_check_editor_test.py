@@ -13,7 +13,7 @@ from tests.runtime_support import run_command
 from tests.surface_automatic_editor_test import diagnostics, offset
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
 from tests.surface_replay_test import native_replay, native_rows
-from tests.surface_support import FIXTURES, module_setup
+from tests.surface_support import fixture_file, module_setup
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -76,7 +76,7 @@ def test_automatic_check_reports_and_offers_actions_for_triples(runtime_root: Pa
     7), proves the true triple and offers a checked proof example that elaborates alone with ordinary axioms, and
     reports nothing when the budget is one unit: the check is then unknown, and no action appears."""
     extra = compile_helper_module(runtime_root, tmp_path, "S6RulesEffects",
-                                  (FIXTURES / "S6RulesEffects.lean").read_text())
+                                  fixture_file("S6RulesEffects.lean").read_text())
     server = LeanServer(runtime_root, tmp_path, module="EditorFixture", extra_modules=extra, automatic_check=True)
     try:
         uri = server.open(DOCUMENT, wait=False)
@@ -124,7 +124,7 @@ def test_automatic_check_of_an_equivalence_is_cancelled_by_an_edit_of_an_earlier
     false-claim diagnostic, and no replacement check reports."""
     entered, cancelled = tmp_path / "entered", tmp_path / "cancelled"
     extra = compile_helper_module(runtime_root, tmp_path, "S6RulesEffects",
-                                  (FIXTURES / "S6RulesEffects.lean").read_text())
+                                  fixture_file("S6RulesEffects.lean").read_text())
     source = HEADER + f'''open Lean Elab in
 run_elab
   Command.lintersRef.modify fun linters => linters.map fun linter =>

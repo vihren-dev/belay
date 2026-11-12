@@ -168,7 +168,7 @@ The production collector replaces the prototype. This section records what it fo
 differs from the experiment. The user guide is the "Proof costs" section of
 `packages/belay/README.md`.
 
-- **Installation.** `Belay.Sqlite.ProofCost` is a module that `import Belay` does not import. The
+- **Installation.** `Belay.Sqlite.Tooling.ProofCost.ProofCost` is a module that `import Belay` does not import. The
   option `belay.proofCosts` is false by default; with it off, the two handlers run the handler that
   Lean would run and store nothing. A library turns it on with `weak.belay.proofCosts` in
   `leanOptions`.

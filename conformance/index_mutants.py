@@ -7,9 +7,9 @@ builds and runs against its target case of `conformance.authored_indexes`.
 
 from conformance.resolve_mutants import SQLITE
 
-LITERAL_DATA = SQLITE + "LiteralData.lean"
+LITERAL_DATA = SQLITE + "Schema/Rows/LiteralData.lean"
 """The key equality of the execution semantics."""
-EXECUTION = SQLITE + "Execution.lean"
+EXECUTION = SQLITE + "Schema/Dispatch/Execution.lean"
 """The execution of CREATE INDEX."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

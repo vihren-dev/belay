@@ -1,10 +1,10 @@
-"""The translation maps INSERT from a query (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Writes.lean`,
+"""The translation maps INSERT from a query (`packages/belay-sqlite-text/Belay/Sqlite/Frontend/Grammar/Writes.lean`,
 `insertQuery`, through the text package's program; ADR 0019, D4).
 
 These tests check the JSON that Lean's `Syntax.Statement.insertSelect` and `Syntax.SelectBody` decoders
 read: the table, the optional column list, the query as a body whose subqueries are the subqueries of
 the query, the conflict clauses, the algorithm and RETURNING. An INSERT of VALUES rows keeps its
-`insert` form. `tests/surface/TranslationChecks.lean` checks the source ranges of the paths.
+`insert` form. `tests/surface/Frontend/Tests/TranslationChecks.lean` checks the source ranges of the paths.
 """
 
 from collections.abc import Callable

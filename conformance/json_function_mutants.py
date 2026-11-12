@@ -9,9 +9,9 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-FUNCTIONS = SQLITE + "Json/Functions.lean"
+FUNCTIONS = SQLITE + "Values/Json/Functions.lean"
 """`json_type`, `json_array_length` and `json`."""
-VALID = SQLITE + "Json/Valid.lean"
+VALID = SQLITE + "Values/Json/Valid.lean"
 """`json_valid`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

@@ -9,14 +9,14 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.sql_file_support import installed_layout, lake_build, write_package
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 
 def test_file_parameter_construction_and_replay(runtime_root: Path, tmp_path: Path) -> None:
     """SqlFileTerm preserves explicit dollar arguments, sparse slots and S5's validated source hints."""
-    result = run_command(surface_command(runtime_root, FIXTURES / "SqlFileConstruction.lean", tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file("SqlFileConstruction.lean"), tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     assert "file construction and replay passed" in result.stdout, result.diagnostic()
@@ -29,7 +29,7 @@ def test_file_parameter_construction_and_replay(runtime_root: Path, tmp_path: Pa
 ])
 def test_file_parameter_diagnostics(runtime_root: Path, tmp_path: Path, text: str, message: str) -> None:
     """The common planner retains identity conflicts and reports their external SQL location."""
-    header = (FIXTURES / "SqlFileConstruction.lean").read_text().split("/-- The file's dollar")[0]
+    header = fixture_file("SqlFileConstruction.lean").read_text().split("/-- The file's dollar")[0]
     source = tmp_path / "FileError.lean"
     source.write_text(header + f"\ndef bad := file_parameters {json.dumps(text)}\n")
     result = run_command(surface_command(runtime_root, source, tmp_path), cwd=tmp_path, timeout=60)
@@ -50,7 +50,7 @@ def test_sql_file_uses_owning_package(runtime_root: Path, tmp_path: Path) -> Non
     (nested / "lake-manifest.json").write_text(json.dumps({"name": "Unrelated", "packages": []}))
     (nested / "sql").mkdir()
     (nested / "sql/query.sql").write_text("SELECT $x, 99")
-    probe = (FIXTURES / "SqlFileProbe.lean").read_text()
+    probe = fixture_file("SqlFileProbe.lean").read_text()
     (nested / "Queries.lean").write_text(probe + '\nnamespace SqlDependency\ndef query := file_probe "sql/query.sql"\n'
                                        'example (x : Value) : query x = sql "SELECT $x, 7" := rfl\nend SqlDependency\n')
     (dependency / "lean/SqlDependency.lean").write_text("import SqlDependency.Queries\n")
@@ -92,7 +92,7 @@ def test_sql_file_load_errors(runtime_root: Path, tmp_path: Path, configured: bo
         (tmp_path / "lakefile.toml").write_text('name = "fixture"\n')
         (tmp_path / "lake-manifest.json").write_text(json.dumps({"name": "fixture", "packages": []}))
     source = tmp_path / "Missing.lean"
-    source.write_text((FIXTURES / "SqlFileProbe.lean").read_text() +
+    source.write_text(fixture_file("SqlFileProbe.lean").read_text() +
                       '\ndef query := file_probe "sql/missing.sql"\n')
     command = surface_command(runtime_root, source, tmp_path)
     setup_path = tmp_path / "setup.json"

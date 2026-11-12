@@ -59,7 +59,7 @@ def test_cardinality_cases(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_expression_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance case A11 through the expression rules (`resolveStatement_select_table`, the value rules of
-    `Model/ExprValueRules.lean`): a projection of a column, a parameter, an arithmetic and a CASE expression
+    `Model/{Queries/Evaluation,Programs/Clock}/ExprValueRules.lean`): a projection of a column, a parameter, an arithmetic and a CASE expression
     over every database with generic premises, with a witness; an `abs` call that can fail is not calm, has a
     fault, and its query returns neither a result nor an error, although its value rule gives a value.
     Every proof has only logical axioms."""
@@ -145,10 +145,10 @@ def test_distinct_order_and_window_cases(runtime_root: Path, tmp_path: Path) -> 
 
 
 def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
-    """The procedure `sql_select` (`Belay/Sqlite/SqlSelect.lean`) with its built-in rules and evaluation laws
+    """The procedure `sql_select` (`Belay/Sqlite/{Queries/Automation,Schema/Dispatch,Programs/Automation}/SqlSelect.lean`) with its built-in rules and evaluation laws
     (`SqlSelectRules.lean`) proves the core set A01, A02, A03, A04, A08, A10, A13 and A14 over every database
     with the catalog of the case, with the catalog fact as its only hint, at the default heartbeat limit,
-    and a phase claim that has no run and no membership hypothesis. `sql_auto` (`Belay/Sqlite/AutoSearch.lean`) proves the same claims through its route `sql_select` and
+    and a phase claim that has no run and no membership hypothesis. `sql_auto` (`Belay/Sqlite/{Programs/Automation,Tooling/Tests}/AutoSearch.lean`) proves the same claims through its route `sql_select` and
     offers `sql_select [schema]` as the replacement, which the first module uses alone. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectProjectionCases", 6), ("SelectFilterCases", 3),
@@ -159,8 +159,8 @@ def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_run_delegation(runtime_root: Path, tmp_path: Path) -> None:
-    """`sql_run` (`Belay/Sqlite/SqlRun.lean`) gives the check of one query to `sql_select`, whose
-    execution rule `Sql.check_query_ofCatalog` (`Belay/Sqlite/SelectCatalogCheck.lean`) proves the check at
+    """`sql_run` (`Belay/Sqlite/Programs/Automation/SqlRun.lean`) gives the check of one query to `sql_select`, whose
+    execution rule `Sql.check_query_ofCatalog` (`Belay/Sqlite/Tooling/Counterexamples/SelectCatalogCheck.lean`) proves the check at
     a context with the connection of the database. Both tactics prove A04 and A08 as a check at the initial
     context, and `sql_run` also as a Hoare triple, over every database with the catalog of the case. Every
     proof has only logical axioms."""
@@ -172,7 +172,7 @@ def test_run_delegation(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
-    """The registry of the attribute `sql_select_rule` (`Belay/Sqlite/SqlSelectRule.lean`) refuses a
+    """The registry of the attribute `sql_select_rule` (`Belay/Sqlite/Queries/Automation/SqlSelectRule.lean`) refuses a
     declaration that is no theorem, an unknown phase and a scoped registration, each with its message. A
     local registration of a user rule closes a goal that the built-in rules do not close, and ends with
     its section; the same claim then needs the rule applied by hand. The procedure tries the rules of a

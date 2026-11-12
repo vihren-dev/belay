@@ -1,6 +1,5 @@
 import RowNarrow
-import Belay.Sqlite.Model.RowEngineTriggers
-import Belay.Sqlite.Model.ForeignKeyCounterTriggers
+import Belay.Sqlite.Model.Schema.Triggers.ForeignKeyCounterTriggers
 
 set_option doc.verso true
 

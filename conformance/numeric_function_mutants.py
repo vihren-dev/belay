@@ -7,7 +7,7 @@ builds and runs against its target case of `conformance.authored_numeric_functio
 
 from conformance.resolve_mutants import SQLITE
 
-NUMERIC = SQLITE + "Functions/Numeric.lean"
+NUMERIC = SQLITE + "Values/Scalar/Numeric.lean"
 """The numeric functions."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

@@ -30,10 +30,10 @@ measurements of this revision.
 | `AdmittedSqlRunsRows` (removed) | `runSqlFrom_`, `runSql_` | `rowsWide`, `rowsStored`, `rowsAliased`, `admitted` | 8 |
 | `ScriptRunAdmittedCatalog` (removed) | `runScriptAllFrom_` | `catalogSupported`, `rowsShaped`, `rowidsDistinct`, `rowidsInRange` | 4 |
 | `ScriptRunAdmittedRows` (removed) | `runScriptAllFrom_` | `rowsWide`, `rowsStored`, `rowsAliased`, `admitted` | 4 |
-| [ScriptRunConstraints][script-constraints] | `runScriptAllFrom_` | `keysUnique`, `notNull`, `typesFit`, `checksHold`, `constraintAtoms` | 5 |
-| [ForeignKeyRuns][fk-runs] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `rowReferences`, `foreignKeyAtoms` | 6 |
+| ScriptRunConstraints ([Schema/Rows][script-constraints-schema-rows], [Programs/Scripts][script-constraints-programs-scripts]) | `runScriptAllFrom_` | `keysUnique`, `notNull`, `typesFit`, `checksHold`, `constraintAtoms` | 5 |
+| ForeignKeyRuns ([Schema/ForeignKeys][fk-runs-schema-foreignkeys], [Tooling/Counterexamples][fk-runs-tooling-counterexamples]) | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `rowReferences`, `foreignKeyAtoms` | 6 |
 | [ForeignKeySchemaRuns][fk-schema] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `parentSchemasCompatible` | 3 |
-| [ForeignKeySelectedRuns][fk-selected] | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `parentSchemasCompatibleSelected`, `foreignKeyAtomsSelected` | 6 |
+| ForeignKeySelectedRuns ([Programs/StatementRunLaws][fk-selected-programs-statementrunlaws], [Tooling/Counterexamples][fk-selected-tooling-counterexamples]) | `runSqlFrom_`, `runSql_`, `runScriptAllFrom_` | `parentSchemasCompatibleSelected`, `foreignKeyAtomsSelected` | 6 |
 
 Replace these with generic raw/surface run laws applied to retained invariant
 evidence. Preserve each current formula and its assumptions, including every
@@ -62,10 +62,10 @@ The API migration deletes six pure-wrapper files: `AdmittedSqlRunsCatalog`, `Adm
 `RowLocalSchemaTheorems`. Update [model imports](../packages/belay-sqlite-model/Belay/Sqlite/Model.lean)
 and [Lake roots](../packages/belay-sqlite-model/lakefile.toml), plus direct imports
 at callers. Other listed files contain retained declarations. Their replacements are
-[generic raw run laws and readiness conditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/RunHolds.lean),
-[derived surface laws](../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunDerived.lean),
-[row-local writes](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalWrites.lean) and
-[row-local schema facts](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalSchema.lean).
+[generic raw run laws and readiness conditions](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RunHolds.lean),
+[derived surface laws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunDerived.lean),
+row-local writes ([Schema/Rows](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowLocalWrites.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RowLocalWrites.lean)) and
+row-local schema facts ([Schema/Rows](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/RowLocalSchema.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/RowLocalSchema.lean)).
 
 ## Remove duplicated predicates and condition aliases
 
@@ -89,32 +89,32 @@ The following are retained boundaries, even where their file also loses wrappers
 
 | Current owner | Declarations and intended treatment |
 | --- | --- |
-| [DatabaseConstraints](../packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseConstraints.lean) | Preserve `Database.NotNull`, `Database.TypesFit`, `Database.ChecksHold`, `Database.KeysUnique` and their table-level definitions. |
-| [ValidAtomsStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsStatement.lean) | Preserve `Resolved.Statement.NotNullCondition`, `.TypesFitCondition`, `.ChecksHoldCondition`; preserve `runStatement_notNull`, `runStatement_typesFit`, `runStatement_checksHold` as independent evidence. |
-| [KeysUniqueRunStep][key-step], [KeysUniqueStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueStatement.lean) | Preserve the meanings of `Resolved.Statement.RunCondition`, `.KeysCondition`, `.unconditioned`, `.keysCondition_of_runCondition`, `.runCondition_of_unconditioned` and `runStatement_keysUnique`. |
+| [DatabaseConstraints](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/DatabaseConstraints.lean) | Preserve `Database.NotNull`, `Database.TypesFit`, `Database.ChecksHold`, `Database.KeysUnique` and their table-level definitions. |
+| ValidAtomsStatement ([Schema/Columns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/ValidAtomsStatement.lean), [Programs/StatementRunLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ValidAtomsStatement.lean)) | Preserve `Resolved.Statement.NotNullCondition`, `.TypesFitCondition`, `.ChecksHoldCondition`; preserve `runStatement_notNull`, `runStatement_typesFit`, `runStatement_checksHold` as independent evidence. |
+| [KeysUniqueRunStep][key-step], KeysUniqueStatement ([Schema/Columns](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/KeysUniqueStatement.lean), [Programs/StatementRunLaws](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/KeysUniqueStatement.lean)) | Preserve the meanings of `Resolved.Statement.RunCondition`, `.KeysCondition`, `.unconditioned`, `.keysCondition_of_runCondition`, `.runCondition_of_unconditioned` and `runStatement_keysUnique`. |
 | [ValidAtomsTogether][together] | Preserve `Database.ConstraintAtoms`, `Database.Valid.constraintAtoms`, `Resolved.Statement.AtomsCondition`, `.atomsCondition_of_unconditioned`; move/generalize conjunction evidence where needed. |
 | [RowLocalAddColumnTheorems][add-column] | Preserve `Table.NotNull.appendColumn`, `Table.TypesFit.appendColumn`, `Table.ChecksHold.appendColumn`, `Table.allChecks_appendColumn` and `runStatement_addColumn_rowLocal`. |
-| [RowLocalAddColumn](../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumn.lean) | Preserve `Database.RowsWideAt`, `Database.StrictDefaultFitsAt`, `Database.ChecksReadBelowAt`; these encode distinct necessary premises. |
-| [ScriptRunConstraints][script-constraints] | Retain `Database.AdmittedWith` and generic `runScriptAllFrom_admittedWith`; migrate their proof interface. |
-| [ScriptRunValid][valid] | Retain `Database.valid_iff`, `Database.valid_empty`, `runScriptAllFrom_valid`, `runScriptStep_valid`; preserve the latter's guarantee for every `RunStep.executions` member. |
-| [ForeignKeyRuns][fk-runs] | Retain `Database.ParentSchemasCompatible.rowReferences_iff_selected` and `runStatement_foreignKeyAtoms`; migrate the preservation certificates listed in the companion. |
-| [ForeignKeyStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyStatement.lean), [ForeignKeySelectedStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySelectedStatement.lean) | Preserve `Resolved.Statement.ForeignKeyRowsCondition`, `.ForeignKeySchemaCondition`, `.ForeignKeyAtomsCondition`: rename requires equal `selectedParents`; DROP COLUMN requires no additional condition. |
-| [KeysUniqueLookup](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueLookup.lean) | Retain `Table.KeysUnique.lookup` and `Database.KeysUnique.lookup`; uniqueness lookup is not a run wrapper. |
+| [RowLocalAddColumn](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowLocalAddColumn.lean) | Preserve `Database.RowsWideAt`, `Database.StrictDefaultFitsAt`, `Database.ChecksReadBelowAt`; these encode distinct necessary premises. |
+| ScriptRunConstraints ([Schema/Rows][script-constraints-schema-rows], [Programs/Scripts][script-constraints-programs-scripts]) | Retain `Database.AdmittedWith` and generic `runScriptAllFrom_admittedWith`; migrate their proof interface. |
+| ScriptRunValid ([Schema/Rows][valid-schema-rows], [Programs/StatementRunLaws][valid-programs-statementrunlaws]) | Retain `Database.valid_iff`, `Database.valid_empty`, `runScriptAllFrom_valid`, `runScriptStep_valid`; preserve the latter's guarantee for every `RunStep.executions` member. |
+| ForeignKeyRuns ([Schema/ForeignKeys][fk-runs-schema-foreignkeys], [Tooling/Counterexamples][fk-runs-tooling-counterexamples]) | Retain `Database.ParentSchemasCompatible.rowReferences_iff_selected` and `runStatement_foreignKeyAtoms`; migrate the preservation certificates listed in the companion. |
+| [ForeignKeyStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeyStatement.lean), [ForeignKeySelectedStatement](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeySelectedStatement.lean) | Preserve `Resolved.Statement.ForeignKeyRowsCondition`, `.ForeignKeySchemaCondition`, `.ForeignKeyAtomsCondition`: rename requires equal `selectedParents`; DROP COLUMN requires no additional condition. |
+| [KeysUniqueLookup](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/KeysUniqueLookup.lean) | Retain `Table.KeysUnique.lookup` and `Database.KeysUnique.lookup`; uniqueness lookup is not a run wrapper. |
 
 ## Migrate clients and retire duplicate formula checks
 
 | Existing file or registration | Intended change |
 | --- | --- |
-| [ScriptRunValid][valid] | Rewrite `runScriptAllFrom_valid` and `runScriptStep_valid` through retained generic evidence. |
-| [KeysUniqueRunExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueRunExamples.lean) | Migrate `cascadeScript_keysUnique` and anonymous condition examples to generic predicates/run laws. |
-| [ValidAtomsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsExamples.lean) | Migrate `strictCascadeScript_constraintAtoms`, `setNullScript_notNull` and their condition proofs. |
-| [AdmittedRunsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedRunsExamples.lean), [AdmittedRunsConditionExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/AdmittedRunsConditionExamples.lean) | Migrate `mixedRun_rowsAliased` and anonymous run formulas; retain necessity counterexamples and `mixedRun_valid`. |
-| [ProgramRun](../packages/belay/Belay/Sqlite/ProgramRun.lean), [ProgramLaws](../packages/belay/Belay/Sqlite/ProgramLaws.lean) | Recompile callers of the retained Valid helpers; change only if their proof application or imports require it. |
+| ScriptRunValid ([Schema/Rows][valid-schema-rows], [Programs/StatementRunLaws][valid-programs-statementrunlaws]) | Rewrite `runScriptAllFrom_valid` and `runScriptStep_valid` through retained generic evidence. |
+| [KeysUniqueRunExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/KeysUniqueRunExamples.lean) | Migrate `cascadeScript_keysUnique` and anonymous condition examples to generic predicates/run laws. |
+| [ValidAtomsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ValidAtomsExamples.lean) | Migrate `strictCascadeScript_constraintAtoms`, `setNullScript_notNull` and their condition proofs. |
+| [AdmittedRunsExamples](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/AdmittedRunsExamples.lean), AdmittedRunsConditionExamples ([Queries/Preparation](../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Preparation/AdmittedRunsConditionExamples.lean), [Schema/Ddl](../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Ddl/AdmittedRunsConditionExamples.lean), [Programs/Scripts](../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/AdmittedRunsConditionExamples.lean)) | Migrate `mixedRun_rowsAliased` and anonymous run formulas; retain necessity counterexamples and `mixedRun_valid`. |
+| [ProgramRun](../packages/belay/Belay/Sqlite/Programs/Scripts/ProgramRun.lean), [ProgramLaws](../packages/belay/Belay/Sqlite/Programs/Scripts/ProgramLaws.lean) | Recompile callers of the retained Valid helpers; change only if their proof application or imports require it. |
 | [valid_atoms_theorems_test.py](../tests/valid_atoms_theorems_test.py) | Retire 12 run endpoint checks after migration acceptance; preserve independent whole-statement contracts/premise coverage. |
 | [keys_unique_theorems_test.py](../tests/keys_unique_theorems_test.py) | Retire three run endpoint checks; migrate the statement and lookup checks to generic effect/state predicates. |
 | [admitted_atoms_run_theorems_test.py](../tests/admitted_atoms_run_theorems_test.py) | Retire the `ATOMS` × three prefixes matrix and removed constraint-wrapper audit entries; retain/rehome four Valid helper/definition checks. |
-| [ForeignKeyRuns](../tests/surface/ForeignKeyRuns.lean), [ForeignKeySchemaRuns](../tests/surface/ForeignKeySchemaRuns.lean), [ForeignKeyDdlRuns](../tests/surface/ForeignKeyDdlRuns.lean), [ForeignKeyDdlDropRuns](../tests/surface/ForeignKeyDdlDropRuns.lean) | Migrate fixed/selected mapping and reached-run examples; retain their semantic cases where coverage is unique. |
-| [ForeignKeyStatementAxioms](../tests/surface/ForeignKeyStatementAxioms.lean), [nix_suites.json](../tests/nix_suites.json) | Replace retired endpoint audit roots with generic proofs and independent evidence; remove obsolete registrations after final acceptance. |
+| [ForeignKeyRuns](../tests/surface/Schema/Tests/ForeignKeyRuns.lean), [ForeignKeySchemaRuns](../tests/surface/Schema/ForeignKeys/ForeignKeySchemaRuns.lean), [ForeignKeyDdlRuns](../tests/surface/Schema/Tests/ForeignKeyDdlRuns.lean), [ForeignKeyDdlDropRuns](../tests/surface/Schema/ForeignKeys/ForeignKeyDdlDropRuns.lean) | Migrate fixed/selected mapping and reached-run examples; retain their semantic cases where coverage is unique. |
+| [ForeignKeyStatementAxioms](../tests/surface/Schema/ForeignKeys/ForeignKeyStatementAxioms.lean), [nix_suites.json](../tests/nix_suites.json) | Replace retired endpoint audit roots with generic proofs and independent evidence; remove obsolete registrations after final acceptance. |
 
 DROP COLUMN adds a statement case, not new per-atom endpoints to this removal
 set. Its execution guard supplies its preservation premises. For rename, the
@@ -132,14 +132,18 @@ new claims. Then record Nix acceptance and remove redundant active witnesses
 and registrations under ADR 0025 D4. Do not add
 a permanent test or CI inventory that freezes this table.
 
-[valid-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsRuns.lean
-[together]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ValidAtomsTogether.lean
-[key-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueRuns.lean
-[script-constraints]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunConstraints.lean
-[fk-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyRuns.lean
-[fk-schema]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySchemaRuns.lean
-[fk-selected]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeySelectedRuns.lean
-[add-column]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/RowLocalAddColumnTheorems.lean
-[key-frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueFrame.lean
-[key-step]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/KeysUniqueRunStep.lean
-[valid]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunValid.lean
+[valid-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ValidAtomsRuns.lean
+[together]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/ValidAtomsTogether.lean
+[key-runs]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/KeysUniqueRuns.lean
+[script-constraints-schema-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/ScriptRunConstraints.lean
+[script-constraints-programs-scripts]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunConstraints.lean
+[fk-runs-schema-foreignkeys]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/ForeignKeys/ForeignKeyRuns.lean
+[fk-runs-tooling-counterexamples]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/ForeignKeyRuns.lean
+[fk-schema]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ForeignKeySchemaRuns.lean
+[fk-selected-programs-statementrunlaws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ForeignKeySelectedRuns.lean
+[fk-selected-tooling-counterexamples]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/ForeignKeySelectedRuns.lean
+[add-column]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowLocalAddColumnTheorems.lean
+[key-frame]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/KeysUniqueFrame.lean
+[key-step]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/KeysUniqueRunStep.lean
+[valid-schema-rows]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/ScriptRunValid.lean
+[valid-programs-statementrunlaws]: ../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/ScriptRunValid.lean

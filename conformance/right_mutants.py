@@ -8,7 +8,7 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-QUERY_JOINS = SQLITE + "QueryJoins.lean"
+QUERY_JOINS = SQLITE + "Queries/Select/QueryJoins.lean"
 """The rows of joins."""
 
 ADDED = ("    | .right | .full => (unmatchedRight context left join candidates).map\n"

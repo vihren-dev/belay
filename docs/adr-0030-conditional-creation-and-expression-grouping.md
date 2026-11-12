@@ -50,10 +50,10 @@ job of this model's tree.
 
 - **Syntax.** The parser gives the `ifnotexists` node in each CREATE header, with no children
   when the clause is absent. `Syntax.Statement.createView` and `createTrigger` have a field
-  `ifNotExists : Bool` (`Resolution/Syntax.lean`). `createTable` and `createIndex` have none.
+  `ifNotExists : Bool` (`Shared/Syntax/Syntax.lean`). `createTable` and `createIndex` have none.
 - **Translation.** `createTable` refuses the clause with `absent header[3]! "IF NOT EXISTS"`
-  (`Translation/Tables.lean`), and `createIndex` with `absent parts[3]! "IF NOT EXISTS"`
-  (`Translation/Schema.lean`). `absent` (`Translation/Shapes.lean`) makes a frontend refusal
+  (`Frontend/Grammar/Tables.lean`), and `createIndex` with `absent parts[3]! "IF NOT EXISTS"`
+  (`Frontend/Grammar/Schema.lean`). `absent` (`Frontend/Grammar/Shapes.lean`) makes a frontend refusal
   `IF NOT EXISTS is not modeled; remove it` with no restriction id. The translation also
   refuses `TEMP`, a schema name and `AS SELECT` in `CREATE TABLE`.
 - **The precedent of views and triggers.** The translation only records the flag. The resolver
@@ -61,8 +61,8 @@ job of this model's tree.
   `resolveCreateView` and `resolveCreateTrigger` give `.drop []` and `catalog.drop []`, which
   keep the catalog and the rows. The step of `.drop []` keeps the database, the output is
   `.done 0`, and the counters do not change (the theorem `counters` in
-  `tests/surface/ClaimsViewCreate.lean`).
-- **Resolution order.** `resolveCreateTable` (`Resolution/Definitions.lean`) checks the reserved
+  `tests/surface/Schema/Tests/ClaimsViewCreate.lean`).
+- **Resolution order.** `resolveCreateTable` (`Schema/Columns/Definitions.lean`) checks the reserved
   name first, then the name: a table gives `table %s already exists`, a view
   `view %s already exists`, an index `there is already an index named %s`. Only then does it
   read the column definitions, the constraints and the table options. `resolveCreateIndex`
@@ -74,16 +74,16 @@ job of this model's tree.
   (`LiteralData.uniqueRows`, `Execution.lean`) and fails with a constraint violation.
 - **Proofs.** These statements are about the two resolvers and assume, by their form, that a
   CREATE never resolves to `.drop []`:
-  `resolveCreateTable_step`, `resolveCreateIndex_step` (`Resolution/NamesSpec.lean`),
+  `resolveCreateTable_step`, `resolveCreateIndex_step` (`Schema/Ddl/NamesSpec.lean`),
   `resolveCreateTable_applyCatalog`, `resolveCreateIndex_applyCatalog`
-  (`Resolution/ApplyCatalogSpec.lean`), `resolveCreateTable_named`, `resolveCreateTable_used`
-  (`Resolution/PrepareSpec.lean`), `resolveCreateIndex_named`, `_missing`, `_used`
-  (`Resolution/DefinitionSpec.lean`), `resolveCreateTable_form` and
+  (`Schema/Columns/ApplyCatalogSpec.lean`), `resolveCreateTable_named`, `resolveCreateTable_used`
+  (`Schema/Ddl/PrepareSpec.lean`), `resolveCreateIndex_named`, `_missing`, `_used`
+  (`Schema/Ddl/DefinitionSpec.lean`), `resolveCreateTable_form` and
   `runScriptStep_createTable_failed` (`SchemaFailureLaws.lean`), `resolveCreateTable_single`,
   `resolveCreateIndex_single` (`Resolution/ResolveStatementSingleWrites.lean`), and
   `CreateIndexConditions` with `runScriptStep_createIndex_ok_iff`
   (`CreateIndexSuccessLaws.lean`) and their public forms `Script.createIndex_allOk_iff` and
-  `Succeeds.iff_createIndex` (`packages/belay/Belay/Sqlite/CreateIndexSuccess.lean`). The
+  `Succeeds.iff_createIndex` (`packages/belay/Belay/Sqlite/Programs/Scripts/CreateIndexSuccess.lean`). The
   trigger laws `createTrigger_resolution_cases` and `createTrigger_step`
   (`CreateTriggerStep.lean`) show the pattern: they assume `ifNotExists = false`.
 - **Documentation.** `docs/semantic-subset.md` lists `IF NOT EXISTS` among the refused forms
@@ -127,8 +127,8 @@ From `sqlite3StartTable` and `sqlite3CreateIndex` (`build.c`) and probes:
 
 - **Syntax.** Every `GROUP BY` item is a `Syntax.Expr` (`Statement.select`, `Subquery.groupBy`,
   `SelectBody.groupBy`). The resolved query has `Query.groupBy : List (Expr × Collation)`
-  (`Resolution/QueryForm.lean`).
-- **Resolution.** `resolveGroupTermTraced` (`Resolution/QueryAggregates.lean`) admits a column
+  (`Shared/Resolved/QueryForm.lean`).
+- **Resolution.** `resolveGroupTermTraced` (`Queries/Select/QueryAggregates.lean`) admits a column
   name, a column under one `COLLATE`, a qualified name, a parameter, and an integer literal or
   an alias that names a result column. An aggregate is SQLite's
   `aggregate functions are not allowed in the GROUP BY clause`, and a number out of range is
@@ -151,7 +151,7 @@ From `sqlite3StartTable` and `sqlite3CreateIndex` (`build.c`) and probes:
   the group in the order of the source, which is rowid order for a table. `possibleResults`
   (`PossibleResults.lean`) gives the results that SQLite may give for the order of rows only;
   it does not vary the row of a group.
-- **Grouped and bare expressions.** `Resolved.Expr.grouped` (`Resolution/QueryTerms.lean`)
+- **Grouped and bare expressions.** `Resolved.Expr.grouped` (`Queries/Select/QueryTerms.lean`)
   admits a result expression when it is one of the grouping terms, by structural equality, or
   when its parts are grouping terms, values or aggregates. A column outside the terms is the
   restriction `bare-column`.
@@ -163,8 +163,8 @@ From `sqlite3StartTable` and `sqlite3CreateIndex` (`build.c`) and probes:
   `resolveGroupTerm` that an expression makes false today (`DuplicateKeyGroupTerm.lean`).
   `LiteralData.uniqueRows_of_column_groups` (`GroupKeyConflictLaws.lean`) needs a column key.
   `resolveGroupTerm_identifier_found` and `resolveGroupTerm_collate`
-  (`Resolution/QueryAggregatesArms.lean`) and `resolveQueryBody_arm`
-  (`Resolution/QueryBodyArms.lean`) follow the case split of the resolver. The count,
+  (`Queries/Select/QueryAggregatesArms.lean`) and `resolveQueryBody_arm`
+  (`Queries/Select/QueryBodyArms.lean`) follow the case split of the resolver. The count,
   aggregate and simple query laws require `groupBy = []` and do not change.
 
 ### Grouping: SQLite

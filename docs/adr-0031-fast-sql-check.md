@@ -270,7 +270,7 @@ and the row variants of D3 and the first construction form of D6 for #318.
 Tests, each with a timeout, in the suites of the surface checks:
 
 - The claim of #316 is false with the default budget, with the same text and replay as the
-  fixture `tests/surface/CounterexampleReadable.lean` of the work of #316.
+  fixture `tests/surface/Tooling/Tests/CounterexampleReadable.lean` of the work of #316.
 - A fixture with an authored schema of the consumer's size and kind (more than 8,192 nodes,
   triggers that write another table, CHECK and foreign keys). It is not the consumer's text.
   Its DELETE claim is false, the counterexample has at most two rows in each touched table, and

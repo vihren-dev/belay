@@ -10,11 +10,17 @@ import pytest
 from conformance.native_connection import Connection
 from conformance.native_trace import Fixture, initialize, record
 from conformance.model_check import compiled, evaluate
+from conformance.mutation_check import SHADOWED
 from conformance.record_parser import default_parser
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
               pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
+COPIED_STEMS = {"StatementStep", "SqlAdvance", "SqlExecution", "StatementOutput", "PossibleOutput",
+                "Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"}
+"""The old modules whose parts the INSERT mutant copies into its own namespace, in the order of `SHADOWED`."""
+MUTATED = "LiteralData.inserted table values"
+"""The text of `StatementStep` that the mutant replaces, so that INSERT keeps the table unchanged."""
 
 
 def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
@@ -25,23 +31,19 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
     result = compiled(case, runtime_root, emit_lean=True)
     assert result["verdict"] == "AGREE"
     sources = []
-    for filename in ("packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean",
-                     "packages/belay-sqlite-model/Belay/Sqlite/Model/SqlAdvance.lean",
-                     "packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean",
-                     "packages/belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean",
-                     "packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleOutput.lean",
-                     *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                       for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):
+    copied = [filename for filename in SHADOWED if Path(filename).stem in COPIED_STEMS]
+    assert sum((ROOT / filename).read_text().count(MUTATED) for filename in copied
+               if Path(filename).stem == "StatementStep") == 1
+    for filename in copied:
         source = (ROOT / filename).read_text()
         source = "\n".join(line for line in source.splitlines() if not line.startswith("import "))
         source = source.replace("namespace Belay.Sqlite.Model", "namespace Belay.Sqlite.Model.Mutant")
         source = source.replace("end Belay.Sqlite.Model", "end Belay.Sqlite.Model.Mutant")
-        if filename == "packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean":
-            assert source.count("LiteralData.inserted table values") == 1
-            source = source.replace("LiteralData.inserted table values", "table")
+        if Path(filename).stem == "StatementStep":
+            source = source.replace(MUTATED, "table")
         sources.append(source)
     proof = tmp_path / "Mutant.lean"
-    proof.write_text("import VerifierConformance.Case\n" + "\n".join(sources) +
+    proof.write_text("import VerifierConformance.Tooling.Conformance.Case\n" + "\n".join(sources) +
         "\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Mutant.Conformance\n"
         "def mutantCase : Case :=\n" + indent(result["caseLean"], "  ") + "\n"
         "theorem detected : classifyHaltingCase mutantCase = .disagree (some 1) := by decide +kernel\n"

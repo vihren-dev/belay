@@ -7,11 +7,11 @@ runs against its target case of `conformance.authored_triggers`.
 
 from conformance.resolve_mutants import SQLITE
 
-RULES = SQLITE + "Resolution/TriggerRules.lean"
+RULES = SQLITE + "Schema/Triggers/TriggerRules.lean"
 """The trigger programs of a write, the newest trigger first."""
-PROGRAM = SQLITE + "Resolution/TriggerProgram.lean"
+PROGRAM = SQLITE + "Shared/Resolved/TriggerProgram.lean"
 """The events of a program and the writes that fire them."""
-RUN = SQLITE + "TriggerRun.lean"
+RUN = SQLITE + "Schema/Triggers/TriggerRun.lean"
 """The run of the programs of a row."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

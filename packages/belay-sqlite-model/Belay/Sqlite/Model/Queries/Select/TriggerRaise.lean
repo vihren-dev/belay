@@ -1,0 +1,59 @@
+import Belay.Sqlite.Model.Shared.Resolved.TriggerProgram
+
+set_option doc.verso true
+
+namespace Belay.Sqlite.Model
+
+/-- The kind of a {lit}`RAISE` expression; none for another expression. -/
+def Syntax.Expr.raiseKind? : Syntax.Expr → Option Syntax.RaiseKind
+  | .raise kind _ => some kind
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
+  | .concatenate .. => none
+
+/-- The message of a {lit}`RAISE` expression; none for {lit}`RAISE(IGNORE)` and for another
+expression. -/
+def Syntax.Expr.raiseMessage? : Syntax.Expr → Option Syntax.Expr
+  | .raise _ message => message
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
+  | .concatenate .. => none
+
+/-- The positions of the results among the operands of a {lit}`CASE` after its base: each odd
+position, and the last one of an odd number of operands, the {lit}`ELSE` result. -/
+def caseResult (count index : Nat) : Bool := index % 2 == 1 || (count % 2 == 1 && index + 1 == count)
+
+/-- How the result column of a SELECT raises: the column with each {lit}`RAISE` result as NULL,
+the kind of each operand of its {lit}`CASE` after the base (none for an operand that does not
+raise), and the messages of the {lit}`RAISE` results; none for a column that does not raise
+there. -/
+def raisingColumn : Syntax.Expr → Option (Syntax.Expr × List (Option Syntax.RaiseKind) × List Syntax.Expr)
+  | written@(.raise kind _) => some (.null, [some kind], written.raiseMessage?.toList)
+  | .caseOf operands hasBase =>
+    let base := if hasBase then operands.take 1 else []
+    let rest := if hasBase then operands.drop 1 else operands
+    let kinds := rest.zipIdx.map fun (operand, index) => if caseResult rest.length index then operand.raiseKind? else none
+    if kinds.all (·.isNone) then none
+    else some (.caseOf (base ++ rest.zipIdx.map fun (operand, index) =>
+        if caseResult rest.length index && operand.raiseKind?.isSome then .null else operand) hasBase,
+      kinds, rest.filterMap fun operand => if operand.raiseKind?.isSome then operand.raiseMessage? else none)
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .concatenate .. => none
+
+/-- The paths of the messages that {name}`raisingColumn` lists, in the same order, in the written
+column: the message of a {lit}`RAISE` is its child 1, and the operand {lit}`j` of a {lit}`CASE` is
+{lit}`[0, j]` (the base operand counts). -/
+def raiseMessagePaths : Syntax.Expr → List (List Nat)
+  | written@(.raise ..) => (written.raiseMessage?.map fun _ => [1]).toList
+  | .caseOf operands hasBase =>
+    let skip := if hasBase then 1 else 0
+    ((operands.drop skip).zipIdx.filterMap fun (operand, index) =>
+      if operand.raiseKind?.isSome && operand.raiseMessage?.isSome then some [0, skip + index, 1] else none)
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .concatenate .. => []
+
+end Belay.Sqlite.Model

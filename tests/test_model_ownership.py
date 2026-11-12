@@ -11,9 +11,10 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "packages/belay-sqlite-model"
-MODEL_ROOTS = ("Belay.Sqlite.Model.SchemaExtensionLaws", "Belay.Sqlite.Model.SchemaPreservationLaws",
-               "Belay.Sqlite.Model.LiteralPreservationLaws", "Belay.Sqlite.Model.ModelProjectionLaws",
-               "Belay.Sqlite.Model.Laws")
+MODEL_ROOTS = ("Belay.Sqlite.Model.Schema.Ddl.SchemaExtensionLaws", "Belay.Sqlite.Model.Schema.Rows.SchemaPreservationLaws",
+               "Belay.Sqlite.Model.Schema.Rows.LiteralPreservationLaws",
+               "Belay.Sqlite.Model.Queries.Preparation.ModelProjectionLaws", "Belay.Sqlite.Model.Schema.Columns.ModelProjectionLaws",
+               "Belay.Sqlite.Model.Programs.Scripts.Laws", "Belay.Sqlite.Model.Tooling.Conformance.Laws")
 """Mixed-file facts and conformance laws must have a structural import closure."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core model uses only Lean's prelude, without `Std` or the Lean compiler API."""

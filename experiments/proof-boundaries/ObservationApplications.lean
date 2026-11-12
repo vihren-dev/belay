@@ -1,6 +1,6 @@
 import ObservationAlgebra
-import Belay.Sqlite.ExecutionViewFrames
-import Belay.Sqlite.ExecutionDeterministic
+import Belay.Sqlite.Programs.Reasoning.ExecutionViewFrames
+import Belay.Sqlite.Programs.Reasoning.ExecutionDeterministic
 
 set_option doc.verso true
 

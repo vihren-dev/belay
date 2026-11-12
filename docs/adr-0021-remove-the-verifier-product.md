@@ -37,7 +37,7 @@ A survey of the source (2026-10-21) found these dependencies of the kept parts o
   from the `SqliteVerifier` library.
 - **The model package** has codecs that exist only for the gate: `Codec/Source.lean` and
   `Codec/SourceExamples.lean` write Lean modules that import `SqliteVerifier`, and the script
-  record (`ScriptRecord`, `decodeScriptRecord` in `Codec/Resolution.lean`) is the resolver's input.
+  record (`ScriptRecord`, `decodeScriptRecord` in `{Values/Json,Frontend/Codecs,Queries/Preparation}/Resolution.lean`) is the resolver's input.
 - **CI**: the check job builds the installed runtime first, runs the bundle suite on macOS and
   packs the release archives; the `release` job and `adr3-p1.yml` serve only the product.
 

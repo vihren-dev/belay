@@ -6,7 +6,7 @@ import re
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import fixture_file, surface_command
 
 STANDARD_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 """Logical axioms admitted by the kernel audit; semantic assumptions are excluded."""
@@ -65,7 +65,7 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     another name keeps both atoms, and that DROP VIEW of a named view fails the transport
     condition. Every displayed law excludes native-computation or admission axioms.
     """
-    result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path),
+    result = run_command(surface_command(runtime_root, fixture_file(fixture), tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()
     reports = re.findall(r"depends on axioms: \[([^]]*)\]|does not depend on any axioms", result.stdout)
