@@ -113,3 +113,41 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     assert 'login vihren https://cache.vihren.dev "$ATTIC_WRITE_TOKEN"' in upload
     assert ("nix path-info --all | grep -v '\\.drv$' | "
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
+
+
+def test_the_macos_check_job_has_the_longer_limit() -> None:
+    """The check job stops after 120 minutes on macOS and after 75 minutes on Linux: without a saved
+    store, the macOS runner builds the Lean packages for about 60 minutes before the suites start."""
+    assert ("\n    timeout-minutes: ${{ matrix.system == 'aarch64-darwin' && 120 || 75 }}\n"
+            in workflow_jobs()["check"])
+
+
+def test_a_failed_check_saves_its_store_with_an_unchecked_key() -> None:
+    """A failed or cancelled main or nightly check saves its store after the store collection, so
+    the next run does not build it again. Its key has "unchecked" before the tree hash: the restore
+    prefix of later runs finds it, but the publishing job's key is not a prefix of it, so the
+    publishing job never uploads a store that did not pass the check."""
+    jobs = workflow_jobs()
+    steps = job_steps(jobs["check"])
+    names = [step.split("\n", 1)[0] for step in steps]
+    save = steps[names.index("name: Save the Nix store of a failed or stopped check")]
+    assert names.index("name: Save the Nix store of a failed or stopped check") == \
+        names.index("name: Keep only the store paths that this commit needs") + 1
+    condition = re.search(r"\n        if: (.+)", save).group(1)
+    assert condition.startswith("(failure() || cancelled()) && " + GUARD)
+    assert "steps.store.outputs.hit-primary-key != 'true'" in condition
+    restore = next(step for step in steps if step.startswith("name: Restore Nix builds"))
+    assert "id: store" in restore
+    action = re.compile(r"uses: nix-community/cache-nix-action(/save)?@([0-9a-f]{40}) ")
+    assert action.search(save).group(1) == "/save"
+    assert action.search(save).group(2) == action.search(restore).group(2)
+    expected_save = ("save: ${{ github.event_name == 'schedule' || "
+                     "(github.event_name == 'push' && github.ref == 'refs/heads/main') }}")
+    assert expected_save in save and expected_save in restore
+    key = re.compile(r"primary-key: (.+)")
+    checked, unchecked = key.search(restore).group(1), key.search(save).group(1)
+    tree = "-${{ steps.tree.outputs.hash }}"
+    assert unchecked == checked.replace(tree, "-unchecked" + tree)
+    prefix = re.search(r"restore-prefixes-first-match: \|\n\s+(.+)", restore).group(1)
+    assert unchecked.startswith(prefix)
+    assert not unchecked.startswith(key.search(jobs["publish-nix-store"]).group(1))
