@@ -19,11 +19,11 @@ def customerByEmail (email : Value) : Script :=
 #sql_check Succeeds addEmailLower (·.HasCatalog shop)
 
 -- When an answer is `false`: keep its database, with the statements that the answer
--- prints after `Construction:`, and prove the fact.
+-- prints after `Construction:` in a raw string with hashes, and prove the fact.
 --
--- def found : Database := db! r"
+-- def found : Database := db! r#"
 --   CREATE TABLE …;
---   INSERT INTO … VALUES (…);"
+--   INSERT INTO … VALUES (…);"#
 --
 -- theorem old_read_changes :
 --     ¬ (addEmailLower preserves oldRead on shop) := by

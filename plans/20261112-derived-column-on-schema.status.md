@@ -43,6 +43,15 @@ Status: in progress; reads (a), success (b) and example (c) done; the test of th
   each, from the SQL files. Its test builds it in a consumer Lake project that requires only `belay`.
   `docs/guide/agents.md`, `skills/belay/SKILL.md` and the template `MigrationClaims.lean` name the laws.
   The boundary fixture also checks a `db!` schema.
+- 2026-11-12: test of the page with a fresh agent. From `docs/guide/agents.md` and the skill only, an agent
+  proved in a new project the two reads and the success claim with the three laws; `lake build` and
+  `belay-sql-check` passed, with logical axioms only. From its report, the skill now says to paste the
+  `Construction:` statements in `r#"…"#` (they can contain `"`), puts the library law first in the steps
+  for `unknown`, and names the count of SQL sources in place of the count of modules.
+- 2026-11-12: the first `just test-full` failed in `test-source`: the model root did not import the new
+  model modules, the skill templates had no Lean file category (from the page for agents, #373), and the
+  test of #371 was in no Nix suite, so it ran on the host with the wrong runtime. Fix commits are after the
+  commits of each issue.
 
 ## Tests of each commit
 

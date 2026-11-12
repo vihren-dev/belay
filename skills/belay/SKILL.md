@@ -76,7 +76,9 @@ a theorem of yours that it can prove again. Ignore it there, or put
 for the `sqlite3` shell.
 
 1. Keep the database as a `db!` definition. Paste the statements that the
-   answer prints after `Construction:`, as printed.
+   answer prints after `Construction:`, as printed, in a raw string with
+   hashes: `db! r#"…"#`. The statements can contain `"`, which ends a raw
+   string `r"…"`.
 2. If the migration is wrong, fix it, and check the claim again.
 3. If the migration is right and a read of the application must change,
    change the read and its claim. Prove `¬ claim` for the old read with
@@ -88,14 +90,14 @@ for the `sqlite3` shell.
 **`unknown`:** the search found no proof and no counterexample. This is not
 evidence for the claim.
 
-1. Try `theorem … := by sql_auto`. Remove the theorem if the tactic fails.
-2. Try the check with more work: put `set_option sql.checkBudget 500000 in`
+1. Look for a library law for the shape of the migration. For `ADD COLUMN`
+   with an `UPDATE` that fills the column, see
+   [The laws for a filled column](#the-laws-for-a-filled-column).
+2. Try `theorem … := by sql_auto`. Remove the theorem if the tactic fails.
+3. Try the check with more work: put `set_option sql.checkBudget 500000 in`
    before `#sql_check`. A larger budget helps a schema with many tables or a
    migration with many statements. If the answer stays `unknown`, remove the
    option.
-3. Look for a library law for the shape of the migration. For `ADD COLUMN`
-   with an `UPDATE` that fills the column, see
-   [The laws for a filled column](#the-laws-for-a-filled-column).
 4. For a claim about the rows that one `SELECT` returns, or about the result
    of an insert or a delete, the tactics `sql_select` and `sql_run` are in
    `.lake/packages/belay/packages/belay/README.md`. They do not prove
@@ -159,8 +161,8 @@ you prove the facts of the read by hand.
 2. Run `lake build`. It must exit with 0, with no `sorry` warning from the
    files of the project.
 3. Run `lake --log-level=error exe belay-sql-check`. It must exit with 0 and
-   report `0 stale`. The first run builds the tool. The count of modules in
-   the report is the count of files that read SQL files.
+   report `0 stale`. The first run builds the tool. The count of SQL sources
+   in the report is the count of SQL files that the claims read.
 4. Read the `#print axioms` lines of each file of claims.
 
 ## The report
