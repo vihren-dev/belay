@@ -1,6 +1,6 @@
 import Belay.Sqlite.Programs.StatementRunLaws.DerivedColumnSchema
 import Belay.Sqlite.Programs.Scripts.ScriptSuccess
-import Belay.Sqlite.Model.Programs.StatementRunLaws.DerivedColumnSuccess
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 

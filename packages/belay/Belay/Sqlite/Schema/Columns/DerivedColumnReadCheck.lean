@@ -1,6 +1,6 @@
 import Belay.Sqlite.Schema.Columns.DerivedColumnSiteCheck
 import Belay.Sqlite.Schema.Columns.DerivedColumnReads
-import Belay.Sqlite.Model.Schema.Dispatch.SelectTableParts
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 

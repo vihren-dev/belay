@@ -57,6 +57,8 @@ Status: in progress; reads (a), success (b), example (c) and the test of the pag
   tenths of the budget, so that the reason of an unknown result stays. A fix commit after the #371 commits
   gives the check the whole budget again and keeps the unknown outcome, with its reason, when the end of
   the budget aborts the command.
+- 2026-11-12: the third `just test-full` failed in `surface`: three surface modules of the checks imported
+  single model modules; they import the model root `Belay.Sqlite.Model` now.
 
 ## Tests of each commit
 

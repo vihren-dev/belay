@@ -1,5 +1,5 @@
 import Belay.Sqlite.Schema.Columns.DerivedColumnMigration
-import Belay.Sqlite.Model.Queries.Evaluation.ExprFormChecks
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
