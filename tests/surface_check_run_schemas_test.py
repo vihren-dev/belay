@@ -24,14 +24,15 @@ INDEX = "CREATE INDEX customers_by_email ON customers(email);"
 
 @pytest.mark.timeout(300)
 def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_path: Path) -> None:
-    """A schema from `sql_file`, given with `with (schema := ...)` or with `on`, and a `db!` schema
-    followed by a run of `sql` give false with a replay that builds the index; a schema after a run of
-    Lean code gives unknown with the reason that it has no SQL text."""
+    """A schema from `sql_file`, given with `with (schema := ...)` or with `on`, a `db!` schema followed by
+    a run of `sql`, and two runs whose first text has no final semicolon give false with a replay that
+    builds the index; a schema after a run of Lean code gives unknown with the reason that it has no SQL
+    text."""
     result = run_command(configured_command(runtime_root, fixture_file("CheckRunSchemas.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)
-    for label in ("file-schema", "file-on", "two-runs-on"):
+    for label in ("file-schema", "file-on", "two-runs-on", "unterminated-on"):
         assert blocks[label].startswith("SQL check: false."), blocks[label]
         assert INDEX in blocks[label].split("SQLite replay:\n", 1)[1], blocks[label]
     assert blocks["without-text"].startswith("SQL check: unknown; the schema of the search has no SQL text"), \

@@ -41,11 +41,15 @@ def sourceText? (key : Name) : Expr → Option SourceText
     pure { text, literal := data.getSyntax sourceRangeKey, fileName := data.getString sourceFileKey, expression }
   | _ => none
 
+/-- The number of definition unfoldings that a search for the SQL text of a term makes before it gives up.
+128 covers the definitions of a project, which name each other a few levels deep. -/
+def sourceUnfoldings : Nat := 128
+
 /-- Recover source through a finite number of named-definition and lambda expansions.
 The returned expression is the supplied value, including parameter applications and explicit
 rebinding. Text remains a hint; callers must validate it against that complete expression.
-Use an explicit text input when the default 128 expansions cannot recover a source. -/
-def sourceOf (key : Name) (expression : Expr) (fuel : Nat := 128) : MetaM (Option SourceText) := do
+Use an explicit text input when the default {name}`sourceUnfoldings` expansions cannot recover a source. -/
+def sourceOf (key : Name) (expression : Expr) (fuel : Nat := sourceUnfoldings) : MetaM (Option SourceText) := do
   let rec visit : Nat → Expr → MetaM (Option SourceText)
     | 0, _ => pure none
     | fuel + 1, current => do

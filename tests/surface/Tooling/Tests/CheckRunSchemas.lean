@@ -24,6 +24,12 @@ def fromTwoRuns : Database :=
   ((db! r"CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);").run
     (sql r"CREATE INDEX customers_by_email ON customers(email);")).db
 
+/-- A first run whose text ends with a comment and no semicolon, then a run that adds an index. The text of
+the schema separates the two texts, so the last statement of the first text ends. -/
+def fromUnterminated : Database :=
+  ((Database.empty.run (sql r"CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL)
+    -- no semicolon")).db.run (sql r"CREATE INDEX customers_by_email ON customers(email);")).db
+
 /-- The schema of {name}`fromTwoRuns` after a run of a Lean program, which has no SQL text. -/
 def withoutText : Database := (fromTwoRuns.run (Sql.pure ())).db
 
@@ -43,6 +49,9 @@ labelled_sql "file-on" in
 
 labelled_sql "two-runs-on" in
 #sql_check addEmailLower preserves allCustomers on fromTwoRuns
+
+labelled_sql "unterminated-on" in
+#sql_check addEmailLower preserves allCustomers on fromUnterminated
 
 labelled_sql "without-text" in
 #sql_check addEmailLower preserves allCustomers on withoutText
