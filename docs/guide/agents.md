@@ -109,23 +109,14 @@ has a file of claims, such as `Claims/EmailLower.lean` for
 import Belay
 open Belay.Sqlite
 
-def shop : Database := db! r"
-CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
-CREATE TABLE sessions (id INTEGER PRIMARY KEY,
-  customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  expires_at INTEGER NOT NULL);"
-
-theorem shop_is_schema_file :
-    (Database.empty.run (sql_file "db/schema.sql")).db = shop := by
-  decide +kernel
+def shop : Database := (Database.empty.run (sql_file "db/schema.sql")).db
 ```
 
-The search for counterexamples needs the schema as text in `db!`
-([#371](https://github.com/vihren-dev/belay/issues/371)). The theorem fails
-the build when the text and `db/schema.sql` build different databases. A claim
-about a migration is about the schema before it. When the migration is in
-production and you update `db/schema.sql` and `shop`, give the claims of that
-migration their own copy of the old schema, or delete them.
+`shop` is the database that the statements of `db/schema.sql` build. The search
+for counterexamples reads the SQL of the file, so the schema has one copy. A
+claim about a migration is about the schema before it. When the migration is
+in production and you add it to `db/schema.sql`, `shop` changes too. Give the
+claims of that migration their own copy of the old schema, or delete them.
 
 The section in `AGENTS.md` names the directory of the SQL files, the directory
 of the claims and the schema database. It tells the agent to read the skill

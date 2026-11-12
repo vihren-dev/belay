@@ -126,7 +126,8 @@ def runSites (run property : Expr) : MetaM QuerySites := do
 proof variables while their SQL is inspected; these variables are never supplied to the
 certificate. Query predicates retain their exact database argument; an observation of a run reads the
 program of the run ({name}`runSites`). Script success uses the
-selected database; a raw continuation program is marked unsupported instead of flattened.
+selected database; a raw continuation program is marked unsupported instead of flattened. A premise
+{name}`Database.HasCatalog` has no sites, also when its schema is the database of a run of SQL text.
 The finite depth is a heuristic limit. Missing inputs or unsupported structure can return
 unknown in the caller, while the explicit refutation primitive remains available. -/
 def querySites (proposition : Expr) (choose : Name → Expr → MetaM Expr)
@@ -169,6 +170,9 @@ where
         return ← runSites arguments[1]! arguments[2]!
       if programRelationNames.any head.isConstOf && arguments.size ≥ 4 then
         return ← programSites #[arguments[1]!, arguments[2]!] arguments.back!
+      -- A catalog premise has no query: the kernel certifies it on the witness, and the replay builds
+      -- the witness itself. Its schema can be the database of a run of SQL text, which is no site.
+      if head.isConstOf ``Database.HasCatalog then return {}
       if head.isLambda then return ← visit fuel (head.beta arguments)
       if let .const name levels := head then
         -- Logical constructors are inspected by their proposition arguments below.

@@ -33,8 +33,8 @@ If the project has no claims directory with a `Schema.lean`, do
   the claims library, so put experiments in a file of `Claims/` also. If a
   library law needs the migration as Lean syntax, prove with `rfl` that the
   syntax is equal to the file.
-- **The schema** is the database `shop` of `Claims/Schema.lean`: the text of
-  `db/schema.sql` in `db!`, and a theorem that the two are the same database.
+- **The schema** is the database `shop` of `Claims/Schema.lean`: the database
+  that `db/schema.sql` builds, `(Database.empty.run (sql_file "db/schema.sql")).db`.
   It is the schema before the migration that you add. Do not change it in the
   same change as the migration.
 - **State a claim for each SQL change, with the schema in the claim.** For a
@@ -181,10 +181,9 @@ Do this once, when the project has no `Schema.lean` in a claims directory.
    directory of the lakefile, so that the project and Belay use one version of
    Lean. The first `lake build` compiles Belay and takes minutes.
 5. Write `Claims/Schema.lean` from
-   [`templates/Schema.lean`](templates/Schema.lean), with the SQL of the
-   schema file in `db!`, and `Claims.lean` with `import Claims.Schema`. Run
-   `lake build`. If the theorem of the schema fails, the text in `db!` and the
-   file build different databases: correct the text.
+   [`templates/Schema.lean`](templates/Schema.lean), with the path of the
+   schema file, and `Claims.lean` with `import Claims.Schema`. Run
+   `lake build`.
 6. Add [`templates/AGENTS-stanza.md`](templates/AGENTS-stanza.md) to the
    `AGENTS.md` or `CLAUDE.md` of the project, with the three names. If the
    project has neither file, make `AGENTS.md`.

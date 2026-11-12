@@ -70,12 +70,36 @@ def scriptValue (expression : Expr) (excluded : Array Name := #[])
     (mkApp (mkConst ``Script.statements) expression) excluded excludedLocals
   return ⟨statements⟩
 
-/-- The SQL text of a database term's schema: the source of a {lit}`db!` constant, or the
-schema text of a database that the checker generated ({name}`schemaSourceKey`). None for other
-terms. -/
-def schemaText? (database : Expr) : MetaM (Option String) := do
+/-- The start database and the script of a database term that is the database at the end of a
+run of a script, {lit}`(start.run script env).db`, through a finite number of definition
+unfoldings, as in {name}`sourceOf`. None for other terms. -/
+def runParts? (database : Expr) (fuel : Nat := 128) : MetaM (Option (Expr × Expr)) := do
+  let rec visit : Nat → Expr → MetaM (Option (Expr × Expr))
+    | 0, _ => pure none
+    | fuel + 1, current => do
+      let current := current.consumeMData
+      if current.isAppOfArity ``Run.db 2 then
+        let run := current.appArg!.consumeMData
+        if run.isAppOfArity ``Database.run 6 && (run.getArg! 0).isConstOf ``Script then
+          return some (run.getArg! 3, run.getArg! 4)
+      let some unfolded ← unfoldDefinition? current | return none
+      visit fuel unfolded
+  visit fuel database
+
+/-- The SQL text of a database term's schema: the source of a {lit}`db!` constant, the schema
+text of a database that the checker generated ({name}`schemaSourceKey`), or, for the database
+at the end of a run of a script with SQL text ({lit}`sql`, {lit}`sql!` or {lit}`sql_file`), the
+text of the start database followed by the text of the script ({name}`runParts?`). The start
+database {name}`Database.empty` has the empty text. None for other terms: a computed
+database without SQL text, which the search cannot replay. The text is a proposal; the replay
+checks that it builds the database ({lit}`constructionMatches`). -/
+partial def schemaText? (database : Expr) : MetaM (Option String) := do
   if let some source ← sourceOf databaseSourceKey database then return some source.text
-  return (← sourceOf schemaSourceKey database).map (·.text)
+  if let some source ← sourceOf schemaSourceKey database then return some source.text
+  let some (start, script) ← runParts? database | return none
+  let some scriptText := (← sourceOf scriptSourceKey script).map (·.text) | return none
+  if start.consumeMData.isConstOf ``Database.empty then return some scriptText
+  return (← schemaText? start).map (· ++ "\n" ++ scriptText)
 
 /-- The term of a generated database, with the SQL text of its schema when there is one, so
 that its replay can build it from that text ({lit}`Replay.schemaRowsSql`). -/

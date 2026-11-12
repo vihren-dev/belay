@@ -2,6 +2,7 @@ import Belay.Sqlite.Tooling.Counterexamples.CheckDomain
 import Belay.Sqlite.Tooling.Counterexamples.CheckData
 import Belay.Sqlite.Tooling.Counterexamples.CheckScreen
 import Belay.Sqlite.Tooling.Counterexamples.SampleCandidates
+import Belay.Sqlite.Tooling.Counterexamples.ReplayDatabaseSql
 
 set_option doc.verso true
 
@@ -84,7 +85,9 @@ that the claim's equality premises name ({name}`domainDatabases`) and the genera
 result. The generated candidates of a value are at most its share of the candidate count that
 is left ({name}`valueShare`). The screen is {name}`SampleConfig.screen`, else the compiled screen of the claim
 ({name}`compileScreen`). A claim without a screen gets only the explicit witnesses, the empty
-database and the named databases, and the reason is recorded ({name}`recordReason`). The
+database and the named databases, and the reason is recorded ({name}`recordReason`). A schema without
+SQL text ({name}`schemaText?`) that a replay cannot build from its catalog ({name}`Replay.databaseSql`)
+records its reason too. The
 callback also gets the screen and the value that hold for the witness, for shrinking: for a
 generated candidate, its value; for an explicit witness with the configured environment and
 named inputs, {name}`Value.null`, which no input uses then; else none. The candidate count covers every
@@ -110,6 +113,9 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
     if let some result ← attempt (accept witness screened) then return some result
   let domain := (← attempt (domainDatabases proposition)).getD #[]
   let suppliedSchema := config.schema.or ((← attempt (domainSchemas proposition)).bind (·[0]?))
+  let schemaText ← match suppliedSchema with
+    | some schema => schemaText? schema
+    | none => pure none
   for (value, valueIndex) in config.values.zipIdx do
     if tried >= config.candidates then return none
     let initial : Witness :=
@@ -144,10 +150,13 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       dataValue (Database.Raw × List Value × Option (List Model.Identifier))
         (mkApp3 (mkConst ``inferredData) scripts schema (toExpr complete)) | continue
     let some baseDatabase := Sampling.validated base | continue
+    -- Without SQL text, a replay can build only plain tables (Replay.databaseSql).
+    if suppliedSchema.isSome && schemaText.isNone && (Replay.databaseSql baseDatabase).isNone then
+      recordReason "the schema of the search has no SQL text, and the checker can build a schema without its \
+        text only when its tables have no keys or constraints and it has no indexes, triggers or views. Write the \
+        schema with db!, or as the database at the end of a run of SQL text, for example \
+        (Database.empty.run (sql_file \"db/schema.sql\")).db"
     let baseExpression := suppliedSchema.getD (databaseExpr base)
-    let schemaText ← match suppliedSchema with
-      | some schema => schemaText? schema
-      | none => pure none
     -- Generate and screen together, up to the first candidate after the position that the screen
     -- accepts; after a rejected certificate, generate again and continue after it.
     let valueEnd := tried + valueShare (config.candidates - tried) (config.values.length - valueIndex) last
