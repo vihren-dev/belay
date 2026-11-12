@@ -166,10 +166,11 @@ test with `sql_refute (db := found)`.
 The questions are independent. A migration that fails keeps every read, so
 state `succeeds` together with `preserves`.
 
-Each claim is about one database or about every database. For one database,
-such as `found` above, Lean's kernel runs the statements and settles the claim.
-For every database, `#sql_check` searches for a counterexample and tries the
-library's proofs, and a proof by you or an agent settles the rest.
+A fact about one run on one database, such as the two examples with
+`found.run` above, is settled by Lean's kernel, which runs the statements. A
+claim in the notation of the table is about every database. For such a claim,
+`#sql_check` searches for a counterexample and tries the library's proofs, and
+a proof by you or an agent settles the rest.
 
 ## Why trust it
 
