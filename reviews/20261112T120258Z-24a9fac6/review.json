@@ -3,6 +3,7 @@
   "commit": "24a9fac61c32472c8c511c5313bc53bf1363d273",
   "date": "2026-11-12T12:02:58+00:00",
   "exit": 0,
+
   "files": [
     "README.md",
     "docs/guide/agents.md",
