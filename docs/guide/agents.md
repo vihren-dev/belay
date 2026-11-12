@@ -153,8 +153,8 @@ which Lake prints again in each run
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | The law `DerivedColumnMigration.queryPreserves`. The agent proves the facts about the table and about each read: 150 to 180 lines for two reads in the tests of this page. |
-| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../tests/surface/RebuildKeeps.lean). |
-| `Succeeds` for every database of a schema | A proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/RebuildSucceeds.lean). |
+| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../tests/surface/Schema/Tests/RebuildKeeps.lean). |
+| `Succeeds` for every database of a schema | A proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
 
 Two rules make the answers useful. Write the claim out in `#sql_check`; the
 name of a definition that holds the claim gives `unknown`
@@ -293,4 +293,5 @@ to review:
 - The [surface library](../../packages/belay/README.md) describes the notation,
   SQL in separate files, the tactics and the options of the check.
 - The examples under [`tests/surface`](../../tests/surface) are proofs that CI
-  compiles. An agent can read them as patterns.
+  compiles. An agent can read them as patterns. The migration examples are in
+  [`tests/surface/Schema/Tests`](../../tests/surface/Schema/Tests).

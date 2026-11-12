@@ -53,4 +53,5 @@ to `Claims.lean`.
 
 The Belay repository is in `.lake/packages/belay/`. Read
 `docs/guide/agents.md`, `packages/belay/README.md` and the examples in
-`tests/surface/` there. You cannot import the examples.
+`tests/surface/` there. The migration examples are in
+`tests/surface/Schema/Tests/`. You cannot import the examples.
