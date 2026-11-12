@@ -133,7 +133,8 @@ to the read can depend on the index, for example a lookup for every email:
 evaluates the check at the sample, so the goal of {lit}`decide` has no free variable. Proof sketch:
 {name}`preserves_of_check` at each index, with the statements of the sample. -/
 theorem preserves_of_check_forall {α : Type} {schema : Database} {migration : Script} (query : α → Script)
-    (sample : α) (sameStatements : ∀ index, (query index).statements.map Prod.fst = (query sample).statements.map Prod.fst)
+    (sample : α)
+    (sameStatements : ∀ index, (query index).statements.map Prod.fst = (query sample).statements.map Prod.fst)
     (checked : preservesCheck schema migration ((query sample).statements.map Prod.fst) = true) :
     ∀ index, Migration.QueryPreserves (Runnable.toSql migration) (query index)
       (fun db => db.HasCatalog schema) (isQuery_of_preservesCheck (by rw [sameStatements index]; exact checked)) :=

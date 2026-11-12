@@ -12,7 +12,9 @@ Status: in progress; reads (a) done, success (b) and example (c) pending.
 - Model steps: `addColumn_plain_step`, `backfill_step`, `derivedColumn_state` in
   `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/`.
 - Computed check (a): `Schema/Columns/DerivedColumnSiteCheck.lean`, `DerivedColumnReadCheck.lean`,
-  `Programs/StatementRunLaws/DerivedColumnSchema.lean` (all under `packages/belay/Belay/Sqlite/`).
+  `Programs/StatementRunLaws/DerivedColumnSchema.lean` (all under `packages/belay/Belay/Sqlite/`); model
+  parts `Queries/Evaluation/ExprFormChecks.lean` and `Schema/Dispatch/SelectTableParts.lean` (under
+  `packages/belay-sqlite-model/Belay/Sqlite/Model/`).
 - Hand proof to replace: `tests/surface/Schema/Tests/DerivedColumnSchemaPremise.lean`.
 - Page for agents: `docs/guide/agents.md`.
 
