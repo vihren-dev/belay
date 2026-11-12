@@ -13,8 +13,10 @@ from tests.runtime_support import CommandResult, CommandTimeout
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
-OWNER_JOB_LIMIT_MINUTES = 75
-"""Owner feedback of 2026-10-08 restores the aggregate job ceiling; child deadlines stay independent."""
+OWNER_JOB_LIMIT_MINUTES = {"x86_64-linux": 75, "aarch64-darwin": 120}
+"""Owner feedback of 2026-10-08 restores the aggregate job ceiling; child deadlines stay independent.
+On 2026-11-12 the owner raised the macOS ceiling: without a saved store, the macOS runner builds the
+Lean packages for about 60 minutes before the test suites start."""
 
 
 @pytest.mark.parametrize("scope", ["test", "full"])
@@ -22,11 +24,14 @@ OWNER_JOB_LIMIT_MINUTES = 75
 @pytest.mark.parametrize("system", ["aarch64-darwin", "x86_64-linux"])
 def test_hosted_job_keeps_owner_limit_and_child_deadlines(
         tmp_path: Path, scope: str, mode: str, system: str) -> None:
-    """The 75-minute aggregate limit and individual child deadlines are separate bounds."""
+    """The aggregate limit of the job on each platform and the individual child deadlines are
+    separate bounds, and no child deadline is longer than the job limit."""
     workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text()
     check_job = workflow.split("  check:\n", 1)[1].split("\n  publish:", 1)[0]
-    match = re.search(r"(?m)^    timeout-minutes: ([1-9][0-9]*)$", check_job)
+    match = re.search(r"(?m)^    timeout-minutes: \$\{\{ matrix.system == 'aarch64-darwin' "
+                      r"&& ([1-9][0-9]*) \|\| ([1-9][0-9]*) \}\}$", check_job)
     assert match is not None
+    job_limits = {"aarch64-darwin": int(match.group(1)), "x86_64-linux": int(match.group(2))}
     budgets: list[float] = []
 
     def invoke(command: list[str], *, cwd: Path, environment: dict[str, str],
@@ -43,9 +48,9 @@ def test_hosted_job_keeps_owner_limit_and_child_deadlines(
     reference = re.search(r"timeout --foreground ([1-9][0-9]*) nix-build [^\n]*-A apiReference", recipes)
     assert reference is not None, "Reference phase has no bounded recipe"
     reference_limit = int(reference.group(1))
-    assert int(match.group(1)) == OWNER_JOB_LIMIT_MINUTES
-    assert reference_limit == 1800
-    assert all(0 < timeout <= OWNER_JOB_LIMIT_MINUTES * 60 for timeout in budgets)
+    assert job_limits == OWNER_JOB_LIMIT_MINUTES
+    assert reference_limit == 3600
+    assert all(0 < timeout <= job_limits[system] * 60 for timeout in budgets)
     assert budgets[-1] == CHECKS_PHASE_LIMIT_SECONDS == 3600
 
 
