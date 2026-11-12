@@ -55,10 +55,12 @@ A correct migration must keep the result of this query:
 def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessions"
 ```
 
-This command tries to prove that claim or to find a counterexample:
+This command tries to prove that claim or to find a counterexample. `on shop`
+limits the claim to the databases with the schema `shop`, and the check
+searches those databases:
 
 ```lean
-#sql_check makeStrictWrongEnforced preserves allSessions with (schema := shop)
+#sql_check makeStrictWrongEnforced preserves allSessions on shop
 ```
 
 The output is:
