@@ -156,14 +156,20 @@ test with `sql_refute (db := found)`.
 
 ## What you can state
 
-| Level | The question | Notation | Who settles it |
-| --- | --- | --- | --- |
-| 1 | Is the SQL valid against this schema? | `sql!`, `db!` | The elaborator, when the file compiles |
-| 2 | Does it run without an error? | `succeeds`, `succeeds where` | `#sql_check` and tactics, or a proof |
-| 3 | What does it do to the data? | `ensures`, `≈`, `preserves` | `#sql_check` and tactics, or a proof |
-| 4 | Does the whole application behave the same? | `simulates` | A proof that you or an agent write |
+| The question | Notation | Who settles it |
+| --- | --- | --- |
+| Is the SQL valid against this schema? | `sql!`, `db!` | The elaborator, when the file compiles |
+| Does it run without an error? | `succeeds`, `succeeds where` | `#sql_check` and tactics, or a proof |
+| What does it do to the data? | `ensures`, `≈`, `preserves` | `#sql_check` and tactics, or a proof |
+| Does the whole application behave the same? | `simulates` | A proof that you or an agent write |
 
-You can stop at the level you need.
+The questions are independent. A migration that fails keeps every read, so
+state `succeeds` together with `preserves`.
+
+Each claim is about one database or about every database. For one database,
+such as `found` above, Lean's kernel runs the statements and settles the claim.
+For every database, `#sql_check` searches for a counterexample and tries the
+library's proofs, and a proof by you or an agent settles the rest.
 
 ## Why trust it
 
