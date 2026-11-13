@@ -57,7 +57,7 @@ theorem lookup_read_preserved : ∀ email : Value,
 /-- On every database with the catalog of {lit}`shop` and in every complete environment, the migration runs
 without an error. -/
 theorem email_lower_succeeds :
-    Succeeds addEmailLower (·.HasCatalog shop) :=
+    addEmailLower succeeds on shop :=
   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 
 #print axioms star_read_changes

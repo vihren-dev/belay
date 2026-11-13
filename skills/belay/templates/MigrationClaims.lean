@@ -16,7 +16,7 @@ def customerByEmail (email : Value) : Script :=
 #sql_check addEmailLower preserves namedCustomers on shop
 #sql_check ∀ email : Value,
   addEmailLower preserves (customerByEmail email) on shop
-#sql_check Succeeds addEmailLower (·.HasCatalog shop)
+#sql_check addEmailLower succeeds on shop
 
 -- When an answer is `false`: keep its database, with the statements that the answer
 -- prints after `Construction:` in a raw string with hashes, and prove the fact.
@@ -39,7 +39,7 @@ def customerByEmail (email : Value) : Script :=
 -- theorem named_read_preserved : addEmailLower preserves namedCustomers on shop :=
 --   DerivedColumnMigration.preserves_of_check (by decide +kernel)
 --
--- theorem email_lower_succeeds : Succeeds addEmailLower (·.HasCatalog shop) :=
+-- theorem email_lower_succeeds : addEmailLower succeeds on shop :=
 --   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 
 -- Before you finish: replace each `#sql_check` with its theorem, or with a comment
