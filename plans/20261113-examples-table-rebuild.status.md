@@ -2,10 +2,10 @@
 
 Created 2026-11-13. Task: `20261113-examples-table-rebuild.task.md`.
 
-Relevant files: `README.md`, `tests/surface/Schema/Tests/RebuildExample.lean` and the `Rebuild*`
-proof modules under `tests/surface`, `tests/surface_rebuild_test.py`, `tests/surface_support.py`,
-`build-support/tests.nix`, `tests/test_lean_categories.py`, `docs/guide/agents.md`,
-`skills/belay/SKILL.md`.
+Relevant files: `README.md`, `examples/table-rebuild/` (`TableRebuild.lean`, `FixedSucceeds.lean`,
+`lakefile.toml`, `README.md`, the proof modules in `Proof/`), `tests/surface_rebuild_test.py`,
+`tests/surface_support.py`, `build-support/tests.nix`, `tests/test_lean_categories.py`,
+`docs/guide/agents.md`, `skills/belay/SKILL.md`.
 
 ## Progress
 
@@ -21,4 +21,4 @@ proof modules under `tests/surface`, `tests/surface_rebuild_test.py`, `tests/sur
   (`test_example_project_of_the_readme_builds_checks_and_proves_its_claims`). README, page for agents
   and skill name the new places. Tests: `tests/surface_rebuild_test.py`, `tests/test_lean_categories.py`,
   `tests/docs_test.py`; the Lake test needs the Nix runtime (in the development layout Lake fetches
-  Plausible with git), and passed locally with git on the path.
+  Plausible with git). Nix validation (`just test-full`) is pending.
