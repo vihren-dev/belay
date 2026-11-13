@@ -36,7 +36,7 @@ let
     (builtins.fromJSON (builtins.readFile (root + /tests/conformance_frontend.json)));
   # The package outputs in the repository layout. Each package folder is a real folder, so the relative
   # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
-  packageRoot = pkgs.runCommand "sqlite-verifier-test-packages" {} ''
+  packageRoot = pkgs.runCommand "belay-test-packages" {} ''
     mkdir -p "$out"
     ln -s ${leanToolchain} "$out/lean"
     ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (path: package: ''
@@ -45,13 +45,13 @@ let
     '') leanPackages)}
   '';
   # The compiler and the built documentation tool, for the inventory's fixture tests.
-  documentationRoot = pkgs.runCommand "sqlite-verifier-test-documentation" {} ''
+  documentationRoot = pkgs.runCommand "belay-test-documentation" {} ''
     mkdir -p "$out/packages"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
   # The surface (ADR 0016, D1) in the repository layout, with the text package and the model.
-  surfaceRoot = pkgs.runCommand "sqlite-verifier-test-surface" {} ''
+  surfaceRoot = pkgs.runCommand "belay-test-surface" {} ''
     mkdir -p "$out/packages"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${surfacePackage} "$out/packages/belay"
@@ -69,7 +69,7 @@ let
       file = builtins.head files;
       extraFiles = builtins.tail files;
     in pkgs.stdenvNoCC.mkDerivation ({
-      pname = "sqlite-verifier-test-${name}";
+      pname = "belay-test-${name}";
       version = "1";
       src = fs.toSource { inherit root; fileset = fs.unions (common ++ [ (root + "/${file}") ] ++ (map (name: root + "/${name}") extraFiles) ++ inputs); };
       nativeBuildInputs = [ (python name) ] ++ tools;
@@ -354,7 +354,7 @@ in {
       (fs.fileFilter (file: pkgs.lib.hasPrefix "theorem_dependenc" file.name
         && builtins.any file.hasExt [ "py" "html" "css" "js" "lean" ]) (root + /tools))
       (root + /tests/theorem_dependencies) (root + /tests/theorem_dependency_graph_test.js) ];
-    runtime = pkgs.linkFarm "sqlite-verifier-test-lean" [ { name = "lean"; path = leanToolchain; } ];
+    runtime = pkgs.linkFarm "belay-test-lean" [ { name = "lean"; path = leanToolchain; } ];
     tools = [ pkgs.nodejs ];
   };
   # The old `model` suite is four suites, one for each area of the model: on hosted macOS it took

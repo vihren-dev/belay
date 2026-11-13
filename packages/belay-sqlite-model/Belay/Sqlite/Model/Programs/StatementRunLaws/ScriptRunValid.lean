@@ -50,6 +50,6 @@ theorem runScriptStep_valid {profile : Profile} (context : ResolveContext) (cloc
   | continued output next others =>
     exact kept { outputs := [found.output], connection := found.next }
       (by simp only [runScriptAllFrom, runScriptAllWith, step]
-          exact List.mem_flatMap.2 ⟨found, by simpa [step] using member, List.mem_map.2 ⟨⟨[], found.next⟩, by simp [runScriptAllWith], rfl⟩⟩)
+          exact List.mem_flatMap.2 ⟨found, by simpa [step] using member, List.mem_map.2 ⟨⟨[], found.next⟩, by simp, rfl⟩⟩)
 
 end Belay.Sqlite.Model

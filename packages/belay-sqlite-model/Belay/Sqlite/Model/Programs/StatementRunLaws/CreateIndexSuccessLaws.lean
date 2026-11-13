@@ -74,7 +74,7 @@ private theorem runScriptStep_createIndex_plain_ok_iff (context : ResolveContext
   cases found : connection.state.database.catalog.findTable tableName with
   | none =>
     cases view : (connection.state.database.catalog.findView tableName).isSome <;>
-      simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, view, restrict,
+      simp [statement_arms, resolveCreateIndex, Connection.resolveState, found, view,
         prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError, Output.endsRun]
   | some pair =>
     rcases pair with ⟨position, table⟩

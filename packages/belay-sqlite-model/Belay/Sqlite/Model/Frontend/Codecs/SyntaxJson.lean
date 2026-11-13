@@ -52,7 +52,7 @@ instance : Lean.FromJson Syntax.TableOptions where
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 
 /-- The derived reader of a statement, which needs every field. -/
-def Syntax.Statement.derivedFromJson : Lean.FromJson Syntax.Statement := inferInstance
+@[instance_reducible] def Syntax.Statement.derivedFromJson : Lean.FromJson Syntax.Statement := inferInstance
 
 /-- The fields of statement constructors that the frontend writes only when they differ from
 their default, so the records of statements without them keep the form that they had before
@@ -73,7 +73,7 @@ def Syntax.Statement.withDefaultFields (json : Lean.Json) : Lean.Json :=
     | _, _ => json) json
 
 /-- The derived writer of a statement, which writes every field. -/
-def Syntax.Statement.derivedToJson : Lean.ToJson Syntax.Statement := inferInstance
+@[instance_reducible] def Syntax.Statement.derivedToJson : Lean.ToJson Syntax.Statement := inferInstance
 
 /-- The JSON of a statement without each field of {name}`Syntax.Statement.defaultFields` that
 has its default, the form that the frontend writes ({name}`Syntax.Statement.withDefaultFields`

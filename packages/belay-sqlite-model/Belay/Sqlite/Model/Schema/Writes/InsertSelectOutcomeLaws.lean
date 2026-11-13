@@ -119,8 +119,8 @@ theorem insertSelectOutcome_cases (clock : Int) (counters : Counters) (parameter
   | ok pair =>
     simp only [summary] at effect ready ⊢
     cases failure : production.failure with
-    | none => simp only [failure, Option.map_none]; exact .inr ⟨_, effect.symm, ready⟩
-    | some reason => simp only [failure, Option.map_some]; exact .inl ⟨reason.toError, rfl⟩
+    | none => simp only [Option.map_none]; exact .inr ⟨_, effect.symm, ready⟩
+    | some reason => simp only [Option.map_some]; exact .inl ⟨reason.toError, rfl⟩
 
 /-- For every clock value, counters, parameters, target, cells, query, clauses, {lit}`RETURNING` list,
 algorithm, subqueries, rules and database, the effect of INSERT from a query with rules is an error that

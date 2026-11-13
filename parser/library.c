@@ -116,46 +116,46 @@ static void output(Document *document, const Context *ctx, const char *identity)
 /* Check the input size and encoding, then parse a NUL-terminated copy: the
 ** tokenizer reads past the end of a token until it finds a NUL byte. */
 static int parse_checked(GrammarParse parse, Context *ctx, const unsigned char *sql, size_t length){
-  if(length > LIBRARY_INPUT_LIMIT){ ctx->error = 2; return SQLITE_VERIFIER_PARSER_OK; }
-  if(!utf8_valid(sql, length)){ ctx->error = 1; return SQLITE_VERIFIER_PARSER_OK; }
+  if(length > LIBRARY_INPUT_LIMIT){ ctx->error = 2; return BELAY_SQLITE_PARSER_OK; }
+  if(!utf8_valid(sql, length)){ ctx->error = 1; return BELAY_SQLITE_PARSER_OK; }
   char *text = calloc(length + 4, 1);
-  if(!text) return SQLITE_VERIFIER_PARSER_NO_MEMORY;
+  if(!text) return BELAY_SQLITE_PARSER_NO_MEMORY;
   if(length) memcpy(text, sql, length);
   parse(ctx, text, (int)length);
   free(text);
-  return SQLITE_VERIFIER_PARSER_OK;
+  return BELAY_SQLITE_PARSER_OK;
 }
 
 /* Hand the finished document to the caller, or release it after an allocation failure. */
 static int finish(Document *document, char **result, size_t *length){
-  if(document->failed){ free(document->data); return SQLITE_VERIFIER_PARSER_NO_MEMORY; }
+  if(document->failed){ free(document->data); return BELAY_SQLITE_PARSER_NO_MEMORY; }
   *result = document->data;
   *length = document->length;
-  return SQLITE_VERIFIER_PARSER_OK;
+  return BELAY_SQLITE_PARSER_OK;
 }
 
-int sqlite_verifier_parser_metadata(char **document, size_t *length){
+int belay_sqlite_parser_metadata(char **document, size_t *length){
   Document copy = {0};
   document_append(&copy, library_metadata, sizeof library_metadata - 1);
   return finish(&copy, document, length);
 }
 
-int sqlite_verifier_parser_parse(const char *grammar, const unsigned char *sql, size_t length,
+int belay_sqlite_parser_parse(const char *grammar, const unsigned char *sql, size_t length,
                                  char **document, size_t *document_length){
   size_t count = sizeof library_grammars / sizeof library_grammars[0];
   size_t index = 0;
   while(index < count && (!grammar || strcmp(grammar, library_grammars[index].identity))) index++;
-  if(index == count) return SQLITE_VERIFIER_PARSER_UNKNOWN_GRAMMAR;
+  if(index == count) return BELAY_SQLITE_PARSER_UNKNOWN_GRAMMAR;
   Context ctx = {0};
   Document result = {0};
   int status = parse_checked(library_grammars[index].parse, &ctx, sql, length);
-  if(status == SQLITE_VERIFIER_PARSER_OK) output(&result, &ctx, library_grammars[index].identity);
+  if(status == BELAY_SQLITE_PARSER_OK) output(&result, &ctx, library_grammars[index].identity);
   for(int i = 0; i < ctx.count; i++) free(ctx.nodes[i].children);
   free(ctx.nodes);
-  if(status != SQLITE_VERIFIER_PARSER_OK) return status;
+  if(status != BELAY_SQLITE_PARSER_OK) return status;
   return finish(&result, document, document_length);
 }
 
-void sqlite_verifier_parser_free(char *document){
+void belay_sqlite_parser_free(char *document){
   free(document);
 }

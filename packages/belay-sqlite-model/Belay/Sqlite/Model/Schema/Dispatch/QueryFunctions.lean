@@ -93,7 +93,7 @@ theorem source_fault_of_plain (context : EvalContext) (database : Database) (ini
           (context.subqueries index state.outer).ending != .done ||
           !(context.subqueries index state.outer).sourceCertain) = true
       · simp [QuerySource.join, refused] at done
-      · simp only [QuerySource.join, refused, ↓reduceIte, Option.bind_some] at done
+      · simp only [QuerySource.join, refused] at done
         refine source_fault_of_plain context database initial rest _ result plain.2 ?_ done
         exact clean
     | pragma pragma =>

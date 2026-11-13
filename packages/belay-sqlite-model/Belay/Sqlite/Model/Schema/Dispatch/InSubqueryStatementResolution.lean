@@ -84,7 +84,7 @@ theorem resolveStatement_selectFrom_inQuery (context : ResolveContext) (state : 
         (inCollation outerScope probe shape) negated)) { later := [shape] } :=
     FilterResolves.of_term (result := (.inQuery probeExpression 0 (comparisonAffinity probeAffinity columnAffinity)
       (inCollation outerScope probe shape) negated, none)) (by simpa [namesAlias] using probeNoAlias)
-      (by rw [resolveOperand_inQuery, probeOk, SubqueryShapes.column_only parentless (by subst shapeIs; rfl) single]
+      (by rw [resolveOperand_inQuery, probeOk, SubqueryShapes.column_only parentless single]
           simp [Except.mapError, Bind.bind, Except.bind, affinityIs])
   have result := resolveStatement_selectFrom_subquery context state mainReference innerReference mainColumns
     [.expression innerValue innerAlias innerText] (.inQuery probe 0 negated) none position innerPosition outer table

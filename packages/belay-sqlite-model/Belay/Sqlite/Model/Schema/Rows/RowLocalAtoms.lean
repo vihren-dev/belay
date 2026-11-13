@@ -46,7 +46,7 @@ theorem Table.ChecksHold.frame {table other : Table} (holds : table.ChecksHold)
 constraint fact: every table that passes {name}`LiteralData.constraints` for any keys has the
 property. Use {lit}`Table.notNullAtom`, {lit}`Table.typesFitAtom`, or {lit}`Table.checksHoldAtom`
 for the corresponding row-local constraint. -/
-structure RowLocalAtom (atom : Table → Prop) extends TableAtom atom : Prop where
+structure RowLocalAtom (atom : Table → Prop) : Prop extends TableAtom atom where
   /-- A table that passes the checks of a write for some keys has the property. -/
   constraints : ∀ keys table, LiteralData.constraints keys table = true → atom table
 

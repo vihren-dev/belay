@@ -81,6 +81,20 @@ def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path
                        timeout=CHAIN_TIMEOUT_SECONDS)
 
 
+def test_check_of_the_readme_finds_the_lost_session_on_the_schema(runtime_root: Path, tmp_path: Path) -> None:
+    """The README checks the wrong rebuild with the claim of its theorem, `on shop` (fixture RebuildCheck). The
+    check takes the schema from the premise of the claim (`CheckSamples.visitCandidates`) and answers false with
+    the database of the README: one customer and one session of that customer. The replay builds that database
+    from SQL text. The test pins the answer that the README prints."""
+    output = check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildCheck", 0)),
+                                timeout=CHAIN_TIMEOUT_SECONDS)
+    assert "SQL check: false.\nDatabase:\ncustomers:\n  id | name | email\n  1  | NULL | ''\nsessions:\n" \
+        "  id | customer_id | expires_at\n  1  | 1           | 0\n" in output, output
+    assert "allSessions: rows [[1, 1, 0]]" in output, output
+    replay = output.split("SQLite replay:\n", 1)[1]
+    assert 'INSERT INTO "sessions" ("id", "customer_id", "expires_at") VALUES (1, 1, 0);' in replay, output
+
+
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:
     """The right rebuild preserves the read of all sessions on every database whose catalog is the guide's schema,
     for every complete environment (claim 1 of the guide). The rebuild is an INSERT from a query, so its branches

@@ -23,6 +23,18 @@ theorem guarded_preserves_expansion (value : Value) :
     (migration preserves sql r"SELECT $value" where sqlGuard) =
       Migration.QueryPreserves migration (sql r"SELECT $value") (fun db => Holds sqlGuard db) := rfl
 
+/-- The schema of the claims with {lit}`on`. -/
+def shop : Database := db! "CREATE TABLE t(a)"
+
+/-- A preservation on a schema covers the databases with the catalog of the schema. -/
+theorem schema_preserves_expansion : (migration preserves sql r"SELECT 1" on shop) =
+    Migration.QueryPreserves migration (sql r"SELECT 1") (·.HasCatalog shop) := rfl
+
+/-- A preservation on a schema with a guard needs both the catalog and the guard. -/
+theorem guarded_schema_preserves_expansion :
+    (migration preserves sql r"SELECT 1" on shop where sqlGuard) =
+      Migration.QueryPreserves migration (sql r"SELECT 1") (fun db => db.HasCatalog shop ∧ Holds sqlGuard db) := rfl
+
 /-- Translation supports scripts as migrations through the existing Runnable instance. -/
 theorem translates_expansion :
     ((sql r"SELECT 3") translates sql r"SELECT 1" to sql r"SELECT 2") =
@@ -70,6 +82,8 @@ theorem default_guard_is_distinct :
 
 #print axioms preserves_expansion
 #print axioms guarded_preserves_expansion
+#print axioms schema_preserves_expansion
+#print axioms guarded_schema_preserves_expansion
 #print axioms translates_expansion
 #print axioms guarded_translates_expansion
 #print axioms commutes_expansion

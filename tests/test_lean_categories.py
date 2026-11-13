@@ -34,7 +34,8 @@ REPOSITORY_RULES = Rules(
     # The dependency suite invokes the standalone exporter and its fixtures directly with Lean.
     direct_fixture=("tests/public_doc_inventory/", "tests/surface/", "tests/docgen/", "conformance/regressions/",
                     "tests/theorem_dependencies/", "tools/theorem_dependency_exporter.lean"),
-    excluded=("experiments/",),
+    # The templates of the skill are copied into a user's project and built there.
+    excluded=("experiments/", "skills/belay/templates/"),
 )
 """The categories of this repository."""
 

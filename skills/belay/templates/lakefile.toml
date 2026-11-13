@@ -1,0 +1,21 @@
+# The Lake project of the claims. Change `shop` to the name of your project
+# and `db` to the directory of your SQL files.
+name = "shop"
+defaultTargets = ["Claims"]
+
+[[require]]
+name = "belay"
+git = "https://github.com/vihren-dev/belay"
+rev = "main"
+subDir = "packages/belay"
+
+# A change of a file in `db` rebuilds the claims that read it.
+[[input_dir]]
+name = "sqlFiles"
+path = "db"
+text = true
+filter.extension = ["sql"]
+
+[[lean_lib]]
+name = "Claims"
+needs = ["sqlFiles"]

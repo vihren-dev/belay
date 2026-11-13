@@ -1,0 +1,62 @@
+{
+  "caller": "claude",
+  "commit": "2cd1f31567b0ac4bb063b5601093f02c51f8d11e",
+  "date": "2026-11-12T13:31:24+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261112-derived-column-on-schema.status.md",
+    "plans/20261112-derived-column-on-schema.task.md",
+    "reviews/20261112T133006Z-4796030e/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261112T133124Z-2cd1f315#1",
+      "line": 50,
+      "path": "plans/20261112-derived-column-on-schema.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The requirement to cover every existing `Site` contradicts the required rejection of parameter-containing values, because `ContextFree` permits expressions such as `coalesce(0, ?1)` whose value is independent of the parameter. Fix: specify a sufficient syntactic subset for the automatic check instead of promising coverage whenever a `Site` exists."
+    },
+    {
+      "id": "20261112T133124Z-2cd1f315#2",
+      "line": 3,
+      "path": "plans/20261112-derived-column-on-schema.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task’s opening identifies its status file but does not state its current status. Fix: add an explicit status such as “Accepted; implementation pending.”"
+    },
+    {
+      "id": "20261112T133124Z-2cd1f315#3",
+      "line": 3,
+      "path": "plans/20261112-derived-column-on-schema.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file’s opening gives its creation date and task reference but no current status. Fix: state that specification is complete and implementation is pending."
+    }
+  ],
+  "id": "20261112T133124Z-2cd1f315",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

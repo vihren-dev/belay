@@ -31,7 +31,7 @@ theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : Subquery
       .ok [[(.aggregate ((build resolved).withCollation (operand.collationIn scope)), (alias.map (·.text)).getD text,
         none)]] := by
   have notJson : ¬ (build resolved).writesJson = true := by simp [noJson]
-  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, named, operandOk, outerZero, notJson, Resolved.Expr.readsUnder,
     Except.mapError, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- For every query whose one result column is an aggregate call, without grouping, ordering and {lit}`HAVING`, and
@@ -83,14 +83,14 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
   simp only [List.any_cons, List.any_nil, Bool.or_false, aggregates, List.isEmpty_cons, Bool.not_false, Bool.not_true, called,
-    List.isEmpty_nil, Bool.or_true, ite_true, Bool.false_and, Bool.true_and, List.flatMap_cons, List.flatMap_nil,
+    List.isEmpty_nil, Bool.or_true, ite_true, Bool.true_and, List.flatMap_cons, List.flatMap_nil,
     List.append_nil, Option.toList_none, Syntax.Expr.distinctList, List.foldl_nil, Bool.not_eq_true',
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
   · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
       Resolved.Output.canFail, firstRowResults, decidingCall_aggregateColumn scope source _ name operand alias text called]
   · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.aggregateOf,
-      Model.condition, Functor.map, Except.map, Resolved.Output.canFail, firstRowResults,
+      Model.condition, Resolved.Output.canFail, firstRowResults,
       decidingCall_aggregateColumn scope source _ name operand alias text called]
 
 /-- For every condition and aggregate whose expressions are calm ({name}`Resolved.Expr.Calm`) and every position, the

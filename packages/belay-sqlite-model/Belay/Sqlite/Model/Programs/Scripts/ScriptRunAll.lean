@@ -82,6 +82,6 @@ theorem runScriptAllFrom_head (context : ResolveContext) (clock : Option Clock) 
         rw [tail] at inner
         simp only [List.head?_cons, Option.some.injEq] at inner
         subst inner
-        simp [runScriptFrom]
+        simp
 
 end Belay.Sqlite.Model

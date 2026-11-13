@@ -6,8 +6,8 @@
 ** identity with TOKENIZER_PREFIX, and a grammar unit once for each pair of a parser and a
 ** tokenizer with all three prefixes. The tokenizer and grammar units include this header first.
 */
-#ifndef SQLITE_VERIFIER_LIBRARY_PREFIX_H
-#define SQLITE_VERIFIER_LIBRARY_PREFIX_H
+#ifndef BELAY_SQLITE_LIBRARY_PREFIX_H
+#define BELAY_SQLITE_LIBRARY_PREFIX_H
 #ifndef TOKENIZER_PREFIX
 #error "TOKENIZER_PREFIX must name the tokenizer's prefix"
 #endif

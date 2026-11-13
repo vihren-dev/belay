@@ -106,7 +106,7 @@ theorem runScriptStep_begin_ok {context : ResolveContext} {clock : Option Clock}
   obtain ⟨output, next, step⟩ := runScriptStep_begin_continues (parameters := parameters) (clock := clock)
     (index := index) found
   refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.finish, haltError, SqlState.statementRun, runStatement,
+  simp [advanceRun, advanceWith, SqlTransition.counted, haltError, SqlState.statementRun, runStatement,
     closed]
 
 /-- For every connection with an open transaction, statement and values that resolve to COMMIT: the step
