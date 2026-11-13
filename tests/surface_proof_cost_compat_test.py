@@ -93,8 +93,9 @@ def test_overhead_sample(compiler: Compiler, record_testsuite_property: Callable
     source = fixture_file("ProofCostSurface.lean").read_text()
     observations: dict[str, list[dict[str, object]]] = {"off": [], "on": []}
     snapshots = []
-    # The first pair warms the imports; the next four are measured in balanced order.
-    for iteration, enabled in enumerate((False, True, False, True, True, False)):
+    # The first pair warms the imports; the second pair is measured. Six compiles took 154-247 s on Linux and
+    # more than the test's limit of 300 s on hosted macOS, so the test measures one pair.
+    for iteration, enabled in enumerate((False, True, True, False)):
         # Both texts have the same length: SQL terms record source positions.
         text = source.replace("proofCosts true", "proofCosts " + ("true " if enabled else "false"), 1)
         result = compiler.compile("Surface", text, asynchronous=False)
