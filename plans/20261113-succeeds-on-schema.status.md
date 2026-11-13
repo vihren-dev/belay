@@ -23,3 +23,9 @@ Status: IN PROGRESS.
   `DerivedColumnOnSchema.lean` use `M succeeds on shop`. Tests: `tests/surface_success_test.py`,
   `tests/surface_derived_column_test.py` (host, without the consumer-project test, which needs
   Nix), `tests/surface_migration_patterns_test.py`.
+- 2026-11-13: #384: fixture `tests/surface/Schema/Tests/RebuildExample.lean` replaces
+  `RebuildCheck.lean`: the README's `shop`, `badMigration`, `fixedMigration`, both `#sql_check`
+  answers, `found` and the theorems `fixed_keeps_sessions` and `fixed_succeeds` (by
+  `fixedMigration_eq : fixedMigration = makeStrict := rfl` and `shop_catalog`, from the existing
+  proofs). The README uses the new names and links the fixture. Test:
+  `tests/surface_rebuild_test.py` (host).
