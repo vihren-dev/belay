@@ -48,7 +48,8 @@ def test_no_program_or_library_depends_on_a_parser_library(runtime_root: Path) -
 def test_objects_call_only_the_declared_c_library_functions(runtime_root: Path) -> None:
     """The undefined symbols of each object that the text package compiles from the C of `parser`
     are defined by another object of the library, or are one of `DECLARED_C_FUNCTIONS` of `tests/parser_object_symbols.py`. The headers of
-    `parser/c-headers` declare only what the units use, so a new C library function needs a new entry."""
+    `parser/c-headers` declare only what the units use, so a new C library function needs a new entry. On macOS the
+    stack-protector symbols that clang adds (`COMPILER_SYMBOLS`) are also allowed."""
     objects = sorted((runtime_root / "packages/belay-sqlite-text/.lake/build/c/parser").glob("*.o"))
     assert len(objects) >= 3, objects
     calls = undeclared_calls(objects)

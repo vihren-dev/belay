@@ -34,6 +34,14 @@ DECLARED_C_FUNCTIONS: dict[str, str] = {
 other object of the library defines: the ten functions of ADR 0023, fact 6. A new function here
 needs a review of its declaration in `parser/c-headers`."""
 
+COMPILER_SYMBOLS: dict[str, str] = {
+    "__stack_chk_fail": "The function that the stack protector calls when a check fails.",
+    "__stack_chk_guard": "The value that the stack protector stores and checks.",
+} if DARWIN else {}
+"""The symbols that the compiler adds to the objects on macOS, where clang turns on the stack protector by
+default. The C of `parser` does not call them, so `parser/c-headers` has no declaration of them to review.
+The C library of macOS (libSystem) defines them."""
+
 
 def run_tool(*command: str) -> str:
     """The standard output of a tool that must succeed, with a finite timeout."""
@@ -50,13 +58,13 @@ def symbols(path: Path, *options: str) -> set[str]:
 
 def undeclared_calls(objects: list[Path]) -> dict[str, list[str]]:
     """For each object, the undefined symbols that no other object of `objects` defines and that are
-    not in `DECLARED_C_FUNCTIONS`. Objects with no such symbol are left out."""
+    not in `DECLARED_C_FUNCTIONS` or `COMPILER_SYMBOLS`. Objects with no such symbol are left out."""
     defined_options = ("-gU",) if DARWIN else ("-g", "--defined-only")
     defined = {path: symbols(path, *defined_options) for path in objects}
     calls: dict[str, list[str]] = {}
     for path in objects:
         others = set().union(*(names for other, names in defined.items() if other != path))
-        undefined = symbols(path, "-u") - others - set(DECLARED_C_FUNCTIONS)
+        undefined = symbols(path, "-u") - others - set(DECLARED_C_FUNCTIONS) - set(COMPILER_SYMBOLS)
         if undefined:
             calls[path.name] = sorted(undefined)
     return calls
