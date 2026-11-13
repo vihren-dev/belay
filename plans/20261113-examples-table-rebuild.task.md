@@ -1,6 +1,7 @@
 # Task: the table-rebuild example as a Lake project under `examples/`
 
 Created 2026-11-13 (status: `20261113-examples-table-rebuild.status.md`).
+Status: DONE (2026-11-13).
 
 ## Problem
 

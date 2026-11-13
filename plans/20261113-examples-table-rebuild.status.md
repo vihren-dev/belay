@@ -1,6 +1,6 @@
 # Status: the table-rebuild example as a Lake project under `examples/`
 
-Created 2026-11-13. Task: `20261113-examples-table-rebuild.task.md`.
+Created 2026-11-13. Status: DONE (2026-11-13). Task: `20261113-examples-table-rebuild.task.md`.
 
 Relevant files: `README.md`, `examples/table-rebuild/` (`TableRebuild.lean`, `FixedSucceeds.lean`,
 `lakefile.toml`, `README.md`, the proof modules in `Proof/`), `tests/surface_rebuild_test.py`,
@@ -21,4 +21,7 @@ Relevant files: `README.md`, `examples/table-rebuild/` (`TableRebuild.lean`, `Fi
   (`test_example_project_of_the_readme_builds_checks_and_proves_its_claims`). README, page for agents
   and skill name the new places. Tests: `tests/surface_rebuild_test.py`, `tests/test_lean_categories.py`,
   `tests/docs_test.py`; the Lake test needs the Nix runtime (in the development layout Lake fetches
-  Plausible with git). Nix validation (`just test-full`) is pending.
+  Plausible with git).
+- 2026-11-13: `just test-full` passed (exit 0; the seven suites that the change touches ran, 1072
+  tests, none failed), with `test_example_project_of_the_readme_builds_checks_and_proves_its_claims`
+  in `surfaceS6` (45 s). DONE.
