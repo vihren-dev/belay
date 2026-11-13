@@ -80,6 +80,9 @@ import Belay.Sqlite.Model.Programs.StatementRunLaws.ForeignKeyCheckContinues
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyCheckContinues
 import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
 import Belay.Sqlite.Model.Queries.Evaluation.AliasIndexOrder
+import Belay.Sqlite.Model.Programs.StatementRunLaws.DerivedColumnSuccess
+import Belay.Sqlite.Model.Queries.Evaluation.ExprFormChecks
+import Belay.Sqlite.Model.Schema.Dispatch.SelectTableParts
 import Belay.Sqlite.Model.Schema.Columns.CopyInsertRows
 import Belay.Sqlite.Model.Tooling.Counterexamples.CopyInsertRows
 import Belay.Sqlite.Model.Queries.Preparation.RestrictionText
@@ -90,4 +93,5 @@ SQLite may give for it, the laws of the check pragmas and of {lit}`foreign_key_c
 statement syntax that continues after an error, the constraints that a failed write names,
 structural preservation facts, the effect of a plain INSERT and of a SELECT step, the bound of a
 unique lookup in a partial index, and name resolution from statement syntax to resolved statements
-with its specification and laws. -/
+with its specification and laws, the success of the derived-column migration, and the form checks of
+expressions and one-table reads. -/

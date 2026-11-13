@@ -55,10 +55,12 @@ A correct migration must keep the result of this query:
 def allSessions : Script := sql r"SELECT id, customer_id, expires_at FROM sessions"
 ```
 
-This command tries to prove that claim or to find a counterexample:
+This command tries to prove that claim or to find a counterexample. `on shop`
+limits the claim to the databases with the schema `shop`, and the check
+searches those databases:
 
 ```lean
-#sql_check makeStrictWrongEnforced preserves allSessions with (schema := shop)
+#sql_check makeStrictWrongEnforced preserves allSessions on shop
 ```
 
 The output is:
@@ -141,7 +143,7 @@ query `allSessions` gives the same result after the fixed migration:
 
 ```lean
 theorem makeStrict_preserves_allSessions :
-    Migration.QueryPreserves (send makeStrict) allSessions (·.HasCatalog shop)
+    makeStrict preserves allSessions on shop
 ```
 
 Your coding agent can prove such a claim, and Lean's kernel checks the proof.
@@ -150,7 +152,9 @@ One proof is in [`RebuildKeeps.lean`](tests/surface/Schema/Tests/RebuildKeeps.le
 ## Try it on your schema
 
 Put your `CREATE TABLE` statements in `db!`, your migration in `sql`, and state
-`preserves` for the reads you care about. `#sql_check` answers `false` with the
+`migration preserves read on schema` for the reads you care about. Without
+`on schema`, the claim is about every database, also one with other tables and
+triggers. `#sql_check` answers `false` with the
 rows and a replay script, `proved`, or `unknown`. A counterexample becomes a
 test with `sql_refute (db := found)`.
 
@@ -160,7 +164,7 @@ test with `sql_refute (db := found)`.
 | --- | --- | --- |
 | Is the SQL valid against this schema? | `sql!`, `db!` | The elaborator, when the file compiles |
 | Does it run without an error? | `succeeds`, `succeeds where` | `#sql_check` and tactics, or a proof |
-| What does it do to the data? | `ensures`, `≈`, `preserves` | `#sql_check` and tactics, or a proof |
+| What does it do to the data? | `ensures`, `≈`, `preserves`, `preserves … on` | `#sql_check` and tactics, or a proof |
 | Does the whole application behave the same? | `simulates` | A proof that you or an agent write |
 
 The questions are independent. A migration that fails keeps every read, so
@@ -226,9 +230,14 @@ files, and the options of the check.
 An agent writes SQL, states claims, runs `#sql_check`, fixes the SQL when a
 counterexample appears, and writes the proofs. The kernel checks the proof;
 you review the claim, and `#explain` prints a claim in plain words.
+[Use Belay with a coding agent](docs/guide/agents.md) has the loop, the checks
+of the agent's work. To start, tell your agent to set up Belay with the
+[skill](skills/belay/SKILL.md) of this repository.
 
 ## Documentation
 
+- [Use Belay with a coding agent](docs/guide/agents.md), with
+  the [skill for the agent](skills/belay/SKILL.md).
 - The [surface library](packages/belay/README.md): programs and runs, SQL in
   separate files, claims and the check.
 - The [supported subset](docs/semantic-subset.md) and the

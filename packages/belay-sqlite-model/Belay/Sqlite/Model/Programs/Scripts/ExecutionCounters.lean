@@ -103,7 +103,7 @@ theorem StatementExecution.AlternativesLessKnown.cons {firstHead secondHead : Ex
     simp [Except.map, bind, Except.bind, StatementExecution.AlternativesLessKnown]
   · cases firstTail <;> cases secondTail <;>
       simp_all [Except.map, bind, Except.bind, pure, Except.pure, StatementExecution.AlternativesLessKnown,
-        StatementExecution.LessKnownAll, StatementExecution.LessKnown, firstOf, secondOf]
+        StatementExecution.LessKnownAll, StatementExecution.LessKnown]
 
 /-- For every index, values, statement, resolution state, clock value and run, and two connections
 where the first knows fewer counters and knows every counter that the statement reads: the further

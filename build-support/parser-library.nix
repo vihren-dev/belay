@@ -12,7 +12,7 @@ let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
   table = builtins.fromJSON (builtins.readFile (root + /parser/dialects.json));
   tableFile = builtins.toFile "dialects.json" (builtins.toJSON table);
-  libraryName = "libsqlite-verifier-parser" + (if isLinux then ".so" else ".dylib");
+  libraryName = "libbelay-sqlite-parser" + (if isLinux then ".so" else ".dylib");
   source = files: fs.toSource { inherit root; fileset = fs.unions files; };
   # The generation's programs, and the C files that the slice check compiles.
   steps = map (name: root + "/parser/${name}")
@@ -38,7 +38,7 @@ let
       sha256 = release.amalgamationArchive;
     };
   in pkgs.stdenv.mkDerivation {
-    pname = "sqlite-verifier-parser-release";
+    pname = "belay-sqlite-parser-release";
     inherit (release) version;
     src = source steps;
     nativeBuildInputs = [ pkgs.python3 pkgs.unzip ];
@@ -58,7 +58,7 @@ let
   };
   releases = lib.listToAttrs (map (release: lib.nameValuePair release.version (releaseBuild release)) table.releases);
   # The tree that is committed as parser/generated: `just parser-sources` writes it into the checkout.
-  generated = pkgs.runCommand "sqlite-verifier-parser-generated" {
+  generated = pkgs.runCommand "belay-sqlite-parser-generated" {
     src = source steps;
     nativeBuildInputs = [ pkgs.python3 ];
   } ''
@@ -116,10 +116,10 @@ let
   sanitizerFlags = "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all";
   # The sanitized build adds the sanitizer flags to the flags of the manifest, with its own compiler.
   sanitizedFlags = "${lib.concatStringsSep " " (builtins.filter (flag: flag != "-O1") compileFlags)} ${sanitizerFlags}";
-  normal = library { name = "sqlite-verifier-parser-library"; compiler = leanCompiler; flags = lib.concatStringsSep " " compileFlags; exportCheck = true; };
-  sanitized = library { name = "sqlite-verifier-parser-library-sanitized"; compiler = "$CC"; flags = sanitizedFlags; exportCheck = false; };
+  normal = library { name = "belay-sqlite-parser-library"; compiler = leanCompiler; flags = lib.concatStringsSep " " compileFlags; exportCheck = true; };
+  sanitized = library { name = "belay-sqlite-parser-library-sanitized"; compiler = "$CC"; flags = sanitizedFlags; exportCheck = false; };
   # Every parser test input and every distinct SQL text of every retained corpus.
-  inputs = pkgs.runCommand "sqlite-verifier-parser-inputs" {
+  inputs = pkgs.runCommand "belay-sqlite-parser-inputs" {
     src = source ([ (root + /tests/__init__.py) (root + /tests/parser_inputs.py) (root + /tests/parser_library_inputs.py) ]
       ++ map (version: root + "/conformance/corpus-v${toString version}") [ 1 2 3 4 5 ]);
     nativeBuildInputs = [ pkgs.python3 ];
@@ -134,7 +134,7 @@ in {
   library = normal;
   # The runtime root of the parserLibrary test suite: the library, the driver, the
   # inputs and, on Linux, the sanitized build.
-  testRoot = pkgs.runCommandCC "sqlite-verifier-parser-library-tests" {} ''
+  testRoot = pkgs.runCommandCC "belay-sqlite-parser-library-tests" {} ''
     mkdir -p "$out/bin" "$out/lib"
     ln -s ${normal}/lib/${libraryName} "$out/lib/${libraryName}"
     $CC -std=c99 -O1 ${driver} -o "$out/bin/parser-library-driver" ${lib.optionalString isLinux "-ldl"}

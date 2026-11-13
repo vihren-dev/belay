@@ -65,9 +65,9 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
   unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
-  simp only [prepareQuerySources, prepareQuerySourcesTraced, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure, traced_drop]
-  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, subqueryScopesTraced, scopeOrder, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
-    Except.bind, Except.mapError, Pure.pure, Except.pure]
+  simp only [prepareQuerySourcesTraced, noCopies, Bool.false_eq_true, ↓reduceIte, Bind.bind, Pure.pure, traced_drop]
+  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopesTraced, scopeOrder, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
+    Except.mapError, Pure.pure, Except.pure]
 
 /-- For every simple query ({name}`Syntax.Subquery.Simple`) whose pending sources, result columns and
 {lit}`WHERE` condition resolve, and in which no fallible call in a scalar result column has an aggregate value
@@ -128,7 +128,7 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
     rw [List.append_nil, List.append_nil] at feed
     exact absurd (feed.symm.trans noFeed) (by simp)
   · simp [resolveAll, resolveAllFrom, windowValue, windowSkipsFailure, Bind.bind, Except.bind, pure, Except.pure, found,
-      names, resolves, Model.condition, Functor.map, Except.map]
+      names, resolves, Model.condition]
     refine (ite_eq_right_of_eq_false _ _ (eq_false fun feed => ?_)).trans rfl
     rw [List.append_nil, List.append_nil] at feed
     exact absurd (feed.symm.trans noFeed) (by simp)
@@ -178,8 +178,8 @@ theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (cat
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
   unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
-  simp only [prepareQuerySources, prepareQuerySourcesTraced, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure, traced_drop]
-  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, subqueryScopesTraced, scopeOrder, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body,
-    issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]
+  simp only [prepareQuerySourcesTraced, noCopies, Bool.false_eq_true, ↓reduceIte, Bind.bind, Pure.pure, traced_drop]
+  simp [noSources, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, noJoins, sourcesOk, subqueryScopesTraced, scopeOrder, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.refreshTraced, Scope.refreshSources, noStar, noCompound, body,
+    issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.mapError, Pure.pure, Except.pure]
 
 end Belay.Sqlite.Model

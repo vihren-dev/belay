@@ -12,8 +12,10 @@
 # that the build proves that Lake compiles C with the Lean toolchain only (ADR 0023).
 # `sharedRequires` names required packages whose shared libraries Lake links here, because the
 # package's precompiled modules load them; the output keeps them beside its own in `.lake/build/lib`.
+# `failOnWarnings` makes a warning fail the build (`lake build --wfail`): a consumer project replays the
+# warnings of each Belay module in each of its own builds (issue #372).
 { pkgs, leanToolchain, pname, directory, source, targets, requires ? { }, executables ? false, extraSources ? { }
-, sharedRequires ? [ ], withoutSystemCompiler ? false }:
+, sharedRequires ? [ ], withoutSystemCompiler ? false, failOnWarnings ? false }:
 let
   lib = pkgs.lib;
   # Executables link against the C runtime libraries; on Linux the binaries need their store paths.
@@ -58,7 +60,7 @@ in pkgs.stdenv.mkDerivation ({
       done
       case "$(command -v clang)" in "${leanToolchain}/bin/clang") ;; *) echo "clang is not the one of the Lean toolchain" >&2; exit 1 ;; esac
     ''}
-    lake build --no-ansi ${lib.escapeShellArgs targets}
+    lake build --no-ansi ${lib.optionalString failOnWarnings "--wfail "}${lib.escapeShellArgs targets}
   '';
   installPhase = ''
     cp -R . "$out"

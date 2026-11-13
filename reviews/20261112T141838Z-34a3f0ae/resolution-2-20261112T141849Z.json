@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-12T14:18:49+00:00",
+  "finding": "20261112T141838Z-34a3f0ae#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The guide and the skill change in the example slice (c) of the task, which is the next commit; the task file puts the page update there."
+}

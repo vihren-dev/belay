@@ -25,7 +25,7 @@ theorem resolveColumns_scalar (dqs : Bool) (scope : Scope) (shapes : SubquerySha
     (operand : resolveOperand dqs scope shapes false value = .ok (expression, affinity)) :
     resolveAll (resolveResultColumn dqs scope shapes) [.expression value none text] =
       .ok [[(.scalar expression, (definedName scope value).getD text, affinity)]] := by
-  cases value <;> simp_all [Syntax.Expr.isCall, resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, Bind.bind, Except.bind,
+  cases value <;> simp_all [Syntax.Expr.isCall, resolveAll, resolveAllFrom, resolveResultColumn_expression, Bind.bind, Except.bind,
     Pure.pure, Except.pure, Except.mapError]
 
 end Belay.Sqlite.Model

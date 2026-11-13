@@ -11,8 +11,8 @@
 /* The IO error of a library call that made no document, with the call's name and the reason for
 ** its result code. It allocates the message; the IO result owns it. */
 static lean_obj_res failed(const char *call, int code) {
-  const char *reason = code == SQLITE_VERIFIER_PARSER_UNKNOWN_GRAMMAR ? "the library has no such grammar"
-    : code == SQLITE_VERIFIER_PARSER_NO_MEMORY ? "the library could not allocate memory" : "unknown result code";
+  const char *reason = code == BELAY_SQLITE_PARSER_UNKNOWN_GRAMMAR ? "the library has no such grammar"
+    : code == BELAY_SQLITE_PARSER_NO_MEMORY ? "the library could not allocate memory" : "unknown result code";
   lean_object *text = lean_mk_string(call);
   text = lean_string_append(text, lean_mk_string(" call of the parser library failed: "));
   text = lean_string_append(text, lean_mk_string(reason));
@@ -23,7 +23,7 @@ static lean_obj_res failed(const char *call, int code) {
 ** It releases the library's document, so the caller keeps no pointer to it. */
 static lean_obj_res document(char *bytes, size_t length) {
   lean_object *text = lean_mk_string_from_bytes(bytes, length);
-  sqlite_verifier_parser_free(bytes);
+  belay_sqlite_parser_free(bytes);
   return lean_io_result_mk_ok(text);
 }
 
@@ -31,8 +31,8 @@ static lean_obj_res document(char *bytes, size_t length) {
 BELAY_EXPORT lean_obj_res belay_parser_metadata(lean_obj_arg world) {
   char *bytes = NULL;
   size_t length = 0;
-  int code = sqlite_verifier_parser_metadata(&bytes, &length);
-  return code == SQLITE_VERIFIER_PARSER_OK ? document(bytes, length) : failed("metadata", code);
+  int code = belay_sqlite_parser_metadata(&bytes, &length);
+  return code == BELAY_SQLITE_PARSER_OK ? document(bytes, length) : failed("metadata", code);
 }
 
 /* Belay.Sqlite.ParserLibrary.parse: the parse document of the SQL bytes with the grammar, as a
@@ -40,7 +40,7 @@ BELAY_EXPORT lean_obj_res belay_parser_metadata(lean_obj_arg world) {
 BELAY_EXPORT lean_obj_res belay_parser_parse(b_lean_obj_arg grammar, b_lean_obj_arg sql, lean_obj_arg world) {
   char *bytes = NULL;
   size_t length = 0;
-  int code = sqlite_verifier_parser_parse(lean_string_cstr(grammar), lean_sarray_cptr(sql), lean_sarray_size(sql),
+  int code = belay_sqlite_parser_parse(lean_string_cstr(grammar), lean_sarray_cptr(sql), lean_sarray_size(sql),
                                           &bytes, &length);
-  return code == SQLITE_VERIFIER_PARSER_OK ? document(bytes, length) : failed("parse", code);
+  return code == BELAY_SQLITE_PARSER_OK ? document(bytes, length) : failed("parse", code);
 }

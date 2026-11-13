@@ -42,8 +42,8 @@ theorem resolveSelect_noFrom_one_subquery (context : ResolveContext) (catalog : 
     simpa [querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, ordinary, mainNoFrom] using subNoView
   subst shapeIs
   unfold resolveSelect resolveSelectTraced resolveSelectDetailsTraced
-  simp [prepareQuerySourcesTraced, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, noCopies, ordinary, CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopes, subqueryScopesTraced, order, subqueryScope, subqueryScopeTraced,
-    parentless, Scope.columns, Scope.enclose, subSources, subNoStar, resolveSubqueryBodies, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.sourceIndexes, QueryScope.refresh, QueryScope.refreshTraced, Scope.refreshSources,
+  simp [prepareQuerySourcesTraced, resolveSourcesTraced_drop, resolveQueryBodyTraced_drop, traced_drop, noCopies, CommonTableCopies.recursionIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopesTraced, order, subqueryScopeTraced,
+    parentless, Scope.columns, Scope.enclose, subSources, subNoStar, resolveSubqueryBodiesTraced, subqueryBodyOrder, QueryScope.sourceIndexes, QueryScope.refreshTraced, Scope.refreshSources,
     unique, noSource, subNoCompound, subBody,
     mainBody, noFallible, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure, compoundOf]
 

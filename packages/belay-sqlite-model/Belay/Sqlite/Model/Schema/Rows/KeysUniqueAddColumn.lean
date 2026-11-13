@@ -53,18 +53,19 @@ theorem LiteralData.termValue_append {width : Nat} {row : Row} (wide : width ≤
     simp only [termValue, Row.appendValues,
       Resolved.Expr.eval_append _ (Resolved.EvalContext.plain_rowFree 0) row.values extra wide below]
 
-/-- For every two rows with at least the width cells, appended cells, and unique key that reads
-only columns below the width: the rows with the cells appended conflict on the key
-({name}`LiteralData.keyEqual`) exactly when the rows do. Proof sketch: the filter
+/-- For every two rows with at least the width cells, cells appended to each of them (the same or other
+cells), and unique key that reads only columns below the width: the rows with the cells appended conflict
+on the key ({name}`LiteralData.keyEqual`) exactly when the rows do. Proof sketch: the filter
 ({name}`Resolved.Expr.eval_append`) and each term ({name}`LiteralData.termValue_append`) have
 the same value on both rows. -/
 theorem LiteralData.keyEqual_append {width : Nat} {first second : Row} (firstWide : width ≤ first.values.length)
-    (secondWide : width ≤ second.values.length) (extra : List Value) {key : UniqueKey}
+    (secondWide : width ≤ second.values.length) (firstExtra secondExtra : List Value) {key : UniqueKey}
     (below : key.readsBelow width = true) :
-    keyEqual key (first.appendValues extra) (second.appendValues extra) = keyEqual key first second := by
+    keyEqual key (first.appendValues firstExtra) (second.appendValues secondExtra) = keyEqual key first second := by
   simp only [UniqueKey.readsBelow, Bool.and_eq_true, List.all_eq_true] at below
-  have applies : ∀ row : Row, width ≤ row.values.length → keyApplies key (row.appendValues extra) = keyApplies key row := by
-    intro row wide
+  have applies : ∀ (row : Row) (extra : List Value), width ≤ row.values.length →
+      keyApplies key (row.appendValues extra) = keyApplies key row := by
+    intro row extra wide
     unfold keyApplies
     cases filter : key.filter with
     | none => rfl
@@ -72,12 +73,13 @@ theorem LiteralData.keyEqual_append {width : Nat} {first second : Row} (firstWid
       have reads : condition.readsBelow width = true := by simpa [filter] using below.2
       simp only [Row.appendValues, Resolved.Expr.eval_append _ (Resolved.EvalContext.plain_rowFree 0) row.values extra wide reads]
   unfold keyEqual
-  rw [applies first firstWide, applies second secondWide]
+  rw [applies first firstExtra firstWide, applies second secondExtra secondWide]
   congr 1
   rw [Bool.eq_iff_iff]
   simp only [List.all_eq_true]
   exact forall_congr' fun term => imp_congr_right fun member => by
-    rw [termValue_append firstWide extra (below.1 term member), termValue_append secondWide extra (below.1 term member)]
+    rw [termValue_append firstWide firstExtra (below.1 term member),
+      termValue_append secondWide secondExtra (below.1 term member)]
 
 /-- For every list, position, element and function: if the function gives none for the element,
 and gives none for the element of the list at the position or the list has no element there,
@@ -164,7 +166,7 @@ theorem Database.KeysUnique.addColumn {database : Database} (unique : database.K
       rw [List.pairwise_map]
       refine (unique position old found key member).imp_of_mem fun {first second} atFirst atSecond distinct => ?_
       rw [LiteralData.keyEqual_append (Nat.le_of_eq (wide first atFirst).symm) (Nat.le_of_eq (wide second atSecond).symm)
-        _ (below key member)]
+        _ _ (below key member)]
       exact distinct
   · rw [Database.table_addColumn_other database column value same] at present
     have kept := unique position table present

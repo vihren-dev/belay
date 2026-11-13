@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.unit]
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION = ("belay", "conformance")
 """The folders of the production Python modules."""
-LIBRARY_NAMES = ("sqlite-verifier-parser", "sqlite_verifier_parser_")
+LIBRARY_NAMES = ("belay-sqlite-parser", "belay_sqlite_parser_")
 """The parser library's file name and the prefix of its C functions, which a binding names."""
 MINIMUM_PRODUCTION_MODULES = 50
 """Fewer modules than this mean that the search looked in the wrong folders and found nothing."""

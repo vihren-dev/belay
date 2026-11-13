@@ -25,6 +25,7 @@ in rec {
   # The standalone model and its separate transport codec, without application inputs.
   modelPackage = leanPackage {
     pname = "belay-sqlite-model";
+    failOnWarnings = true;
     directory = "packages/belay-sqlite-model";
     source = sources.model;
     # Downstream precompiled modules replay these objects and shared libraries.
@@ -83,6 +84,7 @@ in rec {
   # (ADR 0016, D2, amended). Lake compiles the parser's C from `parser/` (ADR 0023).
   textPackage = leanPackage {
     pname = "belay-sqlite-text";
+    failOnWarnings = true;
     directory = "packages/belay-sqlite-text";
     source = sources.text;
     # The shared libraries are what Lake loads for a file that imports the translation.
@@ -113,6 +115,7 @@ in rec {
   in assert sampler.type == "git" && sampler.url == url && sampler.rev == plausiblePackage.revision;
   (leanPackage {
     pname = "belay";
+    failOnWarnings = true;
     directory = "packages/belay";
     source = sources.surface;
     # The shared library is what Lake loads for a file that imports `Belay`, after the text package's.
@@ -137,7 +140,7 @@ in rec {
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs leanToolchain root; };
   verifierConformance = leanPackage {
-    pname = "sqlite-verifier-conformance-package";
+    pname = "belay-conformance-package";
     directory = "packages/verifier-conformance";
     source = sources.verifierConformance;
     targets = [ "VerifierConformance" "conformance-runner" ];
@@ -151,20 +154,20 @@ in rec {
   };
   # The documentation inventory's Lean part; publicDocumentation and tests.documentation use it.
   docTools = leanPackage {
-    pname = "sqlite-verifier-doc-tools";
+    pname = "belay-doc-tools";
     directory = "packages/public-doc-tools";
     source = sources.docTools;
     targets = [ "PublicDocSyntax" "PublicDocInventory" ];
   };
   # The conformance runner and its library modules, and the translation program, which the harness
   # and the judge's subject run. The program finds the parser library by its path in the Nix store.
-  conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''
+  conformanceRuntime = pkgs.runCommand "belay-conformance-runtime" { } ''
     mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
     cp -R ${verifierConformance}/.lake/build/lib/lean "$out/.lake/build/lib/"
     cp ${verifierConformance}/.lake/build/bin/conformance-runner "$out/.lake/build/bin/"
     cp ${textPackage}/.lake/build/bin/belay-sqlite-translate "$out/.lake/build/bin/"
   '';
-  conformance = pkgs.runCommand "sqlite-verifier-conformance" {} ''
+  conformance = pkgs.runCommand "belay-conformance" {} ''
     mkdir -p "$out"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${conformanceRuntime}/.lake "$out/.lake"

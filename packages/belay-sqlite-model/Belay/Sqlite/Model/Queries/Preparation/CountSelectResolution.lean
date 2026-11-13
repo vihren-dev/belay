@@ -17,7 +17,7 @@ theorem resolveColumns_countStar (dqs : Bool) (scope : Scope) (shapes : Subquery
     (alias : Option Identifier) (text : String) (count : normalizeIdentifier name = "count") :
     resolveAll (resolveResultColumn dqs scope shapes) [.expression (.callStar name) alias text] =
       .ok [[(.aggregate .countRows, (alias.map (·.text)).getD text, none)]] := by
-  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, resolveResultColumn_star, resolveResultColumn_sourceStar, count, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [resolveAll, resolveAllFrom, resolveResultColumn_expression, count, Bind.bind, Except.bind, Pure.pure, Except.pure]
 
 /-- For every query {lit}`SELECT count(*) FROM … WHERE p` without join, grouping, ordering, window,
 {lit}`HAVING`, {lit}`DISTINCT` and compound, whose pending sources and {lit}`WHERE` condition resolve, the body resolves to the
@@ -44,14 +44,14 @@ theorem resolveQueryBody_count (dqs : Bool) (scope : Scope) (current : Option Na
   have nothing : ∀ {α β : Type} (f : Nat → α → Except ValueIssue β), resolveAll f [] = .ok [] := fun f => by
     simp [resolveAll, resolveAllFrom]
   simp only [List.any_cons, List.any_nil, Bool.or_false, aggregates, List.isEmpty_cons, Bool.not_false, Bool.not_true, called,
-    List.isEmpty_nil, Bool.or_true, ite_true, Bool.false_and, Bool.true_and, List.flatMap_cons, List.flatMap_nil,
+    List.isEmpty_nil, Bool.or_true, ite_true, Bool.true_and, List.flatMap_cons, List.flatMap_nil,
     List.append_nil, Option.toList_none, Syntax.Expr.distinctList, List.foldl_nil, Bool.not_eq_true',
     columns, nothing, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rcases resolves with ⟨found, rfl⟩ | ⟨term, expression, affinity, found, rfl, names, ok⟩
   · simp [aliasJoinItem?, found, pendingOk, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.countOf, Resolved.Output.canFail,
-      decidingCall, writtenResults, firstRowResults, Syntax.Expr.indexIn, aggregates, Syntax.Expr.same_self, Resolved.Aggregate.minOrMax]
+      decidingCall, writtenResults, Syntax.Expr.indexIn, aggregates, Syntax.Expr.same_self, Resolved.Aggregate.minOrMax]
   · simp [aliasJoinItem?, found, pendingOk, names, ok, windowValue, windowSkipsFailure, groupedOutput, Resolved.Query.countOf,
-      Model.condition, Functor.map, Except.map, Resolved.Output.canFail, decidingCall, writtenResults, firstRowResults,
+      Model.condition, Resolved.Output.canFail, decidingCall, writtenResults,
       Syntax.Expr.indexIn, aggregates, Syntax.Expr.same_self, Resolved.Aggregate.minOrMax]
 
 end Belay.Sqlite.Model

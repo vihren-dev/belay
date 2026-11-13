@@ -35,7 +35,7 @@ theorem ExecutionContext.finish_prepend {α : Type} (state : ExecutionContext) (
     (connection : Connection) (result : SqlRun α) :
     state.finish { result with outputs := output :: result.outputs } =
       (state.next output connection).finish result := by
-  simp [ExecutionContext.finish, ExecutionContext.next, List.append_assoc, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+  simp [ExecutionContext.finish, ExecutionContext.next, List.append_assoc, Nat.add_left_comm, Nat.add_comm]
 
 /-- The proof context of a fresh surface run: the supplied environment, index zero,
 a new connection to the bundled database, and an empty output trace. -/

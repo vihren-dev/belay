@@ -14,7 +14,7 @@ import sys
 
 from tests.runtime_support import run_command
 
-LIBRARY_NAME = "libsqlite-verifier-parser" + (".dylib" if sys.platform == "darwin" else ".so")
+LIBRARY_NAME = "libbelay-sqlite-parser" + (".dylib" if sys.platform == "darwin" else ".so")
 """The file name of the library on this platform."""
 DRIVER_TIMEOUT_SECONDS = 120
 """One driver run over all inputs and grammars; the sanitized build needs about 6 seconds."""

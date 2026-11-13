@@ -10,7 +10,7 @@ pytest_plugins = ["tests.runtime_fixtures", "tools.observability_pytest"]
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Select the runtime under test; reports come from pytest's own --junitxml."""
-    group = parser.getgroup("sqlite-verifier")
+    group = parser.getgroup("belay")
     group.addoption("--runtime-root", type=Path, help="Built runtime root, such as the conformance runtime")
     group.addoption("--source-checks", action="store_true", help="Exclude suites delegated to Nix")
 

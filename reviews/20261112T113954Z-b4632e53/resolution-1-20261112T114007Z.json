@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-12T11:40:07+00:00",
+  "finding": "20261112T113954Z-b4632e53#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The file is the one complete example that the skill sends an agent to read and copy; a split into two modules makes that harder, and the file is 28 lines over the limit."
+}

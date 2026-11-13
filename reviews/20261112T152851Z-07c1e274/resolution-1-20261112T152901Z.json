@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-12T15:29:01+00:00",
+  "finding": "20261112T152851Z-07c1e274#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "tests/surface_select_procedure_test.py::test_background_checking is the regression test: it fails with the reservation of one tenth (bisected to the #371 commit on 2026-11-12) and passes with this fix"
+}

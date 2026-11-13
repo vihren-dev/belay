@@ -21,8 +21,8 @@ from parser.dialect_table import DialectTable, load_table
 from parser.library_metadata import Grammar, ReleaseRecord, metadata, write_sources
 from parser.release_step import ReleaseOutput, short
 
-PUBLIC_API = frozenset({"sqlite_verifier_parser_metadata", "sqlite_verifier_parser_parse",
-                        "sqlite_verifier_parser_free"})
+PUBLIC_API = frozenset({"belay_sqlite_parser_metadata", "belay_sqlite_parser_parse",
+                        "belay_sqlite_parser_free"})
 """The only symbols that the library exports; see `parser/library.h`."""
 NM_TIMEOUT_SECONDS = 60
 """The limit for listing the symbols of the linked library."""
