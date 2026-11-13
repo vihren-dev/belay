@@ -150,7 +150,7 @@
     "tests/conformance_corpus_writers_test.py",
     "tests/conformance_grouping_corpus_writers_test.py"
   ],
-  "surface": [
+  "surfaceClaims": [
     "tests/surface_guide_test.py",
     "tests/surface_claims_test.py",
     "tests/surface_views_test.py",
@@ -165,7 +165,9 @@
     "tests/surface_migration_patterns_test.py",
     "tests/surface_migration_examples_test.py",
     "tests/surface_application_test.py",
-    "tests/surface_application_syntax_test.py",
+    "tests/surface_application_syntax_test.py"
+  ],
+  "surface": [
     "tests/surface_assertions_test.py",
     "tests/surface_assertion_examples_test.py",
     "tests/success_theorems_test.py",
