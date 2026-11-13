@@ -238,7 +238,9 @@ let
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
+    # The example project: the surface tests elaborate its files and build it with Lake.
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (fs.difference (root + /examples/table-rebuild) (fs.maybeMissing (root + /examples/table-rebuild/.lake)))
                (root + /tests/two_state_support.py)
                (root + /tests/lean_server_support.py) (root + /tests/surface_editor_support.py)
                (root + /tests/proof_cost_support.py)

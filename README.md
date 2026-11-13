@@ -147,9 +147,9 @@ theorem fixed_keeps_sessions :
 ```
 
 Your coding agent can prove such a claim, and Lean's kernel checks the proof.
-The theorem is in [`RebuildExample.lean`](tests/surface/Schema/Tests/RebuildExample.lean),
+The theorem is in [`TableRebuild.lean`](examples/table-rebuild/TableRebuild.lean),
 with the code of this section; its proof starts in
-[`RebuildKeeps.lean`](tests/surface/Schema/Tests/RebuildKeeps.lean).
+[`RebuildKeeps.lean`](examples/table-rebuild/Proof/RebuildKeeps.lean).
 
 ## Try it on your schema
 
@@ -223,9 +223,11 @@ lake build
 
 The first build compiles the model and SQLite's parser once; later builds
 reuse them. Then put the blocks above in a file of your project and open it in
-an editor with the Lean language server. The surface library's
-[README](packages/belay/README.md) describes the notation, SQL in separate
-files, and the options of the check.
+an editor with the Lean language server. The folder
+[`examples/table-rebuild`](examples/table-rebuild) is a Lake project with the
+example of this README and its proofs; open it in a clone of this repository.
+The surface library's [README](packages/belay/README.md) describes the
+notation, SQL in separate files, and the options of the check.
 
 ## With a coding agent
 

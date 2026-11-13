@@ -32,8 +32,9 @@ class Rules:
 REPOSITORY_RULES = Rules(
     package=("packages/",),
     # The dependency suite invokes the standalone exporter and its fixtures directly with Lean.
+    # The surface tests elaborate the example project's files and build the project with Lake.
     direct_fixture=("tests/public_doc_inventory/", "tests/surface/", "tests/docgen/", "conformance/regressions/",
-                    "tests/theorem_dependencies/", "tools/theorem_dependency_exporter.lean"),
+                    "tests/theorem_dependencies/", "tools/theorem_dependency_exporter.lean", "examples/table-rebuild/"),
     # The templates of the skill are copied into a user's project and built there.
     excluded=("experiments/", "skills/belay/templates/"),
 )

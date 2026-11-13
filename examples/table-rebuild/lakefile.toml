@@ -1,0 +1,20 @@
+# The table-rebuild example of Belay's README. Belay comes from this clone, by path.
+# In a copy of this folder outside the clone, use the `git` requirement of the README.
+name = "tableRebuild"
+defaultTargets = ["TableRebuild", "RebuildProof"]
+
+[[require]]
+name = "belay"
+path = "../../packages/belay"
+
+# The example: the checks, the facts about `found` and the theorems.
+[[lean_lib]]
+name = "TableRebuild"
+roots = ["TableRebuild", "FixedSucceeds"]
+
+# The proofs of the theorems, written by hand.
+[[lean_lib]]
+name = "RebuildProof"
+srcDir = "Proof"
+roots = ["RebuildGuide", "RebuildKeepsInvariant", "RebuildKeepsFinish", "RebuildKeepsRead", "RebuildKeeps",
+  "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildSucceedsSteps", "RebuildSucceedsFinish", "RebuildSucceeds"]

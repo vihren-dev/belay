@@ -12,3 +12,13 @@ proof modules under `tests/surface`, `tests/surface_rebuild_test.py`, `tests/sur
 - 2026-11-13: task written. Tried the library's tactics on `fixed_keeps_sessions` in a project that
   requires Belay by path: `sql_auto` (all routes fail), `sql_commute` after `intro` (only
   `Migration.PreservesAt`), `#sql_check` with budget 500000 (`unknown`). The proof moves.
+- 2026-11-13: the example project `examples/table-rebuild` (lakefile with Belay by path, `TableRebuild.lean`
+  with the README's code, `FixedSucceeds.lean`, `README.md`) and the ten proof modules moved from
+  `tests/surface/{Schema/Tests,Programs/Scripts}` to its folder `Proof`; `RebuildExample.lean` is replaced
+  by the two example files. `fixture_file` also finds the example's files, the surface suites take the
+  folder as an input, and `test_lean_categories` counts it as a direct fixture. The README test of
+  `tests/surface_rebuild_test.py` now builds the project with Lake from the installed packages
+  (`test_example_project_of_the_readme_builds_checks_and_proves_its_claims`). README, page for agents
+  and skill name the new places. Tests: `tests/surface_rebuild_test.py`, `tests/test_lean_categories.py`,
+  `tests/docs_test.py`; the Lake test needs the Nix runtime (in the development layout Lake fetches
+  Plausible with git), and passed locally with git on the path.
