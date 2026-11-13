@@ -23,11 +23,13 @@ SCOPE_RECIPES = {
 }
 """The `just` recipes for each scope of tests/ci_scope.py; one invocation runs shared dependencies once."""
 
-CHECKS_PHASE_LIMIT_SECONDS = 3600
+CHECKS_PHASE_LIMIT_SECONDS = 4500
 """The limit of the `just` recipes of a scope. On 2026-10-19 the recipes of the largest scope with the scheduled mutant
 suite needed about 33 minutes on Linux (pull request #182) and more than 30 minutes on macOS (run
-39237549400); the mutant suites now run in the CI job `mutants`. The 75-minute job limit stays the
-outer bound."""
+39237549400); the mutant suites now run in the CI job `mutants`. Without a saved Nix store, the
+macOS recipes build the Lean packages for about 35 minutes before the suites start, and on
+2026-11-09 they ran for 46 minutes until the job limit stopped them (run 42698688166). The job
+limit, 75 minutes on Linux and 120 minutes on macOS, stays the outer bound."""
 def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     """Build the conformance runtime (or set up the host in source mode), then run the scope's recipes."""
     if scope not in SCOPE_RECIPES or mode not in {"source", "build"}:

@@ -305,7 +305,7 @@ cache once and gives a copy to each target:
   and Python changes; a case change adds reruns only for the targets that use
   that case. A seed takes about 1 s, or 5 s for Atuin, before its targets start.
 - **Trust.** Seeds are built in the Nix sandbox from repository sources, so
-  they are in the CI job's trust domain (section 4). Only successful `main`
+  they are in the CI job's trust domain (section 4). Only `main` and nightly
   jobs save the Nix cache, so a pull request cannot replace a seed that `main`
   uses.
 

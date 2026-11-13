@@ -37,8 +37,10 @@ match the cache reuses it.
 CI retains `api-reference-SYSTEM` for 14 days, including when a later check
 fails. `just documentation-inventory` checks authored Verso coverage.
 Documentation dependencies stay outside the conformance runtime.
-The complete job has a 75-minute limit. The reference phase keeps its
-30-minute limit. The phase that runs the scope's `just` recipes has a 60-minute
+The complete job has a 75-minute limit on Linux and a 120-minute limit on macOS:
+without a saved Nix store, the macOS runner builds the Lean packages for about 60
+minutes before the test suites start. The reference phase has a 60-minute limit.
+The phase that runs the scope's `just` recipes has a 75-minute
 limit (`CHECKS_PHASE_LIMIT_SECONDS`). The scheduled mutant suites, which took more than 30 minutes
 in that phase, run in the separate job `mutants` instead: one runner per suite, a 75-minute job
 limit, and a suite limit of 2700 seconds. Individual compiler and suite deadlines remain
@@ -176,7 +178,10 @@ as Python caches, cannot change the key, and the check, mutants and publishing j
 use the same key. A push that changes only task records
 therefore restores the exact store of the earlier push, finds every Nix target
 cached and saves nothing. Other runs restore the newest visible matching store for their platform and pins.
-Pull requests and manual runs do not save caches. Nix, not the GitHub cache
+Pull requests and manual runs do not save caches. When the check of a main push
+or nightly run fails or is cancelled, the job saves its store with the key
+`nix-tests-v2-SYSTEM-PINS-unchecked-TREE`, so that the next run does not build the
+same outputs again. The restore prefix of later runs finds this store too. Nix, not the GitHub cache
 key, determines which outputs can be reused; changing a declared input creates a
 different test derivation.
 
@@ -190,8 +195,9 @@ download fall back to a local build; substitution fallback is unrelated to
 
 After the checks of a `main` push or nightly run, the `publish-nix-store` job
 restores, per platform, exactly the store that the check job saved and uploads its
-paths with the pinned Attic client. The cache action saves a store only after a
-passed check job, so a platform publishes only a store that a passed check saved,
+paths with the pinned Attic client. The cache action saves a store with the check
+job's key only after a passed check job, and the job never restores an "unchecked"
+store, so a platform publishes only a store that a passed check saved,
 in this run or in an earlier run of the same tree. A failed check of the other
 platform does not stop the publication, and a cancelled run publishes nothing; Attic skips paths
 that cache.nixos.org already provides. Only that job uses the `attic-publish`
@@ -223,7 +229,7 @@ For each JUnit report it gives the tests, failures and time, and whether the sui
 ran in this job or Nix reused it from an earlier build, by the report's timestamp. It
 also lists the ten slowest test cases that ran in this job. Individual subprocess and whole-command deadlines remain
 bounded: a timed-out command's process group is killed, and the output read before
-the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes, including the reference phase, runtime,
+the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes on Linux and 120 minutes on macOS, including the reference phase, runtime,
 complete checks, setup and artifact retention. Child limits
 are individual upper bounds; their sum is not a promised job duration. Individual suite and command limits remain unchanged.
 Superseded ordinary runs are cancelled; manual and scheduled runs are not.

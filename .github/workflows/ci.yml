@@ -29,8 +29,11 @@ jobs:
           - runner: macos-15
             system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
-    # The owner limits the complete job to 75 minutes; child limits remain unchanged.
-    timeout-minutes: 75
+    # The owner limits the complete job to 75 minutes on Linux and to 120 minutes on macOS;
+    # child limits remain unchanged. Without a saved store, the macOS runner builds the Lean
+    # packages for about 60 minutes before the test suites start, and a cancelled job at 75
+    # minutes left the macOS runs of 2026-10-26 to 2026-11-12 without a store.
+    timeout-minutes: ${{ matrix.system == 'aarch64-darwin' && 120 || 75 }}
     env:
       BUILD_MODE: build
       # Pull requests run checks and references on Linux. Other events retain
@@ -85,6 +88,7 @@ jobs:
             fallback = true
       - name: Restore Nix builds and test results
         if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs'
+        id: store
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         env:
           # Failed Nix builds can leave unreadable transient locks; never archive them.
@@ -96,7 +100,8 @@ jobs:
           restore-prefixes-first-match: |
             nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
-          # Only accepted main and nightly runs publish caches. Other events restore them.
+          # A passed main or nightly run saves the store with this key, after the job. Other
+          # events restore it. The prefix also finds a store that a failed run saved (next steps).
           save: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
       - name: Build checked API reference
         if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs'
@@ -125,6 +130,19 @@ jobs:
         # A failure only leaves the saved cache larger; it never changes a check result.
         continue-on-error: true
         run: nix develop path:./nix --command python3 tools/ci_store_gc.py
+      - name: Save the Nix store of a failed or stopped check
+        # A failed or cancelled main or nightly run saves the outputs that it built, so that the
+        # next run does not build them again. The key has "unchecked" before the tree hash, so
+        # the publishing job, which needs the exact key of a passed check, never uploads this
+        # store to Attic. Nix reuses a path only when its hash matches, so a result cannot change.
+        if: (failure() || cancelled()) && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs' && steps.store.outputs.hit-primary-key != 'true'
+        continue-on-error: true
+        uses: nix-community/cache-nix-action/save@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        env:
+          TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
+        with:
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-unchecked-${{ steps.tree.outputs.hash }}
+          save: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
       - name: Retain pytest reports and Nix test outputs
         if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -268,8 +286,9 @@ jobs:
     name: Publish Nix store (${{ matrix.system }})
     # After the checks of a main push or nightly run, upload the store that the check
     # job saved for this platform to the Vihren Attic cache. The cache action saves a
-    # store only after a passed check job, so each platform publishes only a store that
-    # a passed check saved, also when the check of the other platform failed. Only this
+    # store with this key only after a passed check job (a failed check saves with an
+    # "unchecked" key), so each platform publishes only a store that a passed check
+    # saved, also when the check of the other platform failed. Only this
     # job can use the attic-publish environment, which deploys only from main and holds
     # the write token. An upload failure never fails the workflow or changes a check result.
     if: ${{ !cancelled() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}

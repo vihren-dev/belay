@@ -37,10 +37,12 @@ conformance-build:
     timeout --foreground 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
 
 # Build the checked library reference from an exact source commit, without hosting it.
+# The limit is 60 minutes: without a saved store, the macOS CI runner builds the model package
+# and doc-gen4 first, and on 2026-11-10 it did not finish in 30 minutes.
 [positional-arguments]
 reference revision: resources
     mkdir -p build
-    timeout --foreground 1800 nix-build build-support/default.nix -A apiReference --argstr referenceRevision "$1" --out-link build/api-reference --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 3600 nix-build build-support/default.nix -A apiReference --argstr referenceRevision "$1" --out-link build/api-reference --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Record live prototype evidence; W3 remains an owner decision after reviewing it.
 [positional-arguments]
