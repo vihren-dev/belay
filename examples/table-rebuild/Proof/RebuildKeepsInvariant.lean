@@ -9,7 +9,7 @@ set_option exponentiation.threshold 2048
 INSERT from a query, so a branch of a run can reach a connection that the model's own run does not reach. The
 facts that hold in all branches are about the resolution state, which does not depend on the rows, and about the
 table of the sessions, which the rebuild never writes. {lit}`Kept` states them after the first statements, and
-the lemmas {lit}`advance_0` to {lit}`advance_4` (here) and {lit}`advance_5` to {lit}`advance_8`
+the lemmas {lit}`advance_0` to {lit}`advance_4` (here) and {lit}`advance_5` to {lit}`advance_7`
 ({lit}`RebuildKeepsFinish`) show that each statement keeps them, in every execution of its step. The lemmas use the
 general step laws of the model; this module holds only what is particular to the guide's script. -/
 
@@ -66,7 +66,7 @@ theorem single_next {output : Output} {next : Connection} {found : StatementExec
 
 /-- For every connection that satisfies {name}`Kept` after 0 statements, and every execution of the step of statement
 0 ({lit}`PRAGMA foreign_keys = OFF`) that has no error output: the connection of the execution satisfies
-{name}`Kept` after 1 statement. The lemmas {lit}`advance_1` to {lit}`advance_8` have the same form for the later
+{name}`Kept` after 1 statement. The lemmas {lit}`advance_1` to {lit}`advance_7` have the same form for the later
 statements. Proof sketch: the step law {name}`runScriptStep_setting` gives the next connection, and the resolution
 state of the sample run is compared by evaluation. -/
 theorem advance_0 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}

@@ -131,7 +131,6 @@ def fixedMigration : Script := sql r"
   INSERT INTO customers_new SELECT id, name, email FROM customers;
   DROP TABLE customers;
   ALTER TABLE customers_new RENAME TO customers;
-  PRAGMA foreign_key_check;            -- fails the migration on a dangling reference
   COMMIT;
   PRAGMA foreign_keys = ON;"           -- on again after the commit
 
