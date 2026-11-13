@@ -10,9 +10,15 @@ adds an SQL guard. No short form says "on every database with the schema `shop`"
 for `preserves` (`M preserves Q on shop`). The README tells the user to state `succeeds` together
 with `preserves`, so both claims need the same form (#382).
 
-The rebuild example of the README is proved in the repository with the long forms and the names
-`makeStrict` and `makeStrictWrongEnforced`. No fixture states it with the names and the notation of
-the public example, so CI does not show that the short forms work on it (#384).
+The rebuild example of the README is proved in the repository with the long forms
+(`Migration.QueryPreserves … (fun db => db.raw.catalog = sample.raw.catalog)` and `Succeeds makeStrict`
+under a catalog equality and `StrictRows`). `RebuildCheck.lean` checks the README's wrong rebuild with
+`preserves … on shop`, but no fixture checks success on the schema or states the two theorems in the
+short forms, so CI does not show that the short forms work on the public example (#384).
+
+Owner decision, 2026-11-13: the public example names its rebuilds `badMigration` and
+`fixedMigration`, as the launch post does, and the README uses these names too (today it uses
+`makeStrictWrongEnforced` and `makeStrict`). The internal rebuild proofs keep their names.
 
 ## What must be true when the task is done
 
@@ -44,6 +50,9 @@ rebuild `badMigration`, the fixed rebuild `fixedMigration` and the read `allSess
   The premise on the rows stays a Lean predicate; an SQL guard for it is #383, not this task.
 - Both theorems reuse the existing rebuild proofs (`RebuildKeeps.lean`, `RebuildSucceeds.lean`)
   and show only the standard axioms.
+- The fixture is the source of the README's example: `README.md` shows `badMigration` and
+  `fixedMigration`, its `#sql_check` commands and their outputs are those of the fixture, and its
+  theorems are the fixture's. The fixture replaces `RebuildCheck.lean`.
 
 ## Tests
 
