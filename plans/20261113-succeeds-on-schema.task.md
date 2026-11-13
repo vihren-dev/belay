@@ -2,6 +2,7 @@
 
 Created 2026-11-13 (status: `20261113-succeeds-on-schema.status.md`). Issues #382 and #384, launch
 blockers.
+Status: DONE (2026-11-13).
 
 ## Problem
 

@@ -1,7 +1,7 @@
 # Status: `succeeds … on schema`, and the public rebuild example as a fixture
 
 Created 2026-11-13. Task: `20261113-succeeds-on-schema.task.md`. Issues #382 and #384.
-Status: IN PROGRESS.
+Status: DONE (2026-11-13).
 
 ## References
 
@@ -29,3 +29,6 @@ Status: IN PROGRESS.
   `fixedMigration_eq : fixedMigration = makeStrict := rfl` and `shop_catalog`, from the existing
   proofs). The README uses the new names and links the fixture. Test:
   `tests/surface_rebuild_test.py` (host).
+- 2026-11-13: reviews of both feature commits: no findings. End checks (Nix) on the top commit:
+  `just test-full` passed (`belay-test-reports`, 348 tests in the last suite), `just verdict`
+  passed, `just test-nix` passed (94 tests), `just test-scheduled-checks` passed. DONE.
