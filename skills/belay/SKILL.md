@@ -103,7 +103,7 @@ evidence for the claim.
    `.lake/packages/belay/packages/belay/README.md`. They do not prove
    `Migration.QueryPreserves`.
 5. For a table rebuild, the proof is by hand. Its pattern starts in
-   `.lake/packages/belay/tests/surface/Schema/Tests/RebuildKeeps.lean`, and
+   `.lake/packages/belay/examples/table-rebuild/Proof/RebuildKeeps.lean`, and
    the pattern for `Succeeds` in `RebuildSucceeds.lean` of that directory.
 6. If you find no proof, report `unknown`. Do not change the claim to get a
    proof.

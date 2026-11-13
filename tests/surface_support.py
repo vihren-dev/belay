@@ -14,17 +14,23 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/surface"
 """The Lean files that the tests elaborate."""
+EXAMPLE = ROOT / "examples/table-rebuild"
+"""The Lake project of the README's example; the tests elaborate its files too, and its proofs serve other fixtures."""
 
 
 def fixture_file(file_name: str) -> Path:
-    """Return the Lean file of `tests/surface` with the name `file_name`, such as `ViewsSupport.lean`.
+    """Return the Lean file of `tests/surface` or of the example project with the name `file_name`, such as
+    `ViewsSupport.lean`.
 
     The files are in the directories of the teams that own them, and each file name occurs once. The
-    module of a file is its file name without `.lean`, wherever the file is.
+    module of a file is its file name without `.lean`, wherever the file is. The build folder `.lake` of the
+    example is not searched.
     """
-    found = sorted(FIXTURES.rglob(file_name))
+    found = sorted([*FIXTURES.rglob(file_name),
+                    *(path for path in EXAMPLE.rglob(file_name) if ".lake" not in path.relative_to(EXAMPLE).parts)])
     if len(found) != 1:
-        raise FileNotFoundError(f"tests/surface has {len(found)} files with the name {file_name}; it must have one.")
+        raise FileNotFoundError(f"tests/surface and {EXAMPLE.relative_to(ROOT)} have {len(found)} files with the name "
+                                f"{file_name}; they must have one.")
     return found[0]
 SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 """The file suffix of a shared library on this platform."""

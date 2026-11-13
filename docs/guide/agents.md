@@ -160,8 +160,8 @@ which Lake prints again in each run
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: one line each, with a check that the kernel evaluates on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
-| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../tests/surface/Schema/Tests/RebuildKeeps.lean). |
-| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
+| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
+| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
 Two rules make the answers useful. Write the claim out in `#sql_check`; the
 name of a definition that holds the claim gives `unknown`

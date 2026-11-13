@@ -11,7 +11,7 @@ of {lit}`sessions` survive. This module holds
 what the three claims share: a database with the guide's schema, the rebuild in the order that SQLite prescribes
 ({lit}`makeStrict`), the same rebuild with the pragma inside the transaction
 ({lit}`makeStrictWrong`) and the read {lit}`allSessions`. The package holds only
-general laws; the tables and the statements are part of this fixture. -/
+general laws; the tables and the statements are part of this example. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database

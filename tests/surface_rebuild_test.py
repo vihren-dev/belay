@@ -9,6 +9,8 @@ import pytest
 
 from tests.runtime_support import run_command
 from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
+from tests.sql_file_support import installed_layout, toolchain_environment
+from tests.surface_support import EXAMPLE
 from tests.surface_assertion_examples_test import check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 
@@ -30,7 +32,11 @@ EXPECTED_ERRORS: dict[str, list[str]] = {
 """The refusal that pinned SQLite gives for each error output of the model, in order."""
 
 CHAIN_TIMEOUT_SECONDS = 400
-"""The time limit of one fixture module, in seconds."""
+"""The time limit of one fixture module, and of the Lake build of the example project, in seconds."""
+
+PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildKeepsFinish",
+                 "RebuildSucceedsSteps", "RebuildKeepsRead", "RebuildSucceedsFinish", "RebuildKeeps", "RebuildSucceeds")
+"""The modules of the example's folder `Proof`, which Lake compiles in a build of the example."""
 
 
 def test_sql_run_rules_for_schema_and_transaction_statements(runtime_root: Path, tmp_path: Path) -> None:
@@ -81,18 +87,24 @@ def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path
                        timeout=CHAIN_TIMEOUT_SECONDS)
 
 
-def test_example_of_the_readme_checks_and_proves_its_claims_on_the_schema(runtime_root: Path, tmp_path: Path) -> None:
-    """The README's rebuild example (fixture RebuildExample) states its claims with `on shop`. The check takes the
-    schema from the premise of each claim (`CheckDomain.domainSchemas`), so `badMigration preserves allSessions on
-    shop` answers false with one customer and one session of that customer, and `fixedMigration succeeds on shop`
-    answers false with a customer whose email is a blob, which the STRICT copy refuses with error 19. The replays
-    build those databases from SQL text. The two theorems in the short forms reuse the proofs of RebuildKeeps and
-    RebuildSucceeds and use only logical axioms. The test pins the answers that the README prints."""
-    output = check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
-        ("RebuildSucceedsSteps", 0), ("RebuildKeepsFinish", 0), ("RebuildSucceedsFinish", 0),
-        ("RebuildKeepsRead", 0), ("RebuildKeeps", 1), ("RebuildSucceeds", 1), ("RebuildExample", 2)),
-        timeout=CHAIN_TIMEOUT_SECONDS)
+def test_example_project_of_the_readme_builds_checks_and_proves_its_claims(runtime_root: Path, tmp_path: Path) -> None:
+    """The README's rebuild example is the Lake project `examples/table-rebuild`, which requires Belay by the path
+    `../../packages/belay`. Lake builds it from the installed packages without compiling them again. Its claims use
+    `on shop`, and the check takes the schema from the premise of each claim (`CheckDomain.domainSchemas`): in
+    TableRebuild, `badMigration preserves allSessions on shop` answers false with one customer and one session of
+    that customer; in FixedSucceeds, `fixedMigration succeeds on shop` answers false with a customer whose email is a
+    blob, which the STRICT copy refuses with error 19. The replays build those databases from SQL text. The two
+    theorems reuse the proofs of RebuildKeeps and RebuildSucceeds in the folder `Proof` and use only logical axioms.
+    The test pins the answers that the README prints, and keeps the example's lakefile from breaking."""
+    installed = installed_layout(runtime_root, tmp_path)
+    example = installed / "examples/table-rebuild"
+    shutil.copytree(EXAMPLE, example, ignore=shutil.ignore_patterns(".lake", "lake-manifest.json"))
+    result = run_command([str(installed / "lean/bin/lake"), "build", "--no-ansi"], cwd=example,
+                         timeout=CHAIN_TIMEOUT_SECONDS, environment=toolchain_environment(installed))
+    assert result.returncode == 0, result.diagnostic()
+    output = result.stdout
+    assert {*PROOF_MODULES, "TableRebuild", "FixedSucceeds"} <= set(re.findall(r"Built (\S+)", output)), output
+    assert "sorryAx" not in output and "error:" not in output, output
     lost, refused = output.split("SQL check: false.\n")[1:3]
     assert lost.startswith("Database:\ncustomers:\n  id | name | email\n  1  | NULL | ''\nsessions:\n"
                            "  id | customer_id | expires_at\n  1  | 1           | 0\n"), output
@@ -106,7 +118,7 @@ def test_example_of_the_readme_checks_and_proves_its_claims_on_the_schema(runtim
     assert 'INSERT INTO "customers" ("id", "name", "email") VALUES (1, NULL, X\'\');' in \
         refused.split("SQLite replay:\n", 1)[1], output
     for theorem in ("fixed_keeps_sessions", "fixed_succeeds"):
-        assert f"'RebuildGuide.{theorem}' depends on axioms: [propext, Classical.choice, Quot.sound]" in output, output
+        assert f"'{theorem}' depends on axioms: [propext, Classical.choice, Quot.sound]" in output, output
 
 
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:

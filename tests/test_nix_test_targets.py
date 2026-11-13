@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import shutil
 import shlex
+import sys
 from uuid import uuid4
 
 import pytest
@@ -12,6 +13,8 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
+SUITE_LIMIT = '2400' if sys.platform == 'darwin' else '1200'
+"""The limit in seconds of a suite that is not a mutant suite on this platform (`build-support/tests.nix`)."""
 
 
 def nix_string(path: Path) -> str:
@@ -43,7 +46,8 @@ def expression(root: Path) -> str:
 
 def test_bounded_commands_keep_complete_suite_ownership() -> None:
     """The real Nix command runs every owned file with a per-test limit and full reporting; the
-    suite limit is 1200 seconds, and 2700 for a mutant suite, which runs alone on its CI runner.
+    suite limit is 1200 seconds (2400 on macOS, where the suites run about twice as slowly), and 2700 for
+    a mutant suite, which runs alone on its CI runner.
     Only mutant suites stop after a reported failure, preserving diagnostics before their deadline."""
     result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
         '--extra-experimental-features', 'nix-command flakes', '--expr',
@@ -59,7 +63,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
-        limit = '2700' if name in mutant_suites else ('120' if name == 'observability' else '1200')
+        limit = '2700' if name in mutant_suites else ('120' if name == 'observability' else SUITE_LIMIT)
         assert command[:5] == ['timeout', limit, 'python3', '-m', 'pytest'], (name, command[:5])
         runtime_index = command.index('--runtime-root')
         assert command[5:runtime_index] == ownership[name], (name, command)
