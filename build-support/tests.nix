@@ -24,7 +24,10 @@ let
   # in parallel, so the suite limit only guards against a hang outside a test and must not
   # depend on how many suites share the CPU (reports/20261006-hosted-model-timeout/README.md).
   testTimeoutSeconds = 300;
-  suiteTimeoutSeconds = 1200;
+  # Hosted macOS runs the suites about 2.1 times slower than Linux: the `surface` suite took 444 s
+  # locally and 932 s there, and `surfaceS6` stopped at 1200 s after 69 of 84 tests (#396). The
+  # suites still run in parallel there, so the check stays inside the job's limit of 120 minutes.
+  suiteTimeoutSeconds = if pkgs.stdenv.hostPlatform.isDarwin then 2400 else 1200;
   # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
   # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
   mutantSuiteTimeoutSeconds = 2700;
