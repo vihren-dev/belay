@@ -228,7 +228,10 @@ let
   # ADR 0027 are in `surfaceSelect`: with them, `surfaceS6` took 959 s of its limit (98 tests).
   # The proof-cost tests are in `surfaceProofCost`: with them, `surface` took 982 s on main CI
   # (377 tests), and a pull request run ended at the limit. `surface_proof_cost_layers_test.py`
-  # stays in `surface`: it imports `surface_layers_test.py`.
+  # stays in `surface`: it imports `surface_layers_test.py`. On hosted macOS `surface` ended at its
+  # limit after 135 of 348 tests (1155 s; 720 s for all of them locally), so the claim, execution,
+  # migration and application tests are in `surfaceClaims` (366 s locally) and the rest stays in
+  # `surface` (355 s).
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
   surfaceSuite = name: suite name {
@@ -336,6 +339,7 @@ in {
     runtime = parserLibrary;
   };
   surface = surfaceSuite "surface";
+  surfaceClaims = surfaceSuite "surfaceClaims";
   surfaceChecks = surfaceSuite "surfaceChecks";
   surfaceS6 = surfaceSuite "surfaceS6";
   surfaceSelect = surfaceSuite "surfaceSelect";
