@@ -39,7 +39,7 @@ If the project has no claims directory with a `Schema.lean`, do
   same change as the migration.
 - **State a claim for each SQL change, with the schema in the claim.** For a
   migration `M` and each read `Q` of the application:
-  `M preserves Q on shop`, and `Succeeds M (·.HasCatalog shop)`. The form
+  `M preserves Q on shop`, and `M succeeds on shop`. The form
   `M preserves Q`, without `on shop`, is about every database, also one with
   other tables and triggers. For a read with a
   parameter, write `def q (email : Value) : Script := sql r"… ?1" email` and
@@ -129,7 +129,7 @@ theorem lookup_read_preserved : ∀ email : Value,
     (fun _ => rfl) (by decide +kernel)
 
 theorem email_lower_succeeds :
-    Succeeds addEmailLower (·.HasCatalog shop) :=
+    addEmailLower succeeds on shop :=
   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 ```
 
@@ -173,9 +173,9 @@ Report each claim as written, with one of these:
 - `false`, with the counterexample and what you changed;
 - `unknown`.
 
-Report each change of a claim and each change of application code. If
-`Succeeds` has no theorem, say that the theorems about reads say nothing about
-a database on which the migration fails.
+Report each change of a claim and each change of application code. If the
+claim `M succeeds on shop` has no theorem, say that the theorems about reads
+say nothing about a database on which the migration fails.
 
 ## Set up the project
 

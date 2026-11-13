@@ -40,7 +40,7 @@ Such a claim can be weaker than it looks in four ways:
    list of the databases that the claim leaves out.
 3. **The claim requires nothing where the migration fails.** A migration that
    fails on every database of your schema keeps every read. Ask for the
-   second claim: `Succeeds addEmailLower (·.HasCatalog shop)`.
+   second claim: `addEmailLower succeeds on shop`.
 4. **The claim compares the result of one read, and no more.** It does not
    compare the final state of the database, and it says nothing about the
    reads that it does not name.
@@ -161,7 +161,7 @@ which Lake prints again in each run
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: one line each, with a check that the kernel evaluates on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
 | A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../tests/surface/Schema/Tests/RebuildKeeps.lean). |
-| `Succeeds` for every database of a schema | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
+| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../tests/surface/Schema/Tests/RebuildSucceeds.lean). |
 
 Two rules make the answers useful. Write the claim out in `#sql_check`; the
 name of a definition that holds the claim gives `unknown`
@@ -279,7 +279,7 @@ theorem named_read_preserved :
   DerivedColumnMigration.preserves_of_check (by decide +kernel)
 
 theorem email_lower_succeeds :
-    Succeeds addEmailLower (·.HasCatalog shop) :=
+    addEmailLower succeeds on shop :=
   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 ```
 
@@ -297,7 +297,7 @@ The agent reports three things, and each is yours to review:
   columns. That is a change of your code and of the claim.
 - The claim about `namedCustomers` is `proved`, with the theorem
   `named_read_preserved`. Its premise is the schema `shop`.
-- `Succeeds addEmailLower (·.HasCatalog shop)` is `proved`, with the theorem
+- `addEmailLower succeeds on shop` is `proved`, with the theorem
   `email_lower_succeeds`. Together with `named_read_preserved`, it says that
   the migration runs on every database of `shop` and keeps the read.
 

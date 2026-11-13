@@ -291,8 +291,10 @@ skips that failing projection and makes the result empty, for every database.
 `Succeeds program predicate` states that every database satisfying the Lean predicate runs
 the program without an error or an output that ends the run. It checks every complete
 environment: one that supplies a clock and knows all three counters, at any values. Use
-`program succeeds` for the always-true predicate, or `program succeeds where query` for
-`Holds query` as the predicate. The query must be one read-only statement.
+`program succeeds` for the always-true predicate, `program succeeds on shop` for the databases
+with the catalog of the database `shop` (`Database.HasCatalog`), or
+`program succeeds where query` for `Holds query` as the predicate. The query must be one
+read-only statement. `program succeeds on shop where query` needs both.
 
 Success checks the actual continuation and every concrete result listed by `Output.oneOf`.
 This matters when a later statement depends on a `LIMIT` query without a fixed order:

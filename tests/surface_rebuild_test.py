@@ -81,18 +81,32 @@ def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path
                        timeout=CHAIN_TIMEOUT_SECONDS)
 
 
-def test_check_of_the_readme_finds_the_lost_session_on_the_schema(runtime_root: Path, tmp_path: Path) -> None:
-    """The README checks the wrong rebuild with the claim of its theorem, `on shop` (fixture RebuildCheck). The
-    check takes the schema from the premise of the claim (`CheckSamples.visitCandidates`) and answers false with
-    the database of the README: one customer and one session of that customer. The replay builds that database
-    from SQL text. The test pins the answer that the README prints."""
-    output = check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildCheck", 0)),
-                                timeout=CHAIN_TIMEOUT_SECONDS)
-    assert "SQL check: false.\nDatabase:\ncustomers:\n  id | name | email\n  1  | NULL | ''\nsessions:\n" \
-        "  id | customer_id | expires_at\n  1  | 1           | 0\n" in output, output
-    assert "allSessions: rows [[1, 1, 0]]" in output, output
-    replay = output.split("SQLite replay:\n", 1)[1]
-    assert 'INSERT INTO "sessions" ("id", "customer_id", "expires_at") VALUES (1, 1, 0);' in replay, output
+def test_example_of_the_readme_checks_and_proves_its_claims_on_the_schema(runtime_root: Path, tmp_path: Path) -> None:
+    """The README's rebuild example (fixture RebuildExample) states its claims with `on shop`. The check takes the
+    schema from the premise of each claim (`CheckDomain.domainSchemas`), so `badMigration preserves allSessions on
+    shop` answers false with one customer and one session of that customer, and `fixedMigration succeeds on shop`
+    answers false with a customer whose email is a blob, which the STRICT copy refuses with error 19. The replays
+    build those databases from SQL text. The two theorems in the short forms reuse the proofs of RebuildKeeps and
+    RebuildSucceeds and use only logical axioms. The test pins the answers that the README prints."""
+    output = check_module_chain(runtime_root, tmp_path, (
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
+        ("RebuildSucceedsSteps", 0), ("RebuildKeepsFinish", 0), ("RebuildSucceedsFinish", 0),
+        ("RebuildKeepsRead", 0), ("RebuildKeeps", 1), ("RebuildSucceeds", 1), ("RebuildExample", 2)),
+        timeout=CHAIN_TIMEOUT_SECONDS)
+    lost, refused = output.split("SQL check: false.\n")[1:3]
+    assert lost.startswith("Database:\ncustomers:\n  id | name | email\n  1  | NULL | ''\nsessions:\n"
+                           "  id | customer_id | expires_at\n  1  | 1           | 0\n"), output
+    assert "allSessions: rows [[1, 1, 0]]" in lost, output
+    assert "badMigration, statement 5: done 1\n" in lost, output
+    assert 'INSERT INTO "sessions" ("id", "customer_id", "expires_at") VALUES (1, 1, 0);' in \
+        lost.split("SQLite replay:\n", 1)[1], output
+    assert refused.startswith("Database:\ncustomers:\n  id | name | email\n  1  | NULL | X''\nsessions:\n"
+                              "  id | customer_id | expires_at\n  (no rows)\n"), output
+    assert "fixedMigration, statement 4: error 19\n" in refused, output
+    assert 'INSERT INTO "customers" ("id", "name", "email") VALUES (1, NULL, X\'\');' in \
+        refused.split("SQLite replay:\n", 1)[1], output
+    for theorem in ("fixed_keeps_sessions", "fixed_succeeds"):
+        assert f"'RebuildGuide.{theorem}' depends on axioms: [propext, Classical.choice, Quot.sound]" in output, output
 
 
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:

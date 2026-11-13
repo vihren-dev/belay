@@ -31,7 +31,7 @@ place, so the migration copies the table, drops the old one and renames the
 copy.
 
 ```lean
-def makeStrictWrongEnforced : Script := sql r"
+def badMigration : Script := sql r"
   PRAGMA foreign_keys = ON;
   BEGIN;
   PRAGMA foreign_keys = OFF;
@@ -60,7 +60,7 @@ limits the claim to the databases with the schema `shop`, and the check
 searches those databases:
 
 ```lean
-#sql_check makeStrictWrongEnforced preserves allSessions on shop
+#sql_check badMigration preserves allSessions on shop
 ```
 
 The output is:
@@ -75,14 +75,14 @@ sessions:
   id | customer_id | expires_at
   1  | 1           | 0
 allSessions: rows [[1, 1, 0]]
-makeStrictWrongEnforced, statement 1: done 0
-makeStrictWrongEnforced, statement 2: done 0
-makeStrictWrongEnforced, statement 3: done 0
-makeStrictWrongEnforced, statement 4: done 0
-makeStrictWrongEnforced, statement 5: done 1
-makeStrictWrongEnforced, statement 6: done 0
-makeStrictWrongEnforced, statement 7: done 0
-makeStrictWrongEnforced, statement 8: done 0
+badMigration, statement 1: done 0
+badMigration, statement 2: done 0
+badMigration, statement 3: done 0
+badMigration, statement 4: done 0
+badMigration, statement 5: done 1
+badMigration, statement 6: done 0
+badMigration, statement 7: done 0
+badMigration, statement 8: done 0
 Construction:
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
 …
@@ -110,8 +110,8 @@ def found : Database := db! r"
   INSERT INTO customers VALUES (1, NULL, '');
   INSERT INTO sessions VALUES (1, 1, 0);"
 
-example : (found.run makeStrictWrongEnforced).outputs.allOk = true ∧
-    ((found.run makeStrictWrongEnforced).db.run allSessions).outputs.getLast? = some (.rows []) := by
+example : (found.run badMigration).outputs.allOk = true ∧
+    ((found.run badMigration).db.run allSessions).outputs.getLast? = some (.rows []) := by
   decide +kernel
 ```
 
@@ -122,7 +122,7 @@ build.
 ### The fix and the proof
 
 ```lean
-def makeStrict : Script := sql r"
+def fixedMigration : Script := sql r"
   PRAGMA foreign_keys = OFF;           -- before the transaction, where it takes effect
   BEGIN;
   CREATE TABLE customers_new (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL) STRICT;
@@ -133,8 +133,8 @@ def makeStrict : Script := sql r"
   COMMIT;
   PRAGMA foreign_keys = ON;"           -- on again after the commit
 
-example : (found.run makeStrict).outputs.allOk = true ∧
-    ((found.run makeStrict).db.run allSessions).outputs.getLast? = some (.rows [[1, 1, 0]]) := by
+example : (found.run fixedMigration).outputs.allOk = true ∧
+    ((found.run fixedMigration).db.run allSessions).outputs.getLast? = some (.rows [[1, 1, 0]]) := by
   decide +kernel
 ```
 
@@ -142,12 +142,14 @@ This theorem claims that on **every database** with the schema `shop`, the
 query `allSessions` gives the same result after the fixed migration:
 
 ```lean
-theorem makeStrict_preserves_allSessions :
-    makeStrict preserves allSessions on shop
+theorem fixed_keeps_sessions :
+    fixedMigration preserves allSessions on shop
 ```
 
 Your coding agent can prove such a claim, and Lean's kernel checks the proof.
-One proof is in [`RebuildKeeps.lean`](tests/surface/Schema/Tests/RebuildKeeps.lean).
+The theorem is in [`RebuildExample.lean`](tests/surface/Schema/Tests/RebuildExample.lean),
+with the code of this section; its proof starts in
+[`RebuildKeeps.lean`](tests/surface/Schema/Tests/RebuildKeeps.lean).
 
 ## Try it on your schema
 
@@ -163,7 +165,7 @@ test with `sql_refute (db := found)`.
 | The question | Notation | Who settles it |
 | --- | --- | --- |
 | Is the SQL valid against this schema? | `sql!`, `db!` | The elaborator, when the file compiles |
-| Does it run without an error? | `succeeds`, `succeeds where` | `#sql_check` and tactics, or a proof |
+| Does it run without an error? | `succeeds`, `succeeds on`, `succeeds where` | `#sql_check` and tactics, or a proof |
 | What does it do to the data? | `ensures`, `≈`, `preserves`, `preserves … on` | `#sql_check` and tactics, or a proof |
 | Does the whole application behave the same? | `simulates` | A proof that you or an agent write |
 
