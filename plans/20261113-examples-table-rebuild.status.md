@@ -25,3 +25,6 @@ Relevant files: `README.md`, `examples/table-rebuild/` (`TableRebuild.lean`, `Fi
 - 2026-11-13: `just test-full` passed (exit 0; the seven suites that the change touches ran, 1072
   tests, none failed), with `test_example_project_of_the_readme_builds_checks_and_proves_its_claims`
   in `surfaceS6` (45 s). DONE.
+- 2026-11-13: rebased onto #400 (`fix/macos-suite-limit`, 6939aed7). `just dev-build` passed and
+  `just test-full` passed on the rebased tree (exit 0; seven suites, 1072 tests, none failed), with
+  `test_example_project_of_the_readme_builds_checks_and_proves_its_claims` in `surfaceS6`.
