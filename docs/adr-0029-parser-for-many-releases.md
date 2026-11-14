@@ -1,6 +1,7 @@
 # ADR 0029: A parser library for many SQLite releases
 
-Date: 2026-11-03. Status: ACCEPTED (2026-11-03, owner decisions below).
+Date: 2026-11-03. Status: IMPLEMENTED in pull request #306, merged on 2026-11-04;
+accepted on 2026-11-03 (owner decisions below).
 Audience: designers and reviewers.
 Related: [ADR 0007](adr-0007-parser-library.md) (the parser library: one library for all
 grammars), [ADR 0023](adr-0023-parser-built-by-lake.md) (Lake compiles committed generated C),

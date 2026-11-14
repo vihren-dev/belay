@@ -1,6 +1,7 @@
 # ADR 0026: Shared semantic facts for query and execution proofs
 
-Date: 2026-10-26. Status: ACCEPTED for implementation by the owner on 2026-10-28.
+Date: 2026-10-26. Status: IMPLEMENTED in pull request #297, merged on 2026-10-29, with
+ADR 0025; accepted for implementation by the owner on 2026-10-28.
 Audience: designers and reviewers.
 Owner request: test the causes of proof duplication, then specify the refactor
 supported by the results.
