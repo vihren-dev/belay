@@ -206,6 +206,7 @@
     "tests/surface_check_consumer_size_test.py",
     "tests/surface_check_screen_test.py",
     "tests/surface_check_run_schemas_test.py",
+    "tests/surface_check_schema_note_test.py",
     "tests/surface_search_test.py",
     "tests/surface_sampling_test.py",
     "tests/surface_counterexample_test.py",
