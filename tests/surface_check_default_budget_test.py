@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -23,4 +23,4 @@ def test_rebuild_claim_is_false_at_the_default_budget(runtime_root: Path, tmp_pa
     assert result.returncode == 0, result.diagnostic()
     assert "audit record checks passed" in result.stdout, result.diagnostic()
     block = split_blocks(result.stdout)["rebuild"]
-    assert block.startswith("SQL check: false."), block
+    false_answer(block)

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.surface_replay_test import native_replay
 from tests.surface_support import fixture_file, surface_command
 
@@ -40,7 +40,7 @@ def test_consumer_size_claim_is_false_and_replays(runtime_root: Path, tmp_path: 
     assert nodes > 8192, nodes
     blocks = split_blocks(result.stdout)
     block = blocks["consumer"]
-    assert block.startswith("SQL check: false."), block
+    false_answer(block)
     rows = table_rows(block)
     assert set(rows) == {"users", "conversations", "members", "messages", "attachments", "message_log"}, rows
     assert all(len(lines) <= 2 for lines in rows.values()), rows
@@ -57,5 +57,5 @@ def test_consumer_size_claim_is_false_and_replays(runtime_root: Path, tmp_path: 
     replay = native_replay(sqlite, script, tmp_path, "consumer")
     assert CHECK_ERROR in replay.stderr, replay.diagnostic()
     supplied = blocks["supplied"]
-    assert supplied.startswith("SQL check: false."), supplied
+    false_answer(supplied)
     assert "id: 7" in supplied and "deleteMessage (parameters 7): error 19" in supplied, supplied

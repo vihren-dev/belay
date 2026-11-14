@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
+from tests.s6_check_support import false_answer
 from tests.surface_replay_test import native_replay, native_rows
 from tests.surface_support import fixture_file, surface_command
 
@@ -22,7 +23,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
         record_testsuite_property: Callable[[str, object], None]) -> None:
     """SqlCheckCommand covers all outcomes with default inference, original data premises,
-    explicit inputs and native replay; its printed proof checks against the original claim."""
+    explicit inputs and native replay; its printed proof checks against the original claim.
+    It also checks the level of each answer: a false answer is a warning, which `lean` prints after
+    its position and `warning:`, so the editor marks the refuted claim as a problem; a proved or an
+    unknown answer is an information message, which `lean` prints with no prefix."""
     result = run_command(surface_command(runtime_root, fixture_file("CounterexampleCheckCommand.lean"), tmp_path),
                          cwd=tmp_path, timeout=240)
     assert result.returncode == 0, result.diagnostic()
@@ -33,7 +37,7 @@ def test_sql_check_reports_checked_outcomes(runtime_root: Path, tmp_path: Path,
     assert set(blocks) == false_cases | {"proof", "disabled", "no-candidates", "low-depth",
                                          "unavailable", "after-limits"}, result.stdout
     for name in false_cases:
-        assert blocks[name].startswith("SQL check: false."), (name, blocks[name])
+        false_answer(blocks[name])
         assert "Database:" in blocks[name] and "Environment:" not in blocks[name], blocks[name]
     for name in ("disabled", "no-candidates", "low-depth", "unavailable"):
         assert blocks[name].startswith("SQL check: unknown;"), (name, blocks[name])
@@ -115,7 +119,7 @@ def test_sql_check_sampling_options(runtime_root: Path, tmp_path: Path) -> None:
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     for name, rows in expected_rows.items():
-        assert blocks[name].startswith("SQL check: false."), (name, blocks[name])
+        false_answer(blocks[name])
         sql = blocks[name].split("SQLite replay:\n", 1)[1] + "\nSELECT a FROM t;\n"
         replay = native_replay(sqlite, sql, tmp_path, name)
         assert replay.returncode == 0 and not replay.stderr, replay.diagnostic()

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.sql_file_support import configured_command
 from tests.surface_support import fixture_file
 
@@ -36,5 +36,5 @@ def test_unknown_answer_with_a_search_schema_gets_the_note(runtime_root: Path, t
     assert "write `on shop` after `preserves` or `succeeds`, or add the premise (·.HasCatalog shop)" in noted, noted
     for label in ("on-schema", "with-db"):
         assert "Note:" not in blocks[label], (label, blocks[label])
-    assert blocks["false"].startswith("SQL check: false."), blocks["false"]
+    false_answer(blocks["false"])
     assert NOTE not in blocks["false"], blocks["false"]
