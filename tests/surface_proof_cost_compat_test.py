@@ -93,9 +93,10 @@ def test_overhead_sample(compiler: Compiler, record_testsuite_property: Callable
     source = fixture_file("ProofCostSurface.lean").read_text()
     observations: dict[str, list[dict[str, object]]] = {"off": [], "on": []}
     snapshots = []
-    # The first pair warms the imports; the second pair is measured. Six compiles took 154-247 s on Linux and
-    # more than the test's limit of 300 s on hosted macOS, so the test measures one pair.
-    for iteration, enabled in enumerate((False, True, True, False)):
+    # One compile with the collector on and one with it off. The window counts are heartbeats, which do not
+    # depend on a warm-up: four compiles gave the same off count twice and on counts that differed by 2 in
+    # 3.67 million. Four compiles took 195-303 s on hosted macOS, more than the test's limit of 300 s.
+    for enabled in (True, False):
         # Both texts have the same length: SQL terms record source positions.
         text = source.replace("proofCosts true", "proofCosts " + ("true " if enabled else "false"), 1)
         result = compiler.compile("Surface", text, asynchronous=False)
@@ -105,8 +106,7 @@ def test_overhead_sample(compiler: Compiler, record_testsuite_property: Callable
         assert isinstance(window, int) and window > 0, result.diagnostic()
         if enabled:
             assert set(counts(result)) == {"constant_success", "supplied_success", "default_query"}
-        if iteration >= 2:
-            observations["on" if enabled else "off"].append({"window_heartbeats": window})
+        observations["on" if enabled else "off"].append({"window_heartbeats": window})
     first = {value["name"]: value for value in cast(list[dict[str, object]], snapshots[0])}
     for snapshot in snapshots[1:]:
         other = {value["name"]: value for value in cast(list[dict[str, object]], snapshot)}
