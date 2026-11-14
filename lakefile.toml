@@ -1,0 +1,18 @@
+# The package that users require and that Reservoir indexes. It has no code of its own: it requires
+# the surface package in `packages/belay`, whose library `Belay` users import. Its one module,
+# `BelayRoot`, imports `Belay`, so that `lake build` in this folder builds the library.
+name = "belay"
+version = "0.2.0"
+description = "A semantic model of SQLite in Lean 4: state and prove facts about SQL schemas, migrations and queries"
+keywords = ["sqlite", "sql", "database", "software-verification", "formal-verification"]
+license = "MIT"
+# The tags v0.1.* are releases of an earlier product of this repository, not versions of this package.
+versionTags = { all = [{ startsWith = "v" }, { not = { startsWith = "v0.1." } }] }
+defaultTargets = ["BelayRoot"]
+
+[[require]]
+name = "belaySurface"
+path = "packages/belay"
+
+[[lean_lib]]
+name = "BelayRoot"

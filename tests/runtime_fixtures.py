@@ -98,11 +98,12 @@ def lean_sysroot(runtime_root: Path) -> Path:
 @pytest.fixture(scope="session")
 def lean_libraries(runtime_root: Path) -> tuple[Path, Path]:
     """Require the runtime's own library folder and the model's, in import precedence order. The
-    runtime's folder holds the conformance runner's modules in the conformance runtime."""
+    runtime's folder holds the conformance runner's modules in the conformance runtime. In the
+    repository, the same folder holds the build of the top-level package `belay`, so the check
+    requires the runner's module and not only the folder."""
     application = runtime_root / ".lake/build/lib/lean"
     model = runtime_root / "packages/belay-sqlite-model/.lake/build/lib/lean"
-    if not application.is_dir():
-        pytest.fail(f"Required runtime library folder is missing: {application}; build the runtime first")
+    require_file(application / "ConformanceRunner.olean")
     require_file(model / "Belay/Sqlite/Model.olean")
     return application, model
 

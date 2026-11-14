@@ -20,6 +20,10 @@ SKIPPED_DIRECTORIES = frozenset({".git", ".jj", ".lake", "build", "dist", "__pyc
 """Generated or version-control trees; their Lean files are copies or outputs, not sources."""
 
 
+ROOT_MODULE = "BelayRoot.lean"
+"""The module of the top-level package `belay` (`lakefile.toml`), the only Lean file in the top-level folder."""
+
+
 @dataclass(frozen=True)
 class Rules:
     """Path prefixes (relative, POSIX) of each category."""
@@ -33,8 +37,10 @@ REPOSITORY_RULES = Rules(
     package=("packages/",),
     # The dependency suite invokes the standalone exporter and its fixtures directly with Lean.
     # The surface tests elaborate the example project's files and build the project with Lake.
+    # The tests of the top-level package build its one module with Lake.
     direct_fixture=("tests/public_doc_inventory/", "tests/surface/", "tests/docgen/", "conformance/regressions/",
-                    "tests/theorem_dependencies/", "tools/theorem_dependency_exporter.lean", "examples/table-rebuild/"),
+                    "tests/theorem_dependencies/", "tools/theorem_dependency_exporter.lean", "examples/table-rebuild/",
+                    ROOT_MODULE),
     # The templates of the skill are copied into a user's project and built there.
     excluded=("experiments/", "skills/belay/templates/"),
 )
@@ -117,3 +123,10 @@ def test_repository_lean_files_are_each_in_one_category() -> None:
     """Every Lean source of this repository is in exactly one category."""
     assert lean_files(ROOT), "no Lean files found; the test is not looking at the repository"
     assert problems(ROOT, REPOSITORY_RULES) == []
+
+
+def test_the_root_module_has_a_rule_of_its_own() -> None:
+    """The rule `ROOT_MODULE` of `REPOSITORY_RULES` places the module of the top-level package in one category and
+    matches no other Lean file of the repository."""
+    assert categories(ROOT_MODULE, REPOSITORY_RULES) == ["direct fixture"]
+    assert [path for path in lean_files(ROOT) if path.startswith(ROOT_MODULE)] == [ROOT_MODULE]

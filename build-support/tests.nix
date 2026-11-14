@@ -9,9 +9,10 @@
 }:
 let
   fs = pkgs.lib.fileset;
+  sources = import ./sources.nix { inherit (pkgs) lib; inherit root; };
   # The C of the parser library at `parser/` of the surface root: Lake replays the text package
   # there, and its lakefile reaches the C by `../../parser` (ADR 0023, D2).
-  parserSources = (import ./sources.nix { inherit (pkgs) lib; inherit root; }).parser;
+  parserSources = sources.parser;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
     "tools/__init__.py" "tools/observability_pytest.py" "tools/observability_provenance.py" "tools/observability_records.py"
@@ -61,6 +62,9 @@ let
     ln -s ${textPackage} "$out/packages/belay-sqlite-text"
     ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
     ln -s ${parserSources} "$out/parser"
+    # The files of the top-level package, at their paths in the repository: the tests of a
+    # requirement on the repository root copy them into their layout.
+    for entry in $(ls -A ${sources.rootPackage}); do ln -s "${sources.rootPackage}/$entry" "$out/$entry"; done
   '';
   # The layer test reads the Lean files and lakefiles of every package and the Nix build.
   packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")

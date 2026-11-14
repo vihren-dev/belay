@@ -22,3 +22,31 @@ Status: OPEN.
 ## Progress
 
 - 2026-11-14: prototype and owner decisions 1 to 5; task and status files.
+- 2026-11-15, implementation plan (informal): (1) rename the surface package to `belaySurface` and
+  its callers; (2) the root package (`lakefile.toml`, `lake-manifest.json`, `BelayRoot.lean`), its
+  source identity `rootPackage` in `build-support/sources.nix`, its files in `surfaceRoot`, and the
+  tests; (3) the user documents and the ADR amendments; (4) the end-of-task checks.
+- 2026-11-15: choices where the task leaves room. The root module is `BelayRoot` in
+  `BelayRoot.lean` of the top-level folder, a direct fixture with its own category rule. The
+  version tags are `{ all = [{ startsWith = "v" }, { not = { startsWith = "v0.1." } }] }`: Lake's
+  TOML accepts a preset only at the top level of the pattern, so `verLike` cannot be combined with
+  the exclusion. `surfaceRoot` links the files of `sources.rootPackage` at their paths, and
+  `root_layout` in `tests/surface_root_package_test.py` copies them into the layout of the tests.
+  The root manifest pins Plausible as a `git` package; the layout pins it by the path of the
+  surface's Nix output, because the sandbox has no network (the same localization as
+  `surfacePackage` in `build-support/default.nix`). The Reservoir form of the requirement is
+  `scope = "vihren-dev"` with `rev = "v0.2.0"`: Lake 5.0 looks up a requirement with a scope and no
+  source on Reservoir (`Lake/Load/Materialize.lean`).
+- 2026-11-15: `lean_libraries` (`tests/runtime_fixtures.py`) now requires
+  `ConformanceRunner.olean` in the runtime's library folder, because in the repository that folder
+  also holds the build of the root package.
+- 2026-11-15, commit "refactor(surface): rename the surface package to belaySurface": the
+  lakefile, the manifest, `tests/surface_support.py` (`libbelaySurface_Belay`), the requirements of
+  `tests/sql_file_support.py` and of the example. The stale `libbelay_Belay.so` files of this
+  workspace's build folder were deleted. Review: one "should" finding (R13, the user documents
+  still show the old requirement); the documents commit of this task fixes it.
+- 2026-11-15, commit "feat: a root Lake package for Reservoir": `lakefile.toml`,
+  `lake-manifest.json`, `BelayRoot.lean`, `sources.rootPackage`, `surfaceRoot`, the fixture
+  `lean_libraries`, and the tests `tests/surface_root_package_test.py` (surface suite),
+  `tests/test_root_package.py` (host), `tests/test_lean_categories.py` and
+  `tests/test_source_identity.py`.
