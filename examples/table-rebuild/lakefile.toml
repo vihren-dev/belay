@@ -4,7 +4,7 @@ name = "tableRebuild"
 defaultTargets = ["TableRebuild", "RebuildProof"]
 
 [[require]]
-name = "belay"
+name = "belaySurface"
 path = "../../packages/belay"
 
 # The example: the checks, the facts about `found` and the theorems.

@@ -5,9 +5,11 @@ open Lake DSL System
 {lit}`Belay.Sqlite` (ADR 0016, D1). It reads SQL text with the text package below it
 ({lit}`belaySqliteText`), which calls the SQLite parser library as native code while a file
 elaborates, so the surface's modules are precompiled too. The text package's lakefile compiles the
-parser library's C code. -/
+parser library's C code. The package has the name {lit}`belaySurface`, because the thin package
+{lit}`belay` in the top-level folder of the repository requires it and has the name that users
+require. -/
 
-package belay
+package belaySurface
 
 require belaySqliteModel from "../belay-sqlite-model"
 require belaySqliteText from "../belay-sqlite-text"

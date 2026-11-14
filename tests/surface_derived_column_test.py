@@ -31,7 +31,7 @@ def test_derived_column_example_of_the_page_for_agents(runtime_root: Path, tmp_p
     (`DerivedColumnMigration.preserves_of_check`, `preserves_of_check_forall` and `succeeds_of_check`), that
     two reads keep their results and that the migration succeeds on every database of the schema. It also
     keeps the counterexample of the read with `SELECT *`. The module compiles without a warning in a
-    consumer Lake project that requires only the `belay` package, so it needs no helper of `tests/surface`.
+    consumer Lake project that requires only the surface package `belaySurface`, so it needs no helper of `tests/surface`.
     Every theorem uses only logical axioms."""
     installed = installed_layout(runtime_root, tmp_path)
     project = tmp_path / "shop"

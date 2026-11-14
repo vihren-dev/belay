@@ -66,7 +66,7 @@ def module_setup(runtime_root: Path, directory: Path,
     dynlibs = [libraries / f"libbelaySqliteModel_Belay_Sqlite_Model{SUFFIX}",
                libraries / f"libbelaySqliteModel_Belay_Sqlite_Model_Codec{SUFFIX}", libraries / f"libbelayParserLibrary{SUFFIX}",
                libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}",
-               libraries / f"libplausible_Plausible{SUFFIX}", libraries / f"libbelay_Belay{SUFFIX}"]
+               libraries / f"libplausible_Plausible{SUFFIX}", libraries / f"libbelaySurface_Belay{SUFFIX}"]
     path = directory / "setup.json"
     path.write_text(json.dumps({"name": module, "isModule": False, "importArts": modules,
                                 "dynlibs": [str(item) for item in dynlibs], "plugins": [],
