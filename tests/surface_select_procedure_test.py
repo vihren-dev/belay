@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
+from tests.s6_check_support import (CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS,
+                                       false_answer, final_rows, replays, split_blocks)
 from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_replay_test import native_replay
 
@@ -75,14 +76,14 @@ def test_background_checking(runtime_root: Path, tmp_path: Path) -> None:
     assert sqlite is not None
     for name in REPLAYED_FALSE:
         block = blocks[name]
-        assert block.startswith("SQL check: false."), (name, block)
+        false_answer(block)
         found = re.search(r"^customerOfFirst: rows (\[.*\])$", block, re.MULTILINE)
         assert found is not None, block
         model_rows = json.loads(found.group(1))
         assert model_rows and final_rows(sqlite, tmp_path, name, replays(block)[0], "") == model_rows, block
     assert "Database: shop\n" in blocks["run-named-false"], blocks["run-named-false"]
     empty = blocks["run-empty-false"]
-    assert empty.startswith("SQL check: false.\nDatabase: empty\n") and "customerOfFirst: error 1" in empty, empty
+    assert false_answer(empty).startswith("SQL check: false.\nDatabase: empty\n") and "customerOfFirst: error 1" in empty, empty
     result = native_replay(sqlite, replays(empty)[0], tmp_path, "run-empty-false")
     assert "no such table: invoices" in result.stderr, result.diagnostic()
     for name in ("arithmetic-unknown", "replay-unknown"):

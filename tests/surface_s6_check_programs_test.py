@@ -9,7 +9,8 @@ import pytest
 
 from tests.lean_server_support import compile_helper_module
 from tests.runtime_support import run_command
-from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
+from tests.s6_check_support import (CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS,
+                                       false_answer, final_rows, replays, split_blocks)
 from tests.surface_assertion_examples_test import check_module_chain
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
 from tests.surface_support import fixture_file, module_setup
@@ -57,7 +58,7 @@ def test_each_case_has_the_outcome_that_its_claim_deserves(blocks: dict[str, str
     for name in PROVED:
         assert blocks[name].startswith("SQL check: proved."), (name, blocks[name])
     for name in FALSE:
-        assert blocks[name].startswith("SQL check: false."), (name, blocks[name])
+        false_answer(blocks[name])
     for name in UNKNOWN:
         assert blocks[name].startswith("SQL check: unknown;"), (name, blocks[name])
         assert "Database:" not in blocks[name] and "SQLite replay" not in blocks[name], blocks[name]

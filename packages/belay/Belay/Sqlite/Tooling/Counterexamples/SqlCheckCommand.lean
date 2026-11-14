@@ -15,7 +15,9 @@ Optional {lit}`with (schema := database)`, repeated {lit}`(db := database)`,
 {lit}`(env := environment)` and {lit}`(input name := value)` guide the same checker.
 The inputs direct the search only and do not change the claim.
 The {lit}`sql.checkBudget` and {lit}`sql.checkCandidates` options bound the search;
-an unknown result proves nothing. The command adds no theorem. -/
+an unknown result proves nothing. The command adds no theorem.
+A false answer is a warning, so the editor marks the refuted claim as a problem.
+A proved or unknown answer is an information message. -/
 syntax (name := sqlCheckCommand) "#sql_check " term
   (" with " sqlCheckInput+)? : command
 
@@ -38,22 +40,25 @@ def schemaOnlyDirectsNote (proposition : Expr) (inputs : Array (TSyntax `sqlChec
     write `on {schema}` after `preserves` or `succeeds`, or add the premise (·.HasCatalog {schema})."
 
 /-- Elaborate the original proposition in the command's local context and display only the
-shared checker's result, with the note of {name}`schemaOnlyDirectsNote` when it applies. Normal
-Lean cancellation remains attached to this command. -/
+shared checker's result, with the note of {name}`schemaOnlyDirectsNote` when it applies. A refuted
+claim is logged as a warning, and a proved or unknown claim as an information message. The
+warning does not stop elaboration, so a file can keep a false claim on purpose; only a build with
+{lit}`lake build --wfail` fails on it. Normal Lean cancellation remains attached to this command. -/
 @[command_elab sqlCheckCommand]
 def elabSqlCheckCommand : CommandElab := fun stx => do
   let `(command| #sql_check $proposition $[with $inputs:sqlCheckInput*]?) := stx
     | throwUnsupportedSyntax
-  let message ← runTermElabM fun _ => Term.withoutErrToSorry do
+  let (message, refuted) ← runTermElabM fun _ => Term.withoutErrToSorry do
     let proposition ← Term.elabTerm proposition (some (mkSort .zero))
     Term.synthesizeSyntheticMVarsNoPostponing
     let proposition ← instantiateMVars proposition
     let inputs := inputs.getD #[]
     let outcome ← Check.configuredCheck proposition inputs
     let message ← Check.describe outcome
-    return match ← schemaOnlyDirectsNote proposition inputs outcome with
+    let message := match ← schemaOnlyDirectsNote proposition inputs outcome with
       | some note => message ++ m!"\n{note}"
       | none => message
-  logInfo message
+    return (message, outcome.result matches .refuted ..)
+  if refuted then logWarning message else logInfo message
 
 end Belay.Sqlite

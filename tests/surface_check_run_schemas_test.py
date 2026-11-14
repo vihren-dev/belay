@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.sql_file_support import configured_command
 from tests.surface_support import fixture_file
 
@@ -33,7 +33,7 @@ def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_pat
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)
     for label in ("file-schema", "file-on", "two-runs-on", "unterminated-on"):
-        assert blocks[label].startswith("SQL check: false."), blocks[label]
+        false_answer(blocks[label])
         assert INDEX in blocks[label].split("SQLite replay:\n", 1)[1], blocks[label]
     assert blocks["without-text"].startswith("SQL check: unknown; the schema of the search has no SQL text"), \
         blocks["without-text"]

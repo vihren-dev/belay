@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.surface_support import fixture_file, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
@@ -26,7 +26,7 @@ def test_screen_proposes_and_certification_decides(runtime_root: Path, tmp_path:
     blocks = split_blocks(result.stdout)
     assert blocks["override"].startswith("SQL check: unknown; the search could not compile a screen"), blocks
     assert "(db := ...)" in blocks["override"], blocks["override"]
-    assert blocks["override-witness"].startswith("SQL check: false."), blocks["override-witness"]
+    false_answer(blocks["override-witness"])
     assert blocks["slow"].startswith(
         "SQL check: unknown; the search reached its time limit; increase sql.checkTimeLimit"), blocks["slow"]
     assert "error" not in result.stdout.lower(), result.stdout

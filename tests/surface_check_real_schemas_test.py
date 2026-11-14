@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.surface_replay_test import native_replay
 from tests.surface_support import fixture_file, surface_command
 
@@ -29,7 +29,7 @@ def test_claims_on_real_schemas_are_false(runtime_root: Path, tmp_path: Path) ->
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)
     for label in LABELS:
-        assert blocks[label].startswith("SQL check: false."), (label, blocks[label])
+        false_answer(blocks[label])
     block = blocks["two-checked-db"]
     assert "'ann@x.io'" in block and "'Ann@x.io'" in block, block
     script = block.split("SQLite replay:\n", 1)[1]
@@ -52,7 +52,7 @@ def test_altered_schema_replay_inserts_rows_with_the_triggers_off(runtime_root: 
                          cwd=tmp_path, timeout=380)
     assert result.returncode == 0, result.diagnostic()
     block = split_blocks(result.stdout)["altered"]
-    assert block.startswith("SQL check: false."), block
+    false_answer(block)
     script = block.split("SQLite replay:\n", 1)[1]
     assert "ALTER TABLE customers ADD COLUMN name TEXT;" in script, script
     assert ".dbconfig enable_trigger off\n" in script and ".dbconfig enable_trigger on\n" in script, script

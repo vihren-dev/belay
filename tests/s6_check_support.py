@@ -20,6 +20,19 @@ def split_blocks(output: str) -> dict[str, str]:
     return dict(re.findall(r"SQL-COMMAND-BEGIN ([\w-]+)\n(.*?)\nSQL-COMMAND-END \1:", output, re.DOTALL))
 
 
+FALSE_ANSWER_PREFIX = re.compile(r"\S+:\d+:\d+: warning: (?=SQL check: false\.)")
+"""The prefix that `lean` prints before a false answer of `#sql_check`: its position and `warning:`."""
+
+
+def false_answer(block: str) -> str:
+    """The false answer of `#sql_check` in the block of one label, from `SQL check: false.` on.
+    `SqlCheckCommand` logs a false answer as a warning, so the editor marks the refuted claim as a
+    problem; the test fails when the block is not a false answer or the answer is not a warning."""
+    prefix = FALSE_ANSWER_PREFIX.match(block)
+    assert prefix is not None, block
+    return block[prefix.end():]
+
+
 def replays(block: str) -> list[str]:
     """The SQLite scripts of the replays of one block, in order: the parts of its one replay script,
     each of which after the first starts on a new database with `.open :memory:`."""

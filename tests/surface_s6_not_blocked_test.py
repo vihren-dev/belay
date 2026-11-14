@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS, final_rows, replays, split_blocks
+from tests.s6_check_support import (CHAIN_TEST_TIMEOUT_SECONDS, CHAIN_TIMEOUT_SECONDS,
+                                       false_answer, final_rows, replays, split_blocks)
 from tests.surface_assertion_examples_test import check_module_chain
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler"),
@@ -34,7 +35,7 @@ def test_not_in_and_not_exists_differ_on_three_databases_and_agree_under_the_pre
     assert sqlite is not None
     for name, (in_rows, exists_rows) in NOT_BLOCKED.items():
         block = found[name]
-        assert block.startswith("SQL check: false."), (name, block)
+        false_answer(block)
         assert "Failing observation: The actual runs of the two programs differ at this context." in block, block
         first, second = replays(block)
         assert final_rows(sqlite, tmp_path, f"{name}-in", first, "") == in_rows, block

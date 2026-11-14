@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import split_blocks
+from tests.s6_check_support import false_answer, split_blocks
 from tests.surface_replay_test import native_replay
 from tests.surface_support import fixture_file, surface_command
 
@@ -42,7 +42,7 @@ def test_counterexample_is_one_readable_block(runtime_root: Path, tmp_path: Path
     assert result.returncode == 0, result.diagnostic()
     blocks = split_blocks(result.stdout)
     block = blocks["unique-email"]
-    assert block.startswith(UNIQUE_EMAIL_HEAD), block
+    assert false_answer(block).startswith(UNIQUE_EMAIL_HEAD), block
     assert block.count("Construction:") == 1 and block.count("SQLite replay:") == 1, block
     for absent in ("valid :=", "bytes :=", "candidateEnvironment", "Environment:", "Bindings:", "CAST("):
         assert absent not in block, (absent, block)
