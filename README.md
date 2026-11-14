@@ -5,6 +5,8 @@ migrations. You write SQL, state what must hold, and Lean checks it:
 with a search that finds the rows that break a claim, or with a proof that
 Lean's kernel verifies.
 
+![A recording of 20 seconds in the editor. The check finds a database on which a migration deletes the sessions. Lean then checks a proof that the fixed migration keeps them on every database.](docs/media/belay-demo.gif)
+
 ## An example
 
 This example is a migration that can lose data. The same mistake deleted a
@@ -129,7 +131,6 @@ def fixedMigration : Script := sql r"
   INSERT INTO customers_new SELECT id, name, email FROM customers;
   DROP TABLE customers;
   ALTER TABLE customers_new RENAME TO customers;
-  PRAGMA foreign_key_check;            -- fails the migration on a dangling reference
   COMMIT;
   PRAGMA foreign_keys = ON;"           -- on again after the commit
 

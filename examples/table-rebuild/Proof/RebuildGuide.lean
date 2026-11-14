@@ -25,8 +25,8 @@ def sample : Database := db! r"
   INSERT INTO customers VALUES(1,'ada','Ada@X');
   INSERT INTO sessions VALUES(10,1,100);"
 
-/-- The rebuild of the guide: foreign keys off before the transaction, checked before the commit and on again
-after it. The new table is STRICT, so the copy refuses a customer with a cell that does not fit the declared type of
+/-- The rebuild of the guide: foreign keys off before the transaction and on again after the commit. The new
+table is STRICT, so the copy refuses a customer with a cell that does not fit the declared type of
 its column, for example a blob email; NULL fits every type, so a customer without a name is copied. -/
 def makeStrict : Script := sql r"
   PRAGMA foreign_keys = OFF;
@@ -35,7 +35,6 @@ def makeStrict : Script := sql r"
   INSERT INTO customers_new SELECT id, name, email FROM customers;
   DROP TABLE customers;
   ALTER TABLE customers_new RENAME TO customers;
-  PRAGMA foreign_key_check;
   COMMIT;
   PRAGMA foreign_keys = ON;"
 

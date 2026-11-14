@@ -54,7 +54,7 @@ that connection. Proof sketch: the resolution state of the end is the one that t
 resolves at position 0 there; the table is the same, with the same rows. -/
 theorem sessions_obligations {db : Database} {counters : Counters} {ended : Connection} {sessions : Table}
     (pre : db.raw.catalog = sample.raw.catalog) (named : db.raw.tableNamed sessionsName = some (1, sessions))
-    (kept : Kept sessions 9 ended) :
+    (kept : Kept sessions 8 ended) :
     sessionsCertificate.Obligations runContext sessionsRead (db.raw.connection counters) ended := by
   obtain ⟨before, resolvedBefore⟩ := sessions_resolves_before
   obtain ⟨after, resolvedAfter⟩ := sessions_resolves_after
@@ -70,7 +70,7 @@ theorem sessions_obligations {db : Database} {counters : Counters} {ended : Conn
 
 /-- For every clock and table of the sessions, every statement of the rebuild, and every connection that keeps the
 facts before the statement: every execution of the step of the statement that has no error output reaches a connection
-that keeps the facts after the statement. Proof sketch: the nine cases {lit}`advance_0` to {lit}`advance_8`. -/
+that keeps the facts after the statement. Proof sketch: the eight cases {lit}`advance_0` to {lit}`advance_7`. -/
 theorem kept_advance (clock : Option Clock) (sessions : Table) :
     ∀ (n : Nat) (inList : n < makeStrict.statements.length) (index : Nat) (connection : Connection),
       connection.state.Holds (Database.Valid Profile.pinned) → Kept sessions n connection →
@@ -79,7 +79,7 @@ theorem kept_advance (clock : Option Clock) (sessions : Table) :
         ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
           Kept sessions (n + 1) found.next := by
   intro n inList index connection _ kept output next others step
-  have small : n < 9 := inList
+  have small : n < 8 := inList
   match n, small with
   | 0, _ => exact advance_0 kept step
   | 1, _ => exact advance_1 kept step
@@ -89,7 +89,6 @@ theorem kept_advance (clock : Option Clock) (sessions : Table) :
   | 5, _ => exact advance_5 kept step
   | 6, _ => exact advance_6 kept step
   | 7, _ => exact advance_7 kept step
-  | 8, _ => exact advance_8 kept step
 
 /-- The rebuild preserves the read of all sessions on every database whose catalog is the guide's schema, for every
 complete environment: where the rebuild succeeds on the database, the read before the rebuild and the read after it

@@ -47,7 +47,7 @@ example : (found.run badMigration).outputs.allOk = true ∧
     ((found.run badMigration).db.run allSessions).outputs.getLast? = some (.rows []) := by
   decide +kernel
 
-/-- The fixed migration: foreign keys off before the transaction, checked before the commit. -/
+/-- The fixed migration: foreign keys off before the transaction and on again after the commit. -/
 def fixedMigration : Script := sql r"
   PRAGMA foreign_keys = OFF;           -- before the transaction, where it takes effect
   BEGIN;
@@ -55,7 +55,6 @@ def fixedMigration : Script := sql r"
   INSERT INTO customers_new SELECT id, name, email FROM customers;
   DROP TABLE customers;
   ALTER TABLE customers_new RENAME TO customers;
-  PRAGMA foreign_key_check;            -- fails the migration on a dangling reference
   COMMIT;
   PRAGMA foreign_keys = ON;"           -- on again after the commit
 
