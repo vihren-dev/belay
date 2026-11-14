@@ -250,6 +250,12 @@ builds use finished outputs or other packages, and need nothing. `lean-package.n
 text package's dependents pass the same set. A git require with `subDir` gets the whole
 repository, so the paths are there too.
 
+Amended 2026-11-15 ([root package task](../plans/20261114-root-package-for-reservoir.task.md)):
+users require the top-level package `belay` with a git require and no `subDir`. Lake also clones
+the whole repository for it, and the top-level package requires the surface by the path
+`packages/belay`, so the text package finds `parser/` at the same path. A git require with
+`subDir = "packages/belay"` still works.
+
 The `extern_lib` is renamed from `parserShim` (static library `belayParserShim`) to a name for
 what it now holds, for example `parserLibrary` (owner decision 4). The rename is in the same
 pull request, and D4 lists the places that name the old one. `c/parser_shim.c` includes

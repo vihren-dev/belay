@@ -43,8 +43,17 @@ that requirement with the `git` requirement of the README:
 [[require]]
 name = "belay"
 git = "https://github.com/vihren-dev/belay"
-rev = "main"
-subDir = "packages/belay"
+rev = "v0.2.0"
+```
+
+When [Reservoir](https://reservoir.lean-lang.org) lists Belay, you can use
+this requirement instead:
+
+```toml
+[[require]]
+name = "belay"
+scope = "vihren-dev"
+rev = "v0.2.0"
 ```
 
 Then run `lake update` and `lake build`.

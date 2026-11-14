@@ -122,6 +122,12 @@ decision 1):
 | The surface | `belay` in `packages/belay` | `Belay`, with the SQLite surface under `Belay.Sqlite` |
 | The SQLite model | `belaySqliteModel` in `packages/belay-sqlite-model` | `Belay.Sqlite.Model` |
 
+Amended 2026-11-15 ([root package task](../plans/20261114-root-package-for-reservoir.task.md)):
+the surface package has the name `belaySurface`. The name `belay` is now the name of a thin
+package in the top-level folder of the repository, which users require and Reservoir indexes. It
+requires `belaySurface` by the path `packages/belay`, and its one module, `BelayRoot`, imports
+`Belay` and defines nothing. The surface stays in `packages/belay`, and users still import `Belay`.
+
 With one engine, every part of the surface is specific to SQLite, so all surface code
 lives under `Belay.Sqlite`. The module `Belay` imports it and defines nothing of its
 own. A part that is the same for every engine moves into `Belay` only when a second

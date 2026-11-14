@@ -267,6 +267,16 @@ miss a file without notice. Lean sources that must fail to compile are not
 cached, because Lake stores only successful builds; tests write most of them at
 run time, and checked-in ones are direct fixtures.
 
+Amended 2026-11-15 ([root package task](../plans/20261114-root-package-for-reservoir.task.md)):
+the top-level folder of the repository holds a thin Lake package, `belay`, so that Reservoir can
+index the repository and users can require it with no `subDir`. Its `lakefile.toml` requires the
+surface in `packages/belay` by path, and its one module, `BelayRoot.lean`, imports `Belay`, so
+that `lake build` in the top-level folder builds the library. A TOML lakefile cannot name a target
+of a required package as a default target, so the package needs this module. No Nix derivation
+builds the package: the tests of the surface suite build it in a copy of the repository layout.
+So `BelayRoot.lean` is a direct fixture, with a rule in the test that matches only this file. The
+lakefile is TOML and not a Lean file, so it needs no category.
+
 ### 8. Tests and CI: one seed for each case
 
 Nix test targets are separate sandboxed derivations that run in parallel. They

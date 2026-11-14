@@ -3,11 +3,11 @@
 name = "shop"
 defaultTargets = ["Claims"]
 
+# When Reservoir lists Belay, `scope = "vihren-dev"` can replace the `git` line.
 [[require]]
 name = "belay"
 git = "https://github.com/vihren-dev/belay"
-rev = "main"
-subDir = "packages/belay"
+rev = "v0.2.0"
 
 # A change of a file in `db` rebuilds the claims that read it.
 [[input_dir]]

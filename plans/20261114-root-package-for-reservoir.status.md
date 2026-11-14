@@ -44,7 +44,7 @@ Status: OPEN.
   lakefile, the manifest, `tests/surface_support.py` (`libbelaySurface_Belay`), the requirements of
   `tests/sql_file_support.py` and of the example. The stale `libbelay_Belay.so` files of this
   workspace's build folder were deleted. Review: one "should" finding (R13, the user documents
-  still show the old requirement); the documents commit of this task fixes it.
+  still show the old requirement); fixed by the commit "docs: require Belay from the repository root".
 - 2026-11-15, commit "feat: a root Lake package for Reservoir": `lakefile.toml`,
   `lake-manifest.json`, `BelayRoot.lean`, `sources.rootPackage`, `surfaceRoot`, the fixture
   `lean_libraries`, and the tests `tests/surface_root_package_test.py` (surface suite),
@@ -54,4 +54,14 @@ Status: OPEN.
   review of the root package commit found no test for the new requirement of `lean_libraries`
   (R11, should). `tests/test_pytest_harness.py` now runs a probe with a runtime root whose library
   folder has only `BelayRoot.olean`. The second finding of that review (R13, should: the documents)
-  is fixed by the documents commit.
+  is fixed by the commit "docs: require Belay from the repository root". Its review found one
+  "should" (R19: the status said "fixed" before the documents commit existed); fixed by the same
+  commit.
+- 2026-11-15, commit "docs: require Belay from the repository root": `README.md` ("Install"),
+  `examples/table-rebuild/README.md` and `skills/belay/templates/lakefile.toml` show the `git`
+  requirement on the repository root with `rev = "v0.2.0"` and the Reservoir form
+  (`scope = "vihren-dev"`); the README says that the Reservoir form works only after Reservoir
+  lists the package. `packages/belay/README.md` names the package `belaySurface`. Dated
+  amendments: ADR 0010 section 7, ADR 0016 D3 and ADR 0023 (the `subDir` text).
+  `skills/belay/SKILL.md` needs no change: Lake clones the root requirement into
+  `.lake/packages/belay`, so its paths stay correct.
