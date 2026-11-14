@@ -5,7 +5,7 @@ set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
 set_option exponentiation.threshold 2048
 
-/-! The last four statements of the rebuild keep the facts of {lit}`RebuildKeepsInvariant` (ADR 0017, S6, part 3). -/
+/-! The last three statements of the rebuild keep the facts of {lit}`RebuildKeepsInvariant` (ADR 0017, S6, part 3). -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -34,7 +34,9 @@ theorem advance_5 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
     refine Eq.trans ?_ lookup
     with_unfolding_all rfl
 
-/-- Statement 6, {lit}`PRAGMA foreign_key_check`, keeps the facts: it changes nothing. -/
+/-- Statement 6, {lit}`COMMIT`, keeps the facts (the form of {name}`advance_0`). The transaction is open before it, as
+the resolution state shows. Proof sketch: the step law of the statement gives the next connection; the resolution
+state is compared by evaluation. -/
 theorem advance_6 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 6 c)
     (step : runScriptStep runContext clock index c makeStrict.statements[6].1 makeStrict.statements[6].2 =
@@ -42,25 +44,9 @@ theorem advance_6 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
       Kept sessions 7 found.next := by
   obtain ⟨hres, hnamed⟩ := kept
-  obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps (found := by rw [hres]; with_unfolding_all exact rfl)
-    (Or.inl ⟨_, _, rfl⟩) step
-  intro found member _
-  rw [single_next member]
-  exact ⟨by rw [hres]; with_unfolding_all rfl, hnamed⟩
-
-/-- Statement 7, {lit}`COMMIT`, keeps the facts (the form of {name}`advance_0`). The transaction is open before it, as
-the resolution state shows. Proof sketch: the step law of the statement gives the next connection; the resolution
-state is compared by evaluation. -/
-theorem advance_7 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
-    {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 7 c)
-    (step : runScriptStep runContext clock index c makeStrict.statements[7].1 makeStrict.statements[7].2 =
-      .continued output next others) :
-    ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
-      Kept sessions 8 found.next := by
-  obtain ⟨hres, hnamed⟩ := kept
   obtain ⟨h1, h2, h3, h4⟩ := resolveState_parts hres
   have active : ∃ original, c.state.snapshot = some original := by
-    have open_ : ∃ catalog, (reachedAfter 7).resolveState.saved = some catalog := by
+    have open_ : ∃ catalog, (reachedAfter 6).resolveState.saved = some catalog := by
       with_unfolding_all exact ⟨_, rfl⟩
     obtain ⟨catalog, saved⟩ := open_
     rw [saved] at h2
@@ -77,19 +63,19 @@ theorem advance_7 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
   rw [h1, h3, h4]
   with_unfolding_all rfl
 
-/-- Statement 8, {lit}`PRAGMA foreign_keys = ON`, keeps the facts (the form of {name}`advance_0`). The transaction is
+/-- Statement 7, {lit}`PRAGMA foreign_keys = ON`, keeps the facts (the form of {name}`advance_0`). The transaction is
 closed before it. Proof sketch: the step law of the statement gives the next connection; the resolution state is
 compared by evaluation. -/
-theorem advance_8 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
-    {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 8 c)
-    (step : runScriptStep runContext clock index c makeStrict.statements[8].1 makeStrict.statements[8].2 =
+theorem advance_7 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
+    {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 7 c)
+    (step : runScriptStep runContext clock index c makeStrict.statements[7].1 makeStrict.statements[7].2 =
       .continued output next others) :
     ∀ found ∈ (RunStep.continued output next others).executions, found.output.isError = false →
-      Kept sessions 9 found.next := by
+      Kept sessions 8 found.next := by
   obtain ⟨hres, hnamed⟩ := kept
   obtain ⟨h1, h2, h3, h4⟩ := resolveState_parts hres
   have idle : c.state.snapshot = none := by
-    have closed : (reachedAfter 8).resolveState.saved = none := by with_unfolding_all rfl
+    have closed : (reachedAfter 7).resolveState.saved = none := by with_unfolding_all rfl
     rw [closed] at h2
     simpa using h2
   obtain ⟨-, rfl, nextEq⟩ := runScriptStep_pragma_foreignKeys (found := by rw [hres]; with_unfolding_all exact rfl) step

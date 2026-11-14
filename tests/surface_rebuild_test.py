@@ -136,7 +136,7 @@ def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_
 def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root: Path, tmp_path: Path) -> None:
     """The right rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit
     the STRICT types of the new table, for every complete environment and on every branch of the INSERT from a query
-    (claim 2 of the guide). The fixtures show that each of the nine steps continues without an error in every
+    (claim 2 of the guide). The fixtures show that each of the eight steps continues without an error in every
     execution and keeps the facts of the rebuild (RebuildSucceedsSteps, RebuildSucceedsFinish); the copy needs the
     old customers to fit the types that the model reads from the CREATE TABLE and uses the success law of INSERT
     from a query (RebuildCopyFacts, RebuildSucceedsCopy). The
