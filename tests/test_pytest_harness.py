@@ -52,6 +52,24 @@ def test_missing_prerequisite_fails_setup(harness: Path) -> None:
     assert "1 error" in result.stdout and "call ran" not in result.stdout, result.diagnostic()
 
 
+def test_library_folder_without_the_runner_fails_setup(harness: Path, tmp_path: Path) -> None:
+    """`lean_libraries` (`tests/runtime_fixtures.py`) requires the conformance runner's module in the runtime's
+    library folder. In the repository, that folder holds the build of the top-level package `belay`, which is not
+    the runner, so a runtime root with only that build fails setup and names the missing module."""
+    runtime = tmp_path / "runtime"
+    compiler = runtime / "lean/bin/lean"
+    for path in (compiler, runtime / ".lake/build/lib/lean/BelayRoot.olean",
+                 runtime / "packages/belay-sqlite-model/.lake/build/lib/lean/Belay/Sqlite/Model.olean"):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("")
+    compiler.chmod(0o755)
+    source = ('import pytest\npytestmark = pytest.mark.requires_lean\n'
+              'def test_libraries():\n    raise AssertionError("call ran")\n')
+    result = invoke(harness, source, f"--runtime-root={runtime}")
+    assert result.returncode == 1 and "ConformanceRunner.olean" in result.stdout, result.diagnostic()
+    assert "1 error" in result.stdout and "call ran" not in result.stdout, result.diagnostic()
+
+
 def test_command_json_diagnostics_retain_both_streams(tmp_path: Path) -> None:
     """Malformed JSON retains the command, status, stdout, stderr and elapsed time."""
     result = run_command([sys.executable, "-c", "import sys; print('invalid'); print('detail',file=sys.stderr)"],

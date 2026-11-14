@@ -50,3 +50,8 @@ Status: OPEN.
   `lean_libraries`, and the tests `tests/surface_root_package_test.py` (surface suite),
   `tests/test_root_package.py` (host), `tests/test_lean_categories.py` and
   `tests/test_source_identity.py`.
+- 2026-11-15, commit "refactor(tests): test that lean_libraries requires the runner module": the
+  review of the root package commit found no test for the new requirement of `lean_libraries`
+  (R11, should). `tests/test_pytest_harness.py` now runs a probe with a runtime root whose library
+  folder has only `BelayRoot.olean`. The second finding of that review (R13, should: the documents)
+  is fixed by the documents commit.
