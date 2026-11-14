@@ -48,7 +48,7 @@ warning does not stop elaboration, so a file can keep a false claim on purpose; 
 def elabSqlCheckCommand : CommandElab := fun stx => do
   let `(command| #sql_check $proposition $[with $inputs:sqlCheckInput*]?) := stx
     | throwUnsupportedSyntax
-  let (message, refuted) ← runTermElabM fun _ => Term.withoutErrToSorry do
+  let (message, severity) ← runTermElabM fun _ => Term.withoutErrToSorry do
     let proposition ← Term.elabTerm proposition (some (mkSort .zero))
     Term.synthesizeSyntheticMVarsNoPostponing
     let proposition ← instantiateMVars proposition
@@ -58,7 +58,10 @@ def elabSqlCheckCommand : CommandElab := fun stx => do
     let message := match ← schemaOnlyDirectsNote proposition inputs outcome with
       | some note => message ++ m!"\n{note}"
       | none => message
-    return (message, outcome.result matches .refuted ..)
-  if refuted then logWarning message else logInfo message
+    let severity : MessageSeverity := match outcome.result with
+      | .refuted .. => .warning
+      | .proved .. | .unknown => .information
+    return (message, severity)
+  logAt stx message severity
 
 end Belay.Sqlite

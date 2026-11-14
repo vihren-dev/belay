@@ -146,7 +146,8 @@ builds with.
    [three checks](#three-checks-of-the-agents-work).
 
 `#sql_check` is a search. It adds no theorem, and its answer does not fail
-the build. Only a `theorem` or an `example` in a file that CI builds protects
+the build. A false answer is a warning, so only `lake build --wfail` fails on
+it. Only a `theorem` or an `example` in a file that CI builds protects
 you. The option `--log-level=error` hides the warnings of Belay's own files,
 which Lake prints again in each run
 ([#372](https://github.com/vihren-dev/belay/issues/372)).
