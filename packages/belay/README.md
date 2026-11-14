@@ -445,6 +445,12 @@ work with both frontends. They are proposals: claim preconditions are checked,
 not assumed. The explicit tactic `sql_refute (db := candidate)` checks a supplied
 witness independently of search bounds.
 
+The inputs do not change the claim. `M preserves Q with (schema := shop)` is still a
+claim about all databases, and it can be false on a database of another schema.
+When such a check answers unknown and the claim has no `HasCatalog` premise,
+`#sql_check` adds a note that tells you how to state the claim for the databases
+of `shop`: `M preserves Q on shop`.
+
 | Lean option | Default | Meaning |
 | --- | ---: | --- |
 | `sql.check` | true | Check SQL theorem statements in the background |
