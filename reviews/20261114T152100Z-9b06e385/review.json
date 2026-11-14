@@ -1,0 +1,39 @@
+{
+  "caller": "claude",
+  "commit": "9b06e3856a76533ae7912255c78a8b1a538097e1",
+  "date": "2026-11-14T15:21:00+00:00",
+  "exit": 0,
+  "files": [
+    "docs/guide/agents.md",
+    "packages/belay/Belay/Sqlite/Tooling/Counterexamples/SqlCheckCommand.lean",
+    "reviews/20261114T151925Z-285057db/resolution-1-20261114T152035Z.json",
+    "reviews/20261114T151925Z-285057db/resolution-2-20261114T152036Z.json",
+    "reviews/20261114T151925Z-285057db/review.json"
+  ],
+  "findings": [],
+  "id": "20261114T152100Z-9b06e385",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "eb0d712059e4",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
