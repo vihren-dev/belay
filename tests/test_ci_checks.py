@@ -51,7 +51,7 @@ def test_hosted_job_keeps_owner_limit_and_child_deadlines(
     assert job_limits == OWNER_JOB_LIMIT_MINUTES
     assert reference_limit == 3600
     assert all(0 < timeout <= job_limits[system] * 60 for timeout in budgets)
-    assert budgets[-1] == CHECKS_PHASE_LIMIT_SECONDS == 4500
+    assert budgets[-1] == CHECKS_PHASE_LIMIT_SECONDS[system] == {"x86_64-linux": 4500, "aarch64-darwin": 6000}[system]
 
 
 

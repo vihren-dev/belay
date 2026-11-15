@@ -23,17 +23,20 @@ SCOPE_RECIPES = {
 }
 """The `just` recipes for each scope of tests/ci_scope.py; one invocation runs shared dependencies once."""
 
-CHECKS_PHASE_LIMIT_SECONDS = 4500
-"""The limit of the `just` recipes of a scope. On 2026-10-19 the recipes of the largest scope with the scheduled mutant
-suite needed about 33 minutes on Linux (pull request #182) and more than 30 minutes on macOS (run
-39237549400); the mutant suites now run in the CI job `mutants`. Without a saved Nix store, the
-macOS recipes build the Lean packages for about 35 minutes before the suites start, and on
-2026-11-09 they ran for 46 minutes until the job limit stopped them (run 42698688166). The job
-limit, 75 minutes on Linux and 120 minutes on macOS, stays the outer bound."""
+CHECKS_PHASE_LIMIT_SECONDS = {"x86_64-linux": 4500, "aarch64-darwin": 6000}
+"""The limit of the `just` recipes of a scope, for each native CI system. On 2026-10-19 the recipes of the largest scope
+with the scheduled mutant suite needed about 33 minutes on Linux (pull request #182) and more than 30 minutes on macOS
+(run 39237549400); the mutant suites now run in the CI job `mutants`. Without a saved Nix store, the macOS recipes
+build the Lean packages for about 35 minutes before the suites start, and on 2026-11-09 they ran for 46 minutes until
+the job limit stopped them (run 42698688166). On macOS a change of an input that every suite uses runs all suites,
+which needs about 57 minutes (run 43689805510): the recipes there stop `nix-build` after 4500 seconds
+(`suite_build_limit` of the justfile), so the phase gets 6000 seconds. The job limit, 75 minutes on Linux and
+120 minutes on macOS, stays the outer bound."""
 def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     """Build the conformance runtime (or set up the host in source mode), then run the scope's recipes."""
-    if scope not in SCOPE_RECIPES or mode not in {"source", "build"}:
-        raise ValueError(f"Unknown CI scope or build mode: {scope}, {mode}; use a scope from tests/ci_scope.py")
+    if scope not in SCOPE_RECIPES or mode not in {"source", "build"} or system not in CHECKS_PHASE_LIMIT_SECONDS:
+        raise ValueError(f"Unknown CI scope, build mode or system: {scope}, {mode}, {system}; use a scope from "
+                         f"tests/ci_scope.py and a system of {sorted(CHECKS_PHASE_LIMIT_SECONDS)}")
     job_started = datetime.now(timezone.utc)
     check_resources(root)
     if os.environ.get("SQLITE_VERIFIER_SYSTEM") != system:
@@ -86,7 +89,7 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
                 "lake": run("lake-version", [lake, "--version"], 10)}
     (root / "build/ci-environment.json").write_text(json.dumps(versions, indent=2) + "\n")
     try:
-        run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], CHECKS_PHASE_LIMIT_SECONDS)
+        run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], CHECKS_PHASE_LIMIT_SECONDS[system])
     finally:
         write_test_summary(root / "build", job_started)
 

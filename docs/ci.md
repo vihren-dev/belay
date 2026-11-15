@@ -40,8 +40,8 @@ Documentation dependencies stay outside the conformance runtime.
 The complete job has a 75-minute limit on Linux and a 120-minute limit on macOS:
 without a saved Nix store, the macOS runner builds the Lean packages for about 60
 minutes before the test suites start. The reference phase has a 60-minute limit.
-The phase that runs the scope's `just` recipes has a 75-minute
-limit (`CHECKS_PHASE_LIMIT_SECONDS`). The scheduled mutant suites, which took more than 30 minutes
+The phase that runs the scope's `just` recipes has a limit of 75 minutes on Linux and
+100 minutes on macOS (`CHECKS_PHASE_LIMIT_SECONDS`). The scheduled mutant suites, which took more than 30 minutes
 in that phase, run in the separate job `mutants` instead: one runner per suite, a 75-minute job
 limit, and a suite limit of 2700 seconds. Individual compiler and suite deadlines remain
 unchanged; a job that reaches its aggregate limit fails.
@@ -151,7 +151,8 @@ Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with i
 own name. The S6 tests that compile a chain of fixture modules have a 600-second limit. Nix runs several targets at the same time, so a target's total time
 depends on the other targets; its 1200-second limit (2400 seconds on macOS, where
 the suites run about twice as slowly) only guards against a hang outside a test. The recipes that build test suites stop `nix-build` after 2700
-seconds, so the suite limit ends first and names the suite.
+seconds (4500 seconds on macOS, where a run of all suites takes about 57 minutes), so the suite
+limit ends first and names the suite.
 `tests/test_recipe_limits.py` checks this order. They run
 `timeout --foreground`, which keeps `nix-build` in the caller's process group, so
 the deadline of a CI phase also stops `nix-build`.
