@@ -1,6 +1,7 @@
 # ADR 0025: A compositional preservation proof API
 
-Date: 2026-10-26. Status: ACCEPTED for implementation by the owner on 2026-10-28.
+Date: 2026-10-26. Status: IMPLEMENTED in pull request #297, merged on 2026-10-29, with
+ADR 0026; accepted for implementation by the owner on 2026-10-28.
 Audience: designers and reviewers.
 Direction: [long-term Lean simplification goal](lean-simplification-goal.md).
 Owner request: simplify the theorem and proof API, including changing the

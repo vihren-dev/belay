@@ -1,6 +1,7 @@
 # ADR 0030: Conditional table and index creation, and grouping by expressions
 
-Date: 2026-11-04. Status: ACCEPTED (owner, 2026-11-04: "implement the adr"). Owner decision 1
+Date: 2026-11-04. Status: IMPLEMENTED in pull requests #310 and #311, merged on
+2026-11-05; accepted by the owner on 2026-11-04 ("implement the adr"). Owner decision 1
 is open; the implementation follows its recommendation (a), which keeps today's refusals.
 Implementation: three slices (D8), each with its own task file, as local commits.
 Audience: designers and reviewers.

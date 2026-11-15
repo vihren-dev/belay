@@ -1,5 +1,8 @@
 # ADR 0017 coordination status
-Created 2026-10-24. Status: OPEN. ADR 0017 is not complete.
+Created 2026-10-24. Status: DONE (closed 2026-11-06). ADR 0017's implementation
+was complete on 2026-10-27 (see the ADR's status line and
+[`20261024-adr17-guide-acceptance.status.md`](20261024-adr17-guide-acceptance.status.md));
+the rest of this record is history.
 This record coordinates the task/status files; it adds no implementation scope.
 
 ## Standing owner instructions
