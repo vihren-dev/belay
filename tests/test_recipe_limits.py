@@ -10,10 +10,12 @@ import json
 from pathlib import Path
 import re
 import shlex
+import sys
 
 import pytest
 
 from tests.runtime_support import run_command
+from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "scheduledCheckReports",
@@ -51,9 +53,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
 def nix_build_recipe_lines() -> list[list[str]]:
     """The words of each justfile line that runs nix-build under `timeout`, with the
-    justfile's `NAME := "VALUE"` variables put in place of `{{NAME}}`."""
+    justfile's `NAME := "VALUE"` variables put in place of `{{NAME}}`. A variable
+    `NAME := if os() == "macos" { "MACOS" } else { "OTHER" }` takes the value for this platform."""
     text = (ROOT / "justfile").read_text()
     variables = dict(re.findall(r'(?m)^([a-z_]+) := "([^"]*)"$', text))
+    for name, macos, other in re.findall(
+            r'(?m)^([a-z_]+) := if os\(\) == "macos" \{ "([^"]*)" \} else \{ "([^"]*)" \}$', text):
+        variables[name] = macos if sys.platform == "darwin" else other
     text = re.sub(r"\{\{([a-z_]+)\}\}", lambda match: variables.get(match.group(1), match.group(0)), text)
     lines = [shlex.split(line) for line in text.splitlines()
              if line.lstrip().startswith("timeout ") and " nix-build " in line]
@@ -100,3 +106,16 @@ def test_suite_limit_ends_before_the_limits_that_build_suites() -> None:
     for target, enclosing in recipe_limits.items():
         for name in built_suites(target, suites, scheduled, mutants):
             assert suite_limits[name] < enclosing, (name, suite_limits[name], target, enclosing)
+
+
+def test_suite_build_limit_ends_before_the_checks_phase_on_each_system() -> None:
+    """On each native CI system, the justfile's `suite_build_limit` is less than the limit of the
+    phase that runs the recipes (`CHECKS_PHASE_LIMIT_SECONDS` of tools/ci_checks.py). Otherwise the
+    phase stops `nix-build` first, and the report does not say that the suites ran out of time."""
+    text = (ROOT / "justfile").read_text()
+    match = re.search(r'(?m)^suite_build_limit := if os\(\) == "macos" \{ "([0-9]+)" \} else \{ "([0-9]+)" \}$', text)
+    assert match is not None, "the justfile has no suite_build_limit for macOS and other systems"
+    limits = {"aarch64-darwin": int(match.group(1)), "x86_64-linux": int(match.group(2))}
+    assert set(limits) == set(CHECKS_PHASE_LIMIT_SECONDS)
+    for system, limit in limits.items():
+        assert limit < CHECKS_PHASE_LIMIT_SECONDS[system], (system, limit, CHECKS_PHASE_LIMIT_SECONDS[system])
