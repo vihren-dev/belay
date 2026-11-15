@@ -25,6 +25,6 @@
    "inherited": false,
    "dir": "../belay-sqlite-model",
    "configFile": "lakefile.toml"}],
- "name": "belay",
+ "name": "belaySurface",
  "lakeDir": ".lake",
  "fixedToolchain": false}

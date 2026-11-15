@@ -49,6 +49,12 @@ in {
       ++ map (name: folder + "/${name}") [ "library.c" "library.h" "runtime.h" "tokenizer.c" "library_prefix.h"
         "library_tokenizer.c" "library_parser.c" "library_grammar.c" ]);
   };
+  # The thin top-level package that users require and that Reservoir indexes: its Lake files and its
+  # one module, which imports the surface. The packages under packages/ do not include these files.
+  rootPackage = fs.toSource {
+    inherit root;
+    fileset = fs.unions (map (name: root + "/${name}") [ "lakefile.toml" "lake-manifest.json" "lean-toolchain" "BelayRoot.lean" ]);
+  };
   verifierConformance = package "verifier-conformance";
   docTools = package "public-doc-tools";
 }

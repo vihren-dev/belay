@@ -1,7 +1,9 @@
 """Real Nix fileset identities include each declared input and ignore generated trees.
 
 The `parser` component holds the C that Lake compiles into the text package (ADR 0023): the
-committed generated C, the C library headers, the library's files and each release's sqlite3.c."""
+committed generated C, the C library headers, the library's files and each release's sqlite3.c.
+The `rootPackage` component holds the files of the top-level package only: its Lake files and its
+module, and no other file of the top-level folder."""
 
 import json
 from pathlib import Path
@@ -15,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"model", "surface", "text", "parser", *PACKAGES.values()}
+COMPONENTS: set[str] = {"model", "surface", "text", "parser", "rootPackage", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Catalog/Database.lean": {"model"},
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Frontend/Codecs/Codec.lean": {"model"},
@@ -41,6 +43,7 @@ FIXED: dict[str, set[str]] = {
     **{f"parser/{name}": {"parser"} for name in (
         "library.c", "library.h", "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c",
         "library_parser.c", "library_grammar.c")},
+    **{name: {"rootPackage"} for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain", "BelayRoot.lean")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }

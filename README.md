@@ -210,11 +210,21 @@ defaultTargets = ["MyProject"]
 [[require]]
 name = "belay"
 git = "https://github.com/vihren-dev/belay"
-rev = "main"
-subDir = "packages/belay"
+rev = "v0.2.0"
 
 [[lean_lib]]
 name = "MyProject"
+```
+
+When [Reservoir](https://reservoir.lean-lang.org) lists Belay, this shorter
+requirement gives the same package. It works only after Reservoir lists the
+package:
+
+```toml
+[[require]]
+name = "belay"
+scope = "vihren-dev"
+rev = "v0.2.0"
 ```
 
 ```sh

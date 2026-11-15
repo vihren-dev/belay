@@ -36,7 +36,7 @@ def write_package(folder: Path, name: str, installed: Path, extra: str = "") -> 
     """Create a package that requires the installed Belay package without fetching anything."""
     folder.mkdir(parents=True)
     (folder / "lakefile.toml").write_text(
-        f'name = "{name}"\n\n[[require]]\nname = "belay"\n'
+        f'name = "{name}"\n\n[[require]]\nname = "belaySurface"\n'
         f'path = {json.dumps(str(installed / "packages/belay"))}\n{extra}\n'
         f'[[lean_lib]]\nname = "{name}"\nsrcDir = "lean"\n')
     (folder / "lean-toolchain").write_text((installed / "packages/belay/lean-toolchain").read_text())
@@ -74,7 +74,7 @@ def write_lean_package(folder: Path, name: str, installed: Path, libraries: list
 
     Each library has its root module in `lean/<library>.lean`."""
     folder.mkdir(parents=True)
-    body = (f'import Lake\nopen Lake DSL\n\npackage {name}\n\nrequire belay from {json.dumps(str(installed / "packages/belay"))}\n'
+    body = (f'import Lake\nopen Lake DSL\n\npackage {name}\n\nrequire belaySurface from {json.dumps(str(installed / "packages/belay"))}\n'
             f'\n{inputs}\n')
     for library in libraries:
         body += f'\nlean_lib {library} where\n  srcDir := "lean"\n  roots := #[`{library}]\n{needs}\n'
