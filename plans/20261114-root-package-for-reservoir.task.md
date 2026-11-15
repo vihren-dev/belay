@@ -2,7 +2,7 @@
 
 Created 2026-11-14 (status: `20261114-root-package-for-reservoir.status.md`). Owner request,
 2026-11-14: release version 0.2.0 and publish Belay on [Reservoir](https://reservoir.lean-lang.org).
-Status: OPEN.
+Status: DONE (2026-11-15).
 
 ## Problem
 

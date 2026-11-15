@@ -1,7 +1,7 @@
 # Status: a root Lake package, so that Reservoir can index Belay, and version 0.2.0
 
 Created 2026-11-14. Task: `20261114-root-package-for-reservoir.task.md`. Owner request, 2026-11-14.
-Status: OPEN.
+Status: DONE (2026-11-15).
 
 ## References
 
@@ -65,3 +65,12 @@ Status: OPEN.
   amendments: ADR 0010 section 7, ADR 0016 D3 and ADR 0023 (the `subDir` text).
   `skills/belay/SKILL.md` needs no change: Lake clones the root requirement into
   `.lake/packages/belay`, so its paths stay correct.
+- 2026-11-15, end-of-task checks on commit 1cf11947 ("docs: require Belay from the repository
+  root"), after a passing `just dev-build`: `just test-full` passed on its second run (all suites,
+  among them `surface` with `tests/surface_root_package_test.py`). Its first run failed in
+  `surfaceChecks`: `test_consumer_size_claim_is_false_and_replays` gave "SQL check: unknown; the
+  search reached its time limit" under a load average of about 11; the rerun of that suite passed
+  (32 tests). `just verdict` passed (5,768 AGREE and 2,100 MODEL_UNSUPPORTED, no disagreement). `just test-nix`
+  passed (98 tests) and `just test-scheduled-checks` passed.
+- 2026-11-15: DONE. The tag `v0.2.0`, the GitHub release and the Reservoir listing are not in this
+  task: the owner creates the tag after the pull request is on `main`.
