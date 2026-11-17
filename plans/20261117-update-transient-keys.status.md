@@ -16,3 +16,9 @@ tests/surface_guide_test.py covers final-table constraint diagnostics.
 The task and implementation reviews are recorded under reviews/. The proof
 sketch now describes the mixed-key check, and the module documentation names
 the affected keys. The Nix checks are pending.
+
+The locked Nix verdict produced the same report as main (88523528478c)
+for all 7,868 cases. The subject result is
+/nix/store/5dnimds0s7s0hxqfv7gkim7kncgj13j6-belay-verdict and the main
+result is /nix/store/xky9nn88jn0hsm7zs0jg82m9sv18jmlm-belay-verdict.
+The full and scheduled test gates are pending.

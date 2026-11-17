@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-17T21:55:20+00:00",
+  "finding": "20261117T215322Z-0174d227#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "A rowid alias is a unique key. Resolution rejects SET id = id + 1 with rowDependentKey before execution. The updated paragraph specifically describes a transient unique-index conflict."
+}
