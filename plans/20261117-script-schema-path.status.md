@@ -7,7 +7,7 @@ execution. SchemaPath.lean gives the resolved statement at every prefix.
 SendSchemaPath.lean applies these laws to every successful branch. Both
 README proofs use resolutionAt for intermediate states and retain the
 same public claims. tests/surface_rebuild_test.py checks each proof.
-The repository checks are pending.
+The final stack runs of just test-full, just test-nix and just test-scheduled-checks are pending.
 
 The ten Lean proof files in examples/table-rebuild/Proof contain 1,001
 lines, down from 1,038 before the change.
