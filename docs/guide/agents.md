@@ -304,6 +304,8 @@ The agent reports three things, and each is yours to review:
 
 ## Where to go next
 
+- The [cheat sheet](../cheat-sheet.md) has the claims and their scope on one
+  page.
 - The [README](../../README.md) has the table rebuild that loses rows, from the
   counterexample to the theorem.
 - The [surface library](../../packages/belay/README.md) describes the notation,
