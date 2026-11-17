@@ -43,16 +43,19 @@ say so.
   only the files of item 1, so that a new development page cannot land there.
 - `python3 -m pytest tests/test_review.py tests/restriction_registry_test.py`
   and the tests of the review log: the tools read the pages at the new paths.
-- The Nix checks at the end of the task (`just test-nix`,
-  `just test-scheduled-checks`) cover the Nix file that names the checklist.
+- `nix-instantiate experiments/observability/default.nix -A probes`: the
+  evaluation fails when a source file of the experiment is missing, so it
+  checks the checklist path there. No repository check evaluates that file.
+  The evaluation builds nothing.
 
 ## Points to be careful about
 
 - `plans/`, `reports/`, `reviews/`, `experiments/` records and
   `research_notes/` are history. They keep the paths of their date;
   `tests/docs_test.py` already exempts plans from the link check. Exception:
-  `experiments/observability/default.nix` reads the checklist as a source file
-  and must name the new path.
+  `experiments/observability/default.nix` takes the checklist as a source file
+  and `experiments/observability/review_probe.py` reads it. The two must name
+  the new path.
 - `judge/__init__.py` names the path of a design record in its docstring. The
   judge lock covers that file (`integrity/judge.nix`), so its change is a
   separate pull request with a new `integrity/judge.lock.json`, which needs the
