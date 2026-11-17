@@ -4,9 +4,9 @@ Created 2026-11-17. Issue [#343](https://github.com/vihren-dev/belay/issues/343)
 Status: open.
 
 Accept the recorded immediate transaction convention in a supported
-single-connection profile. BEGIN, BEGIN DEFERRED, BEGIN IMMEDIATE and BEGIN
-EXCLUSIVE, each with optional TRANSACTION, must use the existing transaction
-snapshot semantics. The certified observations on this connection do not
+single-connection profile. The recorder accepts deferred and immediate modes.
+For SQL supplied directly, BEGIN, BEGIN DEFERRED, BEGIN IMMEDIATE and BEGIN
+EXCLUSIVE, each with optional TRANSACTION, use the existing snapshot semantics. The certified observations on this connection do not
 include lock acquisition. The assumption is an uncontended database.
 Read-only access, untrusted schema mode and other writers remain outside
 the model. Named transactions keep their own translation restriction.
