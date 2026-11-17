@@ -34,7 +34,7 @@ EXPECTED_ERRORS: dict[str, list[str]] = {
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, and of the Lake build of the example project, in seconds."""
 
-PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildKeepsFinish",
+PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy",
                  "RebuildSucceedsSteps", "RebuildKeepsRead", "RebuildSucceedsFinish", "RebuildKeeps", "RebuildSucceeds")
 """The modules of the example's folder `Proof`, which Lake compiles in a build of the example."""
 
@@ -125,11 +125,12 @@ def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_
     """The right rebuild preserves the read of all sessions on every database whose catalog is the guide's schema,
     for every complete environment (claim 1 of the guide). The rebuild is an INSERT from a query, so its branches
     can reach different connections; the fixtures show that every execution of every step keeps the resolution
-    state of the sample run and the table of the sessions, which moves from position 1 to position 0
-    (RebuildKeepsInvariant, RebuildKeepsFinish), and the certificate of the read (RebuildKeepsRead) turns that into
-    the preservation claim (RebuildKeeps). The final proof uses only logical axioms."""
+    state computed by the resolver and the table of the sessions, which moves from position 1 to position 0
+    (RebuildKeepsInvariant), and the certificate of the read (RebuildKeepsRead) turns that into
+    the preservation claim (RebuildKeeps). RebuildTableFrames checks the transported position
+    and refusals on writes, cascades and changes to the protected definition. The final proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildKeepsFinish", 0), ("RebuildKeepsRead", 0),
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("RebuildKeepsRead", 0),
         ("RebuildKeeps", 1)), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
@@ -143,5 +144,5 @@ def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root
     final proof (RebuildSucceeds) uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
         ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
-        ("RebuildSucceedsSteps", 0), ("RebuildKeepsFinish", 0), ("RebuildSucceedsFinish", 0),
+        ("RebuildSucceedsSteps", 0), ("RebuildSucceedsFinish", 0),
         ("RebuildKeepsRead", 0), ("RebuildKeeps", 1), ("RebuildSucceeds", 1)), timeout=CHAIN_TIMEOUT_SECONDS)

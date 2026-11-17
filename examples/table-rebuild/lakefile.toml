@@ -16,5 +16,5 @@ roots = ["TableRebuild", "FixedSucceeds"]
 [[lean_lib]]
 name = "RebuildProof"
 srcDir = "Proof"
-roots = ["RebuildGuide", "RebuildKeepsInvariant", "RebuildKeepsFinish", "RebuildKeepsRead", "RebuildKeeps",
+roots = ["RebuildGuide", "RebuildKeepsInvariant", "RebuildKeepsRead", "RebuildKeeps",
   "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildSucceedsSteps", "RebuildSucceedsFinish", "RebuildSucceeds"]

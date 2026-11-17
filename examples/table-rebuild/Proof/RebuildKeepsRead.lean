@@ -1,4 +1,4 @@
-import RebuildKeepsFinish
+import RebuildKeepsInvariant
 
 set_option doc.verso true
 set_option maxRecDepth 8192

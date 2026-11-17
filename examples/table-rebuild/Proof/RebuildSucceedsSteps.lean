@@ -25,24 +25,25 @@ theorem single_output {output : Output} {next : Connection} {found : StatementEx
   simp only [RunStep.executions, List.mem_singleton] at member
   rw [member]
 
-/-- For a step that continues with one execution that has no error: if the facts of {name}`Kept` hold after the step
-in every execution that has no error, and the facts of {name}`Held` hold for the next connection, every execution of the
-step has no error output and reaches a connection with {name}`Good`. Proof sketch: the one execution has the output and
-the connection of the step. -/
-theorem good_step {sessions customers : Table} {count : Nat} {output : Output} {next : Connection}
-    (noError : output.isError = false)
-    (kept : ∀ found ∈ (RunStep.continued output next []).executions, found.output.isError = false →
-      Kept sessions (count + 1) found.next)
-    (held : Held customers (count + 1) next) :
+/-- A successful single execution carries the tracked tables and schema to the next prefix.
+The caller supplies the empty rows of the new table when the next step needs them.
+Proof sketch: apply the prefix laws to the sessions and customers, then use the singleton execution. -/
+theorem good_step {sessions customers : Table} {n index : Nat} {clock : Option Clock}
+    {c next : Connection} {output : Output} (bound : n < makeStrict.statements.length)
+    (good : Good sessions customers n c)
+    (step : runScriptStep runContext clock index c makeStrict.statements[n].1 makeStrict.statements[n].2 =
+      .continued output next []) (noError : output.isError = false)
+    (empty : n + 1 = 3 → next.state.database.rows.getD 2 [] = []) :
     ∀ found ∈ (RunStep.continued output next []).executions,
-      found.output.isError = false ∧ Good sessions customers (count + 1) found.next := by
+      found.output.isError = false ∧ Good sessions customers (n + 1) found.next := by
   intro found member
-  have err : found.output.isError = false := by rw [single_output member]; exact noError
-  exact ⟨err, kept found member err, by rw [single_next member]; exact held⟩
+  have ok : found.output.isError = false := by rw [single_output member]; exact noError
+  exact ⟨ok, kept_step bound good.1 step member ok, tracks_step bound good.1.1 good.2.1 step member ok,
+    single_next member ▸ empty⟩
 
 /-- Statement 0, {lit}`PRAGMA foreign_keys = OFF`: the step continues without an error in every execution, and the
 facts hold after it. The customers are not changed. Proof sketch: {name}`runScriptStep_setting_ok` and
-{name}`runScriptStep_setting_frame`, with {name}`advance_0`. -/
+{name}`runScriptStep_setting_frame`, with {name}`good_step`. -/
 theorem good_0 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 0 c) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[0].1 makeStrict.statements[0].2 =
@@ -51,13 +52,11 @@ theorem good_0 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[0].1) (parameters := makeStrict.statements[0].2)
     (found := by with_unfolding_all exact resolutionAt 0 good.1.1)
-  have frame := runScriptStep_setting_frame (found := by with_unfolding_all exact resolutionAt 0 good.1.1) step
-  refine ⟨output, next, step, good_step noError (advance_0 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
-  rw [frame]; exact good.2.1 (by omega)
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- Statement 1, {lit}`BEGIN`: the step continues without an error in every execution, and the facts hold after it.
 The transaction is closed before it, as the resolution state shows. Proof sketch: {name}`runScriptStep_begin_ok` and
-{name}`runScriptStep_begin_frame`, with {name}`advance_1`. -/
+{name}`runScriptStep_begin_frame`, with {name}`good_step`. -/
 theorem good_1 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 1 c) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[1].1 makeStrict.statements[1].2 =
@@ -71,9 +70,7 @@ theorem good_1 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_begin_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[1].1) (parameters := makeStrict.statements[1].2)
     (found := by with_unfolding_all exact resolutionAt 1 good.1.1) idle
-  have frame := runScriptStep_begin_frame (found := by with_unfolding_all exact resolutionAt 1 good.1.1) step
-  refine ⟨output, next, step, good_step noError (advance_1 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
-  rw [frame]; exact good.2.1 (by omega)
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- Statement 2, the CREATE TABLE of the new customers: the step continues without an error in every execution, and
 the facts hold after it. The customers are not changed, and the new table holds no row. Proof sketch:
@@ -93,15 +90,13 @@ theorem good_2 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
     (by rw [length]; exact length ▸ valid.1.admitted.rowsShaped.1)
   obtain ⟨-, -, -, aligned, nextEq⟩ := runScriptStep_createTable
     (found := by with_unfolding_all exact resolutionAt 2 good.1.1) step
-  refine ⟨output, next, step, good_step noError (advance_2 good.1 step) ⟨fun _ => ?_, fun _ => ?_⟩⟩
-  · exact runScriptStep_createTable_frame (found := by with_unfolding_all exact resolutionAt 2 good.1.1) step
-      (good.2.1 (by omega))
-  · rw [nextEq]
-    simp [List.getD_eq_getElem?_getD, aligned, length]
+  refine ⟨output, next, step, good_step (by decide) good step noError (fun _ => ?_)⟩
+  rw [nextEq]
+  simp [List.getD_eq_getElem?_getD, aligned, length]
 
 /-- Statement 3, the INSERT from a query: the step continues without an error in its first execution when every old
 customer fits the STRICT types of the new table, and every execution that has no error keeps the facts. The execution of the model is the only
-one that the model describes. Proof sketch: {name}`copy_continues` and {name}`advance_3`; the facts about the customers
+one that the model describes. Proof sketch: {name}`copy_continues` and {name}`good_step`; the facts about the customers
 end with the copy. -/
 theorem good_3 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
@@ -110,10 +105,10 @@ theorem good_3 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 4 found.next := by
   obtain ⟨output, next, step, noError⟩ := copy_continues good.1 good.2 valid fits
-  exact ⟨output, next, step, good_step noError (advance_3 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- Statement 4, the DROP of the old customers: the step continues without an error in every execution, and the
-facts hold after it. Proof sketch: {name}`runScriptStep_drop_ok` and {name}`advance_4`; the facts about the customers
+facts hold after it. Proof sketch: {name}`runScriptStep_drop_ok` and {name}`good_step`; the facts about the customers
 end with the copy. -/
 theorem good_4 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 4 c) :
@@ -123,6 +118,6 @@ theorem good_4 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_drop_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[4].1) (parameters := makeStrict.statements[4].2)
     (found := by with_unfolding_all exact resolutionAt 4 good.1.1)
-  exact ⟨output, next, step, good_step noError (advance_4 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 end RebuildGuide

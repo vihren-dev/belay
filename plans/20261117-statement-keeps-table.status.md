@@ -6,3 +6,10 @@ The task records the accepted statement forms, the named rebuild checks
 and the source laws. Implementation and verification are pending.
 
 Issue #411 is the prerequisite for applying the check to the rebuild.
+
+TableKeeps.lean checks resolved statements against the previous catalog.
+TablePath.lean composes the single-step law, and SendSchemaPath.lean
+exposes the final branch law. The README tracks customers and sessions
+by computed positions. Its proof files total 847 lines, down from 1,001
+in #411. RebuildTableFrames.lean and tests/surface_rebuild_test.py check
+the surviving sessions and the rejected frames. The Nix checks are pending.

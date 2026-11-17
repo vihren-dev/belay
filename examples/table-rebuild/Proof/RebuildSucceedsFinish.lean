@@ -1,5 +1,4 @@
 import RebuildSucceedsSteps
-import RebuildKeepsFinish
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -37,7 +36,7 @@ theorem rename_resolves : ∃ renamed after,
 
 /-- Statement 5, the rename of the new customers: the step continues without an error in every execution, and the
 facts hold after it. Proof sketch: {name}`runScriptStep_rewrite_ok`, where the new catalog has the outline of the
-old one by evaluation, and {name}`advance_5`. -/
+old one by evaluation, and {name}`good_step`. -/
 theorem good_5 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 5 c) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[5].1 makeStrict.statements[5].2 =
@@ -47,11 +46,11 @@ theorem good_5 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_rewrite_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[5].1) (parameters := makeStrict.statements[5].2)
     (found := by rw [good.1.1]; exact resolved) (by rw [show c.state.database.catalog = (schemaAt 5).catalog from congrArg ResolveState.catalog good.1.1]; exact outline)
-  exact ⟨output, next, step, good_step noError (advance_5 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- Statement 6, {lit}`COMMIT`: the step continues without an error in every execution, and the facts hold after it.
 The transaction is open before it, as the resolution state shows. Proof sketch: {name}`runScriptStep_commit_ok` and
-{name}`advance_6`. -/
+{name}`good_step`. -/
 theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 6 c) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[6].1 makeStrict.statements[6].2 =
@@ -70,10 +69,10 @@ theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_commit_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[6].1) (parameters := makeStrict.statements[6].2)
     (found := by with_unfolding_all exact resolutionAt 6 good.1.1) active
-  exact ⟨output, next, step, good_step noError (advance_6 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- Statement 7, {lit}`PRAGMA foreign_keys = ON`: the step continues without an error in every execution, and the
-facts hold after it. Proof sketch: {name}`runScriptStep_setting_ok` and {name}`advance_7`. -/
+facts hold after it. Proof sketch: {name}`runScriptStep_setting_ok` and {name}`good_step`. -/
 theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
     (good : Good sessions customers 7 c) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[7].1 makeStrict.statements[7].2 =
@@ -82,7 +81,7 @@ theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[7].1) (parameters := makeStrict.statements[7].2)
     (found := by with_unfolding_all exact resolutionAt 7 good.1.1)
-  exact ⟨output, next, step, good_step noError (advance_7 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
+  exact ⟨output, next, step, good_step (by decide) good step noError (by omega)⟩
 
 /-- For every clock, tables of the sessions and the customers, and customers whose rows all fit the STRICT types of
 the new customers: for every

@@ -21,10 +21,10 @@ theorem exists_of_map_getElem? {α β : Type} {items : List α} {function : α �
   simpa [List.getElem?_map, Option.map_eq_some_iff] using mapped
 
 /-- For a table of the customers, a number of statements and a connection: the facts about the customers that the
-copy needs. Until the copy, the name of the customers finds the given table at position 0, and just after the
+copy needs. The prefix check follows the original customers table, and just after the
 creation of the new customers (3 statements) the table at position 2 holds no row. -/
 def Held (customers : Table) (count : Nat) (connection : Connection) : Prop :=
-  (count ≤ 3 → connection.state.database.tableNamed customersName = some (0, customers)) ∧
+  Tracks customers 0 count connection ∧
     (count = 3 → connection.state.database.rows.getD 2 [] = [])
 
 /-- For every table of the customers whose rows all fit the STRICT types of the new customers
@@ -47,7 +47,12 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {se
   have found : resolveStatement runContext c.resolveState makeStrict.statements[3].1 =
       .ok (.insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none, after) := by
     rw [kept.1]; exact resolved
-  obtain ⟨lookup, present⟩ := Database.tableNamed_some (held.1 (by omega))
+  have present := held.1 0 (by decide +kernel)
+  have shape := Database.tableAt_of_table present
+  have catalog : c.state.database.catalog = (schemaAt 3).catalog := congrArg ResolveState.catalog kept.1
+  have lookup : c.state.database.catalog.findTable customersName = some (0, customers.shape) := by
+    rw [catalog] at shape ⊢
+    with_unfolding_all exact congrArg (Option.map (0, ·)) shape
   have facts : catalogFacts c.state.database.catalog = true := by
     rw [show c.state.database.catalog = (schemaAt 3).catalog from congrArg ResolveState.catalog kept.1]; exact catalogFacts_reached
   obtain ⟨oldOk, accessKeys, atTwo, uniqueKeys⟩ := catalogFacts_unpack facts lookup

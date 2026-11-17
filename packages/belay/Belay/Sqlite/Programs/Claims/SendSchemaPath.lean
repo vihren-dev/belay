@@ -32,4 +32,32 @@ theorem sendStatements_branch_resolveState {statements : List (Syntax.Statement 
   rw [List.length_map] at length
   simpa [ResolveState.atPrefix, ← length, ended] using reached
 
+/-- For every resolved script whose table check gives a final position, every
+returning branch with successful outputs from a valid connection with the starting
+schema preserves the original table at that position. The table can move through a
+DROP. Its definition and rows are equal on both sides. Proof sketch: carry the
+schema prefix and the table frame together through the branch. The final computed
+position selects the table from the invariant. -/
+theorem sendStatements_branch_keepsTable {statements : List (Syntax.Statement × List Value)}
+    {initial final : ResolveState} {resolved : List Resolved.Statement} {clock : Option Clock} {index : Nat}
+    {c : Connection} {result : SqlRun (List Output)} {position destination : Nat} {table : Table}
+    (checked : resolveFrom runContext 0 initial (statements.map Prod.fst) = .ok (resolved, final))
+    (kept : initial.tablePosition resolved statements.length position = some destination)
+    (start : c.resolveState = initial) (valid : c.state.Holds (Database.Valid Profile.pinned))
+    (present : c.state.database.table position = some table)
+    (branch : (sendStatements statements).Branch clock index c result)
+    (returned : result.value.isSome = true) (ok : result.outputs.allOk = true) :
+    result.connection.state.database.table destination = some table := by
+  have reached := sendStatements_branch_invariant statements
+    (fun n conn => conn.resolveState = initial.atPrefix resolved n ∧
+      initial.TableAtPrefix resolved n position table conn.state.database)
+    clock index c result branch returned ok valid ⟨start, ResolveState.tableAtPrefix_zero present⟩ (by
+      intro n bound i conn _ held output next others step execution member good
+      have atStmt : (statements.map Prod.fst)[n]? = some statements[n].1 := by simp [bound]
+      obtain ⟨r, _, resolution⟩ := resolveFrom_atPrefix checked atStmt
+      rw [← held.1] at resolution
+      exact ⟨runScriptStep_resolveState resolution step member good,
+        runScriptStep_tableAtPrefix checked atStmt held.1 held.2 step member good⟩)
+  exact reached.2 destination kept
+
 end Belay.Sqlite

@@ -52,7 +52,7 @@ theorem makeStrict_succeeds :
   obtain ⟨sessions, namedSessions⟩ := sessions_found pre
   obtain ⟨customers, namedCustomers⟩ := customers_found pre
   have start : Good sessions customers 0 (db.raw.connection env.counters) :=
-    ⟨kept_start pre namedSessions, fun _ => namedCustomers, fun h => by omega⟩
+    ⟨kept_start pre namedSessions, ResolveState.tableAtPrefix_zero (Database.tableNamed_some namedCustomers).2, fun h => by omega⟩
   exact sendStatements_succeedsFrom makeStrict.statements (Good sessions customers) env.clock 0
     (db.raw.connection env.counters) ⟨db.valid, fun _ shown => by simp [Database.Raw.connection] at shown⟩ start
     (good_advance env.clock sessions customers (fits 0 customers namedCustomers))
