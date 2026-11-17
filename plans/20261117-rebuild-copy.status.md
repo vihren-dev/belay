@@ -22,3 +22,6 @@ scan order. The README uses this law, and RebuildCopyChecks exercises a table
 whose partial index gives a different order. The proof files contain 377 lines.
 
 The public scan laws describe the catalog, source position, rowid and streaming premises.
+
+The model package lists the scan-order, row compatibility and query production
+modules. Its core import closure is checked by tests/test_model_package.py.

@@ -16,8 +16,10 @@ def Resolved.Query.copyOf (position width : Nat) (names : List String) : Resolve
 
 /-- For every source table satisfying {name}`Table.Admitted` at the given position in the
 database, every list of result names, context satisfying {name}`Resolved.EvalContext.Quiet` and
-either value of the streaming flag, the productions of {name}`Resolved.Query.copyOf` are the
-cell values of the rows in each order in {name}`Table.accessOrders`, with no source errors.
+either value of the streaming flag, take the query {name}`Resolved.Query.copyOf` at that
+position with width equal to the number of columns of the source table. It selects every
+source column in order. Its productions contain the cell values of the rows in each order
+in {name}`Table.accessOrders`, with no source errors.
 Each distinct production occurs once. Proof sketch:
 a simple projection contains no fallible calls. Each scan permutes the rows,
 so its cells have the source width and projecting all its columns is identity. -/
