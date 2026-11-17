@@ -16,3 +16,4 @@ Task: [20261117-docs-folder-structure.task.md](20261117-docs-folder-structure.ta
 ## Progress
 
 - 2026-11-17: task and status files written.
+- 2026-11-17: pages moved to `docs/adr/`, `docs/development/` and `docs/records/`; index `docs/README.md`; links, path mentions and the layout test updated. `judge/__init__.py` still names the old path of one design record (separate pull request with a new lock).

@@ -259,7 +259,7 @@ of the agent's work. To start, tell your agent to set up Belay with the
   separate files, claims and the check.
 - The [supported subset](docs/semantic-subset.md) and the
   [execution profile](docs/execution-profile.md).
-- The [checked Lean API reference](docs/api-reference.md) of the model.
+- The [checked Lean API reference](docs/development/api-reference.md) of the model.
 - The examples under [`tests/surface`](tests/surface), which CI compiles. The
   migration examples are in
   [`tests/surface/Schema/Tests`](tests/surface/Schema/Tests).

@@ -21,12 +21,12 @@ its source links, so it does not change with the commit.
 hash into the source links. `just reference HASH`
 runs it in a sandbox and links the output at `build/api-reference`. These
 targets are separate from `conformance` and its closure. See the
-[API reference guide](../docs/api-reference.md).
+[API reference guide](../docs/development/api-reference.md).
 
 `theoremDependencies` reads the compiled model, codec, text, surface and
 conformance libraries. `just theorem-dependencies` writes an offline HTML
 browser and JSON graph at `build/theorem-dependencies`. The
-[dependency guide](../docs/theorem-dependencies.md) explains coverage, helper
+[dependency guide](../docs/development/theorem-dependencies.md) explains coverage, helper
 paths and optional existing proof costs. `tests.theoremDependencies` checks
 the exporter and report against compiled fixtures.
 
@@ -37,7 +37,7 @@ missing pages and anchors fail validation. The standard `#top` fragment,
 named anchors and raw/decoded HTML IDs remain valid targets.
 
 `parserLibrary` builds the in-process SQLite parser library, as
-[ADR 0007](../docs/adr-0007-parser-library.md) decides. Nix owns all parser
+[ADR 0007](../docs/adr/adr-0007-parser-library.md) decides. Nix owns all parser
 build reuse; there is no separate local builder or content-stamp cache. The
 release derivations (`parserLibrary.releases`) fetch each release's archives by
 the hashes of `parser/dialects.json` and run `parser/release_step.py`: it cuts the
@@ -49,7 +49,7 @@ run generates again (ADR 0029). Nix compiles the committed files with Lean's
 `clang` into `parserLibrary.library`. `parser/library_steps.py` writes the tree
 and checks the library's exports. The test suite
 `tests.parserLibrary` checks the library. Lake compiles the library's C code in the text package, so the translation
-program of `conformance` contains the parser. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
+program of `conformance` contains the parser. See the [SQLite syntax boundary](../docs/development/sqlite-parser.md).
 
 Each Lean package under `packages/` has its own `lakefile.toml` and its
 own derivation (`lean-package.nix`), which builds it once, in a copy of the
@@ -160,5 +160,5 @@ nondeterminism from clocks or platform behavior. Nix daemon tests remain fresh h
 ADR 0004's optional `conformanceNative.fixture`, `conformanceNative.coverage`,
 `conformanceCoverage`, and `conformanceDocs` derivations rebuild upstream mining,
 source instrumentation, and release requirement evidence separately. They do not
-alter the model. See [progress and coverage](../docs/conformance-progress.md).
+alter the model. See [progress and coverage](../docs/records/conformance-progress.md).
 Hypothesis is an input only to `tests.model` and the development shell.

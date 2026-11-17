@@ -1,5 +1,5 @@
 # Ruleset 23934665 requires one approval and a code-owner review before a merge to main.
-# See docs/adr-0011-product-trust-and-development-integrity.md.
+# See docs/adr/adr-0011-product-trust-and-development-integrity.md.
 
 # Development integrity (ADR 0011 decisions 2 to 4): the judge lock, the Nix
 # file that checks it and defines the verdict, the workflows, and this file.

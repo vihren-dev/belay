@@ -1,4 +1,4 @@
-# The SQLite parser library (see docs/sqlite-parser.md, "Library build and dialect table").
+# The SQLite parser library (see docs/development/sqlite-parser.md, "Library build and dialect table").
 # The generation reads parser/dialects.json, fetches each release's two archives by their
 # hashes and makes one derivation for each release, which cuts its tokenizer and generates its
 # parser (parser/release_step.py), and one that writes the tree committed as parser/generated

@@ -1,4 +1,4 @@
-"""The native record versions and what each one carries (docs/conformance-format-v2.md).
+"""The native record versions and what each one carries (docs/development/conformance-format-v2.md).
 
 Version 1 is a migration trace; version 2 adds setup operations; version 3 adds
 statement outputs; version 4 adds an explicit execution profile; version 5 has a

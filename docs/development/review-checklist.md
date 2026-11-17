@@ -1,0 +1,200 @@
+# Review checklist
+
+`just review` gives this checklist to an independent reviewer for one commit
+(see `tools/review.py`). The reviewer is the other agent tool: Codex reviews
+commits from Claude Code sessions, and Claude Code reviews commits from Codex
+sessions.
+
+## How to review
+
+- Review only the changes of the given commit, and the definitions that these
+  changes touch. Do not review unchanged code elsewhere. For a specification
+  (R18 and R19), also read the documents that govern it and the code, data and
+  measurements that it cites, so that you can judge it against them; report
+  findings only in the specification.
+- Report only violations of the conditions below. Do not report general
+  preferences or advice.
+- Do not change any file.
+- Use **must** when the violation makes the code wrong, weakens a guarantee, or
+  breaks a condition in trusted or public code. Use **should** for all other
+  violations.
+
+## Conditions
+
+Each condition ends with the files it applies to. `tools/review_stats.py` uses
+this line to count how often a condition had a chance to fire.
+
+**R1. Separate "what" from "how".** A policy (an allowed list, a limit, an
+exception, a reserved name) is a named definition with a docstring, not a
+literal inside a mechanism. A specification states its meaning directly; an
+executable version for computation is linked to it by a theorem or a test.
+*Example of a violation:* the allowed axioms as a list literal inside the
+traversal loop of `audit`.
+*Applies to:* all files.
+
+**R2. Propositions in plain words.** Each new or changed proposition in the core
+library or the public API (a `def` or `abbrev` of type `Prop`, a `Prop` field,
+a theorem statement) has a docstring that restates it faithfully: quantifiers,
+assumptions, and each case in which it requires nothing. A changed formula has a
+changed restatement. See "Propositions in plain words" in `AGENTS.md`.
+*Applies to:* `*.lean`.
+
+**R3. Proof sketches.** A new or changed library theorem that other proofs use,
+or a proof longer than about 20 lines, has a proof sketch of 1-5 sentences:
+the strategy and the key idea.
+*Applies to:* `*.lean`.
+
+**R4. No compatibility paths.** The project has no users. Replaced code is
+deleted and its callers are updated. No "legacy" code, no aliases kept for old
+names, no fallback to an old path.
+*Applies to:* all files.
+
+**R5. Exhaustive matches.** A `match` over `Statement`, `ExecutionError`,
+`Outcome` or another type whose cases have different meanings has one case for
+each constructor, without a catch-all `_` case. A new constructor must then cause
+a compile error where it is not handled.
+*Applies to:* `*.lean`.
+
+**R6. Model boundary.** The SQLite model is meant for every use of it, so it
+must not depend on one of its users. The model does not import the surface
+(`packages/belay`) or the conformance runner (`packages/verifier-conformance`).
+A lemma that is only about the model belongs in the model, not in a user's
+file. Model docstrings speak about SQLite, not about the data of one use, such
+as "approved", "candidate" or "proof" data.
+*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `packages/belay/**/*.lean`, `packages/verifier-conformance/**/*.lean`.
+
+**R7. SQLite rule or model restriction.** A SQLite rule is a check that SQLite
+itself makes, for example "no two columns with the same name". A model
+restriction excludes input that SQLite accepts but the model does not describe,
+for example "no column named `rowid`". A new or changed condition in a validity
+check, a supported-subset check, or `step` says which of the two it is. A model
+restriction must never appear in `step` as a modeled failure: then the model
+would predict an error where SQLite succeeds. It belongs in the supported-subset
+check instead.
+*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `belay/sqlite/*.py`.
+
+**R9. Docstrings.** Each new class, structure, function and module has a
+docstring that gives the reason for the object. Text follows "Writing style" in
+`AGENTS.md`: what the code does and why, in short active sentences, with a
+negative statement only to warn about a real trap.
+*Applies to:* all files.
+
+**R10. Error messages.** A new or changed user-facing message says what failed,
+where, and what the user can do next. It does not refer to internal documents
+such as ADR numbers.
+*Applies to:* `*.py`, `*.lean`.
+
+**R11. Tests.** A behavior change has a test that would fail without it. Tests
+are deterministic, and each subprocess call in a test has a timeout.
+*Applies to:* all files.
+
+**R12. Size and types.** A source file stays below 200 lines. Python code has
+complete type hints and no `Any`.
+*Applies to:* `*.py`, `*.lean`.
+
+**R13. Documentation follows the code.** Documentation that describes changed
+behavior (README, `docs/`, CLI help) changes in the same commit.
+*Applies to:* all files.
+
+**R15. Tests target our code.** A new or changed test or build check says in
+its docstring which code of this repository it checks. It does not check a
+dependency's own behavior, unless it names a known or suspected problem of that
+dependency, such as an upstream report or an observed failure. A test of a
+dependency with no reason to suspect that it can fail does not stay in the
+test suite or CI. A workaround for a dependency bug names the upstream report.
+See "Testing" in `AGENTS.md`.
+*Example of a violation:* a build check that validates every link on the pages
+that a documentation generator writes for Lean's own libraries.
+*Applies to:* `tests/*`, `tools/*`, `build-support/*`.
+
+**R16. Anchored integrity checks.** A check that claims to prevent tampering
+with development evidence (corpora, expected results, thresholds, baselines)
+compares against a protected value: a file that `.github/CODEOWNERS` lists in
+its development-integrity section, or an input of the judge lock. A new or
+changed check whose reference value an unprotected change can also change is
+not added as a tampering defense; it stays only if it finds honest mistakes,
+and its docstring says so. See ADR 0011.
+*Example of a violation:* a test that refuses a changed corpus by comparing it
+with a digest that is written in the same test file.
+*Applies to:* all files.
+
+**R17. No recorded answers in the subject.** Code outside `judge/` and the
+corpora does not contain or derive recorded SQLite observations, outputs or
+verdicts of corpus cases in order to predict them, for example as a table
+keyed by case name or SQL text. ADR 0011 names this limit of the judge lock.
+*Applies to:* all files.
+
+**R18. Supporting work solves a present problem.** Core work is the SQLite
+model and the evidence that it agrees with SQLite; it serves the goal in
+`AGENTS.md`, and a specification may plan it ahead. Supporting work is
+everything else: tooling, CI, harness features, measurement scripts, process
+and refactors that no core change needs. Each item of supporting work in a new
+or changed specification names the present problem that it solves, with the
+evidence for that problem (a failing check, a measured cost, a core task that it
+blocks, or an owner request), and is the smallest solution. Report supporting
+work for an anticipated future ("later", "at scale", "for consistency", "in
+case"), supporting work larger than its problem, generality that the problem
+does not need (an extension point, a configuration or a shared framework for
+one case), and core work that does not serve the goal. Use **must** for
+supporting work with no present problem.
+*Example of a violation:* a task file that gives every slice three mutants and
+an evidence writer of its own, without a risk in that slice that they check.
+*Applies to:* `docs/adr/*.md`, `plans/*.task.md`.
+
+**R19. Specifications hold against current reality.** A new or changed
+specification, or status file, is true when it is trusted now. Each finding
+names the false assumption: the document assumes X, but the current reality is
+Y. Report a claim about existing code, a dependency, a measurement or SQLite's
+behavior that the repository or the cited evidence contradicts; a contradiction
+with a governing document (`AGENTS.md`, the ADR that a task implements) or
+between two parts of the document; superseded text presented as current, such
+as a status that says "open" for finished work or a changed decision without
+its date; and a top that does not say what the document is for and what its
+status is. Use **must** for a false claim or a contradiction that an
+implementer would act on. The fix is the smallest edit, split, mark as
+historical, or deletion that removes the false assumption; dates, ids and
+evidence stay.
+*Example of a violation:* a task file that says a BLOB argument fails with
+`JSON cannot hold BLOB values`, but SQLite 3.51.0 reads it as JSONB.
+*Applies to:* `docs/*.md`, `plans/*.md`.
+
+**R20. Expensive tests reuse Nix results.** A new or changed test or test group
+with substantial build, service-startup or execution cost first evaluates the
+existing Nix test machinery for dependency-based reuse. Where reuse preserves
+the meaning of the check, use a cacheable test derivation with narrow, complete
+inputs and avoid duplicate host execution. Merely running a command inside a
+Nix development shell does not cache its result. If this mechanism cannot fit
+the check, record why and obtain an explicit owner decision on where, when and
+with what execution limits it runs before adding or scheduling it. Link that
+decision from the test's specification or configuration. Do not cache a check
+of changing external state as if that state were a declared immutable input.
+Use **must** when an expensive check has neither suitable Nix reuse nor the
+required recorded owner decision.
+*Example of a violation:* a database integration suite starts its server on
+every host test run despite having fixed inputs, with no recorded owner decision.
+*Applies to:* `tests/*`, `tools/*`, `build-support/*`, `nix/*`, `.github/workflows/*`, `justfile`, `docs/adr/*.md`, `plans/*.task.md`.
+
+## Output format
+
+Write one line per finding, and nothing else in these lines:
+
+```
+- R<number> <must|should> <path>:<line> <one-sentence problem>. Fix: <one-sentence fix>.
+```
+
+`<path>` is relative to the repository root; `<line>` is a line in the new
+version of the file. Text before or after the finding lines is allowed, for
+example a short summary.
+
+If no condition is violated, write exactly this line:
+
+```
+No findings.
+```
+
+Example:
+
+```
+- R1 must packages/verifier-conformance/VerifierConformance/Programs/Scripts/Trace.lean:38 The allowed statement kinds are a literal inside the traversal of `trace`. Fix: define `tracedKinds` with a docstring and use it in `trace`.
+- R9 should conformance/predict.py:25 `predict` has no reason in its docstring. Fix: say why the inputs are read before the runner starts.
+```

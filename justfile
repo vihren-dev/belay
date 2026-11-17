@@ -82,7 +82,7 @@ theorem-dependencies: resources
 test-source:
     timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/source.xml
 
-# Review a commit (default: @-) with the other agent tool against docs/review-checklist.md (REVIEWER= overrides).
+# Review a commit (default: @-) with the other agent tool against docs/development/review-checklist.md (REVIEWER= overrides).
 [positional-arguments]
 review *args:
     python3 -m tools.review "$@"

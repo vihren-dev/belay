@@ -19,7 +19,7 @@ import sys
 from tools.review_records import DIRECTORY, read_records, write_record
 
 ROOT = Path(__file__).resolve().parents[1]
-CHECKLIST = ROOT / "docs" / "review-checklist.md"
+CHECKLIST = ROOT / "docs" / "development" / "review-checklist.md"
 #: The reviews directory; tests point the variable at a temporary directory.
 LOG_VARIABLE = "SQLITE_VERIFIER_REVIEW_LOG"
 #: What can happen to a finding. "rejected" and "deferred" need a reason.

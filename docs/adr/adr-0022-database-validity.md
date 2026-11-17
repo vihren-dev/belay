@@ -1,0 +1,425 @@
+# ADR 0022: The facts of a valid database, and the statements that keep them
+
+Date: 2026-10-22. Status: ACCEPTED on 2026-10-22 (owner decision in the design discussion of
+ADR 0017's slice S2).
+Implementation: slice by slice (D4), each with its own task file, as local commits.
+Audience: designers and reviewers.
+Design follow-up, 2026-10-26: [proposed ADR 0025](adr-0025-compositional-preservation-proofs.md)
+replaces the requirement for separately named preservation endpoints with
+derivable guarantees through generic laws. Its experiments and tasks are ready
+for implementation review. The code and historical delivery records below
+still describe the existing API until that refactor is implemented.
+Related: [ADR 0012](adr-0012-query-semantics.md) (decision 5, the admitted databases),
+[ADR 0016](adr-0016-model-and-surface.md) (the layer rules),
+[ADR 0017](adr-0017-user-surface.md) (the user surface, D3 and D5),
+[ADR 0019](adr-0019-guide-sql.md) (D2, `PRAGMA integrity_check`).
+
+## Overview
+
+A user expects that a database satisfies the constraints of its schema: NOT NULL, CHECK, the
+keys and the types of a `STRICT` table. The model's invariant `Database.Valid` does not say
+this, on purpose: SQLite can reach databases whose constraints fail, and ADR 0012 admits every
+database that SQLite can reach.
+
+This ADR keeps both notions and builds them from small named facts, the atoms. A user can use
+each atom alone, or a bundle of them: `Database.Valid`, the strong notion that users expect, and
+`Database.Admitted`, today's weaker invariant under a new name. For each atom, a theorem says
+which statements keep it. Each theorem is its own work, which the slices of D4 deliver in the
+order in which the user surface needs them.
+
+## Context
+
+Measured on this tree on 2026-10-22:
+
+- **Today's invariant.** `Database.Valid` (`Model/Shared/Catalog/Database.lean:148`) requires a supported
+  catalog (`Catalog.Valid`), one row list for each catalog object, no rows at an index's
+  position, and for each table: distinct rowids, each in the signed 64-bit range, one cell for
+  each column, each cell in its stored form, and the rowid in the cell of a rowid alias. Its
+  docstring says: "Native representability and constraint truth are separate claims."
+- **Why it is weak.** ADR 0012, decision 5: an invariant may join it "only if it holds for every
+  database that SQLite can reach". Constraints can fail in such databases: after
+  `PRAGMA ignore_check_constraints`, after a write to the schema with `writable_schema`, in a file
+  that another program wrote, or after writes with foreign keys off.
+- **The model checks the constraints already.** `LiteralData.constraints`
+  (`Model/Schema/Rows/LiteralData.lean:88`) checks NOT NULL, the types of a `STRICT` table, CHECK and the
+  unique keys of the catalog (`Catalog.uniqueKeys`). INSERT, UPDATE and upsert store a table only
+  after it passes this check. Plain INSERT and UPDATE check their whole result once
+  (`checkedWrite`, `Model/Schema/Writes/StatementRun.lean:13`). Upsert, and the writes that check foreign keys
+  or run triggers, check the table after each row (`checkedRow`, `Model/Schema/Writes/Upsert.lean:57`), and a
+  FAIL failure keeps the rows that the write stored before it. The model describes these writes
+  only when the table passes the check before (`tableReady`). DELETE uses neither check: it
+  removes the selected rows from any table (`runStatement`, `Model/Schema/Dispatch/StatementStep.lean`), also
+  from a table whose constraints fail.
+- **No statement has a preservation theorem.** The model has lemmas for single operations
+  (`Conforms.setRows`, `Conforms.addColumn`, `Conforms.createTable`,
+  `Catalog.emptyDatabase_conforms`), not for a statement. ADR 0012 says that "a preservation
+  theorem shows that the model's statements keep every invariant" (line 444); it does not exist.
+- **Decidability.** `Catalog.Valid` is decidable. `Database.Valid` is not: it quantifies over
+  every position and every value.
+- **The user guide** ("Databases") says that each `Database` satisfies its constraints, and that
+  a proof reads them with `db.notNull`, `db.check`, `db.unique` and `db.rowid_unique`.
+- **ADR 0019, D2** relates the `ok` row of `PRAGMA integrity_check` to `LiteralData.constraints`,
+  because `Database.Valid` does not include them.
+
+## Decision
+
+### D1. The atoms
+
+Each atom is one fact about one table of a database, at its position in the catalog, or about the
+whole database. Its database form says the fact for every table.
+
+| Atom | It says | Bundle |
+| --- | --- | --- |
+| catalog supported | the catalog satisfies `Catalog.Valid` (database) | Admitted |
+| rows shaped | one row list for each catalog object, and no rows at a position without a table (database) | Admitted |
+| rowids distinct | no two rows of the table have the same rowid | Admitted |
+| rowids in range | each rowid is in the signed 64-bit range | Admitted |
+| rows wide | each row has one cell for each column | Admitted |
+| rows stored | each cell is in the stored form of its column's affinity | Admitted |
+| rows aliased | the cell of a rowid alias is the row's rowid | Admitted |
+| not null | no NOT NULL column holds NULL | Valid |
+| checks hold | no CHECK constraint is false for a row | Valid |
+| types fit | each cell of a `STRICT` table fits its column's type | Valid |
+| keys unique | no two rows conflict on a unique key of the catalog: PRIMARY KEY, UNIQUE, unique indexes with their filters, terms and collations | Valid |
+| parent schema compatible | every declared foreign key has the supplied parent mapping selected and supported by the current catalog | neither |
+| row references hold | for a supplied mapping of every declared foreign key, each child row has a NULL key cell or a matching parent row | neither |
+
+Amended 2026-10-24 by owner decision: slice 5 replaces the single
+`ForeignKeysHold` API with these two atoms. The slice-5 part-1 record below describes
+the implemented split. The row atom takes an explicit mapping that determines the
+child columns tested for NULL and the resolved parent comparison. It does not
+require the supporting unique index to exist. A convenience operation selects
+the mappings as SQLite does; its row check agrees with the corrected engine.
+The schema atom requires that the current catalog selects and supports exactly
+those mappings for every declaration, even for an empty child table.
+Mapping transport preserves table identity when catalog positions change.
+See [the slice-5 task](../../plans/20261024-foreign-key-atoms.task.md).
+
+Further amended 2026-10-24 by owner decision after a native counterexample:
+the shared engine NULL test must use the child projection of a selected parent
+comparison, including repeated columns. When no comparison is selected, it
+retains the declaration-column fallback. The original rule inspected unused
+child columns and could wrongly exempt a nonmatching row. Slice 5 includes this
+engine correction, native regressions and the corresponding atom/proof update.
+
+The owner further accepted mapped action targets on 2026-10-24. CASCADE,
+SET NULL and SET DEFAULT write the child columns selected by the parent mapping,
+including repeated targets. Unused declared child columns remain unchanged.
+Assigned/changed-column effects, including UPDATE OF triggers, use those actual
+targets. Slice 5 includes this correction and native regressions alongside the
+NULL check; it does not reinterpret a repeated mapping as positional declaration pairs.
+
+On 2026-10-25 the owner also accepted correcting ADD COLUMN REFERENCES defaults.
+With foreign-key enforcement on, a nonempty table rejects a new REFERENCES
+column unless its default is absent or literal NULL. The native check observes
+default syntax: `(NULL)` qualifies, while `(+NULL)` does not become acceptable
+because its computed value is NULL. Pinned native SQLite 3.51.0 also accepts the
+bare `DEFAULT +NULL`, because its grammar gives the literal; the model decides
+neither that spelling nor `-NULL` (no column default value exists for a signed
+NULL, with or without REFERENCES), so the model leaves them unsupported. The
+last DEFAULT of a column decides. Empty-table and enforcement-off cases retain
+their native behavior and other ADD COLUMN checks. Slice 5 includes the execution
+correction, pinned-native regressions and updated conditional preservation laws.
+
+Each atom has two forms: a proposition that a proof reads easily, and a check that computes,
+with a lemma that the two are equivalent. The atom is decidable through its check, so `decide`
+proves it for a concrete database. The checks of the constraint atoms are the functions that
+the writes use (`LiteralData`), so "valid" means what the model's writes enforce. The atoms are
+public in the model and named in the surface. The task file of slice 1 gives their names.
+
+### D2. Two bundles
+
+- **`Database.Admitted`** is today's `Database.Valid` under a new name: a structure with one
+  field for each Admitted atom. It describes every database that SQLite can reach, as ADR 0012
+  requires. `Conforms` becomes a fixed catalog and `Database.Admitted`.
+- **`Database.Valid`** is a structure with a field for `Database.Admitted` and one field for each
+  Valid atom. It describes the databases that users expect: the databases that SQLite reaches
+  through statements, with no pragma or file that bypasses the constraints.
+
+A field is an accessor: from `valid : db.Valid profile`, `valid.notNull` is the atom. Both
+bundles are decidable. A claim for every database states `Database.Valid` as its hypothesis; a
+claim that must hold also for databases with broken constraints states `Database.Admitted` and
+the atoms that it needs.
+
+### D3. A theorem for each atom
+
+For each atom, a theorem says that a statement that the model describes keeps the atom. A
+theorem can require a condition on the connection, for example that foreign keys are on. A
+statement that can break an atom, such as `PRAGMA ignore_check_constraints` if the model
+describes it, has no theorem for that atom; the theorems of the other atoms still apply to it.
+A frame lemma says that a statement keeps an atom of a table when it changes nothing that the atom
+reads: the table's rows and catalog entry, and also its indexes for "keys unique".
+The foreign-key schema atom reads parent definitions and eligible indexes. The row
+atom reads the child rows, parent rows, parent-column definitions and supplied
+mapping. A DELETE of a parent row with foreign keys off can break the row atom
+without changing the child rows or the schema atom.
+
+The theorems are about the model's statement step (`runStatement`) and its runs (`runSql`). A
+failed statement keeps the database that the model gives for it. The model refuses
+`DEFERRABLE INITIALLY DEFERRED` keys today. This does not imply unconditional
+foreign-key preservation: native SQLite permits DROP INDEX to remove a parent's
+supporting unique key while enforcement is on. Slice 5 gives separate, conditional
+statement and run theorems for the two atoms. The conditions identify the mapping,
+schema and connection facts that each statement needs; enforcement alone is not
+a condition sufficient for all statements. Deferred keys require further laws
+when the model describes them.
+
+The conditional comparison premises also matter for parent writes. In pinned
+SQLite, differing affinities in a child scan and a parent lookup can let a parent
+replacement trigger leave an orphan after a successful enforced statement.
+Slice 5 names the required comparison-consistency conditions and retains the
+native necessity example; it does not change engine behavior to make a law hold.
+
+A proof that fails is a finding: an error of the model, or a path through which SQLite breaks
+the fact. It is reported to the owner, and no proof assumes it away.
+
+### D4. Slices
+
+| Slice | Content | Needed by |
+| --- | --- | --- |
+| 1 | the atoms, their checks, the two bundles, the rename | ADR 0017 S2: the checked run of the bundled database (D5, amended) |
+| 2 | the theorem of "keys unique" | ADR 0017 S4: a lookup by key gives at most one row |
+| 3 | the theorems of the other Valid atoms | ADR 0017 S4: a run of the bundled database over every database (D5, amended) |
+| 4 | the theorems of the Admitted atoms | ADR 0017 S4, as slice 3 |
+| 5 | the two foreign-key atoms, their checks, correspondence and conditional preservation laws | ADR 0017 S6: the rebuild that cascades |
+
+Slice 5, part 1 implementation (2026-10-24, `plans/20261024-foreign-key-atoms.task.md`):
+`ForeignKeyMapping` supplies explicit parent comparisons. `RowReferencesHold` and
+`ParentSchemasCompatible` replace `ForeignKeysHold`; each has table/database forms and
+executable equivalence laws. Row frames transport positions and do not read supporting indexes;
+schema frames read parent definitions and ordered eligible indexes. Full `foreign_key_check`
+statement laws state preparation separately from row truth. NULL tests and action targets
+share the selected child projection, including repeated columns. Action preparation and
+execution distinguish assigned columns from generated-column dependencies. The named
+`ForeignKeyLink.LookupScanConsistent` premise has structural BLOB and TEXT sufficient
+conditions and a checked mixed-affinity counterexample. Statement/run preservation remains
+part 2, including the global immediate-counter invariant; part 1 does not claim those laws.
+
+Slice 5, part 2 implementation (2026-10-25, same task file). Both atoms have laws for every resolved
+statement form. The laws exist for a statement (`runStatement_rowReferences`,
+`runStatement_parentSchemasCompatibleSelected`, `runStatement_foreignKeyAtomsSelected`) and for
+`runSqlFrom`, `runSql` and `runScriptFrom`. They use the mapping that the catalog of the database
+selects (`Catalog.foreignKeyMapping`), so the mapping follows a statement that changes the catalog.
+The laws with a supplied fixed mapping remain for the statements that keep the catalog. No
+condition states an atom of the database after the statement. A schema condition is a fact about the
+catalog before the statement and the catalog after it, or about the rules and the database before it. ADD COLUMN
+of a REFERENCES column with a default other than a literal NULL is refused on a table with rows
+when foreign keys are on, as in SQLite 3.51.0.
+
+The matrix lists, for each statement family, what each law needs. "Row atom alone" is the law
+for `RowReferencesHold`. "Both atoms" is the combined law, which has the schema atom as a premise
+and so derives some of the conditions. A fixture name has the form `Fixture.theorem`, in
+`tests/surface/`.
+
+| Statement family | Row atom alone needs | Both atoms need | Without the condition |
+| --- | --- | --- | --- |
+| INSERT, UPSERT, UPDATE, DELETE with rules (foreign keys on) | The database is admitted with unique keys; the rules meet the five rule conditions (comparison consistency, safe programs, safe actions, BEFORE frame). UPDATE also needs complete changed-column coverage and no stale self scan. | The same. The schema atom needs nothing, because the statement keeps the catalog. | Duplicate parent keys: `ForeignKeyInsert.duplicateNeedsUniqueness`. Lookup and scan differ: `ForeignKeyComparison.mixedInconsistent`. Stale self scan: `ForeignKeyUpdateNecessity.staleScanLeavesOrphan`. Stale generated cell: `ForeignKeyUpdateNecessity.staleGeneratedLeavesOrphan`. Uncovered changed column: `ForeignKeyCounter.uncheckedUpdateNeedsCoverage`. |
+| The same without rules (no trigger program and no foreign-key work) | The target is outside every child and parent read (`Catalog.ForeignKeyOutside`). | The same. | A write inside the footprint: `ForeignKeyAtoms` (`orphan`), `ForeignKeyActionRuns.restrictOff`, `ForeignKeyActionRuns.deferredOff`. |
+| BEGIN, COMMIT, ROLLBACK, queries, settings, prepare errors | None. ROLLBACK needs both atoms in the saved snapshot. | The same. | A snapshot with an orphan: `ForeignKeyRuns.snapshotRequired`. |
+| CREATE TABLE | Every old declaration keeps its selected parent (`Catalog.CreateKeepsSelection`). | Every new declaration has a located parent (`Catalog.CreateLocatesNewKeys`); the first condition follows from the schema atom. | A forward reference: `ForeignKeyCreate.forwardNeedsSchemaPremise`, `ForeignKeyDdlRuns.forwardBreaksSchema`. |
+| CREATE INDEX, CREATE TRIGGER | `Catalog.CreateKeepsSelection`. | None: the schema atom gives it. | A repeated-column index selects another child projection: `ForeignKeyDdlNecessity.repeatedIndexBreaksRows` and `repeatedIndexNotKept`. |
+| CREATE VIEW | `Catalog.CreateKeepsSelection`. A view appends one catalog object and no rows. The condition holds when no declaration of a table names the view (`Catalog.createKeepsSelection_view`). | None: the schema atom gives it, because it makes every selected parent a table. | A view with the name of a parent that does not exist changes the link of a declaration from missing to mismatch: `ForeignKeyDdlViews.namedViewChangesLink` and `namedViewNotKept`. A view with another name keeps both atoms: `ForeignKeyDdlViews.otherViewKeepsAtoms`. |
+| ADD COLUMN | Wide rows, declarations and selection below the old width, and each new declaration satisfied by the old rows with the new cell (`Database.AddColumnRowsCondition`). A refusing statement on a table with rows keeps the database. | The same, and a located parent for each new declaration (`Catalog.AddColumnLocatesNewKeys`). Wide rows and selection below the width follow from an admitted database; the declarations below the width are a fact of the catalog. | Default 99 without the refusal: `ForeignKeyAddColumn.numberNeedsRefusal`. Absent parent table: `ForeignKeyDdlNecessity.absentParentBreaksSchema`. |
+| DROP without rules (DROP INDEX, DROP TRIGGER, DROP VIEW, and DROP TABLE without implicit DELETE) | Every kept declaration keeps its selected parent, moved, and its located parents are kept (`Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`). | The same. | A supporting index: `ForeignKeyDdlDrop.indexDropNeedsSelection`. A parent with a child: `ForeignKeyDdlDropRuns.dropParentBreaksRows`. A view has no rows, so DROP VIEW is a DROP without rules; if a kept declaration names the view, its link changes from mismatch to missing and the transport condition refuses it: `ForeignKeyDdlViews.droppedViewMissesLink` and `droppedViewNotKept`. |
+| DROP with rules (the implicit DELETE of DROP TABLE) | Admitted with unique keys, the rule conditions, and the frames of the implicit DELETE at every clock (`Database.EnforcedDropFrames`). | Admitted with unique keys, the rule conditions, and the two DROP conditions above. | The row atom survives the removal of a parent whose rows were deleted, the schema atom does not: `ForeignKeyEnforcedDrop.dropSeparatesAtoms`. NO ACTION refuses: `ForeignKeyDropOutcomes.rejected`. |
+
+INSERT, UPSERT, UPDATE and DELETE on a view, and ADD COLUMN to a view, are prepare errors of the
+resolver, because the model holds no INSTEAD OF trigger. They keep the database and meet the row of the
+prepare errors. CREATE VIEW and DROP VIEW are the only view statements that change the catalog, and the
+two rows above give their conditions. A query over a view reads rows and keeps the database.
+
+A write that carries trigger programs with foreign keys off has rules with `keys = false`. The rule
+conditions require `keys = true`, so no law covers that write today. Actions need no condition of
+their own. The rule conditions cover CASCADE, SET NULL and SET DEFAULT
+through the selected child columns of the key. NO ACTION and RESTRICT write nothing. They differ in
+time: RESTRICT fails as soon as the parent row goes, while NO ACTION checks at the end of the
+statement (`ForeignKeyActionRuns.noActionRepairs`, `restrictRefuses`). SET DEFAULT writes the
+default, and the write fails when the default has no parent (`setDefaultDelete`,
+`setDefaultUpdate`, `setDefaultWithoutParent`). A key that is DEFERRABLE INITIALLY DEFERRED is a
+restriction of the resolver when foreign keys are on, so no resolved statement reaches the laws.
+The run stops and keeps the database (`deferredStops`); with foreign keys off the key is not
+processed (`deferredOff`). Conflict outcomes and explicit transactions use the run laws: a partial
+FAIL keeps both atoms (`ForeignKeyRuns.partialPreserves`) and ROLLBACK restores the snapshot
+(`ForeignKeyRuns.rollbackPreserves`). The run laws of a statement with a condition quantify over
+the statements that the run reaches. The model results of the DDL and action fixtures agree with
+the pinned SQLite 3.51.0, except the deferred key with foreign keys on: the model stops at a resolver
+restriction and keeps its current result, and SQLite fails at the commit. The probes are listed in
+the status file of the task. The native cases of the part are in `conformance/corpus-v54`, which
+`judge/claims.json` claims in the separate judge change (the lock of that change is the owner's to approve).
+
+API amendment, 2026-10-28 ([ADR 0025](adr-0025-compositional-preservation-proofs.md)):
+the per-atom endpoint names in the historical slice records below are removed.
+Generic run laws take independent invariant evidence and preserve the same premises,
+including support-independent constraint atoms and every complete surface execution.
+`runScriptAllFrom_admittedWith` and the used Valid helpers remain.
+
+Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
+`runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
+with a condition only for ADD COLUMN (`Database.AddColumnCondition`) and DROP
+(`Catalog.DropCondition`). The run theorems of `runSqlFrom`, `runSql` and `runScriptFrom` assume
+that each CREATE INDEX, ADD COLUMN and DROP that the run reaches meets its condition. This is an
+owner decision of 2026-10-23 after a finding: a resolved CREATE INDEX of an index that
+`CatalogIndex.supported` refuses runs, and a later ADD COLUMN then breaks the atom. Slice 4 also
+proves the resolver facts that give these conditions, and removes the hypothesis from the
+theorem of `runScriptFrom`; the theorem of `runSqlFrom` keeps it.
+
+Record of slice 3 (2026-10-23, `plans/20261023-valid-atoms-theorems.task.md`): the statement
+theorems `runStatement_notNull`, `runStatement_typesFit` and `runStatement_checksHold` hold for
+every statement form, foreign keys and triggers included, and they assume only their own atom.
+The only condition is on ADD COLUMN: the rows of the table are as wide as the table
+(`Database.RowsWideAt`), the stored default fits the strict type (`Database.StrictDefaultFitsAt`,
+"types fit"), and each CHECK reads only columns below the width (`Database.ChecksReadBelowAt`,
+"checks hold"). A counterexample in `RowLocalExamples` shows that each condition is necessary. The
+run theorems of `runSqlFrom`, `runSql` and `runScriptFrom` exist for each atom, and for the four
+constraint atoms together (`Database.ConstraintAtoms`: `runSql_constraintAtoms`,
+`runSqlFrom_constraintAtoms`, `runScriptFrom_constraintAtoms`), where the conditions are the
+conditions of slice 2 and of the three atoms. Slice 4 proves the width condition and the type
+condition as facts of resolved scripts. The CHECK condition is also a fact of the start database,
+which no atom states today (status file, decision 3), so the hypothesis of `runScriptFrom` goes only
+with such an atom; the theorems of `runSqlFrom` keep the hypotheses. By owner decision 1a, the row engine of slice 2 and its run theorems take the atom as a
+parameter (`RowEngineFacts`, `RunHolds`), and slice 2 is the instance for "keys unique". No proof
+failed. Amended 2026-10-23: the pragma forms of ADR 0019, slice 2 are now in this line of changes;
+the statement theorem of `RowLocalStatement` has a case for each constructor of `Resolved.Statement`
+and covers them.
+
+Record of slice 4, part 1 (2026-10-24, `plans/20261023-admitted-atoms-theorems.task.md`):
+`Catalog.Valid` now states three more facts about a table. Each CHECK reads only columns of its
+table. A rowid alias is a column that is not generated and has INTEGER affinity, is the whole primary
+key, and is in a table that is not `WITHOUT ROWID`. A key may name a column twice, as SQLite allows
+(`PRIMARY KEY(a, a)`); the model does not restrict it, and the facts of slice 2 hold for such keys. So
+the CHECK condition of slice 3 is a fact of every admitted database, and it is no longer a gap.
+The resolver keeps `Catalog.Valid` for CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and
+DROP (the validity field of `resolveStatement_certificate`, `resolve_valid`, with the catalog that BEGIN saves for ROLLBACK). The
+resolved DROP meets `Catalog.DropClosed`, from which `Catalog.DropCondition` follows. An admitted
+database meets `Database.AddColumnCondition`, `Database.RowsWideAt` and `Database.ChecksReadBelowAt`,
+and the resolved ADD COLUMN meets `strictDefaultFits`. A CREATE INDEX with no key terms is a prepare
+error that SQL text cannot reach. The statement theorems and the run theorems are parts 2 and 3.
+
+Record of slice 4 (2026-10-24, `plans/20261023-admitted-atoms-theorems.task.md`): each atom of
+`Database.Admitted` has a statement theorem (`runStatement_rowidsDistinct`, `runStatement_rowsShaped`,
+`runStatement_catalogSupported`, `runStatement_rowidsInRange`, `runStatement_rowsWide`,
+`runStatement_rowsStored`, `runStatement_rowsAliased`), and a run theorem for `runSqlFrom`, `runSql` and
+`runScriptFrom` (`runSqlFrom_rowsShaped` and so on, and `runSqlFrom_admitted` for the bundle). By owner
+decision M, the row engine tests each row that it writes (`LiteralData.rowAdmitted`), so the statement
+theorems of "rowids in range", "rows wide", "rows stored" and "rows aliased" assume that the run is ready
+(the support check of the model passes); the run theorems of `runSqlFrom` and `runSql` assume
+`supportedSqlFrom`, and `runScriptFrom` gets it from the run, which ends at a statement that fails it.
+"Catalog supported" and "rows aliased" also assume that the catalog after each statement is valid
+(`Resolved.Statement.AppliedValid`). A theorem lists the atoms that it needs: "rows stored" lists "rows wide",
+and "rows aliased" lists "catalog supported". The theorems of `runScriptFrom` have no hypothesis on the
+statements of the script. The resolver facts of part 1 give the conditions: `Resolved.Statement.SchemaLink`
+(ADD COLUMN: the default fits the strict type; DROP: `Catalog.DropClosed`) is a fact of every successful
+resolution against a valid catalog (the schema-link field of `resolveStatement_certificate`, with `state.catalog.Valid limits`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
+existing trigger resolves to a DROP of no object. The `runScriptFrom` theorems of the constraint atoms assume
+`Database.AdmittedWith profile atom` (admitted, with the atom), a context in execution mode, and the limits
+of the context equal to those of the profile; `Database.ConstraintAtoms` together give the corollary
+`runScriptFrom_valid`: a run of `runScriptFrom` from a connection with a valid database and snapshot ends in
+one, with `Database.valid_empty` for a new connection. The surface form is `Sql.runFrom_valid`, by induction
+over the program, and `Sql.runFrom_database_valid`. The conditions stay in the theorems of `runSqlFrom` and
+`runSql`, and `AdmittedRunsConditionExamples` shows a run that breaks the atom for each: a rowid past the
+largest, and a DROP of a table that leaves its index. ADR 0017 S4 removed the redundant run check
+on 2026-10-24: `Run.ofValid` takes the preservation proof and keeps the exact model result. No proof failed. The predictions, the claims and the judge lock do not
+change.
+
+Amended 2026-10-26 (task `plans/20261026-possible-write-executions.task.md`): a statement can have
+several admitted executions (ADR 0019, D4), so the run theorems of scripts quantify over the complete
+executions of the script. The theorems that this ADR names as `runScriptFrom_X` (for example
+`runScriptFrom_valid`) are now `runScriptAllFrom_X`: for every run in `runScriptAllFrom`, the end
+connection satisfies the invariant. `runScriptStep_valid` states it for every execution of one
+statement. Every statement of the model has one execution, so the run of the surface is the one such
+run, and no assumption of a theorem changed.
+
+For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
+store passed the checks, after the whole write or after each row, and a proof follows those
+steps, also for the rows that a FAIL failure keeps. DELETE removes rows, and each constraint
+atom is a fact of each row or of each pair of rows, which fewer rows keep. Schema statements,
+trigger programs and foreign key actions are the larger work. No slice
+changes what a statement does, so the predictions, the claims and the judge lock do not change.
+
+### D5. The bundled database stays open
+
+#### Initial design, superseded on 2026-10-22
+
+The guide's `Database` carries its validity, so that a proof gets the facts "without extra
+hypotheses". That needs `db.run` to keep `Database.Valid`, which slices 2 to 4 prove. Until then,
+the surface's `Database` is the model's, and `db!` gives a proof of `Database.Valid` beside it.
+
+A decision for later, with the bundled type: a script with a statement that has no theorem for
+an atom cannot give a bundled result. Either elaboration refuses such a statement in a bundled
+run, or the run gives a database with the weaker bundle.
+
+#### Amendment of 2026-10-22, superseded on 2026-10-24
+
+Owner decision 5: the bundled database comes in S2, with a run that checks
+instead of proves. The surface's `Database` holds a model database and its proof of
+`Database.Valid`; a plain model database without the proof has its own name, `Database.Raw`,
+for the claims that must cover databases with broken constraints (`Database.Admitted`). A run
+computes the model's result as before, and then decides `Database.Valid` for the database at
+its end (slice 1). When it holds, that decision is the proof of the bundled result. When it
+does not, the run's outputs end with `Output.unmodeled`, whose reason says that the result is
+not a valid database, and the run's database is the one at its start; the model's result stays
+readable as a `Database.Raw`. The run never presents a database that is not valid as one that
+is.
+
+- **For one concrete database** this gives the guide's experience: `db.notNull` needs no
+  hypothesis, for the database of `db!` and for the database after a run, and `decide` checks
+  the run.
+- **For a claim over every database** (ADR 0017, S4 and later), a proof must show that the
+  check holds, which is the theorems of D3. Slices 2 to 4 therefore come before S4; with them,
+  the check is proved to hold, and the run can give the proof without the check.
+- **The else branch is a finding** while the model describes no statement that bypasses a
+  constraint: a run that reaches it shows an error of the model, which D3 reports to the
+  owner. When the model describes such a statement, the else branch is how a run treats it,
+  which decides the question of the previous paragraph for runs of the bundled database.
+
+#### Current implementation, completed on 2026-10-24
+
+ADR 0017 S4: the run preservation theorem now supplies the final
+database's validity proof directly. The runtime decision and its invalid-result branch are
+removed. Public runs keep the model's value, outputs, database, transaction and settings.
+The raw API remains available for databases without validity proofs.
+
+## Consequences
+
+- **The guide states both notions.** Its "Databases" section names the atoms, says which
+  databases a claim over `Database` covers, and points to `Database.Admitted` for the others.
+- **ADR 0012's preservation sentence** is corrected by an amendment that points here.
+- **ADR 0019, D2** gets a simpler law: the `ok` row of `integrity_check` is the Valid constraint
+  atoms, and of `quick_check` the same without "keys unique", under `Database.Admitted`
+  (done with ADR 0019's acceptance, 2026-10-22).
+- **The work is a matrix** of atoms and statement forms, which the slices deliver one atom at a
+  time, so each slice is useful alone.
+
+## Alternatives considered
+
+**One strong invariant without atoms.** Rejected: one statement that bypasses a constraint would
+lose every fact, and the user could not use the facts that still hold. A helper must never be
+the only door (the workspace rule on flexibility and usability).
+
+**Add the constraints to today's invariant.** Rejected: claims would then silently exclude
+databases that SQLite can reach, against ADR 0012's rule.
+
+**Bundle the surface's database in S2.** Rejected at first: `db.run` cannot give the proof before
+the theorems of D3 exist. Amended 2026-10-22: a check gives the proof for each concrete run, so
+S2 bundles the database (D5, amended), and the theorems move to before S4.
+
+## Not decided here
+
+- How elaboration treats a statement that has no theorem for an atom, in a claim over every
+  database, when the model describes such a statement (D5, amended).
+- Whether the cells of stored generated columns become an atom.
+- The model of `PRAGMA ignore_check_constraints` and `writable_schema`.
+
+## Owner decisions
+
+Decided on 2026-10-22, in the design discussion of S2:
+
+1. **The atoms are the primitives**, public, and the two bundles are built from them.
+2. **Strong is `Database.Valid`, weak is `Database.Admitted`.**
+3. **The foreign-key atoms are outside `Database.Valid`** (amended 2026-10-24:
+   two atoms).
+4. **A theorem for each atom**, with conditions on the connection, delivered slice by slice; the
+   postponed work is documented, and the guide keeps its scope.
+5. **The bundled database in S2, with a checked run** (D5, amended 2026-10-22): the
+   surface's `Database` carries its proof of `Database.Valid`, `Database.Raw` is the plain
+   database, and the theorems of D3 replace the check before S4.

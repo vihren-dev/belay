@@ -2,7 +2,7 @@
 
 A record of version 7 is a version 6 record that also holds the three counters of the writer
 connection just before the migration runs: `changes()`, `total_changes()` and
-`last_insert_rowid()`, after the setup (docs/conformance-format-v2.md). The model starts the
+`last_insert_rowid()`, after the setup (docs/development/conformance-format-v2.md). The model starts the
 run from them. A record of an older version holds none, so its run starts with unknown counters.
 """
 
