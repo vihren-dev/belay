@@ -7,6 +7,8 @@ import Belay.Sqlite.Model.Programs.Scripts.RewriteStepLaws
 
 set_option doc.verso true
 
+/-! A one-statement frame check for callers that follow a single table across a migration. -/
+
 namespace Belay.Sqlite.Model
 
 /-- The position of a table after a statement whose effects preserve its definition and rows.
@@ -19,7 +21,10 @@ def Resolved.Statement.keeps (statement : Resolved.Statement) (catalog : Catalog
   | .insertSelect target _ _ _ _ _ _ none => if position = target then none else some position
   | .drop positions none => if positions.contains position then none else some (keptBelow positions position)
   | .rewrite renamed => if renamed.tableAt position == catalog.tableAt position then some position else none
-  | other => other.plainWriteTarget.bind fun target => if position = target then none else some position
+  | .insert .. | .update .. | .delete .. =>
+    statement.plainWriteTarget.bind fun target => if position = target then none else some position
+  | .insertSelect _ _ _ _ _ _ _ (some _) | .drop _ (some _) | .rollback | .createView .. | .createIndex ..
+  | .createTrigger .. | .addColumn .. | .dropColumn .. | .prepareError _ | .upsert .. => none
 
 /-- With no alternative executions, every member of the step reaches the given next connection. -/
 private theorem singleConnection {output : Output} {next : Connection} {execution : StatementExecution}
@@ -83,7 +88,9 @@ theorem runScriptStep_keepsTable {context : ResolveContext} {clock : Option Cloc
     obtain ⟨_, rfl, _, nextEq⟩ := runScriptStep_rewrite resolution step
     rw [singleConnection member, nextEq]
     simpa only [Database.table, eq_of_beq equal] using present
-  · obtain ⟨target, plain, destinationEq⟩ := Option.bind_eq_some_iff.mp kept
+  all_goals try contradiction
+  all_goals
+    obtain ⟨target, plain, destinationEq⟩ := Option.bind_eq_some_iff.mp kept
     split at destinationEq <;> try contradiction
     rename_i distinct
     cases destinationEq

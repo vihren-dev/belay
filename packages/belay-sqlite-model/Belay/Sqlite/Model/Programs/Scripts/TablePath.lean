@@ -3,6 +3,8 @@ import Belay.Sqlite.Model.Programs.Scripts.TableKeeps
 
 set_option doc.verso true
 
+/-! Follow an original table through the resolved prefixes of a script. -/
+
 namespace Belay.Sqlite.Model
 
 /-- Follow a table through the first statements of a resolved script. Zero gives its

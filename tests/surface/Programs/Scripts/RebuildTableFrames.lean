@@ -1,5 +1,8 @@
 import RebuildKeepsInvariant
 
+/-! Exercise the checked table frame across a moving DROP, a cascading DROP, a write to the
+protected table and a rewrite of the definition of the protected table. -/
+
 open Belay.Sqlite Belay.Sqlite.Model RebuildGuide
 set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
