@@ -40,8 +40,11 @@ def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
   let some (some (script, proof)) := found | return none
   return some { proof, tactic := printableScript script }
 
-/-- The default proof attempt: the closing tactics first, because they are cheap, then the search. -/
+/-- Try a derived-column law before opening the claim, then the closing tactics and the general search. -/
 def defaultProof (proposition : Expr) : TermElabM (Option Proven) := do
+  let goal ← mkFreshExprMVar proposition
+  if let some step ← derivedColumnSteps? goal.mvarId! then
+    return some { proof := ← instantiateMVars goal, tactic := printableScript step }
   if let some proven ← tryProof proposition then return some proven
   searchedProof proposition
 

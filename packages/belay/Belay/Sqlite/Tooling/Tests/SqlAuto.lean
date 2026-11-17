@@ -19,6 +19,10 @@ explicit steps as a suggestion in place of the call. -/
     | _ => #[]
   let goal ← getMainGoal
   let siblings := (← getGoals).drop 1
+  if let some step ← derivedColumnSteps? goal then
+    setGoals siblings
+    suggestSteps "Replace sql_auto with its steps" stx #[step]
+    return
   match ← search hints goal with
   | .error reasons =>
     throwError "sql_auto did not close the goal. The routes failed:\n{reasons}\nRun one of these tactics alone to see the goals that it leaves."

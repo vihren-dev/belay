@@ -1,5 +1,6 @@
 import Belay.Sqlite.Tooling.Counterexamples.CheckBudget
 import Belay.Sqlite.Programs.Automation.AutoSearch
+import Belay.Sqlite.Programs.StatementRunLaws.DerivedColumnSuccessCheck
 
 set_option doc.verso true
 
@@ -13,6 +14,30 @@ that does not search again. A proof that the search builds is checked by the ker
 
 namespace Belay.Sqlite.Run
 open Lean Meta Elab Term Tactic
+
+/-- Try a derived-column law on a success or preservation claim with a schema premise.
+The quantified form tries a NULL sample for a SQL value parameter. The law checks that
+all values give the same statement syntax. Each check inspects the migration shape before
+evaluating the catalog. Failure restores the goal for the other proof routes. -/
+def derivedColumnSteps? (goal : MVarId) : TermElabM (Option (TSyntax `tactic)) := goal.withContext do
+  let claim := (← instantiateMVars (← goal.getType)).consumeMData
+  let quantified := claim.isForall
+  let body := if quantified then claim.bindingBody! else claim
+  let step ← if body.isAppOfArity ``Migration.QueryPreserves 5 then
+      if !body.getAppArgs[3]!.isLambda || !body.getAppArgs[3]!.bindingBody!.isAppOf ``Database.HasCatalog then
+        return none
+      if quantified then
+        `(tactic| exact DerivedColumnMigration.preserves_of_check_forall _ Value.null (fun _ => rfl) (by decide +kernel))
+      else
+        `(tactic| exact DerivedColumnMigration.preserves_of_check (by decide +kernel))
+    else if !quantified && body.isAppOfArity ``Succeeds 5 then
+      if !body.getAppArgs[4]!.isLambda || !body.getAppArgs[4]!.bindingBody!.isAppOf ``Database.HasCatalog then
+        return none
+      `(tactic| exact DerivedColumnMigration.succeeds_of_check (by decide +kernel))
+    else return none
+  return (← Check.withinBudget (Check.searchShare.units (← Check.remainingUnits)) <| Check.attempt do
+    unless (← runStrict goal step).isEmpty && (← completeProof goal) do throwError "the law left an open goal"
+    return step).join
 
 /-- Search the routes in order for a proof of the goal. The work limit of the call is shared by the routes
 that have not run yet. A route that fails, runs out of its share, or builds an incomplete proof leaves

@@ -25,7 +25,8 @@ NOTE = "Note: (schema := shop) only directs the search."
 def test_unknown_answer_with_a_search_schema_gets_the_note(runtime_root: Path, tmp_path: Path) -> None:
     """An unknown answer with `with (schema := shop)` and no `HasCatalog` premise gets the note, which names
     the schema and the two forms of the claim about its databases. The claim with `on shop`, a false answer
-    and a search schema from `(db := shop)` get no note."""
+    and a search schema from `(db := shop)` get no note. The three schema-scoped derived-column
+    claims have checked proof scripts, and sql_auto closes the same goals."""
     result = run_command(configured_command(runtime_root, fixture_file("CheckSchemaNote.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
@@ -36,5 +37,9 @@ def test_unknown_answer_with_a_search_schema_gets_the_note(runtime_root: Path, t
     assert "write `on shop` after `preserves` or `succeeds`, or add the premise (·.HasCatalog shop)" in noted, noted
     for label in ("on-schema", "with-db"):
         assert "Note:" not in blocks[label], (label, blocks[label])
+    for label, law in (("on-schema", "preserves_of_check"), ("on-schema-lookup", "preserves_of_check_forall"),
+                       ("on-schema-succeeds", "succeeds_of_check")):
+        assert blocks[label].startswith("SQL check: proved."), blocks[label]
+        assert f"DerivedColumnMigration.{law}" in blocks[label], blocks[label]
     false_answer(blocks["false"])
     assert NOTE not in blocks["false"], blocks["false"]
