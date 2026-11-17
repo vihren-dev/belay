@@ -162,7 +162,7 @@ which Lake prints again in each run
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: `#sql_check` and `sql_auto` apply these laws with a kernel check on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
 | A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
-| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
+| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. For a script certified from its schema, apply `Script.succeeds_of_schema`. A mixed script supplies proofs for its remaining statements, as in [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
 You can give `#sql_check` a claim by name. For example, if `selectClaim`
 defines a query claim, `#sql_check selectClaim` checks it and gives proof

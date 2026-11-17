@@ -1,18 +1,13 @@
-import RebuildKeeps
-import RebuildSucceedsFinish
+import RebuildSucceedsCopy
+import Belay.Sqlite.Programs.Claims.KeptRead
+import Belay.Sqlite.Programs.Claims.SchemaSuccess
 
 set_option doc.verso true
 set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
 set_option exponentiation.threshold 2048
 
-/-! Claim 2 of the guide's table rebuild (ADR 0017, S6, part 3): the rebuild {lit}`makeStrict` succeeds on every
-database of the guide's schema whose customers fit the STRICT types of the new table. The success covers the actual
-run and every branch
-of the INSERT from a query. The steps of the rebuild keep the facts of {lit}`RebuildKeepsInvariant` and the facts about
-the customers of {lit}`RebuildSucceedsCopy`, and each step continues without an error
-({lit}`RebuildSucceedsSteps`, {lit}`RebuildSucceedsFinish`); {lit}`sendStatements_succeedsFrom` turns this into success
-of the script. -/
+/-! Success of the rebuild on every database whose original customers fit the STRICT table. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -26,24 +21,41 @@ def StrictRows (db : Database) : Prop :=
   ∀ (position : Nat) (customers : Table), db.raw.tableNamed customersName = some (position, customers) →
     ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true
 
-/-- The rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit the STRICT
-types of the new table, in every complete environment, on the actual run and on every branch. The rows are otherwise
-unrestricted. Where the database has a customer with a cell that does not fit the STRICT type of its column, for
-example a blob email, the claim requires nothing; there the INSERT from a query fails. NULL fits every type, so a
-customer without a name is within the premise. Proof sketch: {name}`sendStatements_succeedsFrom` with the facts {name}`Good`; the facts
-hold at the start, and {name}`good_advance` shows that each step continues without an error and keeps them. -/
+/-- The rebuild succeeds on every database of the guide's schema for which each old customer
+fits the new STRICT types. This covers every complete environment and every branch. A database
+with a customer that does not fit is outside the premise. Proof sketch: the computed schema path
+leaves only statement 3, the copy, to prove. The table frame tracks its source. CREATE TABLE
+adds the empty destination row store. The copy law applies to those tables and the STRICT premise. -/
 theorem makeStrict_succeeds :
     Succeeds makeStrict (fun db => db.raw.catalog = sample.raw.catalog ∧ StrictRows db) := by
   intro db ⟨pre, fits⟩ env complete
-  obtain ⟨sessions, namedSessions, _⟩ := Database.tableNamed_of_hasCatalog (schema := sample) pre
-    (name := sessionsName) (position := 1) (by with_unfolding_all exact rfl)
-  obtain ⟨customers, namedCustomers, _⟩ := Database.tableNamed_of_hasCatalog (schema := sample) pre
+  obtain ⟨customers, named, _⟩ := Database.tableNamed_of_hasCatalog (schema := sample) pre
     (name := customersName) (position := 0) (by with_unfolding_all exact rfl)
-  have start : Good sessions customers 0 (db.raw.connection env.counters) :=
-    ⟨kept_start pre namedSessions, ResolveState.tableAtPrefix_zero (Database.tableNamed_some namedCustomers).2, fun h => by omega⟩
-  exact sendStatements_succeedsFrom makeStrict.statements (Good sessions customers) env.clock 0
-    (db.raw.connection env.counters) ⟨db.valid, fun _ shown => by simp [Database.Raw.connection] at shown⟩ start
-    (good_advance env.clock sessions customers (fits 0 customers namedCustomers))
+  have start : (db.raw.connection env.counters).resolveState = sample.raw.connection.resolveState := by
+    simp [Database.Raw.connection, Connection.resolveState, pre]
+  apply sendStatements_succeeds_mixed (path := rebuildPath.1) (final := rebuildPath.2)
+    rebuild_resolves env.clock 0 start
+    ⟨db.valid, fun _ saved => by simp [Database.Raw.connection] at saved⟩ (Held customers)
+    ⟨ResolveState.tableAtPrefix_zero (Database.tableNamed_some named).2, fun h => by omega⟩
+  · intro n bound i c schema valid held output next others step found member ok
+    refine ⟨tracks_step bound schema held.1 step member ok, ?_⟩
+    intro third
+    have two : n = 2 := by omega
+    subst n
+    obtain ⟨_, rfl, _, aligned, nextEq⟩ := runScriptStep_createTable
+      (found := by with_unfolding_all exact resolutionAt 2 schema) step
+    have length : c.state.database.catalog.length = 2 := by
+      rw [show c.state.database.catalog = (schemaAt 2).catalog from congrArg ResolveState.catalog schema]
+      with_unfolding_all rfl
+    rw [single_next member, nextEq]
+    simp [List.getD_eq_getElem?_getD, aligned, length]
+  · intro n bound remaining i c schema valid held
+    have onlyCopy : sample.raw.connection.resolveState.uncheckedSteps rebuildPath.1 = [3] := by decide +kernel
+    rw [onlyCopy, List.mem_singleton] at remaining
+    subst n
+    obtain ⟨output, next, step, ok⟩ := copy_continues (clock := env.clock) (index := i)
+      schema held valid (fits 0 customers named)
+    exact ⟨output, next, [], step, by simpa [RunStep.executions] using ok⟩
 
 #print axioms makeStrict_succeeds
 

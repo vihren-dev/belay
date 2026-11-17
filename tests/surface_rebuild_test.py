@@ -35,7 +35,7 @@ CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, and of the Lake build of the example project, in seconds."""
 
 PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy",
-                 "RebuildSucceedsSteps", "RebuildSucceedsFinish", "RebuildKeeps", "RebuildSucceeds")
+                 "RebuildKeeps", "RebuildSucceeds")
 """The modules of the example's folder `Proof`, which Lake compiles in a build of the example."""
 
 
@@ -131,14 +131,11 @@ def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_
 
 
 def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root: Path, tmp_path: Path) -> None:
-    """The right rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit
-    the STRICT types of the new table, for every complete environment and on every branch of the INSERT from a query
-    (claim 2 of the guide). The fixtures show that each of the eight steps continues without an error in every
-    execution and keeps the facts of the rebuild (RebuildSucceedsSteps, RebuildSucceedsFinish); the copy needs the
-    old customers to fit the types that the model reads from the CREATE TABLE and uses the success law of INSERT
-    from a query (RebuildCopyFacts, RebuildSucceedsCopy). The
-    final proof (RebuildSucceeds) uses only logical axioms."""
+    """The schema success check discharges every rebuild statement except the copy.
+    SchemaSuccessChecks covers whole scripts and the transaction and foreign-key boundaries.
+    RebuildSucceeds supplies the STRICT row premise for the copy and proves success on every branch.
+    The final proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
         ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
-        ("RebuildSucceedsSteps", 0), ("RebuildSucceedsFinish", 0),
+        ("SchemaSuccessChecks", 0),
         ("RebuildKeeps", 1), ("RebuildSucceeds", 1)), timeout=CHAIN_TIMEOUT_SECONDS)

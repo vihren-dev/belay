@@ -17,4 +17,4 @@ roots = ["TableRebuild", "FixedSucceeds"]
 name = "RebuildProof"
 srcDir = "Proof"
 roots = ["RebuildGuide", "RebuildKeepsInvariant", "RebuildKeeps",
-  "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildSucceedsSteps", "RebuildSucceedsFinish", "RebuildSucceeds"]
+  "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildSucceeds"]

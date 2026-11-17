@@ -29,7 +29,7 @@ def Held (customers : Table) (count : Nat) (connection : Connection) : Prop :=
 
 /-- For every table of the customers whose rows all fit the STRICT types of the new customers
 ({name}`LiteralData.typesFit` on {name}`strictShape`), and every connection that has the facts of the rebuild before
-the copy ({name}`Kept`, {name}`Held`) and a valid state: the step of the copy continues with an output that is no
+the copy (the resolved schema and {name}`Held`) and a valid state: the step of the copy continues with an output that is no
 error and no other execution. In plain words, copying the customers into the new, STRICT customers table never fails
 when every old customer fits its types, in the run of the model; the other branches of the step are covered by
 {name}`runScriptStep_insertSelect_frame`. The clock and the index are arbitrary. Proof sketch: the facts of the
@@ -38,23 +38,23 @@ the customers in rowid order ({name}`Table.accessOrders_alias`); these rows are 
 ({name}`insertSelectRows_copy`) and fit the new table ({name}`InsertFits.copy`), where a valid database gives the
 NOT NULL of {lit}`email` and the premise gives the STRICT types. Then {name}`runScriptStep_insertSelect_success`
 applies. -/
-theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {sessions customers : Table}
-    (kept : Kept sessions 3 c) (held : Held customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
+theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {customers : Table}
+    (schema : c.resolveState = schemaAt 3) (held : Held customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
     (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
       .continued output next [] ∧ output.isError = false := by
   obtain ⟨after, resolved⟩ := copy_resolves
   have found : resolveStatement runContext c.resolveState makeStrict.statements[3].1 =
       .ok (.insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none, after) := by
-    rw [kept.1]; exact resolved
+    rw [schema]; exact resolved
   have present := held.1 0 (by decide +kernel)
   have shape := Database.tableAt_of_table present
-  have catalog : c.state.database.catalog = (schemaAt 3).catalog := congrArg ResolveState.catalog kept.1
+  have catalog : c.state.database.catalog = (schemaAt 3).catalog := congrArg ResolveState.catalog schema
   have lookup : c.state.database.catalog.findTable customersName = some (0, customers.shape) := by
     rw [catalog] at shape ⊢
     with_unfolding_all exact congrArg (Option.map (0, ·)) shape
   have facts : catalogFacts c.state.database.catalog = true := by
-    rw [show c.state.database.catalog = (schemaAt 3).catalog from congrArg ResolveState.catalog kept.1]; exact catalogFacts_reached
+    rw [show c.state.database.catalog = (schemaAt 3).catalog from congrArg ResolveState.catalog schema]; exact catalogFacts_reached
   obtain ⟨oldOk, accessKeys, atTwo, uniqueKeys⟩ := catalogFacts_unpack facts lookup
   have newOk := strictShape_facts
   have presentNew : c.state.database.table 2 = some ⟨strictShape, []⟩ := by
