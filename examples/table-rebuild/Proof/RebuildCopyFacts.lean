@@ -8,7 +8,7 @@ set_option maxHeartbeats 4000000
 {lit}`makeStrict` copies the three columns of the customers into the new customers table. This module names the
 resolved statement and the facts about the catalog that the success of the copy needs: the shapes of the old and
 the new table, and the keys that the new table checks. The facts are checked by evaluation on the catalog that the
-model reaches after the first three statements, and they hold for the catalog of every connection that has the
+resolver computes after the first three statements, and they hold for the catalog of every connection that has the
 same resolution state. -/
 
 open Belay.Sqlite
@@ -29,7 +29,7 @@ def copyStatement : Resolved.Statement :=
 
 /-- The fourth statement of the rebuild resolves to {name}`copyStatement` on the resolution state that the model
 reaches before it. Proof sketch: evaluation. -/
-theorem copy_resolves : ∃ after, resolveStatement runContext (reachedAfter 3).resolveState makeStrict.statements[3].1 =
+theorem copy_resolves : ∃ after, resolveStatement runContext (schemaAt 3) makeStrict.statements[3].1 =
     .ok (copyStatement, after) := ⟨_, by with_unfolding_all rfl⟩
 
 /-- The key of the primary key of {lit}`id`, which is the rowid alias of both tables. -/
@@ -42,10 +42,10 @@ def oldFacts (shape : CatalogTable) : Bool :=
     shape.columns.map CatalogColumn.affinity == [.integer, .text, .text]
 
 /-- The definition of the new customers, as the model builds it for the CREATE TABLE of the rebuild: the table at
-position 2 of the catalog that the model reaches after the first three statements. The premise of the success claim
+position 2 of the catalog that the resolver computes after the first three statements. The premise of the success claim
 asks that every old customer fits its STRICT types ({name}`LiteralData.typesFit`). The table without columns is not
 reached; it only completes the lookup. -/
-def strictShape : CatalogTable := ((reachedAfter 3).resolveState.catalog.tableAt 2).getD { columns := [] }
+def strictShape : CatalogTable := ((schemaAt 3).catalog.tableAt 2).getD { columns := [] }
 
 /-- Whether a table definition is that of the new customers: {lit}`id` is the rowid alias with an integer type, no
 column is generated, the table has no CHECK, the STRICT types are {lit}`INTEGER`, {lit}`TEXT` and {lit}`TEXT`, and
@@ -69,9 +69,9 @@ def catalogFacts (catalog : Catalog) : Bool :=
     | none => false) &&
   catalog.tableAt 2 == some strictShape && catalog.uniqueKeys 2 strictShape == [aliasKey]
 
-/-- The catalog that the model reaches after the first three statements has the facts. Proof sketch: kernel
+/-- The catalog that the resolver computes after the first three statements has the facts. Proof sketch: kernel
 evaluation. -/
-theorem catalogFacts_reached : catalogFacts (reachedAfter 3).resolveState.catalog = true := by decide +kernel
+theorem catalogFacts_reached : catalogFacts (schemaAt 3).catalog = true := by decide +kernel
 
 /-- For every catalog that has the facts and finds the customers at position 0 with the definition {lit}`oldShape`:
 the definition is that of the old customers, the primary key is its only access key, and the new customers are at

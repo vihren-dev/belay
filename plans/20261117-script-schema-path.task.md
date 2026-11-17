@@ -6,8 +6,7 @@ Status: open.
 Given the initial catalog, saved catalog and settings, resolution determines
 the resolved statements and the resolution state at each script position.
 For every execution of a continuing step with a non-error output, its next
-connection has the resolution state that the resolver returned. This also
-holds for the other executions of INSERT from SELECT. A caller that follows
+connection has the resolution state that the resolver returned. A caller that follows
 the path on a branch of sendStatements can use its intermediate resolution
 equations and conclude that a complete branch with only successful outputs
 ends with the final resolution state. A failing statement gives no guarantee

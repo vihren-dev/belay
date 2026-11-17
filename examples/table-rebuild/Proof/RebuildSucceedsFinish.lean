@@ -16,8 +16,8 @@ namespace RebuildGuide
 /-- Whether the rename of the rebuild resolves, on the resolution state after the first five statements, to a new
 catalog that has the outline of the old one ({name}`Catalog.sameOutline`). -/
 def renameKeepsOutline : Bool :=
-  match resolveStatement runContext (reachedAfter 5).resolveState makeStrict.statements[5].1 with
-  | .ok (.rewrite renamed, _) => (reachedAfter 5).resolveState.catalog.sameOutline renamed
+  match resolveStatement runContext (schemaAt 5) makeStrict.statements[5].1 with
+  | .ok (.rewrite renamed, _) => (schemaAt 5).catalog.sameOutline renamed
   | .ok (.query .., _) | .ok (.createView .., _) | .ok (.createTable .., _) | .ok (.createIndex .., _)
   | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.dropColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
   | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _) | .ok (.upsert .., _)
@@ -26,8 +26,8 @@ def renameKeepsOutline : Bool :=
 /-- The rename resolves to a new catalog that has the outline of the old one. Proof sketch: kernel evaluation of
 {name}`renameKeepsOutline`. -/
 theorem rename_resolves : ∃ renamed after,
-    resolveStatement runContext (reachedAfter 5).resolveState makeStrict.statements[5].1 = .ok (.rewrite renamed, after) ∧
-      (reachedAfter 5).resolveState.catalog.sameOutline renamed = true := by
+    resolveStatement runContext (schemaAt 5) makeStrict.statements[5].1 = .ok (.rewrite renamed, after) ∧
+      (schemaAt 5).catalog.sameOutline renamed = true := by
   have ok : renameKeepsOutline = true := by decide +kernel
   unfold renameKeepsOutline at ok
   split at ok
@@ -46,7 +46,7 @@ theorem good_5 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨renamed, after, resolved, outline⟩ := rename_resolves
   obtain ⟨output, next, step, noError⟩ := runScriptStep_rewrite_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[5].1) (parameters := makeStrict.statements[5].2)
-    (found := by rw [good.1.1]; exact resolved) (by rw [(resolveState_parts good.1.1).1]; exact outline)
+    (found := by rw [good.1.1]; exact resolved) (by rw [show c.state.database.catalog = (schemaAt 5).catalog from congrArg ResolveState.catalog good.1.1]; exact outline)
   exact ⟨output, next, step, good_step noError (advance_5 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
 /-- Statement 6, {lit}`COMMIT`: the step continues without an error in every execution, and the facts hold after it.
@@ -58,10 +58,10 @@ theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 7 found.next := by
   have active : ∃ original, c.state.snapshot = some original := by
-    have open_ : ∃ catalog, (reachedAfter 6).resolveState.saved = some catalog := by
+    have open_ : ∃ catalog, (schemaAt 6).saved = some catalog := by
       with_unfolding_all exact ⟨_, rfl⟩
     obtain ⟨catalog, saved⟩ := open_
-    have h2 := (resolveState_parts good.1.1).2.1
+    have h2 : c.state.snapshot.map (·.catalog) = (schemaAt 6).saved := congrArg ResolveState.saved good.1.1
     rw [saved] at h2
     cases snapshot : c.state.snapshot with
     | none => simp [snapshot] at h2
@@ -69,7 +69,7 @@ theorem good_6 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
   obtain ⟨original, active⟩ := active
   obtain ⟨output, next, step, noError⟩ := runScriptStep_commit_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[6].1) (parameters := makeStrict.statements[6].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl) active
+    (found := by with_unfolding_all exact resolutionAt 6 good.1.1) active
   exact ⟨output, next, step, good_step noError (advance_6 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
 /-- Statement 7, {lit}`PRAGMA foreign_keys = ON`: the step continues without an error in every execution, and the
@@ -81,7 +81,7 @@ theorem good_7 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
         found.output.isError = false ∧ Good sessions customers 8 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock)
     (index := index) (statement := makeStrict.statements[7].1) (parameters := makeStrict.statements[7].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl)
+    (found := by with_unfolding_all exact resolutionAt 7 good.1.1)
   exact ⟨output, next, step, good_step noError (advance_7 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
 /-- For every clock, tables of the sessions and the customers, and customers whose rows all fit the STRICT types of

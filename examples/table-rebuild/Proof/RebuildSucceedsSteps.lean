@@ -50,8 +50,8 @@ theorem good_0 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
         found.output.isError = false ∧ Good sessions customers 1 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_setting_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[0].1) (parameters := makeStrict.statements[0].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl)
-  have frame := runScriptStep_setting_frame (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
+    (found := by with_unfolding_all exact resolutionAt 0 good.1.1)
+  have frame := runScriptStep_setting_frame (found := by with_unfolding_all exact resolutionAt 0 good.1.1) step
   refine ⟨output, next, step, good_step noError (advance_0 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
   rw [frame]; exact good.2.1 (by omega)
 
@@ -64,14 +64,14 @@ theorem good_1 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 2 found.next := by
   have idle : c.state.snapshot = none := by
-    have closed : (reachedAfter 1).resolveState.saved = none := by with_unfolding_all rfl
-    have h2 := (resolveState_parts good.1.1).2.1
+    have closed : (schemaAt 1).saved = none := by with_unfolding_all rfl
+    have h2 : c.state.snapshot.map (·.catalog) = (schemaAt 1).saved := congrArg ResolveState.saved good.1.1
     rw [closed] at h2
     simpa using h2
   obtain ⟨output, next, step, noError⟩ := runScriptStep_begin_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[1].1) (parameters := makeStrict.statements[1].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl) idle
-  have frame := runScriptStep_begin_frame (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
+    (found := by with_unfolding_all exact resolutionAt 1 good.1.1) idle
+  have frame := runScriptStep_begin_frame (found := by with_unfolding_all exact resolutionAt 1 good.1.1) step
   refine ⟨output, next, step, good_step noError (advance_1 good.1 step) ⟨fun _ => ?_, fun h => by omega⟩⟩
   rw [frame]; exact good.2.1 (by omega)
 
@@ -86,15 +86,15 @@ theorem good_2 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
       .continued output next [] ∧ ∀ found ∈ (RunStep.continued output next []).executions,
         found.output.isError = false ∧ Good sessions customers 3 found.next := by
   have length : c.state.database.catalog.length = 2 := by
-    rw [(resolveState_parts good.1.1).1]; with_unfolding_all rfl
+    rw [show c.state.database.catalog = (schemaAt 2).catalog from congrArg ResolveState.catalog good.1.1]; with_unfolding_all rfl
   obtain ⟨output, next, step, noError⟩ := runScriptStep_createTable_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[2].1) (parameters := makeStrict.statements[2].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl) (by rw [length]; with_unfolding_all rfl)
+    (found := by with_unfolding_all exact resolutionAt 2 good.1.1) (by rw [length]; with_unfolding_all rfl)
     (by rw [length]; exact length ▸ valid.1.admitted.rowsShaped.1)
   obtain ⟨-, -, -, aligned, nextEq⟩ := runScriptStep_createTable
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
+    (found := by with_unfolding_all exact resolutionAt 2 good.1.1) step
   refine ⟨output, next, step, good_step noError (advance_2 good.1 step) ⟨fun _ => ?_, fun _ => ?_⟩⟩
-  · exact runScriptStep_createTable_frame (found := by rw [good.1.1]; with_unfolding_all exact rfl) step
+  · exact runScriptStep_createTable_frame (found := by with_unfolding_all exact resolutionAt 2 good.1.1) step
       (good.2.1 (by omega))
   · rw [nextEq]
     simp [List.getD_eq_getElem?_getD, aligned, length]
@@ -122,7 +122,7 @@ theorem good_4 {clock : Option Clock} {index : Nat} {c : Connection} {sessions c
         found.output.isError = false ∧ Good sessions customers 5 found.next := by
   obtain ⟨output, next, step, noError⟩ := runScriptStep_drop_ok (context := runContext) (clock := clock) (index := index)
     (statement := makeStrict.statements[4].1) (parameters := makeStrict.statements[4].2)
-    (found := by rw [good.1.1]; with_unfolding_all exact rfl)
+    (found := by with_unfolding_all exact resolutionAt 4 good.1.1)
   exact ⟨output, next, step, good_step noError (advance_4 good.1 step) ⟨fun h => by omega, fun h => by omega⟩⟩
 
 end RebuildGuide

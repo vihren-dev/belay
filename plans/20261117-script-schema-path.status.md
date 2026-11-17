@@ -2,7 +2,12 @@
 
 Created 2026-11-17. Open. [Task](20261117-script-schema-path.task.md).
 
-The sources and acceptance checks are listed in the task. RebuildKeepsInvariant,
-RebuildKeepsFinish, RebuildSucceedsSteps and RebuildSucceedsFinish each prove
-facts about intermediate resolution states. The public laws and migration of
-the example are pending.
+SchemaPathStep.lean proves resolution-state agreement for each successful
+execution. SchemaPath.lean gives the resolved statement at every prefix.
+SendSchemaPath.lean applies these laws to every successful branch. Both
+README proofs use resolutionAt for intermediate states and retain the
+same public claims. tests/surface_rebuild_test.py checks each proof.
+The repository checks are pending.
+
+The ten Lean proof files in examples/table-rebuild/Proof contain 1,002
+lines, down from 1,038 before the change.

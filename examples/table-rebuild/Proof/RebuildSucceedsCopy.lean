@@ -49,7 +49,7 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {se
     rw [kept.1]; exact resolved
   obtain ⟨lookup, present⟩ := Database.tableNamed_some (held.1 (by omega))
   have facts : catalogFacts c.state.database.catalog = true := by
-    rw [(resolveState_parts kept.1).1]; exact catalogFacts_reached
+    rw [show c.state.database.catalog = (schemaAt 3).catalog from congrArg ResolveState.catalog kept.1]; exact catalogFacts_reached
   obtain ⟨oldOk, accessKeys, atTwo, uniqueKeys⟩ := catalogFacts_unpack facts lookup
   have newOk := strictShape_facts
   have presentNew : c.state.database.table 2 = some ⟨strictShape, []⟩ := by
