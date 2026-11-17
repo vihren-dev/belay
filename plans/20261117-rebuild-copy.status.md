@@ -29,3 +29,12 @@ modules. Its core import closure is checked by tests/test_model_package.py.
 The pinned replay test now includes a copy that fires an audit trigger and a
 copy that fails on an enforced foreign key. These cases exercise the write
 rules that the general copy law must account for.
+
+The rule-free run law now covers every scan of an admitted source with a
+shared rowid alias. The model writes the table scan, and each alternative
+writes a permutation that preserves the rowids. The README uses the law
+for its INSERT. A row-level lemma also describes the values and newly
+allocated rowids when an empty target has no alias or generated columns.
+The six README proof files now total 362 lines. RebuildCopyChecks exercises
+the default and partial-index writes; the native replay checks the distinct
+source and target rowids of an implicit-rowid copy.

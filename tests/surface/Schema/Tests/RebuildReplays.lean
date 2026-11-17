@@ -9,7 +9,7 @@ set_option exponentiation.threshold 2048
 after them, with the outputs that the model gives, for a check against pinned SQLite (ADR 0017, S6, part 2). The four
 runs are the rebuild in the right order, the wrong rebuild on a connection with foreign keys on, the right rebuild on
 a database with a customer whose email is a blob, and the right rebuild on a database with a session of a customer
-that does not exist. Two further replays exercise target write rules during the copy. -/
+that does not exist. The copy cases exercise target write rules and implicit rowid allocation. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -82,6 +82,16 @@ def copyWithForeignKey : Script := sql r"
   INSERT INTO dst SELECT id FROM src;
   SELECT count(*) FROM dst;"
 
+/-- Deleting the first source row leaves implicit rowids 2 and 3. The empty
+target assigns 1 and 2 when it copies the remaining cell values. -/
+def copyImplicit : Script := sql r"
+  CREATE TABLE old(value INTEGER);
+  INSERT INTO old VALUES(10),(20),(30);
+  DELETE FROM old WHERE value = 10;
+  CREATE TABLE fresh(value INTEGER);
+  INSERT INTO fresh SELECT value FROM old;
+  SELECT value FROM fresh ORDER BY value;"
+
 open Lean Elab Meta in
 /-- Keep exact model value tags so the test can compare native observations. -/
 def outputJson : Output → Json
@@ -106,6 +116,7 @@ elab "report_rebuild_replays" : command => Command.liftTermElabM do
   emitReplay "dangling" (← Replay.scriptReport (mkConst ``dangling) (mkConst ``rightThenRead))
   emitReplay "copy-audit" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyWithAudit))
   emitReplay "copy-foreign-key" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyWithForeignKey))
+  emitReplay "copy-implicit" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyImplicit))
 
 report_rebuild_replays
 

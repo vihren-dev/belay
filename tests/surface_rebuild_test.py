@@ -24,14 +24,16 @@ EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "dangling": [["sessions", 11, "customers", 0], [10, 1, 100], [11, 99, 200]],
     "copy-audit": [[7]],
     "copy-foreign-key": [[0]],
+    "copy-implicit": [[20], [30]],
 }
 """The rows from the rebuild or copy replay that Belay and pinned SQLite must both return."""
 
-EXPECTED_ERRORS: dict[str, list[str]] = {
-    "right": [], "wrong-enforced": [], "with-blob": ["cannot store BLOB value in TEXT column"], "dangling": [],
-    "copy-audit": [], "copy-foreign-key": ["FOREIGN KEY constraint failed"],
+EXPECTED_ERRORS: dict[str, list[tuple[int, str]]] = {
+    "right": [], "wrong-enforced": [], "with-blob": [(19, "cannot store BLOB value in TEXT column")], "dangling": [],
+    "copy-audit": [], "copy-foreign-key": [(19, "FOREIGN KEY constraint failed")],
+    "copy-implicit": [],
 }
-"""The refusal that pinned SQLite gives for each error output of the model, in order."""
+"""The shared constraint code and pinned SQLite message for each model error, in output order."""
 
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, and of the Lake build of the example project, in seconds."""
@@ -59,7 +61,8 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
     them, and a customer whose email is a blob makes the copy into the STRICT table fail (the rebuilt table stays
     empty, and the pragma foreign_key_check then reports the session, but the commit does not stop). The last replay has a session of a
     customer that does not exist: the pragma reports it and the rebuild still commits. Two further replays
-    check that a copy fires its audit trigger and that a missing parent rejects the copy with error 19."""
+    check that a copy fires its audit trigger and that a missing parent rejects the copy with error 19.
+    The implicit-rowid replay checks the stored values and inspects the rowids that SQLite assigned."""
     stdout = check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildReplays", 0)),
                                 timeout=CHAIN_TIMEOUT_SECONDS)
     sqlite = shutil.which("sqlite3")
@@ -77,10 +80,12 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
         refusals = re.findall(r"error near line \d+: (.*)", result.stderr)
         modeled_errors = [output for output in outputs if "error" in output]
         assert len(refusals) == len(modeled_errors) == len(EXPECTED_ERRORS[name]), (name, result.stderr)
-        if name == "copy-foreign-key":
-            assert modeled_errors == [{"error": 19}] and refusals[0].endswith("(19)"), (outputs, result.stderr)
-        for line, expected in zip(refusals, EXPECTED_ERRORS[name], strict=True):
-            assert expected in line, (name, line, expected)
+        for error, line, (code, message) in zip(modeled_errors, refusals, EXPECTED_ERRORS[name], strict=True):
+            assert error == {"error": code} and line.endswith(f"({code})") and message in line, (name, error, line)
+    rowids = run_command([sqlite, "-json", str(tmp_path / "copy-implicit.db"),
+                          "SELECT rowid FROM old ORDER BY rowid; SELECT rowid FROM fresh ORDER BY rowid"],
+                         cwd=tmp_path, timeout=10)
+    assert rowids.returncode == 0 and native_rows(rowids.stdout) == [[2], [3], [1], [2]], rowids.diagnostic()
 
 
 def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path) -> None:

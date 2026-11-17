@@ -67,4 +67,45 @@ theorem InsertFits.copy_compatible (ctx : Resolved.EvalContext) {source target :
     have prior := required _ (List.mem_iff_getElem?.mpr ⟨i, pair⟩)
     exact sourceNotNull row (order.mem_iff.mp m) i _ value atOld atValue (by simpa [needed] using prior)
 
+/-- Appending the next rowid increases the next allocation by one. -/
+private theorem nextRowid_append_next (rows : List Row) (values : List Value) :
+    LiteralData.nextRowid (rows ++ [⟨LiteralData.nextRowid rows, values⟩]) = LiteralData.nextRowid rows + 1 := by
+  cases rows with
+  | nil => rfl
+  | cons head tail =>
+    simp [LiteralData.nextRowid, List.foldl_append]
+    apply Int.max_eq_right
+    omega
+
+/-- Without an alias or generated columns, insertion appends each input row with consecutive rowids
+starting at the specified natural number when it is the next rowid of the table.
+Proof sketch: each insertion leaves the cells intact and increases the next rowid by one. -/
+private theorem LiteralData.inserted_implicit_from (table : Table) (values : List (List Value)) (first : Nat)
+    (alias : table.shape.rowidAlias = none) (plain : ∀ column ∈ table.shape.columns, column.generated = none)
+    (start : nextRowid table.rows = first) :
+    (inserted table values).rows = table.rows ++ (values.zipIdx first).map (fun (cells, id) => ⟨id, cells⟩) := by
+  induction values generalizing table first with
+  | nil => simp [inserted]
+  | cons cells rest ih =>
+    have add : insertRow table cells = { table with rows := table.rows ++ [⟨first, cells⟩] } := by
+      simp [insertRow, newRowid, newCells, alias, generatedCells_plain _ _ plain, start]
+    change (inserted (insertRow table cells) rest).rows = _
+    rw [add]
+    have next : nextRowid (table.rows ++ [⟨first, cells⟩]) = ((first + 1 : Nat) : Int) := by
+      rw [← start, nextRowid_append_next, start]
+      simp
+    rw [ih { table with rows := table.rows ++ [⟨first, cells⟩] } (first + 1) alias plain next]
+    simp [List.zipIdx_cons, List.append_assoc]
+
+/-- For every empty table without a rowid alias or generated columns and every list of cell
+lists, {name}`LiteralData.inserted` gives exactly those cells in input order, with rowids
+1, 2, and so on. This describes the row operation even when a statement constraint would
+reject the input. Proof sketch: the next rowid of an empty table is 1, and each insertion
+advances it by one. -/
+theorem LiteralData.inserted_copy_implicit (target : Table) (values : List (List Value))
+    (empty : target.rows = []) (alias : target.shape.rowidAlias = none)
+    (plain : ∀ column ∈ target.shape.columns, column.generated = none) :
+    (inserted target values).rows = (values.zipIdx 1).map (fun (cells, id) => ⟨id, cells⟩) := by
+  simpa [empty] using inserted_implicit_from target values 1 alias plain (by rw [empty]; rfl)
+
 end Belay.Sqlite.Model
