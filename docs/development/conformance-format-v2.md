@@ -79,7 +79,7 @@ Records of formats 1 and 2 have the limits of their compile options.
 Acquisition `nativeVersion: 5` is version 4 with a profile of format 3 and a `phase`
 in each trace event: `prepare` when `sqlite3_prepare_v2` failed, `step` when
 `sqlite3_step` failed, and `null` otherwise. `conformance/record_versions.py` lists
-what each version carries. The frozen corpora hold records of versions 4 to 7.
+what each version carries. The frozen corpora hold records of versions 1, 4, 5, 6 and 7.
 Acquisition `nativeVersion: 6` is version 5 from a recorder that runs on after an
 SQL error, so each statement of the migration has one event, also after a failed one.
 The case of such a record has `continues: true`, and `classifyCase` compares it with the
