@@ -164,9 +164,9 @@ which Lake prints again in each run
 | A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
 | `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
-Two rules make the answers useful. Write the claim out in `#sql_check`; the
-name of a definition that holds the claim gives `unknown`
-([#358](https://github.com/vihren-dev/belay/issues/358)). State the schema in
+You can give `#sql_check` a claim by name. For example, if `selectClaim`
+defines a query claim, `#sql_check selectClaim` checks it and gives proof
+steps you can use with that name. State the schema in
 the claim with `on shop`. The form without it,
 `addEmailLower preserves namedCustomers`, covers every database, and
 `with (schema := shop)` after it only tells the search where to look. That
