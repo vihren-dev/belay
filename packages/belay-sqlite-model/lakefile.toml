@@ -18,6 +18,7 @@ globs = ["Belay.Sqlite.Model", "Belay.Sqlite.Model.Programs.StatementRunLaws.Add
   "Belay.Sqlite.Model.Schema.Writes.CopyCompatibility",
   "Belay.Sqlite.Model.Schema.Writes.CopyProductions",
   "Belay.Sqlite.Model.Schema.Writes.CopyRun",
+  "Belay.Sqlite.Model.Programs.Scripts.CopyStep",
 ]
 
 [[lean_lib]]

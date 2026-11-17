@@ -38,3 +38,15 @@ allocated rowids when an empty target has no alias or generated columns.
 The six README proof files now total 362 lines. RebuildCopyChecks exercises
 the default and partial-index writes; the native replay checks the distinct
 source and target rowids of an implicit-rowid copy.
+
+runScriptStep_copyOf lifts compatible alias copies without write rules to the
+script API. It proves success and the database contents for the main execution
+and every alternative. The README applies this law without checking a clock,
+a counter, or a unique scan order. Its proof files now total 354 lines.
+
+The implicit-rowid guarantee also depends on SQLite's transfer optimization.
+In SQLite 3.51.0, start with s(v INTEGER), an index on v, values 10, 20, 30,
+and delete 10. Create the empty t(v INTEGER) with a matching index and run
+INSERT INTO t SELECT * FROM s. Native SQLite keeps the source rowids 2 and 3.
+Belay reports the transfer as unmodeled. The owner decision is whether to
+state the existing transfer support condition or to expand the model.

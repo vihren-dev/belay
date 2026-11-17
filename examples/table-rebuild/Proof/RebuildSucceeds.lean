@@ -53,9 +53,9 @@ theorem makeStrict_succeeds :
     have onlyCopy : sample.raw.connection.resolveState.uncheckedSteps rebuildPath.1 = [3] := by decide +kernel
     rw [onlyCopy, List.mem_singleton] at remaining
     subst n
-    obtain ⟨output, next, step, ok, _⟩ := copy_continues (clock := env.clock) (index := i)
+    obtain ⟨output, next, others, step, _, ok⟩ := copy_continues (clock := env.clock) (index := i)
       schema held valid (fits 0 customers named)
-    exact ⟨output, next, [], step, by simpa [RunStep.executions] using ok⟩
+    exact ⟨output, next, others, step, ok⟩
 
 #print axioms makeStrict_succeeds
 

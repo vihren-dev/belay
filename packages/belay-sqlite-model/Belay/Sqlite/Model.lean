@@ -77,7 +77,7 @@ import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.SchemaFailureLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
-import Belay.Sqlite.Model.Schema.Writes.CopyRun
+import Belay.Sqlite.Model.Programs.Scripts.CopyStep
 import Belay.Sqlite.Model.Schema.Writes.CopyInsertFits
 import Belay.Sqlite.Model.Programs.StatementRunLaws.ForeignKeyCheckContinues
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyCheckContinues

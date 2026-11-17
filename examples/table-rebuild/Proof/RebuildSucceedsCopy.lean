@@ -1,5 +1,5 @@
 import RebuildCopyFacts
-import Belay.Sqlite.Model.Schema.Writes.CopyRun
+import Belay.Sqlite.Model.Programs.Scripts.CopyStep
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -22,20 +22,17 @@ def Held (customers : Table) (count : Nat) (connection : Connection) : Prop :=
   Tracks customers 0 count connection ∧
     (count = 3 → connection.state.database.rows.getD 2 [] = [])
 
-/-- For every table of the customers whose rows all fit the STRICT types of the new customers
-({name}`LiteralData.typesFit` on {name}`strictShape`), and every connection that has the facts of the rebuild before
-the copy (the resolved schema and {name}`Held`) and a valid state: the step of the copy continues with an output that is no
-error and no other execution. In plain words, copying the customers into the new, STRICT customers table never fails
-when every old customer fits its types. The next database differs only at the target, where the copied
-rows have the original rowids in scan order. The clock and the index are arbitrary. Proof sketch: the prefix gives the two shapes. The catalog admits only the scan order.
-{name}`runStatement_copyOf` gives the exact database and excludes alternatives.
-{name}`runScriptStep_insertSelect_ok` lifts this run to the script step. -/
+/-- For a valid connection at the fourth statement, with the resolution state and tracked
+tables of the rebuild, suppose every customer fits the new STRICT types. The copy continues.
+Its main database changes only the target, which holds the old customers in scan order.
+Every execution has a successful output. Proof sketch: the prefix gives the source and empty
+target; their catalog definitions pass the checks of {name}`runScriptStep_copyOf`. -/
 theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {customers : Table}
     (schema : c.resolveState = schemaAt 3) (held : Held customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
     (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
-    ∃ output next, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
-      .continued output next [] ∧ output.isError = false ∧
-      next.state.database = c.state.database.setRows 2 customers.scanRows := by
+    ∃ output next others, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
+      .continued output next others ∧ next.state.database = c.state.database.setRows 2 customers.scanRows ∧
+      ∀ ex ∈ (RunStep.continued output next others).executions, ex.output.isError = false := by
   obtain ⟨after, resolved⟩ := copy_resolves
   have found : resolveStatement runContext c.resolveState makeStrict.statements[3].1 =
       .ok (.insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none, after) := by
@@ -52,26 +49,21 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
     unfold Database.table
     rw [atTwo]
     simp only [Option.map_some, emptyRows]
-  have admitted := valid.1.admitted.table present
   have oldAlias : customers.shape.rowidAlias = some 0 := by rw [oldShape]; decide +kernel
   have oldWidth : customers.shape.columns.length = 3 := by rw [oldShape]; decide +kernel
-  have single : Table.accessOrders c.state.database.catalog 0 customers = [customers.scanRows] :=
-    Table.accessOrders_alias _ 0 customers 0 (by rw [oldShape]; decide +kernel) (fun row m => admitted.rowsAliased row m 0 oldAlias)
-      (fun access m => by
-        rw [catalog, oldShape] at m
-        have keys : (schemaAt 3).catalog.accessKeys 0 sourceShape = [([{ term := .column 0 }], none)] := by decide +kernel
-        simpa [keys] using m)
   have compatible : customers.shape.copyCompatible strictShape (c.state.database.catalog.uniqueKeys 2 strictShape) =
       true := by rw [oldShape, catalog]; decide +kernel
   have newWidth : strictShape.columns.length = 3 := by decide +kernel
-  have run := runStatement_copyOf 0 (c.state.counters.view copyStatement.counterReads) makeStrict.statements[3].2
-    c.state.database 0 2 customers ⟨strictShape, []⟩ ["id", "name", "email"] present presentNew compatible oldAlias rfl
-    admitted (valid.1.notNull 0 customers present) fits
-  dsimp only at run
-  rw [oldWidth, newWidth] at run
-  obtain ⟨ready, effect, unique, _⟩ := run
-  obtain ⟨output, next, step, ok, nextEq⟩ := runScriptStep_insertSelect_ok (value := 0) found rfl rfl
-    (by change (_ && _) = true; rw [Bool.and_eq_true]; exact ⟨ready, rfl⟩) effect (unique single)
-  exact ⟨output, next, step, ok, by rw [nextEq]⟩
+  have copy := runScriptStep_copyOf (context := runContext) (clock := clock) (index := index)
+    (statement := makeStrict.statements[3].1) (parameters := makeStrict.statements[3].2) (after := after)
+    ["id", "name", "email"] present presentNew compatible oldAlias rfl valid fits
+  dsimp only at copy
+  rw [oldWidth, newWidth] at copy
+  obtain ⟨output, next, others, step, ok, database, _, alternatives⟩ := copy found
+  refine ⟨output, next, others, step, database, ?_⟩
+  intro ex member
+  rcases List.mem_cons.mp member with rfl | alternative
+  · exact ok
+  · exact (alternatives _ alternative).1
 
 end RebuildGuide
