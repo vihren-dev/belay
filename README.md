@@ -251,6 +251,8 @@ of the agent's work. To start, tell your agent to set up Belay with the
 
 ## Documentation
 
+- The [cheat sheet](docs/cheat-sheet.md): the claims `succeeds` and
+  `preserves`, their scope, and how to read a claim.
 - [Use Belay with a coding agent](docs/guide/agents.md), with
   the [skill for the agent](skills/belay/SKILL.md).
 - The [surface library](packages/belay/README.md): programs and runs, SQL in
