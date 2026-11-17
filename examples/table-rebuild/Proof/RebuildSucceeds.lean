@@ -26,20 +26,6 @@ def StrictRows (db : Database) : Prop :=
   ∀ (position : Nat) (customers : Table), db.raw.tableNamed customersName = some (position, customers) →
     ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true
 
-/-- For every database of the guide's schema: the name of the customers finds a table at position 0. Proof sketch: the
-sample finds the name at position 0, and the lookup depends on the catalog only. -/
-theorem customers_found {db : Database} (pre : db.raw.catalog = sample.raw.catalog) :
-    ∃ customers, db.raw.tableNamed customersName = some (0, customers) := by
-  have atZero : (sample.raw.catalog.findTable customersName).map (·.1) = some 0 := by decide +kernel
-  cases lookup : db.raw.catalog.findTable customersName with
-  | none => rw [← pre, lookup] at atZero; simp at atZero
-  | some found =>
-    obtain ⟨place, shape⟩ := found
-    rw [← pre, lookup] at atZero
-    simp only [Option.map_some, Option.some.injEq] at atZero
-    subst atZero
-    exact ⟨_, by rw [Database.tableNamed_of_findTable lookup, Database.table_of_findTable _ _ _ _ lookup]; rfl⟩
-
 /-- The rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit the STRICT
 types of the new table, in every complete environment, on the actual run and on every branch. The rows are otherwise
 unrestricted. Where the database has a customer with a cell that does not fit the STRICT type of its column, for
@@ -49,8 +35,10 @@ hold at the start, and {name}`good_advance` shows that each step continues witho
 theorem makeStrict_succeeds :
     Succeeds makeStrict (fun db => db.raw.catalog = sample.raw.catalog ∧ StrictRows db) := by
   intro db ⟨pre, fits⟩ env complete
-  obtain ⟨sessions, namedSessions⟩ := sessions_found pre
-  obtain ⟨customers, namedCustomers⟩ := customers_found pre
+  obtain ⟨sessions, namedSessions, _⟩ := Database.tableNamed_of_hasCatalog (schema := sample) pre
+    (name := sessionsName) (position := 1) (by with_unfolding_all exact rfl)
+  obtain ⟨customers, namedCustomers, _⟩ := Database.tableNamed_of_hasCatalog (schema := sample) pre
+    (name := customersName) (position := 0) (by with_unfolding_all exact rfl)
   have start : Good sessions customers 0 (db.raw.connection env.counters) :=
     ⟨kept_start pre namedSessions, ResolveState.tableAtPrefix_zero (Database.tableNamed_some namedCustomers).2, fun h => by omega⟩
   exact sendStatements_succeedsFrom makeStrict.statements (Good sessions customers) env.clock 0

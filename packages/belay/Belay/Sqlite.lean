@@ -12,7 +12,7 @@ import Belay.Sqlite.Programs.Claims.SendStatementsInvariant
 import Belay.Sqlite.Programs.Claims.SendStatementsSuccess
 import Belay.Sqlite.Tooling.Tests.SqlAuto
 import Belay.Sqlite.Programs.Scripts.SendSuccessIfOk
-import Belay.Sqlite.Programs.Claims.SendSchemaPath
+import Belay.Sqlite.Programs.Claims.KeptReadCheck
 import Belay.Sqlite.Programs.Claims.MigrationExplainCommand
 import Belay.Sqlite.Programs.Claims.SuccessSyntax
 import Belay.Sqlite.Programs.Scripts.CreateIndexSuccess

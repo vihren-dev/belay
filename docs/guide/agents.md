@@ -161,7 +161,7 @@ which Lake prints again in each run
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: `#sql_check` and `sql_auto` apply these laws with a kernel check on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
-| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
+| A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
 | `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
 You can give `#sql_check` a claim by name. For example, if `selectClaim`
