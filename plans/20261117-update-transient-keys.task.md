@@ -1,7 +1,7 @@
 # Multi-row UPDATE and transient unique keys
 
 Created 2026-11-17. Issue [#219](https://github.com/vihren-dev/belay/issues/219).
-Status: open. The companion status file records the checks.
+Status: DONE. The companion status file records the checks.
 
 An UPDATE can leave a table with distinct keys and still fail while SQLite
 writes a row. For example, on rows (3, 9) and (1, 2) with a unique index on
