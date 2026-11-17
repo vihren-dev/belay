@@ -27,7 +27,8 @@ def test_unknown_answer_with_a_search_schema_gets_the_note(runtime_root: Path, t
     """An unknown answer with `with (schema := shop)` and no `HasCatalog` premise gets the note, which names
     the schema and the two forms of the claim about its databases. The claim with `on shop`, a false answer
     and a search schema from `(db := shop)` get no note. The three schema-scoped derived-column
-    claims have checked proof scripts, and sql_auto closes the same goals."""
+    claims have checked proof scripts, and sql_auto closes the same goals. When derivedColumnSteps?
+    fails on allCustomers on shop, the checker still finds a counterexample that replays in SQLite."""
     result = run_command(configured_command(runtime_root, fixture_file("CheckSchemaNote.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()

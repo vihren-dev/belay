@@ -11,3 +11,5 @@ printed scripts. The Nix checks are pending.
 
 The guide now shows the proof for the named-column read. The regression
 also checks the schema-scoped SELECT * counterexample against SQLite.
+
+The guide distinguishes a direct law application from both automatic searches.

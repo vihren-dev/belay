@@ -251,7 +251,7 @@ def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 
 #sql_check addEmailLower preserves namedCustomers on shop
 -- SQL check: proved.
--- by exact DerivedColumnMigration.preserves_of_check (by decide +kernel)
+-- Checked proof: by exact DerivedColumnMigration.preserves_of_check (by decide +kernel)
 
 def found : Database := db! r"
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
@@ -286,8 +286,9 @@ theorem email_lower_succeeds :
 ```
 
 The checks cover a column without constraints, a value that reads only the
-old columns of the row, and a read of one table that names old columns. When
-a check is false, the checker continues its search for a proof or counterexample. The complete
+old columns of the row, and a read of one table that names old columns. A direct
+application requires its check to pass. If the check fails, `sql_auto` tries
+its other proof routes, and `#sql_check` can still find a counterexample. The complete
 example is
 [`DerivedColumnOnSchema.lean`](../../tests/surface/Schema/Tests/DerivedColumnOnSchema.lean),
 with the schema and the migration as SQL files; CI compiles it in a project
