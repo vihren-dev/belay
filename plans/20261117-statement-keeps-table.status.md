@@ -16,3 +16,6 @@ the surviving sessions and the rejected frames. Every resolved statement kind is
 The Nix checks are pending.
 
 The frame regression describes the expected position or refusal for each of its four scripts.
+
+The model Lake library lists both frame modules. The package-boundary test in
+tests/test_model_package.py checks that its manifest covers the import closure.
