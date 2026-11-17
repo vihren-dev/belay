@@ -57,11 +57,6 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
   have oldAlias : customers.shape.rowidAlias = some 0 := by rw [oldShape]; decide +kernel
   have oldWidth : customers.shape.columns.length = 3 := by rw [oldShape]; decide +kernel
   have newAlias : strictShape.rowidAlias = some 0 := by decide +kernel
-  have inRows : ∀ row ∈ customers.scanRows, row ∈ customers.rows := fun row m => customers.scanRows_perm.mem_iff.mp m
-  have wide : ∀ row ∈ Resolved.sourceRows customers, row.length = 3 := by
-    intro values m
-    obtain ⟨row, inScan, rfl⟩ := List.mem_map.mp m
-    rw [admitted.rowsWide row (inRows row inScan), oldWidth]
   let ctx := Resolved.statementContext 0 (c.state.counters.view copyStatement.counterReads) makeStrict.statements[3].2
     c.state.database []
   have quiet : ctx.Quiet := fun _ _ => ⟨rfl, rfl, rfl⟩
@@ -74,9 +69,10 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
   have certain : copyQuery.productions ctx c.state.database
       (!Resolved.Statement.collectsSource 2 copyQuery [] [] none) =
       some [{ rows := Resolved.sourceRows customers, failure := none }] := by
-    rw [copyQuery.productions_scan_single ctx c.state.database 0 customers _ rfl
-      rfl rfl rfl rfl rfl rfl rfl (by decide +kernel) quiet present single]
-    rw [Resolved.Query.results_copy rfl rfl rfl rfl rfl rfl ctx 3 rfl rfl _ wide]
+    have sourceQuery : copyQuery = Resolved.Query.copyOf 0 customers.shape.columns.length ["id", "name", "email"] := by
+      rw [oldWidth]; rfl
+    rw [sourceQuery, Resolved.Query.productions_copyOf _ _ _ _ _ _ quiet present admitted, single]
+    rfl
   have compatible : customers.shape.copyCompatible strictShape (c.state.database.catalog.uniqueKeys 2 strictShape) =
       true := by rw [oldShape, catalog]; decide +kernel
   obtain ⟨fit, copiedRows⟩ := InsertFits.copy_compatible ctx (target := ⟨strictShape, []⟩) compatible oldAlias rfl

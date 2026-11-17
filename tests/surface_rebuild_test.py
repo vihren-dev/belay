@@ -134,6 +134,7 @@ def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root
     """The schema success check discharges every rebuild statement except the copy.
     SchemaSuccessChecks covers whole scripts and the transaction and foreign-key boundaries.
     RebuildCopyChecks checks the allowed NOT NULL weakening and incompatible source and target columns.
+    It also compares the table and partial-index scans of a copying SELECT.
     RebuildSucceeds supplies the STRICT row premise for the copy and proves success on every branch.
     The final proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (

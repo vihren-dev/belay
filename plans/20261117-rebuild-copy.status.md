@@ -15,3 +15,8 @@ The proof directory shrank from 470 lines to 381. RebuildCopyChecks exercises
 both directions of the NOT NULL condition and the width and affinity checks
 through tests/surface_rebuild_test.py. The assembled statement law and Nix
 checks are pending.
+
+Table.accessOrders_perm now accounts for indexed scans, including partial
+indexes. Resolved.Query.productions_copyOf gives the source values in each
+scan order. The README uses this law, and RebuildCopyChecks exercises a table
+whose partial index gives a different order. The proof files contain 377 lines.

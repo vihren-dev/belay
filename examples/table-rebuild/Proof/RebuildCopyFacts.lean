@@ -1,4 +1,5 @@
 import RebuildKeepsInvariant
+import Belay.Sqlite.Model.Schema.Writes.CopyProductions
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -15,8 +16,7 @@ def customersName : Identifier := name! "customers"
 
 /-- The query of the copy: the three columns of the table at position 0, the old customers, in order. -/
 def copyQuery : Resolved.Query :=
-  Resolved.Query.simple [Resolved.QuerySource.first 0] none ((List.range 3).map fun position => .scalar (.column position))
-    ["id", "name", "email"]
+  Resolved.Query.copyOf 0 3 ["id", "name", "email"]
 
 /-- The resolved copy: the table at position 2, the new customers, takes the three cells of the query in order. -/
 def copyStatement : Resolved.Statement :=
