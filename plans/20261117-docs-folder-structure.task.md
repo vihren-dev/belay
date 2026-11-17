@@ -1,6 +1,6 @@
 # Task: a `docs/` folder that separates user pages from internal pages
 
-Date: 2026-11-17. Status: OPEN. Owner request of 2026-11-17.
+Date: 2026-11-17. Status: DONE (2026-11-17). Owner request of 2026-11-17.
 Audience: the implementer and the reviewer.
 
 ## The problem
