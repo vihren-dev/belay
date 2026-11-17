@@ -4,9 +4,8 @@ A native record of version 4 or 5 names its execution profile. Name resolution r
 the release, the build, the limits and the double-quoted-string settings (ADR 0008,
 "Execution profile"); the execution semantics takes the clock value of each statement
 as an input. Deferred and immediate transactions share the same observations on an
-uncontended database. A record whose profile changes such a setting stays out of the
-model's scope, with the setting named, so that the model never predicts behavior it
-does not implement. The model implements foreign keys on (ADR 0018, D4) and recursive
+uncontended database. A read-only connection, an untrusted schema or other writers
+put a record outside the model. The diagnostic names the setting. The model implements foreign keys on (ADR 0018, D4) and recursive
 triggers on (ADR 0019, D2), so the case profile carries those settings. Records before version 4 have no profile: their recorder used
 the pinned build with its documented default limits, and their setup may have turned
 foreign keys on, which the subject cannot see; such a record with a foreign key stays out

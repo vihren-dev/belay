@@ -9,3 +9,5 @@ profile_scope_test.py and conformance_profile_test.py. The locked verdict and
 full Nix gates are pending.
 
 The task distinguishes the recorded modes from direct SQL, which also accepts EXCLUSIVE.
+
+The profile-scope module documents all three settings that still receive a refusal.
