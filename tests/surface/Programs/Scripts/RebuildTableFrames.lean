@@ -1,8 +1,9 @@
 import RebuildKeepsInvariant
 
-/-! Exercise the checked table frame across a moving DROP, a cascading DROP, a write to the
-protected table and a rewrite of the definition of the protected table. -/
-
+/-! Test `ResolveState.tablePosition`, which applies `Resolved.Statement.keeps` at each step.
+Dropping customers moves sessions from position 1 to position 0. With enforcement on the drop
+can delete sessions by cascade, so the result is none. Updating sessions can change its rows,
+and renaming customers rewrites its foreign key, so both scripts also give none. -/
 open Belay.Sqlite Belay.Sqlite.Model RebuildGuide
 set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000

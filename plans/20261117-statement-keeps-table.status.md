@@ -14,3 +14,5 @@ by computed positions. Its proof files total 847 lines, down from 1,001
 in #411. RebuildTableFrames.lean and tests/surface_rebuild_test.py check
 the surviving sessions and the rejected frames. Every resolved statement kind is listed explicitly, so a new kind requires a frame decision.
 The Nix checks are pending.
+
+The frame regression describes the expected position or refusal for each of its four scripts.
