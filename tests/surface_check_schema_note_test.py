@@ -7,11 +7,12 @@ the databases of the schema.
 """
 
 from pathlib import Path
+import shutil
 
 import pytest
 
 from tests.runtime_support import run_command
-from tests.s6_check_support import false_answer, split_blocks
+from tests.s6_check_support import false_answer, final_rows, replays, split_blocks
 from tests.sql_file_support import configured_command
 from tests.surface_support import fixture_file
 
@@ -41,5 +42,13 @@ def test_unknown_answer_with_a_search_schema_gets_the_note(runtime_root: Path, t
                        ("on-schema-succeeds", "succeeds_of_check")):
         assert blocks[label].startswith("SQL check: proved."), blocks[label]
         assert f"DerivedColumnMigration.{law}" in blocks[label], blocks[label]
+    scoped = false_answer(blocks["false-on-schema"])
+    before, after = replays(scoped)
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    old_rows = final_rows(sqlite, tmp_path, "before", before, "")
+    # The second program runs the final read in Lean. Read the migrated table in SQLite.
+    new_rows = final_rows(sqlite, tmp_path, "after", after, "\nSELECT * FROM customers;\n")
+    assert old_rows and [row[:-1] for row in new_rows] == old_rows and new_rows != old_rows, scoped
     false_answer(blocks["false"])
     assert NOTE not in blocks["false"], blocks["false"]

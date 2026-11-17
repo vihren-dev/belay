@@ -8,3 +8,6 @@ selection of sql_auto are the user entry points. Both entry points now try the d
 CheckSchemaNote.lean exercises the two reads, the success claim and the
 unscoped fallback. tests/surface_check_schema_note_test.py checks the
 printed scripts. The Nix checks are pending.
+
+The guide now shows the proof for the named-column read. The regression
+also checks the schema-scoped SELECT * counterexample against SQLite.

@@ -5,7 +5,7 @@ import Belay.Sqlite.Programs.Automation.CheckAutoProof
 
 set_option doc.verso true
 
-/-! The default proof attempt of the SQL checker: the short closing tactics of {name}`Belay.Sqlite.Check.tryProof`, then the
+/-! The default proof attempt of the SQL checker: a derived-column law for a claim with a schema premise, the short closing tactics of {name}`Belay.Sqlite.Check.tryProof`, then the
 search of {lit}`sql_auto` on the check of a program or on a claim about the results of a run of a query
 ({name}`Belay.Sqlite.Select.isQueryRun`). The search needs the checks of a program in the form
 that {lit}`sql_run` reads, so the attempt first opens a fresh triple to that form. The result is a script of

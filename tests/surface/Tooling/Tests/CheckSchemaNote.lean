@@ -44,6 +44,9 @@ labelled_sql "with-db" in
 labelled_sql "false" in
 #sql_check addEmailLower preserves allCustomers with (schema := shop)
 
+labelled_sql "false-on-schema" in
+#sql_check addEmailLower preserves allCustomers on shop
+
 /-- The lookup binds its email argument while keeping the same SELECT at each value. -/
 def lookupEmail (email : Value) : Script := sql r"SELECT id FROM customers WHERE email = ?1" email
 
