@@ -32,8 +32,8 @@ A path is relative to the Lake package that owns the Lean file.
 | `M preserves Q on shop where noCustomers` | Only for the databases on which the query `noCustomers` returns a row. |
 | `M succeeds`, `M preserves Q` | For every database, with any schema. |
 
-State `succeeds` with each `preserves`: a migration that fails preserves every
-read.
+State `succeeds` with each `preserves`: a migration that always fails
+preserves every read.
 
 ## Check a claim
 
@@ -41,10 +41,12 @@ read.
 #sql_check M preserves Q on shop   -- false with a database, proved, or unknown
 #explain M preserves Q on shop     -- the claim in plain words
 theorem q_kept : M preserves Q on shop := …   -- the proof, from your agent
+#print axioms q_kept                -- only propext, Classical.choice, Quot.sound
 ```
 
-`unknown` is not evidence. A claim is proved when it is a `theorem` and
-`lake build` passes.
+`unknown` is not evidence. A claim is proved when it is a `theorem`,
+`lake build` passes, and `#print axioms` shows only these three axioms.
+`sorryAx` in the list is a hole in the proof.
 
 More: [use Belay with a coding agent](guide/agents.md), the
 [surface library](../packages/belay/README.md).
