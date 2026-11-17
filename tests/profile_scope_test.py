@@ -7,6 +7,8 @@ record, and a record without a foreign key, stay in scope; and a profile with fo
 is modeled (ADR 0018, D4).
 """
 
+from dataclasses import replace
+
 import pytest
 
 from belay.sqlite.errors import SqlError
@@ -52,6 +54,21 @@ def test_a_profile_with_foreign_keys_on_is_modeled() -> None:
     off = ExecutionProfile("plain", 1, "3.51.0", "source", ("THREADSAFE=1",))
     assert modeled_profile({"name": "on", "nativeVersion": 5, "profile": on.to_wire()})["foreignKeys"] is True
     assert "foreignKeys" not in modeled_profile({"name": "off", "nativeVersion": 5, "profile": off.to_wire()})
+
+
+@pytest.mark.parametrize("version", [4, 5])
+def test_immediate_profile_requires_uncontended_read_write_access(version: int) -> None:
+    """The recorded mode reaches resolution and each unsupported setting keeps its diagnostic."""
+    immediate = ExecutionProfile("case", 1, "3.51.0", "source", ("THREADSAFE=1",),
+                                 transaction_mode="immediate", format_version=2)
+    record = {"name": "case", "nativeVersion": version}
+    assert modeled_profile({**record, "profile": immediate.to_wire()}) == modeled_profile(
+        {**record, "profile": replace(immediate, transaction_mode="deferred").to_wire()})
+    for restricted, reason in [(replace(immediate, access_mode="read-only"), "read-only access"),
+                               (replace(immediate, trusted_schema=False), "untrusted schema mode"),
+                               (replace(immediate, other_writers=("writer",)), "other writers")]:
+        with pytest.raises(SqlError, match=reason):
+            modeled_profile({**record, "profile": restricted.to_wire()})
 
 
 RENAME_TABLE = Located({"renameTable": {"table": "t", "newName": "u"}}, 0, 1)

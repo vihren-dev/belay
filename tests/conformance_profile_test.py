@@ -92,7 +92,8 @@ def test_recorded_profile_clock_and_fresh_replay(tmp_path: Path, runtime_root: P
         (tmp_path / "manifest.json").write_text(json.dumps({**manifest, "executionProfiles": declarations}))
         with pytest.raises(ValueError, match="profile"):
             load(tmp_path)
-    assert prepare(record, runtime_translator(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
+    _, restriction = prepare(record, runtime_translator(runtime_root))
+    assert restriction["verdict"] == "MODEL_UNSUPPORTED" and "column constraint" in restriction["error"], restriction
     malformed = {**record, "setupClockUnixMilliseconds": True}
     assert prepare(malformed, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     with pytest.raises(ValueError, match="profile differs"):

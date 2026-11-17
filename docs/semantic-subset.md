@@ -28,7 +28,7 @@ The frontend maps these statements, and refuses every other statement as
   table to the name of the dropped one, which gives the foreign keys of the children their parent again; with
   enforcement on, the `DROP TABLE` cascades, and with enforcement off the children keep their rows;
 - `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
-- `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
+- `BEGIN` (optionally `DEFERRED`, `IMMEDIATE` or `EXCLUSIVE`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
 - `INSERT INTO table [(columns)] SELECT …` and `REPLACE INTO table … SELECT …`, with the
