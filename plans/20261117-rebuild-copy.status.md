@@ -20,3 +20,5 @@ Table.accessOrders_perm now accounts for indexed scans, including partial
 indexes. Resolved.Query.productions_copyOf gives the source values in each
 scan order. The README uses this law, and RebuildCopyChecks exercises a table
 whose partial index gives a different order. The proof files contain 377 lines.
+
+The public scan laws describe the catalog, source position, rowid and streaming premises.

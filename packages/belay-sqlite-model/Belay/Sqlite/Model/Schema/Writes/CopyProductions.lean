@@ -14,9 +14,11 @@ The caller supplies SQLite's result column names. -/
 def Resolved.Query.copyOf (position width : Nat) (names : List String) : Resolved.Query :=
   .simple [.first position] none ((List.range width).map fun i => .scalar (.column i)) names
 
-/-- For any admitted source table, the productions of its copy query are the
-rows of its access orders, without source errors. Each distinct result occurs
-once. The clock and parameters can vary in the quiet context. Proof sketch:
+/-- For every source table satisfying {name}`Table.Admitted` at the given position in the
+database, every list of result names, context satisfying {name}`Resolved.EvalContext.Quiet` and
+either value of the streaming flag, the productions of {name}`Resolved.Query.copyOf` are the
+cell values of the rows in each order in {name}`Table.accessOrders`, with no source errors.
+Each distinct production occurs once. Proof sketch:
 a simple projection contains no fallible calls. Each scan permutes the rows,
 so its cells have the source width and projecting all its columns is identity. -/
 theorem Resolved.Query.productions_copyOf (context : Resolved.EvalContext) (database : Database) (position : Nat)

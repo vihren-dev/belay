@@ -3,8 +3,8 @@ import Belay.Sqlite.Model.Queries.Evaluation.QueryLaws
 
 set_option doc.verso true
 
-/-! An index scan, including a partial index, permutes the rows of an admitted table.
-The copy proof can therefore transport its row premises through any source scan. -/
+/-! Every scan that SQLite can choose on a table with distinct rowids, including a
+partial-index scan, gives exactly the rows of the table in some order. -/
 
 namespace Belay.Sqlite.Model
 
@@ -20,7 +20,9 @@ private theorem eq_of_same_rowid {rows : List Row} (unique : (rows.map Row.rowid
   subst j
   exact Option.some.inj (hi.symm.trans hj)
 
-/-- An index order contains each input row once when the input rowids are distinct.
+/-- For every list of rows with distinct rowids, every list of index keys and every
+optional filter, {name}`Table.indexOrder` is a permutation of the input ({name}`List.Perm`),
+so it contains exactly the input rows, each once.
 Proof sketch: the sort permutes the rows selected by the filter. The remaining
 rows are exactly its complement, since a selected rowid identifies a unique row. -/
 theorem Table.indexOrder_perm (rows : List Row) (keys : List IndexKey) (filter : Option Resolved.Expr)
@@ -39,7 +41,8 @@ theorem Table.indexOrder_perm (rows : List Row) (keys : List IndexKey) (filter :
     (q := fun row => !keep row) (fun row m => congrArg Bool.not (held row m))]
   exact ((Resolved.stableSort_perm _ _).append_right _).trans (List.filter_append_perm keep rows)
 
-/-- Each access order of a table with distinct rowids permutes its rows. Proof
+/-- For every {name}`Catalog`, position and table with distinct rowids, each member
+of {name}`Table.accessOrders` is a permutation of the table’s rows ({name}`List.Perm`). Proof
 sketch: the scan has this property and each catalog index permutes the scan.
 Discarding duplicate orders only removes members from the list of choices. -/
 theorem Table.accessOrders_perm (catalog : Catalog) (position : Nat) (table : Table)
