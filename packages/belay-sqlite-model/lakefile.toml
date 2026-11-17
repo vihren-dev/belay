@@ -11,6 +11,9 @@ globs = ["Belay.Sqlite.Model", "Belay.Sqlite.Model.Programs.StatementRunLaws.Add
   "Belay.Sqlite.Model.Programs.Scripts.SchemaPathStep",
   "Belay.Sqlite.Model.Programs.Scripts.TableKeeps",
   "Belay.Sqlite.Model.Programs.Scripts.TablePath",
+  "Belay.Sqlite.Model.Programs.Scripts.SchemaKeyCheck",
+  "Belay.Sqlite.Model.Programs.Scripts.SchemaSuccess",
+  "Belay.Sqlite.Model.Programs.Scripts.SchemaSuccessPath",
 ]
 
 [[lean_lib]]

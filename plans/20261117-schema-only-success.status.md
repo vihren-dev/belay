@@ -9,3 +9,6 @@ README example proof files went from 693 lines to 470. The regression in
 schema-only transaction and PRAGMA examples. The Nix checks are pending.
 
 The task distinguishes the catalog-order restriction and the COMMIT check from the underlying execution laws.
+
+SchemaKeyCheck, SchemaSuccess and SchemaSuccessPath are listed in the core
+Lake manifest and checked by tests/test_model_package.py.
