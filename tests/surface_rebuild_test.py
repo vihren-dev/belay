@@ -133,9 +133,11 @@ def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_
 def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root: Path, tmp_path: Path) -> None:
     """The schema success check discharges every rebuild statement except the copy.
     SchemaSuccessChecks covers whole scripts and the transaction and foreign-key boundaries.
+    RebuildCopyChecks checks the allowed NOT NULL weakening and incompatible source and target columns.
     RebuildSucceeds supplies the STRICT row premise for the copy and proves success on every branch.
     The final proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildCopyChecks", 0),
+        ("RebuildSucceedsCopy", 0),
         ("SchemaSuccessChecks", 0),
         ("RebuildKeeps", 1), ("RebuildSucceeds", 1)), timeout=CHAIN_TIMEOUT_SECONDS)

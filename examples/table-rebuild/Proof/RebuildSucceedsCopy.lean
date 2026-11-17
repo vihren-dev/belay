@@ -1,4 +1,5 @@
 import RebuildCopyFacts
+import Belay.Sqlite.Model.Schema.Writes.CopyCompatibility
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -14,12 +15,6 @@ open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 namespace RebuildGuide
 
-/-- For every list, function and position at which the mapped list has a value: the list has an item there that the
-function maps to the value. Proof sketch: unfold the lookup in a mapped list. -/
-theorem exists_of_map_getElem? {α β : Type} {items : List α} {function : α → β} {position : Nat} {value : β}
-    (mapped : (items.map function)[position]? = some value) : ∃ item, items[position]? = some item ∧ function item = value := by
-  simpa [List.getElem?_map, Option.map_eq_some_iff] using mapped
-
 /-- For a table of the customers, a number of statements and a connection: the facts about the customers that the
 copy needs. The prefix check follows the original customers table, and just after the
 creation of the new customers (3 statements) the table at position 2 holds no row. -/
@@ -31,18 +26,17 @@ def Held (customers : Table) (count : Nat) (connection : Connection) : Prop :=
 ({name}`LiteralData.typesFit` on {name}`strictShape`), and every connection that has the facts of the rebuild before
 the copy (the resolved schema and {name}`Held`) and a valid state: the step of the copy continues with an output that is no
 error and no other execution. In plain words, copying the customers into the new, STRICT customers table never fails
-when every old customer fits its types, in the run of the model; the other branches of the step are covered by
-{name}`runScriptStep_insertSelect_frame`. The clock and the index are arbitrary. Proof sketch: the facts of the
-catalog ({name}`catalogFacts`) give the shapes and keys of both tables. The query has one production, the rows of
+when every old customer fits its types. The next database differs only at the target, where the copied
+rows have the original rowids in scan order. The clock and the index are arbitrary. Proof sketch: the prefix catalog gives the two shapes and their keys. The query has one production, the rows of
 the customers in rowid order ({name}`Table.accessOrders_alias`); these rows are copied unchanged
-({name}`insertSelectRows_copy`) and fit the new table ({name}`InsertFits.copy`), where a valid database gives the
-NOT NULL of {lit}`email` and the premise gives the STRICT types. Then {name}`runScriptStep_insertSelect_success`
+({name}`insertSelectRows_copy`) and fit the new table ({name}`InsertFits.copy_compatible`) by the catalog check and the STRICT typing premise. Then {name}`runScriptStep_insertSelect_success`
 applies. -/
 theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {customers : Table}
     (schema : c.resolveState = schemaAt 3) (held : Held customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
     (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
     ∃ output next, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
-      .continued output next [] ∧ output.isError = false := by
+      .continued output next [] ∧ output.isError = false ∧
+      next.state.database = c.state.database.setRows 2 customers.scanRows := by
   obtain ⟨after, resolved⟩ := copy_resolves
   have found : resolveStatement runContext c.resolveState makeStrict.statements[3].1 =
       .ok (.insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none, after) := by
@@ -50,26 +44,19 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
   have present := held.1 0 (by decide +kernel)
   have shape := Database.tableAt_of_table present
   have catalog : c.state.database.catalog = (schemaAt 3).catalog := congrArg ResolveState.catalog schema
-  have lookup : c.state.database.catalog.findTable customersName = some (0, customers.shape) := by
-    rw [catalog] at shape ⊢
-    with_unfolding_all exact congrArg (Option.map (0, ·)) shape
-  have facts : catalogFacts c.state.database.catalog = true := by
-    rw [show c.state.database.catalog = (schemaAt 3).catalog from congrArg ResolveState.catalog schema]; exact catalogFacts_reached
-  obtain ⟨oldOk, accessKeys, atTwo, uniqueKeys⟩ := catalogFacts_unpack facts lookup
-  have newOk := strictShape_facts
+  have oldShape : customers.shape = sourceShape := by
+    rw [catalog, show (schemaAt 3).catalog.tableAt 0 = some sourceShape by decide +kernel] at shape
+    exact (Option.some.inj shape).symm
+  have atTwo : c.state.database.catalog.tableAt 2 = some strictShape := by rw [catalog]; decide +kernel
   have presentNew : c.state.database.table 2 = some ⟨strictShape, []⟩ := by
     have emptyRows := held.2 rfl
     unfold Database.table
     rw [atTwo]
     simp only [Option.map_some, emptyRows]
-  simp only [oldFacts, Bool.and_eq_true, beq_iff_eq, Bool.not_eq_true'] at oldOk
-  obtain ⟨⟨⟨oldAlias, oldRowid⟩, oldNotNull⟩, oldAffinity⟩ := oldOk
-  simp only [newFacts, Bool.and_eq_true, beq_iff_eq, List.all_eq_true, Option.isNone_iff_eq_none, List.isEmpty_iff]
-    at newOk
-  obtain ⟨⟨⟨⟨⟨⟨newAlias, newReady⟩, newPlain⟩, newUnchecked⟩, -⟩, newNotNull⟩, newAffinity⟩ := newOk
   have admitted := valid.1.admitted.table present
-  have oldWidth : customers.shape.columns.length = 3 := by simpa using congrArg List.length oldNotNull
-  have newWidth : strictShape.columns.length = 3 := by simpa using congrArg List.length newNotNull
+  have oldAlias : customers.shape.rowidAlias = some 0 := by rw [oldShape]; decide +kernel
+  have oldWidth : customers.shape.columns.length = 3 := by rw [oldShape]; decide +kernel
+  have newAlias : strictShape.rowidAlias = some 0 := by decide +kernel
   have inRows : ∀ row ∈ customers.scanRows, row ∈ customers.rows := fun row m => customers.scanRows_perm.mem_iff.mp m
   have wide : ∀ row ∈ Resolved.sourceRows customers, row.length = 3 := by
     intro values m
@@ -79,50 +66,24 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
     c.state.database []
   have quiet : ctx.Quiet := fun _ _ => ⟨rfl, rfl, rfl⟩
   have single : Table.accessOrders c.state.database.catalog 0 customers = [customers.scanRows] :=
-    Table.accessOrders_alias _ 0 customers 0 oldRowid (fun row m => admitted.rowsAliased row m 0 oldAlias)
-      (fun access m => by rw [accessKeys] at m; simpa using m)
+    Table.accessOrders_alias _ 0 customers 0 (by rw [oldShape]; decide +kernel) (fun row m => admitted.rowsAliased row m 0 oldAlias)
+      (fun access m => by
+        rw [catalog, oldShape] at m
+        have keys : (schemaAt 3).catalog.accessKeys 0 sourceShape = [([{ term := .column 0 }], none)] := by decide +kernel
+        simpa [keys] using m)
   have certain : copyQuery.productions ctx c.state.database
       (!Resolved.Statement.collectsSource 2 copyQuery [] [] none) =
       some [{ rows := Resolved.sourceRows customers, failure := none }] := by
     rw [copyQuery.productions_scan_single ctx c.state.database 0 customers _ rfl
       rfl rfl rfl rfl rfl rfl rfl (by decide +kernel) quiet present single]
     rw [Resolved.Query.results_copy rfl rfl rfl rfl rfl rfl ctx 3 rfl rfl _ wide]
-  have storedNew : ∀ row ∈ customers.scanRows, row.Stored strictShape.columns := fun row m =>
-    Row.Stored.of_affinities (by rw [newAffinity, oldAffinity]) (admitted.rowsStored row (inRows row m))
-  have fit : InsertFits (c.state.database.keys 2 ⟨strictShape, []⟩) ⟨strictShape, []⟩
-      (insertSelectRows ctx strictShape.columns ((List.range 3).map .source) (Resolved.sourceRows customers)) := by
-    have copied := insertSelectRows_copy ctx strictShape.columns (Resolved.sourceRows customers)
-      (by rw [newWidth]; exact wide) (by
-        intro values m
-        obtain ⟨row, inScan, rfl⟩ := List.mem_map.mp m
-        exact storedNew row inScan)
-    rw [newWidth] at copied
-    rw [copied]
-    refine InsertFits.copy _ ⟨strictShape, []⟩ 0 customers.scanRows rfl newAlias newReady newPlain
-      (fun row m => fits row (inRows row m)) newUnchecked ?_ ?_ ?_ storedNew ?_ ?_ ?_
-    · intro key m
-      have listed : key ∈ c.state.database.catalog.uniqueKeys 2 strictShape := m
-      rw [uniqueKeys] at listed
-      simp only [List.mem_singleton] at listed
-      subst listed
-      exact ⟨rfl, rfl⟩
-    · exact fun row m => admitted.rowsAliased row (inRows row m) 0 oldAlias
-    · intro row m
-      rw [admitted.rowsWide row (inRows row m), oldWidth, newWidth]
-    · intro row m i column value atColumn atValue required
-      have mapped : (strictShape.columns.map CatalogColumn.notNull)[i]? = some column.notNull := by
-        simp [List.getElem?_map, atColumn]
-      rw [newNotNull] at mapped
-      rcases i with _ | _ | _ | i
-      · simp at mapped; simp [mapped] at required
-      · simp at mapped; simp [mapped] at required
-      · obtain ⟨oldColumn, atOld, oldRequired⟩ := exists_of_map_getElem?
-          (show (customers.shape.columns.map CatalogColumn.notNull)[2]? = some true by rw [oldNotNull]; rfl)
-        exact valid.1.notNull 0 customers present row (inRows row m) 2 oldColumn value atOld atValue oldRequired
-      · simp at mapped
-    · exact (customers.scanRows_perm.map Row.rowid).nodup_iff.mpr (admitted.rowidsDistinct)
-    · exact fun row m => admitted.rowidsInRange row (inRows row m)
-  obtain ⟨output, next, step, noError, -⟩ := runScriptStep_insertSelect_success (value := 0) (table := ⟨strictShape, []⟩)
+  have compatible : customers.shape.copyCompatible strictShape (c.state.database.catalog.uniqueKeys 2 strictShape) =
+      true := by rw [oldShape, catalog]; decide +kernel
+  obtain ⟨fit, copiedRows⟩ := InsertFits.copy_compatible ctx (target := ⟨strictShape, []⟩) compatible oldAlias rfl
+    admitted (valid.1.notNull 0 customers present) customers.scanRows_perm fits
+  have newWidth : strictShape.columns.length = 3 := by decide +kernel
+  simp only [newWidth] at fit copiedRows
+  obtain ⟨output, next, step, noError, database⟩ := runScriptStep_insertSelect_success (value := 0) (table := ⟨strictShape, []⟩)
     (rows := Resolved.sourceRows customers) found rfl rfl presentNew certain fit rfl
     (fun source transfer => by
       exfalso
@@ -130,6 +91,6 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
       split at transfer
       · simp [newAlias] at transfer
       · simp at transfer) rfl rfl rfl
-  exact ⟨output, next, step, noError⟩
+  exact ⟨output, next, step, noError, database.trans (congrArg (c.state.database.setRows 2) copiedRows)⟩
 
 end RebuildGuide
