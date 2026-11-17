@@ -47,7 +47,7 @@ def test_reference_definitions_are_checked(tmp_path: Path) -> None:
     assert broken_links(tmp_path) == ["README.md: missing missing.md"]
 
 
-USER_DOCS = {"README.md", "cheat-sheet.md", "execution-profile.md", "semantic-subset.md", "guide", "media"}
+USER_DOCS = {"README.md", "cheat-sheet.md", "execution-profile.md", "faq.md", "semantic-subset.md", "guide", "media"}
 """The index, the pages for users of the library and their folders, at the top level of `docs/`."""
 
 INTERNAL_DOCS = {"adr", "development", "records"}
