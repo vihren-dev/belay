@@ -13,3 +13,7 @@ The ten Lean proof files in examples/table-rebuild/Proof contain 1,001
 lines, down from 1,038 before the change.
 
 The example describes resolution from the prefix certificate at the copy and the final read.
+
+The core Lake library now lists SchemaPath and SchemaPathStep explicitly.
+tests/test_model_package.py compares the Lake module inventory with the model
+root's import closure. The locked Nix verdict matched main on all 7,868 cases.
