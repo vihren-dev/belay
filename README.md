@@ -76,6 +76,9 @@ customers:
 sessions:
   id | customer_id | expires_at
   1  | 1           | 0
+Failing observation: The views of the claim project the actual runs of the two programs to observations that differ at this context. The text shows the runs before the projection.
+First program: returns a value; outputs [rows [[1, 1, 0]]].
+Second program: returns a value; outputs [done 0, done 0, done 0, done 0, done 1, done 0, done 0, done 0, rows []].
 allSessions: rows [[1, 1, 0]]
 badMigration, statement 1: done 0
 badMigration, statement 2: done 0
@@ -85,6 +88,7 @@ badMigration, statement 5: done 1
 badMigration, statement 6: done 0
 badMigration, statement 7: done 0
 badMigration, statement 8: done 0
+Note: The program runs Lean code after the scripts of this replay, so SQLite did not run the whole program. The model's run of the whole program gives the failing result.
 Construction:
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
 …
@@ -96,6 +100,9 @@ CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
 
 Belay wrote one customer and one session, the smallest database of the schema
 that breaks the claim, and every statement of the migration reported success.
+The first program is the read alone, and the second program is the migration
+and then the read: the read returns the session before the migration and no
+row after it.
 The editor prints the whole block. Paste the replay script into the `sqlite3`
 shell and watch native SQLite do the same.
 
@@ -186,7 +193,8 @@ own test suite and the project's corpora: 5,525 cases, replayed against native
 SQLite and against the model, with no disagreement allowed. SQL outside the
 model is refused. A proof is about the statements, not about locks, query
 plans or concurrency; the [execution profile](docs/execution-profile.md)
-states the connection settings it assumes.
+states the connection settings it assumes. The
+[questions and answers](docs/faq.md) say more about the trust in the model.
 
 ## Supported SQL
 
@@ -200,7 +208,13 @@ the foreign-key and recursive-trigger pragmas. The exact list is in the
 ## Install
 
 Install [elan](https://github.com/leanprover/elan), then add Belay to a Lake
-project:
+project. Belay `v0.2.0` uses Lean 4.34.1, so put that release in the file
+`lean-toolchain` of the project. Without the file, elan first downloads the
+newest Lean release, and `lake update` then changes to this one.
+
+```text
+leanprover/lean4:v4.34.1
+```
 
 ```toml
 # lakefile.toml
@@ -232,8 +246,9 @@ lake update
 lake build
 ```
 
-The first build compiles the model and SQLite's parser once; later builds
-reuse them. Then put the blocks above in a file of your project and open it in
+The first build compiles the model and SQLite's parser once. It takes some
+minutes: about seven on a machine with eight cores. Later builds reuse the
+result and take seconds. The build needs no C compiler. Then put the blocks above in a file of your project and open it in
 an editor with the Lean language server. The folder
 [`examples/table-rebuild`](examples/table-rebuild) is a Lake project with the
 example of this README and its proofs; open it in a clone of this repository.
@@ -251,6 +266,8 @@ of the agent's work. To start, tell your agent to set up Belay with the
 
 ## Documentation
 
+- The [questions and answers](docs/faq.md): the objections that a new reader
+  has, each with a short answer.
 - The [cheat sheet](docs/cheat-sheet.md): how to define SQL, load it from
   files and state a claim.
 - [Use Belay with a coding agent](docs/guide/agents.md), with

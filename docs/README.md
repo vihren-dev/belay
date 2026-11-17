@@ -4,6 +4,8 @@
 
 These pages are for developers who use the library.
 
+- [Questions and answers](faq.md): what a proof means, what Belay does not
+  cover, and what it costs to use.
 - [Cheat sheet](cheat-sheet.md): how to define SQL, load it from files, state
   a claim and check it.
 - [Use Belay with a coding agent](guide/agents.md): the agent writes the
