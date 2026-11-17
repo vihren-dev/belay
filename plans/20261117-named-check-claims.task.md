@@ -19,5 +19,5 @@ The checker must stay within its existing budget.
 
 Exercise the named and expanded query, a name for the named query, and a
 named false claim through #sql_check. Recheck the emitted proof against the
-name. Keep the background check's existing budget, cancellation and excluded
-rule tests in tests/surface_select_procedure_test.py.
+name. Keep the budget tests in tests/surface_search_test.py and the cancellation
+and excluded-rule cases in tests/surface_select_procedure_test.py.

@@ -60,6 +60,22 @@ query {name}`customerOfFirst` returns a result whose rows each have a first cell
 def selectClaim : Prop := ∀ (db : Database) (env : Env), db.HasCatalog invoices →
   (db.run (query customerOfFirst customerOfFirst_one) env).returnsRows firstCellPresent
 
+/-- A second name for the same query claim. -/
+def aliasClaim : Prop := selectClaim
+
+labelled_sql "named-proved" in
+#sql_check selectClaim
+
+labelled_sql "alias-proved" in
+#sql_check aliasClaim
+
+/-- A false claim that the original database refutes. -/
+def namedFalse : Prop := ∀ (db : Database) (env : Env), db = shop →
+  (db.run (query customerOfFirst customerOfFirst_one) env).returnsResult (· = [])
+
+labelled_sql "named-refuted" in
+#sql_check namedFalse
+
 /-- The statement of {name}`selectClaim`, which the opening of the search introduces. -/
 def selectStatement : MetaM Expr := return (← getConstInfo ``selectClaim).value!
 

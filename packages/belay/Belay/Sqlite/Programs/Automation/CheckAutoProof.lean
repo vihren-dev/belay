@@ -13,9 +13,22 @@ def defaultSearchHints : TermElabM (Array (TSyntax `term)) :=
   return #[← `(rfl), ← `(⟨_, _, _, rfl⟩)]
 
 /-- The tactic that opens a claim to the form of the search: a fresh triple with the assertion {lit}`ifOk`
-becomes its check of the program at the initial context, every variable is introduced, and an equation that a
+becomes its check of the program at the initial context. First unfold names of claims from the user's
+modules so that the binders are visible. Every variable is introduced, and an equation that a
 premise gives for a variable replaces the variable. -/
-def openingTactic : TermElabM (TSyntax `tactic) :=
-  `(tactic| ((first | refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_ | skip); intros; try subst_vars))
+def openingTactic (proposition : Expr) : TermElabM (TSyntax `tactic) := do
+  let environment ← getEnv
+  let mut claim := proposition.consumeMData
+  let mut names := #[]
+  while let some name := claim.getAppFn.constName? do
+    let some (.defnInfo _) := environment.find? name | break
+    if (environment.getModuleIdxFor? name).any fun index =>
+        [`Init, `Lean, `Std, `Belay].contains (environment.header.moduleNames[index.toNat]!).getRoot then break
+    let some body ← unfoldDefinition? claim | break
+    names := names.push (mkIdent name)
+    claim := body.consumeMData
+  let openGoal ← `(tactic| ((first | refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_ | skip); intros; try subst_vars))
+  if names.isEmpty then return openGoal
+  return ← `(tactic| (unfold $names:ident*; $openGoal:tactic))
 
 end Belay.Sqlite.Check

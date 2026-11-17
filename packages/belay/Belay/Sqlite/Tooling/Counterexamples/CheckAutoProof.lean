@@ -20,10 +20,10 @@ with the routes of {lit}`sql_auto`,
 using at most {name}`searchShare` of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
 proves the claim again without a search. None when the claim has no such proof. -/
 def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
-  let opening ← openingTactic
   let hints ← defaultSearchHints
   let share := searchShare.units (← remainingUnits)
   let found ← withinBudget share <| attempt do
+    let opening ← openingTactic proposition
     let goal ← mkFreshExprMVar proposition
     let [opened] ← runStrict goal.mvarId! opening | throwError "the claim has no single goal after the opening"
     -- The search is for the check of a program or the run of a query. Other claims have no route, and a
