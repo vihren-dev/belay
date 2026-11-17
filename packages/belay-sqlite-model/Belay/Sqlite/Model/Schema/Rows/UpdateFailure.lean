@@ -24,8 +24,8 @@ The argument does not use the form of the keys: it holds for keys with expressio
 partial unique indexes whose filter reads an assigned column. The list can contain constraints
 that SQLite does not name in any order of the rows.
 
-The model's effect can differ from SQLite's for such an UPDATE: SQLite can fail where the table
-after the UPDATE has no conflict. The plain write then fails its support check for a conflict between old and new keys. -/
+When a unique index causes a transient conflict and the final table passes its constraints,
+the support check compares each new key with the old keys of the other rows and refuses the run. -/
 
 namespace Belay.Sqlite.Model
 namespace LiteralData

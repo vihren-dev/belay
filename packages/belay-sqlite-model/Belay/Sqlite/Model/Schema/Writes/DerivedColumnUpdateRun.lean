@@ -35,7 +35,9 @@ words, the backfill of a derived column cannot fail. The model has no limit on t
 the length of a row is no condition. Proof sketch: the UPDATE gives the old rows with a cell appended
 ({name}`updated_derived_append`); {name}`Table.appendCells_checked` gives the write check of that table and
 the ready check of the table before it; the alias is not assigned, so no rowid moves; the expression has
-no fault ({name}`Resolved.Expr.fault_of_plain_at`). -/
+no fault ({name}`Resolved.Expr.fault_of_plain_at`). The keys read only old cells, so
+{name}`LiteralData.keyEqual_append` and the original uniqueness also rule out a conflict
+between the new key of one row and the old key of another. -/
 theorem runStatement_backfill_ok (clock : Int) (counters : Counters) (parameters : List Value)
     {database : Database} {position : Nat} {table : Table} {column : CatalogColumn} {derived : Resolved.Expr}
     (present : database.table position = some (table.appendColumns [(column, .null)]))
