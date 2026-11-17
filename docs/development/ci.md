@@ -135,7 +135,7 @@ While ADR 0010 is implemented, each pull request records its CI job times next t
 the latest comparable `main` run, and a big increase (starting threshold: 20 % or
 2 minutes for a job) is explained before the merge (ADR 0010 section 11).
 
-The frozen corpora (v1 to v9 and the synthetic workload corpus) are the corpora
+The frozen corpora (v1 to v58 and the synthetic workload corpus) are the corpora
 that `judge/claims.json` claims, and the judge lock protects their bytes
 (ADR 0011, "Verdict of the development claims" below).
 `conformance.corpus.load` decodes a locked corpus without validating it again.

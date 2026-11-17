@@ -1,5 +1,8 @@
 # Runtime upstream mining (W6)
 
+Status: record of the upstream extraction for corpus v3 (October 2026). The command
+`just conformance-upstream` is current. The counts and the version numbers are not current.
+
 `just conformance-upstream` builds the pinned SQLite 3.51.0 Tcl testfixture and
 runs the real harness over `alter*.test` and `e_*.test`. Tcl expands loops,
 substitutions and capability guards. SQL is replayed through the pinned C library;

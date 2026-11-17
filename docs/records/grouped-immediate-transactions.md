@@ -1,5 +1,7 @@
 # Grouped immediate-transaction evidence
 
+Status: evidence record of 2026-10-06.
+
 Audience: model and native-evidence reviewers.
 
 [Issue #36](https://github.com/vihren-dev/belay/issues/36) adds five

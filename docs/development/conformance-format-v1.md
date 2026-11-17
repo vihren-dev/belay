@@ -1,5 +1,9 @@
 # Conformance case format
 
+Status: this page describes case version 4. The current case version is 5 (`caseVersion` in
+`packages/verifier-conformance/VerifierConformance/Tooling/Conformance/Json.lean`), which this page
+does not describe.
+
 ADR 0004's test-only `conformance-runner` accepts one JSON object per line and
 returns one result per line. The current case format is version 4. Versions 1
 and 2 carried statements and schemas that Python resolved; ADR 0008 replaced

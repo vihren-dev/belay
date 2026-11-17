@@ -54,7 +54,7 @@ and the model predicts the same code. Table replay reports a recorded view as un
 every replay. Unsupported cases retain their original native record. Admitted
 cases cross-check the frozen PRAGMA metadata independently and reach the existing
 Lean classifier. No native trace is regenerated or edited during model replay.
-The model case format is [version 3](conformance-format-v1.md).
+The model case format is [version 5](conformance-format-v1.md).
 
 ## Execution profiles
 

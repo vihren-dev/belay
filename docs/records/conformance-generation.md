@@ -1,5 +1,8 @@
 # Bounded generation and proven regressions (W3/W4)
 
+Status: record of the generator run of 2026-09-29. The commands are current. The counts are from
+that run.
+
 `just test-full` runs two Hypothesis RuleBasedStateMachine modes at seed 4004,
 20 examples and at most eight actions per example. Each example checks a DDL
 program and a keyed DML program. Every rendered program must map to the

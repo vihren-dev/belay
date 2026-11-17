@@ -1,5 +1,9 @@
 # Concrete native/model comparisons
 
+Status: the commands and the files on this page are current. The counts and the list of refused SQL
+are from October 2026 and are not current. [The supported subset](../semantic-subset.md) gives the
+current list.
+
 ADR 0004's conformance pipeline uses one Lean `classifyCase` function for compiled
 comparison and its `checkCase` predicate for kernel proofs. The
 [case format](conformance-format-v1.md) includes the statement syntax of the SQL,

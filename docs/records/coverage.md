@@ -1,5 +1,8 @@
 # Conformance test scope
 
+Status: record of the first conformance work (September and October 2026). The scopes and the counts
+on this page are not current. The verdict job gives the current results.
+
 `just test` runs the source checks through pytest and independently cached Nix
 test targets. Versioned conformance progress and measured coverage are documented in
 [conformance-progress.md](conformance-progress.md).

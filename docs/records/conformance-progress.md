@@ -1,5 +1,8 @@
 # Frozen progress and measured coverage (W7)
 
+Status: record of 2026-10-06, for corpus v5. The numbers on this page are not current: the
+repository now has 58 frozen corpora, and the verdict job gives the current results.
+
 Current state, 2026-10-06: [v5](../../conformance/corpus-v5/manifest.json) contains
 4,376 cases in 109 shards: 4,307 upstream cases and 69 authored cases.
 The [yield report](../../reports/20261002-adr5-review-yield.json) accounts for all
