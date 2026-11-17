@@ -86,8 +86,13 @@ def customerByEmail (email : Value) : Script :=
 ## Check a claim
 
 ```lean
+def allCustomers : Script := sql r"SELECT * FROM customers"
+
 #sql_check addEmailLower preserves allCustomers on shop
 ```
+
+The answer for this claim is `false`: after the migration, the read returns
+one cell more for each row.
 
 `#sql_check` searches for a database that breaks the claim, and it tries the
 proofs of the library. It adds no theorem.
@@ -139,8 +144,6 @@ A counterexample makes a claim false for good. `sql_refute` checks that the
 database breaks the claim:
 
 ```lean
-def allCustomers : Script := sql r"SELECT * FROM customers"
-
 theorem star_read_changes : ¬ (addEmailLower preserves allCustomers on shop) := by
   sql_refute (db := one)
 ```
