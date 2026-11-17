@@ -129,8 +129,8 @@ A `Database` has a catalog and the rows of each catalog object:
 The model does not describe physical page layouts, schema text identity or the
 schema cookie. The SQLite C code is not formally verified: the agreement of
 the model with SQLite comes from the conformance evidence, which is
-[upstream fixture evidence](conformance-fixtures.md) and
-[derived model comparisons](conformance-model.md).
+[upstream fixture evidence](development/conformance-fixtures.md) and
+[derived model comparisons](development/conformance-model.md).
 
 ## Measure the engine build of an application
 
@@ -167,4 +167,4 @@ Then compare the measurements with the profile that your proofs use:
 
 The conformance tools record native evidence under recorded execution profiles.
 The team documentation of those records is in
-[native corpus records](native-corpus-format.md#execution-profiles).
+[native corpus records](development/native-corpus-format.md#execution-profiles).

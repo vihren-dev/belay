@@ -7,7 +7,7 @@ let
     root = ../..;
     fileset = pkgs.lib.fileset.unions [
       (pkgs.lib.fileset.fileFilter (file: file.hasExt "py" || file.hasExt "lean" || file.hasExt "toml") ./.)
-      ../../tools ../../reviews ../../docs/review-checklist.md
+      ../../tools ../../reviews ../../docs/development/review-checklist.md
       ../../conftest.py ../../pytest.ini ../../tests/__init__.py
       ../../tests/runtime_fixtures.py ../../tests/runtime_support.py
       ../../tests/test_review_log.py ../../tests/test_test_reports.py

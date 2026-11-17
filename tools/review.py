@@ -1,4 +1,4 @@
-"""Review one commit with the other agent tool, against `docs/review-checklist.md`.
+"""Review one commit with the other agent tool, against `docs/development/review-checklist.md`.
 
 A commit written in a Claude Code session is reviewed by Codex, and a commit
 written in a Codex session by Claude Code. The reviewer gets only the commit, the

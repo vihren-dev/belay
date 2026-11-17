@@ -2,7 +2,7 @@
 
 Version 0.2 · 24 September 2026
 
-This guide defines how people and agents collaborate on the SQLite model and its surface. The ADRs under `docs/` define the product decisions; the task files under `plans/` define the current delivery priorities. This guide assigns responsibility, establishes constructive adversarial review, and explains when to involve the product owner.
+This guide defines how people and agents collaborate on the SQLite model and its surface. The ADRs under `docs/adr/` define the product decisions; the task files under `plans/` define the current delivery priorities. This guide assigns responsibility, establishes constructive adversarial review, and explains when to involve the product owner.
 
 **Team structure.** Begin with the product owner and three technical roles. These are responsibilities, not necessarily four full-time positions. People or agents may cover multiple roles, but a substantive change requires a qualified reviewer other than its author. Assign named occupants and substitutes when work begins. At least two technical members must be able to review consequential Lean definitions and proofs; arrange additional review if that competence is unavailable.
 

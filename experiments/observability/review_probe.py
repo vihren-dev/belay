@@ -21,7 +21,7 @@ def measure(root: Path, output: Path) -> None:
     encoded = "".join(json.dumps(record, sort_keys=True) + "\n" for record in records)
     exported = [json.loads(line) for line in encoded.splitlines()]
     assert exported == records
-    rules = parse_rules((root / "docs/review-checklist.md").read_text())
+    rules = parse_rules((root / "docs/development/review-checklist.md").read_text())
     before, after = collect(records, rules), collect(exported, rules)
     assert before == after
     write_json(output / "statistics.json", {rule: asdict(stats) for rule, stats in after.items()})

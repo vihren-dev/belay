@@ -1,4 +1,4 @@
-"""The judge of development claims (ADR 0011, `docs/adr-0011-product-trust-and-development-integrity.md`).
+"""The judge of development claims (ADR 0011, `docs/adr/adr-0011-product-trust-and-development-integrity.md`).
 
 The judge compares what native SQLite recorded in the frozen corpora with what the subject
 (the frontend and the model) predicts, and applies the claims in `judge/claims.json`.

@@ -36,7 +36,7 @@ queries, and can trust that the model behaves as SQLite does, which the
 conformance evidence checks against native SQLite.
 
 Lean design and refactoring work follows the
-[long-term simplification goal](docs/lean-simplification-goal.md): at most 45,000
+[long-term simplification goal](docs/development/lean-simplification-goal.md): at most 45,000
 maintained Lean code lines with at least 90% of the fixed capability baseline.
 Consult its scope and retention rules before proposing changes. At substantial
 milestones, record net code changes and capability effects there; temporary
@@ -149,7 +149,7 @@ and changed tests and checks, including checks that tools run during a build.
   machinery for expensive tests and test groups. Use dependency-based caching
   where it preserves the check's meaning. If it cannot fit, record why and get
   an explicit owner decision on the execution policy before adding or scheduling
-  the check. See R20 in [the review checklist](docs/review-checklist.md).
+  the check. See R20 in [the review checklist](docs/development/review-checklist.md).
 
 ## The local build loop
 
@@ -209,7 +209,7 @@ Do not put recorded SQLite results of corpus cases into the subject's code
 ## Review after each commit
 
 An independent reviewer checks each commit against
-[`docs/review-checklist.md`](docs/review-checklist.md). The reviewer is the other
+[`docs/development/review-checklist.md`](docs/development/review-checklist.md). The reviewer is the other
 agent tool: Codex reviews commits from Claude Code sessions, and Claude Code
 reviews commits from Codex sessions.
 

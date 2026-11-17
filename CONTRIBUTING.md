@@ -79,19 +79,19 @@ all authored and synthetic cases plus a stable upstream sample.
 `just test-full` also runs the complete model suite; CI uses it. `just test-nix` checks
 the Nix build infrastructure. `just verdict` grades the development claims as the
 verdict job does. Commands run under explicit timeouts and are also the entry points
-for CI; see [CI](docs/ci.md) and [conformance coverage](docs/coverage.md).
+for CI; see [CI](docs/development/ci.md) and [conformance coverage](docs/records/coverage.md).
 
 Pytest also records test names, outcomes and durations automatically. See
-[test observations](docs/test-observability.md) for local upload configuration,
+[test observations](docs/development/test-observability.md) for local upload configuration,
 retained reports and CI setup.
 
 ## Where things are
 
 - **The model**, `packages/belay-sqlite-model` (`Belay.Sqlite.Model`): SQLite's statement
   syntax, its resolution against a catalog and the execution semantics. It imports only
-  Lean's `Init`. The [checked Lean API reference](docs/api-reference.md) documents it.
+  Lean's `Init`. The [checked Lean API reference](docs/development/api-reference.md) documents it.
 - **The parser**, `packages/belay-sqlite-text`, which calls SQLite's own parser as native
-  code while a file elaborates; see [the SQLite parser](docs/sqlite-parser.md).
+  code while a file elaborates; see [the SQLite parser](docs/development/sqlite-parser.md).
 - **The surface**, `packages/belay` (`Belay`, with `Belay.Sqlite`): the library that Lean
   developers import; see [its README](packages/belay/README.md).
 - **Divisions and teams.** Each library and `tests/surface` have one directory for each
@@ -102,7 +102,7 @@ retained reports and CI setup.
 - **The conformance evidence**: the frozen corpora under `conformance/`, which the
   conformance runner predicts with the model and the pinned native SQLite checks. The
   verdict job grades the claims in `judge/claims.json` against them.
-- **Decisions** are the architecture decision records under `docs/`, named
+- **Decisions** are the architecture decision records under `docs/adr/`, named
   `adr-NNNN-*.md`. A change that adds or removes a capability starts as a record.
 - **Tasks** are the task and status files under `plans/`, one pair for each piece of
   work that needs several commits.
