@@ -289,6 +289,12 @@ order of its walk of names, which the model does not follow, so the restriction
 term, a date and time function, a JSON function and a rowid name in the filter are
 model restrictions.
 
+For a plain UPDATE that passes the final constraint checks, the model also
+compares each new unique key with the old key of every other row. When two
+such keys conflict, the statement is outside the model. SQLite can reject
+the write before it updates the other row. This applies to expression keys
+and to partial indexes whose filter changes during the UPDATE.
+
 A `WITHOUT ROWID` table (ADR 0014, slice 2) needs a primary key, else SQLite's
 `PRIMARY KEY missing on table t`. Its key columns are NOT NULL, `INTEGER PRIMARY KEY` is
 no rowid alias, and `rowid`, `_rowid_` and `oid` that name no column are

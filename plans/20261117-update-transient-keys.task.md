@@ -7,8 +7,10 @@ An UPDATE can leave a table with distinct keys and still fail while SQLite
 writes a row. For example, on rows (3, 9) and (1, 2) with a unique index on
 a + b, setting b to zero makes the first key equal to the second row's old
 key. A partial index can do the same when one row enters its filter and
-another leaves it. The plain UPDATE model must refuse an order-dependent
-success when a new key conflicts with a different row's old key. An UPDATE
+another leaves it. For a unique index on a WHERE b > c, use (a,b,c) rows
+(1,10,20) and (1,3,0) and set c to 5. The plain UPDATE model must refuse an order-dependent
+success when a new key conflicts with a different row's old key. The ready check marks the run as outside the model. The modeled effect
+still uses the final-table constraint check. An UPDATE
 whose final table violates a constraint must retain its existing diagnostic.
 
 The filter, expression terms, collation and NULL behavior come from

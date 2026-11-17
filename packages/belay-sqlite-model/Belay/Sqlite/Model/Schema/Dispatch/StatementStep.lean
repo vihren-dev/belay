@@ -18,6 +18,7 @@ constraint, a query ({name}`queryEffect`), and {name}`step` for every other stat
 position without a table fails as {lean}`ExecutionError.unmodeled`. An error carries the
 database that the statement reached: the rows before the failing row of an INSERT with
 clauses or algorithms, and the input database for every other error. The support check:
+a plain UPDATE with a successful final write passes {name}`LiteralData.updateKeysOrderIndependent`,
 INSERT and UPDATE pass the data domain of the table, every write and query the JSON
 checks of {lit}`JsonReady`, no expression cell of INSERT may fail ({name}`Resolved.cellsReady`), and a
 statement's subqueries have no fallible call ({name}`Resolved.subqueriesPlain`), because SQLite may
@@ -79,7 +80,8 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
         else checkedWrite database target keys result
       StatementRun.withKeys effect
         (LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
-          updateJsonReady context table assignments filter returning)
+          updateJsonReady context table assignments filter returning &&
+          (rules.isSome || !effect.isOk || LiteralData.updateKeysOrderIndependent keys table.rows result.rows))
         (LiteralData.changedCounts effect (table.scanRows.filter (LiteralData.selected context filter)).length)
         (rules.map fun rules => updateKeys context rules target table assignments filter database subqueries.isEmpty)
   | .delete target filter returning subqueries rules => match database.table target with

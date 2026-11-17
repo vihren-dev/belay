@@ -100,6 +100,22 @@ theorem runStatement_backfill_ok (clock : Int) (counters : Counters) (parameters
   rotate_left
   · trivial
   simp only [LiteralData.updateReady, LiteralData.tableReady, Bool.and_eq_true]
+  refine ⟨?_, ?_⟩
+  rotate_left
+  · apply Bool.or_eq_true_iff.mpr
+    right
+    unfold LiteralData.updateKeysOrderIndependent
+    apply List.all_eq_true.mpr
+    intro key member
+    apply decide_eq_true
+    change ((table.rows.map _).zip (table.rows.map _)).Pairwise _
+    rw [List.zip_map', List.pairwise_map]
+    refine (unique key member).imp_of_mem fun {first second} atFirst atSecond distinct => ?_
+    dsimp only
+    have firstWide := Nat.le_of_eq (admitted.rowsWide first atFirst).symm
+    have secondWide := Nat.le_of_eq (admitted.rowsWide second atSecond).symm
+    exact ⟨(LiteralData.keyEqual_append firstWide secondWide _ _ (keysBelow key member)).trans distinct,
+      (LiteralData.keyEqual_append firstWide secondWide _ _ (keysBelow key member)).trans distinct⟩
   refine ⟨⟨⟨⟨⟨by rw [nullCells]; exact ready.1, ?_⟩, ?_⟩, ?_⟩, rfl⟩, ?_⟩
   · unfold LiteralData.aliasReady at alias ⊢
     cases aliasAt : table.shape.rowidAlias with
