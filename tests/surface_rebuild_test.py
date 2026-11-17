@@ -22,12 +22,14 @@ EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "wrong-enforced": [],
     "with-blob": [["sessions", 10, "customers", 0], [10, 1, 100]],
     "dangling": [["sessions", 11, "customers", 0], [10, 1, 100], [11, 99, 200]],
+    "copy-audit": [[7]],
+    "copy-foreign-key": [[0]],
 }
-"""The rows that the model gives for each replay, which pinned SQLite must give too: the rows of the pragma
-foreign_key_check, if any, and then the sessions after the rebuild."""
+"""The rows from the rebuild or copy replay that Belay and pinned SQLite must both return."""
 
 EXPECTED_ERRORS: dict[str, list[str]] = {
     "right": [], "wrong-enforced": [], "with-blob": ["cannot store BLOB value in TEXT column"], "dangling": [],
+    "copy-audit": [], "copy-foreign-key": ["FOREIGN KEY constraint failed"],
 }
 """The refusal that pinned SQLite gives for each error output of the model, in order."""
 
@@ -56,7 +58,8 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
     rebuild claims rest on: the right order keeps the sessions, foreign keys on before the transaction lose
     them, and a customer whose email is a blob makes the copy into the STRICT table fail (the rebuilt table stays
     empty, and the pragma foreign_key_check then reports the session, but the commit does not stop). The last replay has a session of a
-    customer that does not exist: the pragma reports it and the rebuild still commits."""
+    customer that does not exist: the pragma reports it and the rebuild still commits. Two further replays
+    check that a copy fires its audit trigger and that a missing parent rejects the copy with error 19."""
     stdout = check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildReplays", 0)),
                                 timeout=CHAIN_TIMEOUT_SECONDS)
     sqlite = shutil.which("sqlite3")
@@ -74,6 +77,8 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
         refusals = re.findall(r"error near line \d+: (.*)", result.stderr)
         modeled_errors = [output for output in outputs if "error" in output]
         assert len(refusals) == len(modeled_errors) == len(EXPECTED_ERRORS[name]), (name, result.stderr)
+        if name == "copy-foreign-key":
+            assert modeled_errors == [{"error": 19}] and refusals[0].endswith("(19)"), (outputs, result.stderr)
         for line, expected in zip(refusals, EXPECTED_ERRORS[name], strict=True):
             assert expected in line, (name, line, expected)
 

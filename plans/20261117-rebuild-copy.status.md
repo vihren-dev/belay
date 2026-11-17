@@ -25,3 +25,7 @@ The public scan laws describe the catalog, source position, rowid and streaming 
 
 The model package lists the scan-order, row compatibility and query production
 modules. Its core import closure is checked by tests/test_model_package.py.
+
+The pinned replay test now includes a copy that fires an audit trigger and a
+copy that fails on an enforced foreign key. These cases exercise the write
+rules that the general copy law must account for.
