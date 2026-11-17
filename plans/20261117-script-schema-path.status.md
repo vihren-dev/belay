@@ -9,5 +9,7 @@ README proofs use resolutionAt for intermediate states and retain the
 same public claims. tests/surface_rebuild_test.py checks each proof.
 The repository checks are pending.
 
-The ten Lean proof files in examples/table-rebuild/Proof contain 1,002
+The ten Lean proof files in examples/table-rebuild/Proof contain 1,001
 lines, down from 1,038 before the change.
+
+The example describes resolution from the prefix certificate at the copy and the final read.

@@ -56,8 +56,7 @@ theorem sessions_resolves_before : ∃ state, resolveStatement runContext sample
     exact ⟨state, by rw [same, checked]⟩
   · cases checked
 
-/-- The read resolves to the read of position 0 where the connection is the one that the whole rebuild reaches on
-the sample. Proof sketch: kernel evaluation. -/
+/-- The read resolves to the read of position 0 on the state that {name}`schemaAt` computes after the whole rebuild. Proof sketch: kernel evaluation. -/
 theorem sessions_resolves_after : ∃ state, resolveStatement runContext (schemaAt 8)
     sessionsRead = .ok (sessionsResolvedAt 0, state) := by
   have checked : (match resolveStatement runContext (schemaAt 8) sessionsRead with

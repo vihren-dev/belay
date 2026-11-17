@@ -110,7 +110,7 @@ theorem advance_1 {clock : Option Clock} {index : Nat} {c next : Connection} {ou
   exact kept.2
 
 /-- Statement 2, the CREATE TABLE of the new customers, keeps the facts (the form of {name}`advance_0`). Proof sketch:
-the step law of the statement gives the next connection; the resolution state is compared by evaluation. -/
+the prefix law gives the schema, and the statement frame gives the sessions. -/
 theorem advance_2 {clock : Option Clock} {index : Nat} {c next : Connection} {output : Output}
     {others : List StatementExecution} {sessions : Table} (kept : Kept sessions 2 c)
     (step : runScriptStep runContext clock index c makeStrict.statements[2].1 makeStrict.statements[2].2 =

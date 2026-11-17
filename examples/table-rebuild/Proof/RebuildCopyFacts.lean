@@ -27,8 +27,8 @@ def copyQuery : Resolved.Query :=
 def copyStatement : Resolved.Statement :=
   .insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none
 
-/-- The fourth statement of the rebuild resolves to {name}`copyStatement` on the resolution state that the model
-reaches before it. Proof sketch: evaluation. -/
+/-- The fourth statement of the rebuild resolves to {name}`copyStatement` on the resolution state that {name}`schemaAt`
+computes after the first three statements. Proof sketch: evaluation. -/
 theorem copy_resolves : ∃ after, resolveStatement runContext (schemaAt 3) makeStrict.statements[3].1 =
     .ok (copyStatement, after) := ⟨_, by with_unfolding_all rfl⟩
 
