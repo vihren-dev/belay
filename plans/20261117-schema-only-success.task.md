@@ -10,8 +10,9 @@ BEGIN in an idle connection, COMMIT in a transaction with foreign keys off,
 CREATE TABLE at the end of the catalog, plain DROP, compatible catalog
 rewrites, and a foreign-key check for which the catalog bounds the number
 of tables that can contribute rows. A failing check makes no claim.
-Deferred foreign keys prevent a schema-only COMMIT guarantee with
-enforcement enabled.
+The existing model refuses deferred-key writes and its COMMIT law accepts
+any open transaction. The public check also requires enforcement off, as
+#414 requests, because native SQLite can reject a deferred violation at COMMIT.
 
 A script whose statements all pass on their resolved prefixes must satisfy
 Succeeds on the specified schema. For a mixed script, callers may carry an
@@ -33,7 +34,7 @@ rebuild success proof after the change.
 ## Existing facts
 
 StepContinuesOk and ForeignKeyCheckContinues give per-kind execution laws.
-Database.blocks models unspecified order among foreign-key check results
-from multiple tables. SendStatementsSuccess accepts a branch invariant.
-Issue #411 supplies the resolved path. The README uses the table frame of
-#412 to carry its original tables.
+Database.blocks groups nonempty results by table. Database.foreignKeyCheckRows
+returns none when two or more groups have rows. The check must refuse
+catalogs where several groups can contribute. SendStatementsSuccess accepts a branch invariant.
+Issue #411 supplies the resolved path. The mixed README proof depends on the table frame being implemented in #412.
