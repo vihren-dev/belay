@@ -6,6 +6,8 @@ set_option maxRecDepth 8192
 set_option maxHeartbeats 4000000
 set_option exponentiation.threshold 2048
 
+/-! The first README claim applies the certified read law to the sessions table across the rebuild. -/
+
 open Belay.Sqlite
 namespace RebuildGuide
 
