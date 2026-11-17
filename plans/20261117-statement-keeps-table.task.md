@@ -35,5 +35,7 @@ tests and the relevant repository checks.
 PlainWriteFrame and ReadOnlyFrame cover queries and plain writes.
 CreateTableStepLaws, DropTableStepLaws and ControlStepFrames cover the
 remaining rebuild statements. TableByName relates SQL names to positions.
-The prefix laws of #411 provide the resolved statements and the catalog at
-each position. ADRs 0025 and 0026 keep proof rules in the library.
+ADRs 0025 and 0026 keep proof rules in the library.
+
+The script-level check depends on the open schema-path task (#411) for
+the resolved statement and catalog at each prefix.
