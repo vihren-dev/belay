@@ -59,6 +59,6 @@ transfer scope. The statement law covers the shared-alias copy. The
 implicit-rowid lemma describes the ordinary row operation. The pinned SQLite replays in
 `tests/surface_rebuild_test.py` check ordinary rowid allocation, an enforced
 foreign-key failure and an audit trigger. The separate native and kernel
-test in `tests/conformance_insert_queries_test.py` checks the indexed transfer
-in the cases `insert-query-transfer-with-rowid-gap` and
-`insert-query-transfer-column-list`.
+test in `tests/conformance_insert_queries_test.py` checks that the model
+refuses `insert-query-transfer-with-rowid-gap`. It also checks the separate
+column-list case, which the model conservatively refuses.
