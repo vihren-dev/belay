@@ -26,3 +26,7 @@ cases. Four assertions in those tests now check the observed verdicts. conforman
 now checks agreement on the rejected REFERENCES and CURRENT_TIMESTAMP
 additions by name. conformance_workload_test.py checks the directory replay,
 combined report and final constraint error against native SQLite.
+
+The frozen-suite test in conformance_authored_test.py now checks the two
+new agreements by name: begin-immediate and foreign-key-failure. Native
+replay still checks the original traces for all 43 authored cases.
