@@ -1,7 +1,7 @@
 # Schema-only success for resolved statements
 
 Created 2026-11-17. Issue [#414](https://github.com/vihren-dev/belay/issues/414).
-Status: open.
+Status: DONE.
 
 A decidable check on a resolved statement and its input resolution state
 must certify a continuing step, a successful output, and no alternative
@@ -37,4 +37,4 @@ StepContinuesOk and ForeignKeyCheckContinues give per-kind execution laws.
 Database.blocks groups nonempty results by table. Database.foreignKeyCheckRows
 returns none when two or more groups have rows. The check must refuse
 catalogs where several groups can contribute. SendStatementsSuccess accepts a branch invariant.
-Issue #411 supplies the resolved path. The mixed README proof depends on the table frame being implemented in #412.
+Issue #411 supplies the resolved path. The mixed README proof uses the table frame from #412.
