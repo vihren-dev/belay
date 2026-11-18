@@ -1,7 +1,7 @@
 # A preserved table gives a preserved read
 
 Created 2026-11-17. Issue [#413](https://github.com/vihren-dev/belay/issues/413).
-Status: open.
+Status: DONE.
 
 A single library law must prove that a migration preserves a certified
 single-table read on every database of the specified schema. The read can
@@ -34,5 +34,5 @@ different evidence.
 ReadCertificate.preservesAt accepts branch-specific obligations.
 ReadAnalysis.analyze_sound checks the initial certificate.
 The schema path of #411 and table frame of #412 supply the final schema
-and table for successful branches. The current example constructs these
-obligations in RebuildKeepsRead.lean and RebuildKeeps.lean.
+and table for successful branches. KeptReadCheck.lean discharges these
+obligations for the README example in RebuildKeeps.lean.
