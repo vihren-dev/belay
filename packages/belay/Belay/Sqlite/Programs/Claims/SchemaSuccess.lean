@@ -1,6 +1,6 @@
 import Belay.Sqlite.Programs.Claims.SendStatementsSuccess
 import Belay.Sqlite.Programs.Claims.SuccessSyntax
-import Belay.Sqlite.Model.Programs.Scripts.SchemaSuccessPath
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 

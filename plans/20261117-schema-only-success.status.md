@@ -12,3 +12,6 @@ The task distinguishes the catalog-order restriction and the COMMIT check from t
 
 SchemaKeyCheck, SchemaSuccess and SchemaSuccessPath are listed in the core
 Lake manifest and checked by tests/test_model_package.py.
+
+SchemaSuccess imports SchemaSuccessPath through the public model root.
+tests/surface_layers_test.py checks that surface imports use that boundary.
