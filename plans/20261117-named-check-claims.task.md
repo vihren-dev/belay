@@ -1,7 +1,7 @@
 # Prove a SQL claim given by its name
 
 Created 2026-11-17. Issue [#358](https://github.com/vihren-dev/belay/issues/358).
-Status: open.
+Status: DONE.
 
 For the query claim selectClaim in SelectCheckCases.lean, the named and
 expanded forms of #sql_check must both report a proof. The printed proof
