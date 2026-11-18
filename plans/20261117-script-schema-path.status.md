@@ -17,3 +17,7 @@ The example describes resolution from the prefix certificate at the copy and the
 The core Lake library now lists SchemaPath and SchemaPathStep explicitly.
 tests/test_model_package.py compares the Lake module inventory with the model
 root's import closure. The locked Nix verdict matched main on all 7,868 cases.
+
+SendSchemaPath imports the public model root that exports SchemaPath.
+tests/surface_layers_test.py checks the package boundary for all surface
+modules. tests/surface_rebuild_test.py checks the path in the README proof.

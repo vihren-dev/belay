@@ -1,5 +1,5 @@
 import Belay.Sqlite.Programs.Claims.SendStatementsInvariant
-import Belay.Sqlite.Model.Programs.Scripts.SchemaPath
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
