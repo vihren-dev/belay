@@ -13,8 +13,7 @@ for any permutation of source rows with an alias. The concrete README copy
 now returns the exact next database, with customers.scanRows in the target.
 The proof directory shrank from 470 lines to 381. RebuildCopyChecks exercises
 both directions of the NOT NULL condition and the width and affinity checks
-through tests/surface_rebuild_test.py. The assembled statement law and Nix
-checks are pending.
+through tests/surface_rebuild_test.py.
 
 Table.accessOrders_perm now accounts for indexed scans, including partial
 indexes. Resolved.Query.productions_copyOf gives the source values in each
@@ -50,3 +49,17 @@ and delete 10. Create the empty t(v INTEGER) with a matching index and run
 INSERT INTO t SELECT * FROM s. Native SQLite keeps the source rowids 2 and 3.
 Belay reports the transfer as unmodeled. The owner decision is whether to
 state the existing transfer support condition or to expand the model.
+
+The [hosted verdict](https://github.com/vihren-dev/belay/actions/runs/44212430809)
+agreed with the baseline on all 7,868 frozen cases. At stack head
+761208cf244b, the 22 Nix reports contained 1,483 passing tests, including
+the rebuild proofs and the pinned SQLite replays. The 98 infrastructure
+tests and the scheduled checks also passed.
+
+The task stays open for two scope decisions. An unconditional frame fails
+when a trigger writes another table. An enforced foreign key can also
+make the copy fail. The script law currently requires a copy without
+write rules. Extending it to write rules needs premises that establish
+success and identify which other tables can change. For implicit rowids,
+the scope decision is whether the statement law may require an already
+supported transfer or must also model the indexed transfer described above.
