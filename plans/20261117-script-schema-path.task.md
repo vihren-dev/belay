@@ -1,7 +1,7 @@
 # Schema states along a successful script
 
 Created 2026-11-17. Issue [#411](https://github.com/vihren-dev/belay/issues/411).
-Status: open.
+Status: DONE.
 
 Given the initial catalog, saved catalog and settings, resolution determines
 the resolved statements and the resolution state at each script position.
