@@ -1,7 +1,7 @@
 # Copy the rows of a compatible table
 
 Created 2026-11-17. Issue [#415](https://github.com/vihren-dev/belay/issues/415).
-Status: open.
+Status: DONE.
 
 A library law for the README rebuild must establish that the INSERT from a
 full projection of the source succeeds, the empty target receives the source
@@ -16,12 +16,12 @@ the corresponding guarantee in the source. The source can have additional
 NOT NULL constraints. The only data-dependent typing premise for the README
 is that the source rows fit the target's STRICT types.
 
-There is an open question about the operational premise. The issue's stated
-schema conditions allow an AFTER INSERT trigger to write an audit table.
-The unchanged-other-tables conclusion would be false for that statement.
-The owner has been asked whether the law should require the resolved INSERT
-to have no write rules. Column compatibility and the theorem that compatible
-source rows satisfy target column obligations apply in either case.
+The statement law covers supported full-column transfers with a shared
+rowid alias and no resolved write rules. This excludes triggers that write
+another table and foreign keys that can reject the INSERT. For a target
+with an implicit rowid, the row-operation law describes ordinary allocation.
+Indexed transfers that reuse source rowids remain outside that guarantee.
+The owner approved this scope on 2026-11-18.
 
 ## Acceptance
 
@@ -35,7 +35,7 @@ write. Run the repository's Nix gates on the completed stack.
 
 ## Existing code
 
-RebuildCopyFacts and RebuildSucceedsCopy contain the current concrete proof.
+RebuildCopyFacts and RebuildSucceedsCopy apply the library laws to the README copy.
 InsertFits.copy takes row-level premises about width, storage affinity, NULL,
 types and keys. LiteralData.inserted_copy gives the stored rows for an alias
 copy. runScriptStep_insertSelect_success exposes the exact updated database

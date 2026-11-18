@@ -1,10 +1,9 @@
 # Status of the rebuild copy
 
-Created 2026-11-17. Open. [Task](20261117-rebuild-copy.task.md).
+Created 2026-11-17. DONE. [Task](20261117-rebuild-copy.task.md).
 
-Issue #415 needs a premise for statement side effects. The column-compatibility
-check and proof that a valid source meets the target's column obligations
-can be developed independently. The README success proof and data effect
+The script-step law requires a resolved INSERT without write rules. The column-compatibility
+check and the row-level proof apply independently of that premise. The README success proof and data effect
 tests are the acceptance checks for the assembled law.
 
 CatalogTable.copyCompatible checks affinities, NOT NULL implication, aliases
@@ -47,8 +46,7 @@ The implicit-rowid guarantee also depends on SQLite's transfer optimization.
 In SQLite 3.51.0, start with s(v INTEGER), an index on v, values 10, 20, 30,
 and delete 10. Create the empty t(v INTEGER) with a matching index and run
 INSERT INTO t SELECT * FROM s. Native SQLite keeps the source rowids 2 and 3.
-Belay reports the transfer as unmodeled. The owner decision is whether to
-state the existing transfer support condition or to expand the model.
+Belay reports this indexed transfer as unsupported.
 
 The [hosted verdict](https://github.com/vihren-dev/belay/actions/runs/44212430809)
 agreed with the baseline on all 7,868 frozen cases. At stack head
@@ -56,10 +54,8 @@ agreed with the baseline on all 7,868 frozen cases. At stack head
 the rebuild proofs and the pinned SQLite replays. The 98 infrastructure
 tests and the scheduled checks also passed.
 
-The task stays open for two scope decisions. An unconditional frame fails
-when a trigger writes another table. An enforced foreign key can also
-make the copy fail. The script law currently requires a copy without
-write rules. Extending it to write rules needs premises that establish
-success and identify which other tables can change. For implicit rowids,
-the scope decision is whether the statement law may require an already
-supported transfer or must also model the indexed transfer described above.
+On 2026-11-18 the owner accepted the rule-free copy law and the existing
+transfer scope. The statement law covers the shared-alias copy. The
+implicit-rowid lemma describes the ordinary row operation. The pinned
+SQLite regressions distinguish that operation from indexed rowid transfer,
+an enforced foreign-key failure and a trigger that writes another table.
