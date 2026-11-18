@@ -29,10 +29,10 @@ def table_rows(block: str) -> dict[str, list[str]]:
 def test_consumer_size_claim_is_false_and_replays(runtime_root: Path, tmp_path: Path) -> None:
     """CheckDomain.domainSchemas, SampleTouched and SampleConstraints with the data limits of
     CheckBudget: on a schema of more than 8,192 data nodes, the premise `HasCatalog consumer`
-    gives the schema of the search, which finds a message whose delete trigger breaks a CHECK at
-    the default options, with at most two rows in each table. The construction inserts the rows
-    with the triggers off; native SQLite rebuilds them and fails on the same CHECK. A
-    counterexample supplied with `db!` is also reported."""
+    gives the schema of the search, which finds a message whose delete trigger breaks a CHECK. The
+    fixture allows 60 seconds for compiled work and uses the default sampling options, including
+    at most two rows per table. Native SQLite rebuilds the rows with triggers off and reproduces
+    the CHECK failure. The checker also reports the counterexample supplied with `db!`."""
     result = run_command(surface_command(runtime_root, fixture_file("CheckConsumerSize.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
