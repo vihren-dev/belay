@@ -29,7 +29,8 @@ gain coverage.
 
 ## Existing code
 
-Grammar/Writes.lean restricts the parsed BEGIN transaction type.
+Grammar/Writes.lean translates all four parsed BEGIN modes to the same
+snapshot operation on an uncontended connection.
 conformance/profile_scope.py checks the execution profile before translation.
 The wire profile already validates the immediate and deferred conventions.
 The model's begin statement saves the transaction snapshot.
