@@ -20,3 +20,9 @@ two immediate-profile cases in v4 and four in v5 now name their remaining
 restrictions: a column default expression, an UPDATE expression on a unique
 key, and deferred foreign-key enforcement. No other verdict or diagnostic
 changed.
+
+The Nix harness exposed three assertions that still expected the profile
+gate to refuse IMMEDIATE cases. conformance_authored_boundaries_test.py
+now checks agreement on the rejected REFERENCES and CURRENT_TIMESTAMP
+additions by name. conformance_workload_test.py checks the directory replay,
+combined report and final constraint error against native SQLite.
