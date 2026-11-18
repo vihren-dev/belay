@@ -48,14 +48,17 @@ and delete 10. Create the empty t(v INTEGER) with a matching index and run
 INSERT INTO t SELECT * FROM s. Native SQLite keeps the source rowids 2 and 3.
 Belay reports this indexed transfer as unsupported.
 
-The [hosted verdict](https://github.com/vihren-dev/belay/actions/runs/44212430809)
-agreed with the baseline on all 7,868 frozen cases. At stack head
-761208cf244b, the 22 Nix reports contained 1,483 passing tests, including
-the rebuild proofs and the pinned SQLite replays. The 98 infrastructure
-tests and the scheduled checks also passed.
+At revision ba625cf90711 the [Linux checks](https://github.com/vihren-dev/belay/actions/runs/44221060452/job/134522729144)
+and the [locked verdict](https://github.com/vihren-dev/belay/actions/runs/44221060249/job/134522724488)
+passed for this PR. Both runs include the public script-step theorem and the
+README proof. The earlier [verdict report](https://github.com/vihren-dev/belay/actions/runs/44212430809)
+matched main on all 7,868 frozen cases.
 
 On 2026-11-18 the owner accepted the rule-free copy law and the existing
 transfer scope. The statement law covers the shared-alias copy. The
-implicit-rowid lemma describes the ordinary row operation. The pinned
-SQLite regressions distinguish that operation from indexed rowid transfer,
-an enforced foreign-key failure and a trigger that writes another table.
+implicit-rowid lemma describes the ordinary row operation. The pinned SQLite replays in
+`tests/surface_rebuild_test.py` check ordinary rowid allocation, an enforced
+foreign-key failure and an audit trigger. The separate native and kernel
+test in `tests/conformance_insert_queries_test.py` checks the indexed transfer
+in the cases `insert-query-transfer-with-rowid-gap` and
+`insert-query-transfer-column-list`.
