@@ -1,6 +1,7 @@
 # Refute the consumer-size claim under CI load
 
 Created 2026-11-18 for [issue #426](https://github.com/vihren-dev/belay/issues/426).
+Status: DONE on 2026-11-18.
 
 The consumer-size fixture must retain its full schema, its two counterexamples,
 and the replay against pinned SQLite. The generated counterexample must use
