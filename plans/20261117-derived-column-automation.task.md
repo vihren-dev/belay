@@ -1,7 +1,7 @@
 # Automatic proofs for a derived-column migration
 
 Created 2026-11-17. Issue [#404](https://github.com/vihren-dev/belay/issues/404).
-Status: open.
+Status: DONE.
 
 On the guide's shop schema, both sql_auto and #sql_check prove that
 addEmailLower succeeds and preserves the named-column customer read.
