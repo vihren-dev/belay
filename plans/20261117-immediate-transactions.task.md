@@ -1,7 +1,7 @@
 # Replay immediate transactions on a single connection
 
 Created 2026-11-17. Issue [#343](https://github.com/vihren-dev/belay/issues/343).
-Status: open.
+Status: DONE.
 
 Accept the recorded immediate transaction convention in a supported
 single-connection profile. The recorder accepts deferred and immediate modes.
