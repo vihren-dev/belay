@@ -11,3 +11,9 @@ The Nix checks are pending.
 
 The guide shows how to check a claim by name. The library module roots
 that the checker preserves are documented beside the opening tactic.
+
+The hosted S6 proof replay exposed an opening instruction that required
+the original user-defined name even when the replay restated its expanded
+body. The generated proof unfolds the names when present and also accepts
+the expanded body. The named and expanded replay checks are in surface_select_procedure_test.py and
+surface_s6_check_programs_test.py.

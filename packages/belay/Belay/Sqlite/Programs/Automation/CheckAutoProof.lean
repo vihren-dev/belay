@@ -18,7 +18,8 @@ private def libraryModuleRoots : List Name := [`Init, `Lean, `Std, `Belay]
 
 /-- The tactic that opens a claim to the form of the search: a fresh triple with the assertion {lit}`ifOk`
 becomes its check of the program at the initial context. First unfold names of claims from the user's
-modules so that the binders are visible. Every variable is introduced, and an equation that a
+modules so that the binders are visible. A printed proof can also start from an expanded
+claim in a module where the original name is unavailable. Every variable is introduced, and an equation that a
 premise gives for a variable replaces the variable. -/
 def openingTactic (proposition : Expr) : TermElabM (TSyntax `tactic) := do
   let environment ← getEnv
@@ -33,6 +34,6 @@ def openingTactic (proposition : Expr) : TermElabM (TSyntax `tactic) := do
     claim := body.consumeMData
   let openGoal ← `(tactic| ((first | refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_ | skip); intros; try subst_vars))
   if names.isEmpty then return openGoal
-  return ← `(tactic| (unfold $names:ident*; $openGoal:tactic))
+  return ← `(tactic| ((first | unfold $names:ident* | skip); $openGoal:tactic))
 
 end Belay.Sqlite.Check
