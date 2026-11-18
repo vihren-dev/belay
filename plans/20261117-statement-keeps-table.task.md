@@ -1,7 +1,7 @@
 # Follow a table through a resolved script
 
 Created 2026-11-17. Issue [#412](https://github.com/vihren-dev/belay/issues/412).
-Status: open.
+Status: DONE.
 
 Given a resolved statement and a table position, a computable check gives
 the position of the same table after the step or reports that it cannot
@@ -37,5 +37,5 @@ CreateTableStepLaws, DropTableStepLaws and ControlStepFrames cover the
 remaining rebuild statements. TableByName relates SQL names to positions.
 ADRs 0025 and 0026 keep proof rules in the library.
 
-The script-level check depends on the open schema-path task (#411) for
+The script-level check uses the schema path from #411 for
 the resolved statement and catalog at each prefix.
