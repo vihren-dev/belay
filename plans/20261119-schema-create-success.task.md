@@ -1,6 +1,6 @@
 # Schema-only success for catalog creation and DROP COLUMN
 
-Created 2026-11-19. Open. [Belay issue 444](https://github.com/vihren-dev/belay/issues/444).
+Created 2026-11-19. DONE. [Belay issue 444](https://github.com/vihren-dev/belay/issues/444).
 
 For any valid connection, resolution to CREATE TABLE, CREATE VIEW, CREATE
 TRIGGER or non-unique CREATE INDEX guarantees that the script step continues

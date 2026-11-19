@@ -1,6 +1,6 @@
 # Status of schema-only success for catalog creation
 
-Created 2026-11-19. Open. [Task](20261119-schema-create-success.task.md).
+Created 2026-11-19. DONE. [Task](20261119-schema-create-success.task.md).
 
 At the starting revision, `Programs/Scripts/SchemaSuccess.lean` rejects
 views, triggers and all indexes. The step for CREATE INDEX can return a
@@ -18,6 +18,5 @@ SplitByAge checks that precisely its two data-copy steps need row proofs.
 The focused tests are tests/surface_rebuild_test.py and
 tests/surface_split_by_age_test.py. Review required an exhaustive creation classifier. It now lists every
 statement kind. The module comments name the creation and removal cases.
-The slice checks are pending.
 
-The second review found no issues. The full test and verdict checks are pending.
+The second review found no issues. The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579039872/job/135754315530) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579039546/job/135754312595) passed on the PR source tree.
