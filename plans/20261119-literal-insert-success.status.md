@@ -11,3 +11,6 @@ change count. PlainInsertStep gives the continued script step, done output
 and updated counters. PlainInsertStepCases applies the step law to two
 literal rows and checks a conflicting batch on an empty table. The fixture
 runs through tests/surface_schema_script_test.py.
+
+Review clarified the exact ready run and its alternatives. SchemaScriptReplays
+now compares the successful literal batch and the duplicate batch with pinned SQLite.

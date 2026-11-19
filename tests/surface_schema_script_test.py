@@ -18,6 +18,7 @@ EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "drop-on": [],
     "refusals": [[0], [1], [3]],
     "inserts": [[1, "a"], [2, "b"]],
+    "literals": [[1, "a"], [2, "b"]],
 }
 """The rows that the model gives for each replay, which pinned SQLite must give too."""
 
@@ -26,6 +27,7 @@ EXPECTED_ERRORS: dict[str, list[str]] = {
     "drop-on": [],
     "refusals": ["already exists", "no such table", "no transaction is active",
                  "cannot start a transaction within a transaction"],
+    "literals": ["UNIQUE constraint failed"],
     "inserts": ["NOT NULL constraint failed", "UNIQUE constraint failed", "CHECK constraint failed",
                 "cannot store TEXT value in INTEGER column"],
 }

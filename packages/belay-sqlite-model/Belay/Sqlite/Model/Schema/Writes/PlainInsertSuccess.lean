@@ -5,8 +5,9 @@ set_option doc.verso true
 namespace Belay.Sqlite.Model
 
 /-- For a plain INSERT with no RETURNING or write rules, a found table, plain subqueries,
-ready cell expressions and values that satisfy {name}`InsertFits`, the run succeeds once,
-stores the table with those rows inserted, and uses the counts of that insertion.
+ready cell expressions and values that satisfy {name}`InsertFits`, the model describes the run (it is ready).
+The run has one successful effect and no alternative executions. It stores the table with
+the new rows and uses the counts of that insertion.
 The change count is the number of inserted rows. Proof sketch: the final table satisfies
 its constraints, so its prefix does too. No row fails the alias check. These two facts
 select the successful branches of {name}`insertOutcome` and {name}`checkedWrite`. -/
