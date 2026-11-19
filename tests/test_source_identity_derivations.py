@@ -40,7 +40,8 @@ def test_parser_change_rebuilds_only_the_packages_that_compile_it(tmp_path: Path
 def test_surface_fixture_changes_only_consuming_suites(tmp_path: Path) -> None:
     """Check the fixture closure in build-support/surface-fixtures.nix and its surfaceSuite inputs
     in build-support/tests.nix. From tests/surface_fixture_roots.json, only surfaceChecks reaches
-    CheckConsumerSize, and surfaceS6 reaches LowercaseFilters through its derived-column fixtures."""
+    CheckConsumerSize. The two SQL root suites use SqlFileProbe through a Python helper.
+    The derived-column fixtures bring LowercaseFilters into surfaceS6."""
     root = tmp_path / "repository"
     shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(*IGNORED, "reviews", ".direnv"), symlinks=True)
     names = [name for name in json.loads((root / "tests/nix_suites.json").read_text())
@@ -60,6 +61,7 @@ def test_surface_fixture_changes_only_consuming_suites(tmp_path: Path) -> None:
     before = drv_paths()
     for fixture, consumers in [
         ("CheckConsumerSize.lean", {"surfaceChecks"}),
+        ("SqlFileProbe.lean", {"surface", "surfaceS6"}),
         ("LowercaseFilters.lean", {"surface", "surfaceClaims", "surfaceS6"}),
     ]:
         path, = (root / "tests/surface").rglob(fixture)

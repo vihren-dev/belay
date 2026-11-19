@@ -17,3 +17,9 @@ is read on demand. The root list includes the literal INSERT fixture from issue 
 
 The second review found no issues. The six restricted suites are included
 in the full Nix test target.
+
+The complete Nix run found a missing SqlFileProbe in surfaceS6.
+surface_sql_check_roots_test.py builds a same-name project through a Python
+helper that reads this Lean file. Both consuming suites now list the probe.
+The derivation-identity regression covers its two consumers. The Nix
+verdict passed for this layer.
