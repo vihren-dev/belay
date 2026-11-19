@@ -35,3 +35,34 @@ def test_parser_change_rebuilds_only_the_packages_that_compile_it(tmp_path: Path
     target.write_text(target.read_text() + "\n")
     after = drv_paths()
     assert {name for name in before if before[name] != after[name]} == {"textPackage", "surfacePackage"}
+
+
+def test_surface_fixture_changes_only_consuming_suites(tmp_path: Path) -> None:
+    """The six Nix surface suites isolate the consumer-size fixture and share LowercaseFilters,
+    which surfaceS6 reaches through the imports of its derived-column fixtures."""
+    root = tmp_path / "repository"
+    shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(*IGNORED, "reviews", ".direnv"), symlinks=True)
+    names = [name for name in json.loads((root / "tests/nix_suites.json").read_text())
+             if name.startswith("surface")]
+    body = " ".join(f"{name} = set.tests.{name}.drvPath;" for name in names)
+    expr = (f"let set = import {json.dumps(str(root / 'build-support/default.nix'))} "
+            f"{{ root = /. + {json.dumps(str(root))}; }}; in {{ {body} }}")
+
+    def drv_paths() -> dict[str, str]:
+        """Evaluate the real suite definitions on the fixture tree of this test."""
+        result = run_command(["nix", "eval", "--offline", "--impure", "--json",
+                              "--extra-experimental-features", "nix-command flakes", "--expr", expr],
+                             cwd=ROOT, timeout=120)
+        assert result.returncode == 0, result.diagnostic()
+        return json.loads(result.stdout)
+
+    before = drv_paths()
+    for fixture, consumers in [
+        ("CheckConsumerSize.lean", {"surfaceChecks"}),
+        ("LowercaseFilters.lean", {"surface", "surfaceClaims", "surfaceS6"}),
+    ]:
+        path, = (root / "tests/surface").rglob(fixture)
+        path.write_text(path.read_text() + "\n")
+        after = drv_paths()
+        assert {name for name in names if before[name] != after[name]} == consumers, fixture
+        before = after

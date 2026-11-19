@@ -2,6 +2,9 @@
 
 Created 2026-11-19. Open. [Issue 438](https://github.com/vihren-dev/belay/issues/438).
 
+After the consumer-size fixture and its Python test changed, Nix reran all six
+surface suites. Only surfaceChecks loads this fixture.
+
 Changing a private fixture changes the Nix derivation of its surface suite
 alone. Changing a shared fixture changes all suites that consume it, even
 when the dependency crosses a Lean import. Each suite still has the files
