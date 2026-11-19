@@ -16,3 +16,6 @@ Review clarified the prefix and successful-execution premises, the empty
 target required by the copy example and the subject of the regression.
 
 The second review found no issues. The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579051692/job/135754357382) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579051592/job/135754357383) passed on the PR source tree.
+
+Before the stack was published, `just test-nix` passed all 99 selected
+tests on the combined changes and `just test-scheduled-checks` passed.
