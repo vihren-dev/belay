@@ -16,3 +16,5 @@ tests/surface_select_sources_test.py. The slice checks are pending.
 
 Review clarified the checked names in the four public law statements and
 the SQL partition and tie cases covered by the test.
+
+The second review found no issues. The full test and verdict checks are pending.
