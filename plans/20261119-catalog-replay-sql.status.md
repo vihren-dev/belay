@@ -9,15 +9,14 @@ trigger syntax. The checker validates the emitted construction against both
 the catalog and the stored rows. The fixtures in surface_check_run_schemas_test.py,
 surface_views_test.py and surface_search_test.py exercise the public command,
 native SQL, nested views and a sparse rowid candidate that fails exact replay.
-The independent review and slice checks are pending.
+The slice covers the public command and exact replay on model and native SQLite.
 
 Review added a public diagnostic case for an unprintable object name, module
 descriptions, and exhaustive scalar function collation selection.
 
 The public command test now describes the unknown answer for an unprintable name.
 
-The final code and documentation review found no issues. The Nix suite and
-verdict checks remain pending.
+The code and documentation review found no issues. The Nix verdict passed.
 
 The Nix surface layer check on pull request 463 found two imports of model
 implementation modules. The printers use the model's public statement resolution
