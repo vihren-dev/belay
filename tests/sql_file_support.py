@@ -17,7 +17,8 @@ OUTER_SQL, NESTED_SQL = "SELECT $x, 7", "SELECT $x, 99"
 
 
 def file_probe() -> str:
-    """Read the Lean fixture that exposes loadSqlFileSource to tests of package resolution."""
+    """Read the package-resolution probe on demand. Other suites import these helpers
+    with a fixture tree that omits SqlFileProbe.lean."""
     return fixture_file("SqlFileProbe.lean").read_text()
 
 

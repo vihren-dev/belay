@@ -11,3 +11,6 @@ Python helpers now load SqlFileProbe on demand so other suites can import
 the helpers with their restricted fixture tree. The proof-cost run reached
 its independent timing limit, recorded in issue 453. Whole-suite checks
 and independent code review are pending.
+
+Review clarified the SQL resource list, the identity check and why the probe
+is read on demand. The root list includes the literal INSERT fixture from issue 419.

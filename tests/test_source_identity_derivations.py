@@ -38,8 +38,9 @@ def test_parser_change_rebuilds_only_the_packages_that_compile_it(tmp_path: Path
 
 
 def test_surface_fixture_changes_only_consuming_suites(tmp_path: Path) -> None:
-    """The six Nix surface suites isolate the consumer-size fixture and share LowercaseFilters,
-    which surfaceS6 reaches through the imports of its derived-column fixtures."""
+    """Check the fixture closure in build-support/surface-fixtures.nix and its surfaceSuite inputs
+    in build-support/tests.nix. From tests/surface_fixture_roots.json, only surfaceChecks reaches
+    CheckConsumerSize, and surfaceS6 reaches LowercaseFilters through its derived-column fixtures."""
     root = tmp_path / "repository"
     shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(*IGNORED, "reviews", ".direnv"), symlinks=True)
     names = [name for name in json.loads((root / "tests/nix_suites.json").read_text())

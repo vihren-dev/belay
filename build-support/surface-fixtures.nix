@@ -17,6 +17,8 @@ let
     in lib.optional (match != null && builtins.hasAttr (builtins.elemAt match 1) modules)
       (builtins.elemAt match 1)
   ) (lib.splitString "\n" (builtins.readFile path));
+  # Lean imports do not include SQL files read by sql_file or sql_module.
+  # List each such file or directory under the fixture that opens it.
   resources = {
     SqlFileForms = [ (directory + /Frontend/Embedding/sql_files) ];
     SqlFileErrors = [ (directory + /Frontend/Embedding/sql_files) ];
