@@ -1,6 +1,6 @@
 # Execution guards for resolved schema statements
 
-Created 2026-11-19. Open. [Belay issue 443](https://github.com/vihren-dev/belay/issues/443).
+Created 2026-11-19. DONE. [Belay issue 443](https://github.com/vihren-dev/belay/issues/443).
 
 For a statement that resolves against the catalog of a valid database,
 the resolver certificate supplies the catalog facts used by the execution

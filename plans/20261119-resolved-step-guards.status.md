@@ -1,6 +1,6 @@
 # Status of execution guards for resolved schema statements
 
-Created 2026-11-19. Open. [Task](20261119-resolved-step-guards.task.md).
+Created 2026-11-19. DONE. [Task](20261119-resolved-step-guards.task.md).
 
 At the start of the task the revision was `c8ff959b`. In `Schema/Dispatch/ResolveStatementForms.lean`,
 `SchemaLink` required only the strict default fact for ADD COLUMN and closure
@@ -18,6 +18,11 @@ use these laws. SchemaRuleExamples exercises both rules on abstract initial
 connections. The affected tests are tests/test_model_package.py and
 tests/surface_rebuild_test.py. Review found a catch-all case in StepGuards. The match now lists each
 statement kind so a new kind needs an explicit decision. Corrected the proof
-sketches to name the direct step theorem. The slice checks are pending.
+sketches to name the direct step theorem.
 
-The second review found no issues. The Nix verdict agrees with the native oracle. The full test suite is running.
+The second code review found no issues. The Nix full test suite and the Nix
+verdict passed for this change. The first full run exceeded the frozen v5
+progress timeout. The isolated rerun passed all 153 tests, and the full
+rerun passed. The timeout is tracked in issue 454.
+
+The combined stack passed all 99 Nix host tests and the scheduled checks.
