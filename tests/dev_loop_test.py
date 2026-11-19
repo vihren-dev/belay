@@ -21,6 +21,15 @@ HEADER_WARNING = re.compile(r"file not found|implicit declaration|implicitly dec
 """A compiler message that a declaration of `parser/c-headers` is missing."""
 
 
+COLD_BUILD_SECONDS = 1200
+WARM_BUILD_SECONDS = 300
+PROGRAM_START_SECONDS = 60
+METADATA_SECONDS = 300
+VERDICT_SECONDS = 600
+PROGRAMS = (("belay-sqlite-text", "belay-sqlite-translate"), ("verifier-conformance", "conformance-runner"))
+"""The two locally linked programs that must start before running the verdict."""
+
+
 def just(*arguments: str, timeout: int) -> subprocess.CompletedProcess[str]:
     """Run a recipe in the repository and keep its output for the assertion messages."""
     return subprocess.run(["just", *arguments], cwd=ROOT, capture_output=True, text=True, timeout=timeout,
@@ -42,7 +51,7 @@ def test_local_loop_builds_incrementally_and_runs_the_judge(tmp_path: Path) -> N
     if missing:
         pytest.skip(f"{', '.join(missing)} not set: not the shell of shell.nix")
     shutil.rmtree(TEXT_PACKAGE / ".lake/build", ignore_errors=True)
-    first = just("dev-build", timeout=1200)
+    first = just("dev-build", timeout=COLD_BUILD_SECONDS)
     assert first.returncode == 0, first.stdout[-4000:] + first.stderr[-4000:]
     warnings = [line for line in (first.stdout + first.stderr).splitlines() if HEADER_WARNING.search(line)]
     assert not warnings, "\n".join(warnings)
@@ -50,22 +59,21 @@ def test_local_loop_builds_incrementally_and_runs_the_judge(tmp_path: Path) -> N
     assert len(objects) >= 3, objects
     calls = undeclared_calls(objects)
     assert not calls, f"review the declarations of these calls in parser/c-headers: {calls}"
-    second = just("dev-build", timeout=300)
+    second = just("dev-build", timeout=WARM_BUILD_SECONDS)
     assert second.returncode == 0, second.stdout[-4000:] + second.stderr[-4000:]
     assert "Built " not in second.stdout, second.stdout[-4000:]
-    for package, target in (("belay-sqlite-text", "belay-sqlite-translate"),
-                            ("verifier-conformance", "conformance-runner")):
+    for package, target in PROGRAMS:
         program = ROOT / "packages" / package / ".lake/build/bin" / target
-        started = subprocess.run([str(program)], input="", capture_output=True, text=True, timeout=60, check=False)
+        started = subprocess.run([str(program)], input="", capture_output=True, text=True, timeout=PROGRAM_START_SECONDS, check=False)
         assert started.returncode == 0, f"{program}: {started.returncode} {started.stderr[-2000:]}"
     source = tmp_path / "Metadata.lean"
     source.write_text("import Belay.Sqlite.Frontend.Grammar.ParserLibrary\n#eval do IO.println (← Belay.Sqlite.ParserLibrary.metadata)\n",
                       encoding="utf-8")
     printed = subprocess.run(["lake", "lean", str(source)], cwd=TEXT_PACKAGE, capture_output=True, text=True,
-                             timeout=300, check=False)
+                             timeout=METADATA_SECONDS, check=False)
     assert printed.returncode == 0, printed.stdout[-4000:] + printed.stderr[-4000:]
     assert '{"api":' in printed.stdout and '"releases":' in printed.stdout, printed.stdout[-4000:]
-    judged = just("dev-verdict", "corpus-v10", timeout=600)
+    judged = just("dev-verdict", "corpus-v10", timeout=VERDICT_SECONDS)
     assert judged.returncode == 0, judged.stdout[-4000:] + judged.stderr[-4000:]
     report = json.loads((ROOT / "build/dev/report.json").read_text(encoding="utf-8"))
     assert list(report) == ["corpus-v10"]
