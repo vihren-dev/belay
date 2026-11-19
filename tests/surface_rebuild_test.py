@@ -22,20 +22,24 @@ EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "wrong-enforced": [],
     "with-blob": [["sessions", 10, "customers", 0], [10, 1, 100]],
     "dangling": [["sessions", 11, "customers", 0], [10, 1, 100], [11, 99, 200]],
+    "copy-audit": [[7]],
+    "copy-foreign-key": [[0]],
+    "copy-implicit": [[20], [30]],
 }
-"""The rows that the model gives for each replay, which pinned SQLite must give too: the rows of the pragma
-foreign_key_check, if any, and then the sessions after the rebuild."""
+"""The rows from the rebuild or copy replay that Belay and pinned SQLite must both return."""
 
-EXPECTED_ERRORS: dict[str, list[str]] = {
-    "right": [], "wrong-enforced": [], "with-blob": ["cannot store BLOB value in TEXT column"], "dangling": [],
+EXPECTED_ERRORS: dict[str, list[tuple[int, str]]] = {
+    "right": [], "wrong-enforced": [], "with-blob": [(19, "cannot store BLOB value in TEXT column")], "dangling": [],
+    "copy-audit": [], "copy-foreign-key": [(19, "FOREIGN KEY constraint failed")],
+    "copy-implicit": [],
 }
-"""The refusal that pinned SQLite gives for each error output of the model, in order."""
+"""The shared constraint code and pinned SQLite message for each model error, in output order."""
 
 CHAIN_TIMEOUT_SECONDS = 400
 """The time limit of one fixture module, and of the Lake build of the example project, in seconds."""
 
-PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy", "RebuildKeepsFinish",
-                 "RebuildSucceedsSteps", "RebuildKeepsRead", "RebuildSucceedsFinish", "RebuildKeeps", "RebuildSucceeds")
+PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "RebuildSucceedsCopy",
+                 "RebuildKeeps", "RebuildSucceeds")
 """The modules of the example's folder `Proof`, which Lake compiles in a build of the example."""
 
 
@@ -56,7 +60,9 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
     rebuild claims rest on: the right order keeps the sessions, foreign keys on before the transaction lose
     them, and a customer whose email is a blob makes the copy into the STRICT table fail (the rebuilt table stays
     empty, and the pragma foreign_key_check then reports the session, but the commit does not stop). The last replay has a session of a
-    customer that does not exist: the pragma reports it and the rebuild still commits."""
+    customer that does not exist: the pragma reports it and the rebuild still commits. Two further replays
+    check that a copy fires its audit trigger and that a missing parent rejects the copy with error 19.
+    The implicit-rowid replay checks the stored values and inspects the rowids that SQLite assigned."""
     stdout = check_module_chain(runtime_root, tmp_path, (("RebuildGuide", 0), ("RebuildReplays", 0)),
                                 timeout=CHAIN_TIMEOUT_SECONDS)
     sqlite = shutil.which("sqlite3")
@@ -74,8 +80,12 @@ def test_rebuild_replays_agree_with_pinned_sqlite(runtime_root: Path, tmp_path: 
         refusals = re.findall(r"error near line \d+: (.*)", result.stderr)
         modeled_errors = [output for output in outputs if "error" in output]
         assert len(refusals) == len(modeled_errors) == len(EXPECTED_ERRORS[name]), (name, result.stderr)
-        for line, expected in zip(refusals, EXPECTED_ERRORS[name], strict=True):
-            assert expected in line, (name, line, expected)
+        for error, line, (code, message) in zip(modeled_errors, refusals, EXPECTED_ERRORS[name], strict=True):
+            assert error == {"error": code} and line.endswith(f"({code})") and message in line, (name, error, line)
+    rowids = run_command([sqlite, "-json", str(tmp_path / "copy-implicit.db"),
+                          "SELECT rowid FROM old ORDER BY rowid; SELECT rowid FROM fresh ORDER BY rowid"],
+                         cwd=tmp_path, timeout=10)
+    assert rowids.returncode == 0 and native_rows(rowids.stdout) == [[2], [3], [1], [2]], rowids.diagnostic()
 
 
 def test_sql_refute_refutes_the_wrong_rebuild(runtime_root: Path, tmp_path: Path) -> None:
@@ -122,26 +132,23 @@ def test_example_project_of_the_readme_builds_checks_and_proves_its_claims(runti
 
 
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:
-    """The right rebuild preserves the read of all sessions on every database whose catalog is the guide's schema,
-    for every complete environment (claim 1 of the guide). The rebuild is an INSERT from a query, so its branches
-    can reach different connections; the fixtures show that every execution of every step keeps the resolution
-    state of the sample run and the table of the sessions, which moves from position 1 to position 0
-    (RebuildKeepsInvariant, RebuildKeepsFinish), and the certificate of the read (RebuildKeepsRead) turns that into
-    the preservation claim (RebuildKeeps). The final proof uses only logical axioms."""
+    """KeptRead proves that the rebuild preserves the sessions read on the guide's schema.
+    RebuildTableFrames checks the moving table. KeptReadChecks rejects the cascading rebuild
+    and a final read redirected to another table. The proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildKeepsFinish", 0), ("RebuildKeepsRead", 0),
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("KeptReadChecks", 0),
         ("RebuildKeeps", 1)), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
 def test_rebuild_succeeds_when_every_customer_fits_the_strict_types(runtime_root: Path, tmp_path: Path) -> None:
-    """The right rebuild succeeds on every database whose catalog is the guide's schema and whose customers all fit
-    the STRICT types of the new table, for every complete environment and on every branch of the INSERT from a query
-    (claim 2 of the guide). The fixtures show that each of the eight steps continues without an error in every
-    execution and keeps the facts of the rebuild (RebuildSucceedsSteps, RebuildSucceedsFinish); the copy needs the
-    old customers to fit the types that the model reads from the CREATE TABLE and uses the success law of INSERT
-    from a query (RebuildCopyFacts, RebuildSucceedsCopy). The
-    final proof (RebuildSucceeds) uses only logical axioms."""
+    """The schema success check discharges every rebuild statement except the copy.
+    SchemaSuccessChecks covers whole scripts and the transaction and foreign-key boundaries.
+    RebuildCopyChecks checks the allowed NOT NULL weakening and incompatible source and target columns.
+    It also compares the table and partial-index scans of a copying SELECT.
+    RebuildSucceeds supplies the STRICT row premise for the copy and proves success on every branch.
+    The final proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildSucceedsCopy", 0),
-        ("RebuildSucceedsSteps", 0), ("RebuildKeepsFinish", 0), ("RebuildSucceedsFinish", 0),
-        ("RebuildKeepsRead", 0), ("RebuildKeeps", 1), ("RebuildSucceeds", 1)), timeout=CHAIN_TIMEOUT_SECONDS)
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildCopyFacts", 0), ("RebuildCopyChecks", 0),
+        ("RebuildSucceedsCopy", 0),
+        ("SchemaSuccessChecks", 0),
+        ("RebuildKeeps", 1), ("RebuildSucceeds", 1)), timeout=CHAIN_TIMEOUT_SECONDS)

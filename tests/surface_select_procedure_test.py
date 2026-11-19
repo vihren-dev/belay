@@ -50,7 +50,7 @@ def test_work_limit_and_cancellation(runtime_root: Path, tmp_path: Path) -> None
     check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("SelectBudgetCases", 5)), timeout=90)
 
 
-REPLAYED_FALSE = ("convenience-screened", "run-schema-false", "run-witness-false", "run-named-false")
+REPLAYED_FALSE = ("convenience-screened", "run-schema-false", "run-witness-false", "run-named-false", "named-refuted")
 """The false claims whose counterexample has rows of the query, which native SQLite must give too."""
 
 
@@ -68,10 +68,11 @@ def test_background_checking(runtime_root: Path, tmp_path: Path) -> None:
     output = check_module_chain(runtime_root, tmp_path, (*CORE_CASES, ("S6CheckLabels", 0), ("SelectCheckCases", 0)),
                                 timeout=CHAIN_TIMEOUT_SECONDS)
     blocks = split_blocks(output)
-    assert set(blocks) == {"select-proved", *REPLAYED_FALSE, "run-empty-false", "arithmetic-unknown",
+    assert set(blocks) == {"select-proved", "named-proved", "alias-proved", *REPLAYED_FALSE, "run-empty-false", "arithmetic-unknown",
                            "replay-unknown"}, output
-    proved = blocks["select-proved"]
-    assert proved.startswith("SQL check: proved.") and "sql_select [rfl, ⟨_, _, _, rfl⟩]" in proved, proved
+    for label in ("select-proved", "named-proved", "alias-proved"):
+        proved = blocks[label]
+        assert proved.startswith("SQL check: proved.") and "sql_select [rfl, ⟨_, _, _, rfl⟩]" in proved, proved
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     for name in REPLAYED_FALSE:

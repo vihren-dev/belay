@@ -43,7 +43,7 @@ theorem runStatement_update_ready {clock : Int} {counters : Counters} {parameter
       (LiteralData.updated (Resolved.statementContext clock counters parameters database subqueries) table assignments
         filter) = true := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys, found, Bool.and_eq_true] at ready
-  exact ready.1.1
+  exact ready.1.1.1
 
 /-- For every clock value, counters, parameter list, upsert without rules and database, and every table at
 the target: if the run of {name}`runStatement` is ready, the check {name}`LiteralData.upsertReady` passes for

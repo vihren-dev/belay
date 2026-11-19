@@ -14,14 +14,12 @@ open Belay.Sqlite.Model
 /-- The refusal of a subquery in RETURNING or ON CONFLICT. -/
 def inWriteClause : String := "A subquery in RETURNING or ON CONFLICT is not modeled; read the value in a separate statement"
 
-/-- {lit}`BEGIN [DEFERRED] [TRANSACTION]`, {lit}`COMMIT` or {lit}`END [TRANSACTION]`, and
+/-- An uncontended {lit}`BEGIN [DEFERRED|IMMEDIATE|EXCLUSIVE] [TRANSACTION]`, {lit}`COMMIT` or {lit}`END [TRANSACTION]`, and
 {lit}`ROLLBACK [TRANSACTION]`. -/
 def transaction (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let keyword := (tree.children command)[0]!.symbol
   let option ← if keyword == "BEGIN" then do
       let parts ← require tree command ["BEGIN", "transtype", "trans_opt"]
-      unless tree.symbols parts[1]! == [] || tree.symbols parts[1]! == ["DEFERRED"] do
-        unsupported parts[1]! "Only deferred transactions are modeled; write BEGIN or BEGIN DEFERRED"
       pure parts[2]!
     else pure (← require tree command [keyword, "trans_opt"])[1]!
   unless tree.symbols option == [] || tree.symbols option == ["TRANSACTION"] do

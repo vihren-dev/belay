@@ -31,11 +31,12 @@ def boundaries() -> dict[str, dict[str, Json]]:
 def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str, dict[str, Json]],
                                                          runtime_root: Path) -> None:
     """Profiles, outputs, requirement tags and bounded shared storage survive fresh replay. The
-    model implements the default execution settings of these profiles (`profile_scope`), so the
+    model implements the default and uncontended IMMEDIATE transaction modes, so the
     cases whose SQL it models agree, including NOT NULL additions on empty and
     populated tables and, since a CREATE TABLE with constraints runs (ADR 0014, slice 4),
     tables with keys created in the migration and the cases that bind values to parameters
-    (ADR 0019), and the others stay out of scope."""
+    (ADR 0019). It also agrees with SQLite on the rejected REFERENCES and CURRENT_TIMESTAMP
+    additions recorded under IMMEDIATE profiles."""
     catalog = list(boundaries.values())
     inventory = json.loads((Path(__file__).resolve().parents[1] /
                            "conformance/requirements-3.51.0.json").read_text())
@@ -47,9 +48,10 @@ def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str,
         assert record["profile"]["engineVersion"] == "3.51.0"
     native_replay(catalog)
     report = replay(catalog, runtime_root)
-    assert report["counts"] == {"MODEL_UNSUPPORTED": 8, "AGREE": 15}
+    assert report["counts"] == {"MODEL_UNSUPPORTED": 6, "AGREE": 17}
     additions = {"add-not-null-empty", "add-not-null-populated",
-                 "add-not-null-null-empty", "add-not-null-null-populated"}
+                 "add-not-null-null-empty", "add-not-null-null-populated",
+                 "add-rejected-references", "add-rejected-current-timestamp"}
     assert {case["name"] for case in report["cases"]
             if case["name"] in additions and case["verdict"] == "AGREE"} == additions
 

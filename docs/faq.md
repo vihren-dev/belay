@@ -44,10 +44,10 @@ that you write.
 
 ## How long are the proofs?
 
-For some claims, one line. For others, long: the proof that the table rebuild
-of the README keeps the sessions has about 465 lines. An agent can write such
-a proof, but it costs time, and it does not always finish. Shorter proofs of
-the common claims are the main work that remains in the library. The table
+The README proof that a rebuild keeps the sessions read is one application of
+`KeptRead.preserves_of_check`. The kernel checks the table and the read on
+the schema before and after the migration. Claims about what happens to the
+rows of the rebuilt table can need a longer proof. The table
 [What an agent can finish today](guide/agents.md#what-an-agent-can-finish-today)
 gives the cost of each kind of claim.
 

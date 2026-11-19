@@ -67,7 +67,7 @@ identities, engine builds, transaction modes and changes to established behavior
 settings during case SQL are refused. Setup can replay FK changes when it restores
 the selected profile before case SQL. Transaction-local FK writes keep SQLite's
 no-op behavior; readback still checks the fixed profile after each statement.
-The model implements a profile with DEFERRED transactions, read-write access,
+The model implements a profile with deferred or immediate transactions, read-write access,
 trusted schema mode and no other writers, with foreign keys and recursive triggers
 on or off and with or without a controlled clock (`conformance/profile_scope.py`). Name resolution then uses the profile's release,
 build, limits and double-quoted-string settings. A record whose profile changes

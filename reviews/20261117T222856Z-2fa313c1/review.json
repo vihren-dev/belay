@@ -1,0 +1,61 @@
+{
+  "caller": "codex",
+  "commit": "2fa313c177e40fcea24160000e4b145ce67960df",
+  "date": "2026-11-17T22:28:56+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261117-schema-only-success.status.md",
+    "plans/20261117-schema-only-success.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261117T222856Z-2fa313c1#1",
+      "line": 36,
+      "path": "plans/20261117-schema-only-success.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task assumes that `Database.blocks` models the unspecified order of foreign-key check results from several tables, but `Database.blocks` only lists each table's rows in catalog order, and `Database.foreignKeyCheckRows` gives `none` (no modeled result) when two or more tables give rows (`Schema/Rows/ForeignKeyCheck.lean:37-47`), so the model has no alternative executions for this case. An implementer would then expect the \"multiple sources\" acceptance case on line 30 to certify through order alternatives that do not exist. Fix: say that the model gives no result when more than one table gives rows, that the check certifies only a catalog in which at most one table can give rows (`Database.foreignKeyCheckRows_isSome`), and that the case with multiple sources must fail the check."
+    },
+    {
+      "id": "20261117T222856Z-2fa313c1#2",
+      "line": 38,
+      "path": "plans/20261117-schema-only-success.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "\"Existing facts\" says that issue #411 supplies the resolved path and that the README uses the table frame of #412, but both tasks are still open (`plans/20261117-script-schema-path.task.md:4`, `plans/20261117-statement-keeps-table.task.md:4`), and the repository has no table frame yet. Fix: move both items to a prerequisites sentence that says this task depends on the open tasks #411 and #412."
+    },
+    {
+      "id": "20261117T222856Z-2fa313c1#3",
+      "line": 11,
+      "path": "plans/20261117-schema-only-success.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task limits COMMIT to \"a transaction with foreign keys off\" and says that deferred foreign keys prevent a schema-only COMMIT guarantee when enforcement is on. But the existing law `runScriptStep_commit_ok` (`Programs/Scripts/StepContinuesOk.lean:111`) already proves that COMMIT in an open transaction succeeds whatever the foreign-key setting, because the model rejects writes that check a deferred key as a restriction. The task does not say how its rule relates to that law. Fix: say whether the foreign-key-off condition is a deliberate restriction of the check that is stricter than the model law, and give the reason, or remove the condition and the acceptance case that rejects a COMMIT with enforcement enabled."
+    }
+  ],
+  "id": "20261117T222856Z-2fa313c1",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -75,7 +75,10 @@ The database and the connection:
   read-write.
 - No extensions, custom authorizers, application callbacks or custom
   collations change what a statement does.
-- No other connection or process writes to the database.
+- No other connection or process writes to the database. A transaction can acquire
+  its locks without contention, including from readers during `BEGIN EXCLUSIVE`.
+  Under this assumption, `BEGIN`, `BEGIN DEFERRED`, `BEGIN IMMEDIATE` and
+  `BEGIN EXCLUSIVE` have the same observable transaction state.
 
 How the script runs:
 

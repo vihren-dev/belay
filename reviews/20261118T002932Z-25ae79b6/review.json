@@ -1,0 +1,46 @@
+{
+  "caller": "codex",
+  "commit": "25ae79b63f5daff7fecc627c165ddaac41b4cf7a",
+  "date": "2026-11-18T00:29:32+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261117-immediate-transactions.status.md",
+    "tests/conformance_authored_boundaries_test.py",
+    "tests/conformance_workload_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261118T002932Z-25ae79b6#1",
+      "line": 24,
+      "path": "plans/20261117-immediate-transactions.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file says the Nix harness exposed \"three assertions\", but the commit changes four count assertions: one in `conformance_authored_boundaries_test.py` and three in `conformance_workload_test.py` (directory replay, combined report and final constraint error). Fix: Say \"four assertions in three tests\", or name the three tests."
+    }
+  ],
+  "id": "20261118T002932Z-25ae79b6",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

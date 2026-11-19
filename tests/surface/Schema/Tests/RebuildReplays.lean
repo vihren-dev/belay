@@ -9,7 +9,7 @@ set_option exponentiation.threshold 2048
 after them, with the outputs that the model gives, for a check against pinned SQLite (ADR 0017, S6, part 2). The four
 runs are the rebuild in the right order, the wrong rebuild on a connection with foreign keys on, the right rebuild on
 a database with a customer whose email is a blob, and the right rebuild on a database with a session of a customer
-that does not exist. -/
+that does not exist. The copy cases exercise target write rules and implicit rowid allocation. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -59,6 +59,39 @@ def wrongThenRead : Script := sql r"
   COMMIT;
   SELECT id, customer_id, expires_at FROM sessions ORDER BY id;"
 
+/-- A source row with an integer primary key shared by each copy target. -/
+def copySource : Belay.Sqlite.Database := db! r"
+  CREATE TABLE src(id INTEGER PRIMARY KEY);
+  INSERT INTO src VALUES(7);"
+
+/-- A target trigger writes the copied key into a third table. -/
+def copyWithAudit : Script := sql r"
+  CREATE TABLE dst(id INTEGER PRIMARY KEY);
+  CREATE TABLE audit(copied INTEGER);
+  CREATE TRIGGER copied_key AFTER INSERT ON dst BEGIN
+    INSERT INTO audit VALUES(NEW.id);
+  END;
+  INSERT INTO dst SELECT id FROM src;
+  SELECT copied FROM audit;"
+
+/-- Foreign-key enforcement rejects the copy because the parent table is empty. -/
+def copyWithForeignKey : Script := sql r"
+  PRAGMA foreign_keys = ON;
+  CREATE TABLE parent(id INTEGER PRIMARY KEY);
+  CREATE TABLE dst(id INTEGER PRIMARY KEY REFERENCES parent(id));
+  INSERT INTO dst SELECT id FROM src;
+  SELECT count(*) FROM dst;"
+
+/-- Deleting the first source row leaves implicit rowids 2 and 3. The empty
+target assigns 1 and 2 when it copies the remaining cell values. -/
+def copyImplicit : Script := sql r"
+  CREATE TABLE old(value INTEGER);
+  INSERT INTO old VALUES(10),(20),(30);
+  DELETE FROM old WHERE value = 10;
+  CREATE TABLE fresh(value INTEGER);
+  INSERT INTO fresh SELECT value FROM old;
+  SELECT value FROM fresh ORDER BY value;"
+
 open Lean Elab Meta in
 /-- Keep exact model value tags so the test can compare native observations. -/
 def outputJson : Output → Json
@@ -81,6 +114,9 @@ elab "report_rebuild_replays" : command => Command.liftTermElabM do
   emitReplay "wrong-enforced" (← Replay.scriptReport (mkConst ``sample) (mkConst ``wrongThenRead))
   emitReplay "with-blob" (← Replay.scriptReport (mkConst ``withBlob) (mkConst ``rightThenRead))
   emitReplay "dangling" (← Replay.scriptReport (mkConst ``dangling) (mkConst ``rightThenRead))
+  emitReplay "copy-audit" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyWithAudit))
+  emitReplay "copy-foreign-key" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyWithForeignKey))
+  emitReplay "copy-implicit" (← Replay.scriptReport (mkConst ``copySource) (mkConst ``copyImplicit))
 
 report_rebuild_replays
 

@@ -160,13 +160,13 @@ which Lake prints again in each run
 | A false claim about every database of a schema | `#sql_check` finds the rows when a small database shows the failure. |
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
-| A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: one line each, with a check that the kernel evaluates on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
-| A read kept by a table rebuild | A proof by hand. The rebuild of the README needs about 465 lines; they start in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
-| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `DerivedColumnMigration.succeeds_of_check`: one line. Else a proof by hand, such as [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
+| A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: `#sql_check` and `sql_auto` apply these laws with a kernel check on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
+| A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
+| `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. For a script certified from its schema, apply `Script.succeeds_of_schema`. A mixed script supplies proofs for its remaining statements, as in [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
-Two rules make the answers useful. Write the claim out in `#sql_check`; the
-name of a definition that holds the claim gives `unknown`
-([#358](https://github.com/vihren-dev/belay/issues/358)). State the schema in
+You can give `#sql_check` a claim by name. For example, if `selectClaim`
+defines a query claim, `#sql_check selectClaim` checks it and gives proof
+steps you can use with that name. State the schema in
 the claim with `on shop`. The form without it,
 `addEmailLower preserves namedCustomers`, covers every database, and
 `with (schema := shop)` after it only tells the search where to look. That
@@ -250,7 +250,8 @@ its columns, keeps the fact about the old read, and checks the new read:
 def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 
 #sql_check addEmailLower preserves namedCustomers on shop
--- SQL check: unknown; no proof or replayable counterexample was found within the budget.
+-- SQL check: proved.
+-- Checked proof: by exact DerivedColumnMigration.preserves_of_check (by decide +kernel)
 
 def found : Database := db! r"
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
@@ -269,10 +270,10 @@ theorem named_read_kept_on_found :
   decide +kernel
 ```
 
-`unknown` is not the end. `sql_auto` does not close this claim, but the
-migration has the shape of a law of the library: `ADD COLUMN`, then an
-`UPDATE` that fills the column from the other columns. Each law takes a check
-that the kernel evaluates on the catalog of `shop`, so each proof is one line:
+Both `#sql_check` and `sql_auto` recognize the two statements in the
+migration. The `ADD COLUMN` adds a column and the `UPDATE` fills it from
+the old columns. The proof uses a library law whose check the kernel
+evaluates on the catalog of `shop`. You can also apply the laws directly:
 
 ```lean
 theorem named_read_preserved :
@@ -285,8 +286,9 @@ theorem email_lower_succeeds :
 ```
 
 The checks cover a column without constraints, a value that reads only the
-old columns of the row, and a read of one table that names old columns. When
-a check is false, `decide` fails, and the claim stays `unknown`. The complete
+old columns of the row, and a read of one table that names old columns. A direct
+application requires its check to pass. If the check fails, `sql_auto` tries
+its other proof routes, and `#sql_check` can still find a counterexample. The complete
 example is
 [`DerivedColumnOnSchema.lean`](../../tests/surface/Schema/Tests/DerivedColumnOnSchema.lean),
 with the schema and the migration as SQL files; CI compiles it in a project
