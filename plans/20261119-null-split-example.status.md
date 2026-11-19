@@ -67,3 +67,9 @@ Together the general laws are more than 200 lines. The example proof would add a
   two `decide +kernel` theorems about it (`split_loses_found_customer`,
   `fixed_keeps_found_customer`) and `split_loses_null_age` (`sql_refute`); its test. Checks: the
   test file, local run (not evidence); `just test-full` not run.
+- 2026-11-19: `just dev-build` passed. `just test-full` failed (exit 1): suite `surfaceChecks` had
+  1 failed and 33 passed. The failed test is
+  `tests/surface_check_consumer_size_test.py::test_consumer_size_claim_is_false_and_replays`
+  ("SQL check: unknown; the search reached its time limit"), which this change does not touch
+  (issue #426). Both tests of `tests/surface_split_by_age_test.py` passed in that run. The other
+  suites that the log shows passed; it was not checked that every suite ran.
