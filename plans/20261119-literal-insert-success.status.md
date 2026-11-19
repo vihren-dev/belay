@@ -14,3 +14,6 @@ runs through tests/surface_schema_script_test.py.
 
 Review clarified the exact ready run and its alternatives. SchemaScriptReplays
 now compares the successful literal batch and the duplicate batch with pinned SQLite.
+
+The second review of the statement and script laws found no issues. The
+validity bridge remains open pending the premise for keys within a batch.
