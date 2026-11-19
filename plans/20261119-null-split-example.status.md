@@ -51,11 +51,12 @@ these general laws, which the packages do not have:
   subqueries: the source of the subquery (`Query.subqueryRun`), its certain fault
   (`Query.compoundRun`, `Compound.ending_done`, `keepsCertain` of `UNION ALL`), the certainty of
   its whole rows (`run.sourceCertain = true`, which `QuerySource.join` checks; it follows from the
-  zero offset and the absent limit of the view), and its rows (`Compound.rows_unionAll`). Estimate: 150 lines or more; not measured.
-- A form of `ReadCertificate.preservesAt` without the certificate: when the read resolves with
-  `fromQuery = false` before and after the migration on every branch
-  (`sendStatements_single_observations` needs both), equal step outputs on every branch give
-  `PreservesAt`. A draft of about 40 lines moved the proof body; it is not in a commit.
+  zero offset and the absent limit of the view), and its rows (`Compound.rows_unionAll`).
+  Estimate: 150 lines or more; not measured.
+- A form of `ReadCertificate.preservesAt` without the certificate: when every successful
+  resolution of the read gives `fromQuery = false`, before the migration and on each branch after it
+  (`sendStatements_single_observations` needs both; a failed resolution satisfies them), equal step
+  outputs on every branch give `PreservesAt`. A draft of about 40 lines moved the proof body; it is not in a commit.
 
 Together the general laws are more than 200 lines. The example proof would add about 500 to
 1000 lines (an invariant over eight statements, as in `examples/table-rebuild/Proof`).
