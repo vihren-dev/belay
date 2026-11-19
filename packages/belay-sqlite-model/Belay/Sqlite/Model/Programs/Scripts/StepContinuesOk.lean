@@ -62,7 +62,7 @@ theorem runScriptStep_createTable_ok {context : ResolveContext} {clock : Option 
 
 /-- For every connection, statement and values that resolve to a DROP TABLE without rules: the step continues
 without further execution, and its output is no error. In plain words, a drop that no foreign key can cascade
-from succeeds. Proof sketch: as {name}`runScriptStep_createTable_ok`, with {name}`runScriptStep_drop_continues`. -/
+from succeeds. Proof sketch: as {name}`runScriptStep_createTable_ok_of_aligned`, with {name}`runScriptStep_drop_continues`. -/
 theorem runScriptStep_drop_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {positions : List Nat}
@@ -77,7 +77,7 @@ theorem runScriptStep_drop_ok {context : ResolveContext} {clock : Option Clock} 
 
 /-- For every connection, statement and values that resolve to a rewrite of the catalog that keeps its outline:
 the step continues without further execution, and its output is no error. In plain words, a rename that keeps the
-outline of the catalog succeeds. Proof sketch: as {name}`runScriptStep_createTable_ok`, with
+outline of the catalog succeeds. Proof sketch: as {name}`runScriptStep_createTable_ok_of_aligned`, with
 {name}`runScriptStep_rewrite_continues`. -/
 theorem runScriptStep_rewrite_ok_of_outline {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
@@ -105,7 +105,7 @@ theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Cloc
   runScriptStep_rewrite_ok_of_outline found (step_guards_hold found rfl valid)
 
 /-- For every connection, statement and values that resolve to a setting: the step continues without further
-execution, and its output is no error. Proof sketch: as {name}`runScriptStep_createTable_ok`, with
+execution, and its output is no error. Proof sketch: as {name}`runScriptStep_createTable_ok_of_aligned`, with
 {name}`runScriptStep_setting_continues`. -/
 theorem runScriptStep_setting_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
@@ -121,7 +121,7 @@ theorem runScriptStep_setting_ok {context : ResolveContext} {clock : Option Cloc
 
 /-- For every connection with no open transaction, statement and values that resolve to BEGIN: the step continues
 without further execution, and its output is no error. In plain words, BEGIN outside a transaction succeeds.
-Proof sketch: as {name}`runScriptStep_createTable_ok`, with {name}`runScriptStep_begin_continues`; with no open
+Proof sketch: as {name}`runScriptStep_createTable_ok_of_aligned`, with {name}`runScriptStep_begin_continues`; with no open
 transaction the transition continues. -/
 theorem runScriptStep_begin_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}

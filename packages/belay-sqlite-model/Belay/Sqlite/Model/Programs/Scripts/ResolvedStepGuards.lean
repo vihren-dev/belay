@@ -21,7 +21,8 @@ def Resolved.Statement.StepGuards (db : Database) : Resolved.Statement → Prop
   | .addColumn pos .. => (db.table pos).isSome = true
   | .rewrite renamed => db.catalog.sameOutline renamed = true
   | .dropColumn pos index stored => db.runsDropColumn pos index stored = true
-  | _ => True
+  | .drop .. | .begin | .commit | .rollback | .insert .. | .update .. | .upsert ..
+  | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For each statement resolved on the catalog of a valid database, its {name}`Resolved.Statement.StepGuards`
 hold. Proof sketch: {name}`ResolverCertificate.link` supplies the catalog facts. Validity aligns the row
