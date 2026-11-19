@@ -24,7 +24,9 @@ INDEX = "CREATE INDEX customers_by_email ON customers(email);"
 def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_path: Path) -> None:
     """A schema from `sql_file`, given with `with (schema := ...)` or with `on`, a `db!` schema followed by
     a run of `sql`, and two runs whose first text has no final semicolon give false with a replay that
-    builds the index; a schema after a run of Lean code yields the same replay from its computed catalog."""
+    builds the index; a schema after a run of Lean code yields the same replay from its computed catalog.
+    A computed schema with an object name that has no SQL spelling gives an unknown answer
+    that asks the caller for the original SQL."""
     result = run_command(configured_command(runtime_root, fixture_file("CheckRunSchemas.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()

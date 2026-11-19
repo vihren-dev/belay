@@ -13,3 +13,5 @@ The independent review and slice checks are pending.
 
 Review added a public diagnostic case for an unprintable object name, module
 descriptions, and exhaustive scalar function collation selection.
+
+The public command test now describes the unknown answer for an unprintable name.
