@@ -28,3 +28,6 @@ surface suites. The report is `85l74ybhyfb22bx13ba71y8jdzj9wkwx-belay-test-repor
 The verdict passed for all 59 frozen corpora. On the combined stack,
 `just test-nix` passed all 99 selected tests and `just test-scheduled-checks`
 passed.
+
+The completion review updated the task description to cover the catalog
+definitions and stored rows that ReplayDatabaseSql emits.

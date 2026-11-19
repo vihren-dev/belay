@@ -24,7 +24,7 @@ column, a view and a trigger. Check equality of the reconstructed model
 database and replay representative cases with the pinned SQLite. Keep a
 negative case where reconstruction fails and verify the diagnostic.
 
-ReplayDatabaseSql produces the current table and row fragments. CheckSamples
+ReplayDatabaseSql emits the catalog definitions and stored rows. CheckSamples
 uses this printer when a schema has no saved text. CheckReplayData checks
 the resulting database before a replay can reach the user. CatalogView keeps
 syntax and a separate subquery list. CatalogIndex and generated columns keep
