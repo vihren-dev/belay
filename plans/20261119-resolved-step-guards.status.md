@@ -19,3 +19,5 @@ connections. The affected tests are tests/test_model_package.py and
 tests/surface_rebuild_test.py. Review found a catch-all case in StepGuards. The match now lists each
 statement kind so a new kind needs an explicit decision. Corrected the proof
 sketches to name the direct step theorem. The slice checks are pending.
+
+The second review found no issues. The Nix verdict agrees with the native oracle. The full test suite is running.
