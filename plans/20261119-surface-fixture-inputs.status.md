@@ -1,6 +1,6 @@
 # Status of surface suite inputs
 
-Created 2026-11-19. Open. [Task](20261119-surface-fixture-inputs.task.md).
+Created 2026-11-19. DONE. [Task](20261119-surface-fixture-inputs.task.md).
 
 Each suite declares the fixtures that its Python tests open. The Nix source
 includes the transitive Lean imports and SQL resources of those fixtures.
@@ -21,4 +21,8 @@ The complete Nix run found a missing SqlFileProbe in surfaceS6.
 surface_sql_check_roots_test.py builds a same-name project through a Python
 helper that reads this Lean file. Both consuming suites now list the probe.
 The derivation-identity regression covers its two consumers. The Nix
-verdict passed for this layer. The corrected S6 suite is running.
+verdict passed for this layer. All 70 tests passed in the corrected
+S6 suite. The full Nix test target passed with all six restricted surface
+suites: surface, surfaceChecks, surfaceClaims, surfaceProofCost, surfaceS6
+and surfaceSelect. The Nix host tests and scheduled checks also passed on
+the combined stack.

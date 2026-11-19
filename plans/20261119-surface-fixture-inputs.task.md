@@ -1,6 +1,6 @@
 # Surface suite inputs follow the fixtures each suite uses
 
-Created 2026-11-19. Open. [Issue 438](https://github.com/vihren-dev/belay/issues/438).
+Created 2026-11-19. DONE. [Issue 438](https://github.com/vihren-dev/belay/issues/438).
 
 After the consumer-size fixture and its Python test changed, Nix reran all six
 surface suites. Only surfaceChecks loads this fixture.
