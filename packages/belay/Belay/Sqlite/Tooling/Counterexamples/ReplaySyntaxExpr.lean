@@ -2,6 +2,9 @@ import Belay.Sqlite.Tooling.Counterexamples.ReplayValues
 
 set_option doc.verso true
 
+/-! Render stored syntax expressions for view and trigger SQL.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 
 open Belay.Sqlite.Model

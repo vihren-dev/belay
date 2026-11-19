@@ -3,6 +3,9 @@ import Belay.Sqlite.Model.Queries.Evaluation.Calls
 
 set_option doc.verso true
 
+/-! Print expressions whose column positions have been resolved against a table.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 open Belay.Sqlite.Model
 
@@ -57,10 +60,12 @@ partial def resolvedExprSql (table : CatalogTable) : Resolved.Expr → Option St
     callSql name (← args.toList.mapM (resolvedExprSql table))
   | .scalar f args => do
     let rendered ← args.toList.mapM (resolvedExprSql table)
-    let rendered := match f, rendered with
-      | .nullif coll, a :: rest | .min coll, a :: rest | .max coll, a :: rest => collated a coll :: rest
-      | _, rest => rest
-    callSql (scalarFunctionSql f) rendered
+    let (spelling, collation) := scalarFunctionSql f
+    let arguments := match collation, rendered with
+      | some coll, first :: rest => collated first coll :: rest
+      | none, items => items
+      | some _, [] => []
+    callSql spelling arguments
   | .inList e args _ coll negated => do
     let items ← args.toList.mapM (resolvedExprSql table)
     return binarySql (if negated then "NOT IN" else "IN") (collated (← resolvedExprSql table e) coll)

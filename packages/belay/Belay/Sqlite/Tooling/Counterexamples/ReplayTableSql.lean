@@ -4,6 +4,9 @@ import Belay.Sqlite.Model.Queries.Preparation.ForeignKeyAction
 
 set_option doc.verso true
 
+/-! Reconstruct table definitions and indexes from the catalog, including their constraints.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 open Belay.Sqlite.Model
 

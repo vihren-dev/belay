@@ -2,6 +2,9 @@ import Belay.Sqlite.Tooling.Counterexamples.ReplayViewSql
 
 set_option doc.verso true
 
+/-! Print trigger events, conditions and body statements for catalog reconstruction.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 
 open Belay.Sqlite.Model

@@ -2,6 +2,9 @@ import Belay.Sqlite.Tooling.Counterexamples.ReplaySyntaxExpr
 
 set_option doc.verso true
 
+/-! Recover operator and function spellings for resolved catalog expressions.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 open Belay.Sqlite.Model
 
@@ -34,47 +37,47 @@ def jsonFunctionSql : Resolved.JsonFunction → String
   | .jsonbRemove => "jsonb_remove"
   | .jsonbPatch => "jsonb_patch"
 
-/-- The SQL spelling of a resolved scalar function, including the three trim functions. -/
-def scalarFunctionSql : Resolved.ScalarFunction → String
-  | .typeof => "typeof"
-  | .length => "length"
-  | .octetLength => "octet_length"
-  | .abs => "abs"
-  | .sign => "sign"
-  | .zeroblob => "zeroblob"
-  | .iif => "iif"
-  | .nullif _ => "nullif"
-  | .min _ => "min"
-  | .max _ => "max"
-  | .like => "like"
-  | .glob => "glob"
-  | .lower => "lower"
-  | .upper => "upper"
-  | .substr => "substr"
-  | .instr => "instr"
-  | .replace => "replace"
-  | .trim .leading => "ltrim"
-  | .trim .trailing => "rtrim"
-  | .trim .both => "trim"
-  | .hex => "hex"
-  | .unhex => "unhex"
-  | .quote => "quote"
-  | .unistrQuote => "unistr_quote"
-  | .char => "char"
-  | .unicode => "unicode"
-  | .unistr => "unistr"
-  | .pipes => "||"
-  | .concat => "concat"
-  | .concatWs => "concat_ws"
-  | .round => "round"
-  | .floor => "floor"
-  | .ceil => "ceil"
-  | .trunc => "trunc"
-  | .sqrt => "sqrt"
-  | .pi => "pi"
-  | .degrees => "degrees"
-  | .radians => "radians"
-  | .mod => "mod"
-  | .printf => "printf"
+/-- The SQL spelling of a resolved scalar function and the collation required on its first argument. -/
+def scalarFunctionSql : Resolved.ScalarFunction → String × Option Collation
+  | .typeof => ("typeof", none)
+  | .length => ("length", none)
+  | .octetLength => ("octet_length", none)
+  | .abs => ("abs", none)
+  | .sign => ("sign", none)
+  | .zeroblob => ("zeroblob", none)
+  | .iif => ("iif", none)
+  | .nullif coll => ("nullif", some coll)
+  | .min coll => ("min", some coll)
+  | .max coll => ("max", some coll)
+  | .like => ("like", none)
+  | .glob => ("glob", none)
+  | .lower => ("lower", none)
+  | .upper => ("upper", none)
+  | .substr => ("substr", none)
+  | .instr => ("instr", none)
+  | .replace => ("replace", none)
+  | .trim .leading => ("ltrim", none)
+  | .trim .trailing => ("rtrim", none)
+  | .trim .both => ("trim", none)
+  | .hex => ("hex", none)
+  | .unhex => ("unhex", none)
+  | .quote => ("quote", none)
+  | .unistrQuote => ("unistr_quote", none)
+  | .char => ("char", none)
+  | .unicode => ("unicode", none)
+  | .unistr => ("unistr", none)
+  | .pipes => ("||", none)
+  | .concat => ("concat", none)
+  | .concatWs => ("concat_ws", none)
+  | .round => ("round", none)
+  | .floor => ("floor", none)
+  | .ceil => ("ceil", none)
+  | .trunc => ("trunc", none)
+  | .sqrt => ("sqrt", none)
+  | .pi => ("pi", none)
+  | .degrees => ("degrees", none)
+  | .radians => ("radians", none)
+  | .mod => ("mod", none)
+  | .printf => ("printf", none)
 
 end Belay.Sqlite.Replay

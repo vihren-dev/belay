@@ -10,3 +10,6 @@ the catalog and the stored rows. The fixtures in surface_check_run_schemas_test.
 surface_views_test.py and surface_search_test.py exercise the public command,
 native SQL, nested views and a sparse rowid candidate that fails exact replay.
 The independent review and slice checks are pending.
+
+Review added a public diagnostic case for an unprintable object name, module
+descriptions, and exhaustive scalar function collation selection.

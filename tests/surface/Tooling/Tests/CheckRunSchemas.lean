@@ -56,6 +56,16 @@ labelled_sql "without-text" in
 #sql_check addEmailLower preserves allCustomers on withoutText
 
 
+/-- A computed schema with an object name whose bytes cannot appear in SQL text. -/
+def unprintable : Database :=
+  let source := (db! "CREATE TABLE customers(id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL); CREATE TABLE extra(n);").raw
+  ⟨{ source with catalog := source.catalog.map fun object =>
+      if object.name == name! "extra" then { object with name := Model.Identifier.ofBytes [255] } else object },
+    by decide +kernel⟩
+
+labelled_sql "unprintable" in
+#sql_check addEmailLower preserves allCustomers on unprintable
+
 /-- A computed schema with each catalog entry and constraints whose formatting needs a row scope. -/
 def complex : Database := db! r"
 CREATE TABLE parents(id INTEGER PRIMARY KEY);

@@ -2,6 +2,9 @@ import Belay.Sqlite.Tooling.Counterexamples.ReplaySyntaxExpr
 
 set_option doc.verso true
 
+/-! Print stored SELECT bodies and their indexed subqueries for view reconstruction.
+Replay validates the reconstructed database before it reports a counterexample. -/
+
 namespace Belay.Sqlite.Replay
 
 open Belay.Sqlite.Model

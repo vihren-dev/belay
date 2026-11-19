@@ -32,6 +32,9 @@ def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_pat
     for label in ("file-schema", "file-on", "two-runs-on", "unterminated-on"):
         false_answer(blocks[label])
         assert INDEX in blocks[label].split("SQLite replay:\n", 1)[1], blocks[label]
+    unknown = blocks["unprintable"]
+    assert "SQL check: unknown" in unknown and "could not reconstruct this computed schema" in unknown, unknown
+    assert "Supply its original SQL" in unknown and "SQLite replay:" not in unknown, unknown
     computed = blocks["without-text"]
     false_answer(computed)
     replay = computed.split("SQLite replay:\n", 1)[1]
