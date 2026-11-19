@@ -19,3 +19,5 @@ The focused tests are tests/surface_rebuild_test.py and
 tests/surface_split_by_age_test.py. Review required an exhaustive creation classifier. It now lists every
 statement kind. The module comments name the creation and removal cases.
 The slice checks are pending.
+
+The second review found no issues. The full test and verdict checks are pending.
