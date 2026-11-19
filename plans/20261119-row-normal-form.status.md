@@ -1,6 +1,6 @@
 # Status of permutation invariance for unordered queries
 
-Created 2026-11-19. Open. [Task](20261119-row-normal-form.task.md).
+Created 2026-11-19. DONE. [Task](20261119-row-normal-form.task.md).
 
 Shared/Execution/PossibleResults defines the comparators and normalForm.
 Shared/Execution/QueryEval defines stableSort. Queries/Evaluation/SelectWindowRules proves that the
@@ -12,9 +12,12 @@ the same result on permutations, and that row normal forms are equal exactly
 on permutations. SelectCompoundCases checks a one-table UNION ALL split,
 repeated rows and ties between model values. Its proof uses the filter
 partition and permutation laws. The focused test is
-tests/surface_select_sources_test.py. The slice checks are pending.
+tests/surface_select_sources_test.py.
 
 Review clarified the checked names in the four public law statements and
 the SQL partition and tie cases covered by the test.
 
-The second review found no issues. The full test and verdict checks are pending.
+The second review found no issues. The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579064013/job/135754399820) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579063951/job/135754398839) passed on the PR source tree.
+
+On the combined changes, `just test-nix` passed all 99 selected tests and
+`just test-scheduled-checks` passed.

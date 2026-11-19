@@ -1,6 +1,6 @@
 # Permutation invariance of unordered query results
 
-Created 2026-11-19. Open. [Issue 446](https://github.com/vihren-dev/belay/issues/446).
+Created 2026-11-19. DONE. [Issue 446](https://github.com/vihren-dev/belay/issues/446).
 
 Two lists of rows have the same normal form exactly when they are permutations
 of one another, including repeated rows. The result applies to all model
