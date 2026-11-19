@@ -8,7 +8,8 @@ set_option exponentiation.threshold 2048
 
 /-! The schema-only law certifies a transaction and a foreign-key check with a
 single possible source of violations. The other checks exercise the conditions
-on the transaction state, enforcement and number of result-producing tables. -/
+on the transaction state, enforcement and number of result-producing tables. The catalog tests certify creation of a view, trigger and non-unique
+index and removal of a column. They require a row premise for a UNIQUE index. -/
 
 /-- A complete transaction whose successful steps depend only on the schema. -/
 private def transaction : Script := sql "BEGIN; CREATE TABLE flags(id INTEGER); DROP TABLE flags; COMMIT;"

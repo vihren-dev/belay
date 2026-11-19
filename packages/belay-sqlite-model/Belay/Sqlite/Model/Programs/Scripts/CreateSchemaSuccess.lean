@@ -2,6 +2,8 @@ import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepOk
 
 set_option doc.verso true
 
+/-! The schema-only script check uses these step laws for catalog creations and DROP COLUMN. -/
+
 namespace Belay.Sqlite.Model
 
 /-- Whether a resolved statement creates an object with no condition on the stored rows.
@@ -9,7 +11,8 @@ CREATE TABLE, VIEW, TRIGGER and a non-unique index qualify. A UNIQUE index needs
 def Resolved.Statement.createsBySchema : Resolved.Statement → Bool
   | .createTable .. | .createView .. | .createTrigger .. => true
   | .createIndex _ _ key => !key.unique
-  | _ => false
+  | .addColumn .. | .dropColumn .. | .drop .. | .rewrite .. | .begin | .commit | .rollback | .insert ..
+  | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting .. => false
 
 /-- Each resolved creation that passes {name}`Resolved.Statement.createsBySchema` succeeds on every
 valid input database. The script step continues with a non-error output and has no alternative execution.
