@@ -9,8 +9,7 @@ Changing CheckConsumerSize changes only surfaceChecks. Changing the shared
 LowercaseFilters fixture changes surface, surfaceClaims and surfaceS6.
 Python helpers now load SqlFileProbe on demand so other suites can import
 the helpers with their restricted fixture tree. The proof-cost run reached
-its independent timing limit, recorded in issue 453. Whole-suite checks
-and independent code review are pending.
+its independent timing limit, recorded in issue 453.
 
 Review clarified the SQL resource list, the identity check and why the probe
 is read on demand. The root list includes the literal INSERT fixture from issue 419.
@@ -22,4 +21,4 @@ The complete Nix run found a missing SqlFileProbe in surfaceS6.
 surface_sql_check_roots_test.py builds a same-name project through a Python
 helper that reads this Lean file. Both consuming suites now list the probe.
 The derivation-identity regression covers its two consumers. The Nix
-verdict passed for this layer.
+verdict passed for this layer. The corrected S6 suite is running.
