@@ -42,6 +42,11 @@ def splitByAgeFixed : Script := sql r"
     SELECT id, name, age FROM minors UNION ALL SELECT id, name, age FROM adults;
   COMMIT;"
 
+/-- Resolution of the corrected migration succeeds and leaves only the two copies to justify from rows. -/
+example : (Model.resolveFrom runContext 0 shop.raw.connection.resolveState (splitByAgeFixed.statements.map Prod.fst)).toOption.map
+    (fun path => shop.raw.connection.resolveState.uncheckedSteps path.1) = some [3, 4] := by
+  decide +kernel
+
 /-- The read that a correct migration keeps: every customer. It has no {lit}`ORDER BY`: the model
 compares its rows in their normal form, so the claim is about the rows and not about their order. -/
 def allCustomers : Script := sql r"SELECT id, name, age FROM customers"

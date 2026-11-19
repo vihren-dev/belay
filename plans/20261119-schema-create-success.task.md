@@ -1,4 +1,4 @@
-# Schema-only success for catalog creation
+# Schema-only success for catalog creation and DROP COLUMN
 
 Created 2026-11-19. Open. [Belay issue 444](https://github.com/vihren-dev/belay/issues/444).
 
@@ -6,7 +6,7 @@ For any valid connection, resolution to CREATE TABLE, CREATE VIEW, CREATE
 TRIGGER or non-unique CREATE INDEX guarantees that the script step continues
 with one execution and a successful output. A caller can use one law for all
 four forms. Keep the raw rules for a particular statement. The existing
-schema-only success check must certify these steps. A UNIQUE index still
+schema-only success check must certify these steps and resolved DROP COLUMN. A UNIQUE index still
 needs a proof about the rows. A prepare error gives no success certificate.
 
 The DROP COLUMN guard in `Schema/Ddl/DatabaseDropColumn.lean` reads only the

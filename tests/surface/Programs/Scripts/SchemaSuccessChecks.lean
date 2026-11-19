@@ -18,6 +18,21 @@ example : (sql "COMMIT;").succeedsBySchema sample = false := by decide +kernel
 example : (sql "PRAGMA foreign_keys=ON; BEGIN; COMMIT;").succeedsBySchema sample = false := by decide +kernel
 example : (sql "PRAGMA foreign_key_check;").succeedsBySchema sample = true := by decide +kernel
 
+/-- Creating the view, trigger and ordinary index succeeds for every database of the sample schema. -/
+private def createObjects : Script := sql r"
+  CREATE VIEW customer_ids AS SELECT id FROM customers;
+  CREATE TRIGGER observe AFTER INSERT ON customers BEGIN SELECT 1; END;
+  CREATE INDEX customer_names ON customers(name);"
+example : Succeeds createObjects (·.HasCatalog sample) := Script.succeeds_of_schema (by decide +kernel)
+
+-- Removing an unreferenced column needs only the catalog.
+example : (sql "CREATE TABLE flags(id INTEGER, label TEXT); ALTER TABLE flags DROP COLUMN label;").succeedsBySchema sample =
+    true := by decide +kernel
+
+-- Existing customers can share a name. A unique index requires a proof about their rows.
+example : (sql "CREATE UNIQUE INDEX customer_names ON customers(name);").succeedsBySchema sample = false := by
+  decide +kernel
+
 /-- Two child tables can each contribute a nonempty result block in a database of this schema. -/
 private def twoChildren : Database := db! r"
 CREATE TABLE parent(id INTEGER PRIMARY KEY);
