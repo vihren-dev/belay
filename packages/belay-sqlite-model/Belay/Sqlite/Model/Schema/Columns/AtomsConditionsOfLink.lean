@@ -51,7 +51,7 @@ theorem Resolved.Statement.typesFitCondition_of_link {profile : Profile} {databa
     (link : statement.SchemaLink database.catalog) : statement.TypesFitCondition database := by
   cases statement with
   | addColumn target column _ =>
-    exact ⟨database.rowsWideAt_of_admitted admitted target, Database.strictDefaultFitsAt_of_fits link⟩
+    exact ⟨database.rowsWideAt_of_admitted admitted target, Database.strictDefaultFitsAt_of_fits link.2⟩
   | createTable | createView | createIndex | createTrigger | rewrite | dropColumn | drop | begin | commit | rollback | insert
   | update | upsert | insertSelect | delete | prepareError | query | setting => trivial
 

@@ -3,24 +3,27 @@ import Belay.Sqlite.Model.Schema.Ddl.NamesSpec
 
 set_option doc.verso true
 
-/-! The link of a resolved statement to its catalog (ADR 0022, D3, slice 4). The facts that the resolver
-gives about an ADD COLUMN or a DROP (the strict default of the column, the positions of the drop) are
-stated as {lit}`Resolved.Statement.SchemaLink`, a property of every resolved statement. The resolver of
-another statement gives a prepare error, a statement of its own form, or, for CREATE TRIGGER IF NOT EXISTS
-of an existing trigger, a DROP of no object, which meets the link by {lit}`Catalog.DropClosed.nil`. -/
+/-! Facts that the resolver supplies about the input catalog and the resulting statement. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The link of a resolved statement to the catalog that it resolved against:
-* ADD COLUMN: the default of the new column fits its strict type ({name}`strictDefaultFits`);
-* DROP: the positions of the drop meet {name}`Catalog.DropClosed` on the catalog;
-* every other statement: nothing.
+/-- The facts about the input catalog for each resolved statement.
+* CREATE TABLE, VIEW, TRIGGER and INDEX append at the end. An index also refers to a table.
+* ADD COLUMN refers to a table and the default fits its strict type ({name}`strictDefaultFits`).
+* DROP COLUMN removes a droppable column and stores the catalog with that column removed.
+* A rewrite preserves the catalog outline ({name}`Catalog.sameOutline`).
+* DROP removes positions closed under dependencies ({name}`Catalog.DropClosed`).
+* Other statements require nothing.
 
 For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
-  | .addColumn _ column _ => strictDefaultFits column = true
+  | .createTable target .. | .createView target .. | .createTrigger target .. => target = catalog.length
+  | .createIndex target _ index => target = catalog.length ∧ (catalog.tableAt index.table).isSome = true
+  | .addColumn target column _ => (catalog.tableAt target).isSome = true ∧ strictDefaultFits column = true
+  | .dropColumn target index stored => catalog.droppable target index = true ∧ stored = catalog.dropColumn target index
   | .drop positions _ => catalog.DropClosed positions
-  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .rewrite _ | .dropColumn .. | .begin | .commit | .rollback | .insert ..
+  | .rewrite renamed => catalog.sameOutline renamed = true
+  | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .insertSelect .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every successful resolution of CREATE TABLE, the resolved statement meets
@@ -47,7 +50,10 @@ theorem resolveCreateIndex_schemaLink (context : ResolveContext) (catalog after 
   unfold resolveCreateIndex at ok
   simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
-  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact ⟨rfl, by rw [Catalog.tableAt_of_findTable (by assumption)]; rfl⟩)
+    | cases ok
 
 /-- For every successful resolution of CREATE TRIGGER, the resolved statement meets
 {name}`Resolved.Statement.SchemaLink` on the catalog. Proof sketch: every branch of the resolver gives a

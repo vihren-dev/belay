@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Programs.Scripts.StepContinues
+import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 
 set_option doc.verso true
 
@@ -32,7 +33,7 @@ theorem runScriptStep_isError_false {context : ResolveContext} {clock : Option C
 the step continues without further execution, and its output is no error. In plain words, the creation of a
 table at the end of the catalog succeeds. Proof sketch: {name}`runScriptStep_createTable_continues`; the
 effect succeeds, so the transition does not halt ({name}`runScriptStep_isError_false`). -/
-theorem runScriptStep_createTable_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
+theorem runScriptStep_createTable_ok_of_aligned {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {name : Identifier} {table : CatalogTable}
     (found : resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after))
@@ -45,6 +46,19 @@ theorem runScriptStep_createTable_ok {context : ResolveContext} {clock : Option 
   refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
   simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
     Model.step, atEnd, aligned]
+
+/-- On every valid database, if resolution gives a CREATE TABLE, its step continues once
+with a successful output. Proof sketch: {name}`resolveStatement_certificate` gives the append
+position. Validity supplies the length of the row store for {name}`runScriptStep_createTable_ok_of_aligned`. -/
+theorem runScriptStep_createTable_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
+    {target : Nat} {name : Identifier} {table : CatalogTable} {profile : Profile}
+    (found : resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after))
+    (valid : connection.state.database.Valid profile) :
+    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
+      output.isError = false := by
+  obtain ⟨atEnd, aligned⟩ := step_guards_hold found rfl valid
+  exact runScriptStep_createTable_ok_of_aligned found atEnd aligned
 
 /-- For every connection, statement and values that resolve to a DROP TABLE without rules: the step continues
 without further execution, and its output is no error. In plain words, a drop that no foreign key can cascade
@@ -65,7 +79,7 @@ theorem runScriptStep_drop_ok {context : ResolveContext} {clock : Option Clock} 
 the step continues without further execution, and its output is no error. In plain words, a rename that keeps the
 outline of the catalog succeeds. Proof sketch: as {name}`runScriptStep_createTable_ok`, with
 {name}`runScriptStep_rewrite_continues`. -/
-theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
+theorem runScriptStep_rewrite_ok_of_outline {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {renamed : Catalog}
     (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
@@ -77,6 +91,18 @@ theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Cloc
   refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
   simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
     Model.step, outline]
+
+/-- On every valid database, if resolution gives a catalog rewrite, its step continues once
+with a successful output. Proof sketch: the outline equality from {name}`resolveStatement_certificate`
+supplies the premise of {name}`runScriptStep_rewrite_ok_of_outline`. -/
+theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
+    {renamed : Catalog} {profile : Profile}
+    (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
+    (valid : connection.state.database.Valid profile) :
+    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
+      output.isError = false :=
+  runScriptStep_rewrite_ok_of_outline found (step_guards_hold found rfl valid)
 
 /-- For every connection, statement and values that resolve to a setting: the step continues without further
 execution, and its output is no error. Proof sketch: as {name}`runScriptStep_createTable_ok`, with
