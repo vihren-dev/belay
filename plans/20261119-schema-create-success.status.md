@@ -20,3 +20,6 @@ tests/surface_split_by_age_test.py. Review required an exhaustive creation class
 statement kind. The module comments name the creation and removal cases.
 
 The second review found no issues. The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579039872/job/135754315530) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579039546/job/135754312595) passed on the PR source tree.
+
+Before the stack was published, `just test-nix` passed all 99 selected
+tests on the combined changes and `just test-scheduled-checks` passed.
