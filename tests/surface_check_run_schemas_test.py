@@ -1,13 +1,10 @@
-"""Search schemas that are the database at the end of a run of SQL text (issue #371).
+"""The SQL checker recovers a construction from source runs or from a computed catalog.
+The fixture exercises both routes through public claims. The catalog case also checks
+the printed constraints, view, index and trigger with the model and native SQLite."""
 
-The test checks `CheckData.schemaText?` and `CheckData.runParts?`, which recover the SQL text of such
-a schema; `CheckClaim.querySites`, which gives a `Database.HasCatalog` premise no query; the reason
-that `CheckSamples.visitCandidates` records for a schema without SQL text; and
-`CheckInputs.configuredCheck`, which keeps that reason when the search uses the whole budget. Each schema of the fixture has an index, so
-a counterexample is replayable only when the replay builds the schema from its text.
-"""
-
+import json
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -23,11 +20,11 @@ INDEX = "CREATE INDEX customers_by_email ON customers(email);"
 
 
 @pytest.mark.timeout(300)
+@pytest.mark.requires_native("sqlite3")
 def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_path: Path) -> None:
     """A schema from `sql_file`, given with `with (schema := ...)` or with `on`, a `db!` schema followed by
     a run of `sql`, and two runs whose first text has no final semicolon give false with a replay that
-    builds the index; a schema after a run of Lean code gives unknown with the reason that it has no SQL
-    text."""
+    builds the index; a schema after a run of Lean code yields the same replay from its computed catalog."""
     result = run_command(configured_command(runtime_root, fixture_file("CheckRunSchemas.lean"), tmp_path),
                          cwd=tmp_path, timeout=280)
     assert result.returncode == 0, result.diagnostic()
@@ -35,6 +32,14 @@ def test_run_schemas_give_replayable_counterexamples(runtime_root: Path, tmp_pat
     for label in ("file-schema", "file-on", "two-runs-on", "unterminated-on"):
         false_answer(blocks[label])
         assert INDEX in blocks[label].split("SQLite replay:\n", 1)[1], blocks[label]
-    assert blocks["without-text"].startswith("SQL check: unknown; the schema of the search has no SQL text"), \
-        blocks["without-text"]
-    assert "(Database.empty.run (sql_file \"db/schema.sql\")).db" in blocks["without-text"], blocks["without-text"]
+    computed = blocks["without-text"]
+    false_answer(computed)
+    replay = computed.split("SQLite replay:\n", 1)[1]
+    assert 'CREATE INDEX "customers_by_email" ON "customers"' in replay, replay
+    sql, = [json.loads(line.split("CATALOG-SQL ", 1)[1]) for line in result.stdout.splitlines() if "CATALOG-SQL " in line]
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    native = run_command([sqlite, ":memory:", sql + "SELECT label FROM via_cte; "
+                          "INSERT INTO items(id,parent,v) VALUES(3,2,7); SELECT id FROM parents ORDER BY id;"],
+                         cwd=tmp_path, timeout=10)
+    assert native.returncode == 0 and native.stdout.splitlines() == ["6", "1", "2"], native.diagnostic()

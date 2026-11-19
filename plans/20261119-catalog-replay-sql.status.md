@@ -2,7 +2,11 @@
 
 Created 2026-11-19. Open. [Task](20261119-catalog-replay-sql.task.md).
 
-ReplayDatabaseSql currently supports simple tables. Tests of the public
-command in tests/surface_check_run_schemas_test.py cover two sources of
-construction text and an unknown result for a database with no text.
-The printer and its acceptance checks are pending.
+ReplayDatabaseSql now emits all four catalog entry kinds. ReplayTableSql and
+ReplayResolvedExpr reconstruct table constraints and index expressions.
+ReplayViewSql, ReplaySyntaxExpr and ReplayTriggerSql print stored query and
+trigger syntax. The checker validates the emitted construction against both
+the catalog and the stored rows. The fixtures in surface_check_run_schemas_test.py,
+surface_views_test.py and surface_search_test.py exercise the public command,
+native SQL, nested views and a sparse rowid candidate that fails exact replay.
+The independent review and slice checks are pending.

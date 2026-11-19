@@ -150,12 +150,9 @@ def visitCandidates (proposition : Expr) (config : SampleConfig)
       dataValue (Database.Raw × List Value × Option (List Model.Identifier))
         (mkApp3 (mkConst ``inferredData) scripts schema (toExpr complete)) | continue
     let some baseDatabase := Sampling.validated base | continue
-    -- Without SQL text, a replay can build only plain tables (Replay.databaseSql).
     if suppliedSchema.isSome && schemaText.isNone && (Replay.databaseSql baseDatabase).isNone then
-      recordReason "the schema of the search has no SQL text, and the checker can build a schema without its \
-        text only when its tables have no keys or constraints and it has no indexes, triggers or views. Write the \
-        schema with db!, or as the database at the end of a run of SQL text, for example \
-        (Database.empty.run (sql_file \"db/schema.sql\")).db"
+      recordReason "the checker could not reconstruct this computed schema. Supply its original SQL with db! \
+        or as the database at the end of a run of SQL text"
     let baseExpression := suppliedSchema.getD (databaseExpr base)
     -- Generate and screen together, up to the first candidate after the position that the screen
     -- accepts; after a rejected certificate, generate again and continue after it.

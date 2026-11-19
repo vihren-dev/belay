@@ -66,7 +66,7 @@ private def constructionStatements (text : String) : TermElabM (List Model.Synta
   return items.toList.map (·.statement.value)
 
 /-- Reconstruct a database with original metadata, with the schema text of a generated
-database ({name}`Replay.schemaRowsSql`), or with the existing ordinary-table formatter.
+database ({name}`Replay.schemaRowsSql`), or with SQL printed from the catalog.
 The shared formatter receives only checked literal database data and checks resources between
 table/row fragments. Its text is an untrusted proposal. Compiled model execution validates the
 exact reconstruction ({name}`constructionMatches`, {name}`constructionWithoutTriggersMatches`).

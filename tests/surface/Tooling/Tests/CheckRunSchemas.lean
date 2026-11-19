@@ -5,8 +5,7 @@ open Belay.Sqlite Lean Elab
 /-! Schemas that are the database at the end of a run of SQL text (issue #371): {lit}`#sql_check`
 finds a replayable counterexample on such a schema ({lit}`Belay.Sqlite.Check.schemaText?`), with
 {lit}`with (schema := ...)` and with the {lit}`on` form of a migration claim. A schema without SQL
-text gives unknown with the reason. Each schema has an index, so the replay must build the schema
-from its text. The test is {lit}`tests/surface_check_run_schemas_test.py`. -/
+text gives a replay from its catalog. Each replay must build the index on its schema. The test is {lit}`tests/surface_check_run_schemas_test.py`. -/
 
 /-- Mark the message of one command, so the test reads each block. -/
 elab "labelled_sql " label:str " in " cmd:command : command => do
@@ -55,3 +54,51 @@ labelled_sql "unterminated-on" in
 
 labelled_sql "without-text" in
 #sql_check addEmailLower preserves allCustomers on withoutText
+
+
+/-- A computed schema with each catalog entry and constraints whose formatting needs a row scope. -/
+def complex : Database := db! r"
+CREATE TABLE parents(id INTEGER PRIMARY KEY);
+CREATE TABLE items(id INTEGER PRIMARY KEY, parent INTEGER REFERENCES parents(id),
+  v INTEGER NOT NULL DEFAULT 4 CHECK(v > 0), doubled INTEGER GENERATED ALWAYS AS (v * 2) STORED,
+  CONSTRAINT item_pair UNIQUE(parent,v)) STRICT;
+INSERT INTO parents VALUES (1);
+INSERT INTO items(id,parent,v) VALUES (2,1,3);
+CREATE UNIQUE INDEX active_pair ON items(parent, v DESC) WHERE v > 1;
+CREATE VIEW forward AS SELECT label FROM summary;
+CREATE VIEW summary(label) AS SELECT doubled FROM items WHERE parent IN (SELECT id FROM parents);
+CREATE VIEW via_cte AS WITH local AS (SELECT label FROM forward) SELECT * FROM local;
+CREATE TRIGGER copy_parent AFTER INSERT ON items WHEN NEW.parent IS NOT NULL
+  BEGIN INSERT INTO parents(id) VALUES (NEW.parent) ON CONFLICT(id) DO NOTHING; END;"
+
+/- Check the same catalog equality that protects a public SQL replay after parsing the emitted text. -/
+run_meta do
+  let some text := Replay.databaseSql complex | throwError "no SQL for the compound catalog"
+  let statements ← match ← Replay.translated text with
+    | .ok statements => pure statements
+    | .error reason => throwError "could not translate the printed SQL: {reason}\n{text}"
+  logInfo m!"CATALOG-SQL {Json.compress (toJson text)}"
+  unless Check.constructionMatches (statements.toList.map (·.statement.value)) complex.raw do
+    throwError "the printed SQL did not reproduce the compound catalog: {text}"
+
+
+/-- Even a quoted column rename that leaves no application-visible constraint changes later DDL diagnostics. -/
+def renamedCatalog := ((db! "CREATE TABLE t(old INTEGER);").run (sql "ALTER TABLE t RENAME COLUMN old TO [new];")).db
+
+/- Require equality including the spelling flags changed by the rename. -/
+run_meta do
+  let some text := Replay.databaseSql renamedCatalog | throwError "no SQL for the renamed table"
+  let .ok statements ← Replay.translated text | throwError "could not translate the renamed table: {text}"
+  unless Check.constructionMatches (statements.toList.map (·.statement.value)) renamedCatalog.raw do
+    throwError "the printed SQL did not reproduce the rename: {text}"
+
+/-- Only rowid 2 survives. An ordinary INSERT into the empty table would assign rowid 1. -/
+def sparseRows : Database := db! r"
+CREATE TABLE sparse(v INTEGER); INSERT INTO sparse VALUES (1), (2); DELETE FROM sparse WHERE v = 1;"
+
+/- A printable schema and row value still need exact rowid reconstruction before replay. -/
+run_meta do
+  let some text := Replay.databaseSql sparseRows | throwError "missing candidate for ordinary rows"
+  let .ok statements ← Replay.translated text | throwError "could not translate the sparse-row candidate"
+  if Check.constructionMatches (statements.toList.map (·.statement.value)) sparseRows.raw then
+    throwError "the construction lost a hidden rowid"
