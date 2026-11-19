@@ -68,6 +68,54 @@ theorem LiteralData.upsertWritten_of_summary (table : Table) :
         have tail := LiteralData.upsertWritten_of_summary next rest later
         simp [LiteralData.upsertWritten, result, ← summary.2, ← tail]
 
+/-- For every clock, evaluation context, database, target position, table, INSERT cells,
+conflict clauses, algorithm, subquery flag and list of input rows, consider the outcome of
+this production with no source failure and no write rules. If the projected cells meet
+{name}`InsertFits` and every conflict assignment addresses a target column, the outcome
+succeeds with only the target rows replaced by those of {name}`LiteralData.inserted`,
+is ready, and records exactly the appended rows as its written rows. The claim is about
+one production, so it applies to both the model's run and each alternative scan.
+Proof sketch: the constraints make the upsert summary succeed. Its inserted rows give
+the effect, its readiness checks, and the written suffix. -/
+theorem insertSelectOutcome_fits (clock : Int) (ctx : Resolved.EvalContext) (database : Database)
+    (target : Nat) (table : Table) (cells : List Resolved.SourceCell) (clauses : List Resolved.ConflictClause)
+    (algorithm : Option ConflictAlgorithm) (plain : Bool) (rows : List (List Value))
+    (fits : InsertFits (database.keys target table) table (insertSelectRows ctx table.shape.columns cells rows))
+    (clauseColumns : clauses.all (fun clause => match clause.action with
+      | .nothing => true
+      | .update assignments _ => assignments.all fun (position, _) => (table.shape.columns[position]?).isSome) = true) :
+    let outcome := insertSelectOutcome clock ctx database target table cells clauses algorithm none plain ⟨rows, none⟩
+    let inserted := LiteralData.inserted table (insertSelectRows ctx table.shape.columns cells rows)
+    outcome.effect = .ok (database.setRows target inserted.rows) ∧ outcome.ready = true ∧
+      outcome.keyRows = some (inserted.rows.drop table.rows.length) := by
+  dsimp only
+  have passes : LiteralData.constraints (database.keys target table) (LiteralData.inserted table (insertSelectRows
+      ctx table.shape.columns cells rows)) = true := by
+    simp [LiteralData.constraints, fits.notNull, fits.typed, fits.checked, fits.keysDistinct]
+  have summary := LiteralData.upsertSummary_inserted ctx
+    (database.keys target table) (database.catalog.writePolicy target table.shape algorithm) clauses table _ fits.aliasFree
+    passes fits.rowidsDistinct
+  obtain ⟨added, appended⟩ := LiteralData.inserted_rows_prefix table (insertSelectRows
+    ctx table.shape.columns cells rows)
+  have tableOk : LiteralData.tableReady (database.keys target table) table = true :=
+    LiteralData.constraints_of_appended (LiteralData.shape_inserted _ _) appended passes
+  have readyRun : LiteralData.upsertReady (database.keys target table) table clauses
+      (insertSelectRows ctx
+        table.shape.columns cells rows)
+      (LiteralData.upsertSteps ctx
+        (database.keys target table) (database.catalog.writePolicy target table.shape algorithm) clauses table
+        (insertSelectRows ctx
+          table.shape.columns cells rows)) = true := by
+    have bounded := LiteralData.upsertBounded_inserted
+      ctx (database.keys target table)
+      (database.catalog.writePolicy target table.shape algorithm) clauses table _ fits.aliasFree passes
+      fits.rowidsDistinct fits.rowidsBounded
+    simp only [LiteralData.upsertReady, Bool.and_eq_true]
+    exact ⟨⟨⟨⟨tableOk, fits.aliasInteger⟩, by simpa using fits.stored⟩, clauseColumns⟩, bounded⟩
+  have written := LiteralData.upsertWritten_of_summary table _ summary
+  simp [insertSelectOutcome, summary, StatementRun.withKeys, readyRun, written]
+
+
 /-- For every clock value, counters, parameters, target, cells, query, clauses, {lit}`RETURNING` list,
 algorithm and subqueries of INSERT from a query without rules, database, target table and production rows:
 if the query has one certain production, which hands over the rows and has no failure, the full rows of
@@ -128,38 +176,15 @@ theorem runStatement_insertSelect_none_ok (clock : Int) (counters : Counters) (p
     from rfl]
   unfold insertSelectRun
   simp only [found, certain]
-  have passes : LiteralData.constraints (database.keys target table) (LiteralData.inserted table (insertSelectRows
-      (Resolved.statementContext clock counters parameters database subqueries) table.shape.columns cells rows)) = true := by
-    simp [LiteralData.constraints, fits.notNull, fits.typed, fits.checked, fits.keysDistinct]
-  have summary := LiteralData.upsertSummary_inserted (Resolved.statementContext clock counters parameters database subqueries)
-    (database.keys target table) (database.catalog.writePolicy target table.shape algorithm) clauses table _ fits.aliasFree
-    passes fits.rowidsDistinct
-  obtain ⟨added, appended⟩ := LiteralData.inserted_rows_prefix table (insertSelectRows
-    (Resolved.statementContext clock counters parameters database subqueries) table.shape.columns cells rows)
-  have tableOk : LiteralData.tableReady (database.keys target table) table = true :=
-    LiteralData.constraints_of_appended (LiteralData.shape_inserted _ _) appended passes
-  have readyRun : LiteralData.upsertReady (database.keys target table) table clauses
-      (insertSelectRows (Resolved.statementContext clock counters parameters database subqueries)
-        table.shape.columns cells rows)
-      (LiteralData.upsertSteps (Resolved.statementContext clock counters parameters database subqueries)
-        (database.keys target table) (database.catalog.writePolicy target table.shape algorithm) clauses table
-        (insertSelectRows (Resolved.statementContext clock counters parameters database subqueries)
-          table.shape.columns cells rows)) = true := by
-    have bounded := LiteralData.upsertBounded_inserted
-      (Resolved.statementContext clock counters parameters database subqueries) (database.keys target table)
-      (database.catalog.writePolicy target table.shape algorithm) clauses table _ fits.aliasFree passes
-      fits.rowidsDistinct fits.rowidsBounded
-    simp only [LiteralData.upsertReady, Bool.and_eq_true]
-    exact ⟨⟨⟨⟨tableOk, fits.aliasInteger⟩, by simpa using fits.stored⟩, clauseColumns⟩, bounded⟩
-  have written := LiteralData.upsertWritten_of_summary table _ summary
-  simp only [insertSelectOutcome, summary, Option.map_none, StatementRun.withKeys, readyRun]
-  refine ⟨trivial, ?_, by simp⟩
-  simp only [Bool.and_eq_true, Option.isNone_none, Bool.true_or, Bool.and_true, plainSubqueries, json, true_and]
-  refine ⟨⟨by simp, ?_⟩, fixedCells⟩
+  obtain ⟨effect, ready, written⟩ := insertSelectOutcome_fits clock
+    (Resolved.statementContext clock counters parameters database subqueries) database target table cells clauses
+    algorithm subqueries.isEmpty rows fits clauseColumns
+  refine ⟨effect, ?_, rfl⟩
+  simp only [ready, List.map_nil, List.all_nil, Bool.and_true, Option.isNone_none, Bool.true_or,
+    plainSubqueries, json, Bool.and_eq_true, true_and]
+  refine ⟨?_, fixedCells⟩
   cases rowids : insertSelectTransferRowids target cells query table database none with
-  | none => simp [insertSelectTransferReady]
+  | none => rfl
   | some source =>
-    have same := transfer source rowids
-    simpa [insertSelectTransferReady, written] using same
-
+    simpa [insertSelectTransferReady, effect, written] using transfer source rowids
 end Belay.Sqlite.Model

@@ -4,6 +4,8 @@ import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyCreateView
 import Belay.Sqlite.Model.Programs.StatementRunLaws.ForeignKeySelectedRuns
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeySelectedRuns
 import Belay.Sqlite.Model.Programs.StatementRunLaws.ForeignKeySchemaRuns
+import Belay.Sqlite.Model.Programs.Scripts.TablePath
+import Belay.Sqlite.Model.Programs.Scripts.SchemaSuccessPath
 import Belay.Sqlite.Model.Programs.Scripts.ScriptRunStates
 import Belay.Sqlite.Model.Programs.StatementRunLaws.ScriptSingleStatements
 import Belay.Sqlite.Model.Programs.Scripts.ScriptRunCounters
@@ -75,6 +77,7 @@ import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.SchemaFailureLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
+import Belay.Sqlite.Model.Programs.Scripts.CopyStep
 import Belay.Sqlite.Model.Schema.Writes.CopyInsertFits
 import Belay.Sqlite.Model.Programs.StatementRunLaws.ForeignKeyCheckContinues
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyCheckContinues

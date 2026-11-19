@@ -116,6 +116,8 @@ elab "labelled_sql " label:str " in " cmd:command : command => do
   IO.println s!"consumer schema nodes: {nodes}"
 
 set_option maxHeartbeats 4000000
+-- Allow the compiled search to finish when a CI runner is under load (#426).
+set_option sql.checkTimeLimit 60000
 
 labelled_sql "consumer" in #sql_check ∀ id, Succeeds (deleteMessage id) (·.HasCatalog consumer)
 

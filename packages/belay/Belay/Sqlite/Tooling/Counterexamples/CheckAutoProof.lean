@@ -5,7 +5,7 @@ import Belay.Sqlite.Programs.Automation.CheckAutoProof
 
 set_option doc.verso true
 
-/-! The default proof attempt of the SQL checker: the short closing tactics of {name}`Belay.Sqlite.Check.tryProof`, then the
+/-! The default proof attempt of the SQL checker: a derived-column law for a claim with a schema premise, the short closing tactics of {name}`Belay.Sqlite.Check.tryProof`, then the
 search of {lit}`sql_auto` on the check of a program or on a claim about the results of a run of a query
 ({name}`Belay.Sqlite.Select.isQueryRun`). The search needs the checks of a program in the form
 that {lit}`sql_run` reads, so the attempt first opens a fresh triple to that form. The result is a script of
@@ -20,10 +20,10 @@ with the routes of {lit}`sql_auto`,
 using at most {name}`searchShare` of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
 proves the claim again without a search. None when the claim has no such proof. -/
 def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
-  let opening ← openingTactic
   let hints ← defaultSearchHints
   let share := searchShare.units (← remainingUnits)
   let found ← withinBudget share <| attempt do
+    let opening ← openingTactic proposition
     let goal ← mkFreshExprMVar proposition
     let [opened] ← runStrict goal.mvarId! opening | throwError "the claim has no single goal after the opening"
     -- The search is for the check of a program or the run of a query. Other claims have no route, and a
@@ -40,8 +40,11 @@ def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
   let some (some (script, proof)) := found | return none
   return some { proof, tactic := printableScript script }
 
-/-- The default proof attempt: the closing tactics first, because they are cheap, then the search. -/
+/-- Try a derived-column law before opening the claim, then the closing tactics and the general search. -/
 def defaultProof (proposition : Expr) : TermElabM (Option Proven) := do
+  let goal ← mkFreshExprMVar proposition
+  if let some step ← derivedColumnSteps? goal.mvarId! then
+    return some { proof := ← instantiateMVars goal, tactic := printableScript step }
   if let some proven ← tryProof proposition then return some proven
   searchedProof proposition
 

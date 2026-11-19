@@ -46,7 +46,7 @@ def command(arguments: list[str]) -> None:
 
 
 def test_directory_commands_record_replay_and_combined_progress(tmp_path: Path, runtime_root: Path) -> None:
-    """Parameters, transaction state, trigger rows and cascade counts survive the CLI path."""
+    """The model agrees with SQLite on both IMMEDIATE workload cases and on the combined CLI report."""
     source = copied_inputs(tmp_path)
     frozen = tmp_path / "frozen"
     command(["record", str(source), "--output", str(frozen)])
@@ -65,7 +65,7 @@ def test_directory_commands_record_replay_and_combined_progress(tmp_path: Path, 
     replay_output = tmp_path / "replay.json"
     command(["replay", str(source), "--corpus", str(frozen), "--runtime-root", str(runtime_root),
              "--output", str(replay_output)])
-    assert json.loads(replay_output.read_text())["counts"] == {"MODEL_UNSUPPORTED": 2}
+    assert json.loads(replay_output.read_text())["counts"] == {"AGREE": 2}
     generic = tmp_path / "generic"
     evidence = record_sql("", "SELECT 1;", name="generic-query", outputs=True, profile=load_inputs(source).profile)
     evidence.update({"part": "boundary-interaction", "features": ["select"]})
@@ -74,7 +74,7 @@ def test_directory_commands_record_replay_and_combined_progress(tmp_path: Path, 
     command(["progress", str(source), "--corpus", str(frozen), "--generic", str(generic),
              "--runtime-root", str(runtime_root), "--output", str(combined_output)])
     combined = json.loads(combined_output.read_text())
-    assert combined["denominator"] == 3 and combined["counts"] == {"MODEL_UNSUPPORTED": 3}
+    assert combined["denominator"] == 3 and combined["counts"] == {"AGREE": 3}
     assert combined["generic"]["denominator"] == 1 and combined["workload"]["denominator"] == 2
 
 
@@ -128,7 +128,7 @@ def test_inventory_refuses_malformed_parameters_and_escaping_paths(tmp_path: Pat
 
 
 def test_failed_last_statement_is_complete_evidence(tmp_path: Path, runtime_root: Path) -> None:
-    """A fully reached constraint failure remains evidence, including trailing comments."""
+    """The model agrees with the final SQLite constraint error in an IMMEDIATE profile with trailing comments."""
     source = copied_inputs(tmp_path)
     value = inventory(source)
     value["cases"][0]["parameters"] = [[]]
@@ -137,7 +137,7 @@ def test_failed_last_statement_is_complete_evidence(tmp_path: Path, runtime_root
     record(source, tmp_path / "frozen")
     _, records = load(tmp_path / "frozen")
     assert records[0]["trace"][0]["primaryCode"] == 19
-    assert report(source, tmp_path / "frozen", runtime_root)["counts"] == {"MODEL_UNSUPPORTED": 2}
+    assert report(source, tmp_path / "frozen", runtime_root)["counts"] == {"AGREE": 2}
 
 
 def test_setup_file_boundaries_and_executable_setup_binding(tmp_path: Path) -> None:

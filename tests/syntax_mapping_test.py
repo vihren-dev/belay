@@ -104,6 +104,15 @@ def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Transla
                                               "descending": False}]
 
 
+@pytest.mark.parametrize("mode", ["", " DEFERRED", " IMMEDIATE", " EXCLUSIVE"])
+@pytest.mark.parametrize("transaction", ["", " TRANSACTION"])
+def test_uncontended_begin_uses_the_transaction_snapshot(
+        parse_sql: Callable[..., Translation], mode: str, transaction: str) -> None:
+    """The four BEGIN forms in Grammar.Writes use the same begin, commit and rollback operations."""
+    begin = f"BEGIN{mode}{transaction};"
+    assert mapped(parse_sql, f"{begin} COMMIT; {begin} ROLLBACK;") == ["begin", "commit", "begin", "rollback"]
+
+
 def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Translation]) -> None:
     """INSERT keeps its optional columns and rows, with no ON CONFLICT clauses; UPDATE keeps
     assignments and its filter."""
@@ -138,7 +147,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
     ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
     ("ALTER TABLE main.t DROP COLUMN a;", "main.t"),
-    ("ALTER TABLE main.t RENAME TO u;", "main.t"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
+    ("ALTER TABLE main.t RENAME TO u;", "main.t"), ("BEGIN IMMEDIATE TRANSACTION named;", "TRANSACTION named"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "SELECT 1"),
     ("INSERT INTO t VALUES (a & 1);", "a & 1"), ("UPDATE t SET a = 1 WHERE a IN u;", "a IN u"),
     ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),

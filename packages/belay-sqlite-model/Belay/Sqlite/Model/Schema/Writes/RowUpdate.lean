@@ -65,6 +65,14 @@ def updateMismatch (context : Resolved.EvalContext) (table : Table) (assignments
         | some (.integer _) => false
         | some .null | some (.real _) | some (.text _) | some (.blob _) | none => true
 
+/-- Whether each unique key stays distinct across old and new versions of different rows.
+{name}`updated` keeps row positions, so a pair at one position contains the old and new
+versions of the same row. SQLite can have written either row of a pair of positions first.
+Use this check for a plain UPDATE whose final table passes its constraints. -/
+def updateKeysOrderIndependent (keys : List UniqueKey) (before after : List Row) : Bool :=
+  keys.all fun key => decide ((before.zip after).Pairwise fun left right =>
+    keyEqual key left.1 right.2 = false ∧ keyEqual key left.2 right.1 = false)
+
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, a column at every
 assigned position, and a bounded rowid for every row of the updated table ({lit}`result`,
 which the execution computes: {name}`updated`). This check does not establish the updated

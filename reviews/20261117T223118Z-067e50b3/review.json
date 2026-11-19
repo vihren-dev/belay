@@ -1,0 +1,92 @@
+{
+  "caller": "codex",
+  "commit": "067e50b372da7b80420f8416f266861fc98e6f0b",
+  "date": "2026-11-17T22:31:18+00:00",
+  "exit": 1,
+  "files": [
+    "examples/table-rebuild/Proof/RebuildKeeps.lean",
+    "examples/table-rebuild/Proof/RebuildKeepsFinish.lean",
+    "examples/table-rebuild/Proof/RebuildKeepsInvariant.lean",
+    "examples/table-rebuild/Proof/RebuildKeepsRead.lean",
+    "examples/table-rebuild/Proof/RebuildSucceeds.lean",
+    "examples/table-rebuild/Proof/RebuildSucceedsCopy.lean",
+    "examples/table-rebuild/Proof/RebuildSucceedsFinish.lean",
+    "examples/table-rebuild/Proof/RebuildSucceedsSteps.lean",
+    "examples/table-rebuild/lakefile.toml",
+    "packages/belay/Belay/Sqlite/Programs/Claims/SendSchemaPath.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TableKeeps.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TablePath.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "plans/20261117-statement-keeps-table.status.md",
+    "reviews/20261117T220936Z-2a6eb0a8/review.json",
+    "tests/surface/Programs/Scripts/RebuildTableFrames.lean",
+    "tests/surface_rebuild_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261117T223118Z-067e50b3#1",
+      "line": 22,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TableKeeps.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "`Resolved.Statement.keeps` matches over `Resolved.Statement` with a catch-all `other` case. This case also takes the `insertSelect` and `drop` forms with write rules, so a new constructor does not cause a compile error in `keeps`. Fix: list each constructor of `Resolved.Statement` (including `.insertSelect … (some _)`, `.drop _ (some _)`, `.rollback`, `.createView`, `.createIndex`, `.createTrigger`, `.addColumn`, `.dropColumn`, `.prepareError`, `.insert`, `.update`, `.upsert`, `.delete`) explicitly, with no catch-all."
+    },
+    {
+      "id": "20261117T223118Z-067e50b3#2",
+      "line": 1,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TableKeeps.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring that gives its reason, unlike the other modules in `Programs/Scripts`. Fix: add a `/-! … -/` docstring that says the module gives the one-statement table-preservation check and its frame law."
+    },
+    {
+      "id": "20261117T223118Z-067e50b3#3",
+      "line": 1,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TablePath.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring that gives its reason. Fix: add a `/-! … -/` docstring that says the module follows a table along the resolved prefixes of a script."
+    },
+    {
+      "id": "20261117T223118Z-067e50b3#4",
+      "line": 15,
+      "path": "tests/surface/Programs/Scripts/RebuildTableFrames.lean",
+      "rule": "R15",
+      "severity": "should",
+      "text": "The new test module and its `example` checks have no docstring. Nothing says which code they check (`Resolved.Statement.keeps` and `ResolveState.tablePosition`) or why each script must give `some 0` or `none`. Fix: add a module docstring that names the subject and gives the reason for each case: the drop shift, the cascade under enforcement, the write to the protected table and the foreign key rewrite."
+    },
+    {
+      "id": "20261117T223118Z-067e50b3#5",
+      "line": 6,
+      "path": "plans/20261117-statement-keeps-table.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file says \"Implementation and verification are pending\", but lines 10–15 record that the implementation is done and only the Nix checks are pending. Fix: change line 6 to say that only the Nix checks are pending, or mark it as historical."
+    }
+  ],
+  "id": "20261117T223118Z-067e50b3",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

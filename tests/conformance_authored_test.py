@@ -40,14 +40,10 @@ def table_rows(event: dict[str, Json], name: str, *, persisted: bool = False) ->
 
 def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[str, Json]],
                                                       runtime_root: Path) -> None:
-    """Legacy scenarios gain evidence; explicit profiles cannot produce false model agreements:
-    no case disagrees, the 36 cases whose SQL and default execution settings the model
-    implements agree, among them the CREATE INDEX cases that run (ADR 0014, slice 1), the
-    index with `COLLATE NOCASE` (slice 3), `index-if-not-exists` (ADR 0030), the CHECK that aborts a write (`check-abort`,
-    slice 4), the DROP INDEX (`drop-index`, slice 7) and the cases that bind values to
-    parameters (`schema-defaults-add`, `upsert-returning`, `not-null-failure`,
-    `json-values-empty` and `numeric-ties-windows` with `LIMIT ? OFFSET ?`, ADR 0019), and the
-    others stay out of scope (`profile_scope`)."""
+    """Check the retained SQL, complete outputs and modeled verdicts of the authored catalog.
+    Agreement covers the CREATE INDEX, COLLATE NOCASE, CHECK and DROP INDEX cases of ADR 0014,
+    index-if-not-exists (ADR 0030), and the bound parameters of ADR 0019. The two IMMEDIATE
+    cases cover a successful BEGIN and a foreign-key error. Five cases have model restrictions."""
     for name, setup, sql, tags in requirement_definitions():
         record = authored[name]
         assert (record["setupSql"], record["migrationSql"], record["requirements"]) == (setup, sql, tags)
@@ -60,7 +56,9 @@ def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[
             output_wire(event)
             assert event["columnCount"] == len(event["columns"])
     result = replay(list(authored.values()), runtime_root)
-    assert result["counts"] == {"MODEL_UNSUPPORTED": 7, "AGREE": 36}
+    assert result["counts"] == {"MODEL_UNSUPPORTED": 5, "AGREE": 38}
+    verdicts = {case["name"]: case["verdict"] for case in result["cases"]}
+    assert verdicts["begin-immediate"] == verdicts["foreign-key-failure"] == "AGREE"
 
 
 def test_retained_authored_evidence_and_coverage(authored: dict[str, dict[str, Json]]) -> None:

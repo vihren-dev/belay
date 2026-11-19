@@ -152,6 +152,7 @@
   ],
   "surfaceClaims": [
     "tests/surface_guide_test.py",
+    "tests/surface_update_transient_keys_test.py",
     "tests/surface_claims_test.py",
     "tests/surface_views_test.py",
     "tests/surface_schema_claims_test.py",

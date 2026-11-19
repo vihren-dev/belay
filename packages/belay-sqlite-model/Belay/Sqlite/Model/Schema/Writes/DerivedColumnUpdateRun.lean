@@ -35,7 +35,9 @@ words, the backfill of a derived column cannot fail. The model has no limit on t
 the length of a row is no condition. Proof sketch: the UPDATE gives the old rows with a cell appended
 ({name}`updated_derived_append`); {name}`Table.appendCells_checked` gives the write check of that table and
 the ready check of the table before it; the alias is not assigned, so no rowid moves; the expression has
-no fault ({name}`Resolved.Expr.fault_of_plain_at`). -/
+no fault ({name}`Resolved.Expr.fault_of_plain_at`). The keys read only old cells, so
+{name}`LiteralData.keyEqual_append` and the original uniqueness also rule out a conflict
+between the new key of one row and the old key of another. -/
 theorem runStatement_backfill_ok (clock : Int) (counters : Counters) (parameters : List Value)
     {database : Database} {position : Nat} {table : Table} {column : CatalogColumn} {derived : Resolved.Expr}
     (present : database.table position = some (table.appendColumns [(column, .null)]))
@@ -100,6 +102,22 @@ theorem runStatement_backfill_ok (clock : Int) (counters : Counters) (parameters
   rotate_left
   · trivial
   simp only [LiteralData.updateReady, LiteralData.tableReady, Bool.and_eq_true]
+  refine ⟨?_, ?_⟩
+  rotate_left
+  · apply Bool.or_eq_true_iff.mpr
+    right
+    unfold LiteralData.updateKeysOrderIndependent
+    apply List.all_eq_true.mpr
+    intro key member
+    apply decide_eq_true
+    change ((table.rows.map _).zip (table.rows.map _)).Pairwise _
+    rw [List.zip_map', List.pairwise_map]
+    refine (unique key member).imp_of_mem fun {first second} atFirst atSecond distinct => ?_
+    dsimp only
+    have firstWide := Nat.le_of_eq (admitted.rowsWide first atFirst).symm
+    have secondWide := Nat.le_of_eq (admitted.rowsWide second atSecond).symm
+    exact ⟨(LiteralData.keyEqual_append firstWide secondWide _ _ (keysBelow key member)).trans distinct,
+      (LiteralData.keyEqual_append firstWide secondWide _ _ (keysBelow key member)).trans distinct⟩
   refine ⟨⟨⟨⟨⟨by rw [nullCells]; exact ready.1, ?_⟩, ?_⟩, ?_⟩, rfl⟩, ?_⟩
   · unfold LiteralData.aliasReady at alias ⊢
     cases aliasAt : table.shape.rowidAlias with

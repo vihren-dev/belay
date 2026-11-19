@@ -22,6 +22,31 @@ theorem resolvedStepOutput_keyCheck_rows (index : Nat) (connection : Connection)
       rfl rfl source (by simp) rfl rfl]
   exact ⟨rfl, fun _ => nofun⟩
 
+/-- For every statement that resolves to a foreign-key check and every database on
+which the model describes its rows, the step succeeds once and retains the whole
+connection. The output can list violations. Proof sketch: the resolved check has a
+modeled output without an error. A read-only step has a single execution. -/
+theorem runScriptStep_keyCheck_resolved {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {table : Option Nat} {after : ResolveState} {rows : List (List Value)}
+    (resolved : resolveStatement context connection.resolveState statement = .ok (keyCheckQuery table, after))
+    (found : (Resolved.PragmaRows.foreignKeyCheck table).rowsOn connection.state.database = some rows) :
+    ∃ output, runScriptStep context clock index connection statement parameters =
+      .continued output connection [] ∧ output.isError = false := by
+  have out := runScriptStep_output context clock index connection statement parameters
+  rw [resolved] at out
+  simp only [] at out
+  rw [resolvedStepOutput_keyCheck_clock] at out
+  obtain ⟨noError, modeled⟩ := resolvedStepOutput_keyCheck_rows index connection parameters table rows found
+  cases step : runScriptStep context clock index connection statement parameters with
+  | ended reason =>
+    rw [step] at out
+    exact absurd out.symm (modeled reason)
+  | continued output next others =>
+    rw [step] at out
+    obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolved (Or.inl ⟨_, _, rfl⟩) step
+    exact ⟨output, rfl, by rw [show output = _ from out]; exact noError⟩
+
 /-- For every context, clock, index, connection and values, if no catalog position has a foreign-key mismatch
 and the pragma gives rows ({lit}`rowsOn` is {lit}`some`), the step of the database-wide
 {lit}`PRAGMA foreign_key_check` continues with an output that is no error, without further executions, and the
@@ -41,18 +66,6 @@ theorem runScriptStep_keyCheck_continues (context : ResolveContext) (clock : Opt
   have resolved : resolveStatement context connection.resolveState (.pragma (.foreignKeyCheck none)) =
       .ok (keyCheckQuery none, connection.resolveState) := by
     simp only [statement_arms, resolveStatementPragma_foreignKeyCheck, prepared]
-  have out := runScriptStep_output context clock index connection (.pragma (.foreignKeyCheck none)) parameters
-  rw [resolved] at out
-  simp only [] at out
-  rw [resolvedStepOutput_keyCheck_clock] at out
-  obtain ⟨noError, modeled⟩ := resolvedStepOutput_keyCheck_rows index connection parameters none rows found
-  cases step : runScriptStep context clock index connection (.pragma (.foreignKeyCheck none)) parameters with
-  | ended reason =>
-    rw [step] at out
-    exact absurd out.symm (modeled reason)
-  | continued output next others =>
-    rw [step] at out
-    obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolved (Or.inl ⟨_, _, rfl⟩) step
-    exact ⟨output, rfl, by rw [show output = _ from out]; exact noError⟩
+  exact runScriptStep_keyCheck_resolved resolved found
 
 end Belay.Sqlite.Model
