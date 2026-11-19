@@ -11,7 +11,7 @@ needs a proof about the rows. A prepare error gives no success certificate.
 
 The DROP COLUMN guard in `Schema/Ddl/DatabaseDropColumn.lean` reads only the
 catalog. Its successful resolver outcome gives both droppability and the
-exact catalog after removal. The existing data-dependent ADD COLUMN errors
+exact catalog after removal. Certify this resolved step from the schema as well. The existing data-dependent ADD COLUMN errors
 must still be possible.
 
 ## Acceptance
@@ -20,9 +20,10 @@ Compile a public `Script.succeeds_of_schema` proof for a migration with a
 view, a trigger, and a non-unique index. Exercise the UNIQUE case separately
 so that accepting it for arbitrary rows fails a test. On the corrected
 `SplitByAge` migration, check the entire resolved path and show that only
-its two INSERT FROM SELECT statements need hand proofs. Use the actual script
+its two INSERT FROM SELECT statements need hand proofs. Verify that a
+resolved DROP COLUMN on a table with a removable column is certified. Use the actual script
 in the surface fixture. Run the repository acceptance checks.
 
-The resolver certificate in #443 supplies the catalog guards. The step check
+This task depends on the catalog guards requested in #443. The step check
 also sees transaction state. A true result must imply success for each
 valid connection that has the input resolution state.

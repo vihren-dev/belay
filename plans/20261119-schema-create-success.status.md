@@ -8,4 +8,6 @@ constraint violation only when the index is unique. The corrected script
 in `tests/surface/Schema/Tests/SplitByAge.lean` has two copy steps at
 positions 3 and 4, followed by DROP TABLE, CREATE VIEW and COMMIT.
 
+The implementation depends on the resolver certificate from #443. The
+first review clarified that dependency and the DROP COLUMN acceptance check.
 The implementation and acceptance checks are pending.
