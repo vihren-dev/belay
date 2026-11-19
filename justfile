@@ -144,7 +144,7 @@ review-stats *args:
 # Check Nix source identities, test-target commands and environment snapshots.
 # Collection reads the installed package list even for tests excluded by the marker.
 # The local-loop test allows 2520 seconds across its builds, binaries, metadata and verdict.
-# Allow 600 seconds for the other host tests and time for collection and reporting.
+# tests/test_recipe_limits.py checks the reserve for the other host tests and collection.
 test-nix: conformance-build
     timeout --foreground {{host_nix_limit}} python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
 

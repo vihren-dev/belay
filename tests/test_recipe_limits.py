@@ -19,6 +19,9 @@ from tests.runtime_support import run_command
 from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
+OTHER_HOST_TESTS_SECONDS = 600
+"""Time reserved for Nix identity, target and environment tests after the local dev loop."""
+
 SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "scheduledCheckReports",
                  "scheduledTests.{{suite}}"}
 """The `nix-build -A` targets of build-support/default.nix that build test suites."""
@@ -134,5 +137,4 @@ def test_host_nix_limit_allows_every_dev_loop_phase() -> None:
     assert command[:2] == ["timeout", "--foreground"], command
     inner = (loop.COLD_BUILD_SECONDS + loop.WARM_BUILD_SECONDS + len(loop.PROGRAMS) * loop.PROGRAM_START_SECONDS
              + loop.METADATA_SECONDS + loop.VERDICT_SECONDS)
-    other_host_tests = 600
-    assert int(command[2]) > inner + other_host_tests, (command, inner, other_host_tests)
+    assert int(command[2]) > inner + OTHER_HOST_TESTS_SECONDS, (command, inner, OTHER_HOST_TESTS_SECONDS)
