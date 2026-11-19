@@ -1,6 +1,6 @@
 # Empty rows of a table created by a script
 
-Created 2026-11-19. Open. [Issue 445](https://github.com/vihren-dev/belay/issues/445).
+Created 2026-11-19. DONE. [Issue 445](https://github.com/vihren-dev/belay/issues/445).
 
 If a statement resolves to CREATE TABLE and its step continues, the new
 position holds exactly the resolved table shape and an empty row list.
