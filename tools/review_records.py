@@ -35,7 +35,10 @@ def record_path(record: Mapping[str, object]) -> PurePosixPath:
         return PurePosixPath(str(record["id"]), "review.json")
     if record.get("kind") == "resolution":
         review, _, number = str(record["finding"]).partition("#")
-        moment = datetime.fromisoformat(str(record["date"])).astimezone(timezone.utc)
+        moment = datetime.fromisoformat(str(record["date"]))
+        if moment.tzinfo is None:
+            raise ValueError("resolution date must include a UTC offset")
+        moment = moment.astimezone(timezone.utc)
         return PurePosixPath(review, f"resolution-{number}-{moment.strftime(STAMP_FORMAT)}.json")
     raise ValueError(f"unknown record kind {record.get('kind')!r}")
 
@@ -43,7 +46,7 @@ def record_path(record: Mapping[str, object]) -> PurePosixPath:
 def path_problem(relative: str, record: Mapping[str, object]) -> str | None:
     """Why a record does not belong at `relative` (inside the reviews directory), or `None`.
 
-    The CI check uses this so that a file name always tells which review or finding it holds.
+    The CI check uses this to verify the review, finding and resolution time in the file name.
     """
     if (match := REVIEW_FILE.fullmatch(relative)) is not None:
         if record.get("kind") != "review":
@@ -53,7 +56,15 @@ def path_problem(relative: str, record: Mapping[str, object]) -> str | None:
         if record.get("kind") != "resolution":
             return "a resolution file must hold a resolution record"
         expected = f"{match['review']}#{match['number']}"
-        return None if record.get("finding") == expected else f"finding {record.get('finding')!r} does not match the path"
+        if record.get("finding") != expected:
+            return f"finding {record.get('finding')!r} does not match the path"
+        try:
+            written_path = record_path(record)
+        except (KeyError, ValueError, OverflowError):
+            return "resolution date must give a valid time with a UTC offset"
+        if written_path != PurePosixPath(relative):
+            return f"resolution date does not match the path, expected {written_path.name}"
+        return None
     return "not a record path; use ID/review.json or ID/resolution-N-SECOND.json"
 
 
