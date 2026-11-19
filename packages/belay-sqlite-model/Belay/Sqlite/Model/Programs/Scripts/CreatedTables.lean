@@ -42,8 +42,10 @@ def ResolveState.CreatedTablesAt (initial : ResolveState) (path : List Resolved.
   ∀ origin pos shape, initial.createdTable path origin n = some (pos, shape) →
     database.table pos = some ⟨shape, []⟩
 
-/-- Each successful execution of a resolved step carries the created tables of the prefix to the next
-prefix. A fresh creation uses {name}`runScriptStep_createTable_empty`. For a previous creation,
+/-- Suppose the statement resolves to the entry at position {lit}`n` of the path, the connection's
+resolution state equals the prefix state there, and its database satisfies {name}`ResolveState.CreatedTablesAt`
+for that prefix. If the step continues, the next database of every error-free execution satisfies
+{name}`ResolveState.CreatedTablesAt` at {lit}`n + 1`. Proof sketch: a fresh creation uses {name}`runScriptStep_createTable_empty`. For a previous creation,
 {name}`runScriptStep_keepsTable` supplies the new lookup whenever the frame check succeeds. -/
 theorem runScriptStep_createdTables {context : ResolveContext} {clock : Option Clock} {index n : Nat}
     {initial : ResolveState} {path : List Resolved.Statement} {resolved : Resolved.Statement} {after : ResolveState}

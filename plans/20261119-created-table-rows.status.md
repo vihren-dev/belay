@@ -12,3 +12,6 @@ and accounts for shifted positions after DROP. The rebuild proof uses it at
 the copy step. SchemaSuccessChecks covers preservation and a no-op creation.
 The focused test is tests/surface_rebuild_test.py. The slice review and Nix
 checks are pending.
+
+Review clarified the prefix and successful-execution premises, the empty
+target required by the copy example and the subject of the regression.

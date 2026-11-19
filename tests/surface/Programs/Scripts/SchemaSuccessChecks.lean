@@ -43,8 +43,8 @@ CREATE TABLE b(pid INTEGER REFERENCES parent(id));"
 example : (sql "PRAGMA foreign_key_check;").succeedsBySchema twoChildren = false := by decide +kernel
 example : (sql "PRAGMA foreign_key_check(a);").succeedsBySchema twoChildren = true := by decide +kernel
 
-/-- Two fresh tables, a creation no-op, a write to the first and its removal. The second table
-moves when the first table is removed. The prefix must track only the tables it can prove empty. -/
+/-- Check Model.ResolveState.createdTable after two creations, a creation no-op, a write to the
+first table and its removal. The write ends its empty-row guarantee. The removal shifts the second table. -/
 private def trackCreated : Script := sql r"
   CREATE TABLE first_table(id INTEGER);
   CREATE TABLE second_table(id INTEGER);

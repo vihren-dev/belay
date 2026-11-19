@@ -16,7 +16,8 @@ open Belay.Sqlite.Model hiding Database
 namespace RebuildGuide
 
 /-- For a valid connection at the fourth statement, with the resolution state and tracked
-tables of the rebuild, suppose every customer fits the new STRICT types. The copy continues.
+tables of the rebuild, suppose position 2 holds the STRICT table with no rows and every
+customer fits its new types. The copy continues.
 Its main database changes only the target, which holds the old customers in scan order.
 Every execution has a successful output. Proof sketch: the prefix gives the source and empty
 target; their catalog definitions pass the checks of {name}`runScriptStep_copyOf`. -/
