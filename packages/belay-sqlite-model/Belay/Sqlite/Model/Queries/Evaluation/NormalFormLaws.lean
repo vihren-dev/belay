@@ -21,7 +21,7 @@ private theorem compareNormal_lex :
 
 private instance : Std.TransCmp compareNormal := compareNormal_lex ▸ inferInstance
 
-/-- All values compare equal in normal order exactly when they are identical model values.
+/-- For two model values, {name}`compareNormal` gives equality exactly when they are identical.
 Proof sketch: equality gives equal SQL ranks, scaled numbers and bytes. The tie-break recovers the
 exact real bits. Equal scaled integers have equal integer values. -/
 theorem compareNormal_eq_iff (first second : Value) : compareNormal first second = .eq ↔ first = second := by
@@ -43,14 +43,14 @@ private theorem compareRows_lex : compareRows = List.compareLex compareNormal :=
   | nil => cases ys <;> rfl
   | cons x xs ih => cases ys <;> first | rfl | simp [compareRows, ih, List.compareLex_cons_cons]
 
-/-- Two rows compare equal exactly when all their values agree in order, including their lengths.
+/-- For two rows, {name}`compareRows` gives equality exactly when they have the same length and the same value at every position.
 Proof sketch: lexicographic list comparison has lawful equality because normal value comparison does. -/
 theorem compareRows_eq_iff (first second : List Value) : compareRows first second = .eq ↔ first = second := by
   rw [compareRows_lex]
   exact Std.LawfulEqCmp.compare_eq_iff_eq
 
-/-- For a total, transitive and antisymmetric Boolean order, permuting the input gives the same
-stable sort. Proof sketch: the two sorted results are ordered permutations of one another. -/
+/-- For a total, transitive and antisymmetric Boolean order and two lists that are permutations,
+{name}`stableSort` returns identical lists. Proof sketch: the two sorted results are ordered permutations of one another. -/
 theorem stableSort_eq_of_perm {α : Type} (le : α → α → Bool)
     (total : ∀ a b, le a b || le b a) (trans : ∀ a b c, le a b → le b c → le a c)
     (antisymm : ∀ a b, le a b → le b a → a = b) {first second : List α} (same : first.Perm second) :
@@ -58,7 +58,7 @@ theorem stableSort_eq_of_perm {α : Type} (le : α → α → Bool)
   List.Perm.eq_of_pairwise (fun a b _ _ => antisymm a b) (stableSort_sorted le trans total first)
     (stableSort_sorted le trans total second) (((stableSort_perm le first).trans same).trans (stableSort_perm le second).symm)
 
-/-- Two lists of rows have the same normal form exactly when one permutes the other.
+/-- For two lists of rows, {name}`normalForm` gives the same list exactly when one is a permutation of the other.
 Proof sketch: sorting permutes each input. Conversely, the normal row comparator is a total
 lexicographic order with lawful equality, so sorted permutations coincide. -/
 theorem normalForm_eq_iff_perm (first second : List (List Value)) :

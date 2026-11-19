@@ -13,3 +13,6 @@ on permutations. SelectCompoundCases checks a one-table UNION ALL split,
 repeated rows and ties between model values. Its proof uses the filter
 partition and permutation laws. The focused test is
 tests/surface_select_sources_test.py. The slice checks are pending.
+
+Review clarified the checked names in the four public law statements and
+the SQL partition and tie cases covered by the test.

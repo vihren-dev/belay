@@ -42,7 +42,9 @@ def test_compound_cases(runtime_root: Path, tmp_path: Path) -> None:
     compound execution rule: over every database with the catalog of `shop`, UNION ALL of the customer ids
     and the order customer ids keeps the count of each row, and UNION, INTERSECT and EXCEPT give each row
     once with the members of their rules. The instances show a row that UNION ALL keeps twice and UNION
-    once. Every proof has only logical axioms."""
+    once. The partition_reads_agree proof uses normalForm_eq_iff_perm to compare a split on
+    NULL with a single read. Other checks cover representation ties, signed zero, NaNs and
+    byte prefixes. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
                        ("SelectJoinCases", 3), ("SelectCompoundSupport", 4), ("SelectCompoundCases", 5)),
                        timeout=120)
