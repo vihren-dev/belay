@@ -140,8 +140,11 @@ review-stats *args:
     python3 -m tools.review_stats "$@"
 
 # Check Nix source identities, test-target commands and environment snapshots.
-test-nix:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
+# Collection reads the installed package list even for tests excluded by the marker.
+# The local-loop test allows 2520 seconds across its builds, binaries, metadata and verdict.
+# Leave the remaining tests their previous 600 seconds plus time for collection and reporting.
+test-nix: conformance-build
+    timeout --foreground 3300 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
 
 # Run all scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip, also the
 # mutant suites that CI runs in their own job.
