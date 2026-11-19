@@ -15,3 +15,5 @@ checks are pending.
 
 Review clarified the prefix and successful-execution premises, the empty
 target required by the copy example and the subject of the regression.
+
+The second review found no issues. The full test and verdict checks are pending.
