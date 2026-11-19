@@ -134,4 +134,5 @@ def test_host_nix_limit_allows_every_dev_loop_phase() -> None:
     assert command[:2] == ["timeout", "--foreground"], command
     inner = (loop.COLD_BUILD_SECONDS + loop.WARM_BUILD_SECONDS + len(loop.PROGRAMS) * loop.PROGRAM_START_SECONDS
              + loop.METADATA_SECONDS + loop.VERDICT_SECONDS)
-    assert int(command[2]) > inner, (command, inner)
+    other_host_tests = 600
+    assert int(command[2]) > inner + other_host_tests, (command, inner, other_host_tests)
