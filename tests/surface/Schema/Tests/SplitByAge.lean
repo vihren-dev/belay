@@ -46,9 +46,9 @@ def splitByAgeFixed : Script := sql r"
 compares its rows in their normal form, so the claim is about the rows and not about their order. -/
 def allCustomers : Script := sql r"SELECT id, name, age FROM customers"
 
--- The default time limit is 10 s of wall-clock time. On an idle machine this file elaborates about 8 s
--- longer with the check than without it, which is near the limit, and a loaded machine makes the check
--- slower (issue #426). So the fixture gives the check 60 s.
+-- The default time limit of the check is 10 s of wall-clock time. On an idle machine this file
+-- elaborates about 8 s longer with the check than without it, and a loaded machine makes the check
+-- slower (issue #426). So the fixture gives the check 60 s, and the answer does not depend on the load.
 set_option sql.checkTimeLimit 60000 in
 #sql_check splitByAge preserves allCustomers on shop
 
@@ -58,13 +58,13 @@ def found : Database := db! r"
   INSERT INTO customers VALUES (1, '', NULL);"
 
 /-- On {name}`found`, every statement of {name}`splitByAge` succeeds, and the read gives no row. -/
-example : (found.run splitByAge).outputs.allOk = true ∧
+theorem split_loses_found_customer : (found.run splitByAge).outputs.allOk = true ∧
     ((found.run splitByAge).db.run allCustomers).outputs.getLast? = some (.rows []) := by
   decide +kernel
 
 /-- On {name}`found`, every statement of {name}`splitByAgeFixed` succeeds, and the read gives the
 customer. -/
-example : (found.run splitByAgeFixed).outputs.allOk = true ∧
+theorem fixed_keeps_found_customer : (found.run splitByAgeFixed).outputs.allOk = true ∧
     ((found.run splitByAgeFixed).db.run allCustomers).outputs.getLast? = some (.rows [[1, "", .null]]) := by
   decide +kernel
 
@@ -73,6 +73,8 @@ database with the schema on which the read changes. -/
 theorem split_loses_null_age : ¬ (splitByAge preserves allCustomers on shop) := by
   sql_refute (db := found)
 
+#print axioms split_loses_found_customer
+#print axioms fixed_keeps_found_customer
 #print axioms split_loses_null_age
 
 end SplitByAge
