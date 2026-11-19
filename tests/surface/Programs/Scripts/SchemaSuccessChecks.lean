@@ -42,3 +42,18 @@ CREATE TABLE b(pid INTEGER REFERENCES parent(id));"
 
 example : (sql "PRAGMA foreign_key_check;").succeedsBySchema twoChildren = false := by decide +kernel
 example : (sql "PRAGMA foreign_key_check(a);").succeedsBySchema twoChildren = true := by decide +kernel
+
+/-- Two fresh tables, a creation no-op, a write to the first and its removal. The second table
+moves when the first table is removed. The prefix must track only the tables it can prove empty. -/
+private def trackCreated : Script := sql r"
+  CREATE TABLE first_table(id INTEGER);
+  CREATE TABLE second_table(id INTEGER);
+  CREATE TABLE IF NOT EXISTS first_table(id INTEGER);
+  INSERT INTO first_table VALUES (1);
+  DROP TABLE first_table;"
+
+example : (Model.resolveFrom runContext 0 Database.empty.raw.connection.resolveState
+    (trackCreated.statements.map Prod.fst)).toOption.map (fun (path, _) =>
+      let locate := fun origin n => (Database.empty.raw.connection.resolveState.createdTable path origin n).map Prod.fst
+      [locate 0 2, locate 1 2, locate 2 3, locate 0 4, locate 1 4, locate 1 5]) =
+    some [some 0, some 1, none, none, some 1, some 0] := by decide +kernel

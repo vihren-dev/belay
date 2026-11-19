@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.CreatedTables
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyActionCoverage
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyRuns
 import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyCreateView

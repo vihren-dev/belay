@@ -15,20 +15,14 @@ open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 namespace RebuildGuide
 
-/-- For a table of the customers, a number of statements and a connection: the facts about the customers that the
-copy needs. The prefix check follows the original customers table, and just after the
-creation of the new customers (3 statements) the table at position 2 holds no row. -/
-def Held (customers : Table) (count : Nat) (connection : Connection) : Prop :=
-  Tracks customers 0 count connection ∧
-    (count = 3 → connection.state.database.rows.getD 2 [] = [])
-
 /-- For a valid connection at the fourth statement, with the resolution state and tracked
 tables of the rebuild, suppose every customer fits the new STRICT types. The copy continues.
 Its main database changes only the target, which holds the old customers in scan order.
 Every execution has a successful output. Proof sketch: the prefix gives the source and empty
 target; their catalog definitions pass the checks of {name}`runScriptStep_copyOf`. -/
 theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {customers : Table}
-    (schema : c.resolveState = schemaAt 3) (held : Held customers 3 c) (valid : c.state.Holds (Database.Valid Profile.pinned))
+    (schema : c.resolveState = schemaAt 3) (tracked : Tracks customers 0 3 c)
+    (presentNew : c.state.database.table 2 = some ⟨strictShape, []⟩) (valid : c.state.Holds (Database.Valid Profile.pinned))
     (fits : ∀ row ∈ customers.rows, LiteralData.typesFit strictShape row = true) :
     ∃ output next others, runScriptStep runContext clock index c makeStrict.statements[3].1 makeStrict.statements[3].2 =
       .continued output next others ∧ next.state.database = c.state.database.setRows 2 customers.scanRows ∧
@@ -37,18 +31,12 @@ theorem copy_continues {clock : Option Clock} {index : Nat} {c : Connection} {cu
   have found : resolveStatement runContext c.resolveState makeStrict.statements[3].1 =
       .ok (.insertSelect 2 ((List.range 3).map .source) copyQuery [] [] none [] none, after) := by
     rw [schema]; exact resolved
-  have present := held.1 0 (by decide +kernel)
+  have present := tracked 0 (by decide +kernel)
   have shape := Database.tableAt_of_table present
   have catalog : c.state.database.catalog = (schemaAt 3).catalog := congrArg ResolveState.catalog schema
   have oldShape : customers.shape = sourceShape := by
     rw [catalog, show (schemaAt 3).catalog.tableAt 0 = some sourceShape by decide +kernel] at shape
     exact (Option.some.inj shape).symm
-  have atTwo : c.state.database.catalog.tableAt 2 = some strictShape := by rw [catalog]; decide +kernel
-  have presentNew : c.state.database.table 2 = some ⟨strictShape, []⟩ := by
-    have emptyRows := held.2 rfl
-    unfold Database.table
-    rw [atTwo]
-    simp only [Option.map_some, emptyRows]
   have oldAlias : customers.shape.rowidAlias = some 0 := by rw [oldShape]; decide +kernel
   have oldWidth : customers.shape.columns.length = 3 := by rw [oldShape]; decide +kernel
   have compatible : customers.shape.copyCompatible strictShape (c.state.database.catalog.uniqueKeys 2 strictShape) =

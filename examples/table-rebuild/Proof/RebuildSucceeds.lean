@@ -35,26 +35,16 @@ theorem makeStrict_succeeds :
     simp [Database.Raw.connection, Connection.resolveState, pre]
   apply sendStatements_succeeds_mixed (path := rebuildPath.1) (final := rebuildPath.2)
     rebuild_resolves env.clock 0 start
-    ⟨db.valid, fun _ saved => by simp [Database.Raw.connection] at saved⟩ (Held customers)
-    ⟨ResolveState.tableAtPrefix_zero (Database.tableNamed_some named).2, fun h => by omega⟩
-  · intro n bound i c schema valid held output next others step found member ok
-    refine ⟨tracks_step bound schema held.1 step member ok, ?_⟩
-    intro third
-    have two : n = 2 := by omega
-    subst n
-    obtain ⟨_, rfl, _, aligned, nextEq⟩ := runScriptStep_createTable
-      (found := by with_unfolding_all exact resolutionAt 2 schema) step
-    have length : c.state.database.catalog.length = 2 := by
-      rw [show c.state.database.catalog = (schemaAt 2).catalog from congrArg ResolveState.catalog schema]
-      with_unfolding_all rfl
-    rw [single_next member, nextEq]
-    simp [List.getD_eq_getElem?_getD, aligned, length]
-  · intro n bound remaining i c schema valid held
+    ⟨db.valid, fun _ saved => by simp [Database.Raw.connection] at saved⟩ (Tracks customers 0)
+    (ResolveState.tableAtPrefix_zero (Database.tableNamed_some named).2)
+  · intro n bound i c schema valid tracked output next others step found member ok
+    exact tracks_step bound schema tracked step member ok
+  · intro n bound remaining i c schema valid tracked created
     have onlyCopy : sample.raw.connection.resolveState.uncheckedSteps rebuildPath.1 = [3] := by decide +kernel
     rw [onlyCopy, List.mem_singleton] at remaining
     subst n
     obtain ⟨output, next, others, step, _, ok⟩ := copy_continues (clock := env.clock) (index := i)
-      schema held valid (fits 0 customers named)
+      schema tracked (created 2 2 strictShape (by decide +kernel)) valid (fits 0 customers named)
     exact ⟨output, next, others, step, ok⟩
 
 #print axioms makeStrict_succeeds
