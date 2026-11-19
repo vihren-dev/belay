@@ -1,6 +1,5 @@
 import Belay.Sqlite.Tooling.Counterexamples.ReplayTriggerSql
 import Belay.Sqlite.Tooling.Counterexamples.ReplayResolvedExpr
-import Belay.Sqlite.Model.Queries.Preparation.ForeignKeyAction
 
 set_option doc.verso true
 

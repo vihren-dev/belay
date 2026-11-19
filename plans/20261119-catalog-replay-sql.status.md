@@ -18,3 +18,8 @@ The public command test now describes the unknown answer for an unprintable name
 
 The final code and documentation review found no issues. The Nix suite and
 verdict checks remain pending.
+
+The Nix surface layer check on pull request 463 found two imports of model
+implementation modules. The printers use the model's public statement resolution
+library for argument lists and the SQL names of foreign key actions. The regression
+test is tests/surface_layers_test.py.

@@ -1,5 +1,5 @@
 import Belay.Sqlite.Tooling.Counterexamples.ReplayFunctionNames
-import Belay.Sqlite.Model.Queries.Evaluation.Calls
+import Belay.Sqlite.Model.Queries.Preparation.ResolveStatementSingle
 
 set_option doc.verso true
 
