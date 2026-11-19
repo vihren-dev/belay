@@ -8,8 +8,8 @@ tests/test_source_identity_derivations.py compares all six derivation paths.
 Changing CheckConsumerSize changes only surfaceChecks. Changing the shared
 LowercaseFilters fixture changes surface, surfaceClaims and surfaceS6.
 Python helpers now load SqlFileProbe on demand so other suites can import
-the helpers with their restricted fixture tree. The proof-cost run reached
-its independent timing limit, recorded in issue 453.
+the helpers with their restricted fixture tree. An earlier proof-cost run timed out under load (issue 453).
+The final full run passed its proof-cost checks.
 
 Review clarified the SQL resource list, the identity check and why the probe
 is read on demand. The root list includes the literal INSERT fixture from issue 419.
@@ -22,7 +22,7 @@ surface_sql_check_roots_test.py builds a same-name project through a Python
 helper that reads this Lean file. Both consuming suites now list the probe.
 The derivation-identity regression covers its two consumers. The Nix
 verdict passed for this layer. All 70 tests passed in the corrected
-S6 suite. The full Nix test target passed with all six restricted surface
-suites: surface, surfaceChecks, surfaceClaims, surfaceProofCost, surfaceS6
-and surfaceSelect. The Nix host tests and scheduled checks also passed on
+S6 suite. The full Nix test target passed with all six restricted suites
+(surface, surfaceChecks, surfaceClaims, surfaceProofCost, surfaceS6 and
+surfaceSelect). The Nix host tests and scheduled checks also passed on
 the combined stack.
