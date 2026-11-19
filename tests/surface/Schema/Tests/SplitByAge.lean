@@ -48,7 +48,8 @@ def allCustomers : Script := sql r"SELECT id, name, age FROM customers"
 
 -- The default time limit of the check is 10 s of wall-clock time. On an idle machine this file
 -- elaborates about 8 s longer with the check than without it, and a loaded machine makes the check
--- slower (issue #426). So the fixture gives the check 60 s, and the answer does not depend on the load.
+-- slower (issue #426). So the fixture gives the check 60 s, which makes a timeout on a loaded machine
+-- less likely.
 set_option sql.checkTimeLimit 60000 in
 #sql_check splitByAge preserves allCustomers on shop
 

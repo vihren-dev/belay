@@ -35,8 +35,9 @@ Status: in progress.
 
 ## Stop: the proof of the fixed migration
 
-The proof of `splitByAgeFixed preserves allCustomers on shop` stops at the limit of about 200 lines
-of new general code. Not proved: that claim and `splitByAgeFixed succeeds on shop`. The proof needs
+The request for this task sets a stop condition that the workspace rules do not have: stop and
+report when the proof needs more than about 200 lines of new general library code. The proof of
+`splitByAgeFixed preserves allCustomers on shop` stops at that condition and is pending. Not proved: that claim and `splitByAgeFixed succeeds on shop`. The proof needs
 these general laws, which the packages do not have:
 
 - The normal form of two permutations of the same rows is the same list (`Resolved.normalForm`).
@@ -48,10 +49,13 @@ these general laws, which the packages do not have:
   subqueries 1 and 2 scan `minors` and `adults`. `resolvedStepOutput_calm_unordered` needs
   `query.compound = none` and no subqueries, so the law must build `Connection.SelectReady` with
   subqueries: the source of the subquery (`Query.subqueryRun`), its certain fault
-  (`Query.compoundRun`, `Compound.ending_done`, `keepsCertain` of `UNION ALL`), and its rows
-  (`Compound.rows_unionAll`). Estimate: 150 lines or more; not measured.
-- A form of `ReadCertificate.preservesAt` without the certificate: equal step outputs on every
-  branch give `PreservesAt`. A draft of about 40 lines moved the proof body; it is not in a commit.
+  (`Query.compoundRun`, `Compound.ending_done`, `keepsCertain` of `UNION ALL`), the certainty of
+  its whole rows (`run.sourceCertain = true`, which `QuerySource.join` checks; it follows from the
+  zero offset and the absent limit of the view), and its rows (`Compound.rows_unionAll`). Estimate: 150 lines or more; not measured.
+- A form of `ReadCertificate.preservesAt` without the certificate: when the read resolves with
+  `fromQuery = false` before and after the migration on every branch
+  (`sendStatements_single_observations` needs both), equal step outputs on every branch give
+  `PreservesAt`. A draft of about 40 lines moved the proof body; it is not in a commit.
 
 Together the general laws are more than 200 lines. The example proof would add about 500 to
 1000 lines (an invariant over eight statements, as in `examples/table-rebuild/Proof`).
