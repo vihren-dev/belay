@@ -1,6 +1,6 @@
 # SQL reconstruction of computed schemas
 
-Created 2026-11-19. Open. [Issue 380](https://github.com/vihren-dev/belay/issues/380).
+Created 2026-11-19. DONE. [Issue 380](https://github.com/vihren-dev/belay/issues/380).
 
 A caller can give #sql_check a computed schema that has no attached SQL
 source. The checker can propose SQL for the tables, views, indexes and

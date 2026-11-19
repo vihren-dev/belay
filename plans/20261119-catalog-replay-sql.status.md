@@ -1,6 +1,6 @@
 # Status of SQL reconstruction of computed schemas
 
-Created 2026-11-19. Open. [Task](20261119-catalog-replay-sql.task.md).
+Created 2026-11-19. DONE. [Task](20261119-catalog-replay-sql.task.md).
 
 ReplayDatabaseSql now emits all four catalog entry kinds. ReplayTableSql and
 ReplayResolvedExpr reconstruct table constraints and index expressions.
@@ -22,3 +22,9 @@ The Nix surface layer check on pull request 463 found two imports of model
 implementation modules. The printers use the model's public statement resolution
 library for argument lists and the SQL names of foreign key actions. The regression
 test is tests/surface_layers_test.py.
+
+With the corrected imports, `just test-full` passed, including all six
+surface suites. The report is `85l74ybhyfb22bx13ba71y8jdzj9wkwx-belay-test-reports`.
+The verdict passed for all 59 frozen corpora. On the combined stack,
+`just test-nix` passed all 99 selected tests and `just test-scheduled-checks`
+passed.
