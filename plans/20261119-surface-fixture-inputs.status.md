@@ -14,3 +14,6 @@ and independent code review are pending.
 
 Review clarified the SQL resource list, the identity check and why the probe
 is read on demand. The root list includes the literal INSERT fixture from issue 419.
+
+The second review found no issues. The six restricted suites are included
+in the full Nix test target.
