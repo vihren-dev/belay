@@ -23,7 +23,7 @@ RESOLUTION_FILE = f"reviews/{REVIEW_ID}/resolution-1-20261011T091200Z.json"
 FILE_REVIEW = json.dumps({"kind": "review", "id": REVIEW_ID, "commit": "c" * 40, "date": "2026-10-11",
                           "findings": [{"id": f"{REVIEW_ID}#1"}], "well_formed": True}).encode()
 FILE_RESOLUTION = json.dumps({"kind": "resolution", "finding": f"{REVIEW_ID}#1", "outcome": "fixed",
-                              "date": "2026-10-11"}).encode()
+                              "date": "2026-10-11T09:12:00+00:00"}).encode()
 CHECK_TIMEOUT_SECONDS = 10
 """One check reads two small files from a local repository."""
 
@@ -52,6 +52,25 @@ class RecordFileTest(unittest.TestCase):
         base = {REVIEW_FILE: blob_hash(FILE_REVIEW)}
         head = {REVIEW_FILE: FILE_REVIEW, RESOLUTION_FILE: FILE_RESOLUTION}
         self.assertEqual(file_problems(base, head), [])
+
+    def test_resolution_filename_matches_the_utc_second(self) -> None:
+        """CI accepts the UTC second written by record_path and reports a different or invalid date."""
+        record = json.loads(FILE_RESOLUTION)
+        for date, error in [
+            ("2026-10-11T11:12:00+02:00", None),
+            ("2026-10-11T09:13:00Z", "resolution date does not match the path"),
+            ("2026-10-11T09:12:00", "valid time with a UTC offset"),
+            ("invalid", "valid time with a UTC offset"),
+        ]:
+            with self.subTest(date=date):
+                data = json.dumps({**record, "date": date}).encode()
+                problems = file_problems({}, {RESOLUTION_FILE: data})
+                if error is None:
+                    self.assertEqual(problems, [])
+                else:
+                    problem, = problems
+                    self.assertTrue(problem.startswith(RESOLUTION_FILE))
+                    self.assertIn(error, problem)
 
     def test_refuses_changed_or_removed_files(self) -> None:
         """A changed and a removed base file each name the file."""
