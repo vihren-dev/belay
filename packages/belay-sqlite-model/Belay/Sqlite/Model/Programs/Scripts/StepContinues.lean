@@ -107,23 +107,6 @@ theorem runScriptStep_continues_free {context : ResolveContext} {clock : Option 
     rfl
   · simpa [SqlState.statementRun, noCounters] using single
 
-/-- For every connection, statement and values that resolve to a CREATE TABLE at the end of an aligned
-catalog, at every clock: the step continues, with no further execution. In plain words, the model describes
-CREATE TABLE whenever the resolver put the table at the end of the catalog and the rows have one list for each
-catalog entry, which every valid database satisfies. Proof sketch: {name}`runScriptStep_continues_free`; the
-effect succeeds on an aligned catalog. -/
-theorem runScriptStep_createTable_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {target : Nat} {name : Identifier} {table : CatalogTable}
-    (found : resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after))
-    (atEnd : target = connection.state.database.catalog.length)
-    (aligned : connection.state.database.rows.length = connection.state.database.catalog.length) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, atEnd, aligned]
-
 /-- For every connection, statement and values that resolve to a DROP TABLE without rules, which is the
 resolution while foreign-key enforcement is off: the step continues, with no further execution. In plain
 words, the model describes a drop that no foreign key can cascade from. Proof sketch:

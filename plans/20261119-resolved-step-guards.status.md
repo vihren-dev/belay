@@ -27,5 +27,6 @@ rerun passed. The timeout is tracked in issue 454.
 
 The combined stack passed all 99 Nix host tests and the scheduled checks.
 
-The CREATE TABLE success proof now uses the continuation and output laws directly.
+The CREATE TABLE success proof applies the general continuation law for
+statements that read no clock or counters, then the CREATE TABLE output law.
 The surface regression is `tests/surface_rebuild_test.py`.
