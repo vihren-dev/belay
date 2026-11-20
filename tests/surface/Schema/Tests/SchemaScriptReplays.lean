@@ -50,7 +50,12 @@ def inserts : Script := sql r"
 def literalInserts : Script := sql r"
   INSERT INTO dst VALUES (1,'a'), (1,'b');
   INSERT INTO dst VALUES (1,'a'), (2,'b');
-  SELECT id, name FROM dst ORDER BY id;"
+  SELECT id, name FROM dst ORDER BY id;
+  INSERT INTO dstUnique VALUES (NULL,'b'), (12,NULL);
+  INSERT INTO dstUnique VALUES (13,'a');
+  CREATE UNIQUE INDEX foldedDstName ON dstUnique(name COLLATE NOCASE);
+  INSERT INTO dstUnique VALUES (13,'c'), (14,'C');
+  SELECT id, name FROM dstUnique ORDER BY id;"
 
 open Lean Elab Meta in
 /-- Keep exact model value tags so the test can compare native observations. -/

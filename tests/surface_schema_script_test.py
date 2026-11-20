@@ -18,7 +18,7 @@ EXPECTED_ROWS: dict[str, list[list[object]]] = {
     "drop-on": [],
     "refusals": [[0], [1], [3]],
     "inserts": [[1, "a"], [2, "b"]],
-    "literals": [[1, "a"], [2, "b"]],
+    "literals": [[1, "a"], [2, "b"], [9, "a"], [10, "b"], [12, None]],
 }
 """The rows that the model gives for each replay, which pinned SQLite must give too."""
 
@@ -27,7 +27,7 @@ EXPECTED_ERRORS: dict[str, list[str]] = {
     "drop-on": [],
     "refusals": ["already exists", "no such table", "no transaction is active",
                  "cannot start a transaction within a transaction"],
-    "literals": ["UNIQUE constraint failed"],
+    "literals": ["UNIQUE constraint failed", "UNIQUE constraint failed", "UNIQUE constraint failed"],
     "inserts": ["NOT NULL constraint failed", "UNIQUE constraint failed", "CHECK constraint failed",
                 "cannot store TEXT value in INTEGER column"],
 }
@@ -39,14 +39,15 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
     InsertSelectExamples and PlainInsertStepCases (with the helpers of SchemaStepLaws) apply the
     step, frame and success laws of CREATE TABLE, DROP TABLE, BEGIN, COMMIT, the pragmas foreign_keys and
     foreign_key_check, and INSERT from a query or literal rows to concrete databases. The literal insert
-    checks the change count, last rowid, stored values and a duplicate within one batch. DROP TABLE with foreign keys on
+    derives success from validity, and checks an allocated rowid, a secondary UNIQUE key,
+    the change count, the last rowid, stored values and two new names that conflict under NOCASE. DROP TABLE with foreign keys on
     cascades into the observed table. Other fixtures cover a read certificate that survives the drop of an earlier table and
     a failing case for each premise of the success law of INSERT from a query. Every theorem uses only logical
     axioms. The fixture SchemaScriptReplays emits scripts of the same statements. Pinned SQLite 3.51.0 gives the
     rows that the model gives, and refuses the statements that the model refuses, in the same order."""
     stdout = check_module_chain(runtime_root, tmp_path, (
         ("SchemaStepLaws", 0), ("SchemaDropExamples", 4), ("SchemaCreateExamples", 3), ("ControlStepExamples", 7),
-        ("CertificateAfterDrop", 2), ("InsertSelectExamples", 6), ("PlainInsertStepCases", 1), ("SchemaScriptReplays", 0)))
+        ("CertificateAfterDrop", 2), ("InsertSelectExamples", 6), ("PlainInsertStepCases", 2), ("SchemaScriptReplays", 0)))
     sqlite = shutil.which("sqlite3")
     assert sqlite is not None
     version = run_command([sqlite, "-version"], cwd=tmp_path, timeout=5)

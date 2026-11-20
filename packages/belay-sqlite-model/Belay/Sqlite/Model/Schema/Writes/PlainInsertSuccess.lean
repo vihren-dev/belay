@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Schema.Writes.InsertSelectSuccess
+import Belay.Sqlite.Model.Schema.Writes.LiteralInsertFits
 
 set_option doc.verso true
 
