@@ -14,10 +14,14 @@ import sys
 
 import pytest
 
+from tests import dev_loop_test as loop
 from tests.runtime_support import run_command
 from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
+OTHER_HOST_TESTS_SECONDS = 600
+"""Time reserved for Nix identity, target and environment tests after the local dev loop."""
+
 SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "scheduledCheckReports",
                  "scheduledTests.{{suite}}"}
 """The `nix-build -A` targets of build-support/default.nix that build test suites."""
@@ -119,3 +123,18 @@ def test_suite_build_limit_ends_before_the_checks_phase_on_each_system() -> None
     assert set(limits) == set(CHECKS_PHASE_LIMIT_SECONDS)
     for system, limit in limits.items():
         assert limit < CHECKS_PHASE_LIMIT_SECONDS[system], (system, limit, CHECKS_PHASE_LIMIT_SECONDS[system])
+
+
+def test_host_nix_limit_allows_every_dev_loop_phase() -> None:
+    """The test-nix recipe must let the dev loop report its own timeout at every phase (issue 439)."""
+    recipe = run_command(["just", "--dry-run", "test-nix"], cwd=ROOT, timeout=10)
+    assert recipe.returncode == 0, recipe.diagnostic()
+    commands = (recipe.stdout + recipe.stderr).splitlines()
+    runtime, = [i for i, line in enumerate(commands) if " -A conformance " in line]
+    suite, = [i for i, line in enumerate(commands) if "-m requires_nix" in line]
+    assert runtime < suite, commands
+    command = shlex.split(commands[suite])
+    assert command[:2] == ["timeout", "--foreground"], command
+    inner = (loop.COLD_BUILD_SECONDS + loop.WARM_BUILD_SECONDS + len(loop.PROGRAMS) * loop.PROGRAM_START_SECONDS
+             + loop.METADATA_SECONDS + loop.VERDICT_SECONDS)
+    assert int(command[2]) > inner + OTHER_HOST_TESTS_SECONDS, (command, inner, OTHER_HOST_TESTS_SECONDS)
