@@ -12,10 +12,14 @@ from pathlib import Path
 from tests.runtime_support import CommandResult, run_command
 from tests.surface_support import fixture_file, surface_command
 
-PROBE = fixture_file("SqlFileProbe.lean").read_text()
-"""The probe module that exposes `file_probe`, a form that reads an SQL file through `loadSqlFileSource`."""
 OUTER_SQL, NESTED_SQL = "SELECT $x, 7", "SELECT $x, 99"
 """The texts of `sql/query.sql` in the outer package and in its nested project of the same name."""
+
+
+def file_probe() -> str:
+    """Read the package-resolution probe on demand. Other suites import these helpers
+    with a fixture tree that omits SqlFileProbe.lean."""
+    return fixture_file("SqlFileProbe.lean").read_text()
 
 
 def installed_layout(runtime_root: Path, tmp_path: Path) -> Path:
@@ -100,7 +104,7 @@ def write_same_name_projects(world: Path, installed: Path, with_option: bool) ->
     (nested / "sql/query.sql").write_text(NESTED_SQL)
     (nested / "lakefile.toml").write_text('name = "Twin"\n')
     (nested / "lake-manifest.json").write_text(json.dumps({"name": "Twin", "packages": []}))
-    body = PROBE + "\n"
+    body = file_probe() + "\n"
     if with_option:
         body += ('set_option belay.sql.packageRoot ".." in\ndef outer := file_probe "sql/query.sql"\n'
                  'set_option belay.sql.packageRoot "." in\ndef inner := file_probe "sql/query.sql"\n'
