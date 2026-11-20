@@ -11,9 +11,12 @@ ordinary inserts without RETURNING, conflict handling, triggers or enforced
 foreign-key rules.
 
 A separate bridge from database validity must establish InsertFits from
-conditions on the new values and keys. The condition on multiple new rows
-is pending owner clarification. Keys of two new rows may conflict even
-when the original table was empty.
+conditions on the new values and keys. For each target key, no incoming row may conflict
+with a stored row or a later incoming row under SQLite key comparison.
+Apply these checks to the stored values, including generated and allocated
+values. For explicit INTEGER PRIMARY KEY rows in a table keyed only by the
+alias, checking the incoming rowids against the old rowids and against
+each other suffices for uniqueness.
 
 ## Acceptance
 

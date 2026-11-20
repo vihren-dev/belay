@@ -19,3 +19,7 @@ The second review of the statement and script laws found no issues. The
 validity bridge remains open pending the premise for keys within a batch.
 
 The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579073231/job/135754436979) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579073093/job/135754435913) passed for the statement and step laws.
+
+On 2026-11-20 the owner approved pairwise uniqueness of new keys in
+addition to their freshness against stored keys. The regression is
+`tests/surface_schema_script_test.py`.
