@@ -23,3 +23,8 @@ The second review found no issues. The [full Nix suite](https://github.com/vihre
 
 Before the stack was published, `just test-nix` passed all 99 selected
 tests on the combined changes and `just test-scheduled-checks` passed.
+
+The continuation and ordinary success laws now derive counter availability
+from statement readiness. All six callers of the clock-free, counter-free
+wrapper use the general law directly. The focused checks cover schema and
+transaction steps, the split by age, and derived-column success.

@@ -34,14 +34,14 @@ theorem runScriptStep_create_ok {context : ResolveContext} {clock : Option Clock
     obtain ⟨pos, aligned, present⟩ := guards
     obtain ⟨table, tableAt⟩ := Option.isSome_iff_exists.mp present
     obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) (by rfl) (by rfl)
+      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) rfl
       (by rfl) (by rfl) (by simp [created, Resolved.Statement.applyCatalog, SqlState.statementRun, runStatement, Model.step, pos, aligned, tableAt, creates])
       (by rfl)
     exact ⟨out, next, step, ok⟩
   all_goals
     obtain ⟨pos, aligned⟩ := guards
     obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) (by rfl) (by rfl)
+      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) rfl
       (by rfl) (by rfl) (by simp [created, Resolved.Statement.applyCatalog, SqlState.statementRun, runStatement, Model.step, pos, aligned]) (by rfl)
     exact ⟨out, next, step, ok⟩
 
@@ -57,7 +57,7 @@ theorem runScriptStep_dropColumn_ok {context : ResolveContext} {clock : Option C
       output.isError = false := by
   have runs : c.state.database.runsDropColumn pos column stored = true := step_guards_hold found rfl valid
   obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-    (index := index) (database := c.state.database.dropColumn pos column stored) found rfl (by intro _ _ h; cases h) (value := 0) (by rfl) (by rfl)
+    (index := index) (database := c.state.database.dropColumn pos column stored) found rfl (by intro _ _ h; cases h) (value := 0) rfl
     (by rfl) (by rfl) (by simp [SqlState.statementRun, runStatement, Model.step, runs]) (by rfl)
   exact ⟨out, next, step, ok⟩
 
