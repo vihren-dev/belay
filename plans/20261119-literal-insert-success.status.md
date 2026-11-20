@@ -1,6 +1,6 @@
 # Status of success of a literal INSERT
 
-Created 2026-11-19. Open. [Task](20261119-literal-insert-success.task.md).
+Created 2026-11-19. DONE on 2026-11-20. [Task](20261119-literal-insert-success.task.md).
 
 The statement and step parts of the issue can proceed independently of
 the validity bridge. The proposed old-table freshness premise admits two
@@ -35,3 +35,8 @@ within a batch.
 The package boundary test found the new module missing from the core
 library manifest. The manifest now includes LiteralInsertFits. The
 regression is `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
+
+The full Nix suite passed, including the public Lean proofs and pinned SQLite
+replay. The report is `56qg0ixg91qm1qz4ryji895mdhy2hcbm-belay-test-reports`. The verdict
+passed for all 59 frozen corpora. On the combined stack, `just test-nix`
+passed all 99 selected host tests and `just test-scheduled-checks` passed.

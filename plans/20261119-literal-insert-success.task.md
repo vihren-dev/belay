@@ -1,6 +1,6 @@
 # Success of a literal INSERT at a script step
 
-Created 2026-11-19. Open. [Issue 419](https://github.com/vihren-dev/belay/issues/419).
+Created 2026-11-19. DONE on 2026-11-20. [Issue 419](https://github.com/vihren-dev/belay/issues/419).
 
 A plain INSERT of literal rows with a found target and fitting values
 succeeds in one execution. The run is ready, its change count is the
