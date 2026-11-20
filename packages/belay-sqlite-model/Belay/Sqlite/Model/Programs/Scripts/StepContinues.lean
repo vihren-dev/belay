@@ -51,18 +51,15 @@ theorem Output.ofStep_ne_unmodeled (clock : Int) (parameters : List Value) (stat
     cases failure <;> simp_all
     done
 
-/-- For every statement that resolves, has a clock value and reads only known counters, whose run is ready and
-has no alternative execution, and whose output is not a stop of the model: the step continues,
-with no further execution. In plain words, a statement that the model describes and that has one execution
-gives a step that continues. The premises are the cases in which {name}`runScriptStep` ends the run, one
-for each. Proof sketch: unfold the step; every case that ends the run is excluded by a premise; the
-alternatives are empty, so the list of further executions is empty. -/
+/-- If a statement resolves, has a clock value, and its run is ready, has no alternative
+execution, and gives a modeled output, then {name}`runScriptStep` continues
+with no further executions. Proof sketch: readiness implies that every counter read is known.
+Unfold the step and use the premises to rule out each stop. -/
 theorem runScriptStep_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
     {resolved : Resolved.Statement} {after : ResolveState} {value : Int}
     (found : resolveStatement context connection.resolveState statement = .ok (resolved, after))
     (timed : statementClock clock index resolved = some value)
-    (known : connection.state.counters.firstUnknown resolved.counterReads = none)
     (ready : (connection.state.statementRun value parameters resolved).ready = true)
     (single : (connection.state.statementRun value parameters resolved).alternatives = [])
     (modeled : ∀ reason, Output.ofStep value parameters resolved connection.state
@@ -70,6 +67,8 @@ theorem runScriptStep_continues {context : ResolveContext} {clock : Option Clock
       (advanceRun index resolved connection.state (connection.state.statementRun value parameters resolved)) ≠
         .unmodeled reason) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
+  have known : connection.state.counters.firstUnknown resolved.counterReads = none := by
+    simpa [SqlState.statementRun] using (Bool.and_eq_true_iff.mp ready).2
   simp only [runScriptStep, runScriptStepWith, found, timed, known, ready, Bool.not_true, Bool.false_eq_true,
     ite_false, ranScriptStep]
   split
@@ -80,61 +79,16 @@ theorem runScriptStep_continues {context : ResolveContext} {clock : Option Clock
       List.map_nil, RunStep.withOthers]
     exact ⟨_, _, rfl⟩
 
-/-- For every statement that resolves to a statement that reads neither the clock nor a counter, whose run
-at clock value 0 is ready and has no alternative execution, and whose output is not a stop of the model: the
-step continues, with no further execution. In plain words, this is {name}`runScriptStep_continues` for the
-statements that need no clock and no counter, which is every statement of a schema change or a transaction.
-Proof sketch: the clock value is 0 and no counter is read, so the premises of
-{name}`runScriptStep_continues` follow. -/
-theorem runScriptStep_continues_free {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
-    {resolved : Resolved.Statement} {after : ResolveState}
-    (found : resolveStatement context connection.resolveState statement = .ok (resolved, after))
-    (free : resolved.readsClock = false) (noCounters : resolved.counterReads = [])
-    (ready : (runStatement 0 (connection.state.counters.view []) parameters resolved connection.state.database).ready =
-      true)
-    (single : (runStatement 0 (connection.state.counters.view []) parameters resolved
-      connection.state.database).alternatives = [])
-    (modeled : ∀ reason, Output.ofStep 0 parameters resolved connection.state
-      (connection.state.statementRun 0 parameters resolved)
-      (advanceRun index resolved connection.state (connection.state.statementRun 0 parameters resolved)) ≠
-        .unmodeled reason) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  have known : connection.state.counters.firstUnknown resolved.counterReads = none := by
-    rw [noCounters]; rfl
-  refine runScriptStep_continues found (by simp [statementClock, free]) known ?_ ?_ modeled
-  · simp only [SqlState.statementRun, noCounters, ready, Bool.true_and]
-    rfl
-  · simpa [SqlState.statementRun, noCounters] using single
-
-/-- For every connection, statement and values that resolve to a CREATE TABLE at the end of an aligned
-catalog, at every clock: the step continues, with no further execution. In plain words, the model describes
-CREATE TABLE whenever the resolver put the table at the end of the catalog and the rows have one list for each
-catalog entry, which every valid database satisfies. Proof sketch: {name}`runScriptStep_continues_free`; the
-effect succeeds on an aligned catalog. -/
-theorem runScriptStep_createTable_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {target : Nat} {name : Identifier} {table : CatalogTable}
-    (found : resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after))
-    (atEnd : target = connection.state.database.catalog.length)
-    (aligned : connection.state.database.rows.length = connection.state.database.catalog.length) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, atEnd, aligned]
-
 /-- For every connection, statement and values that resolve to a DROP TABLE without rules, which is the
 resolution while foreign-key enforcement is off: the step continues, with no further execution. In plain
 words, the model describes a drop that no foreign key can cascade from. Proof sketch:
-{name}`runScriptStep_continues_free`; the drop is an unconditional effect. -/
+{name}`runScriptStep_continues`; the drop is an unconditional effect. -/
 theorem runScriptStep_drop_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {positions : List Nat}
     (found : resolveStatement context connection.resolveState statement = .ok (.drop positions none, after)) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement, StatementRun.withKeys])
-    (by simp [runStatement, StatementRun.withKeys]) fun reason => ?_
+  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
   apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
   simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
     Model.step, StatementRun.withKeys]
@@ -142,39 +96,39 @@ theorem runScriptStep_drop_continues {context : ResolveContext} {clock : Option 
 /-- For every connection, statement and values that resolve to a rewrite of the catalog that keeps the
 outline of the catalog ({name}`Catalog.sameOutline`), as a rename does: the step continues, with no further
 execution. In plain words, the model describes a rename whose new catalog has the outline of the old one.
-Proof sketch: {name}`runScriptStep_continues_free`; the effect succeeds under the guard. -/
+Proof sketch: {name}`runScriptStep_continues`; the effect succeeds under the guard. -/
 theorem runScriptStep_rewrite_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {renamed : Catalog}
     (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
     (outline : connection.state.database.catalog.sameOutline renamed = true) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
+  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
   apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
   simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
     Model.step, outline]
 
 /-- For every connection, statement and values that resolve to a setting: the step continues, with no further
-execution. Proof sketch: {name}`runScriptStep_continues_free`; a setting keeps the database. -/
+execution. Proof sketch: {name}`runScriptStep_continues`; a setting keeps the database. -/
 theorem runScriptStep_setting_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {setting : Syntax.PragmaSetting} {on : Bool}
     (found : resolveStatement context connection.resolveState statement = .ok (.setting setting on, after)) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
+  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
   apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
   simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
     Model.step]
 
 /-- For every connection, statement and values that resolve to BEGIN, inside a transaction or outside one: the
 step continues, with no further execution. In plain words, the model describes BEGIN in both cases: it opens a
-transaction, or fails because one is open. Proof sketch: {name}`runScriptStep_continues_free`; the transition
+transaction, or fails because one is open. Proof sketch: {name}`runScriptStep_continues`; the transition
 continues or halts with an error that is no stop of the model. -/
 theorem runScriptStep_begin_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     (found : resolveStatement context connection.resolveState statement = .ok (.begin, after)) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
+  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
   apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
   cases snapshot : connection.state.snapshot <;>
     simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.finish, haltError, SqlState.statementRun,
@@ -187,7 +141,7 @@ theorem runScriptStep_commit_continues {context : ResolveContext} {clock : Optio
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     (found : resolveStatement context connection.resolveState statement = .ok (.commit, after)) :
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues_free found rfl rfl (by simp [runStatement]) (by simp [runStatement]) fun reason => ?_
+  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
   apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
   cases snapshot : connection.state.snapshot <;>
     simp [advanceRun, advanceWith, SqlTransition.counted, haltError, SqlState.statementRun,

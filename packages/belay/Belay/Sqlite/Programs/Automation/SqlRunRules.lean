@@ -38,7 +38,7 @@ inductive Role where
 /-- The names of the premises of the rules. A goal with another name is a variable of the rule, such as the
 position of a table. A premise that is closed sets it. -/
 def premiseNames : List Name :=
-  [`valid, `found, `present, `atEnd, `outline, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect,
+  [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect,
     `notInsertSelect]
 
 /-- The kinds of statement whose step never fails and does not read the clock: CREATE TABLE, DROP TABLE, a
@@ -78,11 +78,11 @@ def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
   else if kind == ``Model.Syntax.Statement.addColumn then
     `(tactic| refine' Sql.check_send_addColumn ?valid ?found ?present ?modeled ?success ?failure)
   else if kind == ``Model.Syntax.Statement.createTable then
-    `(tactic| refine' Sql.check_send_createTable ?valid ?found ?atEnd ?success)
+    `(tactic| refine' Sql.check_send_createTable ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.dropTable then
     `(tactic| refine' Sql.check_send_dropPlain ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.renameTable then
-    `(tactic| refine' Sql.check_send_rewrite ?valid ?found ?outline ?success)
+    `(tactic| refine' Sql.check_send_rewrite ?valid ?found ?success)
   else if kind == ``Model.Syntax.Pragma.setting then
     `(tactic| refine' Sql.check_send_setting ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.begin then

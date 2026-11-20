@@ -1,0 +1,30 @@
+# Status of schema-only success for catalog creation
+
+Created 2026-11-19. DONE. [Task](20261119-schema-create-success.task.md).
+
+At the starting revision, `Programs/Scripts/SchemaSuccess.lean` rejects
+views, triggers and all indexes. The step for CREATE INDEX can return a
+constraint violation only when the index is unique. The corrected script
+in `tests/surface/Schema/Tests/SplitByAge.lean` has two copy steps at
+positions 3 and 4, followed by DROP TABLE, CREATE VIEW and COMMIT.
+
+The implementation depends on the resolver certificate from #443. The
+first review clarified that dependency and the DROP COLUMN acceptance check.
+
+CreateSchemaSuccess proves continuing steps for the catalog creations and
+DROP COLUMN. The schema success check accepts non-unique indexes and leaves
+unique indexes to the caller. SchemaSuccessChecks exercises the public law.
+SplitByAge checks that precisely its two data-copy steps need row proofs.
+The focused tests are tests/surface_rebuild_test.py and
+tests/surface_split_by_age_test.py. Review required an exhaustive creation classifier. It now lists every
+statement kind. The module comments name the creation and removal cases.
+
+The second review found no issues. The [full Nix suite](https://github.com/vihren-dev/belay/actions/runs/44579039872/job/135754315530) and the [verdict](https://github.com/vihren-dev/belay/actions/runs/44579039546/job/135754312595) passed on the PR source tree.
+
+Before the stack was published, `just test-nix` passed all 99 selected
+tests on the combined changes and `just test-scheduled-checks` passed.
+
+The continuation and ordinary success laws now derive counter availability
+from statement readiness. All six callers of the clock-free, counter-free
+wrapper use the general law directly. The focused checks cover schema and
+transaction steps, the split by age, and derived-column success.

@@ -91,7 +91,7 @@ theorem derivedColumn_script_ok {context : ResolveContext} {clock : Option Clock
     (parameters := addValues) (value := 0)
     (database := connection.state.database.addColumn position (definedColumn table.shape.strict definition) .null)
     resolved1 rfl (by intro _ _ same; cases same) (by simp [statementClock, Statement.readsClock,
-      Statement.clockExpressions]) (by rfl)
+      Statement.clockExpressions])
     (by simp only [SqlState.statementRun, runStatement, noClock, read]; rfl)
     (by simp [SqlState.statementRun, runStatement])
     (by simp [SqlState.statementRun, runStatement, Model.step, present, noClock, read, nullable, unchecked])
@@ -127,7 +127,7 @@ theorem derivedColumn_script_ok {context : ResolveContext} {clock : Option Clock
   obtain ⟨ready2, single2, effect2⟩ := run
   obtain ⟨o2, c2, s2, e2, -⟩ := runScriptStep_ordinary_ok (clock := clock) (index := index + 1)
     (parameters := updateValues) (value := 0) resolved2 rfl (by intro _ _ same; cases same)
-    (by simp [statementClock, free]) (by rw [noCounters]; rfl)
+    (by simp [statementClock, free])
     (by simp only [SqlState.statementRun, noCounters]; rw [ready2]; rfl)
     (by simp only [SqlState.statementRun, noCounters]; exact single2)
     (by simp only [SqlState.statementRun, noCounters]; exact effect2)

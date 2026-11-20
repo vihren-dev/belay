@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Schema.Ddl.CatalogSpec
+import Belay.Sqlite.Model.Schema.Ddl.RenameOutline
 import Belay.Sqlite.Model.Schema.Ddl.Renames
 import Belay.Sqlite.Model.Schema.Ddl.SupportedNames
 
@@ -13,10 +14,10 @@ statement. -/
 namespace Belay.Sqlite.Model
 
 /-- What a successful resolution of a rename is, for the limits: a prepare error with the catalog unchanged, or
-the rewrite with the new catalog, which is supported under the limits. -/
+the rewrite with a supported new catalog that preserves the input outline. -/
 def RenameOutcome (limits : Limits) (catalog after : Catalog) (statement : Resolved.Statement) : Prop :=
   (after = catalog ∧ ∃ error, statement = .prepareError error) ∨
-    (statement = .rewrite after ∧ after.supported limits = true)
+    (statement = .rewrite after ∧ catalog.sameOutline after = true ∧ after.supported limits = true)
 
 /-- For every context, catalog, request and names: if {name}`renameCatalog` gives a catalog, the catalog is
 supported under the limits of the profile. Proof sketch: the last test of the function is the test of
@@ -56,7 +57,7 @@ theorem finishRename_outcome (context : ResolveContext) (catalog after : Catalog
     rw [renamed] at ok
     simp only [Except.ok.injEq, Prod.mk.injEq] at ok
     obtain ⟨rfl, rfl⟩ := ok
-    exact .inr ⟨rfl, renameCatalog_supported context catalog _ request oldTable oldColumn renamed⟩
+    exact .inr ⟨rfl, renameCatalog_sameOutline renamed, renameCatalog_supported context catalog _ request oldTable oldColumn renamed⟩
 
 /-- For every successful RENAME TO resolution: {name}`RenameOutcome`. Proof sketch: every branch of the
 resolver is a prepare error, a restriction, which is not a success, or {name}`finishRename`. -/
@@ -89,7 +90,7 @@ theorem resolveRenameColumn_outcome (context : ResolveContext) (catalog after : 
 catalog; a rewrite has unique names, because its catalog is supported ({name}`Catalog.supported_iff`). -/
 theorem RenameOutcome.step {limits : Limits} {catalog after : Catalog} {statement : Resolved.Statement}
     (outcome : RenameOutcome limits catalog after statement) : CatalogStep catalog after := by
-  rcases outcome with ⟨rfl, _⟩ | ⟨_, supported⟩
+  rcases outcome with ⟨rfl, _⟩ | ⟨_, _, supported⟩
   · exact .same
   · exact .rewrite after ((Catalog.supported_iff limits after).mp supported).1
 
@@ -107,7 +108,7 @@ prepare error keeps the catalog, and a rewrite is supported under the limits by 
 theorem RenameOutcome.valid {limits : Limits} {catalog after : Catalog} {statement : Resolved.Statement}
     (outcome : RenameOutcome limits catalog after statement) (current : catalog.supported limits = true) :
     after.supported limits = true := by
-  rcases outcome with ⟨rfl, _⟩ | ⟨_, supported⟩
+  rcases outcome with ⟨rfl, _⟩ | ⟨_, _, supported⟩
   · exact current
   · exact supported
 

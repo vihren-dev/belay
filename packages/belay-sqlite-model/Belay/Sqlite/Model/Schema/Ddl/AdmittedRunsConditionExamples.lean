@@ -22,9 +22,9 @@ example : (Resolved.Statement.drop [] none).SchemaLink indexedCatalog := Catalog
 example : ¬ (Resolved.Statement.drop [0] none).SchemaLink indexedCatalog := fun closed =>
   absurd (closed.1 1 _ _ rfl rfl (by decide)) (by decide)
 
--- The link of ADD COLUMN is the fit of the default to the strict type; a column without a strict type fits.
+-- ADD COLUMN targets the existing table, and its default fits.
 example : (Resolved.Statement.addColumn 0 { name := name! "c", declaredType := some "INTEGER" }).SchemaLink indexedCatalog := by
-  show strictDefaultFits _ = true
+  unfold Resolved.Statement.SchemaLink
   decide +kernel
 
 -- The resolver gives the link: DROP TABLE of {lit}`t` resolves to the drop of the table and its index, and the

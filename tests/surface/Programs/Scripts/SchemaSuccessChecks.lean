@@ -8,7 +8,8 @@ set_option exponentiation.threshold 2048
 
 /-! The schema-only law certifies a transaction and a foreign-key check with a
 single possible source of violations. The other checks exercise the conditions
-on the transaction state, enforcement and number of result-producing tables. -/
+on the transaction state, enforcement and number of result-producing tables. The catalog tests certify creation of a view, trigger and non-unique
+index and removal of a column. They require a row premise for a UNIQUE index. -/
 
 /-- A complete transaction whose successful steps depend only on the schema. -/
 private def transaction : Script := sql "BEGIN; CREATE TABLE flags(id INTEGER); DROP TABLE flags; COMMIT;"
@@ -18,6 +19,21 @@ example : (sql "COMMIT;").succeedsBySchema sample = false := by decide +kernel
 example : (sql "PRAGMA foreign_keys=ON; BEGIN; COMMIT;").succeedsBySchema sample = false := by decide +kernel
 example : (sql "PRAGMA foreign_key_check;").succeedsBySchema sample = true := by decide +kernel
 
+/-- Creating the view, trigger and ordinary index succeeds for every database of the sample schema. -/
+private def createObjects : Script := sql r"
+  CREATE VIEW customer_ids AS SELECT id FROM customers;
+  CREATE TRIGGER observe AFTER INSERT ON customers BEGIN SELECT 1; END;
+  CREATE INDEX customer_names ON customers(name);"
+example : Succeeds createObjects (·.HasCatalog sample) := Script.succeeds_of_schema (by decide +kernel)
+
+-- Removing an unreferenced column needs only the catalog.
+example : (sql "CREATE TABLE flags(id INTEGER, label TEXT); ALTER TABLE flags DROP COLUMN label;").succeedsBySchema sample =
+    true := by decide +kernel
+
+-- Existing customers can share a name. A unique index requires a proof about their rows.
+example : (sql "CREATE UNIQUE INDEX customer_names ON customers(name);").succeedsBySchema sample = false := by
+  decide +kernel
+
 /-- Two child tables can each contribute a nonempty result block in a database of this schema. -/
 private def twoChildren : Database := db! r"
 CREATE TABLE parent(id INTEGER PRIMARY KEY);
@@ -26,3 +42,18 @@ CREATE TABLE b(pid INTEGER REFERENCES parent(id));"
 
 example : (sql "PRAGMA foreign_key_check;").succeedsBySchema twoChildren = false := by decide +kernel
 example : (sql "PRAGMA foreign_key_check(a);").succeedsBySchema twoChildren = true := by decide +kernel
+
+/-- Check Model.ResolveState.createdTable after two creations, a creation no-op, a write to the
+first table and its removal. The write ends its empty-row guarantee. The removal shifts the second table. -/
+private def trackCreated : Script := sql r"
+  CREATE TABLE first_table(id INTEGER);
+  CREATE TABLE second_table(id INTEGER);
+  CREATE TABLE IF NOT EXISTS first_table(id INTEGER);
+  INSERT INTO first_table VALUES (1);
+  DROP TABLE first_table;"
+
+example : (Model.resolveFrom runContext 0 Database.empty.raw.connection.resolveState
+    (trackCreated.statements.map Prod.fst)).toOption.map (fun (path, _) =>
+      let locate := fun origin n => (Database.empty.raw.connection.resolveState.createdTable path origin n).map Prod.fst
+      [locate 0 2, locate 1 2, locate 2 3, locate 0 4, locate 1 4, locate 1 5]) =
+    some [some 0, some 1, none, none, some 1, some 0] := by decide +kernel

@@ -9,7 +9,7 @@ Each leaf keeps its own catalog-validity premises. -/
 namespace Belay.Sqlite.Model
 
 /-- Every successful CREATE VIEW resolution meets the statement's schema link.
-The fresh append and prepare-error cases require nothing; IF NOT EXISTS removes
+The fresh view appends at the end. A prepare error requires nothing, and IF NOT EXISTS removes
 no positions. Proof sketch: split the resolver and use {name}`Catalog.DropClosed.nil`
 for an empty drop. -/
 theorem resolveCreateView_schemaLink (catalog after : Catalog) (name : Identifier)
@@ -38,6 +38,9 @@ theorem resolveAddColumn_schemaLink (context : ResolveContext) (enforced : Bool)
     | (cases ok; done)
     | (simp only [Except.ok.injEq, Prod.mk.injEq] at ok
        obtain ⟨rfl, _⟩ := ok
+       refine ⟨?_, ?_⟩
+       · rw [Catalog.tableAt_of_findTable (by assumption)]
+         rfl
        show strictDefaultFits _ = true
        rw [strictDefaultFits_with]
        simpa using (by assumption : ¬(!strictDefaultFits _) = true))

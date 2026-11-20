@@ -10,7 +10,7 @@ database. -/
 namespace Belay.Sqlite.Model
 
 /-- For every context, clock, index, connection, statement and values that resolve to a statement that
-is neither a control statement nor a query, with a clock value and no unknown counter, whose run is ready,
+is neither a control statement nor a query, with a clock value, whose run is ready,
 has no alternative execution and succeeds with a database, and which has an output for that run
 ({name}`statementOutput` is some): the step continues with an output that is no error and with no further
 execution, and the next connection is the connection with that database and the counters after the counts
@@ -23,7 +23,6 @@ theorem runScriptStep_ordinary_ok {context : ResolveContext} {clock : Option Clo
     (found : resolveStatement context connection.resolveState statement = .ok (resolved, after))
     (ordinary : resolved.isControl = false) (notQuery : ∀ query subqueries, resolved ≠ .query query subqueries)
     (timed : statementClock clock index resolved = some value)
-    (known : connection.state.counters.firstUnknown resolved.counterReads = none)
     (ready : (connection.state.statementRun value parameters resolved).ready = true)
     (single : (connection.state.statementRun value parameters resolved).alternatives = [])
     (effect : (connection.state.statementRun value parameters resolved).effect = .ok database)
@@ -40,7 +39,7 @@ theorem runScriptStep_ordinary_ok {context : ResolveContext} {clock : Option Clo
   have calm : haltError ((connection.state.publish index (.ok database)).counted
       (connection.state.statementRun value parameters resolved).counts) = none := by
     simp [SqlTransition.counted, SqlState.publish, haltError]
-  obtain ⟨output, next, step⟩ := runScriptStep_continues found timed known ready single fun reason => by
+  obtain ⟨output, next, step⟩ := runScriptStep_continues found timed ready single fun reason => by
     rw [advanceRun_ordinary index _ connection.state _ ordinary, effect]
     exact Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ notQuery (by rw [calm]; nofun) described reason
   have noError : output.isError = false := by

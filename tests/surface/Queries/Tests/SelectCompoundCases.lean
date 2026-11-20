@@ -108,6 +108,35 @@ example : (partial_.run (query unionAllScript rfl)).returnsResult
     (partial_.run (query exceptScript rfl)).returnsResult (· = [[.integer 2]]) := by
   decide +kernel
 
+/-- The NULL predicate gives a Boolean on every input. A split changes scan order and
+preserves duplicate rows. -/
+private def nullableValues : Database := db! r"
+  CREATE TABLE t (x INTEGER);
+  INSERT INTO t VALUES (2), (NULL), (2), (1), (NULL);"
+
+/-- The SQL reads on {name}`nullableValues` return identical unordered outputs. Proof sketch:
+identify the output of each execution with its normalized input rows. A filter and its
+complement partition those rows, so the normal-form permutation law applies. -/
+theorem partition_reads_agree :
+    (nullableValues.run (sql "SELECT x FROM t WHERE x IS NULL UNION ALL SELECT x FROM t WHERE NOT (x IS NULL)")).outputs =
+    (nullableValues.run (sql "SELECT x FROM t")).outputs := by
+  let rows : List (List Value) := [[2], [.null], [2], [1], [.null]]
+  let keep := fun (row : List Value) => row == [.null]
+  let parts := rows.filter keep ++ rows.filter (fun row => !keep row)
+  calc
+    _ = [.rows (Resolved.normalForm parts)] := by decide +kernel
+    _ = [.rows (Resolved.normalForm rows)] := by
+      rw [(Resolved.normalForm_eq_iff_perm parts rows).2 (List.filter_append_perm keep rows)]
+    _ = _ := by decide +kernel
+
+-- The equality laws distinguish exact model values even at ties in the SQL order.
+example : Resolved.compareNormal (.integer 0) (.real 0) = .lt ∧
+    Resolved.compareNormal (.real 0) (.real 0x8000000000000000) = .lt ∧
+    Resolved.compareRows [.null] [.real 0x7ff8000000000001] = .lt ∧
+    Resolved.compareNormal (.real 0x7ff8000000000001) (.real 0x7ff8000000000002) = .lt ∧
+    Resolved.compareRows [.blob [1]] [.blob [1], .blob [2]] = .lt := by decide +kernel
+
+#print axioms partition_reads_agree
 #print axioms unionAll_counts
 #print axioms union_members
 #print axioms intersect_members

@@ -69,21 +69,27 @@ theorem resolveStatement_certificate (context : ResolveContext) (state next : Re
     have outcome := resolveRenameTable_outcome _ _ _ _ _ _ found
     refine ⟨outcome.applyCatalog.1, outcome.applyCatalog.2, ?_, fun _ valid => outcome.valid valid⟩
     intro limits valid
-    rcases outcome with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> trivial
+    rcases outcome with ⟨_, _, rfl⟩ | ⟨rfl, outline, _⟩
+    · trivial
+    · exact outline
   case renameColumn table column newName columnToken quoted =>
     apply certificate_withCatalog ok
     intro statement after found
     have outcome := resolveRenameColumn_outcome _ _ _ _ _ _ _ _ _ found
     refine ⟨outcome.applyCatalog.1, outcome.applyCatalog.2, ?_, fun _ valid => outcome.valid valid⟩
     intro limits valid
-    rcases outcome with ⟨_, _, rfl⟩ | ⟨rfl, _⟩ <;> trivial
+    rcases outcome with ⟨_, _, rfl⟩ | ⟨rfl, outline, _⟩
+    · trivial
+    · exact outline
   case dropColumn table column columnToken =>
     apply certificate_withCatalog ok
     intro statement after found
     have outcome := resolveDropColumn_outcome _ _ _ _ _ _ _ found
     refine ⟨outcome.applyCatalog.1, outcome.applyCatalog.2, ?_, fun _ valid => outcome.valid valid⟩
     intro limits valid
-    rcases outcome with ⟨_, _, rfl⟩ | ⟨_, _, rfl, _⟩ <;> trivial
+    rcases outcome with ⟨_, _, rfl⟩ | ⟨_, _, rfl, stored, droppable, _⟩
+    · trivial
+    · exact ⟨droppable, stored⟩
   case dropTable name ifExists =>
     apply certificate_withWrite ok
     intro statement after found

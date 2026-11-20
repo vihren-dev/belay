@@ -16,6 +16,29 @@ open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 open RebuildGuide
 
+-- Schema success dispatch requires no evaluation of an abstract catalog.
+example (state : ResolveState) (target : Nat) (name : Identifier) (table : CatalogTable) :
+    (Resolved.Statement.createTable target name table).succeedsBySchema state = true := rfl
+example (state : ResolveState) (renamed : Catalog) :
+    (Resolved.Statement.rewrite renamed).succeedsBySchema state = true := rfl
+
+-- A resolution equation and validity suffice even when the target and catalog are variables.
+example (ctx : ExecutionContext) (stmt : Syntax.Statement) (target : Nat) (name : Identifier)
+    (shape : CatalogTable) (after : ResolveState) (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
+    (found : resolveStatement runContext ctx.connection.resolveState stmt = .ok (.createTable target name shape, after)) :
+    (send ⟨[(stmt, [])]⟩).check (fun outputs _ => outputs.all (fun o => !o.isError) = true) ctx := by
+  apply Sql.check_send_createTable valid found
+  intro output next ok _ _ _
+  simp [ok]
+
+example (ctx : ExecutionContext) (stmt : Syntax.Statement) (renamed : Catalog) (after : ResolveState)
+    (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
+    (found : resolveStatement runContext ctx.connection.resolveState stmt = .ok (.rewrite renamed, after)) :
+    (send ⟨[(stmt, [])]⟩).check (fun outputs _ => outputs.all (fun o => !o.isError) = true) ctx := by
+  apply Sql.check_send_rewrite valid found
+  intro output next ok _ _ _
+  simp [ok]
+
 /-- Every statement kind that has a rule for a schema or transaction statement: the setting off, a transaction, a
 new table, the drop of another table, the rename of the new table, the commit and the setting on. -/
 def allKinds : Script := sql r"

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
+import Belay.Sqlite.Model.Programs.Scripts.CreateSchemaSuccess
 import Belay.Sqlite.Model.Programs.Scripts.SchemaKeyCheck
 
 set_option doc.verso true
@@ -10,7 +11,8 @@ namespace Belay.Sqlite.Model
 /-- Check whether the schema alone guarantees one successful step for every valid
 connection with this resolution state. A BEGIN needs an idle connection. A COMMIT
 needs a transaction and disabled foreign-key enforcement. A plain DROP, a setting,
-a CREATE TABLE at the catalog end and a rewrite with the same outline qualify.
+a resolved rewrite, a resolved DROP COLUMN and creations accepted by
+{name}`Resolved.Statement.createsBySchema` qualify.
 A foreign-key check qualifies when its result row order is determined for every
 database. A false value gives no conclusion. -/
 def Resolved.Statement.succeedsBySchema (statement : Resolved.Statement) (state : ResolveState) : Bool :=
@@ -18,12 +20,12 @@ def Resolved.Statement.succeedsBySchema (statement : Resolved.Statement) (state 
   | .setting .. | .drop _ none => true
   | .begin => state.saved.isNone
   | .commit => state.saved.isSome && !state.foreignKeys
-  | .createTable target .. => target == state.catalog.length
-  | .rewrite renamed => state.catalog.sameOutline renamed
+  | .rewrite .. | .dropColumn .. => true
   | .query .. =>
     (none :: (List.range state.catalog.length).map some).any fun table =>
       statement == keyCheckQuery table && state.catalog.keyCheckOrdered table
-  | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .dropColumn ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. => statement.createsBySchema
+  | .addColumn ..
   | .rollback | .drop _ (some _) | .insert .. | .insertSelect .. | .update .. | .delete ..
   | .upsert .. | .prepareError _ => false
 
@@ -52,8 +54,8 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
     cases snapshot : c.state.snapshot with
     | none => simp [Connection.resolveState, snapshot] at open_
     | some original => exact runScriptStep_commit_ok resolution snapshot
-  · exact runScriptStep_createTable_ok resolution (eq_of_beq checked) valid.1.admitted.rowsShaped.1
-  · exact runScriptStep_rewrite_ok resolution checked
+  · exact runScriptStep_rewrite_ok resolution valid.1
+  · exact runScriptStep_dropColumn_ok resolution valid.1
   · obtain ⟨table, _, accepts⟩ := List.any_eq_true.mp checked
     simp only [Bool.and_eq_true] at accepts
     obtain ⟨kind, ordered⟩ := accepts
@@ -62,6 +64,6 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
     obtain ⟨output, step, ok⟩ := runScriptStep_keyCheck_resolved (clock := clock) (index := index)
       (parameters := parameters) resolution rows
     exact ⟨output, _, step, ok⟩
-  all_goals contradiction
+  all_goals first | exact runScriptStep_create_ok resolution checked valid.1 | contradiction
 
 end Belay.Sqlite.Model
