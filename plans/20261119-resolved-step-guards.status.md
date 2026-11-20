@@ -26,3 +26,6 @@ progress timeout. The isolated rerun passed all 153 tests, and the full
 rerun passed. The timeout is tracked in issue 454.
 
 The combined stack passed all 99 Nix host tests and the scheduled checks.
+
+The CREATE TABLE success proof now uses the continuation and output laws directly.
+The surface regression is `tests/surface_rebuild_test.py`.
