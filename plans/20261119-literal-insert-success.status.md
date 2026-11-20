@@ -31,3 +31,7 @@ freshness for every key that contains the alias. PlainInsertStepCases uses
 the laws for two explicit ids and an allocated id on a populated table with
 a secondary UNIQUE key. SchemaScriptReplays also exercises a NOCASE collision
 within a batch.
+
+The package boundary test found the new module missing from the core
+library manifest. The manifest now includes LiteralInsertFits. The
+regression is `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
