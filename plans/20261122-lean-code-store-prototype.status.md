@@ -80,6 +80,10 @@ loaded.
 - 2026-11-22: `lean_code_store/report.py` prints the tables of the findings record from the
   facts, the store and the query result (`tests/test_report.py`). The review loop of the
   folding-rule commits stopped after four rounds with new "must" findings; the five findings
-  of review `20261122T135558Z-7e390e7e` are deferred for the owner, and the findings record
-  lists them as an owner question.
+  of review `20261122T135558Z-7e390e7e` are deferred for the owner. The findings record,
+  which is not written yet, must list them as an owner question.
+- 2026-11-22: review fixes of the report: the store keeps the decision of each constant in
+  `counts.json`, and the report reads the decisions, causes and counts of the requested
+  snapshot's file versions only, so it needs no facts directory. A test runs `report.main` on
+  a small store. Extractor version 6; the version test fills the store with version 5.
 

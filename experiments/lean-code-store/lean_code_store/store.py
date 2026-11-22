@@ -51,7 +51,8 @@ class LocalStore:
         _write_lines(directory / "entity_references.jsonl", rows.references)
         (directory / "fold.json").write_text(json.dumps(fold, sort_keys=True))
         (directory / "counts.json").write_text(json.dumps(
-            {"counts": dict(rows.counts), "reported": rows.reported}, sort_keys=True))
+            {"counts": dict(rows.counts), "reported": rows.reported, "decisions": rows.decisions},
+            sort_keys=True))
         _write_lines(directory / "files.jsonl", [{"file_key": file_key}])
 
     def fold(self, file_key: str) -> dict[str, list[str] | None]:

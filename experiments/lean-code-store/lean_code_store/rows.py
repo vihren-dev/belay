@@ -29,6 +29,8 @@ class FileRows:
     references: list[Row] = field(default_factory=list)
     counts: Counter[str] = field(default_factory=Counter)
     reported: list[tuple[str, str]] = field(default_factory=list)
+    decisions: dict[str, str] = field(default_factory=dict)
+    """The decision of each constant as `STATUS by RULE`, for the findings report."""
 
 
 def entity_kind(facts: ConstantFacts) -> str:
@@ -60,6 +62,7 @@ def build_rows(file_key: str, facts: ModuleFacts, decisions: dict[str, Decision]
     for constant in facts.constants:
         decision = decisions[constant.name]
         rows.counts[f"rule {decision.rule} {decision.status}"] += 1
+        rows.decisions[constant.name] = f"{decision.status} by {decision.rule}"
         if decision.status == "reported":
             rows.reported.append((constant.name, decision.rule))
         if decision.status == "generated" and resolve(facts.module, constant.name) is None:

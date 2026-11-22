@@ -1,8 +1,9 @@
-"""The tables of the prototype findings record, from one run's facts, store and query result.
+"""The tables of the prototype findings record, from one snapshot of a store and its query result.
 
-It prints the decisions of the folding rules with examples, the reported constants by cause,
-the summed counts of the run, the candidates of the single-use query by kind, and a fixed
-sample of candidates with their stored text, for a person to read against the source.
+It reads only the stored file versions of the snapshot. It prints the decisions of the
+folding rules with examples, the reported constants by cause, the summed counts, the
+candidates of the single-use query by kind, and a fixed sample of candidates with their full
+stored text, for a person to read against the source.
 """
 
 from __future__ import annotations
@@ -15,10 +16,6 @@ from pathlib import Path
 import re
 from typing import TypedDict
 
-from lean_code_store.facts import module_facts
-from lean_code_store.folding import decide_module
-from lean_code_store.inputs import select_files
-from lean_code_store.run import package_argument
 
 EXAMPLES = 3
 """Examples printed for each rule or cause."""
@@ -36,8 +33,8 @@ class Candidate(TypedDict):
 
 def snapshot_keys(store: Path, snapshot: str) -> dict[str, str]:
     """The file key of each module of a snapshot."""
-    rows = [json.loads(line) for line in
-            (store / "snapshots" / snapshot / "snapshot_files.jsonl").read_text().splitlines()]
+    rows: list[SnapshotFile] = [json.loads(line) for line in
+                                (store / "snapshots" / snapshot / "snapshot_files.jsonl").read_text().splitlines()]
     return {row["module_name"]: row["file_key"] for row in rows}
 
 
@@ -47,18 +44,38 @@ def name_shape(name: str) -> str:
     return final + (" (private, no prefix)" if re.match(r"^_private\.[^ ]*?\.0\.[^.]+$", name) else "")
 
 
-def decisions_table(facts_dir: Path, sources: dict[str, Path], modules: set[str]) -> dict[str, object]:
-    """The count and examples of each rule, from the facts of exactly the snapshot's modules."""
-    paths = {path.stem: path for path in facts_dir.glob("*.json")}
-    if set(paths) != modules:
-        missing = sorted(modules - set(paths))[:5]
-        raise ValueError(f"{facts_dir}: the facts do not match the snapshot; missing for example "
-                         f"{missing}. Use the facts directory of a run that extracted all modules.")
+class SnapshotFile(TypedDict):
+    """One stored `snapshot_files` row."""
+
+    snapshot_id: str
+    source_path: str
+    module_name: str
+    file_key: str
+
+
+class StoredCounts(TypedDict):
+    """The `counts.json` of one file version: counts, reported constants and decisions."""
+
+    counts: dict[str, int]
+    reported: list[tuple[str, str]]
+    decisions: dict[str, str]
+
+
+def stored_counts(store: Path, file_key: str) -> StoredCounts:
+    """The `counts.json` of one file version; an older version lacks the decisions."""
+    loaded: StoredCounts = json.loads((store / "versions" / file_key / "counts.json").read_text())
+    if "decisions" not in loaded:
+        raise ValueError(f"{store}: file version {file_key} has no decisions; extract the snapshot "
+                         "again with the current prototype into a new store")
+    return loaded
+
+
+def decisions_table(store: Path, keys: dict[str, str]) -> dict[str, object]:
+    """The count and examples of each decision of the snapshot's file versions."""
     rules: defaultdict[str, list[str]] = defaultdict(list)
-    for module in sorted(modules):
-        facts = module_facts(json.loads(paths[module].read_text()), module)
-        for name, decision in sorted(decide_module(facts, sources[module].read_text()).items()):
-            rules[f"{decision.status} by {decision.rule}"].append(name)
+    for module in sorted(keys):
+        for name, decision in sorted(stored_counts(store, keys[module])["decisions"].items()):
+            rules[decision].append(name)
     return {k: [len(v), v[:EXAMPLES]] for k, v in sorted(rules.items())}
 
 
@@ -69,8 +86,7 @@ def reported_table(store: Path, keys: dict[str, str]) -> dict[str, object]:
     """
     reported: defaultdict[str, list[str]] = defaultdict(list)
     for module in sorted(keys):
-        counts = json.loads((store / "versions" / keys[module] / "counts.json").read_text())
-        for name, cause in counts["reported"]:
+        for name, cause in stored_counts(store, keys[module])["reported"]:
             reported[f"{cause}: {name_shape(name)}"].append(name)
     return {k: [len(v), v[:EXAMPLES]] for k, v in sorted(reported.items(), key=lambda i: -len(i[1]))}
 
@@ -79,7 +95,7 @@ def summed_counts(store: Path, keys: dict[str, str]) -> dict[str, int]:
     """The counts of all file versions of one snapshot, summed."""
     total: Counter[str] = Counter()
     for key in keys.values():
-        total.update(json.loads((store / "versions" / key / "counts.json").read_text())["counts"])
+        total.update(stored_counts(store, key)["counts"])
     return dict(sorted(total.items()))
 
 
@@ -109,17 +125,14 @@ def candidates_table(candidates: Path, texts: dict[tuple[str, str], str], sample
 def main() -> int:
     """Print the tables as JSON."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--package", type=package_argument, action="append", required=True)
-    parser.add_argument("--facts", type=Path, required=True, help="The facts directory of the first run")
     parser.add_argument("--store", type=Path, required=True)
     parser.add_argument("--snapshot", required=True)
     parser.add_argument("--candidates", type=Path, required=True)
     parser.add_argument("--sample", type=int, default=20)
     arguments = parser.parse_args()
-    sources = {file.module: file.source for file in select_files(arguments.package)}
     texts = entity_texts(arguments.store, arguments.snapshot)
     keys = snapshot_keys(arguments.store, arguments.snapshot)
-    print(json.dumps({"decisions": decisions_table(arguments.facts, sources, set(keys)),
+    print(json.dumps({"decisions": decisions_table(arguments.store, keys),
                       "reported": reported_table(arguments.store, keys),
                       "counts": summed_counts(arguments.store, keys),
                       "candidates": candidates_table(arguments.candidates, texts, arguments.sample)},
