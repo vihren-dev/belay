@@ -48,7 +48,7 @@ def run(packages: list[tuple[str, Path, str]], libraries: list[Path], store: Loc
         shutil.rmtree(work)
     library = work / "lib"
     merge_libraries(sorted(set(project_libraries)) + libraries, library)
-    seconds = read_facts(reader, library, missing, work / "facts", workers) if missing else {}
+    seconds = read_facts(reader, library, {m: files[m].source for m in missing}, work / "facts", workers) if missing else {}
     read = time.monotonic()
 
     @lru_cache(maxsize=None)

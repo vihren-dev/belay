@@ -54,6 +54,21 @@ def _snapshot_rows(store: LocalStore, snapshot: str) -> dict[str, object]:
     return result
 
 
+DERIVE_TEXTS = {
+    "instBEqPoint": "deriving instance BEq, Hashable for Point, Tag",
+    "instReprTag": "deriving instance Repr for -- a comment inside the type list\n  Tag",
+    "instInhabitedTag": "instance : Inhabited Tag := ⟨Tag.first⟩"}
+"""Stored texts of `Fixture.Derive`: the parsed command, also with a comment in its `for` list,
+and an ordinary instance whose preceding block comment contains `deriving instance`."""
+
+
+def _derive_texts(rows: dict[str, object]) -> dict[str, str]:
+    """The stored text of each entity of `Fixture.Derive` that `DERIVE_TEXTS` names."""
+    module = rows["Fixture.Derive"]
+    assert isinstance(module, dict)
+    return {name: text for name, _, text in module["entities"] if name in DERIVE_TEXTS}
+
+
 def _run(package: Path, store: LocalStore, reader: Path, work: Path) -> dict[str, object]:
     """One run of the prototype on the fixture package copy."""
     lean = Path(shutil.which("lean") or "lean")
@@ -61,23 +76,28 @@ def _run(package: Path, store: LocalStore, reader: Path, work: Path) -> dict[str
 
 
 def test_fixture_rows_and_incremental_runs(tmp_path: Path) -> None:
-    """Rows match the expected file; a second run extracts no file; an edit extracts its importers."""
+    """Rows match the expected file; a second run extracts no file; an edit extracts its importers.
+
+    A store that an older extractor version filled gives no file version to the current one, so
+    the current run extracts all five modules again.
+    """
     _lake_build(EXPERIMENT / "extractor")
     reader = EXPERIMENT / "extractor" / ".lake" / "build" / "bin" / "lean-code-store-facts"
     package = tmp_path / "fixture"
     shutil.copytree(EXPERIMENT / "fixture", package, ignore=shutil.ignore_patterns(".lake", "expected-rows.json"))
     _lake_build(package)
     store = LocalStore(tmp_path / "store")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "lean-code-store-prototype-1")
+        assert _run(package, store, reader, tmp_path / "work")["extracted"] == 5
     first = _run(package, store, reader, tmp_path / "work")
     rows = _snapshot_rows(store, str(first["snapshot_id"]))
     if os.environ.get("LEAN_CODE_STORE_WRITE_EXPECTED") == "1":
         EXPECTED.write_text(json.dumps(rows, indent=1, sort_keys=True) + "\n")
     assert rows == json.loads(EXPECTED.read_text())
     assert first["extracted"] == 5
+    assert _derive_texts(rows) == DERIVE_TEXTS
     assert _run(package, store, reader, tmp_path / "work")["extracted"] == 0
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "an older extractor")
-        assert _run(package, store, reader, tmp_path / "work")["extracted"] == 5
     derive = package / "Fixture" / "Derive.lean"
     derive.write_text(derive.read_text() + "\n/-- An added declaration. -/\ndef added : Nat := 1\n")
     _lake_build(package)

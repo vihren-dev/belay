@@ -46,6 +46,8 @@ class ModuleFacts:
     imports: tuple[str, ...]
     constants: tuple[ConstantFacts, ...]
     external: dict[str, ConstantFacts]
+    deriving_commands: dict[str, Range]
+    """The range of the `deriving instance` command of each instance that such a command declares."""
 
 
 def _range(value: object, context: str) -> Range | None:
@@ -55,6 +57,22 @@ def _range(value: object, context: str) -> Range | None:
     if not isinstance(value, list) or len(value) != 6 or not all(isinstance(x, int) for x in value):
         raise ValueError(f"{context}: a range must be six integers")
     return cast(Range, tuple(value))
+
+
+def _command_ranges(value: object, context: str) -> dict[str, Range]:
+    """Read the `[line, column, endLine, endColumn]` command range of each instance name.
+
+    The UTF-16 columns are not given; the code point columns take their place.
+    """
+    if not isinstance(value, dict):
+        raise ValueError(f"{context}: derivingCommands must be an object")
+    ranges: dict[str, Range] = {}
+    for name, item in cast(dict[str, object], value).items():
+        if not (isinstance(item, list) and len(item) == 4 and all(isinstance(x, int) for x in item)):
+            raise ValueError(f"{context}: the command range of {name} must be four integers")
+        line, column, end_line, end_column = cast(list[int], item)
+        ranges[name] = (line, column, column, end_line, end_column, end_column)
+    return ranges
 
 
 def _references(value: object, context: str) -> tuple[Reference, ...]:
@@ -129,4 +147,5 @@ def module_facts(document: object, context: str) -> ModuleFacts:
     return ModuleFacts(
         module=_text(data, "module", context), imports=tuple(sorted(set(imports))),
         constants=tuple(constant_facts(row, context) for row in constants),
-        external={facts.name: facts for facts in external_facts})
+        external={facts.name: facts for facts in external_facts},
+        deriving_commands=_command_ranges(data.get("derivingCommands"), context))

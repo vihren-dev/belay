@@ -19,7 +19,7 @@ def constant(name: str, *, module: str = "M", kind: str = "definition", span: Ra
 def module(*constants: ConstantFacts, external: tuple[ConstantFacts, ...] = ()) -> ModuleFacts:
     """A module `M` with the given constants and referenced constants."""
     return ModuleFacts(module="M", imports=(), constants=constants,
-                       external={facts.name: facts for facts in external})
+                       external={facts.name: facts for facts in external}, deriving_commands={})
 
 
 def span(line: int, column: int, end_line: int, end_column: int) -> Range:

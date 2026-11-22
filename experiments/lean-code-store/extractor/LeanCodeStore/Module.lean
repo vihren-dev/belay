@@ -1,3 +1,4 @@
+import LeanCodeStore.Commands
 import LeanCodeStore.Facts
 
 /-! Facts of one module, read in the environment of that module and its own imports.
@@ -49,8 +50,9 @@ def referencedNames (env : Environment) (own : NameSet) (infos : Array ConstantI
   return found.toArray.foldl (fun set name =>
     if own.contains name || !env.contains name then set else set.insert name) {}
 
-/-- The facts of one module: imports, own constants with references, and referenced constants. -/
-def moduleJson (env : Environment) (module : Name) (ilean : System.FilePath) : IO Json := do
+/-- The facts of one module: imports, own constants with references, referenced constants, and
+the `deriving instance` command of each instance that such a command declares. -/
+def moduleJson (env : Environment) (module : Name) (ilean source : System.FilePath) : IO Json := do
   let some index := env.getModuleIdx? module
     | throw <| IO.userError s!"Module {module} was not loaded; build it before the extraction"
   let data := env.header.moduleData[index.toNat]!
@@ -59,20 +61,25 @@ def moduleJson (env : Environment) (module : Name) (ilean : System.FilePath) : I
   let external := referencedNames env own infos (← ileanTargets ilean)
   let sortedInfos := infos.qsort (fun a b => a.name.toString < b.name.toString)
   let sortedExternal := external.toArray.qsort (fun a b => a.toString < b.toString)
+  let instances := sortedInfos.filterMap fun info => do
+    guard (Meta.isInstanceCore env info.name)
+    let ranges ← rawRanges? env info.name
+    return (info.name, ranges.selectionRange.pos)
   return Json.mkObj [
     ("module", toJson module.toString),
     ("imports", toJson (data.imports.map (·.module.toString) |>.qsort (· < ·))),
     ("constants", toJson (← sortedInfos.mapM (constantJson env · true))),
     ("external", toJson (← sortedExternal.filterMapM fun name => do
       let some info := env.find? name | return none
-      return some (← constantJson env info false)))]
+      return some (← constantJson env info false))),
+    ("derivingCommands", ← derivingCommands env source instances)]
 
 /-- Load one module with its imports and the states of the environment extensions, and write
 its facts. The instance and class tables are extension states, so `loadExts` is needed. -/
-unsafe def extractModule (module : Name) (output : System.FilePath) : IO Unit := do
+unsafe def extractModule (module : Name) (source output : System.FilePath) : IO Unit := do
   let olean ← findOLean module
   let ilean := olean.withExtension "ilean"
   let env ← importModules #[{ module }] {} (loadExts := true) (level := .private)
-  IO.FS.writeFile output (← moduleJson env module ilean).compress
+  IO.FS.writeFile output (← moduleJson env module ilean source).compress
 
 end LeanCodeStore

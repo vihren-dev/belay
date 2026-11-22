@@ -39,6 +39,12 @@ loaded.
   command, a generated target in Lean's library (`Nat.casesOn`), and the `clickhouse-local`
   load and query.
 - 2026-11-22: review fixes: the text of a `deriving instance` command ends at the last type of
-  its `for` list; extractor version 2, so the store extracts again the file versions of
+  its `for` list (a regular expression; it was correct only for the tested multiline cases and
+  failed for quoted names and comments, and the next entry replaces it); extractor version 2, so the store extracts again the file versions of
   version 1; the fixture uses `Prod.mk` and `Prod.fst` as the only source of `Prod`; the query
   test has a target with two users.
+- 2026-11-22: review fixes: the fact reader takes the range of a `deriving instance` command
+  from Lean's own command parser (`extractor/LeanCodeStore/Commands.lean`), so a comment in the
+  `for` list and the words `deriving instance` in a comment do not change the stored text. The
+  fixture tests both cases. The version test fills the store with version 1 and requires the
+  current version to extract all five modules again.

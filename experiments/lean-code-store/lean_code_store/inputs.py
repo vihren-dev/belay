@@ -99,15 +99,18 @@ def lean_version(lean: Path) -> str:
                           timeout=60).stdout.strip()
 
 
-def read_facts(reader: Path, lean_path: Path, modules: list[str], output: Path,
+def read_facts(reader: Path, lean_path: Path, modules: dict[str, Path], output: Path,
                workers: int) -> dict[str, float]:
-    """Run the fact reader once for each module, `workers` at a time; give seconds per module."""
+    """Run the fact reader once for each module and its source file, `workers` at a time.
+
+    The result gives the seconds of each module.
+    """
     output.mkdir(parents=True, exist_ok=True)
     environment = dict(os.environ, LEAN_PATH=str(lean_path))
 
     def one(module: str) -> tuple[str, float]:
         started = time.monotonic()
-        result = subprocess.run([str(reader), module, str(output / f"{module}.json")],
+        result = subprocess.run([str(reader), module, str(modules[module]), str(output / f"{module}.json")],
                                 env=environment, text=True, capture_output=True,
                                 timeout=FACT_READER_TIMEOUT_SECONDS)
         if result.returncode != 0:

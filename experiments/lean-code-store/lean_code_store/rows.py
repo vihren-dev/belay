@@ -14,7 +14,7 @@ from lean_code_store.facts import ConstantFacts, ModuleFacts, Range
 from lean_code_store.folding import Decision, Declaration
 from lean_code_store.keys import sha256_hex
 from lean_code_store.mentions import Usage, mention_user
-from lean_code_store.source import deriving_command, range_text
+from lean_code_store.source import range_text
 
 Row = dict[str, str]
 """One row of a table, column name to value."""
@@ -42,14 +42,13 @@ def entity_kind(facts: ConstantFacts) -> str:
     return facts.kernel_kind
 
 
-def declaration_text(facts: ConstantFacts, decision: Decision, lines: list[str]) -> str:
-    """The full range of a declaration; for a `deriving instance` instance, the whole command."""
+def declaration_text(facts: ConstantFacts, command: Range | None, lines: list[str]) -> str:
+    """The full range of a declaration; for a `deriving instance` instance, the whole command.
+
+    `command` is the range that Lean's parser gives for the command of the instance.
+    """
     assert facts.range is not None
-    if decision.rule == "3" and facts.is_instance:
-        command = deriving_command(lines, facts.range)
-        if command is not None:
-            return range_text(lines, command)
-    return range_text(lines, facts.range)
+    return range_text(lines, command if command is not None else facts.range)
 
 
 def build_rows(file_key: str, facts: ModuleFacts, decisions: dict[str, Decision], source: str,
@@ -70,7 +69,7 @@ def build_rows(file_key: str, facts: ModuleFacts, decisions: dict[str, Decision]
             continue
         assert constant.range is not None
         declarations[constant.name] = constant.range
-        text = declaration_text(constant, decision, lines)
+        text = declaration_text(constant, facts.deriving_commands.get(constant.name), lines)
         digest = sha256_hex(text.encode())
         rows.texts[digest] = text
         rows.entities.append({"file_key": file_key, "name": constant.name,
