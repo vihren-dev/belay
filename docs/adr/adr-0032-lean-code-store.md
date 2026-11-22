@@ -25,8 +25,8 @@ The present problem has this evidence:
   refactoring starts again from nothing.
 - The simplification goal needs many small removals. A local run of the dependency exporter
   on 2026-11-11 gave 37,460 constants in 1,187 modules; tests were not selected. Of these,
-  5,344 are theorems that the exporter does not mark as internal. For 2,429 of them, no
-  other constant of the export has them in its type or body. For 1,939, exactly one other
+  5,344 are theorems that the exporter does not mark as internal. For 2,423 of them, no
+  other constant of the export has them in its type or body. For 1,942, exactly one other
   constant has. The users in these counts include generated and internal constants, and no
   check accepted the run. The counts are not the result of the design below; they show only
   that the question is worth an exact answer.
@@ -45,8 +45,9 @@ conformance evidence or in any claim.
   modules and writes for each constant its name, module, kind, source selection and the
   constants in its type and in its body.
 - Lake writes one `.ilean` file for each module that it builds. With Lean 4.34.1 (format
-  version 5) the file contains, for each name that the source text mentions, the position of
-  each mention. It also contains the direct imports and the source ranges of declarations.
+  version 5) the file contains the usages of names that Lean recorded during
+  elaboration, each with its position. Lean does not record each name of the source text; a
+  name in a tactic quotation is an example. It also contains the direct imports and the source ranges of declarations.
   This list of declarations is not complete; the compiled environment is the source of the
   declaration ranges (see the specification).
 - ADR 0028 defines the ClickHouse service, its credentials, and the conventions
@@ -98,7 +99,8 @@ A proof by `simp` gives the same problem: its proof term changes when an importe
 
 The build products are in the key because elaboration can read inputs that are not Lean
 files. In this repository, `sql_module` reads an SQL file and generates declarations from
-it. A change to that SQL file changes the build products and no other key input.
+it. When a build reads a changed SQL file, the build products change, and no other key
+input changes. The specification gives the condition that the build must satisfy.
 
 Consequence: a change to a file gives new keys to all files that import it, directly or
 through other files, and the extractor reads them again. This is the same set that Lake
@@ -157,7 +159,7 @@ lists eight groups of relationships in Lean. The first extractor supplies:
 | --- | --- | --- |
 | `type` | The target occurs in the elaborated type of the user. | Exporter |
 | `body` | The target occurs in the elaborated value or proof of the user. | Exporter |
-| `mention` | The source text of the user names the target. | `.ilean` |
+| `mention` | Lean recorded a usage of the target's name in the source text of the user. | `.ilean` |
 | `extends` | The user is a structure that extends the target. | Exporter |
 | `instance_of` | The user is an instance of the class that is the target. | Exporter |
 
@@ -229,9 +231,8 @@ tools for the execution of a refactoring, not for extraction.
 - When the command runs (by hand, in CI, after each build) and how long it takes. No
   measurement exists.
 - Third-party packages: if their files are part of a snapshot. Until then, a change of a
-  dependency version changes the key of a file only when it changes the build products of
-  that file. The extractor also reads facts about imported constants for the folding of D6,
-  and those can change while the products stay the same (see owner decision 4).
+  dependency that leaves each key input of a file the same gives the file no new key, but
+  the folding of D6 reads facts about imported constants (see owner decision 4).
 - The table for attribute membership and the extraction from info trees.
 - Retention of old snapshots and file versions.
 
@@ -270,4 +271,5 @@ Open:
    the library trees (D1). (b) All Lean files of the tree, as in the design discussion; the
    command must then build the test and experiment trees too. Recommendation: (a), with a
    selection that adds the test trees for the inlining query, because a test can be the
-   second user of a declaration.
+   second user of a declaration. Two modules of a selection can declare the same name (two
+   test files do). The schema therefore identifies a target by module and name.

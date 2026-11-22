@@ -45,6 +45,7 @@ CREATE TABLE lean_code.snapshot_files
 (
     snapshot_id UUID,
     source_path String,
+    module_name String,
     file_key    FixedString(64)
 )
 ENGINE = ReplacingMergeTree
@@ -78,16 +79,17 @@ CREATE TABLE lean_code.entity_texts
 ENGINE = ReplacingMergeTree
 ORDER BY text_sha256;
 
--- Relationships from a declaration of this file version to a declaration with a name.
+-- Relationships from a declaration of this file version to a constant of a module.
 CREATE TABLE lean_code.entity_references
 (
-    file_key    FixedString(64),
-    user_name   String,
-    target_name String,
-    kind        LowCardinality(String)
+    file_key      FixedString(64),
+    user_name     String,
+    target_module String,
+    target_name   String,
+    kind          LowCardinality(String)
 )
 ENGINE = ReplacingMergeTree
-ORDER BY (file_key, user_name, target_name, kind);
+ORDER BY (file_key, user_name, target_module, target_name, kind);
 ```
 
 The database name and the service are owner decision 2 of the ADR. The engine and the
@@ -105,15 +107,23 @@ Column rules:
   `instance`, `axiom`, `opaque`. The list can grow.
 - `text` is the source text of the full range of the declaration. The range includes the
   docstring, the attributes and the modifiers.
+- A declaration is identified by its file version and its name. Two modules of one snapshot
+  can declare the same kernel name when no module imports the two; two test files of this
+  repository do.
 - `user_name` is a declaration of the file version, or empty. It is empty for a use that no
   declaration of `entities` contains, for example in an `example`, an `attribute` command or
-  `#print`. For a `mention`, the extractor finds the user by position: the user is the
-  declaration whose full range contains the position of the usage. The container name that
-  the `.ilean` file gives is not used, because it is absent for a usage in a docstring and
-  is a generated name (`_example`) for an anonymous `example`.
-- `target_name` is a name only. It can be a declaration of another file of the project, or a
-  constant of Lean's library or of a third-party package, which has no row in `entities`. A
-  query resolves it in the files of one snapshot.
+  `#print`. For a `mention`, the extractor finds the user in this order: the container that
+  the `.ilean` file gives, after the folding of generated constants, when it is a
+  declaration of the file; if not, the declaration with the smallest full range that
+  contains the position of the usage (a `where` function is inside its parent); if no range
+  contains the position, the empty name. The container alone is not sufficient: it is absent
+  for a usage in a docstring and is a generated name (`_example`) for an anonymous
+  `example`.
+- `target_module` and `target_name` identify the target: the module that declares the
+  constant, and its name. The target can be a declaration of another file of the snapshot,
+  or a constant of Lean's library or of a third-party package, which has no row in
+  `entities`. A query finds the file version of the target through `module_name` in
+  `snapshot_files`.
 - `entity_references.kind` is an open list. The first extractor writes `type`, `body`,
   `mention`, `extends` and `instance_of` (ADR D7).
 
@@ -161,9 +171,11 @@ sources.
 
 Limit: the store is as correct as the build. If elaboration reads a file that is not in
 Lake's trace of the module, Lake can use an old product after a change to that file, and the
-store then has the old data. This document does not establish if the SQL files of
-`sql_module` are in the trace of each library. The implementation task must check this and
-record the result.
+store then has the old data. The SQL files of `sql_module` are such files, and this document
+does not establish that each library has them in its trace. Requirement: the command accepts
+a file version only when each file that its elaboration read is the file on disk. The
+implementation gets this from the Lake trace, or from a comparison of the SQL source record
+in the compiled module with the file on disk, and its task file says which.
 
 | Data | Source |
 | --- | --- |
@@ -171,7 +183,7 @@ record the result.
 | Text | The source file, cut at the full range |
 | `entities.kind` | The kernel kind of the constant. Lean's structure, class and instance tables replace it: a constant in the instance table is `instance`, also when its kernel kind is `theorem`. |
 | `type`, `body` | The constants in the elaborated type and value (`typeReferences`, `bodyReferences` of the exporter) |
-| `mention` | `.ilean`, key `references`: the positions of the usages of each name. The user is found by position (see "Column rules"). |
+| `mention` | `.ilean`, key `references`: the usages that Lean recorded for each name, with position and container. "Column rules" gives the user. |
 | `extends`, `instance_of` | Lean's structure and instance tables |
 
 The `decls` of the `.ilean` file are not the list of declarations: for example, they do not
@@ -207,10 +219,12 @@ that applies decides.
 2. A constant whose declaration range is inside the full range of a type of the same file
    and that is not written there with its own name is generated by a `deriving` clause of
    the type. The parent is the type.
-3. When more than one remaining constant has the same declaration range, and one of them is
-   in the instance table, that one is a declaration and the others are generated with it as
-   parent. This is the case of a `deriving instance` command, which can be in another file
-   than its type: Lean 4.34.1 gives the instance and its helper the same range.
+3. Each remaining constant that is in the instance table and has a declaration range is a
+   declaration. A `deriving instance` command, which can be in another file than its types,
+   gives such instances. Lean 4.34.1 gives each instance of the command and the helpers of
+   the instances the same range. A helper with that range is generated; its parent is the
+   instance whose name is a prefix of the helper's name or that refers to the helper. A
+   helper without such an instance is reported.
 4. Each other constant with a declaration range is a declaration. This includes a written
    declaration with a name such as `Foo._helper`.
 5. A constant without a declaration range whose final name component starts with `_` (for
@@ -218,8 +232,11 @@ that applies decides.
    (`eq_1`, `eq_def`), is generated when the name without that component is a constant. The
    parent is that constant, after these rules are applied to it.
 
-Known limit: for the instance of a `deriving instance` command, the declaration range is
-only the class name in the command, so the stored text is only that name.
+The text of an instance of a `deriving instance` command is the text of the whole command,
+and the instances of one command have the same text hash. The declaration range of such an
+instance is only the class name in the command, and the build products do not give the
+range of the command. The extractor finds the command in the source text around the
+declaration range. The fixture for this case checks the result.
 
 Rule 5 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
 `Environment.isAutoDecl` of Batteries. The extractor copies them with their source named.
@@ -229,8 +246,11 @@ log and is left out. The count of such constants is part of the command's output
 gap in the rules is visible.
 
 The extractor replaces each generated constant by its parent in `user_name` and in
-`target_name`, also for targets outside the project. It then removes rows with
-`user_name = target_name` and duplicate rows.
+`target_name`, also for targets outside the project. `target_module` becomes the module of
+the parent. The two modules can differ: Lean can generate an equation lemma in the module
+that first uses it. A generated constant whose parent is in another module is not a user;
+the extractor leaves out the relationships that start at it. It then removes rows whose
+target is the user, and duplicate rows.
 
 ## Write order
 
@@ -256,27 +276,29 @@ row; the next command writes them again, and the engine removes the copies.
 ```sql
 WITH files AS
 (
-    SELECT file_key
+    SELECT file_key, module_name
     FROM lean_code.snapshot_files FINAL
     WHERE snapshot_id IN
         (SELECT snapshot_id FROM lean_code.snapshots FINAL WHERE snapshot_id = {snapshot:UUID})
 ),
 declarations AS
 (
-    SELECT name, kind
-    FROM lean_code.entities FINAL
-    WHERE file_key IN files
+    SELECT f.module_name AS module_name, e.name AS name, e.kind AS kind
+    FROM lean_code.entities AS e FINAL
+    INNER JOIN files AS f ON f.file_key = e.file_key
 )
 SELECT
+    r.target_module,
     r.target_name,
     any(d.kind) AS target_kind,
-    anyIf(r.user_name, r.user_name != '') AS only_user,
+    anyIf((r.file_key, r.user_name), r.user_name != '') AS only_user,
     countIf(r.kind = 'type') > 0 AS used_in_a_type
 FROM lean_code.entity_references AS r FINAL
-INNER JOIN declarations AS d ON d.name = r.target_name
-WHERE r.file_key IN files
-GROUP BY r.target_name
-HAVING uniqExactIf(r.user_name, r.user_name != '') = 1
+INNER JOIN declarations AS d
+    ON d.module_name = r.target_module AND d.name = r.target_name
+WHERE r.file_key IN (SELECT file_key FROM files)
+GROUP BY r.target_module, r.target_name
+HAVING uniqExactIf((r.file_key, r.user_name), r.user_name != '') = 1
    AND countIf(r.user_name = '') = 0;
 ```
 
@@ -290,7 +312,8 @@ The result is a list of candidates. These limits apply, and a report of the resu
 them:
 
 - Uses that leave no trace in the build products are not in the store: a `simp` call that
-  tries a lemma and fails, unfolding by the kernel, a lemma that `simp` uses by `rfl`.
+  tries a lemma and fails, unfolding by the kernel, a lemma that `simp` uses by `rfl`, a
+  name in a tactic quotation that Lean does not record as a usage.
   Attribute membership is such a use too: a theorem with `@[simp]` can have many users
   through the `simp` set. The text of the candidate shows its attributes.
 - A use in a file outside the snapshot (a test tree that was not selected, another
@@ -303,7 +326,7 @@ A candidate becomes a refactoring only when the edit builds.
 | Column | Reason |
 | --- | --- |
 | Snapshot label, commit, branch, host | No query of the first refactoring needs them. `project` and `created_at` identify a snapshot for a person. |
-| File module name, import list, text hash | They are inputs of `file_key`. The command has them locally. |
+| File import list, text hash | They are inputs of `file_key`. The command has them locally. The module name is a column, because the target of a relationship is identified by module and name. |
 | File Lean version, extractor version | Inputs of `file_key`. A later column can expose them when a query must separate versions. |
 | File line counts | Not needed for the first refactoring. |
 | Declaration lines and columns | The text is stored. Positions change with each edit above the declaration and would defeat the reuse of rows in a later design. |

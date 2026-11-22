@@ -20,7 +20,7 @@ relationship.
 | 4. Replacement and alias | `implemented_by`, `csimp`, `extern`, `export`, `alias`, `deprecated`, `to_additive` | Environment extensions |
 | 5. Use without a trace | Unfolding by the kernel or by `decide`; coercions that were unfolded; a lemma that `simp` tried without success; a lemma that `simp` used by `rfl` | Nothing after the build. Partly visible in info trees. |
 | 6. Use during elaboration | Notations, macros, elaborators, tactics, `deriving` handlers, commands that set context | Info trees, which need a second elaboration of the file |
-| 7. Mention | A name in the source text, also in `example`, `#print`, `open`, and in documentation references that Lean checks | `.ilean` |
+| 7. Mention | A name in the source text, also in `example`, `#print`, `open`, and in documentation references that Lean checks | `.ilean`, for the usages that Lean records. A name in a tactic quotation is not recorded. |
 | 8. Import | Module imports another module | The file header; `.ilean` |
 
 ## Our build products
