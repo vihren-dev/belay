@@ -1,6 +1,6 @@
 # ADR 0032: A store of Lean declarations and their relationships for continuous refactoring
 
-Date: 2026-11-22. Status: PROPOSED. Owner decisions 1 to 4 are open.
+Date: 2026-11-22. Status: PROPOSED. Owner decisions 1 to 5 are open.
 Audience: designers and reviewers.
 Related: [ADR 0028](adr-0028-development-observability.md) (the ClickHouse service and its
 conventions), [the theorem dependency report](../development/theorem-dependencies.md) (the
@@ -24,10 +24,11 @@ The present problem has this evidence:
   ([status record](../../plans/20261110-ownership-reorganization.status.md)). A new
   refactoring starts again from nothing.
 - The simplification goal needs many small removals. A local run of the dependency exporter
-  on 2026-11-11 (37,460 constants in 1,187 modules; tests excluded) gave these upper bounds
-  for project theorems: 5,344 theorems, 2,429 without a user in the selected scope and 1,939
-  with exactly one user. The counts include generated constants, and no check accepted the
-  run, so they show only that the question is worth an exact answer.
+  on 2026-11-11 (37,460 constants in 1,187 modules; tests excluded) gave these counts in the
+  exporter's graph of constants: 5,344 project theorems, 2,429 without a user in the selected
+  scope and 1,939 with exactly one user. The graph includes generated constants, and no check
+  accepted the run. The counts are not the result of the design below; they show only that
+  the question is worth an exact answer.
 
 This ADR decides what the store contains, how one version of a file is identified, and which
 sources supply the data. It does not decide how a refactoring is executed. An inlining edit
@@ -53,18 +54,23 @@ conformance evidence or in any claim.
 
 ## D1. Snapshots do not depend on commits
 
-A command creates a snapshot: an identifier, a project label and the list of the Lean source
-files of the working tree with one key for each file. A snapshot can describe a tree with
-changes that are not committed. A commit identifier is not part of the schema.
+A command creates a snapshot: an identifier, a project label and a list of Lean source files
+with one key for each file. The files are the sources of a selection of modules that the
+command built in the working tree. The default selection is the selection of the dependency
+report: the library trees of the packages. Test and experiment trees are in a snapshot only
+when the selection names them. A selected source without its build products makes the
+command fail. A snapshot can describe a tree with changes that are not committed. A commit
+identifier is not part of the schema.
 
 Reason: the question "what is used once now" is about a tree. A refactoring session changes
 the tree many times before it commits.
 
-## D2. A file version is identified by its text and by the versions of its imports
+## D2. A file version is identified by its text, its build products and the versions of its imports
 
 The key of a file version is a SHA-256 over: the extractor version, the Lean version, the
-module name, the file text, and the keys of the files that it imports directly. The command
-extracts only the file versions whose key the store does not contain.
+module name, the file text, the build products that the extractor reads for the file, and
+the keys of the files that it imports directly. The command extracts only the file versions
+whose key the store does not contain.
 
 The text alone is not sufficient, because the same text can elaborate to different
 declarations when an import changes:
@@ -83,6 +89,10 @@ end Shop
 
 A proof by `simp` gives the same problem: its proof term changes when an imported file adds a
 `simp` lemma.
+
+The build products are in the key because elaboration can read inputs that are not Lean
+files. In this repository, `sql_module` reads an SQL file and generates declarations from
+it. A change to that SQL file changes the build products and no other key input.
 
 Consequence: a change to a file gives new keys to all files that import it, directly or
 through other files, and the extractor reads them again. This is the same set that Lake
@@ -129,7 +139,7 @@ were rows, each count of users would need a join to fold them.
 
 Limit: no function in Lean core maps a generated constant to its parent. The extractor uses
 the rule of `import-graph` (final name component starts with `_`, the prefix is a
-declaration, the constant has no source range) and Lean's own tables for structures and
+constant, the constant has no source range) and Lean's own tables for structures and
 inductive types. The specification states the rule. This decision is open (owner decision 1).
 
 ## D7. Relationships have an open list of kinds; the first extractor supplies the cheap ones
@@ -168,8 +178,10 @@ tools for the execution of a refactoring, not for extraction.
 
 ## Consequences
 
-- The command needs a completed build of the tree, because the two sources are build
-  products. A snapshot of a tree that does not build is not possible.
+- The command needs a completed build of the selected modules, because the two sources are
+  build products. A snapshot of a tree that does not build is not possible.
+- A use in a file outside the selection is not in the snapshot. A declaration with one user
+  in the library trees can have more users in a test tree.
 - After a change to a file with many importers, the extractor reads many files again. It
   writes few new texts (D3).
 - A change of the extractor version reads all files again.
@@ -186,6 +198,10 @@ tools for the execution of a refactoring, not for extraction.
   refactoring.
 - **Key = SHA-256 of the file text only.** Fewer extractions, but wrong data in the cases of
   D2, without a signal.
+- **Key without the keys of the imports.** The build products of a file contain all that the
+  extractor reads from the file, so the keys of the imports are possibly not necessary. Then
+  an edit gives new keys only to the files whose build products change. This is owner
+  decision 5.
 - **Text in the declaration row.** Simple, but D2 would write each text again for each new
   key.
 - **Team and division columns.** Rejected by the owner (D4): the path is sufficient, and the
@@ -228,11 +244,17 @@ Open:
 1. **Generated constants.** (a) Fold them into the written declaration (D6). (b) Store them
    as rows with a parent column. Recommendation: (a).
 2. **Database.** (a) A new database `lean_code` on the ClickHouse service of ADR 0028, with
-   the same credentials. (b) Tables in `belay_observability`. (c) Another service.
-   Recommendation: (a).
+   the same uploader identity. (b) Tables in `belay_observability`. (c) Another service.
+   Recommendation: (a). Its prerequisite: the
+   [devops handoff](../records/observability-devops-handoff.md) asks for rights on
+   `belay_observability` only, so the uploader identity needs the same rights on `lean_code`.
 3. **Extractors.** (a) Our extractor on the exporter and `.ilean`, no new dependency (D8).
    (b) Adopt jixia and follow its Lean pin. Recommendation: (a).
 4. **Dependency versions in the key.** (a) Add the SHA-256 of each package's
    `lake-manifest.json` to the key input, so that a dependency upgrade gives new keys.
    (b) Leave it out until third-party files are in snapshots. Recommendation: (a); it costs
    one more input and removes a silent error.
+5. **Keys of the imports in the key.** (a) Keep them (D2). (b) Remove them and rely on the
+   build products of the file. Recommendation: (a) for the first version. The folding of D6
+   reads facts about imported constants, and no measurement shows that the additional
+   extractions are a problem. Decide again with a measurement of the extraction time.

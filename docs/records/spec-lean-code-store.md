@@ -53,8 +53,7 @@ ORDER BY (snapshot_id, source_path);
 -- One row for each file version whose extraction is complete. Written last for its file.
 CREATE TABLE lean_code.files
 (
-    file_key     FixedString(64),
-    processed_at DateTime64(6, 'UTC')
+    file_key FixedString(64)
 )
 ENGINE = ReplacingMergeTree
 ORDER BY file_key;
@@ -98,15 +97,19 @@ Column rules:
 
 - `source_path` is relative to the root of the project, with `/` as separator.
 - `file_key` and `text_sha256` are lowercase hexadecimal SHA-256 values.
-- `name` is the full name of the declaration. A private declaration keeps the name that the
-  user wrote, without Lean's private prefix. Two private declarations with the same name in
-  different files are different rows, because the file key differs.
+- `name`, `user_name` and `target_name` are exact kernel names. A private declaration keeps
+  Lean's private prefix, which contains the module name, so two private declarations with
+  the same written name in different files have different names. A report removes the prefix
+  for display only.
 - `entities.kind` is one of `definition`, `theorem`, `structure`, `inductive`, `class`,
   `instance`, `axiom`, `opaque`. The list can grow.
 - `text` is the source text of the full range of the declaration. The range includes the
   docstring, the attributes and the modifiers.
-- `user_name` is a declaration of the file version. It is empty for a mention that no
-  declaration contains, for example in an `example`, an `attribute` command or `#print`.
+- `user_name` is a declaration of the file version, or empty. It is empty for a use that no
+  declaration of `entities` contains, for example in an `example`, an `attribute` command or
+  `#print`. Lean 4.34.1 gives the usages of an anonymous `example` a container name
+  (`_example`). The extractor writes the empty name for each container that is not a
+  declaration after the folding of generated constants.
 - `target_name` is a name only. It can be a declaration of another file of the project, or a
   constant of Lean's library or of a third-party package, which has no row in `entities`. A
   query resolves it in the files of one snapshot.
@@ -125,6 +128,7 @@ file_key = sha256(
     lean_version LF
     module_name LF
     sha256(file text) LF
+    sha256(build product 1) LF ... sha256(build product m) LF
     key(import 1) LF ... key(import n) LF )
 ```
 
@@ -138,50 +142,65 @@ file_key = sha256(
 - `extractor_version` is a string in the extractor source. Each change to what the extractor
   writes changes it.
 - `lean_version` is the output of `lean --version` of the toolchain that built the tree.
+- The build products are the files that the extractor reads for the module: the `.ilean`
+  file and each `.olean` part that Lake wrote for the module, sorted by file name. They make
+  the key change when elaboration read an input that is not a Lean file, for example the SQL
+  file of `sql_module`.
 
-The command reads the imports from the header of each source file. It must not read them
-from a build product, because the key must be known before the command reads build products.
+Owner decision 5 of the ADR can remove the keys of the imports from this input.
 
 ## Sources
 
-The extractor reads build products of the same tree. It does not elaborate a file.
+The command first builds the selected modules and stops if the build fails. The extractor
+then reads the build products of that build. It does not elaborate a file. The command does
+not compare file times: only the completed build shows that the products belong to the
+sources.
 
 | Data | Source |
 | --- | --- |
-| Declarations and their full ranges | `.ilean`, key `decls` |
+| Declarations and their full ranges | The constants of the module in the compiled environment, with Lean's declaration ranges |
 | Text | The source file, cut at the full range |
-| `entities.kind` | The exporter (the kind of the constant, with structure, class and instance information from the environment) |
-| `type`, `body` | The exporter (`typeReferences`, `bodyReferences`) |
+| `entities.kind` | The kernel kind of the constant, refined with Lean's structure, class and instance tables |
+| `type`, `body` | The constants in the elaborated type and value (`typeReferences`, `bodyReferences` of the exporter) |
 | `mention` | `.ilean`, key `references`: each usage names the declaration that contains it |
-| `extends`, `instance_of` | The exporter, from Lean's structure and instance tables |
+| `extends`, `instance_of` | Lean's structure and instance tables |
 
-The exporter of the repository (`tools/theorem_dependency_exporter.lean`) writes the first
-three exporter items for a selected set of modules. It does not write `extends` and
-`instance_of`, and it does not fold generated constants. The extractor needs these additions.
+The `decls` of the `.ilean` file are not the list of declarations: for example, they do not
+contain the mutual inductive type `Belay.Sqlite.Model.Resolved.Arguments`, which the
+environment has with its range.
 
-The command must refuse a file whose build products are older than its source, because the
-key is computed from the source.
+The exporter of the repository (`tools/theorem_dependency_exporter.lean`) supplies today,
+for a selected set of modules: the constants, their kernel kinds (a structure and a class
+are `inductive`, an instance is `definition`), their selection ranges, and the constants of
+type and body. The extractor needs these additions: full declaration ranges; the kinds
+`structure`, `class` and `instance`; `extends` and `instance_of`; the folding of generated
+constants.
 
 ## Generated constants
 
 This section implements ADR D6, which is owner decision 1.
 
-A constant `c` of a module is a declaration if the `decls` of the `.ilean` file contain it
-with a range, and it is not generated by the rules below. Each other constant has a parent:
+The extractor applies these rules to each constant of a module, in this order. The first
+rule that applies decides.
 
 1. Constructors, recursors, projections and the other constants that Lean's inductive and
-   structure tables give for a type: the parent is the type.
-2. A constant whose final name component starts with `_` (for example `_proof_1`,
-   `_sunfold`, `_cstage1`), or is a match function (`match_1`), or an equation lemma
-   (`eq_1`, `eq_def`), when the name without that component is a constant: the parent is
-   that constant, after the same rule is applied to it.
-3. An instance or another constant that a `deriving` clause produced: the parent is the type
-   of the clause. Its range is inside the range of the type.
+   structure tables give for a type are generated. The parent is the type.
+2. A constant whose declaration range is inside the full range of a type of the same file
+   and that is not written there with its own name is generated by a `deriving` clause of
+   the type. The parent is the type.
+3. Each other constant with a declaration range is a declaration. This includes a written
+   declaration with a name such as `Foo._helper`, and the instance of a `deriving instance`
+   command, which can be in another file than its type. The text of such an instance is the
+   command.
+4. A constant without a declaration range whose final name component starts with `_` (for
+   example `_proof_1`, `_sunfold`), or is a match function (`match_1`) or an equation lemma
+   (`eq_1`, `eq_def`), is generated when the name without that component is a constant. The
+   parent is that constant, after these rules are applied to it.
 
-Rule 2 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
+Rule 4 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
 `Environment.isAutoDecl` of Batteries. The extractor copies them with their source named.
 
-A constant with no parent by these rules, and with no range, is written to the extractor's
+A constant to which no rule applies is written to the extractor's
 log and is left out. The count of such constants is part of the command's output, so that a
 gap in the rules is visible.
 
@@ -203,7 +222,8 @@ For the snapshot:
 5. Insert the rows of `snapshot_files`.
 6. Insert the row of `snapshots`.
 
-A reader uses only snapshots that have a row in `snapshots`. Steps 4 and 6 make each level
+A reader uses only snapshots that have a row in `snapshots`. The command uses a file
+version as complete only when it has a row in `files`. Steps 4 and 6 make each level
 complete before a reader can see it. An interrupted command leaves rows without a `files`
 row; the next command writes them again, and the engine removes the copies.
 
@@ -214,32 +234,37 @@ WITH files AS
 (
     SELECT file_key
     FROM lean_code.snapshot_files FINAL
-    WHERE snapshot_id = {snapshot:UUID}
+    WHERE snapshot_id IN
+        (SELECT snapshot_id FROM lean_code.snapshots FINAL WHERE snapshot_id = {snapshot:UUID})
+),
+declarations AS
+(
+    SELECT name, kind
+    FROM lean_code.entities FINAL
+    WHERE file_key IN files
 )
 SELECT
     r.target_name,
-    any(r.user_name) AS only_user
+    any(d.kind) AS target_kind,
+    anyIf(r.user_name, r.user_name != '') AS only_user,
+    countIf(r.kind = 'type') > 0 AS used_in_a_type
 FROM lean_code.entity_references AS r FINAL
+INNER JOIN declarations AS d ON d.name = r.target_name
 WHERE r.file_key IN files
-  AND r.user_name != ''
-  AND r.target_name IN
-      (
-          SELECT name
-          FROM lean_code.entities FINAL
-          WHERE file_key IN files AND kind = 'theorem'
-      )
 GROUP BY r.target_name
-HAVING uniqExact(r.user_name) = 1
-   AND countIf(r.kind = 'type') = 0;
+HAVING uniqExactIf(r.user_name, r.user_name != '') = 1
+   AND countIf(r.user_name = '') = 0;
 ```
 
-The result is a list of candidates. These limits apply, and the result of the query must say
+The query counts the users of each declaration over all relationship kinds. It returns no
+row for a snapshot without a row in `snapshots`. A target with a use outside all
+declarations (empty `user_name`) is not a candidate. The columns `target_kind` and
+`used_in_a_type` let a person narrow the result, for example to theorems that only a proof
+uses.
+
+The result is a list of candidates. These limits apply, and a report of the result must say
 them:
 
-- A mention with an empty `user_name` is a use. The query above ignores it; a second query
-  must exclude targets that have such a mention.
-- A private name that two files declare is one name in this query. The query must then
-  compare the file of the target with the file of the user.
 - Uses that leave no trace in the build products are not in the store: a `simp` call that
   tries a lemma and fails, unfolding by the kernel, a lemma that `simp` uses by `rfl`.
   Attribute membership is such a use too: a theorem with `@[simp]` can have many users
@@ -259,7 +284,8 @@ A candidate becomes a refactoring only when the edit builds.
 | File line counts | Not needed for the first refactoring. |
 | Declaration lines and columns | The text is stored. Positions change with each edit above the declaration and would defeat the reuse of rows in a later design. |
 | Docstring as its own column or hash | It is part of the text. |
-| Private flag | The text shows it. |
+| Private flag | The name and the text show it. |
+| Time of extraction of a file version | No query reads it. The row in `files` is the completion mark. |
 | Generated flag, parent name | Not needed with ADR D6. With option (b) of owner decision 1 they return. |
 | Attributes | ADR D7: a later table `entity_attributes (file_key, name, attribute)`. |
 | Team, division, package | ADR D4: derived from `source_path`. |

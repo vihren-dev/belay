@@ -1,0 +1,158 @@
+{
+  "caller": "claude",
+  "commit": "56ed0c51fc3758f38a871cf949bcf91c837ed594",
+  "date": "2026-11-22T12:11:30+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr/adr-0032-lean-code-store.md",
+    "docs/records/lean-relationship-extraction-findings.md",
+    "docs/records/spec-lean-code-store.md"
+  ],
+  "findings": [
+    {
+      "id": "20261122T121130Z-56ed0c51#1",
+      "line": 27,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 1,939 theorems with one user in the exporter output are not an upper bound on the proposed result, because two generated callers can fold into one written caller. Fix: describe the figures as counts in the original exporter graph."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#2",
+      "line": 56,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D1 includes every Lean source file in the working tree, but the cited build excludes separate test and experiment trees, and the specification explicitly permits an unselected test tree. Fix: define the snapshot by an explicit selection of built modules and require matching artifacts for every selected source."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#3",
+      "line": 65,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The key can reuse obsolete relationships after a successful rebuild because changing the SQL read by `sql_module` can change the declarations it generates while every listed key input stays identical. Fix: include the identities of the matching `.olean` and `.ilean` artifacts in the key, including any split `.olean` parts the exporter reads."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#4",
+      "line": 230,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The recommended database option assumes the ADR 0028 credentials can create and populate `lean_code`, but the devops handoff grants access specifically to `belay_observability`. Fix: make grants for `lean_code` an explicit prerequisite of option (a)."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#5",
+      "line": 38,
+      "path": "docs/records/lean-relationship-extraction-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record says collecting proof info trees requires disabling `Elab.async`, but Lean 4.34.1’s own frontend collects them from completed snapshots with `snaps.getAll`. Fix: say that a collector must await the proof snapshots if it keeps asynchronous elaboration enabled."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#6",
+      "line": 57,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "No specified query or completion check reads `processed_at`, contrary to D5’s requirement that each column serve incremental extraction or the single-use query. Fix: remove `processed_at` and use the presence of the `file_key` row as the completion marker."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#7",
+      "line": 101,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Stripping private prefixes loses declaration identity, so two private callers with the same display name can make `uniqExact(r.user_name)` report one user even when the target is public. Fix: retain exact kernel names for both endpoints and strip private prefixes only for display."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#8",
+      "line": 109,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Lean 4.34.1 records a nonempty `_example` parent for references in anonymous examples, so copying the parent name bypasses the proposed empty-user exclusion and can count several examples as one caller. Fix: map references in anonymous examples to the empty-user marker by checking their source range against authored declarations."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#9",
+      "line": 151,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The `.ilean` `decls` map omits the written mutual inductive `Belay.Sqlite.Model.Resolved.Arguments`, although the compiled environment contains its full source range. Fix: enumerate module constants from the environment and match their declaration ranges against authored source declarators, as the public documentation inventory does."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#10",
+      "line": 158,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The existing exporter supplies kernel kinds only, so it reports an ordinary instance as `definition` and a structure or class as `inductive`, contrary to the stated coverage of `entities.kind`. Fix: list structure, class and instance classification among the required exporter additions."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#11",
+      "line": 162,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Comparing a product’s timestamp with its own source accepts an unchanged importer’s stale product after an import changes and rejects valid products after a timestamp-only `touch`. Fix: require a successful build of the selected modules against the snapshot inputs and extract from that build."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#12",
+      "line": 174,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Rule 2 omits the ADR’s no-source-range condition, so it folds a written declaration such as `Foo._helper` whenever `Foo` is also a constant. Fix: apply the name heuristic only after ruling out an authored declaration at that range."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#13",
+      "line": 179,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The range of a derived instance need not be inside the type’s range, as `Tree.lean` derives `Inhabited` for `ParseNode` imported from another module. Fix: distinguish an inline `deriving` clause from a standalone `deriving instance` command and attribute the latter’s generated constants to the command in its own file."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#14",
+      "line": 216,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The query reads `snapshot_files` without checking `snapshots`, so a command interrupted between steps 5 and 6 can return results for a snapshot the write protocol marks incomplete. Fix: require a matching completion row in `snapshots` when selecting the file keys."
+    },
+    {
+      "id": "20261122T121130Z-56ed0c51#15",
+      "line": 229,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The query omits single-use definitions and theorems used in their caller’s type, although the ADR asks to find each declaration with exactly one other declaration as a user. Fix: count distinct callers across all entity and reference kinds, then apply theorem-only or body-only filters as optional refinements."
+    }
+  ],
+  "id": "20261122T121130Z-56ed0c51",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
