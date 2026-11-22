@@ -1,0 +1,150 @@
+{
+  "caller": "claude",
+  "commit": "1de3037940b296cd45c713be9e44645acc67414e",
+  "date": "2026-11-22T12:16:55+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr/adr-0032-lean-code-store.md",
+    "docs/records/lean-relationship-extraction-findings.md",
+    "docs/records/spec-lean-code-store.md",
+    "reviews/20261122T121130Z-56ed0c51/resolution-1-20261122T121304Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-10-20261122T121308Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-11-20261122T121308Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-12-20261122T121309Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-13-20261122T121309Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-14-20261122T121310Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-15-20261122T121310Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-2-20261122T121304Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-3-20261122T121304Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-4-20261122T121305Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-5-20261122T121305Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-6-20261122T121306Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-7-20261122T121306Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-8-20261122T121307Z.json",
+    "reviews/20261122T121130Z-56ed0c51/resolution-9-20261122T121307Z.json",
+    "reviews/20261122T121130Z-56ed0c51/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261122T121655Z-1de30379#1",
+      "line": 28,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The matching 37,460-constant export contains 17,439 project constants of kind `theorem`, and 5,344 is the count after excluding those marked `internal`. Fix: state the target and caller filters used for all three reported counts."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#2",
+      "line": 47,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The ADR says `.ilean` contains the range of every declaration, but the revised specification identifies `Belay.Sqlite.Model.Resolved.Arguments` as a written declaration missing from `decls`. Fix: describe `decls` as partial and identify the compiled environment as the source of declaration ranges."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#3",
+      "line": 59,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D1 limits snapshots to selected modules, while the recorded owner decision at line 234 says the command hashes all Lean files. Fix: mark the selection rule as a proposed amendment to the dated owner decision or record when the owner approved it."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#4",
+      "line": 182,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The ADR says a tree that fails to build cannot yield a snapshot, although D1 allows a snapshot when an unselected test module fails and all selected modules build. Fix: limit the failure condition to the build of the selected modules."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#5",
+      "line": 226,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The ADR says a third-party upgrade leaves project file keys unchanged, although D2 now changes a key whenever the upgrade changes a hashed build product. Fix: limit the remaining risk to changes in imported data that affect extraction while the selected module’s products stay identical."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#6",
+      "line": 111,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Treating a missing `.ilean` container as an outside use misclassifies the checked `Span.isName` reference in the docstring of `nameSpanOf`, so the query excludes a target even when that declaration is its only user. Fix: resolve missing containers against authored declaration ranges before assigning the empty user name."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#7",
+      "line": 138,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "An explicit selection can omit a first-party import, in which case its key is only its module name even though folding reads its declaration ranges and can change the stored target without changing the importer’s products. Fix: include the identity of imported data used for folding regardless of whether the imported module has a row in the snapshot."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#8",
+      "line": 156,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "A successful incremental Lake build can reuse stale `sql_module` products after an SQL edit when the library omits that file from its `needs`. Fix: require the SQL input to participate in the build trace or verify the compiled SQL source record against disk before accepting the snapshot."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#9",
+      "line": 174,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The exporter can report an instance as `theorem`, as it does for `Belay.Sqlite.instLawfulMonadSql`, so `definition` is not the kernel kind of every instance. Fix: state that instance classification uses Lean’s instance table independently of kernel kind."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#10",
+      "line": 191,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Rule 3 treats every remaining ranged constant as authored, but Lean 4.34.1 gives both the instance and its generated `repr` helper a range for a standalone `deriving instance Repr` command. Fix: recognize the instance produced by the command and fold its generated helper into that instance before applying rule 3."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#11",
+      "line": 193,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Cutting the compiled range for `instInhabitedParseNode` yields only `Inhabited`, although rule 3 requires the text of the entire standalone `deriving instance` command. Fix: use the enclosing source command’s range when extracting text for a standalone derived instance."
+    },
+    {
+      "id": "20261122T121655Z-1de30379#12",
+      "line": 262,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "A theorem mentioned only in a definition’s checked docstring has `target_kind = 'theorem'` and `used_in_a_type = false`, so those columns cannot identify theorems used only by a proof. Fix: describe the filter as selecting theorem targets with no recorded `type` edge."
+    }
+  ],
+  "id": "20261122T121655Z-1de30379",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

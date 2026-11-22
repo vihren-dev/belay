@@ -33,7 +33,7 @@ relationship.
   keys are `module`, `version`, `directImports`, `decls` and `references`. `decls` maps a
   name to its full range and its selection range. The full range starts at the docstring.
   `references` maps a constant to its definition position and to a list of usages; each
-  usage has a range and the name of the declaration that contains it.
+  usage has a range and, for most usages, the name of the constant that contains it.
 - Info trees are not written to a file. A program must elaborate the file again and collect
   them. With asynchronous elaboration, the trees of proofs arrive in later snapshots: the
   program must wait for them, as Lean's own frontend does, or set `Elab.async` to `false`.

@@ -1,6 +1,6 @@
 # ADR 0032: A store of Lean declarations and their relationships for continuous refactoring
 
-Date: 2026-11-22. Status: PROPOSED. Owner decisions 1 to 5 are open.
+Date: 2026-11-22. Status: PROPOSED. Owner decisions 1 to 6 are open.
 Audience: designers and reviewers.
 Related: [ADR 0028](adr-0028-development-observability.md) (the ClickHouse service and its
 conventions), [the theorem dependency report](../development/theorem-dependencies.md) (the
@@ -24,11 +24,12 @@ The present problem has this evidence:
   ([status record](../../plans/20261110-ownership-reorganization.status.md)). A new
   refactoring starts again from nothing.
 - The simplification goal needs many small removals. A local run of the dependency exporter
-  on 2026-11-11 (37,460 constants in 1,187 modules; tests excluded) gave these counts in the
-  exporter's graph of constants: 5,344 project theorems, 2,429 without a user in the selected
-  scope and 1,939 with exactly one user. The graph includes generated constants, and no check
-  accepted the run. The counts are not the result of the design below; they show only that
-  the question is worth an exact answer.
+  on 2026-11-11 gave 37,460 constants in 1,187 modules; tests were not selected. Of these,
+  5,344 are theorems that the exporter does not mark as internal. For 2,429 of them, no
+  other constant of the export has them in its type or body. For 1,939, exactly one other
+  constant has. The users in these counts include generated and internal constants, and no
+  check accepted the run. The counts are not the result of the design below; they show only
+  that the question is worth an exact answer.
 
 This ADR decides what the store contains, how one version of a file is identified, and which
 sources supply the data. It does not decide how a refactoring is executed. An inlining edit
@@ -44,9 +45,10 @@ conformance evidence or in any claim.
   modules and writes for each constant its name, module, kind, source selection and the
   constants in its type and in its body.
 - Lake writes one `.ilean` file for each module that it builds. With Lean 4.34.1 (format
-  version 5) the file contains the source range of each declaration, and for each name that
-  the source text mentions: the position of each mention and the declaration that contains
-  the mention. It also contains the direct imports.
+  version 5) the file contains, for each name that the source text mentions, the position of
+  each mention. It also contains the direct imports and the source ranges of declarations.
+  This list of declarations is not complete; the compiled environment is the source of the
+  declaration ranges (see the specification).
 - ADR 0028 defines the ClickHouse service, its credentials, and the conventions
   `ReplacingMergeTree` and deduplicating reads. Its database `belay_observability` contains
   execution data only.
@@ -55,12 +57,16 @@ conformance evidence or in any claim.
 ## D1. Snapshots do not depend on commits
 
 A command creates a snapshot: an identifier, a project label and a list of Lean source files
-with one key for each file. The files are the sources of a selection of modules that the
-command built in the working tree. The default selection is the selection of the dependency
-report: the library trees of the packages. Test and experiment trees are in a snapshot only
-when the selection names them. A selected source without its build products makes the
-command fail. A snapshot can describe a tree with changes that are not committed. A commit
-identifier is not part of the schema.
+with one key for each file. A snapshot can describe a tree with changes that are not
+committed. A commit identifier is not part of the schema.
+
+The owner's decision was that the command hashes all Lean files. This ADR proposes a
+narrower rule, which is owner decision 6: the files are the sources of a selection of
+modules that the command built in the working tree. The extractor reads build products, and
+the build of the repository's packages does not cover each Lean file of the tree (test and
+experiment trees are separate). The default selection is the selection of the dependency
+report: the library trees of the packages. A selected source without its build products
+makes the command fail.
 
 Reason: the question "what is used once now" is about a tree. A refactoring session changes
 the tree many times before it commits.
@@ -179,7 +185,7 @@ tools for the execution of a refactoring, not for extraction.
 ## Consequences
 
 - The command needs a completed build of the selected modules, because the two sources are
-  build products. A snapshot of a tree that does not build is not possible.
+  build products. A snapshot is not possible when a selected module does not build.
 - A use in a file outside the selection is not in the snapshot. A declaration with one user
   in the library trees can have more users in a test tree.
 - After a change to a file with many importers, the extractor reads many files again. It
@@ -223,7 +229,9 @@ tools for the execution of a refactoring, not for extraction.
 - When the command runs (by hand, in CI, after each build) and how long it takes. No
   measurement exists.
 - Third-party packages: if their files are part of a snapshot. Until then, a change of a
-  dependency version does not change the keys of our files (see owner decision 4).
+  dependency version changes the key of a file only when it changes the build products of
+  that file. The extractor also reads facts about imported constants for the folding of D6,
+  and those can change while the products stay the same (see owner decision 4).
 - The table for attribute membership and the extraction from info trees.
 - Retention of old snapshots and file versions.
 
@@ -258,3 +266,8 @@ Open:
    build products of the file. Recommendation: (a) for the first version. The folding of D6
    reads facts about imported constants, and no measurement shows that the additional
    extractions are a problem. Decide again with a measurement of the extraction time.
+6. **Files of a snapshot.** (a) The sources of a selection of built modules; the default is
+   the library trees (D1). (b) All Lean files of the tree, as in the design discussion; the
+   command must then build the test and experiment trees too. Recommendation: (a), with a
+   selection that adds the test trees for the inlining query, because a test can be the
+   second user of a declaration.

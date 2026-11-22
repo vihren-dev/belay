@@ -107,9 +107,10 @@ Column rules:
   docstring, the attributes and the modifiers.
 - `user_name` is a declaration of the file version, or empty. It is empty for a use that no
   declaration of `entities` contains, for example in an `example`, an `attribute` command or
-  `#print`. Lean 4.34.1 gives the usages of an anonymous `example` a container name
-  (`_example`). The extractor writes the empty name for each container that is not a
-  declaration after the folding of generated constants.
+  `#print`. For a `mention`, the extractor finds the user by position: the user is the
+  declaration whose full range contains the position of the usage. The container name that
+  the `.ilean` file gives is not used, because it is absent for a usage in a docstring and
+  is a generated name (`_example`) for an anonymous `example`.
 - `target_name` is a name only. It can be a declaration of another file of the project, or a
   constant of Lean's library or of a third-party package, which has no row in `entities`. A
   query resolves it in the files of one snapshot.
@@ -135,8 +136,10 @@ file_key = sha256(
 - The imports are the direct imports of the file, sorted by module name.
 - For an import that is a source file of the snapshot, `key` is its `file_key`. The import
   graph has no cycle, so the keys are computed in dependency order.
-- For another import (Lean's library, a third-party package), `key` is the module name.
-  `lean_version` identifies Lean's library. Third-party versions are owner decision 4 of the
+- The selection must contain each imported module of the project's own packages. The
+  command fails when an import of such a module is not selected. Then each import outside
+  the snapshot is a module of Lean's library or of a third-party package.
+- For such an import, `key` is the module name. `lean_version` identifies Lean's library. Third-party versions are owner decision 4 of the
   ADR: with option (a), the SHA-256 of the `lake-manifest.json` of the file's package is one
   more line after `lean_version`.
 - `extractor_version` is a string in the extractor source. Each change to what the extractor
@@ -156,13 +159,19 @@ then reads the build products of that build. It does not elaborate a file. The c
 not compare file times: only the completed build shows that the products belong to the
 sources.
 
+Limit: the store is as correct as the build. If elaboration reads a file that is not in
+Lake's trace of the module, Lake can use an old product after a change to that file, and the
+store then has the old data. This document does not establish if the SQL files of
+`sql_module` are in the trace of each library. The implementation task must check this and
+record the result.
+
 | Data | Source |
 | --- | --- |
 | Declarations and their full ranges | The constants of the module in the compiled environment, with Lean's declaration ranges |
 | Text | The source file, cut at the full range |
-| `entities.kind` | The kernel kind of the constant, refined with Lean's structure, class and instance tables |
+| `entities.kind` | The kernel kind of the constant. Lean's structure, class and instance tables replace it: a constant in the instance table is `instance`, also when its kernel kind is `theorem`. |
 | `type`, `body` | The constants in the elaborated type and value (`typeReferences`, `bodyReferences` of the exporter) |
-| `mention` | `.ilean`, key `references`: each usage names the declaration that contains it |
+| `mention` | `.ilean`, key `references`: the positions of the usages of each name. The user is found by position (see "Column rules"). |
 | `extends`, `instance_of` | Lean's structure and instance tables |
 
 The `decls` of the `.ilean` file are not the list of declarations: for example, they do not
@@ -171,8 +180,8 @@ environment has with its range.
 
 The exporter of the repository (`tools/theorem_dependency_exporter.lean`) supplies today,
 for a selected set of modules: the constants, their kernel kinds (a structure and a class
-are `inductive`, an instance is `definition`), their selection ranges, and the constants of
-type and body. The extractor needs these additions: full declaration ranges; the kinds
+are `inductive`, an instance is `definition` or `theorem`), their selection ranges, and the
+constants of type and body. The extractor needs these additions: full declaration ranges; the kinds
 `structure`, `class` and `instance`; `extends` and `instance_of`; the folding of generated
 constants.
 
@@ -180,24 +189,39 @@ constants.
 
 This section implements ADR D6, which is owner decision 1.
 
-The extractor applies these rules to each constant of a module, in this order. The first
-rule that applies decides.
+Requirements:
+
+- Each constant of a selected module is a declaration, or has exactly one parent that is a
+  declaration, or is reported.
+- A declaration has text that a person wrote.
+
+The rules below are the starting point. They were not run. Lean gives ranges to some
+generated constants, and the ranges differ between kinds of commands, so the implementation
+task must check the rules on the default selection and add a fixture for each case.
+
+The extractor applies the rules to each constant of a module, in this order. The first rule
+that applies decides.
 
 1. Constructors, recursors, projections and the other constants that Lean's inductive and
    structure tables give for a type are generated. The parent is the type.
 2. A constant whose declaration range is inside the full range of a type of the same file
    and that is not written there with its own name is generated by a `deriving` clause of
    the type. The parent is the type.
-3. Each other constant with a declaration range is a declaration. This includes a written
-   declaration with a name such as `Foo._helper`, and the instance of a `deriving instance`
-   command, which can be in another file than its type. The text of such an instance is the
-   command.
-4. A constant without a declaration range whose final name component starts with `_` (for
+3. When more than one remaining constant has the same declaration range, and one of them is
+   in the instance table, that one is a declaration and the others are generated with it as
+   parent. This is the case of a `deriving instance` command, which can be in another file
+   than its type: Lean 4.34.1 gives the instance and its helper the same range.
+4. Each other constant with a declaration range is a declaration. This includes a written
+   declaration with a name such as `Foo._helper`.
+5. A constant without a declaration range whose final name component starts with `_` (for
    example `_proof_1`, `_sunfold`), or is a match function (`match_1`) or an equation lemma
    (`eq_1`, `eq_def`), is generated when the name without that component is a constant. The
    parent is that constant, after these rules are applied to it.
 
-Rule 4 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
+Known limit: for the instance of a `deriving instance` command, the declaration range is
+only the class name in the command, so the stored text is only that name.
+
+Rule 5 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
 `Environment.isAutoDecl` of Batteries. The extractor copies them with their source named.
 
 A constant to which no rule applies is written to the extractor's
@@ -259,8 +283,8 @@ HAVING uniqExactIf(r.user_name, r.user_name != '') = 1
 The query counts the users of each declaration over all relationship kinds. It returns no
 row for a snapshot without a row in `snapshots`. A target with a use outside all
 declarations (empty `user_name`) is not a candidate. The columns `target_kind` and
-`used_in_a_type` let a person narrow the result, for example to theorems that only a proof
-uses.
+`used_in_a_type` let a person narrow the result, for example to theorem targets with no
+recorded `type` relationship.
 
 The result is a list of candidates. These limits apply, and a report of the result must say
 them:
