@@ -163,9 +163,9 @@ file_key = sha256(
   writes changes it.
 - `lean_version` is the output of `lean --version` of the toolchain that built the tree.
 - The build products are the files that the extractor reads for the module: the `.ilean`
-  file and each `.olean` part that Lake wrote for the module, sorted by file name. They make
-  the key change when elaboration read an input that is not a Lean file, for example the SQL
-  file of `sql_module`.
+  file and each `.olean` part that Lake wrote for the module, sorted by file name. Elaboration can read an input that is not a Lean file, for example
+  the SQL file of `sql_module`. A change to such an input changes the key only when it
+  changes one of these products.
 
 Owner decision 5 of the ADR can remove the keys of the imports from this input.
 
@@ -184,10 +184,13 @@ a file version only when each SQL file that its elaboration read has, on disk, t
 that the build read. The record in the compiled module (`SqlSourceUse`) is not sufficient
 for this: it contains `sqlTextHash`, the hash after line endings are made the same, and a
 change of line endings inside an SQL string of more than one line changes the compiled
-value. The implementation needs a check of the bytes: the SQL file as an input of Lake's
-trace with `text = false`, so that Lake hashes the bytes (the repository's Lake template
-uses `text = true` for SQL inputs, which is not sufficient), or a hash of the bytes in the
-compiled record. Its task file says which. Another kind
+value. The implementation needs a check of the bytes of the file at each path that the
+module read. Two ways exist: a Lake `input_file` with `text = false` for each such path, or
+a hash of the bytes in the compiled record, which the command compares with the file at the
+recorded path. The repository's Lake template is not sufficient: it uses `text = true` for
+SQL inputs, and an `input_dir` hashes the contents of its files without their paths, so the
+trace can stay the same after a file gets a new name. The implementation's task file says
+which way it uses. Another kind
 of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
