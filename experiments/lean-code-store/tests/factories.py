@@ -7,13 +7,14 @@ from lean_code_store.facts import ConstantFacts, ModuleFacts, Range, Reference
 
 def constant(name: str, *, module: str = "M", kind: str = "definition", span: Range | None = None,
              selection: Range | None = None, table_parent: str | None = None,
-             instance: bool = False, references: tuple[Reference, ...] = ()) -> ConstantFacts:
+             instance: bool = False, references: tuple[Reference, ...] = (),
+             macro_scopes: bool = False) -> ConstantFacts:
     """A constant record with the given facts and no flags."""
     return ConstantFacts(
         name=name, module=module, kernel_kind=kind, range=span, selection=selection or span,
         table_parent=table_parent, is_structure=False, is_class=False, is_instance=instance,
         instance_class=None, parents=(), is_matcher=False, is_reserved=False, lean_auto_decl=False,
-        type_references=(), body_references=references)
+        has_macro_scopes=macro_scopes, type_references=(), body_references=references)
 
 
 def module(*constants: ConstantFacts, external: tuple[ConstantFacts, ...] = (),

@@ -15,3 +15,8 @@ attribute [simp] usesSecret
 
 /-- An `initialize` command: Lean adds a constant with a macro-scoped name and the same range. -/
 initialize counter : IO.Ref Nat ← IO.mkRef 0
+
+/-- A written definition that the next command makes an instance. -/
+def inhabitedPoint : Inhabited Point := ⟨⟨0, 0⟩⟩
+
+attribute [instance] inhabitedPoint

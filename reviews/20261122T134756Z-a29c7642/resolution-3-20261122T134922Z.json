@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-22T13:49:22+00:00",
+  "finding": "20261122T134756Z-a29c7642#3",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The boundaries of the command at elaboration need the syntax state of that command, which the build products do not keep; the specification states the limit, and the findings record lists it as an owner question. No case of the default selection was found: all 186 instances of a deriving instance command got a parsed command."
+}

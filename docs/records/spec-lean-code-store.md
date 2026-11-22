@@ -260,14 +260,15 @@ that applies decides.
    helper. With exactly one candidate, the helper is generated and the candidate is its
    parent. With no candidate or more than one, the helper is reported. The text after the
    rules gives the one case in which an instance of this rule is reported.
-4. A remaining constant with a declaration range and macro scopes in its name (`._@.`) is
-   generated, for example the `initFn` constant of an `initialize` command, which has the
-   range of the command. Its parent is the one remaining constant without macro scopes that
-   has the same range. With no such constant or more than one, it is reported. Each other
+4. A remaining constant with a declaration range whose kernel name has macro scopes
+   (`Name.hasMacroScopes`, for example `initFn._@.M._hyg.2`) is generated, for example the `initFn` constant of an `initialize` command, which has the
+   range of the command. Its parent is the one remaining constant whose name has no macro
+   scopes and that has the same range. With no such constant or more than one, it is reported. Each other
    constant with a declaration range is a declaration. This includes a written declaration
    with a name such as `Foo._helper`. It also includes each constant of a command that
    declares more than one constant with one range: `register_simp_attr arms` gives `arms`
-   and `arms_proc`, two declarations with the same text.
+   and `arms_proc`, two declarations with the same text, so the one command can count as two
+   users. Which of them is the written declaration is open.
 5. A constant without a declaration range is generated when the name without its final
    component is a constant. If it is not, and the name has Lean's private prefix, the name
    without the prefix is used: Lean gives an equation lemma or a splitter that it generates in
@@ -290,8 +291,11 @@ command parser and takes the `deriving instance` command that contains the decla
 range. A search of the source text is not sufficient: a comment can contain the words of the
 command, and a comment can be inside the command. The parser uses the environment at the
 end of the module, so a syntax extension that the file declares after the command can change
-how the command parses. An instance whose declaration range does not contain the `instance`
-keyword and that is in no parsed `deriving instance` command is reported. The fixture for
+how the command parses: it can find no command, or a command with other boundaries. An
+instance whose full range is its selection range, which is the case for the class name in a
+`deriving instance` command, and that is in no parsed `deriving instance` command is
+reported. A written definition that `attribute [instance]` makes an instance has a larger
+full range and stays a declaration. The fixture for
 this case checks the result.
 
 Rule 5 is wider than the rule `isDeclNeedsAutoDecl` of `import-graph`, which needs a final
@@ -300,7 +304,9 @@ more of these constants. The extractor can use the two as checks of rule 5.
 
 A constant to which no rule applies is written to the extractor's
 log and is left out. A generated constant whose parents end in a reported constant is
-reported too, with that cause. The count of such constants is part of the command's output, so that a
+reported too, with that cause. A relationship whose user is reported is left out. How the
+store keeps a relationship whose target is reported is open; the prototype keeps the
+target's kernel name and module. The count of such constants is part of the command's output, so that a
 gap in the rules is visible.
 
 The extractor replaces each generated constant by its parent at the two ends of each

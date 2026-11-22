@@ -2736,6 +2736,11 @@
     "hashPoint",
     "definition",
     "/-- Uses the derived `Hashable` instance of `Point`. -/\ndef hashPoint (p : Point) : UInt64 := hash p"
+   ],
+   [
+    "inhabitedPoint",
+    "instance",
+    "/-- A written definition that the next command makes an instance. -/\ndef inhabitedPoint : Inhabited Point := \u27e8\u27e80, 0\u27e9\u27e9"
    ]
   ],
   "fold": {
@@ -2778,6 +2783,10 @@
    "hashPoint": [
     "Fixture.Uses",
     "hashPoint"
+   ],
+   "inhabitedPoint": [
+    "Fixture.Uses",
+    "inhabitedPoint"
    ],
    "usesSecret.eq_1": [
     "Fixture.Types",
@@ -2959,6 +2968,13 @@
     "",
     "Fixture.Types",
     "usesSecret",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "",
+    "Fixture.Uses",
+    "inhabitedPoint",
     "mention"
    ],
    [
@@ -3268,6 +3284,76 @@
     "Init.Prelude",
     "UInt64",
     "type"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "Inhabited",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "Inhabited",
+    "instance_of"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "Inhabited",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "Inhabited",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "inhabitedPoint",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
    ]
   ]
  }

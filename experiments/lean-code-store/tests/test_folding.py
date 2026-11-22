@@ -95,10 +95,14 @@ def test_a_generated_constant_with_a_reported_parent_is_reported() -> None:
 
 
 def test_an_instance_of_an_unparsed_deriving_instance_command_is_reported() -> None:
-    """An instance whose range has no `instance` keyword and no parsed command is reported."""
-    facts = module(constant("instBEqColor", span=span(5, 18, 5, 21), instance=True))
-    assert decide_module(facts, SOURCE)["instBEqColor"] == Decision(
-        "reported", "deriving instance command not parsed")
+    """An instance whose full range is its selection range and that is in no parsed command is
+    reported; a `def` that `attribute [instance]` makes an instance stays a declaration."""
+    facts = module(constant("instBEqColor", span=span(5, 18, 5, 21), instance=True),
+                   constant("helperUser", span=span(4, 0, 4, 25), selection=span(4, 4, 4, 14),
+                            instance=True))
+    decisions = decide_module(facts, SOURCE)
+    assert decisions["instBEqColor"] == Decision("reported", "deriving instance command not parsed")
+    assert decisions["helperUser"] == Decision("declaration", "3")
 
 
 def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() -> None:
@@ -106,12 +110,14 @@ def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() ->
     constants of its range, as `register_simp_attr` gives, it is reported."""
     one, two = span(4, 0, 4, 25), span(1, 0, 3, 15)
     facts = module(constant("counter", kind="opaque", span=one),
-                   constant("_private.M.0.initFn._@.M.1._hygCtx._hyg.2", span=one),
+                   constant("_private.M.0.initFn._@.M.1._hygCtx._hyg.2", span=one, macro_scopes=True),
                    constant("arms", span=two), constant("arms_proc", span=two),
-                   constant("ext._@.M.1._hygCtx._hyg.3", span=two))
+                   constant("ext._@.M.1._hygCtx._hyg.3", span=two, macro_scopes=True),
+                   constant("«x._@.y»", span=span(4, 4, 4, 9)))
     decisions = decide_module(facts, SOURCE)
     assert decisions["_private.M.0.initFn._@.M.1._hygCtx._hyg.2"] == Decision(
         "generated", "4 macro scopes", "counter")
     assert decisions["ext._@.M.1._hygCtx._hyg.3"] == Decision(
         "reported", "macro scopes, several constants with the same range")
     assert decisions["arms_proc"] == Decision("declaration", "4")
+    assert decisions["«x._@.y»"] == Decision("declaration", "4")

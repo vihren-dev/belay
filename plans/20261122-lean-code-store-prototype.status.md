@@ -64,4 +64,11 @@ loaded.
   run of the matched build, not evidence: an edit of one file of the conformance package in a
   writable copy extracts 7 file versions, the file and its 6 importers, which are the modules
   that Lake rebuilt.
+- 2026-11-22: review fixes of the rule corrections: the fact reader gives
+  `Name.hasMacroScopes` of each name, and the macro-scope rule uses it; an instance is
+  reported as an unparsed `deriving instance` instance only when its full range is its
+  selection range, so a `def` that `attribute [instance]` makes an instance stays a
+  declaration (fixture `inhabitedPoint`). Extractor version 5. The specification states two
+  limits as open: `register_simp_attr` gives two declarations with one text, and a later
+  syntax extension can change the parsed command boundaries.
 

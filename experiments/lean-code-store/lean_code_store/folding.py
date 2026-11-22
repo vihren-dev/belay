@@ -9,20 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-import re
 
 from lean_code_store.facts import ConstantFacts, ModuleFacts, Range
 from lean_code_store.source import name_components, range_text, user_name
 
 Declaration = tuple[str, str]
 """A written declaration as `(module, name)`."""
-
-MACRO_SCOPES = re.compile(r"\._@\.")
-"""The marker of macro scopes in a Lean name, for example `initFn._@.M._hyg.2`."""
-
-INSTANCE_KEYWORD = re.compile(r"\binstance\b")
-"""The keyword of an `instance` command; the range of an instance of a `deriving instance`
-command is the class name only and does not contain it."""
 
 MAX_DEPTH = 64
 """Bound of a chain of parents; a longer chain is reported as a cycle."""
@@ -90,12 +82,15 @@ def rule_five_parent(name: str, is_constant: Callable[[str], bool]) -> tuple[str
     return None
 
 
-def _rule_three_instance(constant: ConstantFacts, facts: ModuleFacts, lines: list[str]) -> Decision:
-    """An instance with a range is a declaration, unless its range shows a `deriving instance`
-    command (no `instance` keyword) whose range the parser did not give: then it is reported."""
-    assert constant.range is not None
-    if (constant.name not in facts.deriving_commands
-            and not INSTANCE_KEYWORD.search(range_text(lines, constant.range))):
+def _rule_three_instance(constant: ConstantFacts, facts: ModuleFacts) -> Decision:
+    """An instance with a range is a declaration, unless it is an instance of a `deriving
+    instance` command whose range the parser did not give: then it is reported.
+
+    The full range of such an instance is its selection range, the class name. A written
+    declaration, also a `def` that `attribute [instance]` makes an instance, has a full range
+    that contains its keyword and is larger.
+    """
+    if constant.name not in facts.deriving_commands and constant.range == constant.selection:
         return Decision("reported", "deriving instance command not parsed")
     return Decision("declaration", "3")
 
@@ -107,7 +102,7 @@ def _macro_scoped_with_range(constant: ConstantFacts, remaining: list[ConstantFa
     constant or more than one, it is reported.
     """
     partners = [c.name for c in remaining if c.range == constant.range and c.name != constant.name
-                and not MACRO_SCOPES.search(c.name)]
+                and not c.has_macro_scopes]
     if len(partners) == 1:
         return Decision("generated", "4 macro scopes", partners[0])
     cause = "no constant" if not partners else "several constants"
@@ -131,7 +126,7 @@ def decide_module(facts: ModuleFacts, source: str) -> dict[str, Decision]:
     instances = [c for c in remaining if c.is_instance and c.range is not None]
     for constant in remaining:
         if constant.is_instance and constant.range is not None:
-            decisions[constant.name] = _rule_three_instance(constant, facts, lines)
+            decisions[constant.name] = _rule_three_instance(constant, facts)
             continue
         same_range = [i for i in instances if constant.range is not None and i.range == constant.range]
         if same_range:
@@ -142,7 +137,7 @@ def decide_module(facts: ModuleFacts, source: str) -> dict[str, Decision]:
             else:
                 cause = "helper without candidate" if not candidates else "helper with several candidates"
                 decisions[constant.name] = Decision("reported", cause)
-        elif constant.range is not None and MACRO_SCOPES.search(constant.name):
+        elif constant.range is not None and constant.has_macro_scopes:
             decisions[constant.name] = _macro_scoped_with_range(constant, remaining)
         elif constant.range is not None:
             decisions[constant.name] = Decision("declaration", "4")

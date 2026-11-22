@@ -30,7 +30,7 @@ from lean_code_store.rows import build_rows
 from lean_code_store.store import LocalStore
 from tools.theorem_dependency_manifest import merge_libraries
 
-EXTRACTOR_VERSION = "lean-code-store-prototype-4"
+EXTRACTOR_VERSION = "lean-code-store-prototype-5"
 """Changes with each change to what the extractor writes, so that all keys change."""
 
 

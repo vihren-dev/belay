@@ -94,6 +94,7 @@ def constantJson (env : Environment) (info : ConstantInfo) (withReferences : Boo
     ("parents", referencesJson env parents),
     ("matcher", toJson (Meta.isMatcherCore env name)),
     ("reserved", toJson (isReservedName env name)),
+    ("macroScopes", toJson name.hasMacroScopes),
     ("leanAutoDecl", toJson (← leanAutoDecl env name))]
   if withReferences then
     let body := (info.value? (allowOpaque := true)).map Expr.getUsedConstants |>.getD #[]

@@ -34,6 +34,8 @@ class ConstantFacts:
     is_matcher: bool
     is_reserved: bool
     lean_auto_decl: bool
+    has_macro_scopes: bool
+    """`Name.hasMacroScopes` of the kernel name; a written name can contain `._@.` too."""
     type_references: tuple[Reference, ...]
     body_references: tuple[Reference, ...]
 
@@ -128,6 +130,7 @@ def constant_facts(row: object, context: str) -> ConstantFacts:
         parents=_references(data.get("parents", []), where),
         is_matcher=_flag(data, "matcher", where), is_reserved=_flag(data, "reserved", where),
         lean_auto_decl=_flag(data, "leanAutoDecl", where),
+        has_macro_scopes=_flag(data, "macroScopes", where),
         type_references=_references(data.get("type", []), where),
         body_references=_references(data.get("body", []), where))
 

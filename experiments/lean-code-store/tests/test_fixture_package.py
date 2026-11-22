@@ -90,7 +90,7 @@ def test_fixture_rows_and_incremental_runs(tmp_path: Path) -> None:
     _lake_build(package)
     store = LocalStore(tmp_path / "store")
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "lean-code-store-prototype-3")
+        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "lean-code-store-prototype-4")
         assert _run(package, store, reader, tmp_path / "work")["extracted"] == 5
     first = _run(package, store, reader, tmp_path / "work")
     rows = _snapshot_rows(store, str(first["snapshot_id"]))
