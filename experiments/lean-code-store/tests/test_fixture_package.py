@@ -37,7 +37,7 @@ def _snapshot_rows(store: LocalStore, snapshot: str) -> dict[str, object]:
     """The rows of a snapshot without file keys, with the fold of each module, by module.
 
     References to Lean's library stay in: they show the folding of generated targets outside
-    the project, for example `Nat.casesOn` into `Nat`.
+    the project, for example `Prod.mk` and `Prod.fst` into `Prod`.
     """
     files = [json.loads(line) for line in
              (store.root / "snapshots" / snapshot / "snapshot_files.jsonl").read_text().splitlines()]
@@ -75,6 +75,9 @@ def test_fixture_rows_and_incremental_runs(tmp_path: Path) -> None:
     assert rows == json.loads(EXPECTED.read_text())
     assert first["extracted"] == 5
     assert _run(package, store, reader, tmp_path / "work")["extracted"] == 0
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "an older extractor")
+        assert _run(package, store, reader, tmp_path / "work")["extracted"] == 5
     derive = package / "Fixture" / "Derive.lean"
     derive.write_text(derive.read_text() + "\n/-- An added declaration. -/\ndef added : Nat := 1\n")
     _lake_build(package)

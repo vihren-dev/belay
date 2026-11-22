@@ -31,8 +31,14 @@ loaded.
   of the target's file, which the prototype does not read for Lean's library. Input: the Nix
   packages of `just theorem-dependencies` for this revision. Local measurement, not evidence:
   1,617 modules in 196 s; a second run extracts 0 files in 4 s; with the rules as written, no
-  rule decides 13,108 constants. The next commits record this and correct the rules.
+  rule decides 13,108 constants. The report of this commit does not name a generated constant
+  whose parents end in a reported constant; the next commit names them (161 in a run of the
+  same rules). The next commits record this and correct the rules.
 - 2026-11-22: review fixes: a generated constant whose parents end in a reported constant is
   reported with that cause; tests for a changed build product, an indented `deriving instance`
   command, a generated target in Lean's library (`Nat.casesOn`), and the `clickhouse-local`
   load and query.
+- 2026-11-22: review fixes: the text of a `deriving instance` command ends at the last type of
+  its `for` list; extractor version 2, so the store extracts again the file versions of
+  version 1; the fixture uses `Prod.mk` and `Prod.fst` as the only source of `Prod`; the query
+  test has a target with two users.

@@ -14,13 +14,17 @@ pytestmark = [pytest.mark.unit, pytest.mark.timeout(5)]
 
 
 def test_range_text_and_deriving_command() -> None:
-    """A range cuts code points; a `deriving instance` command spans its continuation lines."""
+    """A range cuts code points; a `deriving instance` command ends at the last type of `for`."""
     lines = ["def é : Nat := 1", "", "deriving instance BEq, Hashable", "  for A, B", "def x := 2"]
     assert range_text(lines, span(1, 4, 1, 5)) == "é"
     assert deriving_command(lines, span(3, 18, 3, 21)) == (3, 0, 0, 4, 10, 10)
     assert deriving_command(lines, span(5, 4, 5, 5)) is None
     indented = ["  deriving instance BEq for A", "  def y := 3"]
     assert deriving_command(indented, span(1, 20, 1, 23)) == (1, 2, 2, 1, 29, 29)
+    same_indentation = ["deriving instance BEq,", "Hashable for T,", "U", "def z := 4"]
+    command = (1, 0, 0, 3, 1, 1)
+    assert deriving_command(same_indentation, span(1, 18, 1, 21)) == command
+    assert deriving_command(same_indentation, span(2, 0, 2, 8)) == command
     assert user_name("_private.A.B.0.Foo.bar") == "Foo.bar"
 
 

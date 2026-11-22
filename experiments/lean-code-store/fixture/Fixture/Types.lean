@@ -44,8 +44,9 @@ def describe : Color → String
   | .red => "r"
   | .green => "g"
 
-/-- Uses the generated eliminator {name}`Nat.casesOn` of the library, which folds into {name}`Nat`. -/
-def natCase (n : Nat) : Nat := Nat.casesOn (motive := fun _ => Nat) n 0 (fun k => k)
+/-- Uses only the generated constructor and projection of {lit}`Prod` of the library, which fold
+into {lit}`Prod`. -/
+def firstOfPair : Nat := (Prod.mk 1 2).1
 
 example : total ⟨1, 2⟩ = 3 := rfl
 

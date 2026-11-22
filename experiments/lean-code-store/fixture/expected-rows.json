@@ -583,14 +583,14 @@
     "/-- A function by pattern matching, which has a match function. -/\ndef describe : Color \u2192 String\n  | .red => \"r\"\n  | .green => \"g\""
    ],
    [
+    "firstOfPair",
+    "definition",
+    "/-- Uses only the generated constructor and projection of {lit}`Prod` of the library, which fold\ninto {lit}`Prod`. -/\ndef firstOfPair : Nat := (Prod.mk 1 2).1"
+   ],
+   [
     "instAreaPoint",
     "instance",
     "instance : Area Point where\n  area p := p.x * p.y"
-   ],
-   [
-    "natCase",
-    "definition",
-    "/-- Uses the generated eliminator {name}`Nat.casesOn` of the library, which folds into {name}`Nat`. -/\ndef natCase (n : Nat) : Nat := Nat.casesOn (motive := fun _ => Nat) n 0 (fun k => k)"
    ],
    [
     "total",
@@ -877,6 +877,10 @@
     "Fixture.Types",
     "describe"
    ],
+   "firstOfPair": [
+    "Fixture.Types",
+    "firstOfPair"
+   ],
    "instAreaPoint": [
     "Fixture.Types",
     "instAreaPoint"
@@ -904,10 +908,6 @@
    "instReprColor.repr.match_1": [
     "Fixture.Types",
     "Color"
-   ],
-   "natCase": [
-    "Fixture.Types",
-    "natCase"
    ],
    "total": [
     "Fixture.Types",
@@ -1948,6 +1948,55 @@
    ],
    [
     "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "Prod",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "Prod",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "firstOfPair",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "instAreaPoint",
     "Fixture.Types",
     "Area",
@@ -2021,41 +2070,6 @@
     "instAreaPoint",
     "Init.Prelude",
     "instMulNat",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "natCase",
-    "Init.Prelude",
-    "Nat",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "natCase",
-    "Init.Prelude",
-    "Nat",
-    "mention"
-   ],
-   [
-    "Fixture.Types",
-    "natCase",
-    "Init.Prelude",
-    "Nat",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "natCase",
-    "Init.Prelude",
-    "OfNat",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "natCase",
-    "Init.Prelude",
-    "instOfNatNat",
     "body"
    ],
    [
