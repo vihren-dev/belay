@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-22T14:10:17+00:00",
+  "finding": "20261122T141007Z-ec809ab0#3",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Review loop stopped: four rounds in a row gave new must findings on the prototype report; reported to the owner with this finding. Not fixed."
+}
