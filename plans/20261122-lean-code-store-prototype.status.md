@@ -11,7 +11,8 @@ Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
   process for each module, in the environment of the module and its imports.
 - `experiments/lean-code-store/lean_code_store/`: keys (`keys.py`), folding rules (`folding.py`), resolution of parents (`resolve.py`),
   user of a mention (`mentions.py`), rows (`rows.py`), local row files (`store.py`), the run
-  (`run.py`, `inputs.py`), the `clickhouse-local` load and query (`clickhouse.py`).
+  (`run.py`, `inputs.py`), the `clickhouse-local` load and query (`clickhouse.py`), the
+  tables of the findings record (`report.py`).
 - `experiments/lean-code-store/fixture/`: the fixture package and `expected-rows.json`.
 
 ## Tests
@@ -76,4 +77,8 @@ loaded.
   is one name, so a macro instance with equal ranges stays a declaration; the specification
   says that a mention with a reported container gets its user by the range rule; a test of a
   quoted name that contains `._@.` as the only parent of a macro-scoped constant.
+- 2026-11-22: `lean_code_store/report.py` prints the tables of the findings record from the
+  facts, the store and the query result (`tests/test_report.py`). The review loop of the
+  folding-rule commits stopped after four rounds with new "must" findings; the round 4
+  findings are deferred and listed as owner questions.
 
