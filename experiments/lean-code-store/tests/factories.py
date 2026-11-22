@@ -16,10 +16,12 @@ def constant(name: str, *, module: str = "M", kind: str = "definition", span: Ra
         type_references=(), body_references=references)
 
 
-def module(*constants: ConstantFacts, external: tuple[ConstantFacts, ...] = ()) -> ModuleFacts:
-    """A module `M` with the given constants and referenced constants."""
+def module(*constants: ConstantFacts, external: tuple[ConstantFacts, ...] = (),
+           deriving_commands: dict[str, Range] | None = None) -> ModuleFacts:
+    """A module `M` with the given constants, referenced constants and parsed command ranges."""
     return ModuleFacts(module="M", imports=(), constants=constants,
-                       external={facts.name: facts for facts in external}, deriving_commands={})
+                       external={facts.name: facts for facts in external},
+                       deriving_commands=deriving_commands or {})
 
 
 def span(line: int, column: int, end_line: int, end_column: int) -> Range:

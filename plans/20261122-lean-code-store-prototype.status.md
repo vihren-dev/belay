@@ -9,7 +9,7 @@ Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
 
 - `experiments/lean-code-store/extractor/`: the Lean fact reader (`lean-code-store-facts`), one
   process for each module, in the environment of the module and its imports.
-- `experiments/lean-code-store/lean_code_store/`: keys (`keys.py`), folding rules (`folding.py`),
+- `experiments/lean-code-store/lean_code_store/`: keys (`keys.py`), folding rules (`folding.py`), resolution of parents (`resolve.py`),
   user of a mention (`mentions.py`), rows (`rows.py`), local row files (`store.py`), the run
   (`run.py`, `inputs.py`), the `clickhouse-local` load and query (`clickhouse.py`).
 - `experiments/lean-code-store/fixture/`: the fixture package and `expected-rows.json`.
@@ -17,7 +17,7 @@ Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
 ## Tests
 
 `python3 -m pytest -c experiments/lean-code-store/pytest.ini experiments/lean-code-store/tests`:
-unit tests of keys, folding, text cuts and mention users, and the fixture test (needs Lean and
+unit tests of keys, folding, resolution, text cuts and mention users, and the fixture test (needs Lean and
 Lake; builds the fixture copy, compares rows, checks the second run and an edit). The
 experiment has its own `pytest.ini`, so the repository's upload of test observations is not
 loaded.
@@ -55,3 +55,13 @@ loaded.
   extension that the file declares after the command can change how it parses. Review rounds
   1 to 4 all had "must" findings, rounds 2 to 4 on the text of `deriving instance` commands; the
   review loop on this subject stops here and the report names it.
+- 2026-11-22: the stack is rebased on the specification revision that widened rule 5 (any
+  final component). The prototype implements that rule and three corrections that the next
+  commit adds to the specification: rule 5 also after the removal of the private prefix; a
+  constant with macro scopes and a range folds into the one constant without macro scopes of
+  its range, else it is reported; an instance of an unparsed `deriving instance` command is
+  reported. `lean_code_store/resolve.py` now holds the resolver. Extractor version 4. Local
+  run of the matched build, not evidence: an edit of one file of the conformance package in a
+  writable copy extracts 7 file versions, the file and its 6 importers, which are the modules
+  that Lake rebuilt.
+

@@ -5,7 +5,8 @@ from __future__ import annotations
 import pytest
 
 from factories import constant, module, span
-from lean_code_store.folding import Decision, decide_module, resolver
+from lean_code_store.folding import Decision, decide_module
+from lean_code_store.resolve import resolver
 
 pytestmark = [pytest.mark.unit, pytest.mark.timeout(5)]
 
@@ -35,7 +36,8 @@ def test_rule_three_gives_a_helper_the_instance_with_its_range_and_name_prefix()
     facts = module(constant("instBEqColor", span=command, instance=True),
                    constant("instBEqColor.beq", span=command),
                    constant("instBEqTag", span=command, instance=True),
-                   constant("lonely", span=span(4, 4, 4, 14)))
+                   constant("lonely", span=span(4, 4, 4, 14)),
+                   deriving_commands={"instBEqColor": span(5, 0, 5, 31), "instBEqTag": span(5, 0, 5, 31)})
     decisions = decide_module(facts, SOURCE)
     assert decisions["instBEqColor"] == Decision("declaration", "3")
     assert decisions["instBEqColor.beq"] == Decision("generated", "3", "instBEqColor")
@@ -69,22 +71,47 @@ def test_rule_five_folds_a_constant_without_range_into_its_prefix() -> None:
     assert resolve("M", "g.eq_1") == ("N", "g")
 
 
-def test_rule_five_as_specified_reports_other_generated_names() -> None:
-    """The specified rule 5 decides only names whose last component is `_x`, `match_n` or `eq_n`."""
+def test_rule_five_reads_any_final_component_and_names_without_private_prefix() -> None:
+    """`T.ctorIdx` folds into `T`; the private equation lemma of a match function of another
+    module folds into that match function; a match function of an `example` is reported."""
     facts = module(constant("T", kind="inductive", span=span(1, 0, 3, 15)), constant("T.ctorIdx"),
-                   constant("_private.N.0.T.eq_1"))
+                   constant("_private.M.0.g.match_1.eq_1"), constant("_private.M.0.match_1"),
+                   external=(constant("g.match_1", module="N"),))
     decisions = decide_module(facts, SOURCE)
-    assert decisions["T.ctorIdx"] == Decision("reported", "no rule")
-    assert decisions["_private.N.0.T.eq_1"] == Decision("reported", "no rule")
+    assert decisions["T.ctorIdx"] == Decision("generated", "5", "T")
+    assert decisions["_private.M.0.g.match_1.eq_1"] == Decision("generated", "5 private", "g.match_1")
+    assert decisions["_private.M.0.match_1"] == Decision("reported", "no rule")
 
 
 def test_a_generated_constant_with_a_reported_parent_is_reported() -> None:
     """A helper whose parent is reported is named in the report with its cause, and has no user."""
     from lean_code_store.rows import build_rows
-    facts = module(constant("T", kind="inductive", span=span(1, 0, 3, 15)), constant("T.ctorIdx"),
-                   constant("T.ctorIdx._proof_1"))
+    facts = module(constant("_private.M.0.match_1"), constant("_private.M.0.match_1.eq_1"))
     decisions = decide_module(facts, SOURCE)
     resolve = resolver(facts, decisions, lambda m, n: (m, n), lambda m: False)
     rows = build_rows("k" * 64, facts, decisions, SOURCE, [], resolve)
-    assert ("T.ctorIdx", "no rule") in rows.reported
-    assert ("T.ctorIdx._proof_1", "generated, no declaration at the end of its parents") in rows.reported
+    assert ("_private.M.0.match_1", "no rule") in rows.reported
+    assert ("_private.M.0.match_1.eq_1", "generated, no declaration at the end of its parents") in rows.reported
+
+
+def test_an_instance_of_an_unparsed_deriving_instance_command_is_reported() -> None:
+    """An instance whose range has no `instance` keyword and no parsed command is reported."""
+    facts = module(constant("instBEqColor", span=span(5, 18, 5, 21), instance=True))
+    assert decide_module(facts, SOURCE)["instBEqColor"] == Decision(
+        "reported", "deriving instance command not parsed")
+
+
+def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() -> None:
+    """`initFn` of an `initialize` command folds into the declared constant; with two
+    constants of its range, as `register_simp_attr` gives, it is reported."""
+    one, two = span(4, 0, 4, 25), span(1, 0, 3, 15)
+    facts = module(constant("counter", kind="opaque", span=one),
+                   constant("_private.M.0.initFn._@.M.1._hygCtx._hyg.2", span=one),
+                   constant("arms", span=two), constant("arms_proc", span=two),
+                   constant("ext._@.M.1._hygCtx._hyg.3", span=two))
+    decisions = decide_module(facts, SOURCE)
+    assert decisions["_private.M.0.initFn._@.M.1._hygCtx._hyg.2"] == Decision(
+        "generated", "4 macro scopes", "counter")
+    assert decisions["ext._@.M.1._hygCtx._hyg.3"] == Decision(
+        "reported", "macro scopes, several constants with the same range")
+    assert decisions["arms_proc"] == Decision("declaration", "4")

@@ -21,7 +21,8 @@ import time
 import uuid
 
 from lean_code_store.facts import module_facts
-from lean_code_store.folding import Declaration, decide_module, resolver
+from lean_code_store.folding import Declaration, decide_module
+from lean_code_store.resolve import resolver
 from lean_code_store.inputs import key_input, lean_version, read_facts, select_files
 from lean_code_store.keys import dependency_order, snapshot_keys
 from lean_code_store.mentions import read_usages
@@ -29,7 +30,7 @@ from lean_code_store.rows import build_rows
 from lean_code_store.store import LocalStore
 from tools.theorem_dependency_manifest import merge_libraries
 
-EXTRACTOR_VERSION = "lean-code-store-prototype-3"
+EXTRACTOR_VERSION = "lean-code-store-prototype-4"
 """Changes with each change to what the extractor writes, so that all keys change."""
 
 

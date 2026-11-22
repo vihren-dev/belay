@@ -234,13 +234,6 @@
    [
     "Fixture.Derive",
     "instBEqTag",
-    "Fixture.Types",
-    "Tag.ctorIdx",
-    "body"
-   ],
-   [
-    "Fixture.Derive",
-    "instBEqTag",
     "Init.Prelude",
     "BEq",
     "body"
@@ -524,13 +517,6 @@
     "Fixture.Types",
     "Tag",
     "type"
-   ],
-   [
-    "Fixture.Derive",
-    "instOrdTag",
-    "Fixture.Types",
-    "Tag.ctorIdx",
-    "body"
    ],
    [
     "Fixture.Derive",
@@ -929,7 +915,10 @@
     "Fixture.Types",
     "Area"
    ],
-   "Area.ctorIdx": null,
+   "Area.ctorIdx": [
+    "Fixture.Types",
+    "Area"
+   ],
    "Area.mk": [
     "Fixture.Types",
     "Area"
@@ -946,7 +935,10 @@
     "Fixture.Types",
     "Area"
    ],
-   "Area.noConfusionType": null,
+   "Area.noConfusionType": [
+    "Fixture.Types",
+    "Area"
+   ],
    "Area.rec": [
     "Fixture.Types",
     "Area"
@@ -975,8 +967,14 @@
     "Fixture.Types",
     "Color"
    ],
-   "Color.ctorElimType": null,
-   "Color.ctorIdx": null,
+   "Color.ctorElimType": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.ctorIdx": [
+    "Fixture.Types",
+    "Color"
+   ],
    "Color.green": [
     "Fixture.Types",
     "Color"
@@ -985,14 +983,26 @@
     "Fixture.Types",
     "Color"
    ],
-   "Color.green.sizeOf_spec": null,
+   "Color.green.sizeOf_spec": [
+    "Fixture.Types",
+    "Color"
+   ],
    "Color.noConfusion": [
     "Fixture.Types",
     "Color"
    ],
-   "Color.noConfusionType": null,
-   "Color.ofNat": null,
-   "Color.ofNat_ctorIdx": null,
+   "Color.noConfusionType": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.ofNat": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.ofNat_ctorIdx": [
+    "Fixture.Types",
+    "Color"
+   ],
    "Color.rec": [
     "Fixture.Types",
     "Color"
@@ -1009,7 +1019,10 @@
     "Fixture.Types",
     "Color"
    ],
-   "Color.red.sizeOf_spec": null,
+   "Color.red.sizeOf_spec": [
+    "Fixture.Types",
+    "Color"
+   ],
    "Foo": [
     "Fixture.Types",
     "Foo"
@@ -1034,7 +1047,10 @@
     "Fixture.Types",
     "Point"
    ],
-   "Point.ctorIdx": null,
+   "Point.ctorIdx": [
+    "Fixture.Types",
+    "Point"
+   ],
    "Point.mk": [
     "Fixture.Types",
     "Point"
@@ -1043,18 +1059,30 @@
     "Fixture.Types",
     "Point"
    ],
-   "Point.mk.inj": null,
-   "Point.mk.injEq": null,
+   "Point.mk.inj": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.mk.injEq": [
+    "Fixture.Types",
+    "Point"
+   ],
    "Point.mk.noConfusion": [
     "Fixture.Types",
     "Point"
    ],
-   "Point.mk.sizeOf_spec": null,
+   "Point.mk.sizeOf_spec": [
+    "Fixture.Types",
+    "Point"
+   ],
    "Point.noConfusion": [
     "Fixture.Types",
     "Point"
    ],
-   "Point.noConfusionType": null,
+   "Point.noConfusionType": [
+    "Fixture.Types",
+    "Point"
+   ],
    "Point.rec": [
     "Fixture.Types",
     "Point"
@@ -1087,7 +1115,10 @@
     "Fixture.Types",
     "Point3"
    ],
-   "Point3.ctorIdx": null,
+   "Point3.ctorIdx": [
+    "Fixture.Types",
+    "Point3"
+   ],
    "Point3.mk": [
     "Fixture.Types",
     "Point3"
@@ -1096,18 +1127,30 @@
     "Fixture.Types",
     "Point3"
    ],
-   "Point3.mk.inj": null,
-   "Point3.mk.injEq": null,
+   "Point3.mk.inj": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.mk.injEq": [
+    "Fixture.Types",
+    "Point3"
+   ],
    "Point3.mk.noConfusion": [
     "Fixture.Types",
     "Point3"
    ],
-   "Point3.mk.sizeOf_spec": null,
+   "Point3.mk.sizeOf_spec": [
+    "Fixture.Types",
+    "Point3"
+   ],
    "Point3.noConfusion": [
     "Fixture.Types",
     "Point3"
    ],
-   "Point3.noConfusionType": null,
+   "Point3.noConfusionType": [
+    "Fixture.Types",
+    "Point3"
+   ],
    "Point3.rec": [
     "Fixture.Types",
     "Point3"
@@ -1144,8 +1187,14 @@
     "Fixture.Types",
     "Tag"
    ],
-   "Tag.ctorElimType": null,
-   "Tag.ctorIdx": null,
+   "Tag.ctorElimType": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.ctorIdx": [
+    "Fixture.Types",
+    "Tag"
+   ],
    "Tag.first": [
     "Fixture.Types",
     "Tag"
@@ -1154,12 +1203,18 @@
     "Fixture.Types",
     "Tag"
    ],
-   "Tag.first.sizeOf_spec": null,
+   "Tag.first.sizeOf_spec": [
+    "Fixture.Types",
+    "Tag"
+   ],
    "Tag.noConfusion": [
     "Fixture.Types",
     "Tag"
    ],
-   "Tag.noConfusionType": null,
+   "Tag.noConfusionType": [
+    "Fixture.Types",
+    "Tag"
+   ],
    "Tag.rec": [
     "Fixture.Types",
     "Tag"
@@ -1176,7 +1231,10 @@
     "Fixture.Types",
     "Tag"
    ],
-   "Tag.second.sizeOf_spec": null,
+   "Tag.second.sizeOf_spec": [
+    "Fixture.Types",
+    "Tag"
+   ],
    "_private.Fixture.Types.0.secret": [
     "Fixture.Types",
     "_private.Fixture.Types.0.secret"
@@ -1245,20 +1303,6 @@
     "Init.Prelude",
     "rfl",
     "mention"
-   ],
-   [
-    "Fixture.Types",
-    "Area",
-    "Fixture.Types",
-    "Area.noConfusionType",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Area",
-    "Fixture.Types",
-    "Area.noConfusionType",
-    "type"
    ],
    [
     "Fixture.Types",
@@ -1333,55 +1377,6 @@
    [
     "Fixture.Types",
     "Color",
-    "Fixture.Types",
-    "Color.ctorElimType",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.ctorElimType",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.ctorIdx",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.ctorIdx",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.noConfusionType",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.ofNat",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
-    "Fixture.Types",
-    "Color.ofNat_ctorIdx",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Color",
     "Init.Core",
     "Eq.mp",
     "body"
@@ -1391,6 +1386,13 @@
     "Color",
     "Init.Core",
     "noConfusionEnum",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Core",
+    "noConfusionTypeEnum",
     "body"
    ],
    [
@@ -1551,6 +1553,13 @@
     "Fixture.Types",
     "Color",
     "Init.Prelude",
+    "Nat.ble",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
     "Nat.decLe",
     "body"
    ],
@@ -1574,6 +1583,13 @@
     "Init.Prelude",
     "OfNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "OfNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1614,6 +1630,13 @@
     "Fixture.Types",
     "Color",
     "Init.Prelude",
+    "cond",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
     "congrArg",
     "body"
    ],
@@ -1644,6 +1667,13 @@
     "Init.Prelude",
     "instOfNatNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "instOfNatNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1781,15 +1811,29 @@
    [
     "Fixture.Types",
     "Point",
-    "Fixture.Types",
-    "Point.noConfusionType",
+    "Init.Core",
+    "Eq.propIntro",
     "body"
    ],
    [
     "Fixture.Types",
     "Point",
+    "Init.Core",
+    "Lean.injEq_helper",
+    "body"
+   ],
+   [
     "Fixture.Types",
-    "Point.noConfusionType",
+    "Point",
+    "Init.Prelude",
+    "And",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "And",
     "type"
    ],
    [
@@ -1812,6 +1856,13 @@
     "Init.Prelude",
     "HAdd",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "HAdd",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1845,6 +1896,13 @@
     "Fixture.Types",
     "Point",
     "Init.Prelude",
+    "OfNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
     "id",
     "body"
    ],
@@ -1859,6 +1917,13 @@
     "Fixture.Types",
     "Point",
     "Init.Prelude",
+    "instAddNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
     "instHAdd",
     "body"
    ],
@@ -1866,8 +1931,22 @@
     "Fixture.Types",
     "Point",
     "Init.Prelude",
+    "instHAdd",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
     "instOfNatNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "instOfNatNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1896,6 +1975,13 @@
     "Init.SizeOf",
     "instSizeOfNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.SizeOf",
+    "instSizeOfNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1928,15 +2014,29 @@
    [
     "Fixture.Types",
     "Point3",
-    "Fixture.Types",
-    "Point3.noConfusionType",
+    "Init.Core",
+    "Eq.propIntro",
     "body"
    ],
    [
     "Fixture.Types",
     "Point3",
+    "Init.Core",
+    "Lean.injEq_helper",
+    "body"
+   ],
+   [
     "Fixture.Types",
-    "Point3.noConfusionType",
+    "Point3",
+    "Init.Prelude",
+    "And",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "And",
     "type"
    ],
    [
@@ -1959,6 +2059,13 @@
     "Init.Prelude",
     "HAdd",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "HAdd",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -1992,6 +2099,13 @@
     "Fixture.Types",
     "Point3",
     "Init.Prelude",
+    "OfNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
     "id",
     "body"
    ],
@@ -2006,6 +2120,13 @@
     "Fixture.Types",
     "Point3",
     "Init.Prelude",
+    "instAddNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
     "instHAdd",
     "body"
    ],
@@ -2013,8 +2134,22 @@
     "Fixture.Types",
     "Point3",
     "Init.Prelude",
+    "instHAdd",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
     "instOfNatNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "instOfNatNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -2046,37 +2181,9 @@
    ],
    [
     "Fixture.Types",
-    "Tag",
-    "Fixture.Types",
-    "Tag.ctorElimType",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Tag",
-    "Fixture.Types",
-    "Tag.ctorElimType",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "Tag",
-    "Fixture.Types",
-    "Tag.ctorIdx",
-    "body"
-   ],
-   [
-    "Fixture.Types",
-    "Tag",
-    "Fixture.Types",
-    "Tag.ctorIdx",
-    "type"
-   ],
-   [
-    "Fixture.Types",
-    "Tag",
-    "Fixture.Types",
-    "Tag.noConfusionType",
+    "Point3",
+    "Init.SizeOf",
+    "instSizeOfNat",
     "type"
    ],
    [
@@ -2084,6 +2191,13 @@
     "Tag",
     "Init.Core",
     "noConfusionEnum",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Core",
+    "noConfusionTypeEnum",
     "body"
    ],
    [
@@ -2125,6 +2239,13 @@
     "Fixture.Types",
     "Tag",
     "Init.Prelude",
+    "Nat.ble",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
     "OfNat",
     "body"
    ],
@@ -2132,7 +2253,21 @@
     "Fixture.Types",
     "Tag",
     "Init.Prelude",
+    "OfNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
     "PULift",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "cond",
     "body"
    ],
    [
@@ -2148,6 +2283,13 @@
     "Init.Prelude",
     "instOfNatNat",
     "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "instOfNatNat",
+    "type"
    ],
    [
     "Fixture.Types",
@@ -2581,6 +2723,11 @@
  "Fixture.Uses": {
   "entities": [
    [
+    "counter",
+    "opaque",
+    "/-- An `initialize` command: Lean adds a constant with a macro-scoped name and the same range. -/\ninitialize counter : IO.Ref Nat \u2190 IO.mkRef 0"
+   ],
+   [
     "describe_red",
     "theorem",
     "/-- Asks for the equation lemmas of `describe` in this module. -/\ntheorem describe_red : describe .red = \"r\" := by simp [describe]"
@@ -2592,9 +2739,30 @@
    ]
   ],
   "fold": {
-   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_1": null,
-   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_2": null,
-   "_private.Fixture.Uses.0.instReprColor.repr.match_1.splitter": null,
+   "_private.Fixture.Uses.0.initFn._@.Fixture.Uses.3205128003._hygCtx._hyg.2": [
+    "Fixture.Uses",
+    "counter"
+   ],
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_1": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_2": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.splitter": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "counter": [
+    "Fixture.Uses",
+    "counter"
+   ],
+   "counter._proof_1": [
+    "Fixture.Uses",
+    "counter"
+   ],
    "describe.eq_1": [
     "Fixture.Types",
     "describe"
@@ -2618,6 +2786,41 @@
   },
   "path": "Fixture/Uses.lean",
   "references": [
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit.unit",
+    "type"
+   ],
    [
     "Fixture.Types",
     "describe",
@@ -2757,6 +2960,188 @@
     "Fixture.Types",
     "usesSecret",
     "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "Classical.ofNonempty",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "Nonempty",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "instInhabitedNat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "instMonadLiftT",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "instMonadLiftTOfMonadLift",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "instNonemptyOfInhabited",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.Prelude",
+    "liftM",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "BaseIO",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "EIO",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.RealWorld",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.RealWorld",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.Ref",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.Ref",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.Ref",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.mkRef",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "IO.mkRef",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IO",
+    "instMonadLiftBaseIOEIO",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.IOError",
+    "IO.Error",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.ST",
+    "ST.Ref",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "counter",
+    "Init.System.ST",
+    "ST.instNonemptyRef",
+    "body"
    ],
    [
     "Fixture.Uses",
