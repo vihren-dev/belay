@@ -65,14 +65,15 @@ Lean's parser; no instance was reported as unparsed.
 
 Causes:
 
-- The 115 match and `_sparseCasesOn` functions have a private name with nothing after the
-  module prefix. They come from commands that are not declarations, for example the
+- The 115 match and `_sparseCasesOn` functions have a private name in which the function
+  name directly follows `_private.<module>.0`, with no declaration name between them. They come from commands that are not declarations, for example the
   `#guard` commands of `Schema/Ddl/DropColumnExamples.lean`. 113 are in `*Examples`
   modules; the other two are `_private.….Values.Json.JsonApply.0.match_7` and
   `_private.….Schema.Dispatch.QueryOutputs.0.match_3`. The command has no declaration, so
   the function has no parent. Reporting them meets the requirement of the specification.
 - Of the 14 constants with macro scopes and no range, 10 are `match_on_same_ctor` constants
-  of a derived `DecidableEq`, for example `Model.ExecutionError.match_on_same_ctor._@…` and
+  of derived instances, 8 of `DecidableEq` and 2 of `BEq` (for `Syntax.Expr` and
+  `Syntax.Statement`), for example `Model.ExecutionError.match_on_same_ctor._@…` and
   constants in `Shared/Resolved/ResolvedExprForm.lean`. The other 4 are match and
   `_sparseCasesOn` functions of the `initialize` command of
   `Queries/Automation/SqlSelectRule.lean` (`….initFn.match_1._@…`). For each, the name
@@ -148,9 +149,11 @@ sibling `Run.runGoal.runRead`.
 
 A sample of 20 candidates, the first 20 by the SHA-256 of the name, read against the
 source and a search of all Lean files of the repository. "True" means: the source and the
-search show no other user. Uses that leave no trace in the build products and in the text
-(kernel unfolding, a name in a tactic quotation that Lean does not record) can still exist;
-the specification names this limit.
+search show no other user. Uses that the build products do not record can still exist and
+can be missed by the search too: kernel unfolding leaves no name in the text, and a name in
+a tactic quotation is in the text but Lean can omit its usage from the build products, so
+the search finds it only when it uses the same short name. The specification names this
+limit.
 
 | # | Candidate | Only user | Result |
 | ---: | --- | --- | --- |
@@ -232,10 +235,12 @@ specification and the ADR were re-read before each change; the other session's r
    Today both are declarations with the same text, and the macro-scoped constants of the
    command are reported (20).
 2. A constant whose name ends in macro scopes and has no range: should the rule remove the
-   macro scopes and fold it? For the 10 `match_on_same_ctor._@…` constants of a derived
-   `DecidableEq` (and their 10 children), the parent would be the type. For the 4 match
-   functions of the `initialize` command in `SqlSelectRule.lean`, it would be the constant
-   that the command declares.
+   macro scopes and fold it? For the 10 `match_on_same_ctor._@…` constants of derived
+   `DecidableEq` and `BEq` instances (and their 10 children), the parent would be the type.
+   The 4 match functions in `SqlSelectRule.lean` belong to the macro-scoped `initFn` of an
+   anonymous `initialize registerBuiltinAttribute` command; that `initFn` is itself reported,
+   because no constant without macro scopes has its range, so these functions have no
+   written parent even with such a rule.
 3. How should the store keep a relationship whose target is reported? The prototype keeps
    the kernel name and module of the target: 21 relationships before the removal of
    duplicates, 15 stored rows.

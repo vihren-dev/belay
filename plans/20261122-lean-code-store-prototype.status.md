@@ -101,4 +101,7 @@ loaded.
   the reported constants by module, the extractor version of the edit run, the opaque and
   `where` candidates, the limit of "true" candidates, the ADR corrections as pending, the
   partial check `isAutoDeclOrPrivate_Internal`, and 15 stored rows of reported targets.
+- 2026-11-22: review fixes of the findings record: the `match_on_same_ctor` constants of
+  `BEq` and `DecidableEq`, the `SqlSelectRule` functions without a written parent, and the
+  limit of the source search.
 
