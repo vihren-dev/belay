@@ -223,9 +223,9 @@ specification and the ADR were re-read before each change; the other session's r
    and macro-scoped name. It is a partial check only: it is false for
    `Belay.Sqlite.instInhabitedDiagnostic.default`, which has no range and which rule 5
    decides as generated. The fact reader gives it for each constant (`leanAutoDecl`).
-8. Not changed, stated here: rule 1 says that Lean's tables give the "other constants" of a
-   type. `ctorIdx`, `injEq`, `sizeOf_spec` and `noConfusionType` are in no table; rule 5
-   decides them.
+8. Rule 1 said that Lean's tables give the "other constants" of a type. `ctorIdx`, `injEq`,
+   `sizeOf_spec` and `noConfusionType` are in no table; rule 5 decides them. The
+   specification now names the tables and these constants.
 
 ## Questions for the owner
 
