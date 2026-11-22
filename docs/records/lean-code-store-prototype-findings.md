@@ -23,10 +23,13 @@ four library trees of the default selection (`belay-sqlite-model`, `belay-sqlite
 `lean-code-store-prototype-7`. The rules are those of the specification after the
 corrections of this task. Version 7 differs from version 6 only in rule 1: version 6 used
 Lean's `isAuxRecursor`, which also accepts the written declarations `Eq.ndrec`,
-`Eq.ndrec_symm` and `Eq.ndrecOn` by name, so it folded 2,073 mentions of them into `Eq`. A
-full run of version 7 gives the same decisions, the same candidates and the same rows as
-version 6, except 2,073 more `entity_references` rows. The times below are of the version 6
-run; the version 7 run took 195 s.
+`Eq.ndrec_symm` and `Eq.ndrecOn` by name, so it folded their references into `Eq`. A
+full run of version 7 gives the same decisions, the same candidates and the same row counts
+as version 6, except 2,073 more `entity_references` rows: 1,940 `body` and 11 `type` rows to
+`Eq.ndrec`, and 122 `body` rows to `Eq.ndrec_symm`. This comparison does not include the
+file keys, which change with the version. The `entity_references` count below is of version
+7, and the other counts are of version 6. The first run and the second run below are of
+version 6, and the edit run is of version 4; the first run of version 7 took 195 s.
 
 How to run it is in the module docstring of `lean_code_store/run.py`. Sources of the tables:
 the decisions, the reported constants, the mention users and the candidates come from

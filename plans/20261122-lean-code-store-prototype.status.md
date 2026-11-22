@@ -113,7 +113,7 @@ loaded.
   - The rule 1 statement of the specification is not corrected: rule 1 says that Lean's
     tables give the "other constants" of a type, but `ctorIdx`, `injEq`, `sizeOf_spec` and
     `noConfusionType` are in no table and rule 5 decides them (findings record, wrong
-    statement 8). This correction stays open for the owner.
+    statement 8). Resolved later: commit `b164b5daa6de` corrects rule 1.
   - Two review-fix commits, `de015deec265` and `7e390e7ed528`, change the specification and
     the extractor together, so they do not follow the separate-commit rule for
     specification corrections.
@@ -123,8 +123,9 @@ loaded.
     prototype report (review `ec809ab0`).
 - 2026-11-22: review fixes of the rule 1 correction: rule 1 reads Lean's auxiliary-recursor
   tag and not `isAuxRecursor`, which also accepts `Eq.ndrec`, `Eq.ndrec_symm` and
-  `Eq.ndrecOn` by name. Extractor version 7; the fixture rows now keep the mentions of
-  `Eq.ndrec`. Local full run, not evidence: the same decisions and candidates as version 6,
-  and 2,073 more `entity_references` rows. Tests: `python3 -m pytest -c pytest.ini tests` in
+  `Eq.ndrecOn` by name. Extractor version 7; the fixture rows now keep five `body`
+  references to `Eq.ndrec`; the version test seeds the store with version 6. Local full run, not evidence: the same decisions and candidates as version 6,
+  and 2,073 more `entity_references` rows (`body` and `type` references to `Eq.ndrec` and
+  `Eq.ndrec_symm`). Tests: `python3 -m pytest -c pytest.ini tests` in
   `experiments/lean-code-store` (22 passed).
 

@@ -41,8 +41,9 @@ recursor itself has no range. -/
 def rawRanges? (env : Environment) (name : Name) : Option DeclarationRanges :=
   declRangeExt.find? (level := .exported) env name <|> declRangeExt.find? (level := .server) env name
 
-/-- The type that Lean's inductive, auxiliary-recursor, `noConfusion` and projection tables give
-as the source of a constant (rule 1), when such a table has the constant.
+/-- The direct parent that Lean's inductive, auxiliary-recursor, `noConfusion` and projection
+tables give for a constant (rule 1), when such a table has the constant: a type, or a constructor
+that folds into its type in a second step.
 
 It reads the auxiliary-recursor tag itself and not `isAuxRecursor`, because `isAuxRecursor` also
 accepts the written declarations `Eq.ndrec`, `Eq.ndrec_symm` and `Eq.ndrecOn` by name. For a
