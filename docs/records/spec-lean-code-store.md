@@ -1,8 +1,9 @@
 # The Lean code store: tables, file keys and write order
 
 Date: 2026-11-22.
-Status: specification for a proposed design. Nothing in this document is implemented: no
-table exists, and no command writes to the store. The queries were not run.
+Status: specification for a proposed design. No table exists, and no command writes to the
+store. A prototype ran the rules, the DDL and the query on local files and in
+`clickhouse-local`; its results are local, and no check accepted them.
 Audience: implementers and reviewers.
 Decision: [ADR 0032](../adr/adr-0032-lean-code-store.md). Where this document depends on an
 open owner decision of the ADR, it says so.
@@ -124,7 +125,8 @@ Column rules:
   generated constants, when it is a declaration; if not, the declaration of the file with
   the smallest full range that contains the position of the usage (a `where` function is
   inside its parent), when exactly one declaration has that smallest range; in each other
-  case, the empty name. The container alone is not sufficient: it is absent for a usage in a
+  case, the empty name. The full range of an instance of a `deriving instance` command is
+  the class name only, so a usage of a type name in such a command has the empty name. The container alone is not sufficient: it is absent for a usage in a
   docstring and is a generated name (`_example`) for an anonymous `example`.
 - `target_module` and `target_name` identify the target: the module that declares the
   constant, and its name. The target can be a declaration of another file of the snapshot,
@@ -204,7 +206,7 @@ Another kind of file that elaboration reads needs its own check before a module 
 | Text | The source file, cut at the full range |
 | `entities.kind` | The kernel kind of the constant. Lean's structure, class and instance tables replace it: a constant in the instance table is `instance`, also when its kernel kind is `theorem`. |
 | `type`, `body` | The constants in the elaborated type and value (`typeReferences`, `bodyReferences` of the exporter) |
-| `mention` | `.ilean`, key `references`: the usages that Lean recorded for each name, with position and container. "Column rules" gives the user. |
+| `mention` | `.ilean`, key `references`: the usages that Lean recorded for each name, with position and container. "Column rules" gives the user. A key can name something that is not a constant, for example an option or a docstring role; such a usage is not a relationship. |
 | `extends`, `instance_of` | Lean's structure and instance tables |
 
 The `decls` of the `.ilean` file are not the list of declarations: for example, they do not
@@ -233,7 +235,8 @@ Requirements:
   declaration, or is reported.
 - A declaration has text that a person wrote.
 
-The rules below are the starting point. They were not run. Lean gives ranges to some
+The rules below are the starting point. The prototype ran them on the default selection;
+the gaps that it found are stated in the rules. Lean gives ranges to some
 generated constants, and the ranges differ between kinds of commands, so the implementation
 task must check the rules on the default selection and add a fixture for each case.
 
@@ -257,19 +260,32 @@ that applies decides.
    helper. With exactly one candidate, the helper is generated and the candidate is its
    parent. With no candidate or more than one, the helper is reported.
 4. Each other constant with a declaration range is a declaration. This includes a written
-   declaration with a name such as `Foo._helper`.
+   declaration with a name such as `Foo._helper`. It also includes generated constants
+   with macro scopes in their names that have the range of a written declaration, for example
+   the `initFn` constant of an `initialize` command, which has the range of the command.
+   These declarations repeat the text of the written declaration. No rule here folds them.
 5. A constant without a declaration range is generated when the name without its final
-   component is a constant. The parent is that constant, after these rules are applied to
-   it. Examples: `_proof_1`, `_sunfold`, a match function (`match_1`), an equation lemma
-   (`eq_1`, `eq_def`), and the helper `instInhabitedParseNode.default` of a derived
-   instance, which Lean 4.34.1 gives no range.
+   component is a constant. If it is not, and the name has Lean's private prefix, the name
+   without the prefix is used: Lean gives an equation lemma or a splitter that it generates in
+   a module that uses a definition of another module a private name of the using module, for
+   example `_private.U.0.f.match_1.eq_1` for `f.match_1` of another module. The parent is
+   that constant, after these rules are applied to it. Examples: `_proof_1`, `_sunfold`, a
+   match function (`match_1`), an equation lemma (`eq_1`, `eq_def`), and the helper
+   `instInhabitedParseNode.default` of a derived instance, which Lean 4.34.1 gives no range.
+   Rule 5 does not apply to a name that ends in macro scopes, for example the
+   `match_on_same_ctor._@.…._hyg.99` constants of a derived `DecidableEq` of a mutual type,
+   or to a match function of a `#guard` command (`_private.M.0.match_1`). These are
+   reported.
 
 The text of an instance of a `deriving instance` command is the text of the whole command,
 and the instances of one command have the same text hash. The ranges of rule 3 group
 instances and helpers; they are not the range of the text. The declaration range of such an
 instance is only the class name in the command, and the build products do not give the
-range of the command. The extractor finds the command in the source text around the
-declaration range. The fixture for this case checks the result.
+range of the command. The extractor parses the commands of the source file with Lean's
+command parser and takes the `deriving instance` command that contains the declaration
+range. A search of the source text is not sufficient: a comment can contain the words of the
+command, and a comment can be inside the command. The fixture for this case checks the
+result.
 
 Rule 5 is wider than the rule `isDeclNeedsAutoDecl` of `import-graph`, which needs a final
 component that starts with `_`. The predicate `Environment.isAutoDecl` of Batteries names
