@@ -181,17 +181,22 @@ Lake's trace of the module, Lake can use an old product after a change to that f
 store then has the old data. The SQL files of `sql_module` are such files, and this document
 does not establish that each library has them in its trace. Requirement: the command accepts
 a file version only when each SQL file that its elaboration read has, on disk, the bytes
-that the build read. The record in the compiled module (`SqlSourceUse`) is not sufficient
-for this: it contains `sqlTextHash`, the hash after line endings are made the same, and a
-change of line endings inside an SQL string of more than one line changes the compiled
-value. The implementation needs this check: the compiled record gets a hash of the bytes
-that elaboration read, and the command compares it, when it accepts the file version, with
-the hash of the file at the recorded path. Lake's trace alone is not sufficient. The
-repository's Lake template uses `text = true` for SQL inputs. An `input_dir` hashes the
-contents of its files without their paths. An input is part of a module's trace only when
-the library lists it in `needs`. Lake hashes an input before elaboration, so an edit
-between that time and the read is not seen. The byte hash is a new field of `SqlSourceUse`
-in the package `belay`, so this requirement changes that package. Another kind
+that the build read.
+
+This document does not design the check; the implementation's task file must. These facts
+limit it:
+
+- The record in the compiled module (`SqlSourceUse`) contains `sqlTextHash`, the hash after
+  line endings are made the same. A change of line endings inside an SQL string of more than
+  one line changes the compiled value and not this hash.
+- A record exists only for a read whose effect stays in the environment. A read inside
+  `#check` leaves no record, because Lean restores the environment after the command.
+- The repository's Lake template gives SQL inputs to the trace with `text = true`, which
+  also makes line endings the same. An `input_dir` hashes the contents of its files without
+  their paths. Lake hashes an input before elaboration, so it does not see an edit between
+  that time and the read.
+
+Another kind
 of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
