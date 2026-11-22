@@ -41,15 +41,19 @@ recursor itself has no range. -/
 def rawRanges? (env : Environment) (name : Name) : Option DeclarationRanges :=
   declRangeExt.find? (level := .exported) env name <|> declRangeExt.find? (level := .server) env name
 
-/-- The type that Lean's inductive, auxiliary-recursor and projection tables give as the source
-of a constant (rule 1), when such a table has the constant. -/
+/-- The type that Lean's inductive, auxiliary-recursor, `noConfusion` and projection tables give
+as the source of a constant (rule 1), when such a table has the constant.
+
+It reads the auxiliary-recursor tag itself and not `isAuxRecursor`, because `isAuxRecursor` also
+accepts the written declarations `Eq.ndrec`, `Eq.ndrec_symm` and `Eq.ndrecOn` by name. For a
+constant of a constructor, such as `Nat.succ.noConfusion`, the parent is the constructor. -/
 def tableParent? (env : Environment) (info : ConstantInfo) : Option Name :=
   match info with
   | .ctorInfo value => some value.induct
   | .recInfo _ => some info.name.getPrefix
   | .inductInfo _ | .quotInfo _ | .axiomInfo _ => none
   | .defnInfo _ | .thmInfo _ | .opaqueInfo _ =>
-    if isAuxRecursor env info.name || isNoConfusion env info.name then some info.name.getPrefix
+    if auxRecExt.isTagged env info.name || isNoConfusion env info.name then some info.name.getPrefix
     else do
       let projection ← env.getProjectionFnInfo? info.name
       match env.find? projection.ctorName with

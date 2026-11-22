@@ -121,3 +121,10 @@ loaded.
     `deriving instance` commands (deferred: a syntax extension that the file declares after
     the command, review `c530101e`), the folding rules (review `7e390e7e`) and the
     prototype report (review `ec809ab0`).
+- 2026-11-22: review fixes of the rule 1 correction: rule 1 reads Lean's auxiliary-recursor
+  tag and not `isAuxRecursor`, which also accepts `Eq.ndrec`, `Eq.ndrec_symm` and
+  `Eq.ndrecOn` by name. Extractor version 7; the fixture rows now keep the mentions of
+  `Eq.ndrec`. Local full run, not evidence: the same decisions and candidates as version 6,
+  and 2,073 more `entity_references` rows. Tests: `python3 -m pytest -c pytest.ini tests` in
+  `experiments/lean-code-store` (22 passed).
+

@@ -1322,6 +1322,13 @@
     "Fixture.Types",
     "Area",
     "Init.Prelude",
+    "Eq.ndrec",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
     "HEq",
     "body"
    ],
@@ -1506,6 +1513,13 @@
     "Init.Prelude",
     "Eq",
     "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq.ndrec",
+    "body"
    ],
    [
     "Fixture.Types",
@@ -1854,6 +1868,13 @@
     "Fixture.Types",
     "Point",
     "Init.Prelude",
+    "Eq.ndrec",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
     "HAdd",
     "body"
    ],
@@ -2057,6 +2078,13 @@
     "Fixture.Types",
     "Point3",
     "Init.Prelude",
+    "Eq.ndrec",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
     "HAdd",
     "body"
    ],
@@ -2213,6 +2241,13 @@
     "Init.Prelude",
     "Eq",
     "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Eq.ndrec",
+    "body"
    ],
    [
     "Fixture.Types",

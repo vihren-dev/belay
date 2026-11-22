@@ -20,8 +20,13 @@ single-use query of the specification. No ClickHouse server was used.
 Input: the Nix packages of `just theorem-dependencies` for this revision (7 min 43 s), the
 four library trees of the default selection (`belay-sqlite-model`, `belay-sqlite-text`,
 `belay`, `verifier-conformance`), 1,617 modules, Lean 4.34.1. Extractor version
-`lean-code-store-prototype-6`. The rules are those of the specification after the
-corrections of this task.
+`lean-code-store-prototype-7`. The rules are those of the specification after the
+corrections of this task. Version 7 differs from version 6 only in rule 1: version 6 used
+Lean's `isAuxRecursor`, which also accepts the written declarations `Eq.ndrec`,
+`Eq.ndrec_symm` and `Eq.ndrecOn` by name, so it folded 2,073 mentions of them into `Eq`. A
+full run of version 7 gives the same decisions, the same candidates and the same rows as
+version 6, except 2,073 more `entity_references` rows. The times below are of the version 6
+run; the version 7 run took 195 s.
 
 How to run it is in the module docstring of `lean_code_store/run.py`. Sources of the tables:
 the decisions, the reported constants, the mention users and the candidates come from
@@ -113,7 +118,7 @@ in the key is the current module. The selected trees contain no `sql_module` use
 | `files` | 1,617 | 1,617 |
 | `entities` | 7,664 | 7,664 |
 | `entity_texts` | 7,589 | 7,556 |
-| `entity_references` | 439,498 | 439,498 |
+| `entity_references` | 441,571 | 441,571 |
 | `snapshot_files` | 1,617 for each snapshot | 3,234 for two snapshots |
 | `snapshots` | 1 for each run | 2 |
 
