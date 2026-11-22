@@ -23,10 +23,12 @@ four library trees of the default selection (`belay-sqlite-model`, `belay-sqlite
 `lean-code-store-prototype-6`. The rules are those of the specification after the
 corrections of this task.
 
-How to run it is in the module docstring of `lean_code_store/run.py`. The tables below come
-from `lean_code_store/report.py --store STORE --snapshot ID --candidates FILE`, where the
-candidates file is the output of `lean_code_store/clickhouse.py`. Two full runs gave the same
-counts. The tests are
+How to run it is in the module docstring of `lean_code_store/run.py`. Sources of the tables:
+the decisions, the reported constants, the mention users and the candidates come from
+`lean_code_store/report.py --store STORE --snapshot ID --candidates FILE`; the row counts
+come from `lean_code_store/clickhouse.py`, which also writes the candidates file; the times
+and the extracted counts come from the summary that `lean_code_store/run.py` prints. Two full
+runs, with extractor versions 5 and 6, gave the same counts. The tests are
 `python3 -m pytest -c experiments/lean-code-store/pytest.ini experiments/lean-code-store/tests`.
 
 ## Decisions of the rules
@@ -63,18 +65,24 @@ Lean's parser; no instance was reported as unparsed.
 
 Causes:
 
-- The 115 match and `_sparseCasesOn` functions come from `#guard` commands in the
-  `*Examples` modules, for example `#guard errorIn objects (drop "nope" "a") == …` in
-  `Schema/Ddl/DropColumnExamples.lean`. The command is not a declaration, so the function
-  has no parent. Reporting them meets the requirement of the specification.
-- The 14 `match_on_same_ctor` constants come from the derived `DecidableEq` of mutual
-  inductive types, for example in `Shared/Resolved/ResolvedExprForm.lean`. The name without
-  its final component ends in macro scopes and is not a constant.
-- The 20 macro-scoped constants with several partners come from `register_simp_attr`-like
-  commands in `Frontend/Codecs/StatementAttr.lean` and `TracedAttr.lean`. Each command gives
-  two constants without macro scopes with the same range, for example
-  `Parser.Attr.statement_arms` and `Parser.Attr.statement_arms_proc`. Rule 4 makes both
-  declarations with the same text.
+- The 115 match and `_sparseCasesOn` functions have a private name with nothing after the
+  module prefix. They come from commands that are not declarations, for example the
+  `#guard` commands of `Schema/Ddl/DropColumnExamples.lean`. 113 are in `*Examples`
+  modules; the other two are `_private.….Values.Json.JsonApply.0.match_7` and
+  `_private.….Schema.Dispatch.QueryOutputs.0.match_3`. The command has no declaration, so
+  the function has no parent. Reporting them meets the requirement of the specification.
+- Of the 14 constants with macro scopes and no range, 10 are `match_on_same_ctor` constants
+  of a derived `DecidableEq`, for example `Model.ExecutionError.match_on_same_ctor._@…` and
+  constants in `Shared/Resolved/ResolvedExprForm.lean`. The other 4 are match and
+  `_sparseCasesOn` functions of the `initialize` command of
+  `Queries/Automation/SqlSelectRule.lean` (`….initFn.match_1._@…`). For each, the name
+  without its final component ends in macro scopes and is not a constant.
+- The 20 macro-scoped constants with several partners come from commands that declare two
+  constants without macro scopes with one range: 4 in `Frontend/Codecs/StatementAttr.lean`,
+  8 in `TracedAttr.lean`, 4 in `Queries/Automation/SqlSelectRule.lean` and 4 in
+  `SqlSimp.lean`. For example, `Parser.Attr.statement_arms` and
+  `Parser.Attr.statement_arms_proc` have the same range. Rule 4 makes both declarations with
+  the same text.
 - 12 more generated constants are reported because their parents end in a reported
   constant: 10 `match_on_same_ctor.het._@…`, and `instToExprExpr_1.toExpr_2._unsafe_rec` and
   `….toExpr_2.match_1`.
@@ -112,7 +120,7 @@ in the key is the current module. The selected trees contain no `sql_module` use
 | --- | ---: | ---: |
 | First run | 1,617 | 199 s: fact reader 184 s with 4 processes (sum 732 s, at most 1.4 s for one module), keys 3 s, rows 12 s |
 | Second run, no change | 0 | 3.8 s, nearly all for the keys |
-| After an edit of `VerifierConformance/Tooling/Conformance/Classify.lean` in a writable copy of the package, and `lake build` there | 7 | 5.5 s |
+| After an edit of `VerifierConformance/Tooling/Conformance/Classify.lean` in a writable copy of the package, and `lake build` there (extractor version 4, before the macro-scope rule, on the store of its own first run) | 7 | 5.5 s |
 
 The 7 file versions are the edited file and its 6 importers. They are the 7 modules that
 Lake rebuilt. The load into `clickhouse-local` and the query took 1.4 s.
@@ -131,12 +139,18 @@ The query gave 2,285 candidates.
 | structure | 1 | 1 |
 
 Of the 121 instance candidates, 97 are instances of `deriving instance` commands. The 27
-opaque candidates are 17 `partial` definitions and 10 constants whose text contains
-`initialize` or `register`, such as `Belay.Sqlite.parserMetadata`. 14 candidates are `where` functions, whose one user is their parent by
-construction.
+opaque candidates are 11 `partial def` declarations, 1 `where` function of a partial
+definition (`Run.runGoal.runSend`), 5 `opaque` declarations (for example
+`ParserLibrary.metadata`), and 10 constants whose text contains `initialize` or `register`,
+such as `Belay.Sqlite.parserMetadata`. 14 candidates are `where` functions whose only user
+is their parent; `Run.runGoal.closesBySelect` is a `where` function whose only user is its
+sibling `Run.runGoal.runRead`.
 
 A sample of 20 candidates, the first 20 by the SHA-256 of the name, read against the
-source and a search of all Lean files of the repository:
+source and a search of all Lean files of the repository. "True" means: the source and the
+search show no other user. Uses that leave no trace in the build products and in the text
+(kernel unfolding, a name in a tactic quotation that Lean does not record) can still exist;
+the specification names this limit.
 
 | # | Candidate | Only user | Result |
 | ---: | --- | --- | --- |
@@ -161,7 +175,7 @@ source and a search of all Lean files of the repository:
 | 19 | `Model.instToExprSelectBody` | `instToExprStatement` | False: derived instance |
 | 20 | `sendStatements_branch_resolveState` | `KeptRead.preserves` | True |
 
-15 are true candidates and 5 are false. Causes of the false candidates:
+Under this limit, 15 are true candidates and 5 are false. Causes of the false candidates:
 
 - A derived instance (3): instance resolution is the use, and the text is a `deriving
   instance` command that can also declare other instances, for example
@@ -182,7 +196,8 @@ specification and the ADR were re-read before each change; the other session's r
    `_private.Belay.Sqlite.Frontend.Grammar.Located.0.Belay.Sqlite.Translation.Span.leaves.match_1.eq_1`
    has the private prefix of the using module, so the name without its final component is
    not a constant (9,259 constants). Changed: rule 5 also uses the name without the
-   private prefix. The ADR D6 summary of the rule is changed in the same way.
+   private prefix. The ADR D6 summary of the rule still has the old text at this revision;
+   the next commit changes it.
 2. Rule 4 made generated constants declarations: `initFn._@.…SqlFileLoad…` has the range of
    the `initialize` command of `Belay.Sqlite.sqlPackageRootOption` (43 such constants).
    Changed: a constant with macro scopes (`Name.hasMacroScopes`) and a range folds into
@@ -193,8 +208,8 @@ specification and the ADR were re-read before each change; the other session's r
    cases. Changed: the extractor parses the commands of the file with Lean's parser, and an
    instance with a name-only range and no parsed command is reported.
 4. The status said that nothing was implemented and that the queries were not run.
-   Changed. The ADR said that no measurement of the time exists; changed to refer to this
-   record.
+   Changed. The ADR says that no measurement of the time exists; the next commit changes
+   it to refer to this record.
 5. The rule for mention users did not say that a usage of a type name in a `deriving
    instance` command has the empty user: no full range contains it, because the full range
    of such an instance is the class name. Changed: the specification states it.
@@ -202,8 +217,10 @@ specification and the ADR were re-read before each change; the other session's r
    constant. Changed: the specification states it.
 7. Not changed, stated here: the specification names `Environment.isAutoDecl` of Batteries
    as a check of rule 5. Lean core 4.34.1 has `Lean.isAutoDeclOrPrivate_Internal` in
-   `Lean/AutoDecl.lean`, which is true for generated names and also for each private and
-   macro-scoped name. The fact reader gives it for each constant (`leanAutoDecl`).
+   `Lean/AutoDecl.lean`, which is true for many generated names and also for each private
+   and macro-scoped name. It is a partial check only: it is false for
+   `Belay.Sqlite.instInhabitedDiagnostic.default`, which has no range and which rule 5
+   decides as generated. The fact reader gives it for each constant (`leanAutoDecl`).
 8. Not changed, stated here: rule 1 says that Lean's tables give the "other constants" of a
    type. `ctorIdx`, `injEq`, `sizeOf_spec` and `noConfusionType` are in no table; rule 5
    decides them.
@@ -214,14 +231,18 @@ specification and the ADR were re-read before each change; the other session's r
    (`register_simp_attr` gives `X` and `X_proc`): which one is the written declaration?
    Today both are declarations with the same text, and the macro-scoped constants of the
    command are reported (20).
-2. A constant whose name ends in macro scopes and has no range (`match_on_same_ctor._@…`
-   of a derived `DecidableEq`, 14 and 10 children): should the rule remove the macro scopes
-   and fold it into the type?
+2. A constant whose name ends in macro scopes and has no range: should the rule remove the
+   macro scopes and fold it? For the 10 `match_on_same_ctor._@…` constants of a derived
+   `DecidableEq` (and their 10 children), the parent would be the type. For the 4 match
+   functions of the `initialize` command in `SqlSelectRule.lean`, it would be the constant
+   that the command declares.
 3. How should the store keep a relationship whose target is reported? The prototype keeps
-   the kernel name and module of the target (21 rows).
+   the kernel name and module of the target: 21 relationships before the removal of
+   duplicates, 15 stored rows.
 4. Should a usage in a `deriving instance` command get the instances of the command as
-   users? All instances of one command share one range, so the range rule gives the empty
-   user.
+   users? The instances of one command share the text of the command, but the range of each
+   instance is only its class name. A type name after `for` is outside each of these
+   ranges, so the range rule gives the empty user.
 5. Should the single-use query leave out instances, or derived instances? They are 121 of
    2,285 candidates, and the sample had no true instance candidate.
 6. Lean's parser reads a `deriving instance` command in the environment at the end of the

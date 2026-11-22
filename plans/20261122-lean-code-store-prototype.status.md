@@ -80,8 +80,10 @@ loaded.
 - 2026-11-22: `lean_code_store/report.py` prints the tables of the findings record from the
   facts, the store and the query result (`tests/test_report.py`). The review loop of the
   folding-rule commits stopped after four rounds with new "must" findings; the five findings
-  of review `20261122T135558Z-7e390e7e` are deferred for the owner; the findings record
-  lists them as an owner question.
+  of review `20261122T135558Z-7e390e7e` are deferred for the owner. The findings record names
+  that review and summarizes its findings 2 and 3 (macro instance, quoted class name); it
+  notes that extractor version 6 met finding 1; findings 4 and 5 (a test docstring, a test
+  of the `macroScopes` diagnostic) are only in the review record.
 - 2026-11-22: review fixes of the report: the store keeps the decision of each constant in
   `counts.json`, and the report reads the decisions, causes and counts of the requested
   snapshot's file versions only, so it needs no facts directory. A test runs `report.main` on
@@ -95,4 +97,8 @@ loaded.
   (15 true, 5 false), the wrong statements of the specification and the ADR, and the owner
   questions. The review loop of the report commits stopped after four rounds; the findings
   of review `20261122T141007Z-ec809ab0` are deferred.
+- 2026-11-22: review fixes of the findings record: the sources of the tables, the groups of
+  the reported constants by module, the extractor version of the edit run, the opaque and
+  `where` candidates, the limit of "true" candidates, the ADR corrections as pending, the
+  partial check `isAutoDeclOrPrivate_Internal`, and 15 stored rows of reported targets.
 
