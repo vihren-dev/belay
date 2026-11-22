@@ -127,5 +127,8 @@ loaded.
   references to `Eq.ndrec`. The version test writes rows with the current extractor under
   version 6 file keys and checks that version 7 extracts all five modules again. The local
   measurements of version 7 are in the findings record. Tests: `python3 -m pytest -c
-  pytest.ini tests` in `experiments/lean-code-store` (22 passed).
+  pytest.ini tests` in `experiments/lean-code-store`.
+- 2026-11-22: the specification's rule 1 names the auxiliary-recursor tag, the parent of a
+  constant of a constructor, and the written `Eq.ndrec` declarations that `isAuxRecursor`
+  accepts by name.
 

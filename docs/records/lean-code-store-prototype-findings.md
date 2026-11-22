@@ -234,7 +234,8 @@ specification and the ADR were re-read before each change; the other session's r
    `Belay.Sqlite.instInhabitedDiagnostic.default`, which has no range and which rule 5
    decides as generated. The fact reader gives it for each constant (`leanAutoDecl`).
 8. Rule 1 said that Lean's tables give the "other constants" of a type. `ctorIdx`, `injEq`,
-   `sizeOf_spec` and `noConfusionType` are in no table; rule 5 decides them. The
+   `sizeOf_spec` and `noConfusionType` are in none of the tables that rule 1 reads; rule 5
+   decides them. The
    specification now names the tables and these constants.
 
 ## Questions for the owner
