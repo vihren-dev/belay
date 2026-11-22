@@ -79,6 +79,7 @@ loaded.
   quoted name that contains `._@.` as the only parent of a macro-scoped constant.
 - 2026-11-22: `lean_code_store/report.py` prints the tables of the findings record from the
   facts, the store and the query result (`tests/test_report.py`). The review loop of the
-  folding-rule commits stopped after four rounds with new "must" findings; the round 4
-  findings are deferred and listed as owner questions.
+  folding-rule commits stopped after four rounds with new "must" findings; the five findings
+  of review `20261122T135558Z-7e390e7e` are deferred for the owner, and the findings record
+  lists them as an owner question.
 

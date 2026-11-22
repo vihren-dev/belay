@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-22T14:04:22+00:00",
+  "finding": "20261122T140329Z-b9dddadd#3",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The report groups names with the extractor's own name splitting (source.name_components), whose docstring states the limit for quoted components with a dot; no name of the default selection has such a component in a reported constant, and the grouping is only a display."
+}
