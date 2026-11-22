@@ -1,6 +1,6 @@
 # Status: a prototype of the Lean code store extractor
 
-Date: 2026-11-22. Status: OPEN.
+Date: 2026-11-22. Status: DONE (2026-11-22). Open points are owner questions in the findings record.
 Task: [20261122-lean-code-store-prototype.task.md](20261122-lean-code-store-prototype.task.md).
 Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
 [ADR 0032](../docs/adr/adr-0032-lean-code-store.md).
@@ -107,4 +107,7 @@ loaded.
 - 2026-11-22: ADR 0032: D6 states the private-prefix part of the name rule, and "Not
   decided here" refers to the prototype measurement; the specification links the findings
   record.
+- 2026-11-22: DONE. Each item of the task file is met; the findings record lists the open
+  points as owner questions. Two review loops stopped after four rounds with new "must"
+  findings (folding rules, prototype report); their last findings are deferred.
 

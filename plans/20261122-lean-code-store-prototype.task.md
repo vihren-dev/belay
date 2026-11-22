@@ -1,6 +1,6 @@
 # Task: a prototype of the Lean code store extractor
 
-Date: 2026-11-22. Status: OPEN.
+Date: 2026-11-22. Status: DONE (2026-11-22). Open points are owner questions in the findings record.
 Decision: [ADR 0032](../docs/adr/adr-0032-lean-code-store.md) (PROPOSED).
 Specification: [the Lean code store](../docs/records/spec-lean-code-store.md).
 Status file: [20261122-lean-code-store-prototype.status.md](20261122-lean-code-store-prototype.status.md).
