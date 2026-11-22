@@ -1,6 +1,8 @@
 # Status: a prototype of the Lean code store extractor
 
-Date: 2026-11-22. Status: DONE (2026-11-22). Open points are owner questions in the findings record.
+Date: 2026-11-22. Status: DONE (2026-11-22). The owner questions are in the findings record; the deferred review
+findings are in the review records `reviews/20261122T132942Z-c530101e`,
+`reviews/20261122T135558Z-7e390e7e` and `reviews/20261122T141007Z-ec809ab0`.
 Task: [20261122-lean-code-store-prototype.task.md](20261122-lean-code-store-prototype.task.md).
 Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
 [ADR 0032](../docs/adr/adr-0032-lean-code-store.md).
@@ -107,7 +109,15 @@ loaded.
 - 2026-11-22: ADR 0032: D6 states the private-prefix part of the name rule, and "Not
   decided here" refers to the prototype measurement; the specification links the findings
   record.
-- 2026-11-22: DONE. Each item of the task file is met; the findings record lists the open
-  points as owner questions. Two review loops stopped after four rounds with new "must"
-  findings (folding rules, prototype report); their last findings are deferred.
-
+- 2026-11-22: DONE, with these exceptions and open points:
+  - The rule 1 statement of the specification is not corrected: rule 1 says that Lean's
+    tables give the "other constants" of a type, but `ctorIdx`, `injEq`, `sizeOf_spec` and
+    `noConfusionType` are in no table and rule 5 decides them (findings record, wrong
+    statement 8). This correction stays open for the owner.
+  - Two review-fix commits, `de015deec265` and `7e390e7ed528`, change the specification and
+    the extractor together, so they do not follow the separate-commit rule for
+    specification corrections.
+  - Three review loops stopped after four rounds with new "must" findings: the text of
+    `deriving instance` commands (deferred: a syntax extension that the file declares after
+    the command, review `c530101e`), the folding rules (review `7e390e7e`) and the
+    prototype report (review `ec809ab0`).

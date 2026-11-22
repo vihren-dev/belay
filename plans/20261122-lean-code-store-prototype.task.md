@@ -1,6 +1,8 @@
 # Task: a prototype of the Lean code store extractor
 
-Date: 2026-11-22. Status: DONE (2026-11-22). Open points are owner questions in the findings record.
+Date: 2026-11-22. Status: DONE (2026-11-22). The owner questions are in the findings record; the deferred review
+findings are in the review records `reviews/20261122T132942Z-c530101e`,
+`reviews/20261122T135558Z-7e390e7e` and `reviews/20261122T141007Z-ec809ab0`.
 Decision: [ADR 0032](../docs/adr/adr-0032-lean-code-store.md) (PROPOSED).
 Specification: [the Lean code store](../docs/records/spec-lean-code-store.md).
 Status file: [20261122-lean-code-store-prototype.status.md](20261122-lean-code-store-prototype.status.md).
