@@ -86,6 +86,20 @@
    ],
    [
     "Fixture.Derive",
+    "",
+    "Init.Prelude",
+    "BEq",
+    "mention"
+   ],
+   [
+    "Fixture.Derive",
+    "",
+    "Init.Prelude",
+    "Hashable",
+    "mention"
+   ],
+   [
+    "Fixture.Derive",
     "instBEqPoint",
     "Fixture.Types",
     "Point",
@@ -97,6 +111,76 @@
     "Fixture.Types",
     "Point",
     "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "BEq",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "BEq",
+    "instance_of"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "BEq",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "Bool",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "Bool",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "Bool.and",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "instBEqOfDecidableEq",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Init.Prelude",
+    "instDecidableEqNat",
+    "body"
    ],
    [
     "Fixture.Derive",
@@ -121,6 +205,55 @@
    ],
    [
     "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "BEq",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "BEq",
+    "instance_of"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "BEq",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "Bool",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "instBEqOfDecidableEq",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Init.Prelude",
+    "instDecidableEqNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
     "instHashablePoint",
     "Fixture.Types",
     "Point",
@@ -135,6 +268,83 @@
    ],
    [
     "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Data.Hashable",
+    "instHashableNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Data.UInt.BasicAux",
+    "UInt64.instOfNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "Hashable",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "Hashable",
+    "instance_of"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "Hashable",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "UInt64",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "UInt64",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Init.Prelude",
+    "mixHash",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
     "instHashableTag",
     "Fixture.Types",
     "Tag",
@@ -146,6 +356,76 @@
     "Fixture.Types",
     "Tag",
     "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Data.UInt.BasicAux",
+    "UInt64.instOfNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Hashable",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Hashable",
+    "instance_of"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Hashable",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "UInt64",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "UInt64",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Unit",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Unit",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Init.Prelude",
+    "Unit.unit",
+    "body"
    ]
   ]
  },
@@ -164,7 +444,43 @@
    ]
   },
   "path": "Fixture/Same/A.lean",
-  "references": []
+  "references": [
+   [
+    "Fixture.Same.A",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Same.A",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Same.A",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Same.A",
+    "Shared.value",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Same.A",
+    "Shared.value",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ]
+  ]
  },
  "Fixture.Same.B": {
   "entities": [
@@ -181,7 +497,43 @@
    ]
   },
   "path": "Fixture/Same/B.lean",
-  "references": []
+  "references": [
+   [
+    "Fixture.Same.B",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Same.B",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Same.B",
+    "Shared.value",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Same.B",
+    "Shared.value",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Same.B",
+    "Shared.value",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ]
+  ]
  },
  "Fixture.Types": {
   "entities": [
@@ -193,7 +545,7 @@
    [
     "Color",
     "inductive",
-    "/-- A color with an inline `deriving` clause. -/\ninductive Color where\n  | red\n  | green\n  deriving Repr, DecidableEq"
+    "/-- A color with an inline {lit}`deriving` clause. -/\ninductive Color where\n  | red\n  | green\n  deriving Repr, DecidableEq"
    ],
    [
     "Foo",
@@ -218,7 +570,7 @@
    [
     "Tag",
     "inductive",
-    "/-- A tag without a `deriving` clause; `Fixture.Derive` derives its instances. -/\ninductive Tag where\n  | first\n  | second"
+    "/-- A tag without a `deriving` clause; {lit}`Fixture.Derive` derives its instances. -/\ninductive Tag where\n  | first\n  | second"
    ],
    [
     "_private.Fixture.Types.0.secret",
@@ -236,9 +588,14 @@
     "instance : Area Point where\n  area p := p.x * p.y"
    ],
    [
+    "natCase",
+    "definition",
+    "/-- Uses the generated eliminator {name}`Nat.casesOn` of the library, which folds into {name}`Nat`. -/\ndef natCase (n : Nat) : Nat := Nat.casesOn (motive := fun _ => Nat) n 0 (fun k => k)"
+   ],
+   [
     "total",
     "definition",
-    "/-- The sum of the coordinates, with a `where` function. -/\ndef total (p : Point) : Nat := go p.x\nwhere\n  go (n : Nat) : Nat := n + p.y"
+    "/-- The sum of the coordinates, with a {lit}`where` function. -/\ndef total (p : Point) : Nat := go p.x\nwhere\n  go (n : Nat) : Nat := n + p.y"
    ],
    [
     "total.go",
@@ -548,6 +905,10 @@
     "Fixture.Types",
     "Color"
    ],
+   "natCase": [
+    "Fixture.Types",
+    "natCase"
+   ],
    "total": [
     "Fixture.Types",
     "total"
@@ -572,6 +933,13 @@
    ],
    [
     "Fixture.Types",
+    "",
+    "Init.Prelude",
+    "rfl",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
     "Area",
     "Fixture.Types",
     "Area.noConfusionType",
@@ -583,6 +951,76 @@
     "Fixture.Types",
     "Area.noConfusionType",
     "type"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "HEq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "HEq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "eq_of_heq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "heq_of_eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Init.Prelude",
+    "id",
+    "body"
    ],
    [
     "Fixture.Types",
@@ -635,6 +1073,300 @@
    ],
    [
     "Fixture.Types",
+    "Color",
+    "Init.Core",
+    "Eq.mp",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Core",
+    "noConfusionEnum",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Format.Basic",
+    "Std.Format",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Format.Basic",
+    "Std.Format",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Format.Basic",
+    "Std.Format.FlattenBehavior",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Int.Basic",
+    "Int",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Int.Basic",
+    "instOfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Repr",
+    "Repr",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Repr",
+    "Repr",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Repr",
+    "Repr",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Repr",
+    "Repr",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Data.Repr",
+    "Repr.addAppParen",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Decidable",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "DecidableEq",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "DecidableEq",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "DecidableEq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Eq.symm",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "False",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "False",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "GE.ge",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Nat.decLe",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Not",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Not",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "PULift",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "Unit.unit",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "absurd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "congrArg",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "dite",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "instDecidableEqNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "instLENat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.Prelude",
+    "ite",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.SizeOf",
+    "SizeOf",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.SizeOf",
+    "SizeOf",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Init.SizeOf",
+    "SizeOf",
+    "type"
+   ],
+   [
+    "Fixture.Types",
     "Foo",
     "Fixture.Types",
     "Foo._helper",
@@ -649,6 +1381,97 @@
    ],
    [
     "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "HAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "instAddNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "instHAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo._helper",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo._helper",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Foo._helper",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Foo._helper",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo._helper",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "Point",
     "Fixture.Types",
     "Point.noConfusionType",
@@ -660,6 +1483,111 @@
     "Fixture.Types",
     "Point.noConfusionType",
     "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "HAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "id",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "instAddNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "instHAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.SizeOf",
+    "SizeOf",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.SizeOf",
+    "SizeOf",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.SizeOf",
+    "SizeOf",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Init.SizeOf",
+    "instSizeOfNat",
+    "body"
    ],
    [
     "Fixture.Types",
@@ -705,6 +1633,111 @@
    ],
    [
     "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "HAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "id",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "instAddNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "instHAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.SizeOf",
+    "SizeOf",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.SizeOf",
+    "SizeOf",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.SizeOf",
+    "SizeOf",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Init.SizeOf",
+    "instSizeOfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "Tag",
     "Fixture.Types",
     "Tag.ctorElimType",
@@ -740,6 +1773,132 @@
    ],
    [
     "Fixture.Types",
+    "Tag",
+    "Init.Core",
+    "noConfusionEnum",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Eq.symm",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "PULift",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "instDecidableEqNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.SizeOf",
+    "SizeOf",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.SizeOf",
+    "SizeOf",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Init.SizeOf",
+    "SizeOf",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "describe",
     "Fixture.Types",
     "Color",
@@ -758,6 +1917,34 @@
     "Fixture.Types",
     "Color",
     "type"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "String",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "String",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "String",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "Unit",
+    "body"
    ],
    [
     "Fixture.Types",
@@ -810,6 +1997,69 @@
    ],
    [
     "Fixture.Types",
+    "instAreaPoint",
+    "Init.Prelude",
+    "HMul",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Init.Prelude",
+    "instHMul",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Init.Prelude",
+    "instMulNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "natCase",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "natCase",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "natCase",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "natCase",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "natCase",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "total",
     "Fixture.Types",
     "Point",
@@ -845,6 +2095,20 @@
    ],
    [
     "Fixture.Types",
+    "total",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
     "total.go",
     "Fixture.Types",
     "Point",
@@ -866,6 +2130,41 @@
    ],
    [
     "Fixture.Types",
+    "total.go",
+    "Init.Prelude",
+    "HAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Init.Prelude",
+    "instAddNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Init.Prelude",
+    "instHAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
     "usesSecret",
     "Fixture.Types",
     "Point",
@@ -898,6 +2197,62 @@
     "Fixture.Types",
     "total",
     "mention"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "HAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Nat",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "OfNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instAddNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instHAdd",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instOfNatNat",
+    "body"
    ]
   ]
  },
@@ -957,6 +2312,34 @@
    ],
    [
     "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "String",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Init.Prelude",
+    "String",
+    "type"
+   ],
+   [
+    "Fixture.Types",
     "usesSecret",
     "Fixture.Types",
     "Point",
@@ -974,6 +2357,69 @@
     "usesSecret",
     "Fixture.Types",
     "total",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "HAdd",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Nat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "Nat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "OfNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instAddNat",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instHAdd",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Init.Prelude",
+    "instOfNatNat",
     "type"
    ],
    [
@@ -1020,6 +2466,48 @@
    ],
    [
     "Fixture.Uses",
+    "describe_red",
+    "Init.Prelude",
+    "Eq",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Init.Prelude",
+    "Eq",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Init.Prelude",
+    "String",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Init.Prelude",
+    "String",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Init.SimpLemmas",
+    "eq_self",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Init.SimpLemmas",
+    "of_eq_true",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
     "hashPoint",
     "Fixture.Derive",
     "instHashablePoint",
@@ -1044,6 +2532,34 @@
     "hashPoint",
     "Fixture.Types",
     "Point",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Init.Prelude",
+    "Hashable",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Init.Prelude",
+    "Hashable",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Init.Prelude",
+    "UInt64",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Init.Prelude",
+    "UInt64",
     "type"
    ]
   ]

@@ -1,0 +1,173 @@
+{
+  "caller": "claude",
+  "commit": "de44ca1319fe118080e4957240c67979c8053e6a",
+  "date": "2026-11-22T13:15:07+00:00",
+  "exit": 1,
+  "files": [
+    "experiments/lean-code-store/extractor/LeanCodeStore/Facts.lean",
+    "experiments/lean-code-store/extractor/LeanCodeStore/Module.lean",
+    "experiments/lean-code-store/extractor/Main.lean",
+    "experiments/lean-code-store/extractor/lake-manifest.json",
+    "experiments/lean-code-store/extractor/lakefile.toml",
+    "experiments/lean-code-store/extractor/lean-toolchain",
+    "experiments/lean-code-store/fixture/Fixture/Derive.lean",
+    "experiments/lean-code-store/fixture/Fixture/Same/A.lean",
+    "experiments/lean-code-store/fixture/Fixture/Same/B.lean",
+    "experiments/lean-code-store/fixture/Fixture/Types.lean",
+    "experiments/lean-code-store/fixture/Fixture/Uses.lean",
+    "experiments/lean-code-store/fixture/expected-rows.json",
+    "experiments/lean-code-store/fixture/lake-manifest.json",
+    "experiments/lean-code-store/fixture/lakefile.toml",
+    "experiments/lean-code-store/fixture/lean-toolchain",
+    "experiments/lean-code-store/lean_code_store/__init__.py",
+    "experiments/lean-code-store/lean_code_store/clickhouse.py",
+    "experiments/lean-code-store/lean_code_store/facts.py",
+    "experiments/lean-code-store/lean_code_store/folding.py",
+    "experiments/lean-code-store/lean_code_store/inputs.py",
+    "experiments/lean-code-store/lean_code_store/keys.py",
+    "experiments/lean-code-store/lean_code_store/mentions.py",
+    "experiments/lean-code-store/lean_code_store/rows.py",
+    "experiments/lean-code-store/lean_code_store/run.py",
+    "experiments/lean-code-store/lean_code_store/source.py",
+    "experiments/lean-code-store/lean_code_store/store.py",
+    "experiments/lean-code-store/pytest.ini",
+    "experiments/lean-code-store/tests/conftest.py",
+    "experiments/lean-code-store/tests/factories.py",
+    "experiments/lean-code-store/tests/test_fixture_package.py",
+    "experiments/lean-code-store/tests/test_folding.py",
+    "experiments/lean-code-store/tests/test_keys.py",
+    "experiments/lean-code-store/tests/test_source_and_mentions.py",
+    "plans/20261122-lean-code-store-prototype.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261122T131507Z-de44ca13#1",
+      "line": 28,
+      "path": "plans/20261122-lean-code-store-prototype.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status says the prototype implements the specified folding rules, but the recorded run contains 161 selected constants whose parent chain resolves to no declaration and whose names are absent from the report. Fix: Record these 161 separately from the 13,108 constants for which no rule matched."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#2",
+      "line": 29,
+      "path": "plans/20261122-lean-code-store-prototype.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The specification requires folding generated targets outside the project, but `_external_parent` applies only rules 1 and 5, leaving targets such as instances from inline `deriving` clauses unfolded. Fix: State which rules the prototype applies to external targets so readers can interpret its relationship rows."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#3",
+      "line": 64,
+      "path": "experiments/lean-code-store/lean_code_store/rows.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The tests miss the case where a generated helper has a reported parent, so the helper can disappear from both the declaration rows and the named report. Fix: Add a test that follows a generated helper to an unresolved parent and requires the report to name the helper and the cause."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#4",
+      "line": 19,
+      "path": "experiments/lean-code-store/tests/test_keys.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "Every test keeps the build-product digest fixed, so removing all build products from `file_key` still passes despite breaking invalidation when only compiled output changes. Fix: Hold the source and imports fixed, change one product digest, and assert that the file key and its importers’ keys change."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#5",
+      "line": 47,
+      "path": "experiments/lean-code-store/tests/test_fixture_package.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The fixture comparison discards every reference to an external module, so deleting all relationships to Lean or third-party declarations still passes. Fix: Include an external generated target in the fixture and assert its folded module, name, and relationship kind."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#6",
+      "line": 55,
+      "path": "experiments/lean-code-store/lean_code_store/source.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The command-range test misses indented sibling commands, which the loop appends to the preceding `deriving instance` text and therefore includes in its stored hash. Fix: Add a case with two commands at the same nonzero indentation and stop the extracted text at the end of the first command."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#7",
+      "line": 51,
+      "path": "experiments/lean-code-store/lean_code_store/clickhouse.py",
+      "rule": "R11",
+      "severity": "should",
+      "text": "No test exercises the new ClickHouse load and query, so the suite still passes if the command fails to return any single-use candidates. Fix: Check the command against a small stored snapshot with one known candidate and one target excluded by an anonymous use."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#8",
+      "line": 50,
+      "path": "experiments/lean-code-store/extractor/LeanCodeStore/Facts.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "The catch-all branch in `tableParent?` silently sends any future `ConstantInfo` constructor through the auxiliary-recursor and projection checks. Fix: List the remaining constructors explicitly so Lean requires a parent decision for each new kind."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#9",
+      "line": 32,
+      "path": "plans/20261122-lean-code-store-prototype.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status cites passing unit and fixture tests from a local pytest run even though the repository permits status files to cite only Nix check results. Fix: Keep the test command and cite a passing result only when a Nix check supplies it."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#10",
+      "line": 38,
+      "path": "experiments/lean-code-store/lean_code_store/run.py",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The new command writes local snapshots, while the linked specification still says that nothing is implemented and no command writes to the store. Fix: Update the specification’s status to distinguish the local prototype from the proposed ClickHouse service."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#11",
+      "line": 63,
+      "path": "experiments/lean-code-store/lean_code_store/inputs.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The list of build products that contribute to a file key is embedded in `product_paths`, although it defines which artifact changes invalidate a snapshot. Fix: Give the required and optional product suffixes documented names and use them for both selection and validation."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#12",
+      "line": 22,
+      "path": "experiments/lean-code-store/lean_code_store/source.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The `name_components` docstring says the prototype checks for escaped name components containing dots, but the run performs no such check. Fix: Remove the unsupported claim and state how the function handles those names."
+    },
+    {
+      "id": "20261122T131507Z-de44ca13#13",
+      "line": 18,
+      "path": "experiments/lean-code-store/extractor/LeanCodeStore/Module.lean",
+      "rule": "R10",
+      "severity": "should",
+      "text": "The malformed-`references` diagnostic identifies the `.ilean` file and field but gives the operator no recovery action. Fix: Tell the operator to rebuild the named module with the pinned Lean toolchain."
+    }
+  ],
+  "id": "20261122T131507Z-de44ca13",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

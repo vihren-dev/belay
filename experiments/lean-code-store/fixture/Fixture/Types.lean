@@ -11,13 +11,13 @@ structure Point where
 structure Point3 extends Point where
   z : Nat
 
-/-- A color with an inline `deriving` clause. -/
+/-- A color with an inline {lit}`deriving` clause. -/
 inductive Color where
   | red
   | green
   deriving Repr, DecidableEq
 
-/-- A tag without a `deriving` clause; `Fixture.Derive` derives its instances. -/
+/-- A tag without a `deriving` clause; {lit}`Fixture.Derive` derives its instances. -/
 inductive Tag where
   | first
   | second
@@ -29,7 +29,7 @@ class Area (α : Type) where
 instance : Area Point where
   area p := p.x * p.y
 
-/-- The sum of the coordinates, with a `where` function. -/
+/-- The sum of the coordinates, with a {lit}`where` function. -/
 def total (p : Point) : Nat := go p.x
 where
   go (n : Nat) : Nat := n + p.y
@@ -43,6 +43,9 @@ def usesSecret : Nat := secret + total ⟨1, 2⟩
 def describe : Color → String
   | .red => "r"
   | .green => "g"
+
+/-- Uses the generated eliminator {name}`Nat.casesOn` of the library, which folds into {name}`Nat`. -/
+def natCase (n : Nat) : Nat := Nat.casesOn (motive := fun _ => Nat) n 0 (fun k => k)
 
 example : total ⟨1, 2⟩ = 3 := rfl
 

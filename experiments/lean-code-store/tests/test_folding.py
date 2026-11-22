@@ -76,3 +76,15 @@ def test_rule_five_as_specified_reports_other_generated_names() -> None:
     decisions = decide_module(facts, SOURCE)
     assert decisions["T.ctorIdx"] == Decision("reported", "no rule")
     assert decisions["_private.N.0.T.eq_1"] == Decision("reported", "no rule")
+
+
+def test_a_generated_constant_with_a_reported_parent_is_reported() -> None:
+    """A helper whose parent is reported is named in the report with its cause, and has no user."""
+    from lean_code_store.rows import build_rows
+    facts = module(constant("T", kind="inductive", span=span(1, 0, 3, 15)), constant("T.ctorIdx"),
+                   constant("T.ctorIdx._proof_1"))
+    decisions = decide_module(facts, SOURCE)
+    resolve = resolver(facts, decisions, lambda m, n: (m, n), lambda m: False)
+    rows = build_rows("k" * 64, facts, decisions, SOURCE, [], resolve)
+    assert ("T.ctorIdx", "no rule") in rows.reported
+    assert ("T.ctorIdx._proof_1", "generated, no declaration at the end of its parents") in rows.reported

@@ -15,7 +15,7 @@ The Python side folds these mention targets, so it needs their facts. -/
 def ileanTargets (path : System.FilePath) : IO (Array Name) := do
   let json ← IO.ofExcept <| Json.parse (← IO.FS.readFile path)
   let references ← IO.ofExcept <| json.getObjVal? "references"
-  let .obj entries := references | throw <| IO.userError s!"{path}: references is not an object"
+  let .obj entries := references | throw <| IO.userError s!"{path}: field references is not an object; rebuild the module with the pinned Lean toolchain"
   let mut names := #[]
   for (key, _) in entries.toArray do
     let ident ← IO.ofExcept <| Json.parse key

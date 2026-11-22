@@ -34,6 +34,15 @@ def test_dependency_order_puts_imports_first_and_rejects_cycles() -> None:
         dependency_order({"A": _input("A", imports=("B",)), "B": _input("B", imports=("A",))})
 
 
+def test_a_changed_build_product_changes_the_keys_of_the_file_and_its_importers() -> None:
+    """With the same text and imports, a new build product digest gives new keys to B and C."""
+    inputs = {"B": _input("B"), "C": _input("C", imports=("B",))}
+    before = snapshot_keys("x", "lean", inputs)
+    changed = KeyInput("B", "a" * 64, (("M.olean", "c" * 64),), ())
+    after = snapshot_keys("x", "lean", dict(inputs, B=changed))
+    assert before["B"] != after["B"] and before["C"] != after["C"]
+
+
 def test_an_edit_changes_the_keys_of_the_importers_only() -> None:
     """An edit of B gives new keys to B and C, which imports B, and not to A or D."""
     inputs = {"A": _input("A"), "B": _input("B", imports=("A",)), "C": _input("C", imports=("B",)),

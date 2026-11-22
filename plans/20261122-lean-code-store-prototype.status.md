@@ -26,7 +26,13 @@ loaded.
 
 - 2026-11-22: task file written. No code.
 - 2026-11-22: first prototype. It implements the rules of "Generated constants" as the
-  specification writes them. Input: the Nix packages of `just theorem-dependencies` for this
-  revision (built here, 7 min 43 s). Local run on 1,617 modules: 196 s; a second run extracts 0
-  files in 4 s. With the rules as written, 13,108 constants are reported by no rule; the next
-  commits record this and correct the rules. Unit and fixture tests pass.
+  specification writes them, for the constants of the selected modules. For a target outside
+  the selection it applies only rules 1 and 5: rules 2 and 3 need the ranges of all constants
+  of the target's file, which the prototype does not read for Lean's library. Input: the Nix
+  packages of `just theorem-dependencies` for this revision. Local measurement, not evidence:
+  1,617 modules in 196 s; a second run extracts 0 files in 4 s; with the rules as written, no
+  rule decides 13,108 constants. The next commits record this and correct the rules.
+- 2026-11-22: review fixes: a generated constant whose parents end in a reported constant is
+  reported with that cause; tests for a changed build product, an indented `deriving instance`
+  command, a generated target in Lean's library (`Nat.casesOn`), and the `clickhouse-local`
+  load and query.

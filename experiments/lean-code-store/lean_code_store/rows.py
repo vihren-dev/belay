@@ -63,6 +63,9 @@ def build_rows(file_key: str, facts: ModuleFacts, decisions: dict[str, Decision]
         rows.counts[f"rule {decision.rule} {decision.status}"] += 1
         if decision.status == "reported":
             rows.reported.append((constant.name, decision.rule))
+        if decision.status == "generated" and resolve(facts.module, constant.name) is None:
+            rows.counts["generated, no declaration at the end of its parents"] += 1
+            rows.reported.append((constant.name, "generated, no declaration at the end of its parents"))
         if decision.status != "declaration":
             continue
         assert constant.range is not None

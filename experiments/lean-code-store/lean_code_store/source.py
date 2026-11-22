@@ -17,9 +17,9 @@ DERIVING_INSTANCE = re.compile(r"(?m)^[ \t]*deriving[ \t]+instance\b")
 
 
 def name_components(name: str) -> list[str]:
-    """The components of a Lean name. Escaped components with dots are not split correctly.
+    """The components of a Lean name, split at each dot.
 
-    No name of the default selection has such a component (the prototype run checks this).
+    An escaped component that contains a dot (`«a.b»`) is split into two components.
     """
     return name.split(".")
 
@@ -43,7 +43,8 @@ def range_text(lines: list[str], span: Range) -> str:
 def deriving_command(lines: list[str], span: Range) -> Range | None:
     """The `deriving instance` command that contains a range, as a range of whole lines.
 
-    The command ends before the next line that is empty or starts in column 0.
+    The command ends before the next line that is empty or that is not indented more than the
+    line of `deriving instance`.
     """
     text = "\n".join(lines)
     position = offset(lines, span[0], span[1])
@@ -51,11 +52,12 @@ def deriving_command(lines: list[str], span: Range) -> Range | None:
     if not starts:
         return None
     start_line = text.count("\n", 0, starts[-1]) + 1
+    start_column = len(lines[start_line - 1]) - len(lines[start_line - 1].lstrip())
     end_line = start_line
-    while end_line < len(lines) and lines[end_line].strip() and lines[end_line][0] in " \t":
+    while (end_line < len(lines) and lines[end_line].strip()
+           and len(lines[end_line]) - len(lines[end_line].lstrip()) > start_column):
         end_line += 1
     if not start_line <= span[0] <= end_line:
         return None
-    start_column = len(lines[start_line - 1]) - len(lines[start_line - 1].lstrip())
     end_column = len(lines[end_line - 1])
     return (start_line, start_column, start_column, end_line, end_column, end_column)

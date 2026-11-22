@@ -19,6 +19,8 @@ def test_range_text_and_deriving_command() -> None:
     assert range_text(lines, span(1, 4, 1, 5)) == "é"
     assert deriving_command(lines, span(3, 18, 3, 21)) == (3, 0, 0, 4, 10, 10)
     assert deriving_command(lines, span(5, 4, 5, 5)) is None
+    indented = ["  deriving instance BEq for A", "  def y := 3"]
+    assert deriving_command(indented, span(1, 20, 1, 23)) == (1, 2, 2, 1, 29, 29)
     assert user_name("_private.A.B.0.Foo.bar") == "Foo.bar"
 
 

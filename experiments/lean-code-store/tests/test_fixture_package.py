@@ -27,13 +27,18 @@ LAKE_TIMEOUT_SECONDS = 300
 
 
 def _lake_build(directory: Path) -> None:
-    """Build a Lake package; the error output names the failing file."""
-    subprocess.run(["lake", "build"], cwd=directory, check=True, capture_output=True,
-                   timeout=LAKE_TIMEOUT_SECONDS)
+    """Build a Lake package; a failure shows Lake's output, which names the failing file."""
+    result = subprocess.run(["lake", "build"], cwd=directory, capture_output=True, text=True,
+                            timeout=LAKE_TIMEOUT_SECONDS)
+    assert result.returncode == 0, f"lake build failed in {directory}:\n{result.stdout}{result.stderr}"
 
 
 def _snapshot_rows(store: LocalStore, snapshot: str) -> dict[str, object]:
-    """The rows of a snapshot without file keys, with the fold of each module, by module."""
+    """The rows of a snapshot without file keys, with the fold of each module, by module.
+
+    References to Lean's library stay in: they show the folding of generated targets outside
+    the project, for example `Nat.casesOn` into `Nat`.
+    """
     files = [json.loads(line) for line in
              (store.root / "snapshots" / snapshot / "snapshot_files.jsonl").read_text().splitlines()]
     result: dict[str, object] = {}
@@ -43,8 +48,7 @@ def _snapshot_rows(store: LocalStore, snapshot: str) -> dict[str, object]:
         entities = [[row["name"], row["kind"], texts[row["text_sha256"]]]
                     for row in map(json.loads, (version / "entities.jsonl").read_text().splitlines())]
         references = [[row["user_module"], row["user_name"], row["target_module"], row["target_name"], row["kind"]]
-                      for row in map(json.loads, (version / "entity_references.jsonl").read_text().splitlines())
-                      if row["target_module"].startswith("Fixture")]
+                      for row in map(json.loads, (version / "entity_references.jsonl").read_text().splitlines())]
         result[file["module_name"]] = {"path": file["source_path"], "entities": entities,
                                        "references": references, "fold": store.fold(file["file_key"])}
     return result

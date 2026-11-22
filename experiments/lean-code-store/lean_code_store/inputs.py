@@ -57,21 +57,29 @@ def select_files(packages: list[tuple[str, Path, str]]) -> list[SelectedFile]:
     return sorted(selected, key=lambda file: file.module)
 
 
+REQUIRED_PRODUCTS = (".ilean", ".olean")
+"""Build products that each module has; they are inputs of its key."""
+
+OPTIONAL_PRODUCTS = (".olean.server", ".olean.private")
+"""The `.olean` parts that Lake writes only for a file of the module system; inputs when present."""
+
+
 def product_paths(file: SelectedFile) -> list[Path]:
-    """The `.ilean` file and each `.olean` part that Lake wrote for the module."""
+    """The `.ilean` file and each `.olean` part that Lake wrote for the module, by file name."""
     base = file.library.joinpath(*file.module.split("."))
-    names = [".ilean", ".olean", ".olean.server", ".olean.private"]
-    paths = [base.with_name(base.name + suffix) for suffix in names]
-    present = [path for path in paths if path.is_file()]
-    if len(present) < 2 or not paths[0].is_file() or not paths[1].is_file():
-        raise ValueError(f"{file.module}: build products are missing in {file.library}; build the module")
-    return sorted(present, key=lambda path: path.name)
+    required = [base.with_name(base.name + suffix) for suffix in REQUIRED_PRODUCTS]
+    missing = [path.name for path in required if not path.is_file()]
+    if missing:
+        raise ValueError(f"{file.module}: build products {missing} are missing in {file.library}; "
+                         "build the module")
+    optional = [base.with_name(base.name + suffix) for suffix in OPTIONAL_PRODUCTS]
+    return sorted(required + [path for path in optional if path.is_file()], key=lambda path: path.name)
 
 
 def key_input(file: SelectedFile, project_libraries: list[Path], selected: set[str]) -> KeyInput:
     """The key input of one file. An unselected import of the project's own packages fails."""
     products = product_paths(file)
-    ilean = json.loads(products[0].read_text()) if products[0].suffix == ".ilean" else {}
+    ilean = json.loads(next(path for path in products if path.suffix == ".ilean").read_text())
     imports = tuple(sorted({str(entry[0]) for entry in ilean.get("directImports", [])}))
     for module in imports:
         if module in selected:

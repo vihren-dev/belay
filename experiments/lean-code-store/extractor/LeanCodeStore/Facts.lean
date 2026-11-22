@@ -47,7 +47,8 @@ def tableParent? (env : Environment) (info : ConstantInfo) : Option Name :=
   match info with
   | .ctorInfo value => some value.induct
   | .recInfo _ => some info.name.getPrefix
-  | _ =>
+  | .inductInfo _ | .quotInfo _ | .axiomInfo _ => none
+  | .defnInfo _ | .thmInfo _ | .opaqueInfo _ =>
     if isAuxRecursor env info.name || isNoConfusion env info.name then some info.name.getPrefix
     else do
       let projection ← env.getProjectionFnInfo? info.name
