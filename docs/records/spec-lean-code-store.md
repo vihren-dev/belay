@@ -186,18 +186,17 @@ that the build read.
 This document does not design the check; the implementation's task file must. These facts
 limit it:
 
-- The record in the compiled module (`SqlSourceUse`) contains `sqlTextHash`, the hash after
-  line endings are made the same. A change of line endings inside an SQL string of more than
-  one line changes the compiled value and not this hash.
+- The record in the compiled module (`SqlSourceUse`) contains `sqlTextHash`, the hash of
+  the text after each CRLF pair is replaced with LF. A change from CRLF to LF inside an SQL
+  string of more than one line changes the compiled value and not this hash.
 - A record exists only for a read whose effect stays in the environment. A read inside
   `#check` leaves no record, because Lean restores the environment after the command.
 - The repository's Lake template gives SQL inputs to the trace with `text = true`, which
-  also makes line endings the same. An `input_dir` hashes the contents of its files without
+  also replaces each CRLF pair with LF before it hashes. An `input_dir` hashes the contents of its files without
   their paths. Lake hashes an input before elaboration, so it does not see an edit between
   that time and the read.
 
-Another kind
-of file that elaboration reads needs its own check before a module that uses it is selected.
+Another kind of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
 | --- | --- |
