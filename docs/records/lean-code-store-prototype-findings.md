@@ -199,8 +199,7 @@ specification and the ADR were re-read before each change; the other session's r
    `_private.Belay.Sqlite.Frontend.Grammar.Located.0.Belay.Sqlite.Translation.Span.leaves.match_1.eq_1`
    has the private prefix of the using module, so the name without its final component is
    not a constant (9,259 constants). Changed: rule 5 also uses the name without the
-   private prefix. The ADR D6 summary of the rule still has the old text at this revision;
-   the next commit changes it.
+   private prefix. The ADR D6 summary of the rule is changed in the same way.
 2. Rule 4 made generated constants declarations: `initFn._@.…SqlFileLoad…` has the range of
    the `initialize` command of `Belay.Sqlite.sqlPackageRootOption` (43 such constants).
    Changed: a constant with macro scopes (`Name.hasMacroScopes`) and a range folds into
@@ -211,8 +210,8 @@ specification and the ADR were re-read before each change; the other session's r
    cases. Changed: the extractor parses the commands of the file with Lean's parser, and an
    instance with a name-only range and no parsed command is reported.
 4. The status said that nothing was implemented and that the queries were not run.
-   Changed. The ADR says that no measurement of the time exists; the next commit changes
-   it to refer to this record.
+   Changed. The ADR said that no measurement of the time exists; it now refers to this
+   record.
 5. The rule for mention users did not say that a usage of a type name in a `deriving
    instance` command has the empty user: no full range contains it, because the full range
    of such an instance is the class name. Changed: the specification states it.

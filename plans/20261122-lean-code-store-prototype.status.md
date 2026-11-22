@@ -104,4 +104,7 @@ loaded.
 - 2026-11-22: review fixes of the findings record: the `match_on_same_ctor` constants of
   `BEq` and `DecidableEq`, the `SqlSelectRule` functions without a written parent, and the
   limit of the source search.
+- 2026-11-22: ADR 0032: D6 states the private-prefix part of the name rule, and "Not
+  decided here" refers to the prototype measurement; the specification links the findings
+  record.
 

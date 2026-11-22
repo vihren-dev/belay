@@ -3,7 +3,8 @@
 Date: 2026-11-22.
 Status: specification for a proposed design. No table exists on a ClickHouse service, and no
 command writes to one. A prototype ran the rules, the DDL and the query on local files and in
-`clickhouse-local`; its results are local, and no check accepted them.
+`clickhouse-local`; its results are local, and no check accepted them
+([prototype findings](lean-code-store-prototype-findings.md)).
 Audience: implementers and reviewers.
 Decision: [ADR 0032](../adr/adr-0032-lean-code-store.md). Where this document depends on an
 open owner decision of the ADR, it says so.

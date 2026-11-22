@@ -149,7 +149,9 @@ were rows, each count of users would need a join to fold them.
 Limit: no function in Lean core maps a generated constant to its parent. The extractor uses
 Lean's own tables for structures and inductive types, the declaration ranges, and a name
 rule: a constant without a source range whose name without the final component is a
-constant has that constant as parent. The specification states the rules. This decision is open (owner decision 1).
+constant has that constant as parent. For a private name, the rule also tries the name
+without Lean's private prefix, because Lean gives an equation lemma that it generates in a
+using module a private name of that module. The specification states the rules. This decision is open (owner decision 1).
 
 ## D7. Relationships have an open list of kinds; the first extractor supplies the cheap ones
 
@@ -236,8 +238,9 @@ tools for the execution of a refactoring, not for extraction.
 
 - How a refactoring is executed and checked, and if the tools of the ownership move go into
   the repository.
-- When the command runs (by hand, in CI, after each build) and how long it takes. No
-  measurement exists.
+- When the command runs (by hand, in CI, after each build) and how long it takes. A local
+  measurement of a prototype, which no check accepted, is in the
+  [prototype findings](../records/lean-code-store-prototype-findings.md).
 - Third-party packages: if their files are part of a snapshot. Until then, a change of a
   dependency that leaves each key input of a file the same gives the file no new key, but
   the folding of D6 reads facts about imported constants (see owner decision 4).
