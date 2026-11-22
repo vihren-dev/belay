@@ -68,7 +68,12 @@ loaded.
   `Name.hasMacroScopes` of each name, and the macro-scope rule uses it; an instance is
   reported as an unparsed `deriving instance` instance only when its full range is its
   selection range, so a `def` that `attribute [instance]` makes an instance stays a
-  declaration (fixture `inhabitedPoint`). Extractor version 5. The specification states two
-  limits as open: `register_simp_attr` gives two declarations with one text, and a later
-  syntax extension can change the parsed command boundaries.
+  declaration (fixture `inhabitedPoint`). Extractor version 5. The specification states three
+  points as open: `register_simp_attr` gives two declarations with one text, a later syntax
+  extension can change the parsed command boundaries, and the store of a relationship whose
+  target is reported.
+- 2026-11-22: review fixes: an unparsed `deriving instance` instance also needs a text that
+  is one name, so a macro instance with equal ranges stays a declaration; the specification
+  says that a mention with a reported container gets its user by the range rule; a test of a
+  quoted name that contains `._@.` as the only parent of a macro-scoped constant.
 

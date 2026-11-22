@@ -103,6 +103,8 @@ def test_an_instance_of_an_unparsed_deriving_instance_command_is_reported() -> N
     decisions = decide_module(facts, SOURCE)
     assert decisions["instBEqColor"] == Decision("reported", "deriving instance command not parsed")
     assert decisions["helperUser"] == Decision("declaration", "3")
+    macro = module(constant("instMacro", span=span(4, 0, 4, 25), instance=True))
+    assert decide_module(macro, SOURCE)["instMacro"] == Decision("declaration", "3")
 
 
 def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() -> None:
@@ -113,7 +115,8 @@ def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() ->
                    constant("_private.M.0.initFn._@.M.1._hygCtx._hyg.2", span=one, macro_scopes=True),
                    constant("arms", span=two), constant("arms_proc", span=two),
                    constant("ext._@.M.1._hygCtx._hyg.3", span=two, macro_scopes=True),
-                   constant("«x._@.y»", span=span(4, 4, 4, 9)))
+                   constant("«x._@.y»", span=span(4, 4, 4, 9)),
+                   constant("init2._@.M.1._hygCtx._hyg.4", span=span(4, 4, 4, 9), macro_scopes=True))
     decisions = decide_module(facts, SOURCE)
     assert decisions["_private.M.0.initFn._@.M.1._hygCtx._hyg.2"] == Decision(
         "generated", "4 macro scopes", "counter")
@@ -121,3 +124,4 @@ def test_a_macro_scoped_constant_folds_into_the_one_constant_with_its_range() ->
         "reported", "macro scopes, several constants with the same range")
     assert decisions["arms_proc"] == Decision("declaration", "4")
     assert decisions["«x._@.y»"] == Decision("declaration", "4")
+    assert decisions["init2._@.M.1._hygCtx._hyg.4"] == Decision("generated", "4 macro scopes", "«x._@.y»")

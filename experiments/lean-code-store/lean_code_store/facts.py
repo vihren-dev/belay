@@ -101,7 +101,9 @@ def _flag(row: dict[str, object], key: str, context: str) -> bool:
     """Read one boolean field."""
     value = row.get(key)
     if not isinstance(value, bool):
-        raise ValueError(f"{context}: field {key} must be a boolean")
+        raise ValueError(f"{context}: field {key} must be a boolean; if the field is missing, rebuild "
+                         "the fact reader (lake build in experiments/lean-code-store/extractor) and "
+                         "pass it to --reader")
     return value
 
 

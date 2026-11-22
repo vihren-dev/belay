@@ -9,12 +9,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import re
 
 from lean_code_store.facts import ConstantFacts, ModuleFacts, Range
 from lean_code_store.source import name_components, range_text, user_name
 
 Declaration = tuple[str, str]
 """A written declaration as `(module, name)`."""
+
+NAME_ONLY = re.compile(r"^[^\s()\[\]{}:]+$")
+"""A text that is one name, such as the class name `BEq` in a `deriving instance` command."""
 
 MAX_DEPTH = 64
 """Bound of a chain of parents; a longer chain is reported as a cycle."""
@@ -82,15 +86,18 @@ def rule_five_parent(name: str, is_constant: Callable[[str], bool]) -> tuple[str
     return None
 
 
-def _rule_three_instance(constant: ConstantFacts, facts: ModuleFacts) -> Decision:
+def _rule_three_instance(constant: ConstantFacts, facts: ModuleFacts, lines: list[str]) -> Decision:
     """An instance with a range is a declaration, unless it is an instance of a `deriving
     instance` command whose range the parser did not give: then it is reported.
 
-    The full range of such an instance is its selection range, the class name. A written
-    declaration, also a `def` that `attribute [instance]` makes an instance, has a full range
-    that contains its keyword and is larger.
+    The full range of such an instance is its selection range, and its text is the class name
+    only. A written declaration, also a `def` that `attribute [instance]` makes an instance,
+    has a larger full range; a macro such as `instance! 42` can give equal ranges, but its text
+    is more than a name.
     """
-    if constant.name not in facts.deriving_commands and constant.range == constant.selection:
+    if (constant.name not in facts.deriving_commands and constant.range is not None
+            and constant.range == constant.selection
+            and NAME_ONLY.match(range_text(lines, constant.range))):
         return Decision("reported", "deriving instance command not parsed")
     return Decision("declaration", "3")
 
@@ -126,7 +133,7 @@ def decide_module(facts: ModuleFacts, source: str) -> dict[str, Decision]:
     instances = [c for c in remaining if c.is_instance and c.range is not None]
     for constant in remaining:
         if constant.is_instance and constant.range is not None:
-            decisions[constant.name] = _rule_three_instance(constant, facts)
+            decisions[constant.name] = _rule_three_instance(constant, facts, lines)
             continue
         same_range = [i for i in instances if constant.range is not None and i.range == constant.range]
         if same_range:

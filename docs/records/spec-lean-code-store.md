@@ -292,9 +292,9 @@ range. A search of the source text is not sufficient: a comment can contain the 
 command, and a comment can be inside the command. The parser uses the environment at the
 end of the module, so a syntax extension that the file declares after the command can change
 how the command parses: it can find no command, or a command with other boundaries. An
-instance whose full range is its selection range, which is the case for the class name in a
-`deriving instance` command, and that is in no parsed `deriving instance` command is
-reported. A written definition that `attribute [instance]` makes an instance has a larger
+instance whose full range is its selection range and contains only a name, which is the
+case for the class name in a `deriving instance` command, and that is in no parsed
+`deriving instance` command is reported. A written definition that `attribute [instance]` makes an instance has a larger
 full range and stays a declaration. The fixture for
 this case checks the result.
 
@@ -304,7 +304,9 @@ more of these constants. The extractor can use the two as checks of rule 5.
 
 A constant to which no rule applies is written to the extractor's
 log and is left out. A generated constant whose parents end in a reported constant is
-reported too, with that cause. A relationship whose user is reported is left out. How the
+reported too, with that cause. A `type`, `body`, `extends` or `instance_of` relationship
+whose user is reported is left out. A `mention` whose container is reported gets its user
+by the range rule of "Column rules". How the
 store keeps a relationship whose target is reported is open; the prototype keeps the
 target's kernel name and module. The count of such constants is part of the command's output, so that a
 gap in the rules is visible.
