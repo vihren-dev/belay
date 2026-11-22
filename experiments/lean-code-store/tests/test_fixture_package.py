@@ -57,9 +57,11 @@ def _snapshot_rows(store: LocalStore, snapshot: str) -> dict[str, object]:
 DERIVE_TEXTS = {
     "instBEqPoint": "deriving instance BEq, Hashable for Point, Tag",
     "instReprTag": "deriving instance Repr for -- a comment inside the type list\n  Tag",
-    "instInhabitedTag": "instance : Inhabited Tag := ⟨Tag.first⟩"}
-"""Stored texts of `Fixture.Derive`: the parsed command, also with a comment in its `for` list,
-and an ordinary instance whose preceding block comment contains `deriving instance`."""
+    "instInhabitedTag": "instance : Inhabited Tag := ⟨Tag.first⟩",
+    "instOrdTag": "deriving instance -- deriving instance\n  Ord for Tag"}
+"""Stored texts of `Fixture.Derive`: the parsed command, also with a line comment in its `for`
+list or after `instance`, and an ordinary instance whose preceding block comment has a line that
+starts with `deriving instance`; a real command follows that instance."""
 
 
 def _derive_texts(rows: dict[str, object]) -> dict[str, str]:
@@ -88,7 +90,7 @@ def test_fixture_rows_and_incremental_runs(tmp_path: Path) -> None:
     _lake_build(package)
     store = LocalStore(tmp_path / "store")
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "lean-code-store-prototype-1")
+        patch.setattr("lean_code_store.run.EXTRACTOR_VERSION", "lean-code-store-prototype-2")
         assert _run(package, store, reader, tmp_path / "work")["extracted"] == 5
     first = _run(package, store, reader, tmp_path / "work")
     rows = _snapshot_rows(store, str(first["snapshot_id"]))

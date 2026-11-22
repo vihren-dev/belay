@@ -65,7 +65,8 @@ def _command_ranges(value: object, context: str) -> dict[str, Range]:
     The UTF-16 columns are not given; the code point columns take their place.
     """
     if not isinstance(value, dict):
-        raise ValueError(f"{context}: derivingCommands must be an object")
+        raise ValueError(f"{context}: derivingCommands must be an object; rebuild the fact reader "
+                         "(lake build in experiments/lean-code-store/extractor) and pass it to --reader")
     ranges: dict[str, Range] = {}
     for name, item in cast(dict[str, object], value).items():
         if not (isinstance(item, list) and len(item) == 4 and all(isinstance(x, int) for x in item)):

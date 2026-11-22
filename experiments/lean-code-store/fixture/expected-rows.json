@@ -27,6 +27,11 @@
     "instance : Inhabited Tag := \u27e8Tag.first\u27e9"
    ],
    [
+    "instOrdTag",
+    "instance",
+    "deriving instance -- deriving instance\n  Ord for Tag"
+   ],
+   [
     "instReprTag",
     "instance",
     "deriving instance Repr for -- a comment inside the type list\n  Tag"
@@ -80,6 +85,14 @@
    "instInhabitedTag": [
     "Fixture.Derive",
     "instInhabitedTag"
+   ],
+   "instOrdTag": [
+    "Fixture.Derive",
+    "instOrdTag"
+   ],
+   "instOrdTag.ord": [
+    "Fixture.Derive",
+    "instOrdTag"
    ],
    "instReprTag": [
     "Fixture.Derive",
@@ -497,6 +510,76 @@
     "Init.Prelude",
     "Inhabited",
     "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Fixture.Types",
+    "Tag",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Fixture.Types",
+    "Tag",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Fixture.Types",
+    "Tag.ctorIdx",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "Ord",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "Ord",
+    "instance_of"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "Ord",
+    "mention"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "Ord",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "Ordering",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Data.Ord.Basic",
+    "instOrdNat",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instOrdTag",
+    "Init.Prelude",
+    "Nat",
+    "body"
    ],
    [
     "Fixture.Derive",

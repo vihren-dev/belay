@@ -44,7 +44,14 @@ loaded.
   version 1; the fixture uses `Prod.mk` and `Prod.fst` as the only source of `Prod`; the query
   test has a target with two users.
 - 2026-11-22: review fixes: the fact reader takes the range of a `deriving instance` command
-  from Lean's own command parser (`extractor/LeanCodeStore/Commands.lean`), so a comment in the
-  `for` list and the words `deriving instance` in a comment do not change the stored text. The
-  fixture tests both cases. The version test fills the store with version 1 and requires the
+  from Lean's own command parser (`extractor/LeanCodeStore/Commands.lean`). The fixture tests
+  a comment in the `for` list; the next entry covers the other comment cases. The version test fills the store with version 1 and requires the
   current version to extract all five modules again.
+- 2026-11-22: review fixes (round 4): the parser reads the header and then each command in
+  order, so text in comments is skipped as Lean's front end skips it. The fixture tests a line
+  comment after `deriving instance`, and a block comment with a line that starts with
+  `deriving instance` before an ordinary instance and a later real command. Extractor version
+  3. Known limit, deferred: the parser uses the module's final environment, so a syntax
+  extension that the file declares after the command can change how it parses. Review rounds
+  1 to 4 all had "must" findings, rounds 2 to 4 on the text of `deriving instance` commands; the
+  review loop on this subject stops here and the report names it.
