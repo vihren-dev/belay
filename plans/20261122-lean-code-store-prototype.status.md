@@ -1,7 +1,8 @@
 # Status: a prototype of the Lean code store extractor
 
 Date: 2026-11-22. Status: DONE (2026-11-22). The owner questions are in the findings record; the deferred review
-findings are in the review records `reviews/20261122T132942Z-c530101e`,
+findings are in the review records, among them `reviews/20261122T134756Z-a29c7642` and the
+final reviews of the three stopped review loops, `reviews/20261122T132942Z-c530101e`,
 `reviews/20261122T135558Z-7e390e7e` and `reviews/20261122T141007Z-ec809ab0`.
 Task: [20261122-lean-code-store-prototype.task.md](20261122-lean-code-store-prototype.task.md).
 Specification: [the Lean code store](../docs/records/spec-lean-code-store.md),
