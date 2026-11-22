@@ -32,7 +32,10 @@ class Candidate(TypedDict):
 
 
 def snapshot_keys(store: Path, snapshot: str) -> dict[str, str]:
-    """The file key of each module of a snapshot."""
+    """The file key of each module of a snapshot that has its `snapshots` row."""
+    if not (store / "snapshots" / snapshot / "snapshots.jsonl").is_file():
+        raise ValueError(f"{store}: snapshot {snapshot} has no snapshots row, so it is not complete; "
+                         "use a snapshot that a run finished")
     rows: list[SnapshotFile] = [json.loads(line) for line in
                                 (store / "snapshots" / snapshot / "snapshot_files.jsonl").read_text().splitlines()]
     return {row["module_name"]: row["file_key"] for row in rows}
@@ -57,7 +60,8 @@ class StoredCounts(TypedDict):
     """The `counts.json` of one file version: counts, reported constants and decisions."""
 
     counts: dict[str, int]
-    reported: list[tuple[str, str]]
+    reported: list[list[str]]
+    """`[name, cause]` pairs."""
     decisions: dict[str, str]
 
 

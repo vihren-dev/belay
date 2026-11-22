@@ -85,5 +85,9 @@ loaded.
 - 2026-11-22: review fixes of the report: the store keeps the decision of each constant in
   `counts.json`, and the report reads the decisions, causes and counts of the requested
   snapshot's file versions only, so it needs no facts directory. A test runs `report.main` on
-  a small store. Extractor version 6; the version test fills the store with version 5.
+  a small store. Extractor version 6; the version test writes with the current code under
+  the version 5 key prefix and checks that version 6 extracts all modules again.
+- 2026-11-22: review fixes of the report tests: the report refuses a snapshot without its
+  `snapshots` row; the test has two snapshots and long texts; the fixture test reads back
+  stored decisions of `Fixture.Types`.
 
