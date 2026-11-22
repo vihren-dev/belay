@@ -185,7 +185,9 @@ that the build read. The record in the compiled module (`SqlSourceUse`) is not s
 for this: it contains `sqlTextHash`, the hash after line endings are made the same, and a
 change of line endings inside an SQL string of more than one line changes the compiled
 value. The implementation needs a check of the bytes: the SQL file as an input of Lake's
-trace, or a hash of the bytes in the compiled record. Its task file says which. Another kind
+trace with `text = false`, so that Lake hashes the bytes (the repository's Lake template
+uses `text = true` for SQL inputs, which is not sufficient), or a hash of the bytes in the
+compiled record. Its task file says which. Another kind
 of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
@@ -237,11 +239,12 @@ that applies decides.
    the type. The parent is the type.
 3. Each remaining constant that is in the instance table and has a declaration range is a
    declaration. A `deriving instance` command, which can be in another file than its types,
-   gives such instances. With Lean 4.34.1, the range of each such instance and of its
-   helpers is the class name in the command: instances of the same class for different
-   types have the same range, and instances of different classes have different ranges. A
-   remaining constant that is not in the instance table and has the range of such an
-   instance is a helper. Its candidate parents are the instances with that range whose name
+   gives such instances. With Lean 4.34.1, the range of each such instance is the class
+   name in the command: instances of the same class for different types have the same
+   range, and instances of different classes have different ranges. Some helpers of such an
+   instance have the same range as the instance; a helper without a range is a case of
+   rule 5. A remaining constant that is not in the instance table and has the range of such
+   an instance is a helper of this rule. Its candidate parents are the instances with that range whose name
    is a prefix of the helper's name, and the instances with that range that refer to the
    helper. With exactly one candidate, the helper is generated and the candidate is its
    parent. With no candidate or more than one, the helper is reported.
@@ -329,8 +332,8 @@ The query counts the users of each declaration over all relationship kinds. It r
 row for a snapshot without a row in `snapshots`. A target with a use outside all
 declarations (empty `user_name`) is not a candidate. The columns `target_kind` and
 `used_in_a_type` let a person narrow the result, for example to theorem targets with no
-recorded `type` relationship. `type` has the meaning of ADR D7: the type of the
-user or of a constant that Lean generated for the user.
+recorded `type` relationship. `type` has the meaning of ADR D7: it describes the
+occurrence before the folding of either end.
 
 The result is a list of candidates. These limits apply, and a report of the result must say
 them:

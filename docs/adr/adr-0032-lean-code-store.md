@@ -99,8 +99,9 @@ A proof by `simp` gives the same problem: its proof term changes when an importe
 
 The build products are in the key because elaboration can read inputs that are not Lean
 files. In this repository, `sql_module` reads an SQL file and generates declarations from
-it. When a build reads a changed SQL file, the build products change, and no other key
-input changes. The specification gives the condition that the build must satisfy.
+it. A change to that SQL file can change the build products while no other key input
+changes. The key shows such a change only when the build read the changed file; the
+specification gives that condition as a separate requirement.
 
 Consequence: a change to a file gives new keys to all files that import it, directly or
 through other files, and the extractor reads them again. This is the same set that Lake
@@ -163,11 +164,12 @@ lists eight groups of relationships in Lean. The first extractor supplies:
 | `extends` | The user is a structure that extends the target. | Exporter |
 | `instance_of` | The user is an instance of the class that is the target. | Exporter |
 
-`type` and `body` describe the constant that contains the occurrence, before the folding of
-D6. For example, Lean states an equation lemma of a function `f` as a theorem whose type
-contains the constants of the body of `f`. After the folding, `f` has a `type` relationship
-to them. A `type` relationship therefore says: the target occurs in the type of the user or
-of a constant that Lean generated for the user.
+`type` and `body` describe the occurrence before the folding of D6 changes either end. A
+`type` row from user U to target T says: a constant that folds into T occurs in the type of
+a constant that folds into U. A declaration folds into itself. Two examples: Lean states an
+equation lemma of a function `f` as a theorem whose type contains the constants of the body
+of `f`, so `f` gets `type` rows to them. A type that contains the constructor `True.intro`
+gives a `type` row to `True`.
 
 These sources need only a normal build. Relationships that exist only during elaboration
 (notations, macros, elaborators, tactics that fail, unfolding) need a second elaboration of
