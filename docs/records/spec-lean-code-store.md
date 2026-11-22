@@ -79,17 +79,18 @@ CREATE TABLE lean_code.entity_texts
 ENGINE = ReplacingMergeTree
 ORDER BY text_sha256;
 
--- Relationships from a declaration of this file version to a constant of a module.
+-- Relationships that this file version contributes, from a declaration to a constant.
 CREATE TABLE lean_code.entity_references
 (
     file_key      FixedString(64),
+    user_module   String,
     user_name     String,
     target_module String,
     target_name   String,
     kind          LowCardinality(String)
 )
 ENGINE = ReplacingMergeTree
-ORDER BY (file_key, user_name, target_module, target_name, kind);
+ORDER BY (file_key, user_module, user_name, target_module, target_name, kind);
 ```
 
 The database name and the service are owner decision 2 of the ADR. The engine and the
@@ -110,15 +111,21 @@ Column rules:
 - A declaration is identified by its file version and its name. Two modules of one snapshot
   can declare the same kernel name when no module imports the two; two test files of this
   repository do.
-- `user_name` is a declaration of the file version, or empty. It is empty for a use that no
-  declaration of `entities` contains, for example in an `example`, an `attribute` command or
-  `#print`. For a `mention`, the extractor finds the user in this order: the container that
-  the `.ilean` file gives, after the folding of generated constants, when it is a
-  declaration of the file; if not, the declaration with the smallest full range that
-  contains the position of the usage (a `where` function is inside its parent); if no range
-  contains the position, the empty name. The container alone is not sufficient: it is absent
-  for a usage in a docstring and is a generated name (`_example`) for an anonymous
-  `example`.
+- `file_key` of a relationship row is the file version whose build products contain the
+  relationship.
+- `user_module` and `user_name` identify the user. `user_name` is a declaration, or empty.
+  `user_module` is the module that declares the user. It is the module of the file version,
+  with one exception: a generated constant of this module whose parent is in another module
+  (see "Generated constants"). When `user_name` is empty, `user_module` is the module of the
+  file version.
+- `user_name` is empty for a use that no declaration of `entities` contains, for example in
+  an `example`, an `attribute` command or `#print`. For a `mention`, the extractor finds the
+  user in this order: the container that the `.ilean` file gives, after the folding of
+  generated constants, when it is a declaration; if not, the declaration of the file with
+  the smallest full range that contains the position of the usage (a `where` function is
+  inside its parent), when exactly one declaration has that smallest range; in each other
+  case, the empty name. The container alone is not sufficient: it is absent for a usage in a
+  docstring and is a generated name (`_example`) for an anonymous `example`.
 - `target_module` and `target_name` identify the target: the module that declares the
   constant, and its name. The target can be a declaration of another file of the snapshot,
   or a constant of Lean's library or of a third-party package, which has no row in
@@ -173,9 +180,12 @@ Limit: the store is as correct as the build. If elaboration reads a file that is
 Lake's trace of the module, Lake can use an old product after a change to that file, and the
 store then has the old data. The SQL files of `sql_module` are such files, and this document
 does not establish that each library has them in its trace. Requirement: the command accepts
-a file version only when each file that its elaboration read is the file on disk. The
-implementation gets this from the Lake trace, or from a comparison of the SQL source record
-in the compiled module with the file on disk, and its task file says which.
+a file version only when each SQL file that its elaboration read has, on disk, the hash that
+the compiled module records for it. The record (`SqlSourceUse`) contains `sqlTextHash` of
+the text, which is the hash after line endings are made the same. A change of line endings
+only is therefore not a change for this check, and it does not change what `sql_module`
+generates from the text. Another kind of file that elaboration reads needs its own check
+before a module that uses it is selected.
 
 | Data | Source |
 | --- | --- |
@@ -189,6 +199,11 @@ in the compiled module with the file on disk, and its task file says which.
 The `decls` of the `.ilean` file are not the list of declarations: for example, they do not
 contain the mutual inductive type `Belay.Sqlite.Model.Resolved.Arguments`, which the
 environment has with its range.
+
+The extractor reads each module in the environment of that module's own imports and then
+combines the rows. One environment for all selected modules is not possible when two
+modules declare the same name, as two test files of this repository do; the exporter of the
+repository loads one environment and must change for such a selection.
 
 The exporter of the repository (`tools/theorem_dependency_exporter.lean`) supplies today,
 for a selected set of modules: the constants, their kernel kinds (a structure and a class
@@ -221,10 +236,14 @@ that applies decides.
    the type. The parent is the type.
 3. Each remaining constant that is in the instance table and has a declaration range is a
    declaration. A `deriving instance` command, which can be in another file than its types,
-   gives such instances. Lean 4.34.1 gives each instance of the command and the helpers of
-   the instances the same range. A helper with that range is generated; its parent is the
-   instance whose name is a prefix of the helper's name or that refers to the helper. A
-   helper without such an instance is reported.
+   gives such instances. With Lean 4.34.1, the range of each such instance and of its
+   helpers is the class name in the command: instances of the same class for different
+   types have the same range, and instances of different classes have different ranges. A
+   remaining constant that is not in the instance table and has the range of such an
+   instance is a helper. Its candidate parents are the instances with that range whose name
+   is a prefix of the helper's name, and the instances with that range that refer to the
+   helper. With exactly one candidate, the helper is generated and the candidate is its
+   parent. With no candidate or more than one, the helper is reported.
 4. Each other constant with a declaration range is a declaration. This includes a written
    declaration with a name such as `Foo._helper`.
 5. A constant without a declaration range whose final name component starts with `_` (for
@@ -233,7 +252,8 @@ that applies decides.
    parent is that constant, after these rules are applied to it.
 
 The text of an instance of a `deriving instance` command is the text of the whole command,
-and the instances of one command have the same text hash. The declaration range of such an
+and the instances of one command have the same text hash. The ranges of rule 3 group
+instances and helpers; they are not the range of the text. The declaration range of such an
 instance is only the class name in the command, and the build products do not give the
 range of the command. The extractor finds the command in the source text around the
 declaration range. The fixture for this case checks the result.
@@ -245,12 +265,12 @@ A constant to which no rule applies is written to the extractor's
 log and is left out. The count of such constants is part of the command's output, so that a
 gap in the rules is visible.
 
-The extractor replaces each generated constant by its parent in `user_name` and in
-`target_name`, also for targets outside the project. `target_module` becomes the module of
-the parent. The two modules can differ: Lean can generate an equation lemma in the module
-that first uses it. A generated constant whose parent is in another module is not a user;
-the extractor leaves out the relationships that start at it. It then removes rows whose
-target is the user, and duplicate rows.
+The extractor replaces each generated constant by its parent at the two ends of each
+relationship, also for targets outside the project. The module of that end becomes the
+module of the parent. The two modules can differ: Lean can generate an equation lemma in the
+module that first uses it. The row stays with the file version whose build products contain
+the relationship, so `user_module` can then differ from the module of `file_key`. The
+extractor then removes rows whose target is the user, and duplicate rows.
 
 ## Write order
 
@@ -291,14 +311,14 @@ SELECT
     r.target_module,
     r.target_name,
     any(d.kind) AS target_kind,
-    anyIf((r.file_key, r.user_name), r.user_name != '') AS only_user,
+    anyIf((r.user_module, r.user_name), r.user_name != '') AS only_user,
     countIf(r.kind = 'type') > 0 AS used_in_a_type
 FROM lean_code.entity_references AS r FINAL
 INNER JOIN declarations AS d
     ON d.module_name = r.target_module AND d.name = r.target_name
 WHERE r.file_key IN (SELECT file_key FROM files)
 GROUP BY r.target_module, r.target_name
-HAVING uniqExactIf((r.file_key, r.user_name), r.user_name != '') = 1
+HAVING uniqExactIf((r.user_module, r.user_name), r.user_name != '') = 1
    AND countIf(r.user_name = '') = 0;
 ```
 

@@ -99,8 +99,9 @@ A proof by `simp` gives the same problem: its proof term changes when an importe
 
 The build products are in the key because elaboration can read inputs that are not Lean
 files. In this repository, `sql_module` reads an SQL file and generates declarations from
-it. When a build reads a changed SQL file, the build products change, and no other key
-input changes. The specification gives the condition that the build must satisfy.
+it. When a build reads an SQL file whose text changed in more than its line endings, the
+build products change, and no other key input changes. The specification gives the
+condition that the build must satisfy.
 
 Consequence: a change to a file gives new keys to all files that import it, directly or
 through other files, and the extractor reads them again. This is the same set that Lake
@@ -272,4 +273,7 @@ Open:
    command must then build the test and experiment trees too. Recommendation: (a), with a
    selection that adds the test trees for the inlining query, because a test can be the
    second user of a declaration. Two modules of a selection can declare the same name (two
-   test files do). The schema therefore identifies a target by module and name.
+   test files do). The schema therefore identifies the two ends of a relationship by module
+   and name. The exporter of the repository loads all selected modules into one environment,
+   which cannot hold two constants with one name, so the extractor must read each module in
+   the environment of that module's own imports and then combine the rows.
