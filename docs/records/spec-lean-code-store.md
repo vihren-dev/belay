@@ -184,13 +184,14 @@ a file version only when each SQL file that its elaboration read has, on disk, t
 that the build read. The record in the compiled module (`SqlSourceUse`) is not sufficient
 for this: it contains `sqlTextHash`, the hash after line endings are made the same, and a
 change of line endings inside an SQL string of more than one line changes the compiled
-value. The implementation needs a check of the bytes of the file at each path that the
-module read. Two ways exist: a Lake `input_file` with `text = false` for each such path, or
-a hash of the bytes in the compiled record, which the command compares with the file at the
-recorded path. The repository's Lake template is not sufficient: it uses `text = true` for
-SQL inputs, and an `input_dir` hashes the contents of its files without their paths, so the
-trace can stay the same after a file gets a new name. The implementation's task file says
-which way it uses. Another kind
+value. The implementation needs this check: the compiled record gets a hash of the bytes
+that elaboration read, and the command compares it, when it accepts the file version, with
+the hash of the file at the recorded path. Lake's trace alone is not sufficient. The
+repository's Lake template uses `text = true` for SQL inputs. An `input_dir` hashes the
+contents of its files without their paths. An input is part of a module's trace only when
+the library lists it in `needs`. Lake hashes an input before elaboration, so an edit
+between that time and the read is not seen. The byte hash is a new field of `SqlSourceUse`
+in the package `belay`, so this requirement changes that package. Another kind
 of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
