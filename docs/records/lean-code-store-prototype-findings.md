@@ -25,10 +25,12 @@ corrections of this task. Version 7 differs from version 6 only in rule 1: versi
 Lean's `isAuxRecursor`, which also accepts the written declarations `Eq.ndrec`,
 `Eq.ndrec_symm` and `Eq.ndrecOn` by name, so it folded their references into `Eq`. A
 full run of version 7 gives the same decisions, the same candidates and the same row counts
-as version 6, except 2,073 more `entity_references` rows: 1,940 `body` and 11 `type` rows to
+of the file-version tables (`files`, `entities`, `entity_texts`, `entity_references`) as
+version 6, except 2,073 more `entity_references` rows: 1,940 `body` and 11 `type` rows to
 `Eq.ndrec`, and 122 `body` rows to `Eq.ndrec_symm`. This comparison does not include the
 file keys, which change with the version. The `entity_references` count below is of version
-7, and the other counts are of version 6. The first run and the second run below are of
+7, and the other counts are of version 6. The version 6 store has two snapshots (3,234
+`snapshot_files` rows), and the version 7 store has one (1,617 rows). The first run and the second run below are of
 version 6, and the edit run is of version 4; the first run of version 7 took 195 s.
 
 How to run it is in the module docstring of `lean_code_store/run.py`. Sources of the tables:

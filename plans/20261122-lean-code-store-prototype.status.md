@@ -124,8 +124,8 @@ loaded.
 - 2026-11-22: review fixes of the rule 1 correction: rule 1 reads Lean's auxiliary-recursor
   tag and not `isAuxRecursor`, which also accepts `Eq.ndrec`, `Eq.ndrec_symm` and
   `Eq.ndrecOn` by name. Extractor version 7; the fixture rows now keep five `body`
-  references to `Eq.ndrec`; the version test seeds the store with version 6. Local full run, not evidence: the same decisions and candidates as version 6,
-  and 2,073 more `entity_references` rows (`body` and `type` references to `Eq.ndrec` and
-  `Eq.ndrec_symm`). Tests: `python3 -m pytest -c pytest.ini tests` in
-  `experiments/lean-code-store` (22 passed).
+  references to `Eq.ndrec`. The version test writes rows with the current extractor under
+  version 6 file keys and checks that version 7 extracts all five modules again. The local
+  measurements of version 7 are in the findings record. Tests: `python3 -m pytest -c
+  pytest.ini tests` in `experiments/lean-code-store` (22 passed).
 
