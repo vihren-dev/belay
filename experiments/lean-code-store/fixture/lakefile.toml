@@ -1,0 +1,6 @@
+name = "lean-code-store-fixture"
+defaultTargets = ["Fixture"]
+
+[[lean_lib]]
+name = "Fixture"
+globs = ["Fixture.+"]

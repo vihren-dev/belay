@@ -1,0 +1,1051 @@
+{
+ "Fixture.Derive": {
+  "entities": [
+   [
+    "instBEqPoint",
+    "instance",
+    "deriving instance BEq, Hashable for Point, Tag"
+   ],
+   [
+    "instBEqTag",
+    "instance",
+    "deriving instance BEq, Hashable for Point, Tag"
+   ],
+   [
+    "instHashablePoint",
+    "instance",
+    "deriving instance BEq, Hashable for Point, Tag"
+   ],
+   [
+    "instHashableTag",
+    "instance",
+    "deriving instance BEq, Hashable for Point, Tag"
+   ]
+  ],
+  "fold": {
+   "instBEqPoint": [
+    "Fixture.Derive",
+    "instBEqPoint"
+   ],
+   "instBEqPoint.beq": [
+    "Fixture.Derive",
+    "instBEqPoint"
+   ],
+   "instBEqPoint.beq.match_1": [
+    "Fixture.Derive",
+    "instBEqPoint"
+   ],
+   "instBEqTag": [
+    "Fixture.Derive",
+    "instBEqTag"
+   ],
+   "instBEqTag.beq": [
+    "Fixture.Derive",
+    "instBEqTag"
+   ],
+   "instHashablePoint": [
+    "Fixture.Derive",
+    "instHashablePoint"
+   ],
+   "instHashablePoint.hash": [
+    "Fixture.Derive",
+    "instHashablePoint"
+   ],
+   "instHashablePoint.hash.match_1": [
+    "Fixture.Derive",
+    "instHashablePoint"
+   ],
+   "instHashableTag": [
+    "Fixture.Derive",
+    "instHashableTag"
+   ],
+   "instHashableTag.hash": [
+    "Fixture.Derive",
+    "instHashableTag"
+   ],
+   "instHashableTag.hash.match_1": [
+    "Fixture.Derive",
+    "instHashableTag"
+   ]
+  },
+  "path": "Fixture/Derive.lean",
+  "references": [
+   [
+    "Fixture.Derive",
+    "",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Derive",
+    "",
+    "Fixture.Types",
+    "Tag",
+    "mention"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqPoint",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Fixture.Types",
+    "Tag",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Fixture.Types",
+    "Tag",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instBEqTag",
+    "Fixture.Types",
+    "Tag.ctorIdx",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashablePoint",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Fixture.Types",
+    "Tag",
+    "body"
+   ],
+   [
+    "Fixture.Derive",
+    "instHashableTag",
+    "Fixture.Types",
+    "Tag",
+    "type"
+   ]
+  ]
+ },
+ "Fixture.Same.A": {
+  "entities": [
+   [
+    "Shared.value",
+    "definition",
+    "/-- The value of module A. -/\ndef Shared.value : Nat := 1"
+   ]
+  ],
+  "fold": {
+   "Shared.value": [
+    "Fixture.Same.A",
+    "Shared.value"
+   ]
+  },
+  "path": "Fixture/Same/A.lean",
+  "references": []
+ },
+ "Fixture.Same.B": {
+  "entities": [
+   [
+    "Shared.value",
+    "definition",
+    "/-- The value of module B. -/\ndef Shared.value : Nat := 2"
+   ]
+  ],
+  "fold": {
+   "Shared.value": [
+    "Fixture.Same.B",
+    "Shared.value"
+   ]
+  },
+  "path": "Fixture/Same/B.lean",
+  "references": []
+ },
+ "Fixture.Types": {
+  "entities": [
+   [
+    "Area",
+    "class",
+    "/-- Something with an area. -/\nclass Area (\u03b1 : Type) where\n  area : \u03b1 \u2192 Nat"
+   ],
+   [
+    "Color",
+    "inductive",
+    "/-- A color with an inline `deriving` clause. -/\ninductive Color where\n  | red\n  | green\n  deriving Repr, DecidableEq"
+   ],
+   [
+    "Foo",
+    "definition",
+    "/-- The user of {name}`Foo._helper`. -/\ndef Foo : Nat := Foo._helper + 1"
+   ],
+   [
+    "Foo._helper",
+    "definition",
+    "/-- A written declaration with a name that looks generated. -/\ndef Foo._helper : Nat := 1"
+   ],
+   [
+    "Point",
+    "structure",
+    "/-- A point in the plane. -/\nstructure Point where\n  x : Nat\n  y : Nat"
+   ],
+   [
+    "Point3",
+    "structure",
+    "/-- A point with a third coordinate. -/\nstructure Point3 extends Point where\n  z : Nat"
+   ],
+   [
+    "Tag",
+    "inductive",
+    "/-- A tag without a `deriving` clause; `Fixture.Derive` derives its instances. -/\ninductive Tag where\n  | first\n  | second"
+   ],
+   [
+    "_private.Fixture.Types.0.secret",
+    "definition",
+    "private def secret : Nat := 3"
+   ],
+   [
+    "describe",
+    "definition",
+    "/-- A function by pattern matching, which has a match function. -/\ndef describe : Color \u2192 String\n  | .red => \"r\"\n  | .green => \"g\""
+   ],
+   [
+    "instAreaPoint",
+    "instance",
+    "instance : Area Point where\n  area p := p.x * p.y"
+   ],
+   [
+    "total",
+    "definition",
+    "/-- The sum of the coordinates, with a `where` function. -/\ndef total (p : Point) : Nat := go p.x\nwhere\n  go (n : Nat) : Nat := n + p.y"
+   ],
+   [
+    "total.go",
+    "definition",
+    "go (n : Nat) : Nat := n + p.y"
+   ],
+   [
+    "usesSecret",
+    "definition",
+    "/-- Uses {name}`total` in its docstring and {lit}`secret` in its body. -/\ndef usesSecret : Nat := secret + total \u27e81, 2\u27e9"
+   ]
+  ],
+  "fold": {
+   "Area": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.area": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.casesOn": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.ctorIdx": null,
+   "Area.mk": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.mk._flat_ctor": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.mk.noConfusion": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.noConfusion": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.noConfusionType": null,
+   "Area.rec": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Area.recOn": [
+    "Fixture.Types",
+    "Area"
+   ],
+   "Color": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color._sizeOf_1": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color._sizeOf_inst": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.casesOn": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.ctorElim": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.ctorElimType": null,
+   "Color.ctorIdx": null,
+   "Color.green": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.green.elim": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.green.sizeOf_spec": null,
+   "Color.noConfusion": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.noConfusionType": null,
+   "Color.ofNat": null,
+   "Color.ofNat_ctorIdx": null,
+   "Color.rec": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.recOn": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.red": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.red.elim": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "Color.red.sizeOf_spec": null,
+   "Foo": [
+    "Fixture.Types",
+    "Foo"
+   ],
+   "Foo._helper": [
+    "Fixture.Types",
+    "Foo._helper"
+   ],
+   "Point": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point._sizeOf_1": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point._sizeOf_inst": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.casesOn": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.ctorIdx": null,
+   "Point.mk": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.mk._flat_ctor": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.mk.inj": null,
+   "Point.mk.injEq": null,
+   "Point.mk.noConfusion": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.mk.sizeOf_spec": null,
+   "Point.noConfusion": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.noConfusionType": null,
+   "Point.rec": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.recOn": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.x": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point.y": [
+    "Fixture.Types",
+    "Point"
+   ],
+   "Point3": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3._sizeOf_1": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3._sizeOf_inst": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.casesOn": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.ctorIdx": null,
+   "Point3.mk": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.mk._flat_ctor": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.mk.inj": null,
+   "Point3.mk.injEq": null,
+   "Point3.mk.noConfusion": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.mk.sizeOf_spec": null,
+   "Point3.noConfusion": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.noConfusionType": null,
+   "Point3.rec": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.recOn": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.toPoint": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Point3.z": [
+    "Fixture.Types",
+    "Point3"
+   ],
+   "Tag": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag._sizeOf_1": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag._sizeOf_inst": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.casesOn": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.ctorElim": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.ctorElimType": null,
+   "Tag.ctorIdx": null,
+   "Tag.first": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.first.elim": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.first.sizeOf_spec": null,
+   "Tag.noConfusion": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.noConfusionType": null,
+   "Tag.rec": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.recOn": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.second": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.second.elim": [
+    "Fixture.Types",
+    "Tag"
+   ],
+   "Tag.second.sizeOf_spec": null,
+   "_private.Fixture.Types.0.secret": [
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret"
+   ],
+   "describe": [
+    "Fixture.Types",
+    "describe"
+   ],
+   "instAreaPoint": [
+    "Fixture.Types",
+    "instAreaPoint"
+   ],
+   "instDecidableEqColor": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "instDecidableEqColor._proof_1": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "instDecidableEqColor._proof_2": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "instReprColor": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "instReprColor.repr": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "instReprColor.repr.match_1": [
+    "Fixture.Types",
+    "Color"
+   ],
+   "total": [
+    "Fixture.Types",
+    "total"
+   ],
+   "total.go": [
+    "Fixture.Types",
+    "total.go"
+   ],
+   "usesSecret": [
+    "Fixture.Types",
+    "usesSecret"
+   ]
+  },
+  "path": "Fixture/Types.lean",
+  "references": [
+   [
+    "Fixture.Types",
+    "",
+    "Fixture.Types",
+    "total",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Fixture.Types",
+    "Area.noConfusionType",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Area",
+    "Fixture.Types",
+    "Area.noConfusionType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ctorElimType",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ctorElimType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ctorIdx",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ctorIdx",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.noConfusionType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ofNat",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Color",
+    "Fixture.Types",
+    "Color.ofNat_ctorIdx",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Fixture.Types",
+    "Foo._helper",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Foo",
+    "Fixture.Types",
+    "Foo._helper",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Fixture.Types",
+    "Point.noConfusionType",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point",
+    "Fixture.Types",
+    "Point.noConfusionType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point",
+    "extends"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point3.noConfusionType",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Point3",
+    "Fixture.Types",
+    "Point3.noConfusionType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Fixture.Types",
+    "Tag.ctorElimType",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Fixture.Types",
+    "Tag.ctorElimType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Fixture.Types",
+    "Tag.ctorIdx",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Fixture.Types",
+    "Tag.ctorIdx",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "Tag",
+    "Fixture.Types",
+    "Tag.noConfusionType",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Fixture.Types",
+    "Color",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Fixture.Types",
+    "Color",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Fixture.Types",
+    "Color",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Area",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Area",
+    "instance_of"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Area",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Area",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "instAreaPoint",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Fixture.Types",
+    "total.go",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total",
+    "Fixture.Types",
+    "total.go",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "total.go",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "mention"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "total",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "total",
+    "mention"
+   ]
+  ]
+ },
+ "Fixture.Uses": {
+  "entities": [
+   [
+    "describe_red",
+    "theorem",
+    "/-- Asks for the equation lemmas of `describe` in this module. -/\ntheorem describe_red : describe .red = \"r\" := by simp [describe]"
+   ],
+   [
+    "hashPoint",
+    "definition",
+    "/-- Uses the derived `Hashable` instance of `Point`. -/\ndef hashPoint (p : Point) : UInt64 := hash p"
+   ]
+  ],
+  "fold": {
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_1": null,
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.eq_2": null,
+   "_private.Fixture.Uses.0.instReprColor.repr.match_1.splitter": null,
+   "describe.eq_1": [
+    "Fixture.Types",
+    "describe"
+   ],
+   "describe.eq_2": [
+    "Fixture.Types",
+    "describe"
+   ],
+   "describe_red": [
+    "Fixture.Uses",
+    "describe_red"
+   ],
+   "hashPoint": [
+    "Fixture.Uses",
+    "hashPoint"
+   ],
+   "usesSecret.eq_1": [
+    "Fixture.Types",
+    "usesSecret"
+   ]
+  },
+  "path": "Fixture/Uses.lean",
+  "references": [
+   [
+    "Fixture.Types",
+    "describe",
+    "Fixture.Types",
+    "Color",
+    "body"
+   ],
+   [
+    "Fixture.Types",
+    "describe",
+    "Fixture.Types",
+    "Color",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "_private.Fixture.Types.0.secret",
+    "type"
+   ],
+   [
+    "Fixture.Types",
+    "usesSecret",
+    "Fixture.Types",
+    "total",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "",
+    "Fixture.Types",
+    "Foo",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "",
+    "Fixture.Types",
+    "usesSecret",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Fixture.Types",
+    "Color",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Fixture.Types",
+    "Color",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Fixture.Types",
+    "describe",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "describe_red",
+    "Fixture.Types",
+    "describe",
+    "type"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Fixture.Derive",
+    "instHashablePoint",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Fixture.Types",
+    "Point",
+    "body"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Fixture.Types",
+    "Point",
+    "mention"
+   ],
+   [
+    "Fixture.Uses",
+    "hashPoint",
+    "Fixture.Types",
+    "Point",
+    "type"
+   ]
+  ]
+ }
+}
