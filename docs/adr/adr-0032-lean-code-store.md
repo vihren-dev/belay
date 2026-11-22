@@ -99,9 +99,8 @@ A proof by `simp` gives the same problem: its proof term changes when an importe
 
 The build products are in the key because elaboration can read inputs that are not Lean
 files. In this repository, `sql_module` reads an SQL file and generates declarations from
-it. When a build reads an SQL file whose text changed in more than its line endings, the
-build products change, and no other key input changes. The specification gives the
-condition that the build must satisfy.
+it. When a build reads a changed SQL file, the build products change, and no other key
+input changes. The specification gives the condition that the build must satisfy.
 
 Consequence: a change to a file gives new keys to all files that import it, directly or
 through other files, and the extractor reads them again. This is the same set that Lake
@@ -147,9 +146,9 @@ Reason: an inlining decision is about text that a person maintains. If generated
 were rows, each count of users would need a join to fold them.
 
 Limit: no function in Lean core maps a generated constant to its parent. The extractor uses
-the rule of `import-graph` (final name component starts with `_`, the prefix is a
-constant, the constant has no source range) and Lean's own tables for structures and
-inductive types. The specification states the rule. This decision is open (owner decision 1).
+Lean's own tables for structures and inductive types, the declaration ranges, and a name
+rule: a constant without a source range whose name without the final component is a
+constant has that constant as parent. The specification states the rules. This decision is open (owner decision 1).
 
 ## D7. Relationships have an open list of kinds; the first extractor supplies the cheap ones
 
@@ -163,6 +162,12 @@ lists eight groups of relationships in Lean. The first extractor supplies:
 | `mention` | Lean recorded a usage of the target's name in the source text of the user. | `.ilean` |
 | `extends` | The user is a structure that extends the target. | Exporter |
 | `instance_of` | The user is an instance of the class that is the target. | Exporter |
+
+`type` and `body` describe the constant that contains the occurrence, before the folding of
+D6. For example, Lean states an equation lemma of a function `f` as a theorem whose type
+contains the constants of the body of `f`. After the folding, `f` has a `type` relationship
+to them. A `type` relationship therefore says: the target occurs in the type of the user or
+of a constant that Lean generated for the user.
 
 These sources need only a normal build. Relationships that exist only during elaboration
 (notations, macros, elaborators, tactics that fail, unfolding) need a second elaboration of

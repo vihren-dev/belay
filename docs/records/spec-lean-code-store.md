@@ -180,12 +180,13 @@ Limit: the store is as correct as the build. If elaboration reads a file that is
 Lake's trace of the module, Lake can use an old product after a change to that file, and the
 store then has the old data. The SQL files of `sql_module` are such files, and this document
 does not establish that each library has them in its trace. Requirement: the command accepts
-a file version only when each SQL file that its elaboration read has, on disk, the hash that
-the compiled module records for it. The record (`SqlSourceUse`) contains `sqlTextHash` of
-the text, which is the hash after line endings are made the same. A change of line endings
-only is therefore not a change for this check, and it does not change what `sql_module`
-generates from the text. Another kind of file that elaboration reads needs its own check
-before a module that uses it is selected.
+a file version only when each SQL file that its elaboration read has, on disk, the bytes
+that the build read. The record in the compiled module (`SqlSourceUse`) is not sufficient
+for this: it contains `sqlTextHash`, the hash after line endings are made the same, and a
+change of line endings inside an SQL string of more than one line changes the compiled
+value. The implementation needs a check of the bytes: the SQL file as an input of Lake's
+trace, or a hash of the bytes in the compiled record. Its task file says which. Another kind
+of file that elaboration reads needs its own check before a module that uses it is selected.
 
 | Data | Source |
 | --- | --- |
@@ -246,10 +247,11 @@ that applies decides.
    parent. With no candidate or more than one, the helper is reported.
 4. Each other constant with a declaration range is a declaration. This includes a written
    declaration with a name such as `Foo._helper`.
-5. A constant without a declaration range whose final name component starts with `_` (for
-   example `_proof_1`, `_sunfold`), or is a match function (`match_1`) or an equation lemma
-   (`eq_1`, `eq_def`), is generated when the name without that component is a constant. The
-   parent is that constant, after these rules are applied to it.
+5. A constant without a declaration range is generated when the name without its final
+   component is a constant. The parent is that constant, after these rules are applied to
+   it. Examples: `_proof_1`, `_sunfold`, a match function (`match_1`), an equation lemma
+   (`eq_1`, `eq_def`), and the helper `instInhabitedParseNode.default` of a derived
+   instance, which Lean 4.34.1 gives no range.
 
 The text of an instance of a `deriving instance` command is the text of the whole command,
 and the instances of one command have the same text hash. The ranges of rule 3 group
@@ -258,8 +260,9 @@ instance is only the class name in the command, and the build products do not gi
 range of the command. The extractor finds the command in the source text around the
 declaration range. The fixture for this case checks the result.
 
-Rule 5 is the rule `isDeclNeedsAutoDecl` of `import-graph` with the predicate
-`Environment.isAutoDecl` of Batteries. The extractor copies them with their source named.
+Rule 5 is wider than the rule `isDeclNeedsAutoDecl` of `import-graph`, which needs a final
+component that starts with `_`. The predicate `Environment.isAutoDecl` of Batteries names
+more of these constants. The extractor can use the two as checks of rule 5.
 
 A constant to which no rule applies is written to the extractor's
 log and is left out. The count of such constants is part of the command's output, so that a
@@ -326,7 +329,8 @@ The query counts the users of each declaration over all relationship kinds. It r
 row for a snapshot without a row in `snapshots`. A target with a use outside all
 declarations (empty `user_name`) is not a candidate. The columns `target_kind` and
 `used_in_a_type` let a person narrow the result, for example to theorem targets with no
-recorded `type` relationship.
+recorded `type` relationship. `type` has the meaning of ADR D7: the type of the
+user or of a constant that Lean generated for the user.
 
 The result is a list of candidates. These limits apply, and a report of the result must say
 them:
