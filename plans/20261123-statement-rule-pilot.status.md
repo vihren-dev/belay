@@ -165,3 +165,6 @@ counterexample replay (#463)").
   findings on the words of the status file, of a test docstring and of
   the restated `Sql.ifOk_send_plainInsert`; all fixed in a `refactor:`
   commit. Tests: `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T171553Z-0a90bb7d` gave 1 "should" finding
+  on the words of the restated `Sql.ifOk_send_plainInsert`; fixed in a
+  `refactor:` commit. Tests: `tests/surface_schema_script_test.py`.
