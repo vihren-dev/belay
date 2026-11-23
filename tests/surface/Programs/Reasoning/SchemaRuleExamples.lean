@@ -35,6 +35,15 @@ example (ctx : ExecutionContext) (stmt : Syntax.Statement) (target : Nat) (name 
   intro _ same
   cases same
 
+-- The tactic proves the same claim with the kind rule: the validity of the connection gives the guards of the
+-- step, so the premise that the step continues closes, and the case that remains is the success.
+example (ctx : ExecutionContext) (stmt : Syntax.Statement) (target : Nat) (name : Identifier)
+    (shape : CatalogTable) (after : ResolveState) (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
+    (found : resolveStatement runContext ctx.connection.resolveState stmt = .ok (.createTable target name shape, after)) :
+    (send ⟨[(stmt, [])]⟩).check (fun outputs _ => outputs.all (fun o => !o.isError) = true) ctx := by
+  sql_run [found]
+  case success => rfl
+
 example (ctx : ExecutionContext) (stmt : Syntax.Statement) (renamed : Catalog) (after : ResolveState)
     (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
     (found : resolveStatement runContext ctx.connection.resolveState stmt = .ok (.rewrite renamed, after)) :

@@ -14,10 +14,12 @@ open Belay.Sqlite Model
 
 /-- What a program that sends one statement asks of one continuing case of the step, for the post and the
 context: for every execution of the case (the output and the next connection first, then each further
-execution), if the state of the next connection of the execution holds {name}`SqlState.Holds` for
-{lean}`Database.Valid Profile.pinned`, then the post holds for the list of the output and the context after it,
-and, when the output is a choice between results, also for each result ({name}`OutputChoice.Checked`). An
-execution whose next connection is not valid requires nothing. -/
+execution), if the next connection of the execution is valid, then the post holds for the list of the output and
+the context after it, and, when the output is a choice between results, also for each result
+({name}`OutputChoice.Checked`). A connection is valid when its state holds {name}`SqlState.Holds` for
+{lean}`Database.Valid Profile.pinned`: its database is valid, and, when the state has the snapshot of an open
+transaction, the snapshot is valid too; a state without a snapshot asks only for the database. An execution whose
+next connection is not valid requires nothing. -/
 def Sql.SendReached (post : List Output → ExecutionContext → Prop) (ctx : ExecutionContext) (output : Output)
     (next : Connection) (others : List StatementExecution) : Prop :=
   ∀ found ∈ (RunStep.continued output next others).executions,
@@ -28,7 +30,8 @@ def Sql.SendReached (post : List Output → ExecutionContext → Prop) (ctx : Ex
 {lit}`result`: the program that sends the one statement checks the post at the context when all of these hold.
 - {lit}`rule`: the step of the statement at the context is {lit}`result`. A kind rule gives this equation.
 - {lit}`valid`: the state of the connection of the context holds {name}`SqlState.Holds` for
-  {lean}`Database.Valid Profile.pinned`.
+  {lean}`Database.Valid Profile.pinned`: its database is valid, and, when the state has the snapshot of an open
+  transaction, the snapshot is valid too.
 - {lit}`modeled`: {lit}`result` continues ({name}`RunStep.continues`).
 - {lit}`reached`: every continuing case of {lit}`result` ({name}`RunStep.Continuing`) meets
   {name}`Sql.SendReached` for the post and the context.
@@ -59,20 +62,10 @@ theorem Sql.check_send_of_rule {ctx : ExecutionContext} {statement : Syntax.Stat
     | oneOf results => exact fun rows listed => by simpa [Sql.map, Sql.check_pure] using alternatives rows listed
     | done _ | rows _ | error _ | unmodeled _ => trivial
 
-/-- For every post, context, output, next connection and condition: if the condition holds, the continuing case of
-{lit}`yes` meets the property, and if it fails, that of {lit}`no` meets it, then the case of
-{lit}`if condition then yes else no` meets it. {lit}`sql_run` uses it to split a kind rule on its conditions. Proof
-sketch: case split on the condition. -/
-theorem Model.RunStep.continuing_ite {property : Output → Connection → List StatementExecution → Prop} {condition : Prop}
-    [Decidable condition] {yes no : RunStep} (whenYes : condition → yes.Continuing property)
-    (whenNo : ¬condition → no.Continuing property) : (if condition then yes else no).Continuing property := by
-  by_cases holds : condition
-  · simpa [holds] using whenYes holds
-  · simpa [holds] using whenNo holds
-
 /-- For every post, context, output and next connection: if the output is no choice between results, and the post
 holds for the list of the output and the context after it whenever the state of the next connection holds
-{name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned`, then the step that continues with that output,
+{name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned` (a valid database and, when the state has the
+snapshot of an open transaction, a valid snapshot), then the step that continues with that output,
 that connection and no further execution meets {name}`Sql.SendReached` ({name}`RunStep.Continuing`). Proof sketch:
 the step has one execution, and {name}`OutputChoice.Checked` of an output that is no choice is the post for it. -/
 theorem Sql.sendReached_single {post : List Output → ExecutionContext → Prop} {ctx : ExecutionContext}

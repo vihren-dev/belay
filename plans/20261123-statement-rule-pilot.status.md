@@ -25,7 +25,6 @@ counterexample replay (#463)").
   and the simp set of the kind rules; `CreatedTables.lean`,
   `ResolvedStepGuards.lean`: users of the rule and its condition.
 - `…/Programs/Scripts/PlainInsertRule.lean`: the plain INSERT kind rule;
-  `PlainInsertEffect.lean`: the INSERT laws to delete;
   `…/Schema/Writes/PlainInsertSuccess.lean`, `PlainWriteFrame.lean`,
   `LiteralInsertFits.lean`, `StatementRun.lean`, `PlainCounts.lean`: the
   data lemmas and definitions of plain INSERT.
@@ -116,3 +115,16 @@ counterexample replay (#463)").
   `tests/surface_assertion_examples_test.py`, `tests/surface_rebuild_test.py`
   (the README example needs `git`, which `just test-full` has), the
   root-import test of `tests/test_model_package.py`.
+- 2026-11-23: review `20261123T161058Z-83cfffec` gave 6 "must" and 4
+  "should" findings, all fixed in a `refactor:` commit: `sql_run` applies
+  the bridge, the rules and their cases by tags instead of named holes, so
+  one program can send many statements of one kind; a hint whose rewrite
+  leaves a premise open selects no case; a case with a choice output stays
+  unchanged; the guards of the step (`step_guards_hold`) close the premise
+  `modeled` of CREATE TABLE on an abstract valid database;
+  `RunStep.continuing_ite` moved to the model. New fixture
+  `S6AutoKindRuleCases`; SchemaRuleExamples also proves the abstract CREATE
+  TABLE claim with `sql_run [found]`. Tests: `just dev-build`,
+  `tests/surface_s6_automation_test.py`, `tests/surface_schema_script_test.py`,
+  `tests/surface_assertion_examples_test.py`, `tests/surface_rebuild_test.py`
+  (without the README example), `tests/test_source_identity_derivations.py`.
