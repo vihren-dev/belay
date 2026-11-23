@@ -1,0 +1,112 @@
+{
+  "caller": "claude",
+  "commit": "cc312b5611b8dab16a6bab69989ae4066e612586",
+  "date": "2026-11-23T22:18:10+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr/adr-0033-exact-step-rules.md",
+    "reviews/20261123T221411Z-a039a7a8/resolution-1-20261123T221600Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-10-20261123T221605Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-11-20261123T221605Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-2-20261123T221600Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-3-20261123T221601Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-4-20261123T221601Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-5-20261123T221602Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-6-20261123T221603Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-7-20261123T221603Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-8-20261123T221604Z.json",
+    "reviews/20261123T221411Z-a039a7a8/resolution-9-20261123T221604Z.json",
+    "reviews/20261123T221411Z-a039a7a8/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261123T221810Z-cc312b56#1",
+      "line": 121,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The “Alternatives considered” section still credits the case laws with saving four client lines and the case type with saving ten, although the comparison with the retained data facts gives 75 and 69 lines against 74. Fix: Update both alternatives to use the same baseline and distinguish the 52 lines of case laws from the 28 lines of retained data facts."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#2",
+      "line": 200,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The fit lemmas and the subquery and cell checks select success only after `runScriptStep_plainInsert_eq` passes the clock check, finds no unknown counter, and finds the target table. Fix: State those three prerequisites before describing how the data facts select success."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#3",
+      "line": 223,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The statement includes every INSERT without write rules, but `plainWriteTarget` returns `none` for `.upsert` and `.insertSelect` even when their write rules are `none`. Fix: Name the three covered resolved constructors explicitly as `.insert`, `.update`, and `.delete` with `rules = none` and any RETURNING list."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#4",
+      "line": 242,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "D6 requires a change to `sql_run` for the first kind with output choices or further executions, while D6 and the consequences say a new kind needs no tactic change. Fix: Limit the no-change claim to registering a kind whose result forms the tactic already handles."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#5",
+      "line": 307,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "A SELECT that resolves to `.prepareError` on a valid connection can use `Sql.check_send_of_rule` with the prepare-error rule planned for slice 4. Fix: Distinguish the `.query` rule’s resolution premise from the generic surface rule’s validity premise."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#6",
+      "line": 309,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "A retention proof and traversal of output choices can both pass while `sql_run` loses its existing ability to enter a sent SELECT from its syntax and a modeled-step hypothesis alone, because `applyKindRule` needs a resolution proof and its bridge requires validity. Fix: Require the replacement tactic path to enter the continuation from the original premises before deleting the SELECT branch of `sendRule`."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#7",
+      "line": 412,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The retirement condition lists only rules and projections, but ADRs 0025 and 0026 require acceptance after the last planned change to any shared contract a witness uses, including data facts such as `Database.table_createTable_end`. Fix: Set the acceptance point at the last planned change to any shared contract used by the witness."
+    },
+    {
+      "id": "20261123T221810Z-cc312b56#8",
+      "line": 414,
+      "path": "docs/adr/adr-0033-exact-step-rules.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The deletion exception omits witnesses that uniquely protect a trust guarantee, which ADR 0026 explicitly requires retaining. Fix: Include unique trust guarantees among the reasons to keep a witness until a caller or focused test covers it."
+    }
+  ],
+  "id": "20261123T221810Z-cc312b56",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
