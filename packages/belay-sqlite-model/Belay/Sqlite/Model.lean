@@ -77,7 +77,7 @@ import Belay.Sqlite.Model.Programs.Scripts.ControlStepFrames
 import Belay.Sqlite.Model.Programs.Scripts.RewriteStepLaws
 import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
-import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
+import Belay.Sqlite.Model.Programs.Scripts.PlainInsertCases
 import Belay.Sqlite.Model.Programs.Scripts.SchemaFailureLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.CopyStep

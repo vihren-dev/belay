@@ -16,9 +16,12 @@ new "must" findings on the findings record. The owner decided on
 2026-11-23 to continue the review loop and to add case laws of plain
 INSERT; the task file has a section for them.
 
+The case laws of plain INSERT and their data facts are in the model
+(`PlainInsertCases.lean`, `PlainInsertFailure.lean`).
+
 Open:
 
-- The case laws and their use in the client-claims test.
+- The use of the case laws in the client-claims test.
 - The retention test: remove the restated `runScriptStep_insert_ok` and
   its axiom report from `ReplacedStepLaws.lean`, and change the number of
   model laws that `tests/surface_schema_script_test.py` expects from
@@ -47,6 +50,9 @@ counterexample replay (#463)").
   and the simp set of the kind rules; `CreatedTables.lean`,
   `ResolvedStepGuards.lean`: users of the rule and its condition.
 - `…/Programs/Scripts/PlainInsertRule.lean`: the plain INSERT kind rule;
+  `PlainInsertCases.lean`: its case laws `runScriptStep_insert_ok` and
+  `runScriptStep_insert_failed`; `…/Schema/Writes/PlainInsertFailure.lean`:
+  the data facts of a failed INSERT;
   `…/Schema/Writes/PlainInsertSuccess.lean`, `PlainWriteFrame.lean`,
   `LiteralInsertFits.lean`, `StatementRun.lean`, `PlainCounts.lean`: the
   data lemmas and definitions of plain INSERT.
@@ -270,3 +276,15 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T191714Z-d2bebd76` gave 1 "must" finding:
   the acceptance text of the INSERT kind rule promised stored rows for
   each success. Fixed: it names `Database.setRows` and its condition.
+- 2026-11-23: the case laws of plain INSERT. `PlainInsertCases.lean` has
+  the success law `runScriptStep_insert_ok`, with the statement of the
+  law of that name at the start revision, and the failure law
+  `runScriptStep_insert_failed`. Both are proved from
+  `runScriptStep_plainInsert_eq`. `PlainInsertFailure.lean` has the data
+  facts: the counts of a failed INSERT (0 changed rows, no total), a
+  repeated rowid fails `LiteralData.rowidsDistinct`, and rows without an
+  alias mismatch whose result breaks a constraint or repeats a rowid give
+  a constraint violation with the database before. The model root
+  imports the case laws, and `lakefile.toml` lists both modules. Tests:
+  `just dev-build`, `tests/test_model_package.py` (root imports),
+  `tests/surface_layers_test.py`, `tests/surface_schema_script_test.py`.
