@@ -40,3 +40,5 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T141553Z-13640dbc` gave 3 "must" findings
   on the cases in which a plain INSERT ends the run and on the import
   limit. All three are fixed in the task file.
+- 2026-11-23: review `20261123T141711Z-4f02a69d` gave 1 "must" and 1
+  "should" finding on the same cases. Both are fixed in the task file.

@@ -58,7 +58,9 @@ execution. In every other case the run ends.
 
 The plain INSERT rule covers the three results: the run ends, the
 statement succeeds, and the statement fails. It gives the condition of
-each one. The run ends in these cases, and in no other:
+each one. The rule gives every case in which the run ends. The
+definitions show these cases, and the proof of the rule shows whether
+the list is complete:
 
 - `statementClock` gives `none`: the statement reads the clock and the
   run has no clock.
@@ -69,8 +71,9 @@ each one. The run ends in these cases, and in no other:
   run fails: `LiteralData.insertReady`, `Resolved.subqueriesPlain` or
   `Resolved.cellsReady`.
 
-An INSERT that reads no clock and no counter continues without a clock
-and with unknown counters. A success has the output `.done rows.length`, the target with
+An INSERT that reads no clock and no counter passes the first two
+checks without a clock and with unknown counters. It continues only
+when the target holds a table and the three readiness checks pass. A success has the output `.done rows.length`, the target with
 the rows of `LiteralData.inserted`, and the counts of
 `LiteralData.insertCounts`. A failure has an error output with the code
 of the violation, the database before the statement, and the counts of
@@ -235,7 +238,9 @@ today; callers get `output.isError = false`.
 chooses between success, code 20 (`aliasMismatch`) and code 19.
 For a target that holds no table, `runStatement`
 (`Schema/Dispatch/StatementStep.lean`) gives a ready run with the effect
-`.unmodeled`, and the step ends through `Output.ofStep`. For a present
+`.error (.unmodeled, database)`, and the step ends because
+`Output.ofStep` gives `.unmodeled unmodeledHere`. `Output.ofStep` also
+ends the run when `statementOutput` gives no output. For a present
 target the run is not ready when `LiteralData.insertReady`,
 `Resolved.subqueriesPlain` or `Resolved.cellsReady` fails. Its fourth
 check, on the RETURNING expressions, always passes for a plain INSERT.
