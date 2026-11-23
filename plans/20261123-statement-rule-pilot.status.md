@@ -18,10 +18,10 @@ client test are removed. The client-claims test proves its two INSERT
 claims and the claim for each input (`ItemInsertAnyClaims.lean`) with
 the kind rule, and the retention test restates
 `runScriptStep_insert_ok` again. The findings
-record (`docs/records/statement-rule-pilot-findings.md`) has the
-measurements of the three forms. Its last measured revision is
-`a03e8267`; it measures the client proofs with the kind rule at
-`94c3fa5e` and in the scratch file `KindAnyProbe.lean`.
+record (`docs/records/statement-rule-pilot-findings.md`) has the owner
+decision and the final measurement at the last code revision
+`ee83eca7`, with the client proofs in the repository fixtures. Its
+comparison of the three forms at `a03e8267` stays as dated history.
 
 Open:
 
@@ -531,3 +531,10 @@ counterexample replay (#463)").
   the pilot questions and "Cost of the next kind" describe the selected
   form, and the recommendation is now the owner selection. Tests: none;
   the commit changes only documents.
+- 2026-11-23: review `20261123T222457Z-6d5bda62` gave 2 "must" and 3
+  "should" findings, all fixed in a `refactor:` commit: the State
+  section names the final measurement at `ee83eca7`, the answer on lost
+  facts names the kept laws for all kinds, `a03e8267` is the last
+  measured revision with the three forms, and two claims about
+  unchanged sources are limited to their revisions. Tests: none; the
+  commit changes only documents.

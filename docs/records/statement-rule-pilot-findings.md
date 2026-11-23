@@ -4,8 +4,8 @@ Audience: the team. Status: on 2026-11-23 the owner selected the kind
 rule as the one maintained form; the pilot then removed the other two
 forms. Contract:
 [task](../../plans/20261123-statement-rule-pilot.task.md).
-Start revision: `b7854558`. Last revision with the three forms:
-`a03e8267`. Last code revision: `ee83eca7`.
+Start revision: `b7854558`. Last measured revision with the three
+forms: `a03e8267`. Last code revision: `ee83eca7`.
 
 The pilot replaces the step laws of CREATE TABLE and plain INSERT with
 one exact kind rule for each kind, data facts and generic projections.
@@ -31,8 +31,9 @@ statement kinds. The commit `c519a705` removed the case laws
   fixture `ItemInsertAnyClaims.lean`.
 
 `runScriptStep_insert_ok` is a replaced law again, and the retention
-test restates it. The commits after `c519a705` change only docstrings,
-so the code lines of `c519a705` and `ee83eca7` are equal.
+test restates it. From `c519a705` to `ee83eca7`, the Lean and Python
+sources change only in docstrings, so the code lines of the two
+revisions are equal.
 
 The sections "Case laws of plain INSERT", "Case type of plain INSERT"
 and "Comparison of the three forms", and the measurements of the three
@@ -139,7 +140,7 @@ between them.
 | `58a5b045` | case laws, client claims with the case laws | 59,242 | 14,749 | 20,474 | 98,158 |
 | `cdb0da41` | case type | 59,388 | 14,749 | 20,474 | 98,304 |
 | `18aa879d` | client test of the case type | 59,388 | 14,749 | 20,619 | 98,449 |
-| `a03e8267` | last revision with the three forms | 59,388 | 14,749 | 20,619 | 98,449 |
+| `a03e8267` | last measured revision with the three forms | 59,388 | 14,749 | 20,619 | 98,449 |
 | `ee83eca7` | case laws and case type removed; last code revision | 59,191 | 14,749 | 20,543 | 98,176 |
 
 The other scopes do not change: SQL text package 1,945, conformance
@@ -430,7 +431,8 @@ cover proof uses this fact; a client that needs the rows applies it.
 
 Package modules with `time_modules.py`. The first measurement was on
 `94c3fa5e`. The case laws and the case type were measured on the model
-of `cdb0da41`; the later commits do not change the model.
+of `cdb0da41`; the commits from `cdb0da41` to `a03e8267` do not change
+the model.
 
 | Module | Before | After |
 | --- | ---: | ---: |
@@ -826,7 +828,11 @@ continues, without validity.
 
 - **Does the form lose a fact that a caller can prove today?** No. The
   retention test proves the ten replaced laws with their premises of
-  the start revision, from the kind rules and the data facts.
+  the start revision. The proofs use the kind rules, the data facts and
+  the kept laws that serve all kinds. For example,
+  `runScriptStep_insert_ne_oneOf` holds for every INSERT, also with a
+  RETURNING clause or write rules, and follows from the kept
+  `runScriptStep_ne_oneOf_of_not_query`.
 - **How many code lines does it remove and add, once and for each
   kind?** At the last code revision `ee83eca7`: once +296 (model 51,
   surface 189, tests 56); CREATE TABLE −26; plain INSERT with the kind
