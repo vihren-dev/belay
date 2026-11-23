@@ -137,3 +137,9 @@ counterexample replay (#463)").
   `just dev-build`, `tests/surface_s6_automation_test.py`,
   `tests/surface_schema_script_test.py`, `tests/surface_assertion_examples_test.py`,
   `tests/surface_rebuild_test.py` (without the README example).
+- 2026-11-23: review `20261123T163512Z-0a7adb4f` gave 1 "must" and 1
+  "should" finding, both fixed in a `refactor:` commit: `sql_run` unfolds
+  reducible definitions around a premise before it looks for the resolution
+  equation, and the renamed rule of `S6AutoKindRuleCases` states its
+  resolution premise with a reducible name. Tests: `just dev-build`,
+  `tests/surface_s6_automation_test.py`.
