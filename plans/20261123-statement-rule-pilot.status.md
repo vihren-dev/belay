@@ -148,7 +148,9 @@ counterexample replay (#463)").
   prove the statement of each deleted model and surface law from the laws
   that remain (no capability loss). The fixtures ItemInsertSite,
   ItemInsertOutcomes and ItemInsertClaims prove the four client claims on
-  the table `items` (INTEGER PRIMARY KEY alias) with arbitrary valid rows;
+  the table `items` (INTEGER PRIMARY KEY alias): the three INSERT claims
+  on arbitrary valid rows, and CREATE TABLE then INSERT on a valid
+  database with an empty catalog;
   no proof names `runScriptStep`, `runScriptStepWith`, `resolveStatement`
   or `SqlState.statementRun`. `sql_run` gives the kind rule to the open
   goal `modeled` as the hypothesis `rule`. The five fixtures are roots of
@@ -159,3 +161,7 @@ counterexample replay (#463)").
   `tests/surface_s6_automation_test.py`,
   `tests/surface_assertion_examples_test.py`,
   `tests/test_source_identity_derivations.py`.
+- 2026-11-23: review `20261123T171431Z-94c3fa5e` gave 3 "should"
+  findings on the words of the status file, of a test docstring and of
+  the restated `Sql.ifOk_send_plainInsert`; all fixed in a `refactor:`
+  commit. Tests: `tests/surface_schema_script_test.py`.
