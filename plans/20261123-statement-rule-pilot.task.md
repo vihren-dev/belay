@@ -1,6 +1,8 @@
 # Pilot: one exact rule for each statement kind
 
-Created 2026-11-23. [Belay issue 468](https://github.com/vihren-dev/belay/issues/468).
+Created 2026-11-23. Started.
+Status: [20261123-statement-rule-pilot.status.md](20261123-statement-rule-pilot.status.md).
+[Belay issue 468](https://github.com/vihren-dev/belay/issues/468).
 
 The model has 99 theorems about `runScriptStep`. Most of them state one
 fact about one statement kind, and each repeats the resolution premise,
@@ -56,7 +58,10 @@ execution. In every other case the run ends.
 
 The plain INSERT rule covers the three results: the run ends, the
 statement succeeds, and the statement fails. It gives the condition of
-each one. A success has the output `.done rows.length`, the target with
+each one. The run ends when the clock value or a counter is not known,
+when the target holds no table, and when one of the three readiness
+checks of the run fails: `LiteralData.insertReady`,
+`Resolved.subqueriesPlain` and `Resolved.cellsReady`. A success has the output `.done rows.length`, the target with
 the rows of `LiteralData.inserted`, and the counts of
 `LiteralData.insertCounts`. A failure has an error output with the code
 of the violation, the database before the statement, and the counts of
@@ -94,7 +99,10 @@ remains.
 - Model: `runScriptStep_createTable`, `runScriptStep_createTable_ok`,
   `runScriptStep_createTable_frame`, `runScriptStep_createTable_empty`,
   `runScriptStep_insert_ok`, `plainInsert_database`,
-  `runScriptStep_insert_ne_oneOf`.
+  `runScriptStep_insert_ne_oneOf`. The last law holds for every INSERT,
+  also with a RETURNING clause or write rules. The existing law
+  `runScriptStep_ne_oneOf_of_not_query` gives it for every statement
+  that is not a query, so its callers use that law.
 - Surface: `Sql.check_send_createTable`, `Sql.check_send_plainInsert`,
   `Sql.ifOk_send_plainInsert`.
 
@@ -104,13 +112,15 @@ unchanged.
 
 ### No capability loss
 
-A test file proves the statement of each replaced model law from the new
-form, with the premises that the law has today or with weaker premises.
-The statements are copied from the revision before the pilot. This
-includes the facts that the partial laws give without validity:
-`runScriptStep_createTable` derives the two guard facts from a step that
-continues, and `plainInsert_database` needs only the step equation, the
-table and an output without error.
+A test file proves the statement of each replaced law, model and
+surface, from the laws that remain, with the premises that the law has
+today or with weaker premises. The statements are copied from the
+revision before the pilot, with their quantified posts and premises.
+This includes the facts that the partial laws give without validity:
+`runScriptStep_createTable` derives the two guard facts from the
+resolution equation and a step that continues, and
+`plainInsert_database` needs only the resolution equation, the table,
+the step equation and an output without error.
 
 ### Surface
 
@@ -159,8 +169,9 @@ allowed only when it computes the same value for every input.
 - The number of changed callers and of changed lines in them.
 - For each replaced law, the statement lines before and the statement
   lines of the theorem that gives the fact now.
-- The elaboration time of each new or replaced module, before and
-  after.
+- The elaboration time of the modules that the pilot deletes or
+  rewrites, and of the modules that replace them. The owner approved
+  the pilot with build time as one of its measures.
 - The facts that the new form cannot give, or gives only with stronger
   premises.
 - What the next kind costs, as an estimate from the two kinds.
@@ -173,13 +184,18 @@ allowed only when it computes the same value for every input.
   `tests/surface_assertion_examples_test.py`,
   `tests/surface_rebuild_test.py`,
   `tests/surface_s6_automation_test.py` and `tests/test_model_package.py`.
-- The two new test files of "No capability loss" and "Client claims",
-  each run by a pytest test with a timeout.
-- At the end: `just test-full` and `just verdict`.
+- The two new test files of "No capability loss" and "Client claims".
+  They are fixtures of the existing surface suites: their roots are
+  declared in `tests/surface_fixture_roots.json` in the list of the
+  suite that compiles them, and an existing test module with a timeout
+  runs them, so the Nix checks own and cache the result as they do for
+  the other fixtures.
+- At the end of the code changes: `just test-full` and `just verdict`.
+- At the end of the task: `just test-nix` and
+  `just test-scheduled-checks`, once.
 
-The pilot ends with the findings record and an owner decision. Its
-commits stay local until that decision, so `just test-nix`,
-`just test-scheduled-checks` and the pull request are not part of it.
+The pilot ends with the findings record and an owner decision. A pull
+request follows only after that decision.
 
 ## Points to know
 
@@ -208,7 +224,11 @@ today; callers get `output.isError = false`.
 
 **Plain INSERT.** `insertOutcome` (`Schema/Writes/StatementRun.lean`)
 chooses between success, code 20 (`aliasMismatch`) and code 19.
-`LiteralData.insertReady` decides whether the model describes the run.
+`runStatement` (`Schema/Dispatch/StatementStep.lean`) gives a run that
+is not ready when the target holds no table, and for a present target
+when `LiteralData.insertReady`, `Resolved.subqueriesPlain` or
+`Resolved.cellsReady` fails. Its fourth check, on the RETURNING
+expressions, always passes for a plain INSERT.
 `LiteralData.insertCounts` gives counts for a failure too, and
 `Connection.afterWrite` applies them. `InsertFits` and
 `InsertFits.of_valid`, `InsertFits.of_valid_alias`
@@ -232,8 +252,8 @@ kinds outside the pilot.
 `Automation/SqlRunRules.lean`, `Automation/SqlRunGoals.lean`. Tests:
 `tests/surface/Schema/Tests/` (`PlainInsertStepCases`,
 `AddCustomerClaims`, `CustomerInsertSite`, `GlobalSignupInvariant`,
-`S6AutoSignup`, `S6AutoAddCustomer`, `SchemaCreateExamples`) and
-`tests/surface/Programs/Reasoning/` (`SignupInvariantClaims`,
+`SignupInvariantClaims`, `S6AutoAddCustomer`, `SchemaCreateExamples`)
+and `tests/surface/Programs/Reasoning/` (`S6AutoSignup`,
 `SchemaRuleExamples`).
 
 **`sql_run`.** `sendRule` chooses a rule by the syntax kind, and
@@ -243,11 +263,15 @@ goals receive validity of the next connection from
 applies theorems, so a wrong choice cannot prove a false goal; the new
 path must keep that property.
 
-**Package limits.** The model package imports only `Init`. The surface
-package depends only on the model and Plausible.
+**Package limits.** The core modules of the model package import `Init`
+and `Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of
+`Lean` or `Std` (ADR 0006); only its codec imports `Lean`. The surface
+package depends on the model package, the SQL text package and
+Plausible. The pilot adds no import and no dependency.
 
 ## Not in this task
 
-The other statement kinds, INSERT with RETURNING or write rules, new
-rules for facts that no law gives today, one form for `Succeeds` and
-`Sql.check`, and the ADR that decides on the form for all kinds.
+The other statement kinds, INSERT with RETURNING or write rules, rules
+for facts that no law gives today and that the two kind rules do not
+need, one form for `Succeeds` and `Sql.check`, and the ADR that decides
+on the form for all kinds.

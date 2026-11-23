@@ -1,0 +1,125 @@
+{
+  "caller": "claude",
+  "commit": "52986bdcb06f7876694eb88138f582549423b166",
+  "date": "2026-11-23T14:12:36+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261123-statement-rule-pilot.status.md",
+    "plans/20261123-statement-rule-pilot.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261123T141236Z-52986bdc#1",
+      "line": 3,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The opening gives the creation date and purpose but omits the pilot’s current status. Fix: Mark the pilot as started and link its status file."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#2",
+      "line": 97,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`runScriptStep_insert_ne_oneOf` covers arbitrary RETURNING clauses and write rules, so the plain-INSERT rule cannot recover its original statement for every INSERT. Fix: Use the existing `runScriptStep_ne_oneOf_of_not_query` to prove the original statement for all INSERT forms."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#3",
+      "line": 107,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The retention test covers only model laws, although the pilot also deletes three public surface laws whose callers exercise only particular instances. Fix: Include the original statements of all three surface laws in the retention test, preserving their quantified postconditions and premises."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#4",
+      "line": 112,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The premise list for `plainInsert_database` omits the resolution equation that identifies the statement as an INSERT into the given target with the given cells. Fix: Include that resolution equation alongside the table lookup, continued step and non-error output."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#5",
+      "line": 162,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R18",
+      "severity": "must",
+      "text": "The task requires timing every module without identifying a timing problem or owner request, and a newly introduced module has no pre-pilot timing. Fix: Remove the per-module timing requirement from the findings record."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#6",
+      "line": 177,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R20",
+      "severity": "must",
+      "text": "A pytest timeout does not give the new Lean proof compilations a cacheable Nix owner, and the existing surface suites include only declared fixture roots and their imports. Fix: Assign the compilations to existing Nix-owned pytest suites and declare the new fixture roots so `just test-full` reuses their results."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#7",
+      "line": 181,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task treats keeping commits local as an exemption from `just test-nix` and `just test-scheduled-checks`, although `AGENTS.md` requires both once at task completion. Fix: Keep the pull request contingent on the owner decision and restore both end-of-task checks."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#8",
+      "line": 211,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`LiteralData.insertReady` can pass while `runStatement` rejects a plain INSERT because `Resolved.subqueriesPlain` or `Resolved.cellsReady` fails. Fix: State all three readiness checks for a present target and include each in the rule’s ended case."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#9",
+      "line": 235,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The caller inventory swaps the directories of `S6AutoSignup` and `SignupInvariantClaims`. Fix: List `S6AutoSignup` under `tests/surface/Programs/Reasoning/` and `SignupInvariantClaims` under `tests/surface/Schema/Tests/`."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#10",
+      "line": 246,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The package limits contradict ADR 0006’s core import exception, the codec’s imports from `Lean`, and the surface Lake file’s dependency on `belaySqliteText`. Fix: State the core exception for `Lean.Meta.Tactic.Simp.RegisterCommand`, distinguish the codec, and include the SQL text package among surface dependencies."
+    },
+    {
+      "id": "20261123T141236Z-52986bdc#11",
+      "line": 252,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The scope excludes rules for facts that no law gives today, although acceptance requires the exact output of a resolved CREATE TABLE and line 206 identifies that fact as missing. Fix: Limit the exclusion to facts beyond those required for the two exact pilot rules."
+    }
+  ],
+  "id": "20261123T141236Z-52986bdc",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
