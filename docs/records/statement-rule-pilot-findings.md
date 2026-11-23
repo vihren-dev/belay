@@ -43,7 +43,10 @@ count is at the last pilot commit, before this record.
 | --- | ---: | ---: | ---: |
 | Model package | 59,152 | 59,162 | +10 |
 | Surface package | 14,668 | 14,752 | +84 |
-| Other packages and other Lean files | 3,693 | 3,693 | 0 |
+| SQL text package | 1,945 | 1,945 | 0 |
+| Conformance package | 1,042 | 1,042 | 0 |
+| Public documentation tools package | 134 | 134 | 0 |
+| Other Lean files (examples, tooling) | 572 | 572 | 0 |
 | Tests | 19,992 | 20,501 | +509 |
 | **Total** | **97,505** | **98,108** | **+603** |
 
@@ -51,9 +54,9 @@ The same change by origin:
 
 | Part | Model | Surface | Tests |
 | --- | ---: | ---: | ---: |
-| Added once: projections, `step_rule`, `Connection` helpers, bridge, `sql_run` path | +59 | +185 | +56 |
-| CREATE TABLE: rule, data facts, deleted laws, callers | −18 | −23 | +16 |
-| Plain INSERT: rule, data lemmas, deleted laws, callers | −31 | −78 | −41 |
+| Added once: projections, `step_rule`, `Connection` helpers, bridge, `sql_run` path | +59 | +191 | +56 |
+| CREATE TABLE: rule, data facts, deleted laws, callers | −18 | −26 | +16 |
+| Plain INSERT: rule, data lemmas, deleted laws, callers | −31 | −81 | −41 |
 | Retention test of the deleted laws (task acceptance) | 0 | 0 | +235 |
 | Client-claims test (task acceptance) | 0 | 0 | +243 |
 | **Sum** | **+10** | **+84** | **+509** |
@@ -64,14 +67,17 @@ Notes:
   `StepRuleAttr.lean` (3) and `Connection.withDatabase` with
   `Connection.afterError_failed` (10).
 - The surface "once" lines are `SqlRunKindRules.lean` (137),
-  `KindRuleSend.lean` (45), `SqlRun.lean` and `SqlRunGoals.lean` (9),
-  less the removed `sendRule` and `roleOf` entries (−6).
+  `KindRuleSend.lean` (45), and `SqlRun.lean` with `SqlRunGoals.lean`
+  (9).
+- `SqlRunRules.lean` loses 6 lines, all specific to a pilot kind: 3 for
+  CREATE TABLE (its `sendRule` branch and its entry in `schemaKinds`)
+  and 3 for INSERT (its `sendRule` branch and its import).
 - The INSERT surface lines include the move of the generic part of
   `Reasoning/PlainInsertEffect.lean` (59) to `SendSingleStep.lean` (24).
 - The two acceptance tests (478 lines) are new test content, not
   maintained proof work that a client needs.
 - Without the two acceptance tests, the pilot changes the count by
-  +125: +300 once, −25 for CREATE TABLE and −150 for INSERT.
+  +125: +306 once, −28 for CREATE TABLE and −153 for INSERT.
 
 Raw data: `after-scc.json`, `baseline-scc.json` and `scc-delta.tsv` in
 the scratch directory of the session.
@@ -79,53 +85,74 @@ the scratch directory of the session.
 ## Changed callers
 
 Lines are added and removed lines of `jj diff --git` from the start
-revision. The files of the new and deleted laws are not callers.
+revision, for the declarations that use a replaced law. Changes to the
+laws themselves (deleted, new or restated) are counted apart, also when
+they are in the same file.
 
-| Scope | Files | Added | Removed |
+| Scope | Caller files | Added | Removed |
 | --- | ---: | ---: | ---: |
-| Model | 9 | 73 | 104 |
-| Surface | 6 | 41 | 70 |
+| Model | 6 | 37 | 16 |
+| Surface, without the `sql_run` files | 3 | 12 | 11 |
+| Surface, `sql_run` files | 3 | 29 | 21 |
 | Test fixtures | 10 | 219 | 235 |
 
-- Model: `CreateSchemaSuccess`, `CreatedTables`, `PlainDeleteEffect`,
-  `SchemaFailureLaws`, `StepContinuesOk`, `TableKeeps`, `DatabaseLaws`,
-  `TableByName`, `PlainInsertSuccess`.
-- Surface: `SqlRun`, `SqlRunGoals`, `SqlRunRules`, `PlainDeleteEffect`,
-  `SchemaStepRules`, `SendStepRules`.
+- Model callers: `CreateSchemaSuccess`, `PlainDeleteEffect`,
+  `SchemaFailureLaws`, `TableKeeps`, `runScriptStep_createdTables` in
+  `CreatedTables` (+13/−5), and the import of `StepContinuesOk` (+1/−1).
+- Model laws in existing files, not in the caller count: the deleted
+  `runScriptStep_createTable_empty` (−13) and
+  `runScriptStep_createTable_ok` (−19); `runStatement_insert_ok`
+  replaced by `insertOutcome_of_fits` and `insertReady_of_fits` in
+  `PlainInsertSuccess` (+26/−44); `Database.table_createTable` and
+  `Database.tableNamed_createTable` restated with `Database.createTable`
+  in `DatabaseLaws` and `TableByName` (+10/−12).
+- Surface callers: `PlainDeleteEffect`, `SendStepRules`, and the
+  docstrings of the other rules and the module in `SchemaStepRules`
+  (+9/−8).
+  Not in the caller count: the deleted `Sql.check_send_createTable` and
+  the move of `Connection.withDatabase` to the model (−38).
+- `sql_run` files: `SqlRun`, `SqlRunGoals`, `SqlRunRules`.
 - Tests: `S6AutoSignup`, `SchemaRuleExamples`, `AddCustomerQueries`,
   `AddCustomerClaims`, `CustomerInsertSite`, `GlobalSignupInvariant`,
   `PlainInsertStepCases`, `S6AutoAddCustomer`, `SchemaCreateExamples`,
   `SignupInvariantClaims`. Each keeps its claims.
-- `sql_run` proofs: three changed proofs (two in `S6AutoSignup`, one in
-  `S6AutoAddCustomer`): the hints changed, the claims did not.
-  `SchemaRuleExamples` keeps its claim with a new proof through the
-  bridge and adds one `sql_run` proof of the same claim.
+- `sql_run` proofs: four existing proofs changed, two in `S6AutoSignup`
+  and two in `S6AutoAddCustomer` (`addCustomer_adds_by_sql_run` and
+  `addCustomer_adds_triple`: their hints and their `modeled` and
+  `success` cases). The claims did not change. `SchemaRuleExamples`
+  keeps its claim with a new proof through the bridge and adds one
+  `sql_run` proof of the same claim.
 
 ## Statement lines of the replaced laws
 
-Lines from the theorem keyword to `:=`. The replacement column gives the
-theorems that give the fact now; the retention test
-(`tests/surface/Schema/Tests/ReplacedStepLaws.lean`,
-`ReplacedSendLaws.lean`) proves each old statement from them.
+Lines from the theorem keyword to the `:=` that starts the proof. The
+retention test (`tests/surface/Schema/Tests/ReplacedStepLaws.lean`,
+`ReplacedSendLaws.lean`) proves each old statement. "New" counts the
+statements of the theorems that the pilot adds or restates and that the
+proof uses; "kept" counts the theorems of the start revision that the
+proof uses unchanged.
 
-| Replaced law | Before | Replacement | Lines |
-| --- | ---: | --- | ---: |
-| `runScriptStep_createTable` | 10 | `runScriptStep_createTable_eq` | 9 |
-| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq`, `step_guards_hold` (kept) | 9 |
-| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, `Database.tableNamed_createTable` | 13 |
-| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` | 12 |
-| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` | 37 |
-| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` | 30 |
-| `runScriptStep_insert_ne_oneOf` | 8 | `runScriptStep_ne_oneOf_of_not_query` (kept) | 8 |
-| `Sql.check_send_createTable` | 9 | `Sql.check_send_of_rule` with the CREATE TABLE rule | 16 |
-| `Sql.check_send_plainInsert` | 22 | `Sql.check_send_of_rule` with the INSERT rule | 37 |
-| `Sql.ifOk_send_plainInsert` | 18 | `Sql.check_send_of_rule` with the INSERT rule | 37 |
+| Replaced law | Before | Derivation in the retention test | New | Kept |
+| --- | ---: | --- | ---: | ---: |
+| `runScriptStep_createTable` | 12 | `runScriptStep_createTable_eq` | 9 | 0 |
+| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq`, `step_guards_hold` | 9 | 5 |
+| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, `Database.tableNamed_createTable` (restated) | 13 | 0 |
+| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` | 12 | 0 |
+| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` | 37 | 0 |
+| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` | 30 | 0 |
+| `runScriptStep_insert_ne_oneOf` | 8 | `runScriptStep_ne_oneOf_of_not_query` | 0 | 8 |
+| `Sql.check_send_createTable` | 12 | `Sql.check_send_of_rule`, `runScriptStep_createTable_eq` | 16 | 0 |
+| `Sql.check_send_plainInsert` | 22 | `Sql.check_send_of_step`, the restated `plainInsert_database` (from `runScriptStep_plainInsert_eq`), `runScriptStep_plainWrite_failed` | 30 | 24 |
+| `Sql.ifOk_send_plainInsert` | 18 | `check_send_single_of_step`, the restated `plainInsert_database`, `runScriptStep_valid`, `runScriptStep_ne_oneOf_of_not_query` | 30 | 17 + `runScriptStep_valid` |
 
-The ten replaced laws have 120 statement lines. The new theorems that
-replace them have 60 statement lines in total: the two rules (9 and 30),
-the bridge (7) and four data facts (14). Each new theorem serves several
-replaced laws. The INSERT rule alone (30 lines) is longer than any law
-that it replaces, because it states every case.
+The ten replaced laws have 125 statement lines. The new and restated
+theorems in the "New" column have 60 statement lines in total: the two
+rules (9 and 30), the bridge (7), three new data facts (10) and the
+restated `Database.tableNamed_createTable` (4). The INSERT rule alone
+(30 lines) is longer than any law that it replaces, because it states
+every case. The INSERT send rules are restated through the kept generic
+send laws (`Sql.check_send_of_step`, `check_send_single_of_step`), not
+through the bridge.
 
 ## Elaboration time
 
@@ -143,6 +170,7 @@ module with its imports prebuilt. Raw data: `baseline-timing-*.tsv` and
 | `CreateTableRule` (new) | — | 0.59 |
 | `PlainInsertRule` (new) | — | 0.84 |
 | `StepRuleProjections` (new) | — | 0.48 |
+| `StepRuleAttr` (new) | — | 0.45 |
 | `StepContinuesOk` | 0.62 | 0.63 |
 | `CreatedTables` | 0.78 | 0.79 |
 | `PlainInsertSuccess` | 0.51 | 0.46 |
@@ -188,10 +216,12 @@ continues, without validity.
 
 ## Findings
 
-- **Concrete CREATE TABLE resolution.** `rfl` does not close the
-  resolution equation of a concrete `CREATE TABLE` text;
-  `with_unfolding_all rfl` does. So the hint `sql_run [rfl]` cannot
-  close it. A concrete INSERT closes with `rfl` when the client gives
+- **Concrete CREATE TABLE resolution.** In a hand proof, `rfl` does not
+  close the resolution equation of a concrete `CREATE TABLE` text;
+  `with_unfolding_all rfl` does. `sql_run [rfl]` closes it, because
+  `sql_run` tries each hint also under `with_unfolding_all`
+  (`SqlRunGoals.lean`; `SchemaRuleExamples.allKinds_closes_the_transaction`
+  uses it). A concrete INSERT closes with `rfl` when the client gives
   the target and the cells.
 - **Unnormalized cells.** When the resolution premise closes by `rfl`
   without the cells, the rule shows the cells as
@@ -208,10 +238,11 @@ continues, without validity.
   `runScriptStep`. The task bans the identifiers `runScriptStep`,
   `runScriptStepWith`, `resolveStatement` and `SqlState.statementRun`;
   no proof names one of them.
-- **Data facts carry the work.** Most lines of the client test are data
-  facts about the table (`ItemInsertSite.lean`,
-  `ItemInsertOutcomes.lean`): readiness, fit, keys, counts. The rule
-  needs them to select its case.
+- **Data facts carry the work.** Of the 243 code lines of the client
+  test, 111 are data facts about the table (`ItemInsertSite.lean` 51,
+  `ItemInsertOutcomes.lean` 60): readiness, fit, keys, counts. The rule
+  needs them to select its case. The four claims and their proofs are
+  the other 132 lines (`ItemInsertClaims.lean`).
 
 ## Cost of the next kind
 
@@ -229,7 +260,8 @@ From the two kinds: the "once" part is done. A next kind needs:
 
 Estimate: a net change of −20 to −110 maintained lines for each kind.
 Agent wall time in the pilot, from commit times: about 40 minutes for
-CREATE TABLE with the projections, and about 15 minutes for the INSERT
-rule, each with one or two review rounds after it. Kinds whose laws are shared
-with other kinds (`runScriptStep_plainWrite_frame`, `_failed`) are
-cheaper only when all kinds that share the law move together.
+CREATE TABLE with the projections, followed by three review rounds, and
+about 15 minutes for the INSERT rule, followed by two review rounds.
+Kinds whose laws are shared with other kinds
+(`runScriptStep_plainWrite_frame`, `_failed`) are cheaper only when all
+kinds that share the law move together.
