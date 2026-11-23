@@ -9,12 +9,21 @@ In progress. The CREATE TABLE and plain INSERT kind rules, the generic
 projections, the surface bridge, the path of `sql_run` through the kind
 rules, the no-capability-loss test and the client-claims test are done, and
 the replaced laws are deleted. The findings record
-(`docs/records/statement-rule-pilot-findings.md`) is written. Work is
-stopped for the owner: four review rounds in a row gave new "must"
-findings on the findings record (the last one,
-`20261123T174042Z-90ccc457`, is open). The end-of-task checks
-(`just test-full`, `just verdict`, `just test-nix`,
-`just test-scheduled-checks`) have not run.
+(`docs/records/statement-rule-pilot-findings.md`) is written.
+
+The work stopped for the owner after four review rounds in a row with
+new "must" findings on the findings record. The owner decided on
+2026-11-23 to continue the review loop and to add case laws of plain
+INSERT; the task file has a section for them.
+
+Open: the case laws and their use in the client-claims test; the open
+findings of review `20261123T174042Z-90ccc457` on the findings record,
+and its measurements after the import fix and the case laws.
+
+Checks: `just test-full` passes on the commit of the import fix, and
+`just verdict` gives the same result as the start revision (see the
+progress log). Both run again after the case laws. `just test-nix` and
+`just test-scheduled-checks` have not run.
 
 ## Start revision
 
@@ -236,3 +245,11 @@ counterexample replay (#463)").
   file) gives the same `counts.json` and the same `report.json`.
   Open: the review of the import fix, the two open findings on the
   findings record, `just test-nix` and `just test-scheduled-checks`.
+- 2026-11-23: the owner decided to continue the review loop and to add
+  case laws of plain INSERT. The task file has the new section "Case
+  laws of plain INSERT"; `runScriptStep_insert_ok` leaves the list of
+  replaced laws, because its statement is the success law. Review
+  `20261123T191311Z-67a9dc4b` of the import fix gave 1 "must" finding
+  (the State section of this file, fixed here) and 1 "should" finding
+  (the findings record does not count the three removed import lines),
+  which the new measurement of the record resolves.
