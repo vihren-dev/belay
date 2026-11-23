@@ -8,8 +8,9 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 In progress. The CREATE TABLE and plain INSERT kind rules, the generic
 projections, the surface bridge, the path of `sql_run` through the kind
 rules, the no-capability-loss test and the client-claims test are done, and
-the replaced laws are deleted. The findings record and the end-of-task
-checks are open.
+the replaced laws are deleted. The findings record
+(`docs/records/statement-rule-pilot-findings.md`) is written. The
+end-of-task checks are open.
 
 ## Start revision
 
@@ -180,3 +181,9 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T171913Z-a922ed7f` gave 1 "should" finding
   on the same list item (the old rows stay, the new rows follow); fixed
   in a `refactor:` commit. Tests: `tests/surface_schema_script_test.py`.
+- 2026-11-23: the findings record
+  `docs/records/statement-rule-pilot-findings.md`: code lines before and
+  after by package and by origin, changed callers, statement lines of
+  the replaced laws and their replacements, elaboration times, lost facts
+  (none), findings and the estimate for the next kind. No code changes;
+  no tests.
