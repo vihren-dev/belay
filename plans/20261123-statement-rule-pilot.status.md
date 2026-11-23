@@ -26,8 +26,9 @@ plain INSERT, before the end checks; the task file has the section
 
 Open:
 
-- The case type, its part for all statement kinds, and the second
-  client test.
+- The second client test of the case type. The case type and its
+  part for all statement kinds are in the model (`StepCase.lean`,
+  `PlainInsertCase.lean`).
 - The open findings of review `20261123T174042Z-90ccc457` on the
   findings record, and the measurements of the record after the import
   fix and the case laws.
@@ -347,10 +348,24 @@ counterexample replay (#463)").
   statement) and with the kind rule of plain INSERT (four cases that end
   the run, a success and a failure). No code changes; no tests.
 - 2026-11-23: review `20261123T194711Z-3d577446` of the amendment gave
-  3 "must" findings, all fixed in a `refactor:` commit: one result does
-  not prove that the cases exclude each other, so the text now says
-  that the premises of different cases contradict and that the pilot
-  does not state this as a theorem; the step equation has the direction
-  `runScriptStep … = result`; the data facts of `InsertFits` do not give
+  3 "must" findings, all fixed in a `refactor:` commit. One result does
+  not prove that the cases exclude each other. The text now says that
+  the premises of different cases contradict, and that the pilot does
+  not state this as a theorem. The step equation has the direction
+  `runScriptStep … = result`. The data facts of `InsertFits` do not give
   the checks of the subqueries and of the cells. No code changes; no
   tests.
+- 2026-11-23: the case type of plain INSERT is in the model.
+  `StepCase.lean` holds the part for all statement kinds: the inductive
+  `StepCase` with the cases `noClock`, `unknownCounter` and `checked`,
+  which takes the cases of one kind as a parameter, and the theorems
+  `StepCase.of_checks`, `StepCase.unique` and `RunStep.eq_of_cover`.
+  `PlainInsertCase.lean` holds the cases of plain INSERT (`noTable`,
+  `unready`, `success`, `failure`), one result
+  (`PlainInsertCase.unique`), cover (`runScriptStep_plainInsert_cover`,
+  proved from the kind rule) and the step equation
+  (`runScriptStep_plainInsert_of_case`). The model root and the core
+  globs of `lakefile.toml` include both modules. The "should" finding of
+  review `20261123T194819Z-602f9059` (a long sentence in this file) is
+  fixed here. Tests: `just dev-build`,
+  `tests/test_model_package.py`, `tests/surface_layers_test.py`.
