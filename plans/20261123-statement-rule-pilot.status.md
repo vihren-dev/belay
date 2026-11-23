@@ -5,10 +5,11 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-Awaiting the owner's decision (2026-11-23). The code, the tests, the
-findings record and the end checks are done. The task file ends the
-pilot with the owner's decision, and one point of its test list needs
-the owner (see "Open").
+Awaiting the owner's decision (2026-11-23). The code, the findings
+record and the end checks are done, and each test of the task file
+passes except one that is pending: the build of the fourth package
+(`verifier-conformance`) with `--wfail`, which no Nix check makes (see
+"Open"). The task file ends the pilot with the owner's decision.
 
 The CREATE TABLE and plain INSERT kind rules, the generic
 projections, the surface bridge, the path of `sql_run` through the kind
@@ -494,3 +495,7 @@ counterexample replay (#463)").
   `/home/codex/work/belay-hoare-rules/build/verdict/`. `just test-nix` passes (99
   tests), and `just test-scheduled-checks` passes (53 tests). The task
   and this file are marked as awaiting the owner's decision.
+- 2026-11-23: review `20261123T214815Z-59a4aade` gave 1 "must" finding,
+  fixed in a `refactor:` commit: the State section marks the build of
+  the conformance package with `--wfail` as pending until it passes in
+  a Nix check or the owner changes the requirement.
