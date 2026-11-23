@@ -37,3 +37,6 @@ counterexample replay (#463)").
   names the three readiness checks, the new fixtures belong to the
   existing surface suites, and the end-of-task checks are restored.
   Finding 5 (module timing) is rejected with its reason in the record.
+- 2026-11-23: review `20261123T141553Z-13640dbc` gave 3 "must" findings
+  on the cases in which a plain INSERT ends the run and on the import
+  limit. All three are fixed in the task file.

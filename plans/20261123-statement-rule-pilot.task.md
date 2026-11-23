@@ -58,10 +58,19 @@ execution. In every other case the run ends.
 
 The plain INSERT rule covers the three results: the run ends, the
 statement succeeds, and the statement fails. It gives the condition of
-each one. The run ends when the clock value or a counter is not known,
-when the target holds no table, and when one of the three readiness
-checks of the run fails: `LiteralData.insertReady`,
-`Resolved.subqueriesPlain` and `Resolved.cellsReady`. A success has the output `.done rows.length`, the target with
+each one. The run ends in these cases, and in no other:
+
+- `statementClock` gives `none`: the statement reads the clock and the
+  run has no clock.
+- `Counters.firstUnknown` finds an unknown counter among the counters
+  that the statement reads (`counterReads`).
+- The target holds no table.
+- The target holds a table, and one of the three readiness checks of the
+  run fails: `LiteralData.insertReady`, `Resolved.subqueriesPlain` or
+  `Resolved.cellsReady`.
+
+An INSERT that reads no clock and no counter continues without a clock
+and with unknown counters. A success has the output `.done rows.length`, the target with
 the rows of `LiteralData.inserted`, and the counts of
 `LiteralData.insertCounts`. A failure has an error output with the code
 of the violation, the database before the statement, and the counts of
@@ -224,11 +233,12 @@ today; callers get `output.isError = false`.
 
 **Plain INSERT.** `insertOutcome` (`Schema/Writes/StatementRun.lean`)
 chooses between success, code 20 (`aliasMismatch`) and code 19.
-`runStatement` (`Schema/Dispatch/StatementStep.lean`) gives a run that
-is not ready when the target holds no table, and for a present target
-when `LiteralData.insertReady`, `Resolved.subqueriesPlain` or
-`Resolved.cellsReady` fails. Its fourth check, on the RETURNING
-expressions, always passes for a plain INSERT.
+For a target that holds no table, `runStatement`
+(`Schema/Dispatch/StatementStep.lean`) gives a ready run with the effect
+`.unmodeled`, and the step ends through `Output.ofStep`. For a present
+target the run is not ready when `LiteralData.insertReady`,
+`Resolved.subqueriesPlain` or `Resolved.cellsReady` fails. Its fourth
+check, on the RETURNING expressions, always passes for a plain INSERT.
 `LiteralData.insertCounts` gives counts for a failure too, and
 `Connection.afterWrite` applies them. `InsertFits` and
 `InsertFits.of_valid`, `InsertFits.of_valid_alias`
@@ -267,7 +277,8 @@ path must keep that property.
 and `Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of
 `Lean` or `Std` (ADR 0006); only its codec imports `Lean`. The surface
 package depends on the model package, the SQL text package and
-Plausible. The pilot adds no import and no dependency.
+Plausible. The pilot adds no dependency between packages and no import
+of a module outside these limits.
 
 ## Not in this task
 
