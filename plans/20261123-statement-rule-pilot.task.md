@@ -1,6 +1,8 @@
 # Pilot: one exact rule for each statement kind
 
-Created 2026-11-23. Started.
+Created 2026-11-23.
+Status: DONE (2026-11-23). The owner selects the form; a pull request
+follows only after that decision.
 Status: [20261123-statement-rule-pilot.status.md](20261123-statement-rule-pilot.status.md).
 [Belay issue 468](https://github.com/vihren-dev/belay/issues/468).
 

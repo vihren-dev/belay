@@ -5,7 +5,11 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-In progress. The CREATE TABLE and plain INSERT kind rules, the generic
+DONE (2026-11-23). Each acceptance point of the task file holds. The
+owner selects the form for plain INSERT and the next kinds; a pull
+request follows only after that decision.
+
+The CREATE TABLE and plain INSERT kind rules, the generic
 projections, the surface bridge, the path of `sql_run` through the kind
 rules, the no-capability-loss test and the client-claims test are done, and
 the replaced laws are deleted. The findings record
@@ -30,16 +34,15 @@ The case type of plain INSERT, its part for all statement kinds
 findings record has the measurements of the milestone revisions, the
 comparison of the three forms and a recommendation for the owner.
 
-Open:
+Open: the owner's selection of a form for plain INSERT and the next
+kinds.
 
-- The end checks: `just dev-build`, `just test-full`, `just verdict`,
-  then `just test-nix` and `just test-scheduled-checks`.
-- The owner's selection of a form for plain INSERT and the next kinds.
-
-Checks: `just test-full` passes on the commit of the import fix, and
-`just verdict` gives the same result as the start revision (see the
-progress log). Both run again at the end of the code changes.
-`just test-nix` and `just test-scheduled-checks` have not run.
+Checks on the last code revision `a03e8267` (the working copy then
+held only review records): `just test-nix` passes (99 tests) and
+`just test-scheduled-checks` passes (53 tests). `just test-full` passes
+and `just verdict` gives `counts.json` and `report.json` that are
+byte-equal to the reference files of the workspace `belay-hoare-rules`
+(see the progress log).
 
 ## Start revision
 
@@ -470,3 +473,14 @@ counterexample replay (#463)").
   statement and proof lines of `items_taken_outcome`, and both sources
   of the 40 lines of the kind-rule proof for each input. Tests: none;
   the commit changes only documents.
+- 2026-11-23: end checks on `a03e8267`, with review records only in the
+  working copy. `just dev-build` passes. The first `just test-full`
+  failed: `tests/conformance_generation_test.py::test_stateful_modes[True]`
+  timed out after 120 s in its Lean compile of the generated mutants,
+  at a load average of about 15 from other sessions; the pilot does not
+  change that test or the generator. The second `just test-full` passes.
+  `just verdict` passes, and its `counts.json` and `report.json` are
+  byte-equal to the reference files in
+  `/home/codex/work/belay-hoare-rules/build/verdict/`. `just test-nix` passes (99
+  tests), and `just test-scheduled-checks` passes (53 tests). The task
+  and this file are marked DONE.
