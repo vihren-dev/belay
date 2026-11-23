@@ -46,6 +46,13 @@ def test_sql_run_refuses_unreadable_programs(runtime_root: Path, tmp_path: Path)
     check_module_chain(runtime_root, tmp_path, (("S6AutoShapes", 0),), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
+def test_sql_run_keeps_the_cases_of_a_kind_rule_that_it_cannot_use(runtime_root: Path, tmp_path: Path) -> None:
+    """The kind-rule path of `sql_run` (`SqlRunKindRules.lean`) splits a match when the only hint for its case has
+    an open premise, and `ruleCases` keeps a continuing case with a choice between results unchanged and without an
+    error. Both proofs use only ordinary logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("S6AutoKindRuleCases", 2),), timeout=CHAIN_TIMEOUT_SECONDS)
+
+
 def test_sql_commute_proves_the_claim_and_refuses_the_rest(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_commute` proves the preservation claim with `ReadCertificate.preservesAt_send` and the commutation
     claim with `ReadCertificate.commutesOn_send` from an analysis result and obligations. The hints of the weak

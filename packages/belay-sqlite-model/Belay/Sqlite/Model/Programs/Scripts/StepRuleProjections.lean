@@ -29,6 +29,18 @@ def RunStep.Continuing (property : Output → Connection → List StatementExecu
   | .continued output next others => property output next others
   | .ended _ => True
 
+/-- For every property of continuing cases, decidable condition and two steps {lit}`yes` and {lit}`no`: if the
+continuing case of {lit}`yes` meets the property whenever the condition holds, and the continuing case of {lit}`no`
+meets it whenever the condition fails, then the continuing case of {lit}`if condition then yes else no` meets it
+({name}`RunStep.Continuing`). A selected step that ends the run requires nothing. {lit}`sql_run` uses it to split a
+kind rule on its conditions. Proof sketch: case split on the condition. -/
+theorem RunStep.continuing_ite {property : Output → Connection → List StatementExecution → Prop} {condition : Prop}
+    [Decidable condition] {yes no : RunStep} (whenYes : condition → yes.Continuing property)
+    (whenNo : ¬condition → no.Continuing property) : (if condition then yes else no).Continuing property := by
+  by_cases holds : condition
+  · simpa [holds] using whenYes holds
+  · simpa [holds] using whenNo holds
+
 /-- The partial form of a rule. For every two steps {lit}`step` and {lit}`result`, property, output, next
 connection and further executions: if {lit}`step = result` (a kind rule), the property holds for each continuing
 case of {lit}`result` ({name}`RunStep.Continuing`), and {lit}`step` continues with the output, the connection and
