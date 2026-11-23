@@ -33,7 +33,8 @@ def applyTagged (goal : MVarId) (theorem_ : Name) : MetaM (List MVarId) := do
   goal.setTag .anonymous
   goal.apply (← mkConstWithFreshMVarLevels theorem_)
 
-/-- The new goals whose tag is the name. -/
+/-- The new goals whose tag is the name. The comparison ignores macro scopes, because a tag made from the name of a
+premise can carry them, and the callers know only the name. -/
 def taggedGoals (goals : List MVarId) (name : Name) : MetaM (List MVarId) :=
   goals.filterM fun new => return (← new.getTag).eraseMacroScopes == name
 
@@ -142,14 +143,18 @@ def closeModeled (hints : Hints) (rule found valid : Expr) (goal : MVarId) : Tac
     saved.restore
     return [goal]
 
-/-- The tags of the premises of {name}`Sql.check_send_of_rule` and of the resolution premise of a kind rule.
-{lit}`applyKindRule` handles these goals; each other new goal is a variable of the rule that no premise fixes. -/
-def kindRulePremises : List Name := [`rule, `found, `valid, `modeled, `reached]
+/-- The premise of a kind rule that the resolution of the statement closes: the first new goal whose type is an
+equation for {name}`Model.resolveStatement`. The name of the premise does not matter. -/
+def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
+  goals.findM? fun new => do
+    let some (_, side, _) := (← instantiateMVars (← new.getType)).eq? | return false
+    return side.isAppOf ``Model.resolveStatement
 
-/-- Apply the first kind rule whose resolution premise the hints or the hypotheses close, through
-{name}`Sql.check_send_of_rule`. The result is the open premises with the open variables of the rule, and the
-cases of the step that continue ({name}`ruleCases`). The result is {lean}`none`, and the goal is unchanged, when no
-kind rule fits. -/
+/-- Apply the first kind rule whose resolution premise ({name}`resolutionPremise`) the hints or the hypotheses
+close, through {name}`Sql.check_send_of_rule`. The result is the goals that stay open, and the cases of the step
+that continue ({name}`ruleCases`). The goals that stay open are the premises of the bridge that the hints do not
+close, and each other premise and variable of the rule that is not assigned. The result is {lean}`none`, and the
+goal is unchanged, when no kind rule fits. -/
 def applyKindRule (hints : Hints) (goal : MVarId) : TacticM (Option (List MVarId × List MVarId)) := do
   for rule in ← kindRuleNames do
     let saved ← Tactic.saveState
@@ -158,23 +163,25 @@ def applyKindRule (hints : Hints) (goal : MVarId) : TacticM (Option (List MVarId
       let tagged := taggedGoals goals
       let some equation := (← tagged `rule).head? | throwError "sql_run: the bridge has no rule premise"
       let ruleGoals ← applyTagged equation rule
-      let some found := (← taggedGoals ruleGoals `found).head?
+      let some found ← resolutionPremise ruleGoals
         | throwError "sql_run: the kind rule {rule} has no resolution premise"
       unless ← closeSide hints `found found do throwError "sql_run: no hint closes the resolution for {rule}"
       let ruleProof ← instantiateMVars (mkMVar equation)
       let foundProof ← instantiateMVars (mkMVar found)
       let validPremises ← tagged `valid
+      let modeledPremises ← tagged `modeled
+      let reachedPremises ← tagged `reached
       let mut open_ := []
       for premise in validPremises do
         unless ← closeSide hints `valid premise do open_ := open_ ++ [premise]
       let validProof := (validPremises.head?.map mkMVar).getD (mkConst ``True.intro)
-      for premise in ← tagged `modeled do
+      for premise in modeledPremises do
         open_ := open_ ++ (← closeModeled hints ruleProof foundProof validProof premise)
       let mut cases := []
-      for reached in ← tagged `reached do cases := cases ++ (← ruleCases hints reached)
-      let variables ← (goals ++ ruleGoals).filterM fun new => do
-        return !kindRulePremises.contains (← new.getTag).eraseMacroScopes && !(← new.isAssigned)
-      return some (variables ++ open_, cases)
+      for reached in reachedPremises do cases := cases ++ (← ruleCases hints reached)
+      let handled := [equation, found] ++ validPremises ++ modeledPremises ++ reachedPremises
+      let others ← (goals ++ ruleGoals).filterM fun new => return !handled.contains new && !(← new.isAssigned)
+      return some (others ++ open_, cases)
     catch _ => saved.restore
   return none
 
