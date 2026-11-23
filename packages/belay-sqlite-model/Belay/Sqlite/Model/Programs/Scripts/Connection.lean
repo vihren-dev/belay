@@ -51,7 +51,8 @@ def Connection.withDatabase (connection : Connection) (database : Database) : Co
 {lean}`ExecutionError.constraintRollback` and database: the connection after the failure of the statement with the
 error and the database ({name}`SqlState.failed`) is the connection after the write of the database with the counts
 ({name}`Connection.afterWrite`), with the settings of the resolution state. In plain words, such a failure keeps
-the snapshot of an open transaction and the clock assignment, and stores the database and the counts. Proof sketch:
+the snapshot of an open transaction and the clock assignment, stores the database, and applies the counts to the
+counters of the connection. Proof sketch:
 split on the snapshot; {name}`SqlState.finish` gives a failure without a snapshot and a pending outcome with it. -/
 theorem Connection.afterError_failed (connection : Connection) (after : ResolveState) (counts : Counts)
     (position : Nat) {reason : ExecutionError} (other : reason ≠ .constraintRollback) (database : Database) :
