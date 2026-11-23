@@ -195,3 +195,10 @@ counterexample replay (#463)").
   derivations, the `StepRuleAttr` timing, `sql_run [rfl]` on a concrete
   CREATE TABLE, the split of the client test and three CREATE TABLE
   review rounds. No code changes; no tests.
+- 2026-11-23: review `20261123T173202Z-0cbedccd` gave 6 "must" and 2
+  "should" findings on the record, all fixed in a `refactor:` commit:
+  the moved `RunStep.continues` counts as zero, changed callers are
+  counted as declarations, the new `sql_run` example and the law lines
+  are apart from the caller lines, and the statement table counts only
+  the new and restated theorems that each derivation uses (64 lines).
+  No code changes; no tests.

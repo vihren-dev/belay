@@ -54,18 +54,22 @@ The same change by origin:
 
 | Part | Model | Surface | Tests |
 | --- | ---: | ---: | ---: |
-| Added once: projections, `step_rule`, `Connection` helpers, bridge, `sql_run` path | +59 | +191 | +56 |
+| Added once: projections, `step_rule`, `Connection` helpers, bridge, `sql_run` path | +53 | +191 | +56 |
 | CREATE TABLE: rule, data facts, deleted laws, callers | −18 | −26 | +16 |
-| Plain INSERT: rule, data lemmas, deleted laws, callers | −31 | −81 | −41 |
+| Plain INSERT: rule, data lemmas, deleted laws, callers | −25 | −81 | −41 |
 | Retention test of the deleted laws (task acceptance) | 0 | 0 | +235 |
 | Client-claims test (task acceptance) | 0 | 0 | +243 |
 | **Sum** | **+10** | **+84** | **+509** |
 
 Notes:
 
-- The model "once" lines are `StepRuleProjections.lean` (46),
+- The model "once" lines are `StepRuleProjections.lean` (46, less 6
+  lines of `RunStep.continues` and `RunStep.continues_iff`, which moved
+  unchanged from the model `PlainInsertEffect.lean` and count as zero),
   `StepRuleAttr.lean` (3) and `Connection.withDatabase` with
-  `Connection.afterError_failed` (10).
+  `Connection.afterError_failed` (10). `Connection.withDatabase` (2
+  lines) moved from the surface package to the model package; the
+  surface CREATE TABLE line counts its removal.
 - The surface "once" lines are `SqlRunKindRules.lean` (137),
   `KindRuleSend.lean` (45), and `SqlRun.lean` with `SqlRunGoals.lean`
   (9).
@@ -77,82 +81,102 @@ Notes:
 - The two acceptance tests (478 lines) are new test content, not
   maintained proof work that a client needs.
 - Without the two acceptance tests, the pilot changes the count by
-  +125: +306 once, −28 for CREATE TABLE and −153 for INSERT.
+  +125: +300 once, −28 for CREATE TABLE and −147 for INSERT.
 
 Raw data: `after-scc.json`, `baseline-scc.json` and `scc-delta.tsv` in
 the scratch directory of the session.
 
 ## Changed callers
 
-Lines are added and removed lines of `jj diff --git` from the start
-revision, for the declarations that use a replaced law. Changes to the
-laws themselves (deleted, new or restated) are counted apart, also when
-they are in the same file.
+A caller is an existing declaration that used a replaced law. Lines are
+added and removed lines of `jj diff --git` from the start revision, in
+the files of the callers. Changes to the laws themselves (deleted, new
+or restated) are counted apart, also when they are in the same file.
 
-| Scope | Caller files | Added | Removed |
-| --- | ---: | ---: | ---: |
-| Model | 6 | 37 | 16 |
-| Surface, without the `sql_run` files | 3 | 12 | 11 |
-| Surface, `sql_run` files | 3 | 29 | 21 |
-| Test fixtures | 10 | 219 | 235 |
+| Scope | Files | Changed callers | Added | Removed |
+| --- | ---: | ---: | ---: | ---: |
+| Model | 6 | 4 | 37 | 17 |
+| Surface rules | 3 | 0 (docstrings and imports) | 12 | 11 |
+| Surface `sql_run` files | 3 | the tactic | 29 | 21 |
+| Test fixtures | 10 | 12 (+3 moved) | 210 | 235 |
 
-- Model callers: `CreateSchemaSuccess`, `PlainDeleteEffect`,
-  `SchemaFailureLaws`, `TableKeeps`, `runScriptStep_createdTables` in
-  `CreatedTables` (+13/−5), and the import of `StepContinuesOk` (+1/−1).
-- Model laws in existing files, not in the caller count: the deleted
-  `runScriptStep_createTable_empty` (−13) and
-  `runScriptStep_createTable_ok` (−19); `runStatement_insert_ok`
-  replaced by `insertOutcome_of_fits` and `insertReady_of_fits` in
-  `PlainInsertSuccess` (+26/−44); `Database.table_createTable` and
-  `Database.tableNamed_createTable` restated with `Database.createTable`
-  in `DatabaseLaws` and `TableByName` (+10/−12).
-- Surface callers: `PlainDeleteEffect`, `SendStepRules`, and the
-  docstrings of the other rules and the module in `SchemaStepRules`
-  (+9/−8).
-  Not in the caller count: the deleted `Sql.check_send_createTable` and
-  the move of `Connection.withDatabase` to the model (−38).
+- Model callers: `runScriptStep_create_ok` (`CreateSchemaSuccess`),
+  `runScriptStep_createTable_failed` (`SchemaFailureLaws`),
+  `runScriptStep_keepsTable` (`TableKeeps`) and
+  `runScriptStep_createdTables` (`CreatedTables`). The other line
+  changes are imports (`PlainDeleteEffect`, `CreatedTables`,
+  `StepContinuesOk`) and a docstring (`PlainDeleteEffect`).
+- Model laws in the same files, not in the caller count: the deleted
+  `runScriptStep_createTable_empty` (−12) and
+  `runScriptStep_createTable_ok` (−19). Laws in other existing files:
+  `runStatement_insert_ok` replaced by `insertOutcome_of_fits` and
+  `insertReady_of_fits` in `PlainInsertSuccess` (+26/−44);
+  `Database.table_createTable` and `Database.tableNamed_createTable`
+  restated with `Database.createTable` in `DatabaseLaws` and
+  `TableByName` (+10/−12).
+- Surface rules: no declaration changed. The changes are the
+  docstrings of the module and of three other rules in
+  `SchemaStepRules` (+9/−8), which named a deleted law, the imports of
+  `PlainDeleteEffect` and `SendStepRules`, and a docstring in
+  `SendStepRules`. Not
+  in the count: the deleted `Sql.check_send_createTable` and the move of
+  `Connection.withDatabase` to the model (−38).
 - `sql_run` files: `SqlRun`, `SqlRunGoals`, `SqlRunRules`.
-- Tests: `S6AutoSignup`, `SchemaRuleExamples`, `AddCustomerQueries`,
-  `AddCustomerClaims`, `CustomerInsertSite`, `GlobalSignupInvariant`,
-  `PlainInsertStepCases`, `S6AutoAddCustomer`, `SchemaCreateExamples`,
-  `SignupInvariantClaims`. Each keeps its claims.
+- Test callers, each with the same claim:
+  `signup_keeps_by_sql_run`, `signup_keeps_global_by_sql_run`
+  (`S6AutoSignup`), the abstract CREATE TABLE example of
+  `SchemaRuleExamples`, `addCustomer_adds` (`AddCustomerClaims`),
+  `insert_then_holds` (`CustomerInsertSite`), `signup_keeps_global`
+  (`GlobalSignupInvariant`), `two_rows` (`PlainInsertStepCases`),
+  `addCustomer_adds_by_sql_run`, `addCustomer_adds_by_rules`,
+  `addCustomer_adds_triple` (`S6AutoAddCustomer`),
+  `create_appends_and_keeps` (`SchemaCreateExamples`), `signup_keeps`
+  (`SignupInvariantClaims`). Moved to the file of their other users:
+  `customer_named_after_insert`, `AccountSignupSite.keeps_of_valid` and
+  `GlobalSignupSite.keeps_of_valid`.
+- The test line counts include the moved declarations. They do not
+  include the new `sql_run` example of `SchemaRuleExamples` (+9).
 - `sql_run` proofs: four existing proofs changed, two in `S6AutoSignup`
   and two in `S6AutoAddCustomer` (`addCustomer_adds_by_sql_run` and
   `addCustomer_adds_triple`: their hints and their `modeled` and
-  `success` cases). The claims did not change. `SchemaRuleExamples`
-  keeps its claim with a new proof through the bridge and adds one
-  `sql_run` proof of the same claim.
+  `success` cases). The claims did not change.
 
 ## Statement lines of the replaced laws
 
 Lines from the theorem keyword to the `:=` that starts the proof. The
 retention test (`tests/surface/Schema/Tests/ReplacedStepLaws.lean`,
-`ReplacedSendLaws.lean`) proves each old statement. "New" counts the
-statements of the theorems that the pilot adds or restates and that the
-proof uses; "kept" counts the theorems of the start revision that the
-proof uses unchanged.
+`ReplacedSendLaws.lean`) proves each old statement. The table names the
+theorems that the pilot adds or restates and that the proof uses, and
+the sum of their statement lines.
 
-| Replaced law | Before | Derivation in the retention test | New | Kept |
-| --- | ---: | --- | ---: | ---: |
-| `runScriptStep_createTable` | 12 | `runScriptStep_createTable_eq` | 9 | 0 |
-| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq`, `step_guards_hold` | 9 | 5 |
-| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, `Database.tableNamed_createTable` (restated) | 13 | 0 |
-| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` | 12 | 0 |
-| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` | 37 | 0 |
-| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` | 30 | 0 |
-| `runScriptStep_insert_ne_oneOf` | 8 | `runScriptStep_ne_oneOf_of_not_query` | 0 | 8 |
-| `Sql.check_send_createTable` | 12 | `Sql.check_send_of_rule`, `runScriptStep_createTable_eq` | 16 | 0 |
-| `Sql.check_send_plainInsert` | 22 | `Sql.check_send_of_step`, the restated `plainInsert_database` (from `runScriptStep_plainInsert_eq`), `runScriptStep_plainWrite_failed` | 30 | 24 |
-| `Sql.ifOk_send_plainInsert` | 18 | `check_send_single_of_step`, the restated `plainInsert_database`, `runScriptStep_valid`, `runScriptStep_ne_oneOf_of_not_query` | 30 | 17 + `runScriptStep_valid` |
+| Replaced law | Before | New or restated theorems used | Lines |
+| --- | ---: | --- | ---: |
+| `runScriptStep_createTable` | 12 | `runScriptStep_createTable_eq` | 9 |
+| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq` | 9 |
+| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, `Database.tableNamed_createTable` (restated) | 13 |
+| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` | 12 |
+| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` | 37 |
+| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` | 30 |
+| `runScriptStep_insert_ne_oneOf` | 8 | none | 0 |
+| `Sql.check_send_createTable` | 12 | `runScriptStep_createTable_eq`, `Sql.check_send_of_rule`, `Sql.sendReached_single` | 20 |
+| `Sql.check_send_plainInsert` | 22 | `runScriptStep_plainInsert_eq` (through the restated `plainInsert_database`) | 30 |
+| `Sql.ifOk_send_plainInsert` | 18 | `runScriptStep_plainInsert_eq` (through the restated `plainInsert_database`) | 30 |
+
+The proofs also use theorems of the start revision that the pilot does
+not change, for example `step_guards_hold`,
+`runScriptStep_ne_oneOf_of_not_query`, `Sql.check_send_of_step`,
+`check_send_single_of_step`, `runScriptStep_plainWrite_failed` and
+`runScriptStep_valid`. The table does not count them.
 
 The ten replaced laws have 125 statement lines. The new and restated
-theorems in the "New" column have 60 statement lines in total: the two
-rules (9 and 30), the bridge (7), three new data facts (10) and the
-restated `Database.tableNamed_createTable` (4). The INSERT rule alone
-(30 lines) is longer than any law that it replaces, because it states
-every case. The INSERT send rules are restated through the kept generic
-send laws (`Sql.check_send_of_step`, `check_send_single_of_step`), not
-through the bridge.
+theorems of the table have 64 statement lines in total: the two rules
+(9 and 30), the bridge with `Sql.sendReached_single` (7 and 4), three new
+data facts (10) and the restated `Database.tableNamed_createTable` (4).
+The INSERT rule alone (30 lines) is longer than any law that it
+replaces, because it states every case. The two INSERT send rules are
+restated through the kept generic send laws, not through the bridge.
+The retention test uses none of the generic projections; the callers
+and `sql_run` use them.
 
 ## Elaboration time
 
@@ -239,10 +263,12 @@ continues, without validity.
   `runScriptStepWith`, `resolveStatement` and `SqlState.statementRun`;
   no proof names one of them.
 - **Data facts carry the work.** Of the 243 code lines of the client
-  test, 111 are data facts about the table (`ItemInsertSite.lean` 51,
-  `ItemInsertOutcomes.lean` 60): readiness, fit, keys, counts. The rule
-  needs them to select its case. The four claims and their proofs are
-  the other 132 lines (`ItemInsertClaims.lean`).
+  test, 111 are in the two modules of the site and its data facts
+  (`ItemInsertSite.lean` 51, `ItemInsertOutcomes.lean` 60: the
+  definitions of the table and the statement, and readiness, fit, keys,
+  counts). The rule needs these facts to select its case. The module of
+  the claims (`ItemInsertClaims.lean`) has 132 lines, with its helper
+  checks and program definitions.
 
 ## Cost of the next kind
 

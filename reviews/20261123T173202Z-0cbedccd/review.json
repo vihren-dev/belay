@@ -1,0 +1,114 @@
+{
+  "caller": "claude",
+  "commit": "0cbedccdfd32b191f9e008b7de14ac33b823c9a1",
+  "date": "2026-11-23T17:32:02+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/statement-rule-pilot-findings.md",
+    "plans/20261123-statement-rule-pilot.status.md",
+    "reviews/20261123T172548Z-ce164ea8/resolution-1-20261123T172947Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-10-20261123T172952Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-11-20261123T172952Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-12-20261123T172953Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-2-20261123T172948Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-3-20261123T172948Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-4-20261123T172949Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-5-20261123T172949Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-6-20261123T172950Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-7-20261123T172950Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-8-20261123T172951Z.json",
+    "reviews/20261123T172548Z-ce164ea8/resolution-9-20261123T172951Z.json",
+    "reviews/20261123T172548Z-ce164ea8/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261123T173202Z-0cbedccd#1",
+      "line": 57,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The one-time cost includes six code lines for `RunStep.continues` and `RunStep.continues_iff`, while the INSERT savings include their deletion from `PlainInsertEffect.lean`, even though both declarations moved unchanged. Fix: Treat the move as zero net lines and update the one-time and INSERT subtotals."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#2",
+      "line": 92,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The table reports caller files, while the task requires the number of changed callers, and `S6AutoAddCustomer.lean` alone contains multiple changed proofs. Fix: Report distinct changed caller declarations alongside the file counts."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#3",
+      "line": 97,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The 219 added test lines include the new `sql_run [found]` example in `SchemaRuleExamples.lean`, although the stated caller metric covers declarations that used a replaced law. Fix: Separate new examples and helpers from edits to existing callers and recalculate the fixture row."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#4",
+      "line": 103,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The diff removes 12 lines for `runScriptStep_createTable_empty`, including its trailing blank line, and the thirteenth removal attributed to it is the old import. Fix: Record the import replacement separately and count it consistently on both sides of the caller totals."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#5",
+      "line": 144,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The CREATE TABLE send witness also applies the new four-line `Sql.sendReached_single` and the retained five-line `step_guards_hold`, which the row omits. Fix: Report 20 new and 5 kept statement lines for this row and update the distinct new-statement total from 60 to 64."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#6",
+      "line": 145,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The plain INSERT send witness also calls `runScriptStep_ne_oneOf_of_not_query`, `runScriptStep_continued`, and `runScriptStep_effect`, so its retained statements span 50 lines rather than 24. Fix: Add those three theorems to the derivation and record 50 kept lines."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#7",
+      "line": 146,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The `ifOk` witness uses the six-line `runScriptStep_valid` and the two-line `ExecutionContext.initial_holds_valid`, but the row leaves the first unmeasured and omits the second. Fix: Include both dependencies and report 25 kept lines."
+    },
+    {
+      "id": "20261123T173202Z-0cbedccd#8",
+      "line": 242,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 111 and 132 measurements count whole modules, including setup and helper declarations such as `insertItem` and `createAndInsert`, so they do not measure lines devoted exclusively to data facts and the four claims. Fix: Describe the numbers as module totals or count the relevant declarations separately."
+    }
+  ],
+  "id": "20261123T173202Z-0cbedccd",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
