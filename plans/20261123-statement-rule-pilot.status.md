@@ -505,8 +505,8 @@ counterexample replay (#463)").
   findings, all fixed in a `refactor:` commit: the docstring of the
   restated `runScriptStep_insert_ok` names the clock value, the known
   counters that the statement reads and the database of
-  `Database.setRows`, and the docstring of the retention test names the
-  ten laws that the pilot deleted from its start revision. Tests:
+  `Database.setRows`, and the docstring of the retention test gives the
+  number of model and surface laws that it covers. Tests:
   `tests/surface_schema_script_test.py`.
 - 2026-11-23: review `20261123T221545Z-4c0f5ec9` gave 3 "should"
   findings, all fixed in a `refactor:` commit: the restated
@@ -514,4 +514,8 @@ counterexample replay (#463)").
   rows of the table after the insertion, and the docstring of the
   retention test limits its claim to the list "Replaced laws" of the
   task file and gives the number of model and surface laws. Tests:
+  `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T221644Z-4a4086f4` gave 3 "should"
+  findings, all fixed in a `refactor:` commit: shorter sentences in the
+  two docstrings, and a correct earlier entry of this log. Tests:
   `tests/surface_schema_script_test.py`.
