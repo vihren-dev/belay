@@ -146,6 +146,60 @@ counter that the statement does not read can be unknown.
 The client-claims test proves its two INSERT claims with the case laws.
 Those two proofs name no kind rule.
 
+### Case type of plain INSERT
+
+Added 2026-11-23 by an owner decision, as a third form for comparison.
+The kind rule gives the step as one nested term. Each case law gives one
+case, and no theorem says that the case laws cover each input. The case
+type states the cases as a partition of the inputs: each input is in
+one case, and in no more than one.
+
+- The case type. An inductive proposition relates the inputs of a plain
+  INSERT step after resolution (the clock, the index, the connection,
+  the parameters, the target, the rows and the subqueries) to a
+  `RunStep`. It has one case for each case of the kind rule: the four
+  cases in which the run ends, the success and the failure. The premises
+  of a case are the conditions of that case in the kind rule. The values
+  that a later condition uses, such as the clock value and the table,
+  are arguments of the constructor. The result of a case is the result
+  that the kind rule gives for it.
+- The part for all statement kinds. The step function makes the clock
+  check and the counter check for each resolved statement before the
+  statement runs. These two cases are stated once, in a case type for
+  all resolved statements that takes the cases of one kind as a
+  parameter. The case type of plain INSERT uses it and does not state
+  the two checks again.
+- Cover. With the resolution equation, the case type relates the inputs
+  to the result of `runScriptStep`. The proof for the cases of plain
+  INSERT uses the kind rule and does not unfold the step function.
+- One result. Two results that the case type relates to the same inputs
+  are equal.
+- The step equation. With the resolution equation, a result that the
+  case type relates to the inputs is equal to the result of
+  `runScriptStep`. It follows from cover and from one result. This one
+  theorem gives the equation of each case, and
+  `Sql.check_send_of_rule` accepts that equation.
+- The success case has the readiness checks and the outcome as its
+  premises, as the kind rule does. A proof that has `InsertFits` gets
+  them from the data facts `insertReady_of_fits` and
+  `insertOutcome_of_fits`.
+
+A second client test uses the case type on the `items` table of the
+client-claims test:
+
+- The two INSERT claims of the client-claims test, with the same
+  statements, proved with the case type. These proofs name no kind rule
+  and no case law.
+- One claim for each input, with no premise that says whether the key
+  is taken: each execution of the INSERT has the output `.done 1` and
+  the database with the inserted row, or it has an error output and the
+  database before the statement. The test proves this claim two times:
+  with the case type, and without the case type. The second proof uses
+  the case laws or the kind rule.
+
+Until the owner decides, the pilot holds the three forms together: the
+kind rule, the case laws and the case type.
+
 ### Replaced laws
 
 These laws are deleted, and their callers use the new form. No alias
@@ -235,6 +289,16 @@ allowed only when it computes the same value for every input.
 - For the case laws: their statement and code lines, and the code lines
   of the two INSERT claims of the client test and of their helper
   theorems with the kind rule alone and with the case laws.
+- For the case type: the statement and code lines of the part for all
+  statement kinds and of the part for plain INSERT, and their
+  elaboration time.
+- The code lines of the two INSERT claims and of their helper theorems
+  with each of the three forms, and the code lines of the two proofs of
+  the claim for each input.
+- For each of the three forms, what it gives that the other two do not
+  give, and which of the forms can be derived from another one and at
+  what cost in lines. The record states which forms a next kind needs
+  if the owner selects the case type.
 
 ## Tests
 
@@ -250,6 +314,8 @@ allowed only when it computes the same value for every input.
   suite that compiles them, and an existing test module with a timeout
   runs them, so the Nix checks own and cache the result as they do for
   the other fixtures.
+- The test file of "Case type of plain INSERT". It is a fixture of an
+  existing surface suite in the same way as the two files above.
 - At the end of the code changes: `just test-full` and `just verdict`.
 - At the end of the task: `just test-nix` and
   `just test-scheduled-checks`, once.
@@ -337,4 +403,6 @@ of a module outside these limits.
 The other statement kinds, INSERT with RETURNING or write rules, rules
 for facts that no law gives today and that the two kind rules do not
 need, one form for `Succeeds` and `Sql.check`, and the ADR that decides
-on the form for all kinds.
+on the form for all kinds. The selection of one of the three forms,
+and the removal of the forms that the owner does not select, are also
+not in this task.
