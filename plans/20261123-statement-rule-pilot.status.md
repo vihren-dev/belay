@@ -24,19 +24,22 @@ The owner decided on 2026-11-23 to add a third form, a case type of
 plain INSERT, before the end checks; the task file has the section
 "Case type of plain INSERT".
 
+The case type of plain INSERT, its part for all statement kinds
+(`StepCase.lean`, `PlainInsertCase.lean`) and the second client test
+(`ItemInsertCaseChecks.lean`, `ItemInsertCaseClaims.lean`) are done. The
+findings record has the measurements of each pilot commit, the
+comparison of the three forms and a recommendation for the owner.
+
 Open:
 
-- The findings record for the case type. The case type, its part for
-  all statement kinds (`StepCase.lean`, `PlainInsertCase.lean`) and the
-  second client test (`ItemInsertCaseClaims.lean`) are done.
-- The open findings of review `20261123T174042Z-90ccc457` on the
-  findings record, and the measurements of the record after the import
-  fix and the case laws.
+- The end checks: `just dev-build`, `just test-full`, `just verdict`,
+  then `just test-nix` and `just test-scheduled-checks`.
+- The owner's selection of a form for plain INSERT and the next kinds.
 
 Checks: `just test-full` passes on the commit of the import fix, and
 `just verdict` gives the same result as the start revision (see the
-progress log). Both run again after the case laws. `just test-nix` and
-`just test-scheduled-checks` have not run.
+progress log). Both run again at the end of the code changes.
+`just test-nix` and `just test-scheduled-checks` have not run.
 
 ## Start revision
 
@@ -424,3 +427,16 @@ counterexample replay (#463)").
   so that no proof of the case-type test names `runScriptStep`, as the
   client-claims test requires of its proofs. Tests:
   `tests/surface_schema_script_test.py`.
+- 2026-11-23: the findings record has the measurements again, each with
+  its revision and its script, from the start revision to `a03e8267`. It
+  fixes the open findings of review `20261123T174042Z-90ccc457`: the
+  import of `PlainInsertRule` and the line of `hintedKinds` are no
+  longer counted as lines added once, and the module docstrings of
+  `SchemaStepRules` and `SendStepRules` are kept apart from the proof
+  sketches that named a deleted law. It also records the three import
+  lines that the import fix removed (finding
+  `20261123T191311Z-67a9dc4b#2`). New sections: the case laws, the case
+  type, the client claims in the three forms with the two proofs of the
+  claim for each input, `fun_cases`, the comparison of the three forms
+  with a marked recommendation, and the answers to the three pilot
+  questions. Tests: none; the commit changes only documents.
