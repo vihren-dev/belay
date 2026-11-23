@@ -74,24 +74,18 @@ def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: 
     with its old statement, from the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the
     data facts of CREATE TABLE and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
     old laws loses no fact. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 6), ("ReplacedSendLaws", 3)))
+    check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
 
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
-def test_client_claims_on_items_in_three_rule_forms(runtime_root: Path, tmp_path: Path) -> None:
-    """The fixtures ItemInsertSite, ItemInsertOutcomes and ItemInsertClaims prove client claims about a table with
-    an INTEGER PRIMARY KEY alias. The proofs use the bridge Sql.check_send_of_rule. The INSERT claims use the case
-    laws of plain INSERT, and the other claims use the kind rules of CREATE TABLE and plain INSERT. On arbitrary
-    valid rows, a new key inserts one row (success law), and an existing key fails with code 19 and keeps the
-    database (failure law). CREATE TABLE on an empty catalog then INSERT gives a table with exactly the new row.
-    sql_run proves that the insert keeps the condition that every stored item has a name that is not NULL.
-
-    The fixtures ItemInsertCaseChecks and ItemInsertCaseClaims prove the two INSERT claims again with the case type
-    of plain INSERT: the step equation runScriptStep_plainInsert_of_case with one case of StepCase and
-    PlainInsertCase. They also prove a claim for each input. Its output is done 1 and its database has the new row
-    after the old rows, or its output is one error and its database is the database before. One proof uses the cover
-    runScriptStep_plainInsert_cover, and one proof uses the case laws. The chain compiles each module once. Every
-    theorem uses only logical axioms."""
+def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
+    """The fixtures ItemInsertSite, ItemInsertOutcomes, ItemInsertClaims and ItemInsertAnyClaims prove client
+    claims about a table with an INTEGER PRIMARY KEY alias. The proofs use the kind rules of CREATE TABLE and plain
+    INSERT through the bridge Sql.check_send_of_rule. On arbitrary valid rows, a new key inserts one row, and an
+    existing key fails with code 19 and keeps the database. CREATE TABLE on an empty catalog then INSERT gives a
+    table with exactly the new row. sql_run proves that the insert keeps the condition that every stored item has a
+    name that is not NULL. For each id, the insert has the output done 1 and the new row after the old rows, or one
+    error output and the database before. The chain compiles each module once. Every theorem uses only logical
+    axioms."""
     check_module_chain(runtime_root, tmp_path, (("ItemInsertSite", 0), ("ItemInsertOutcomes", 0),
-                                                ("ItemInsertClaims", 4), ("ItemInsertCaseChecks", 0),
-                                                ("ItemInsertCaseClaims", 4)))
+                                                ("ItemInsertClaims", 4), ("ItemInsertAnyClaims", 1)))

@@ -4,9 +4,10 @@ set_option doc.verso true
 
 /-! Data facts of a plain INSERT that fails: the counts that it reports, and the outcome of rows that SQLite refuses
 because of a constraint or a repeated rowid. The facts are about functions on tables, rows and databases; none of
-them is about the step of a statement. The case law {lit}`runScriptStep_insert_failed` takes a failed outcome as a
-premise: a caller can prove that premise with {lit}`insertOutcome_constraintViolation`, and read the counters
-after the step with {lit}`LiteralData.insertCounts_error_changes` and {lit}`LiteralData.insertCounts_error_total`. -/
+them is about the step of a statement. The kind rule {lit}`runScriptStep_plainInsert_eq` selects its failure case
+by the outcome of the insertion: a caller can prove that the outcome is an error with
+{lit}`insertOutcome_constraintViolation`, and read the counters after the step with
+{lit}`LiteralData.insertCounts_error_changes` and {lit}`LiteralData.insertCounts_error_total`. -/
 
 namespace Belay.Sqlite.Model
 

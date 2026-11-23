@@ -11,15 +11,13 @@ the section "Owner decision of 2026-11-23", which changes the
 acceptance points.
 
 The CREATE TABLE and plain INSERT kind rules, the generic projections,
-the surface bridge and the path of `sql_run` through the kind rules are
-done. The replaced laws of the task file are deleted, except
-`runScriptStep_insert_ok`, which the owner decision makes a replaced law
-again. The case laws (with `runScriptStep_insert_ok`), the case type
-(`PlainInsertCases.lean`, `StepCase.lean`, `PlainInsertCase.lean`) and
-the second client test (`ItemInsertCaseChecks.lean`,
-`ItemInsertCaseClaims.lean`) are still in the code. The two INSERT
-claims of the client-claims test still use the case laws, and the
-retention test does not restate `runScriptStep_insert_ok`. The findings
+the surface bridge, the path of `sql_run` through the kind rules, the
+no-capability-loss test and the client-claims test are done, and the
+replaced laws are deleted. The case laws, the case type and the second
+client test are removed. The client-claims test proves its two INSERT
+claims and the claim for each input (`ItemInsertAnyClaims.lean`) with
+the kind rule, and the retention test restates
+`runScriptStep_insert_ok` again. The findings
 record (`docs/records/statement-rule-pilot-findings.md`) has the
 measurements of the three forms. Its last measured revision is
 `a03e8267`; it measures the client proofs with the kind rule at
@@ -27,10 +25,6 @@ measurements of the three forms. Its last measured revision is
 
 Open:
 
-- Remove the case laws, the case type and the second client test. The
-  client-claims test proves its INSERT claims and the claim for each
-  input with the kind rule. The retention test restates
-  `runScriptStep_insert_ok` again.
 - Add the owner decision and a final measurement to the findings record.
 - Run the end checks again on the last code revision.
 
@@ -52,9 +46,8 @@ counterexample replay (#463)").
   and the simp set of the kind rules; `CreatedTables.lean`,
   `ResolvedStepGuards.lean`: users of the rule and its condition.
 - `…/Programs/Scripts/PlainInsertRule.lean`: the plain INSERT kind rule;
-  `PlainInsertCases.lean`: its case laws `runScriptStep_insert_ok` and
-  `runScriptStep_insert_failed`; `…/Schema/Writes/PlainInsertFailure.lean`:
-  the data facts of a failed INSERT;
+  `…/Schema/Writes/PlainInsertFailure.lean`: the data facts of a failed
+  INSERT;
   `…/Schema/Writes/PlainInsertSuccess.lean`, `PlainWriteFrame.lean`,
   `LiteralInsertFits.lean`, `StatementRun.lean`, `PlainCounts.lean`: the
   data lemmas and definitions of plain INSERT.
@@ -494,3 +487,17 @@ counterexample replay (#463)").
   alias mismatch, and the State section says which parts of the owner
   decision are still open and at which revisions the record measures
   the forms. Tests: none; the commit changes only documents.
+- 2026-11-23: removed the case laws (`PlainInsertCases.lean`), the case
+  type (`StepCase.lean`, `PlainInsertCase.lean`) and the second client
+  test (`ItemInsertCaseChecks.lean`, `ItemInsertCaseClaims.lean`) with
+  their root, lakefile and fixture entries. The model root imports
+  `PlainInsertRule` and `PlainInsertFailure` directly. The two INSERT
+  checks of `ItemInsertClaims.lean` use the kind rule again, as at
+  `94c3fa5e`, with the shorter `items_taken_outcome`. The new fixture
+  `ItemInsertAnyClaims.lean` holds `insert_any_rule` and the claim for
+  each input `insert_done_or_error`, proved with the kind rule. The
+  retention test restates `runScriptStep_insert_ok` again (7 model
+  laws). Tests: `tests/surface_schema_script_test.py`,
+  `tests/surface_assertion_examples_test.py`,
+  `tests/surface_layers_test.py` and
+  `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
