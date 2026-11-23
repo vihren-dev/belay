@@ -319,7 +319,7 @@ valid connection, and the kind rule of a query needs a resolution to a query. Sl
 - `sql_run` enters each result of a choice through the kind rules (D6).
 - `sql_run` enters the rest of the program after a sent SELECT from the visible syntax of the
   SELECT alone, as it does today: with no proof of the resolution and no validity, and with
-  `modeled` as a goal of its own when no hint proves it.
+  `modeled` as a goal of its own only when no hint and no local hypothesis proves it.
 
 If one of them does not hold, the rule and its branch stay, `sql_run` uses the branch for a
 sent SELECT, and the status file of the slice records the reason. The rules for the programs
