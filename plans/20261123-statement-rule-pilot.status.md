@@ -187,3 +187,11 @@ counterexample replay (#463)").
   the replaced laws and their replacements, elaboration times, lost facts
   (none), findings and the estimate for the next kind. No code changes;
   no tests.
+- 2026-11-23: review `20261123T172548Z-ce164ea8` of the findings record
+  gave 7 "must" and 5 "should" findings, all fixed in a `refactor:`
+  commit: per-package rows, the `SqlRunRules` lines charged to their
+  kinds, caller lines apart from law lines, four changed `sql_run`
+  proofs, corrected statement counts (125 before) with the real
+  derivations, the `StepRuleAttr` timing, `sql_run [rfl]` on a concrete
+  CREATE TABLE, the split of the client test and three CREATE TABLE
+  review rounds. No code changes; no tests.
