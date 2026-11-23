@@ -58,7 +58,7 @@
     "AccountSignupQueries", "AddCustomerQueries", "CertificateAfterDrop", "ConcatExpansion",
     "ConcatFilters", "ControlStepExamples", "DerivedColumnCheckBoundaries", "DerivedColumnExamples",
     "DerivedColumnOnSchema", "DerivedColumnSuccessBoundaries", "GlobalSignupInvariant",
-    "InsertSelectExamples", "ItemInsertClaims", "ItemInsertOutcomes", "ItemInsertSite", "KeptReadChecks",
+    "InsertSelectExamples", "ItemInsertCaseClaims", "ItemInsertClaims", "ItemInsertOutcomes", "ItemInsertSite", "KeptReadChecks",
     "PlainInsertStepCases", "RebuildCopyChecks", "RebuildRefutation", "RebuildReplays", "RebuildTableFrames",
     "ReplacedSendLaws", "ReplacedStepLaws", "S6AutoAddCustomer", "S6AutoAuto", "S6AutoCommute",
     "S6AutoCommuteNegative", "S6AutoEffects", "S6AutoKindRuleCases", "S6AutoPaths", "S6AutoShapes",
