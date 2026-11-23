@@ -171,3 +171,6 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T171646Z-7b27fa70` gave 1 "should" finding
   on the length of a sentence in the same docstring; fixed in a
   `refactor:` commit. Tests: `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T171736Z-0bb29f50` gave 1 "should" finding
+  on the first condition of the same docstring; fixed in a `refactor:`
+  commit. Tests: `tests/surface_schema_script_test.py`.

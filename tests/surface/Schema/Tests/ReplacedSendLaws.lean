@@ -105,7 +105,8 @@ plain insert that resolves from the initial connection and is modeled, and a pos
 about every clock value, output list and final context. It requires the post for that output list and that context
 when these three conditions hold:
 
-* The database of the context has the rows that the insert gives for that clock value.
+* The database of the context is the given database, with the rows of the target table replaced by the rows that
+  the insert gives for that clock value.
 * That database is valid.
 * No output of the context is an error or ends the run.
 
