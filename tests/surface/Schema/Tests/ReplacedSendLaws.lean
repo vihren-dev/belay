@@ -101,9 +101,11 @@ theorem Sql.check_send_plainInsert {ctx : ExecutionContext} {statement : Syntax.
     exact failure output value _ noError ends rfl reachedValid
 
 /-- The deleted rule {lit}`Sql.ifOk_send_plainInsert`. For every database, environment (no assumption that it is
-complete), plain insert that resolves from the initial connection and is modeled, and post: a program that sends
-the insert checks the post at its fresh start when the post holds for every error-free final context whose
-connection sees the database with the inserted rows, and that database is valid. Proof sketch:
+complete), plain insert that resolves from the initial connection and is modeled, and post: if the post holds for
+every final context whose outputs have no error, whose connection sees the database with the inserted rows, and
+whose database is valid, then a program that sends the insert satisfies {lit}`Sql.ifOk` of the post at its fresh
+start. That is, every branch stays modeled, and the post is required only of a branch whose outputs have no error;
+a branch that gives an error has no obligation. Proof sketch:
 {name}`check_send_single_of_step` with the step of the model; {name}`ReplacedStepLaws.plainInsert_database` gives
 the database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
