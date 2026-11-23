@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-19T17:15:58+00:00",
+  "finding": "20261119T171532Z-01f0697e#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The constant records the 600-second minimum reserved for the other host tests. The previous recipe used that budget for the entire suite. The strict inequality leaves collection and reporting additional time. An upper bound on future test duration cannot be inferred from this minimum."
+}

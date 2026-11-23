@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.sql_file_support import (OUTER_SQL, PROBE, configured_command, installed_layout, lake_build,
+from tests.sql_file_support import (OUTER_SQL, configured_command, file_probe, installed_layout, lake_build,
                                     write_same_name_projects)
 from tests.surface_support import fixture_file, surface_command
 
@@ -31,7 +31,7 @@ def test_option_root_is_anchored_at_the_lean_file(runtime_root: Path, tmp_path: 
     (project / "sql/q.sql").write_text(OUTER_SQL)
     (project / "lean").mkdir()
     source = project / "lean/Q.lean"
-    source.write_text(PROBE + '\nset_option belay.sql.packageRoot ".." in\ndef query := file_probe "sql/q.sql"\n'
+    source.write_text(file_probe() + '\nset_option belay.sql.packageRoot ".." in\ndef query := file_probe "sql/q.sql"\n'
                       'example (x : Value) : query x = sql "SELECT $x, 7" := rfl\n')
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
@@ -47,7 +47,7 @@ def test_option_root_is_anchored_at_the_lean_file(runtime_root: Path, tmp_path: 
 def test_invalid_option_roots_report_one_error(runtime_root: Path, tmp_path: Path, root: str, message: str) -> None:
     """Absolute, missing and non-directory roots fail at the form with the option's name."""
     source = tmp_path / "Q.lean"
-    source.write_text(PROBE + f'\nset_option belay.sql.packageRoot {json.dumps(root)} in\n'
+    source.write_text(file_probe() + f'\nset_option belay.sql.packageRoot {json.dumps(root)} in\n'
                       'def query := file_probe "sql/q.sql"\n')
     result = run_command(configured_command(runtime_root, source, tmp_path), cwd=tmp_path, timeout=60)
     assert result.returncode == 1, result.diagnostic()

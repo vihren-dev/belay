@@ -9,7 +9,7 @@ set_option exponentiation.threshold 2048
 describe (ADR 0017, S6, task {lit}`20261027-schema-script-laws`), with the outputs that the model gives, for a check
 against pinned SQLite. The scripts drop the parent of a foreign key with enforcement off and on, run the failing
 CREATE TABLE, DROP TABLE, COMMIT and BEGIN, turn the enforcement on inside and outside a transaction, and run the
-INSERT from a query that succeeds and the four that fail. -/
+INSERT from a query that succeeds and the four that fail. The literal INSERT cases include two equal keys in one batch. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
@@ -46,6 +46,17 @@ def inserts : Script := sql r"
   INSERT INTO dstStrict SELECT id, name FROM src;
   SELECT id, name FROM dst ORDER BY id;"
 
+/-- A duplicate within one INSERT fails on an empty destination. The next INSERT stores both rows. -/
+def literalInserts : Script := sql r"
+  INSERT INTO dst VALUES (1,'a'), (1,'b');
+  INSERT INTO dst VALUES (1,'a'), (2,'b');
+  SELECT id, name FROM dst ORDER BY id;
+  INSERT INTO dstUnique VALUES (NULL,'b'), (12,NULL);
+  INSERT INTO dstUnique VALUES (13,'a');
+  CREATE UNIQUE INDEX foldedDstName ON dstUnique(name COLLATE NOCASE);
+  INSERT INTO dstUnique VALUES (13,'c'), (14,'C');
+  SELECT id, name FROM dstUnique ORDER BY id;"
+
 open Lean Elab Meta in
 /-- Keep exact model value tags so the test can compare native observations. -/
 def outputJson : Output → Json
@@ -67,6 +78,7 @@ elab "report_schema_replays" : command => Command.liftTermElabM do
   emitReplay "drop-off" (← Replay.scriptReport (mkConst ``family) (mkConst ``dropOff))
   emitReplay "drop-on" (← Replay.scriptReport (mkConst ``family) (mkConst ``dropOn))
   emitReplay "refusals" (← Replay.scriptReport (mkConst ``family) (mkConst ``refusals))
+  emitReplay "literals" (← Replay.scriptReport (mkConst ``warehouse) (mkConst ``literalInserts))
   emitReplay "inserts" (← Replay.scriptReport (mkConst ``warehouse) (mkConst ``inserts))
 
 report_schema_replays

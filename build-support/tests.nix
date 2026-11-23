@@ -224,7 +224,7 @@ let
   authoredCorpora = builtins.filter (path: (builtins.fromJSON (builtins.readFile (path + "/manifest.json"))) ? evidenceKind)
     lockedCorpora;
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
-  # The surface suites share their inputs. One suite took 1130 s of its 1200 s limit, so the
+  # One suite took 1130 s of its 1200 s limit, so the
   # checker, proof-search and sampling tests were moved to `surfaceChecks`. The two then took 1039 s
   # and 939 s, and one run ended at the limit under shared load, so the tests are in three suites:
   # `surfaceChecks` (the check command, proof search, sampling), `surfaceS6` (the S6 tests, the
@@ -241,9 +241,10 @@ let
   # `surface` (355 s).
   # Three support modules are test files of the `surface` suite: two of the checker tests, and the module
   # with the fixture-chain helper that the derived-column tests import.
+  surfaceFixtures = import ./surface-fixtures.nix { inherit (pkgs) lib; inherit root; };
   surfaceSuite = name: suite name {
     # The example project: the surface tests elaborate its files and build it with Lake.
-    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+    inputs = surfaceFixtures name ++ [ (root + /tests/surface_support.py)
                (fs.difference (root + /examples/table-rebuild) (fs.maybeMissing (root + /examples/table-rebuild/.lake)))
                (root + /tests/two_state_support.py)
                (root + /tests/lean_server_support.py) (root + /tests/surface_editor_support.py)

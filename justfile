@@ -15,6 +15,8 @@
 suite_build_limit := if os() == "macos" { "4500" } else { "2700" }
 # Seconds for a nix-build of one mutant suite: more than its limit in build-support/tests.nix.
 mutant_build_limit := "3000"
+# Seconds for the host Nix tests, including the cold local build.
+host_nix_limit := "3300"
 default:
     @just --list
 
@@ -140,8 +142,11 @@ review-stats *args:
     python3 -m tools.review_stats "$@"
 
 # Check Nix source identities, test-target commands and environment snapshots.
-test-nix:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
+# Collection reads the installed package list even for tests excluded by the marker.
+# The local-loop test allows 2520 seconds across its builds, binaries, metadata and verdict.
+# tests/test_recipe_limits.py checks the reserve for the other host tests and collection.
+test-nix: conformance-build
+    timeout --foreground {{host_nix_limit}} python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
 
 # Run all scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip, also the
 # mutant suites that CI runs in their own job.

@@ -5,8 +5,7 @@ import Belay.Sqlite.Tooling.Counterexamples.SqlSource
 
 set_option doc.verso true
 
-/-! Validate replay construction against the supplied witness. Original db! text can retain
-constraints that the simple schema formatter cannot express. Both paths must reconstruct the
+/-! Validate replay construction against the supplied witness. Both original db! text and SQL printed from the catalog must reconstruct the
 same catalog, rowids and cells through the existing model runner. -/
 
 namespace Belay.Sqlite.Replay
@@ -94,7 +93,7 @@ def validateConstruction (text : String) (database : Database) : IO (Except Stri
   return .ok ()
 
 /-- Obtain checked database data and validated construction text. An explicit text is the
-flexible primitive; otherwise use original db! metadata or the ordinary-table formatter.
+flexible primitive; otherwise use original db! metadata or SQL printed from the catalog.
 Unsupported reconstruction fails without replacing the witness with another database. -/
 def construction (expression : Expr) (text : Option String := none)
     (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) :

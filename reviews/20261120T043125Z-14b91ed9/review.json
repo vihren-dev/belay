@@ -1,0 +1,53 @@
+{
+  "caller": "codex",
+  "commit": "14b91ed92e6771c8ee95e100d4d1db4412eb2eea",
+  "date": "2026-11-20T04:31:25+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261119-literal-insert-success.status.md",
+    "plans/20261119-literal-insert-success.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261120T043125Z-14b91ed9#1",
+      "line": 39,
+      "path": "plans/20261119-literal-insert-success.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file still says \"Owner clarification is pending\", but the new line 55 records that the owner decided on 2026-11-20 to require pairwise uniqueness of new keys, so the document contradicts itself. Fix: Mark lines 38-39 as superseded by the 2026-11-20 decision, or replace them with a short note that points to it."
+    },
+    {
+      "id": "20261120T043125Z-14b91ed9#2",
+      "line": 51,
+      "path": "plans/20261119-literal-insert-success.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file says the validity bridge is \"pending the premise for keys within a batch\", but the premise was approved on 2026-11-20 (line 55), so only the bridge's implementation is still open. Fix: Say that the premise is agreed and that the bridge still has to be built against it."
+    }
+  ],
+  "id": "20261120T043125Z-14b91ed9",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

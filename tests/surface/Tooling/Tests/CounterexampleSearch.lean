@@ -53,12 +53,12 @@ def unavailable : Prop := ∀ db : Database, Holds (sql "SELECT random()") db
 /-- A raw run expression outside recognized query sites is still SQL, not a plain predicate. -/
 def hiddenExecution : Prop := ∀ db : Database, (db.run (sql "SELECT 1")).outputs = []
 
-/-- Removing construction metadata leaves this index outside the simple replay formatter. -/
-def indexed : Database := db! "CREATE TABLE t(a); CREATE INDEX i ON t(a);"
+/-- A row with implicit rowid 2 cannot be recreated by inserting its value alone. -/
+def sparse : Database := db! "CREATE TABLE t(a); INSERT INTO t VALUES (1), (2); DELETE FROM t WHERE a=1;"
 
 /-- An unreplayable refutation must not hide a later replayable refutation. -/
 def skipsUnreplayable : Term.TermElabM Unit := do
-  let first : Check.Witness := { database := databaseExpr (← Replay.databaseValue (mkConst ``indexed)).raw }
+  let first : Check.Witness := { database := databaseExpr (← Replay.databaseValue (mkConst ``sparse)).raw }
   let second : Check.Witness := { database := mkConst ``Database.empty }
   discard <| Check.refuteWitness (mkConst ``nonempty) first
   unless (← Check.attempt (Check.replayClaim (mkConst ``nonempty) first)).isNone do

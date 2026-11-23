@@ -1,0 +1,45 @@
+{
+  "caller": "codex",
+  "commit": "deef4714be026657e215cb6d9b35767ef078d377",
+  "date": "2026-11-19T18:30:29+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261119-surface-fixture-inputs.status.md",
+    "plans/20261119-surface-fixture-inputs.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261119T183029Z-deef4714#1",
+      "line": 11,
+      "path": "plans/20261119-surface-fixture-inputs.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "Line 11 still says, as current text, that the proof-cost run reached its timing limit (issue 453). The new text at lines 25-27 says the full Nix test target passed with all six restricted suites, surfaceProofCost included, so the file now contradicts itself about the proof-cost suite. Fix: say that the timeout at line 11 came from an earlier run, or add that the later full run of surfaceProofCost passed within its limit."
+    }
+  ],
+  "id": "20261119T183029Z-deef4714",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

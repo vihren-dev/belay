@@ -52,8 +52,14 @@ run_meta do
     throwError "shared assembly retained supplied view cells or changed physical rows"
   checkWithKernel (databaseExpr raw)
 
-/-- The ordinary-table replay formatter refuses a view instead of omitting its definition. -/
-example : Replay.databaseSql database = none := by decide +kernel
+/- These hand-built result columns have no rename tokens. CREATE VIEW adds those tokens.
+The printer includes the forward view, and the checker detects the metadata difference. -/
+run_meta do
+  let some text := Replay.databaseSql database | throwError "could not reconstruct the computed views"
+  let .ok statements ← Replay.translated text | throwError "could not translate the computed views: {text}"
+  unless text.contains "CREATE VIEW \"late\"" do throwError "the SQL omitted the forward view"
+  if Check.constructionMatches (statements.toList.map (·.statement.value)) database.raw then
+    throwError "the checker accepted different view rename tokens"
 
 /-- Renaming two columns keeps integer affinity and NOCASE collation. -/
 example : Holds (sql r"SELECT 1 FROM renamed WHERE number='7' AND label='A'") database := by decide +kernel
