@@ -1,0 +1,110 @@
+{
+  "caller": "claude",
+  "commit": "642c0f35644aca7afb82db1f673b1e542e8c43b3",
+  "date": "2026-11-23T20:45:19+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/statement-rule-pilot-findings.md",
+    "plans/20261123-statement-rule-pilot.status.md",
+    "reviews/20261123T203224Z-a03e8267/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261123T204519Z-642c0f35#1",
+      "line": 621,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The kind rule also proves the claim for every input without splitting on whether the key is taken, as Lean accepts a proof that establishes readiness and splits on `insertOutcome`. Fix: record the kind-rule result alongside the case-type result, with 32 code lines for the helper and 11 for the unchanged client claim under the same counting convention."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#2",
+      "line": 510,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Only `runScriptStep_insert_ok` takes `InsertFits`, while `runScriptStep_insert_failed` requires the readiness checks and an error outcome. Fix: attribute the `InsertFits` shortcut to the success law and state the failure law’s premises separately."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#3",
+      "line": 534,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task requires the derivability and line cost for each form, but the comparison leaves the kind rule from the case type unresolved. Fix: record the Lean-checked 21-line proof that applies `runScriptStep_plainInsert_of_case` and constructs the case of the rule’s right-hand side, while noting that the current cover theorem itself depends on the kind rule."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#4",
+      "line": 456,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record says the cover theorem needs a statement variable, but Lean accepts the full `insert_any_case` proof with the concrete INSERT supplied as `statement` and the resolution premise closed by `rfl`. Fix: describe `generalize` as the fixture’s way to avoid repeating the concrete syntax."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#5",
+      "line": 391,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The totals of 79, 75 and 69 count `items_taken_outcome` but omit other helper theorems used by the same proofs, including the 18-line `items_fits` and 23-line `items_ready`. Fix: label these numbers as subtotals and report the shared helper lines separately so the owner can recover the full client cost."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#6",
+      "line": 280,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Both `insertCounts_error_changes` and `insertCounts_error_total` have three statement lines through `:= rfl`, but the table counts the following blank line for each. Fix: change both entries to 3 and the statement-line sum to 49."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#7",
+      "line": 105,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record and status claim to cover every code-changing commit, but omitted revisions include `7dbeba93`, which introduced the case laws, and `24d517a0`, which added the case-type client test. Fix: describe the table and the status at line 30 as measurements of selected milestone revisions."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#8",
+      "line": 176,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The claim that the case laws change no declaration from the start revision contradicts the record’s own measurement that `runScriptStep_insert_ok` went from 34 code lines to 22. Fix: narrow the claim to the pre-existing callers counted in this section and identify the restored success theorem separately."
+    },
+    {
+      "id": "20261123T204519Z-642c0f35#9",
+      "line": 56,
+      "path": "docs/records/statement-rule-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The measurement table claims to source every number, but the caller counts use the unlisted `decl_diff.py` and the statement of `StepCase.unique` was counted by hand. Fix: identify the table as the main measurement scripts and retain the specific sources beside the exceptions."
+    }
+  ],
+  "id": "20261123T204519Z-642c0f35",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

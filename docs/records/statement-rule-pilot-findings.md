@@ -53,8 +53,7 @@ forms change, and a comparison of the three forms of plain INSERT.
 
 ## Measurement method
 
-Each number of this record comes from one of these scripts in the
-scratch directory of the session
+The main measurement scripts are in the scratch directory of the session
 (`/tmp/claude-1002/-home-codex-work/a1c729e8-ce7b-5ce0-94c1-8fab926cac49/scratchpad/pilot/`).
 Each script reads a jj revision or the working copy.
 
@@ -70,13 +69,30 @@ Times are the lower of two runs, in seconds. A model module time
 includes the load of its imports, about 0.45 s; a surface module time
 includes about 1.8 s.
 
+Other sources, named where the record uses them:
+
+- `decl_diff.py REV FILE NAME…`: the added and removed lines of a
+  declaration between the start revision and a revision (section
+  "Changed callers").
+- `chain.py` and `probe_after_chain.py FILE M…`: compile the fixtures of
+  a chain, then a scratch Lean file that imports them. The scratch file
+  `kindany/KindAnyProbe.lean` holds a proof of the claim for each input
+  with the kind rule.
+- The scratch files `funcases/Probe.lean` to `Probe4.lean`, compiled
+  with `lake env lean FILE` in `packages/belay-sqlite-model` (sections
+  "`fun_cases`" and "Comparison of the three forms").
+
 `decl_code.py` miscounts the statement of a theorem whose proof is a
-pattern match without `:=`. One theorem has such a proof:
-`StepCase.unique`. Its statement has 6 lines, counted by hand.
+pattern match without `:=`, and of a theorem whose proof is on the line
+of `:=`. Such statements are counted by hand: `StepCase.unique` (6
+lines), `LiteralData.insertCounts_error_changes` and
+`LiteralData.insertCounts_error_total` (3 lines each).
 
 ## Code lines
 
-Totals of `count_rev.py` for each commit that changes code:
+Totals of `count_rev.py` for the milestone revisions of the pilot. A
+revision that this table does not list changes code between two
+milestones, and the next milestone includes its lines.
 
 | Revision | Content | Model | Surface | Tests | Total |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -102,8 +118,9 @@ package (`scc_delta.py` of the two revisions):
 - `KindRuleSend.lean` −1: the import of `StepRuleProjections`, which all
   kinds need.
 
-The other commits between `94c3fa5e` and `a03e8267` that this table does
-not list change only comments, documents and review records.
+For example, the case laws came in `7dbeba93` and the client test of the
+case type in `24d517a0`; their lines are in the totals of `58a5b045` and
+`18aa879d`.
 
 ### Change by origin
 
@@ -173,8 +190,10 @@ counts are the added and removed lines of each caller declaration with
 its docstring (a line diff of the declaration text at the start
 revision and at `94c3fa5e`; scratch script `decl_diff.py`). Imports,
 module docstrings, moved declarations and the laws themselves are listed
-apart. The case laws and the case type change no declaration of the
-start revision.
+apart. The case laws and the case type change no caller of the start
+revision. The success law `runScriptStep_insert_ok` is a law of the
+start revision with its statement and a new proof (section "Statement
+lines of the replaced laws").
 
 | Scope | Changed callers | Added | Removed |
 | --- | ---: | ---: | ---: |
@@ -277,11 +296,11 @@ lines went from 34 to 22: its proof uses the kind rule,
 | --- | ---: | ---: |
 | `runScriptStep_insert_ok` | 16 | 22 |
 | `runScriptStep_insert_failed` | 19 | 25 |
-| `LiteralData.insertCounts_error_changes` | 4 | 3 |
-| `LiteralData.insertCounts_error_total` | 4 | 3 |
+| `LiteralData.insertCounts_error_changes` | 3 | 3 |
+| `LiteralData.insertCounts_error_total` | 3 | 3 |
 | `LiteralData.rowidsDistinct_eq_false_of_repeated` | 3 | 7 |
 | `insertOutcome_constraintViolation` | 5 | 11 |
-| **Sum** | **51** | **71** |
+| **Sum** | **49** | **71** |
 
 Each case law has a proof of 6 lines: it rewrites the step with the
 kind rule and selects the case with its premises. The failure law has
@@ -378,7 +397,9 @@ split further.
 
 The two INSERT claims of the client-claims test ("a new key inserts",
 "a taken key fails") with their helper theorems, in code lines of
-`decl_code.py`. Each claim has the same statement in each form.
+`decl_code.py`. Each claim has the same statement in each form. The
+table gives the declarations that differ between the forms; their sum
+is a subtotal.
 
 | Declaration | Kind rule (`94c3fa5e`) | Case laws (`a03e8267`) | Case type (`a03e8267`) |
 | --- | ---: | ---: | ---: |
@@ -388,7 +409,15 @@ The two INSERT claims of the client-claims test ("a new key inserts",
 | claim of a taken key (`taken_key_fails`) | 10 | 10 | 10 |
 | outcome of a taken key (`items_taken_outcome`) | 13 | 10 | 10 |
 | alias fact (`items_aliases`) | 2 | — | — |
-| **Sum** | **79** | **75** | **69** |
+| **Subtotal** | **79** | **75** | **69** |
+
+All three forms also use these site facts, with the same code at both
+revisions: `items_ready` (23) and `items_fits` (18) in
+`ItemInsertOutcomes.lean`, and `items_table` (4), `items_values` (5),
+`items_clock` (2), `items_reads` (1), `items_cellsReady` (1),
+`items_counts_ok` (5) and `items_inserted` (4) in `ItemInsertSite.lean`:
+63 code lines. These facts use the definitions and the other facts of
+the two site modules (106 code lines together at `a03e8267`).
 
 The data facts of the case laws (`insertOutcome_constraintViolation`,
 `LiteralData.rowidsDistinct_eq_false_of_repeated`) shorten the outcome
@@ -397,26 +426,52 @@ case-type column uses the same outcome. The case laws state the values
 of the rows with `let`, so their checks rewrite the values with
 `items_values` in separate goals. In the case-type checks, the values
 are an argument of the case, and `items_values` gives them in the
-constructor.
+constructor. The kind-rule column was not measured again with the data
+facts of the case laws.
 
 The claim for each input (`insert_done_or_error`: the output is
 `.done 1` with the inserted row, or an error output with the database
-before) has two proofs:
+before) has two proofs in the client test and one in a scratch file:
 
 | Proof | Declarations | Code lines |
 | --- | --- | ---: |
-| With the case type | `insert_any_case` (42), `insert_done_or_error` (11) | 53 |
+| With the kind rule (scratch `kindany/KindAnyProbe.lean`) | a check with the statement of `insert_any_case` (29), and the claim as `insert_done_or_error` (11) | 40 |
 | With the case laws | `insert_done_or_error_by_laws` (14), with the checks `insert_new_check` (22) and `insert_taken_check` (21) | 57 |
+| With the case type | `insert_any_case` (42), `insert_done_or_error` (11) | 53 |
 
-When the two checks of the case laws already exist, the second proof
-adds 14 lines. The second proof splits on whether a stored item has the
-id as its rowid, and needs the fit facts of a new key and the outcome of
-a taken key. The proof with the case type splits the cover and needs
-neither: it uses the readiness of the table and the values
+When the two checks of the case laws already exist, the proof with the
+case laws adds 14 lines. It splits on whether a stored item has the id
+as its rowid, and needs the fit facts of a new key and the outcome of a
+taken key. The proofs with the kind rule and with the case type need
+neither: they use the readiness of the table and the values
 (`items_ready`) but not `items_fits` (18 lines) or
-`items_taken_outcome` (10 lines). In it, the cases `noClock`,
-`unknownCounter`, `noTable` and `unready` close by a contradiction with
-the facts of the site.
+`items_taken_outcome` (10 lines). The proof with the kind rule
+rewrites the step with the rule, reduces the clock, the counter, the
+table and the readiness checks with the facts of the site, and splits
+on the outcome. The proof with the case type splits the cover; the
+cases `noClock`, `unknownCounter`, `noTable` and `unready` close by a
+contradiction with the facts of the site. Neither proof was made as
+short as possible.
+
+The proof with the kind rule:
+
+```lean
+  unfold insertItem
+  refine Sql.check_send_of_rule (runScriptStep_plainInsert_eq (target := 0) (rows := itemCells) (subqueries := [])
+    (by rfl)) valid ?_ ?_
+  all_goals
+    dsimp only [Database.Raw.connection, List.headD]
+    simp only [items_clock, items_reads, Counters.firstUnknown, items_table, items_values, items_ready rows valid.1,
+      items_cellsReady, Resolved.subqueriesPlain, List.find?_nil, List.all_nil, Bool.and_self, ↓reduceIte]
+  · split <;> rfl
+  · split
+    · rename_i written outcome
+      rw [outcome, insertOutcome_ok outcome]
+      refine Sql.sendReached_single (fun _ same => by cases same) fun _ => ?_
+      simp only [items_counts_ok, items_inserted]
+      exact done
+    · exact Sql.sendReached_single (fun _ same => by cases same) fun _ => failed _ _
+```
 
 The proof with the case type:
 
@@ -453,10 +508,11 @@ The proof with the case type:
 
 Two points of this proof are not obvious:
 
-- `runScriptStep_plainInsert_cover` needs the statement as a variable:
-  with the concrete INSERT syntax, Lean cannot infer the statement from
-  the resolution premise. `generalize` makes the statement a variable,
-  and the resolution premise closes with `rw [← named]; rfl`.
+- Lean does not infer the statement of `runScriptStep_plainInsert_cover`
+  from its resolution premise, so the proof must give the statement.
+  The fixture gives it with `generalize`, so that it does not repeat the
+  concrete syntax of the INSERT; the resolution premise then closes with
+  `rw [← named]; rfl`.
 - `cases` cannot split the cover while its result is the step term
   ("dependent elimination failed"). The `obtain` line gives the result
   a name and keeps the step equation `step` for the bridge. The proof
@@ -493,10 +549,10 @@ A cover proof with `fun_cases` instead of the kind rule was not tried.
 
 | | Kind rule | Case laws | Case type |
 | --- | --- | --- | --- |
-| Model code lines for plain INSERT | 84 (the rule file; rule 30 statement and 78 code lines) | +80, on the kind rule | +146 (49 once for all kinds, 97 for INSERT), on the kind rule |
+| Model code lines for plain INSERT | 84 (the rule file; rule 30 statement and 78 code lines) | +80 on the kind rule (28 of them data facts) | +146 on the kind rule (49 once for all kinds, 97 for INSERT) |
 | Elaboration of its modules | 0.84 s | 0.63 s and 0.43 s | 0.51 s and 0.75 s |
-| Two INSERT claims with helpers | 79 | 75 | 69 |
-| Claim for each input | not written | 57 (14 when the two checks exist) | 53 |
+| Two INSERT claims, subtotal of the declarations that differ | 79 | 75 | 69 |
+| Claim for each input | 40 (scratch) | 57 (14 when the two checks exist) | 53 |
 | Inputs covered | all, as one term | one case each: success, failure | all, as named cases |
 
 What each form gives that the other two do not:
@@ -505,11 +561,14 @@ What each form gives that the other two do not:
   `rw` can compute with it, `sql_run` applies it through the set
   `step_rule`, and the generic projections take it. It is the only form
   whose proof unfolds the step function; the other two forms are proved
-  from it.
-- The case laws give no fact that the case type does not give. Each case
-  law takes `InsertFits` directly, so a forward proof of a success needs
-  no readiness or outcome argument. With the case type, the client gets
-  these from `insertReady_of_fits` and `insertOutcome_of_fits`.
+  from it. In the pilot, it gives the shortest proof of the claim for
+  each input.
+- The case laws give no fact that the case type does not give. The
+  success law takes `InsertFits` directly, so a forward proof of a
+  success needs no readiness or outcome argument; with the case type,
+  the client gets these from `insertReady_of_fits` and
+  `insertOutcome_of_fits`. The failure law takes the readiness checks
+  and an error outcome, as the case `failure` does.
 - The case type gives cover: each input is in a named case, with named
   premises, and a proof for each input splits on the cases with `cases`
   or `rcases`. It also gives one result, and it states the checks of
@@ -529,10 +588,16 @@ Which form derives from which:
 - Case type from the kind rule: the cover proof (29 code lines), with
   `StepCase.of_checks`. One result (5) and the step equation (11) do not
   use the kind rule.
-- Case type from the case laws: not possible. The case laws state no
-  case in which the run ends, so they cannot give cover.
-- Kind rule from the case type or the case laws: not tried. The case
-  laws have the same gap as above.
+- Kind rule from the case type: a proof of 21 lines. The scratch file
+  `funcases/Probe4.lean` proves the statement of
+  `runScriptStep_plainInsert_eq`: its first line applies
+  `runScriptStep_plainInsert_of_case`, and the other 20 lines, which
+  give the case of each branch of the right side, are the lines of the
+  cover proof after its first line. In the model, the cover is
+  proved from the kind rule, so this derivation needs another proof of
+  the cover to stand alone.
+- Case type and kind rule from the case laws: not possible. The case
+  laws state no case in which the run ends.
 
 A next kind under the case type needs:
 
@@ -550,11 +615,19 @@ A next kind under the case type needs:
 The part for all kinds (`StepCase.lean`) is done. A next kind needs no
 case laws.
 
-**Recommendation of the implementer, for the owner's decision:** select
-the case type as the form for client proofs, keep the kind rule of each
-kind as the proof of its cover and as the rule of `sql_run`, and add no
-case laws for the next kinds, because each case law follows from the
-case type in one term and the case type also gives the claims for each
+In plain numbers: on top of the kind rule, the case type costs 97 model
+lines for plain INSERT and 49 once, and saves 10 lines on the two
+INSERT claims against the kind rule and 6 against the case laws. For
+the claim for each input, the proof with the kind rule is 13 lines
+shorter than the proof with the case type.
+
+**Recommendation of the implementer, for the owner's decision:** keep
+the kind rule as the one maintained form of each kind, with data facts
+for the outcomes of the kind such as those of `PlainInsertFailure.lean`,
+and add neither case laws nor a case type for the next kinds, because
+in this pilot the case type saves 10 lines of client proof on the two
+INSERT claims together and costs about 90 model lines for each write
+kind, and the kind rule gives the shortest proof of the claim for each
 input.
 
 ## Lost or weakened facts
@@ -616,10 +689,11 @@ model with its statement of the start revision.
   which 49 are once for all kinds. The acceptance tests add 596.
 - **Can a client prove claims about programs without the step function
   in the proof?** Yes, in each of the three forms: no client proof
-  names a banned identifier. The two INSERT claims take 79 code lines
-  with the kind rule, 75 with the case laws and 69 with the case type.
-  Only the case type gives a claim for each input without a split on
-  the data (53 lines).
+  names a banned identifier. The declarations that differ for the two
+  INSERT claims take 79 code lines with the kind rule, 75 with the case
+  laws and 69 with the case type. The claim for each input takes 40
+  lines with the kind rule (in a scratch file), 57 with the case laws
+  and 53 with the case type.
 
 ## Cost of the next kind
 
