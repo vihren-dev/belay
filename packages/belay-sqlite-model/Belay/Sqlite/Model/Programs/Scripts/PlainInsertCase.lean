@@ -44,7 +44,8 @@ inductive PlainInsertCase (connection : Connection) (parameters : List Value) (t
           (Resolved.Statement.insert target rows [] subqueries none).counterReads) parameters connection.state.database
           subqueries) rows) = false) :
       PlainInsertCase connection parameters target rows subqueries value (.ended unmodeledHere)
-  /-- The checks pass and the rows are written: the step continues with the number of rows. -/
+  /-- The checks pass and the outcome is the database {lit}`written`: the step continues with the number of rows and
+  the connection after the write of that database. -/
   | success {table : Table} {values : List (List Value)} {written : Database}
       (located : connection.state.database.table target = some table)
       (evaluated : Resolved.rowsAt (Resolved.statementContext value (connection.state.counters.view
