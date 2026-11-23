@@ -33,8 +33,8 @@ the first form, the kind rule. This ADR adopts it for all statement kinds:
 - **Data facts.** A fact that selects a case of a rule, or that describes the result of a case,
   is a theorem about a function on data. It names no step and no resolution.
 - **One set of projections and one surface rule for all kinds.** They read facts from the
-  equation of a rule. The surface rules that take the resolution to one kind, and the table of
-  kinds in `sql_run`, go.
+  equation of a rule. The surface rules that take the resolution to one kind, and their
+  branches in the table of kinds of `sql_run`, go.
 
 The ADR also gives the order of the work and what each part must show.
 
@@ -62,25 +62,25 @@ the counts by the constructor of `Resolved.Statement`. The type has 19 construct
 arguments of a constructor select a mode. For example, `insert` has the list of RETURNING columns
 and the optional write rules of foreign keys and triggers. This ADR, as the pilot, calls a write
 with no RETURNING column and no write rules a plain write. The model function
-`Resolved.Statement.plainWriteTarget` uses the word for a wider group: the writes with no write
-rules.
+`Resolved.Statement.plainWriteTarget` uses the word for another group: the resolved `.insert`,
+`.update` and `.delete` with no write rules and with each list of RETURNING columns.
 
 ### The laws on main
 
 On main `b7854558`, the start revision of the pilot:
 
 - The model has 99 theorems about `runScriptStep` (count of the pilot task file). Most of them
-  state one fact about one kind, with the same two premises: the statement resolves to the kind,
-  and the step continued. Issue #468 found at least 40 laws of this shape in 24 files. A law of
-  this shape says nothing about the cases in which the step ends.
+  state one fact about one kind. Issue #468 found at least 40 laws in 24 files that have these
+  two premises: the statement resolves, and the step continued. A law with the second premise
+  says nothing about the cases in which the step ends.
 - The surface has 11 rules `Sql.check_send_<kind>` and 4 rules `Sql.ifOk_send_<kind>`. Each rule
   states the premises of a send again. For example, the rules of plain INSERT, plain UPDATE, plain
   DELETE and ADD COLUMN each have the premises `valid`, `found`, `present`, `modeled`, `success`
   and `failure`.
 - `sql_run` selects the surface rule with a table (`sendRule` in
   `Programs/Automation/SqlRunRules.lean`). The table has one branch for each kind with a rule.
-  Lists of kinds (`schemaKinds`, `controlKinds`) give the names of the hypotheses of each
-  outcome.
+  The function `roleOf` gives the names of the hypotheses of each outcome, with lists of kinds
+  (`schemaKinds`, `controlKinds`).
 
 A new fact about a kind is thus a new law, and a new kind is a new group of laws, a surface rule
 and a table entry.
@@ -102,8 +102,8 @@ Other results of the pilot:
 - **No fact lost.** A retention test proves the statement of each replaced law, copied from the
   start revision, with the same premises.
 - **Cost that is paid once.** The projections, the simp set `step_rule`, the surface rule
-  `Sql.check_send_of_rule` and the path of `sql_run` through the rules add 296 lines. They have
-  no code for one kind.
+  `Sql.check_send_of_rule` and the path of `sql_run` through the rules add 296 lines, of which
+  56 are test lines. The shared model and surface code has no code for one kind.
 - **Saving for each kind.** With the deleted laws and the changed callers, the kind rule changes
   the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. With the kind
   rules alone, the pilot changed the total by +125 lines at revision `94c3fa5e`, without its
@@ -113,7 +113,8 @@ Other results of the pilot:
   69 with the case type. With the data facts of a failed insertion, the kind rule takes 74
   lines. The claim about each input ("the INSERT has the output `.done 1` and the new row, or
   an error and the database before") takes 40 lines with the kind rule, 57 with the case laws
-  and 53 with the case type. No client proof names the step function.
+  and 53 with the case type. No client proof names `runScriptStep`, `runScriptStepWith`,
+  `resolveStatement` or `SqlState.statementRun`.
 - **Where the client lines are.** The two modules that define the table and the statement of
   the client test and prove their data facts (readiness, fit, keys and counts) have 106 lines
   at `a03e8267`. Site facts of 63 lines have the same code in each form.
@@ -146,7 +147,7 @@ arguments that select a mode. Plain INSERT is the kind `.insert target rows [] s
 ### D1. The kind rule
 
 Each kind has one theorem, its kind rule, with the name `runScriptStep_<kind>_eq` and the
-attribute `@[step_rule]`:
+attribute `@[step_rule]`. The rule of CREATE TABLE, without its binders:
 
 ```lean
 @[step_rule] theorem runScriptStep_createTable_eq
@@ -200,9 +201,9 @@ and no connection in its statement. Examples from the pilot:
 
 - `insertReady_of_fits` and `insertOutcome_of_fits`: rows that fit the table pass the support
   check of the table and the values, and give a successful outcome. In the rule of plain
-  INSERT, the success case also needs a clock value, no unknown counter, a table at the
-  target, and the subquery check and the cell check. After these, the two facts select the
-  success case.
+  INSERT, the success case also needs a clock value (`statementClock` gives `some value`), no
+  unknown counter among the counters that the statement reads, a table at the target, and
+  the subquery check and the cell check. After these, the two facts select the success case.
 - `insertOutcome_constraintViolation`: when no supplied row has an alias cell that SQLite
   refuses, a result that repeats a rowid or violates a constraint of the keys gives the outcome
   "constraint violation" with the database before. After the same checks and the support
@@ -230,7 +231,7 @@ It is not a law about the step of the kind.
   The slice that gives the last kind of the group its rule keeps the law when callers use it
   for more than one kind.
 
-### D6. One surface rule and one path of `sql_run`
+### D6. One surface rule for the kind rules
 
 - `Sql.check_send_of_rule` is the surface rule for the send of one statement through a kind
   rule. Its premises are the equation of the rule, the validity of the connection, `modeled`
@@ -295,14 +296,15 @@ Each slice shows that a client can use its rules:
 
 ### D10. Slices
 
-Each slice has its own task file and status file. The pilot is slice 1. The order puts the kinds
-with the most callers first.
+Each slice has its own task file and status file. The pilot is slice 1. The order starts with
+the kinds that are most like the pilot kinds, and ends with the kinds that the pilot did not
+test.
 
 | Slice | Kinds | Notes |
 | --- | --- | --- |
 | 1 | CREATE TABLE, plain INSERT | The pilot. |
 | 2 | Plain UPDATE, plain DELETE | Deletes `Sql.check_send_plainUpdate`, `Sql.check_send_plainDelete` and their `ifOk` rules. The laws for the group of `plainWriteTarget` stay (D5). |
-| 3 | BEGIN, COMMIT, ROLLBACK, a pragma that sets a value | Deletes `Sql.check_send_begin`, `Sql.check_send_commit` and `Sql.check_send_setting`. ROLLBACK has no step law and no surface rule today. |
+| 3 | BEGIN, COMMIT, ROLLBACK, a pragma that sets a value | Deletes `Sql.check_send_begin`, `Sql.check_send_commit` and `Sql.check_send_setting`. ROLLBACK has no step law of its own and no surface rule today. |
 | 4 | CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, DROP without write rules, the catalog rewrite of a rename, DROP COLUMN, a statement that SQLite refuses to prepare | Deletes `Sql.check_send_addColumn`, `Sql.ifOk_send_addColumn`, `Sql.check_send_dropPlain` and `Sql.check_send_rewrite`. |
 | 5 | A query | The first kind whose output can be a choice between results (D6). The contracts of ADR 0027 do not change. See the note on `Sql.check_send_select` below. |
 | 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. The general rules for a send exclude INSERT from a query today. |
@@ -315,9 +317,9 @@ valid connection, and the kind rule of a query needs a resolution to a query. Sl
 
 - The retention test proves the rule with its premises (D8).
 - `sql_run` enters each result of a choice through the kind rules (D6).
-- `sql_run` enters the rest of the program after a sent SELECT from the premises that it uses
-  today: the syntax of the SELECT and a hypothesis that the step continues, with no proof of
-  the resolution and no validity.
+- `sql_run` enters the rest of the program after a sent SELECT from the visible syntax of the
+  SELECT alone, as it does today: with no proof of the resolution and no validity, and with
+  `modeled` as a goal of its own when no hint proves it.
 
 If one of them does not hold, the rule and its branch stay, `sql_run` uses the branch for a
 sent SELECT, and the status file of the slice records the reason. The rules for the programs
@@ -388,8 +390,9 @@ revision. The last slice adds a milestone row to the simplification goal.
   the rule back. Rejected: +146 lines, 97 of them for plain INSERT, for 5 lines in two client
   proofs (69 against 74); the proof of the claim about each input is shorter with the rule (40
   lines against 53).
-- **The forms of issue #468.** `ContinuedStep` and `RunStep.ContinuesOnce` give a name to the
-  premises of a partial law. They make the statements shorter but keep one law for each fact.
+- **The forms of issue #468.** `ContinuedStep` packages the two premises of a partial law, and
+  `RunStep.ContinuesOnce` and `RunStep.SucceedsOnce` give names to results of a step. They make
+  statements shorter but keep one law for each fact.
   The Hoare triple on one statement states the success of CREATE TABLE from validity and
   resolution. The rule gives this with `step_guards_hold` and `Database.table_createTable_end`,
   and the triple does not state the cases that end the run.
@@ -403,8 +406,9 @@ revision. The last slice adds a milestone row to the simplification goal.
 ## Not decided here
 
 - **Shorter data facts for the client.** Laws that give the readiness and the fit of rows from
-  the validity of the database would shorten the site modules of a client (106 lines in the
-  pilot). `InsertFits.of_valid` gives the fit from validity and conditions on the new rows.
+  the validity of the database and from conditions on the new rows, which include that they
+  do not conflict with the stored rows, would shorten the site modules of a client (106 lines
+  in the pilot). `InsertFits.of_valid` is such a law for the fit.
 - **A name for the two first checks.** The rules of the kinds that read the clock or a counter
   start with the same two cases. Slice 2 writes them out, as the pilot does.
 - **The data facts of write rules.** `runStatement` computes a write with write rules with
@@ -417,7 +421,7 @@ revision. The last slice adds a milestone row to the simplification goal.
    (b) the kind rule with case laws; (c) the kind rule with a case type; (d) the partial laws
    of main. Recommendation: (a). **DECIDED 2026-11-23: (a).**
 2. **The kinds without a surface rule today.** ROLLBACK and the kinds of slices 6 and 7 have no
-   surface rule of their own, and ROLLBACK has no step law. Options:
+   surface rule of their own, and ROLLBACK has no step law of its own. Options:
    (a) each kind gets a rule, in the order of D10; slice 7 starts with one kind, INSERT with
    write rules, and records its cost before the other kinds; (b) slices 2 to 6 only, and a rule
    for a kind of slice 7 when a client claim needs it. With (b), `sendRule` keeps its general
