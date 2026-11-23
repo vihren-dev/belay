@@ -221,3 +221,12 @@ counterexample replay (#463)").
   is the fourth review round in a row with new "must" findings, so the
   work stops here and goes to the owner, as the task file and
   `CLAUDE.md` require.
+- 2026-11-23: `just verdict` gave a verdict (exit 0). `just test-full`
+  failed in one test:
+  `tests/surface_layers_test.py::test_imports_are_own_modules_model_roots_and_lean[surface]`.
+  `KindRuleSend.lean` and `SqlRunKindRules.lean` imported three inner
+  modules of the model, which the surface must not import. The three
+  imports were not needed and are removed. Tests after the fix:
+  `just dev-build`, `tests/surface_layers_test.py`,
+  `tests/surface_s6_automation_test.py`. This commit is not reviewed yet:
+  the review loop waits for the owner after the stop.
