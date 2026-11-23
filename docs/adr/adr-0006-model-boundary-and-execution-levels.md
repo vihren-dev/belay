@@ -15,8 +15,10 @@ codec and the semantic levels stay; their users are now the conformance runner a
 Amended 2026-10-26 (owner decision): the core may import the one module
 `Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of `Lean` or `Std`. The module gives
 `register_simp_attr`, which defines the named simp sets (`traced_drop`, `traced_arms`,
-`statement_arms`) that the proofs about the name trace need. Two core modules import it:
-`Frontend/Codecs/TracedAttr.lean` and `Frontend/Codecs/StatementAttr.lean`. The cost: every importer of the
+`statement_arms`) that the proofs about the name trace need, and the simp set `step_rule` of the
+exact kind rules of the script step (added 2026-11-23). Three core modules import it:
+`Frontend/Codecs/TracedAttr.lean`, `Frontend/Codecs/StatementAttr.lean` and
+`Programs/Scripts/StepRuleAttr.lean`. The cost: every importer of the
 model also loads the `Lean.Meta` modules that this import pulls in. `tests/test_model_package.py`
 allows exactly this module.
 
