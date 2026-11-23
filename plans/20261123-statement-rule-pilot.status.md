@@ -128,3 +128,12 @@ counterexample replay (#463)").
   `tests/surface_s6_automation_test.py`, `tests/surface_schema_script_test.py`,
   `tests/surface_assertion_examples_test.py`, `tests/surface_rebuild_test.py`
   (without the README example), `tests/test_source_identity_derivations.py`.
+- 2026-11-23: review `20261123T162716Z-79b29efc` gave 3 "must" and 1
+  "should" finding, all fixed in a `refactor:` commit: `sql_run` finds the
+  resolution premise of a kind rule by its type, and keeps every other
+  unassigned premise of the rule as a goal; the docstring of
+  `RunStep.continuing_ite` no longer describes the tactic. The fixture
+  `S6AutoKindRuleCases` adds a kind rule with renamed premises. Tests:
+  `just dev-build`, `tests/surface_s6_automation_test.py`,
+  `tests/surface_schema_script_test.py`, `tests/surface_assertion_examples_test.py`,
+  `tests/surface_rebuild_test.py` (without the README example).
