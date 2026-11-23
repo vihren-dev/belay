@@ -49,8 +49,9 @@ def test_sql_run_refuses_unreadable_programs(runtime_root: Path, tmp_path: Path)
 def test_sql_run_keeps_the_cases_of_a_kind_rule_that_it_cannot_use(runtime_root: Path, tmp_path: Path) -> None:
     """The kind-rule path of `sql_run` (`SqlRunKindRules.lean`) splits a match when the only hint for its case has
     an open premise, and `ruleCases` keeps a continuing case with a choice between results unchanged and without an
-    error. A kind rule with a renamed resolution premise, stated with a reducible name, still applies, and its other premise stays a goal even when
-    it has the name of a premise of the bridge. The three proofs use only ordinary logical axioms."""
+    error. A kind rule with a renamed resolution premise, stated with a reducible name, still applies, and its
+    other premise stays a goal even when it has the name of a premise of the bridge. The three proofs use only
+    ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("S6AutoKindRuleCases", 3),), timeout=CHAIN_TIMEOUT_SECONDS)
 
 

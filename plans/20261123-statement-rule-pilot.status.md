@@ -6,9 +6,10 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 ## State
 
 In progress. The CREATE TABLE and plain INSERT kind rules, the generic
-projections, the surface bridge and the path of `sql_run` through the kind
-rules are done, and the replaced laws are deleted. The no-capability-loss
-test, the client-claims test and the findings record are open.
+projections, the surface bridge, the path of `sql_run` through the kind
+rules, the no-capability-loss test and the client-claims test are done, and
+the replaced laws are deleted. The findings record and the end-of-task
+checks are open.
 
 ## Start revision
 
@@ -143,3 +144,18 @@ counterexample replay (#463)").
   equation, and the renamed rule of `S6AutoKindRuleCases` states its
   resolution premise with a reducible name. Tests: `just dev-build`,
   `tests/surface_s6_automation_test.py`.
+- 2026-11-23: tests: the fixtures ReplacedStepLaws and ReplacedSendLaws
+  prove the statement of each deleted model and surface law from the laws
+  that remain (no capability loss). The fixtures ItemInsertSite,
+  ItemInsertOutcomes and ItemInsertClaims prove the four client claims on
+  the table `items` (INTEGER PRIMARY KEY alias) with arbitrary valid rows;
+  no proof names `runScriptStep`, `runScriptStepWith`, `resolveStatement`
+  or `SqlState.statementRun`. `sql_run` gives the kind rule to the open
+  goal `modeled` as the hypothesis `rule`. The five fixtures are roots of
+  the suite `surfaceS6` and run in two new tests of
+  `tests/surface_schema_script_test.py`. Review
+  `20261123T163841Z-b5173e63` gave 1 "should" finding, fixed here. Tests:
+  `just dev-build`, `tests/surface_schema_script_test.py`,
+  `tests/surface_s6_automation_test.py`,
+  `tests/surface_assertion_examples_test.py`,
+  `tests/test_source_identity_derivations.py`.

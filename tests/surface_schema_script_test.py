@@ -7,6 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
 from tests.surface_assertion_examples_test import check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 
@@ -65,3 +66,23 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
         assert len(refusals) == len(modeled_errors) == len(EXPECTED_ERRORS[name]), (name, result.stderr)
         for line, expected in zip(refusals, EXPECTED_ERRORS[name], strict=True):
             assert expected in line, (name, line, expected)
+
+
+@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
+def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
+    """The fixtures ReplacedStepLaws and ReplacedSendLaws prove each deleted law of CREATE TABLE and plain INSERT,
+    with its old statement, from the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the
+    data facts of CREATE TABLE and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
+    old laws loses no fact. Every theorem uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
+
+
+@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
+def test_client_claims_on_items_use_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
+    """The fixtures ItemInsertSite, ItemInsertOutcomes and ItemInsertClaims prove client claims about a table with
+    an INTEGER PRIMARY KEY alias and arbitrary valid rows through the kind rules of CREATE TABLE and plain INSERT
+    and the bridge Sql.check_send_of_rule: a new key inserts one row, an existing key fails with code 19 and keeps
+    the database, CREATE TABLE then INSERT gives a table with exactly the new row, and sql_run proves that the
+    insert keeps the names of the stored rows. Every theorem uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ItemInsertSite", 0), ("ItemInsertOutcomes", 0),
+                                                ("ItemInsertClaims", 4)))
