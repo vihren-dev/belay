@@ -444,7 +444,10 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T204519Z-642c0f35` gave 6 "must" and 3
   "should" findings on the findings record, all fixed in a `refactor:`
   commit. The record now gives a proof of the claim for each input with
-  the kind rule (40 code lines, in a scratch file), which is shorter
+  the kind rule (40 code lines: the 29-line check `insert_any_rule` in
+  the scratch file `KindAnyProbe.lean`, and the 11 lines of
+  `insert_done_or_error` with `insert_any_rule` in place of
+  `insert_any_case`), which is shorter
   than the proof with the case type (53); the recommendation now keeps
   the kind rule as the one maintained form. It also gives the 21-line
   derivation of the kind rule from the case type, the shared site facts
@@ -452,3 +455,12 @@ counterexample replay (#463)").
   the statement lines of the two count facts, the milestone revisions,
   and the other measurement sources. Tests: none; the commit changes
   only documents.
+- 2026-11-23: review `20261123T205037Z-d5f2ccd7` gave 2 "must" and 3
+  "should" findings, all fixed in a `refactor:` commit: the kind rule
+  with the data facts of the case laws takes 74 lines for the two
+  INSERT claims, so the case type saves 5 lines and not 10; the success
+  law gets the readiness check and the outcome from `InsertFits`, and
+  the caller supplies the cells and the subqueries; the record gives the
+  exact call of `decl_diff.py` and says that a milestone has the net
+  change since the one before. Tests: none; the commit changes only
+  documents.
