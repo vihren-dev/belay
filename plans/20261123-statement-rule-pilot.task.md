@@ -1,8 +1,9 @@
 # Pilot: one exact rule for each statement kind
 
 Created 2026-11-23.
-Status: awaiting the owner's decision (2026-11-23). The pilot ends with
-that decision; a pull request follows only after it.
+Status: on 2026-11-23 the owner selected the kind rule as the one
+maintained form. The open work is the removal of the other two forms and
+the end checks.
 Status: [20261123-statement-rule-pilot.status.md](20261123-statement-rule-pilot.status.md).
 [Belay issue 468](https://github.com/vihren-dev/belay/issues/468).
 
@@ -34,6 +35,33 @@ and add, once and for each kind? Can a client prove claims about
 programs without the step function in the proof?
 
 ## Acceptance
+
+### Owner decision of 2026-11-23
+
+The owner compared the three forms in the findings record and selected
+the kind rule as the one maintained form for plain INSERT and for the
+next statement kinds. The decision changes the acceptance points below
+in these ways:
+
+- The case laws and the case type are removed from the model, and the
+  second client test is removed. The sections "Case laws of plain
+  INSERT" and "Case type of plain INSERT" describe these forms as the
+  pilot measured them at revision `a03e8267`. They are no longer
+  acceptance points. The findings record keeps their measurements.
+- The data facts for a failed insertion stay: the counts of a failed
+  insertion, and the outcome "constraint violation" of an insertion
+  that repeats a rowid or violates a constraint of the keys.
+- `runScriptStep_insert_ok` is a replaced law again. The retention test
+  restates it and proves it from the kind rule.
+- The client-claims test proves its two INSERT claims with the kind
+  rule and the data facts. It also holds the claim for each input (the
+  INSERT has the output `.done 1` and the database with the inserted
+  row, or an error output and the database before), proved with the
+  kind rule.
+- The pilot does not use `fun_cases`.
+- The Lean build with `--wfail` is the build of the three packages that
+  the Nix checks build with it: the model, the SQL text package and the
+  surface. The pilot does not change the conformance package.
 
 ### Kind rules
 
@@ -204,7 +232,7 @@ client-claims test:
   with the case type, and without the case type. The second proof uses
   the case laws or the kind rule.
 
-Until the owner decides, the pilot holds the three forms together: the
+Until the owner decision, the pilot held the three forms together: the
 kind rule, the case laws and the case type.
 
 ### Replaced laws
@@ -214,7 +242,8 @@ remains.
 
 - Model: `runScriptStep_createTable`, `runScriptStep_createTable_ok`,
   `runScriptStep_createTable_frame`, `runScriptStep_createTable_empty`,
-  `plainInsert_database`, `runScriptStep_insert_ne_oneOf`. The last law
+  `runScriptStep_insert_ok`, `plainInsert_database`,
+  `runScriptStep_insert_ne_oneOf`. The last law
   holds for every INSERT,
   also with a RETURNING clause or write rules. The existing law
   `runScriptStep_ne_oneOf_of_not_query` gives it for every statement
@@ -224,9 +253,8 @@ remains.
 
 A law of this list can stay only when the findings record gives the
 reason, for example a caller outside the two kinds that needs it
-unchanged. `runScriptStep_insert_ok` was on this list until the case
-laws were added. Its statement is the success law, so the retention
-test does not restate it.
+unchanged. `runScriptStep_insert_ok` was a case law between `7dbeba93`
+and the owner decision.
 
 ### No capability loss
 
@@ -309,7 +337,8 @@ allowed only when it computes the same value for every input.
 
 ## Tests
 
-- The Lean build of the four packages with `--wfail`.
+- The Lean build with `--wfail` of the three packages of the owner
+  decision: the model, the SQL text package and the surface.
 - The surface tests that compile the callers:
   `tests/surface_schema_script_test.py`,
   `tests/surface_assertion_examples_test.py`,
@@ -321,14 +350,12 @@ allowed only when it computes the same value for every input.
   suite that compiles them, and an existing test module with a timeout
   runs them, so the Nix checks own and cache the result as they do for
   the other fixtures.
-- The test file of "Case type of plain INSERT". It is a fixture of an
-  existing surface suite in the same way as the two files above.
 - At the end of the code changes: `just test-full` and `just verdict`.
 - At the end of the task: `just test-nix` and
   `just test-scheduled-checks`, once.
 
-The pilot ends with the findings record and an owner decision. A pull
-request follows only after that decision.
+The pilot ends with the findings record, the owner decision and the
+removal of the forms that the owner did not select.
 
 ## Points to know
 
@@ -410,6 +437,4 @@ of a module outside these limits.
 The other statement kinds, INSERT with RETURNING or write rules, rules
 for facts that no law gives today and that the two kind rules do not
 need, one form for `Succeeds` and `Sql.check`, and the ADR that decides
-on the form for all kinds. The selection of one of the three forms,
-and the removal of the forms that the owner does not select, are also
-not in this task.
+on the form for all kinds.

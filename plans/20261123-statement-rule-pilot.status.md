@@ -5,55 +5,32 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-Awaiting the owner's decision (2026-11-23). The code, the findings
-record and the end checks are done, and each test of the task file
-passes except one that is pending: the build of the fourth package
-(`verifier-conformance`) with `--wfail`, which no Nix check makes (see
-"Open"). The task file ends the pilot with the owner's decision.
+On 2026-11-23 the owner selected the kind rule as the one maintained
+form for plain INSERT and the next statement kinds. The task file has
+the section "Owner decision of 2026-11-23", which changes the
+acceptance points.
 
-The CREATE TABLE and plain INSERT kind rules, the generic
-projections, the surface bridge, the path of `sql_run` through the kind
-rules, the no-capability-loss test and the client-claims test are done, and
-the replaced laws are deleted. The findings record
-(`docs/records/statement-rule-pilot-findings.md`) is written.
-
-The work stopped for the owner after four review rounds in a row with
-new "must" findings on the findings record. The owner decided on
-2026-11-23 to continue the review loop and to add case laws of plain
-INSERT; the task file has a section for them.
-
-The case laws of plain INSERT and their data facts are in the model
-(`PlainInsertCases.lean`, `PlainInsertFailure.lean`), and the two INSERT
-claims of the client-claims test use them.
-
-The owner decided on 2026-11-23 to add a third form, a case type of
-plain INSERT, before the end checks; the task file has the section
-"Case type of plain INSERT".
-
-The case type of plain INSERT, its part for all statement kinds
-(`StepCase.lean`, `PlainInsertCase.lean`) and the second client test
-(`ItemInsertCaseChecks.lean`, `ItemInsertCaseClaims.lean`) are done. The
-findings record has the measurements of the milestone revisions, the
-comparison of the three forms and a recommendation for the owner.
+The CREATE TABLE and plain INSERT kind rules, the generic projections,
+the surface bridge, the path of `sql_run` through the kind rules, the
+no-capability-loss test and the client-claims test are done, and the
+replaced laws are deleted. The case laws, the case type
+(`PlainInsertCases.lean`, `StepCase.lean`, `PlainInsertCase.lean`) and
+the second client test (`ItemInsertCaseChecks.lean`,
+`ItemInsertCaseClaims.lean`) are still in the code. The findings record
+(`docs/records/statement-rule-pilot-findings.md`) has the measurements
+of the three forms at `a03e8267`.
 
 Open:
 
-- The owner's selection of a form for plain INSERT and the next kinds.
-- The task asks for "the Lean build of the four packages with
-  `--wfail`". The Nix checks build the model, the SQL text and the
-  surface packages with `--wfail` (`failOnWarnings` in
-  `build-support/default.nix`), but the conformance package
-  (`verifier-conformance`) without it, and no Nix check builds that
-  package with `--wfail`. The pilot does not change the conformance
-  package. The owner decides whether the task text changes to the three
-  packages or a check is added.
+- Remove the case laws, the case type and the second client test. The
+  client-claims test proves its INSERT claims and the claim for each
+  input with the kind rule. The retention test restates
+  `runScriptStep_insert_ok` again.
+- Add the owner decision and a final measurement to the findings record.
+- Run the end checks again on the last code revision.
 
-Checks on the last code revision `a03e8267` (the working copy then
-held only review records): `just test-nix` passes (99 tests) and
-`just test-scheduled-checks` passes (53 tests). `just test-full` passes
-and `just verdict` gives `counts.json` and `report.json` that are
-byte-equal to the reference files of the workspace `belay-hoare-rules`
-(see the progress log).
+Earlier checks on the code revision `a03e8267`: `just test-nix` passes
+(99 tests) and `just test-scheduled-checks` passes (53 tests).
 
 ## Start revision
 
@@ -499,3 +476,10 @@ counterexample replay (#463)").
   fixed in a `refactor:` commit: the State section marks the build of
   the conformance package with `--wfail` as pending until it passes in
   a Nix check or the owner changes the requirement.
+- 2026-11-23: the owner selected the kind rule as the one maintained
+  form. The task file has the owner decision as a new section of the
+  acceptance points: the case laws, the case type and the second client
+  test are removed, the data facts of a failed insertion stay,
+  `runScriptStep_insert_ok` is a replaced law again, and the build with
+  `--wfail` is the build of the three packages that the Nix checks
+  build with it. Tests: none; the commit changes only documents.
