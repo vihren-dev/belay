@@ -5,9 +5,10 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-In progress. The CREATE TABLE and plain INSERT kind rules and the generic
-projections are in the model. The surface bridge, `sql_run`, the deletion
-of the replaced INSERT laws, the tests and the findings record are open.
+In progress. The CREATE TABLE and plain INSERT kind rules, the generic
+projections, the surface bridge and the path of `sql_run` through the kind
+rules are done, and the replaced laws are deleted. The no-capability-loss
+test, the client-claims test and the findings record are open.
 
 ## Start revision
 
@@ -23,14 +24,16 @@ counterexample replay (#463)").
   `StepRuleProjections.lean`, `StepRuleAttr.lean`: the generic projections
   and the simp set of the kind rules; `CreatedTables.lean`,
   `ResolvedStepGuards.lean`: users of the rule and its condition.
-- `…/Programs/Scripts/PlainInsertStep.lean`, `PlainInsertEffect.lean`,
-  `…/Schema/Writes/PlainInsertSuccess.lean`, `LiteralInsertFits.lean`,
-  `StatementRun.lean`, `PlainCounts.lean`: the plain INSERT laws and
-  definitions.
-- `packages/belay/Belay/Sqlite/Programs/Scripts/SendStepRules.lean`,
-  `SchemaStepRules.lean`, `PlainInsertStepRule.lean`,
-  `…/Programs/Automation/SqlRunRules.lean`: the surface rules and the
-  rule table of `sql_run`.
+- `…/Programs/Scripts/PlainInsertRule.lean`: the plain INSERT kind rule;
+  `PlainInsertEffect.lean`: the INSERT laws to delete;
+  `…/Schema/Writes/PlainInsertSuccess.lean`, `PlainWriteFrame.lean`,
+  `LiteralInsertFits.lean`, `StatementRun.lean`, `PlainCounts.lean`: the
+  data lemmas and definitions of plain INSERT.
+- `packages/belay/Belay/Sqlite/Programs/Scripts/KindRuleSend.lean`: the
+  surface bridge `Sql.check_send_of_rule`; `SendStepRules.lean`,
+  `SchemaStepRules.lean`: the remaining surface step rules;
+  `…/Programs/Automation/SqlRunKindRules.lean`, `SqlRun.lean`,
+  `SqlRunRules.lean`, `SqlRunGoals.lean`: `sql_run` and its rule table.
 
 ## Progress log
 
@@ -95,3 +98,21 @@ counterexample replay (#463)").
   what the formulas say. Tests: `just dev-build`,
   `tests/surface_schema_script_test.py`, the root-import test of
   `tests/test_model_package.py`.
+- 2026-11-23: surface: the bridge `Sql.check_send_of_rule` with
+  `Sql.SendReached`, `Sql.sendReached_single` and
+  `Model.RunStep.continuing_ite` (`KindRuleSend.lean`); the model
+  projection `RunStep.continues_of_rule`. `sql_run` applies the rules of the
+  simp set `step_rule` through the bridge (`SqlRunKindRules.lean`) and
+  keeps no `sendRule` entry for CREATE TABLE and INSERT. Deleted: the model
+  `Programs/Scripts/PlainInsertEffect.lean` (`plainInsert_database`,
+  `runScriptStep_insert_ne_oneOf`), the surface `PlainInsertStepRule.lean`
+  (`Sql.check_send_plainInsert`), `Sql.ifOk_send_plainInsert` and
+  `Sql.check_send_createTable`; `Reasoning/PlainInsertEffect.lean` is now
+  `SendSingleStep.lean`. Changed callers: the fixtures SchemaRuleExamples,
+  SignupInvariantClaims, GlobalSignupInvariant, S6AutoSignup,
+  AddCustomerQueries, AddCustomerClaims, S6AutoAddCustomer and
+  CustomerInsertSite (same claims, new proofs). Tests: `just dev-build`,
+  `tests/surface_s6_automation_test.py`, `tests/surface_schema_script_test.py`,
+  `tests/surface_assertion_examples_test.py`, `tests/surface_rebuild_test.py`
+  (the README example needs `git`, which `just test-full` has), the
+  root-import test of `tests/test_model_package.py`.

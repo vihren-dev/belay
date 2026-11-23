@@ -49,6 +49,13 @@ theorem RunStep.continued_of_rule {step result : RunStep} (rule : step = result)
     (continues : result.continues = true) : ∃ output next others, step = .continued output next others :=
   RunStep.continues_iff.1 (rule ▸ continues)
 
+/-- For every two steps {lit}`step` and {lit}`result`: if {lit}`step = result` (a kind rule) and {lit}`step`
+continues ({name}`RunStep.continues`), then {lit}`result` continues. It carries a fact about the step, such as one
+that a closed check computes, to the form that the kind rule gives. Proof sketch: rewrite with the rule. -/
+theorem RunStep.continues_of_rule {step result : RunStep} (rule : step = result) (continues : step.continues = true) :
+    result.continues = true :=
+  rule ▸ continues
+
 /-- For every two steps {lit}`step` and {lit}`result`, output, next connection and further executions: if
 {lit}`step = result` (a kind rule), every continuing case of {lit}`result` has no further execution, and
 {lit}`step` continues with the output, the connection and the executions, then there is no further execution.

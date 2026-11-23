@@ -27,9 +27,13 @@ example (ctx : ExecutionContext) (stmt : Syntax.Statement) (target : Nat) (name 
     (shape : CatalogTable) (after : ResolveState) (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
     (found : resolveStatement runContext ctx.connection.resolveState stmt = .ok (.createTable target name shape, after)) :
     (send ⟨[(stmt, [])]⟩).check (fun outputs _ => outputs.all (fun o => !o.isError) = true) ctx := by
-  apply Sql.check_send_createTable valid found
-  intro output next ok _ _ _
-  simp [ok]
+  obtain ⟨atEnd, aligned⟩ := step_guards_hold found rfl valid.1
+  refine Sql.check_send_of_rule (runScriptStep_createTable_eq found) valid (by simp [atEnd, aligned, RunStep.continues])
+    ?_
+  simp only [atEnd, aligned, and_self, ite_true]
+  refine Sql.sendReached_single ?_ fun _ => by simp [Output.isError]
+  intro _ same
+  cases same
 
 example (ctx : ExecutionContext) (stmt : Syntax.Statement) (renamed : Catalog) (after : ResolveState)
     (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))

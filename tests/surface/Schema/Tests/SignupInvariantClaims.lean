@@ -60,13 +60,35 @@ structure AccountSignupSite (db : Database) (e : String) where
   modeled : ∀ env : Env, (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement
     [.text e.toUTF8.toList]).continues = true
 
+/-- Over every site of the signup, email value {lit}`f` and valid database with the catalog of the site: at most
+one live account has the email {lit}`f`. Plain words: the partial unique index of live emails holds in every valid
+database that has the catalog of the site, whatever rows it has. Proof sketch: the database has the table and the
+index of the site; the key of the index is a unique key of the table ({name}`CatalogIndex.uniqueKey_mem_uniqueKeys`);
+{name}`Database.Valid.countMatching_partial_le_one` bounds the count of the live accounts of the email, which is
+the right side of {name}`at_most_one_live_account_iff`. -/
+theorem AccountSignupSite.keeps_of_valid {db : Database} {e : String} (site : AccountSignupSite db e) (f : Value)
+    {reached : Model.Database} (valid : reached.Valid Profile.pinned) (sameCatalog : reached.catalog = db.raw.catalog) :
+    Holds (atMostOneLiveAccountWithEmail f) ⟨reached, valid⟩ := by
+  have foundAfter : reached.catalog.findTable (name! "accounts") = some (site.position, site.table) := by
+    rw [sameCatalog]; exact site.found
+  rw [at_most_one_live_account_iff ⟨reached, valid⟩ f site.position site.emailIx site.deletedIx site.table site.emailCell
+    site.deletedCell foundAfter site.emailColumn site.emailAt site.deletedColumn site.deletedAt]
+  have member : site.index.uniqueKey ∈ reached.catalog.uniqueKeys site.position site.table :=
+    CatalogIndex.uniqueKey_mem_uniqueKeys (sameCatalog ▸ site.indexed) _ _ site.indexTable site.indexUnique
+  refine valid.countMatching_partial_le_one (Database.table_of_findTable reached _ site.position site.table foundAfter)
+    member site.emailAt (filter := liveCondition site.deletedCell site.deletedIx)
+    site.indexFilter site.indexKeys _ _ (.parameter 1) (boundValue f) ?_ fun row => ?_
+  · intro row guard
+    simpa [liveCondition, sql_simp] using guard
+  · simp [sql_simp]
+
 /-- Over every admitted database with a site of the signup, every email and every email value {lit}`f`: if at most
 one live account has the email {lit}`f` and the signup runs without an error, at most one live account has it
 afterwards. Plain words: the invariant of the guide, for each email value. The final database is valid, so it
-keeps its unique indexes, and the signup does not change the catalog. Proof sketch:
-{name}`Sql.ifOk_send_plainInsert` gives the final database as the old one with other rows; the key of the index
-is a unique key of the table ({name}`Catalog.uniqueKeys`); and
-{name}`Table.KeysUnique.countMatching_partial_le_one` bounds the count of the live accounts of the email. -/
+keeps its unique indexes, and the signup does not change the catalog. Proof sketch: the kind rule of plain INSERT
+({name}`runScriptStep_plainInsert_eq`) with {name}`Sql.check_send_of_rule`; a split on its cases leaves a success,
+whose database has the catalog of the start and is valid, so {name}`AccountSignupSite.keeps_of_valid` applies, and
+a failure, whose trace has an error. -/
 theorem signup_keeps (e : String) (f : Value) :
     FreshEnsures (send (signupAccount e))
       (fun db => Holds (atMostOneLiveAccountWithEmail f) db ∧ Nonempty (AccountSignupSite db e))
@@ -74,27 +96,15 @@ theorem signup_keeps (e : String) (f : Value) :
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db ⟨_, ⟨site⟩⟩ env _complete
   rw [site.script]
-  refine Sql.ifOk_send_plainInsert (table := ⟨site.table, db.raw.rows.getD site.position []⟩)
-    site.resolves (Database.table_of_findTable db.raw _ site.position site.table site.found)
-    (RunStep.continues_iff.1 (site.modeled env)) ?_
-  intro value outputs final reached valid _allOk
-  show Holds.reached (atMostOneLiveAccountWithEmail f) final (by check_query)
-  rw [Holds.reached_iff_holds_of_valid _ final _ valid]
-  generalize hv : final.connection.state.database = reachedDatabase at reached valid ⊢
-  obtain ⟨rows, rfl⟩ : ∃ rows, reachedDatabase = db.raw.setRows site.position rows := ⟨_, reached⟩
-  have foundAfter : (db.raw.setRows site.position rows).catalog.findTable (name! "accounts") =
-      some (site.position, site.table) := site.found
-  rw [at_most_one_live_account_iff ⟨db.raw.setRows site.position rows, valid⟩ f site.position site.emailIx site.deletedIx site.table site.emailCell
-    site.deletedCell foundAfter site.emailColumn site.emailAt site.deletedColumn site.deletedAt]
-  have present := Database.table_of_findTable (db.raw.setRows site.position rows) _ site.position site.table foundAfter
-  have member : site.index.uniqueKey ∈ (db.raw.setRows site.position rows).catalog.uniqueKeys site.position site.table :=
-    List.mem_append_right _ (List.mem_filterMap.2 ⟨_, site.indexed, by simp [site.indexTable, site.indexUnique]⟩)
-  refine Table.KeysUnique.countMatching_partial_le_one (valid.unique _ _ present)
-    (valid.admitted.rowsStored _ _ present) member site.emailAt (filter := liveCondition site.deletedCell site.deletedIx)
-    site.indexFilter site.indexKeys _ _ (.parameter 1) (boundValue f) ?_ fun row => ?_
-  · intro row guard
-    simpa [liveCondition, sql_simp] using guard
-  · simp [sql_simp]
+  refine Sql.check_send_of_rule (runScriptStep_plainInsert_eq site.resolves) (ExecutionContext.initial_holds_valid _ _)
+    (RunStep.continues_of_rule (runScriptStep_plainInsert_eq site.resolves) (site.modeled env)) ?_
+  dsimp only
+  repeat' split
+  all_goals first
+    | exact trivial
+    | refine Sql.sendReached_single (fun _ same => by cases same) fun valid allOk => ?_
+  · exact (Holds.reached_iff_holds_of_valid _ _ _ valid.1).2 (site.keeps_of_valid f valid.1 rfl)
+  · simp [ExecutionContext.next, List.allOk, Output.isError] at allOk
 
 /-- A database with a site of the signup: one live account for {lit}`a@x`, one deleted account for {lit}`b@x`, and the
 partial unique index of live emails. -/

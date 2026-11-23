@@ -1,4 +1,4 @@
-import Belay.Sqlite.Programs.Reasoning.PlainInsertEffect
+import Belay.Sqlite.Programs.Reasoning.SendSingleStep
 
 set_option doc.verso true
 
