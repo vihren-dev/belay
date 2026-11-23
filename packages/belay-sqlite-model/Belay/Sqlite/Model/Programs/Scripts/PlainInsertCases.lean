@@ -45,23 +45,21 @@ theorem runScriptStep_insert_ok {context : ResolveContext} {clock : Option Clock
   rfl
 
 /-- The failure law of plain INSERT. For every resolution context, clock, index, connection, statement, parameter
-values, resolution state, target position, rows of cells, subqueries, clock value, table, reason and database: if
-the statement resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause and
+values, resolution state, target position, rows of cells, subqueries, clock value, table and reason: if the
+statement resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause and
 without write rules, the statement has the clock value, no counter that it reads is unknown, the target holds the
 table, the subqueries are plain, the cells are ready, the values pass the readiness check
-({name}`LiteralData.insertReady`), and the outcome ({name}`insertOutcome`) is an error with the reason, then the
-step continues with the error output of the primary code of the reason and with no further execution. Its
-connection is the connection after the write ({name}`Connection.afterWrite`) of the database before the statement,
-with the counts of the failed insertion. The database {lit}`reached` of the error outcome is the database before
-({name}`insertOutcome_error`). The error case of {name}`LiteralData.insertCounts` does not use it. A caller need not
-prove what it is.
-{name}`LiteralData.insertCounts_error_changes` gives 0 changed rows, and
-{name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch: rewrite
-the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
+({name}`LiteralData.insertReady`), and the outcome ({name}`insertOutcome`) is an error with the reason and the
+database before, then the step continues with the error output of the primary code of the reason and with no
+further execution. Its connection is the connection after the write ({name}`Connection.afterWrite`) of the database
+before the statement, with the counts of the failed insertion. The premise loses no case: each error outcome has
+the database before ({name}`insertOutcome_error`). {name}`LiteralData.insertCounts_error_changes` gives 0 changed
+rows, and {name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch:
+rewrite the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
 theorem runScriptStep_insert_failed {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {rows : List (List Resolved.Cell)} {subqueries : List Resolved.Query} {value : Int} {table : Table}
-    {reason : ExecutionError} {reached : Database}
+    {reason : ExecutionError}
     (found : resolveStatement context connection.resolveState statement = .ok (.insert target rows [] subqueries none, after))
     (timed : statementClock clock index (.insert target rows [] subqueries none) = some value)
     (known : connection.state.counters.firstUnknown (Resolved.Statement.insert target rows [] subqueries none).counterReads = none)
@@ -73,10 +71,10 @@ theorem runScriptStep_insert_failed {context : ResolveContext} {clock : Option C
     let keys := connection.state.database.keys target table
     let result := LiteralData.inserted table values
     Resolved.cellsReady eval rows = true → LiteralData.insertReady keys table values result = true →
-      insertOutcome connection.state.database target keys table values result = .error (reason, reached) →
+      insertOutcome connection.state.database target keys table values result = .error (reason, connection.state.database) →
       runScriptStep context clock index connection statement parameters =
         .continued (.error reason.primaryCode)
-          (connection.afterWrite connection.state.database (LiteralData.insertCounts (.error (reason, reached)) keys table values)) [] := by
+          (connection.afterWrite connection.state.database (LiteralData.insertCounts (.error (reason, connection.state.database)) keys table values)) [] := by
   dsimp only
   intro ready checked failed
   rw [runScriptStep_plainInsert_eq found]

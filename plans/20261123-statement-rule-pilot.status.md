@@ -303,3 +303,10 @@ counterexample replay (#463)").
   "should" finding of review `20261123T193144Z-ba44164b` (a long
   sentence in the failure-law docstring) is fixed here. Tests:
   `just dev-build`, `tests/surface_schema_script_test.py`.
+- 2026-11-23: the failure law `runScriptStep_insert_failed` takes an
+  outcome with the database before, not an arbitrary database, and its
+  counts use that database. Each error outcome of `insertOutcome` has
+  the database before (`insertOutcome_error`), so the law covers the
+  same cases. With an arbitrary database the client cannot apply the
+  law with `refine`, because Lean cannot infer that database. Tests:
+  `just dev-build`, `tests/surface_schema_script_test.py`.
