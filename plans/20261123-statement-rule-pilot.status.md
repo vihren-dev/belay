@@ -230,3 +230,9 @@ counterexample replay (#463)").
   `just dev-build`, `tests/surface_layers_test.py`,
   `tests/surface_s6_automation_test.py`. This commit is not reviewed yet:
   the review loop waits for the owner after the stop.
+- 2026-11-23: after the import fix, `just test-full` passes (exit 0).
+  `just verdict` on the start revision `b7854558` and on the pilot
+  (commit `24c5b8f8`, before the import fix, which changes no model
+  file) gives the same `counts.json` and the same `report.json`.
+  Open: the review of the import fix, the two open findings on the
+  findings record, `just test-nix` and `just test-scheduled-checks`.
