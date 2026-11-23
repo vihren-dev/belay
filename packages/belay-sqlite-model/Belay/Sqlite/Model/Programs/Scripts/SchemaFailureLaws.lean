@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
-import Belay.Sqlite.Model.Programs.Scripts.CreateTableStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
+import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
 import Belay.Sqlite.Model.Schema.Columns.SchemaFailureLaws
 
 set_option doc.verso true
@@ -19,7 +20,8 @@ step has no further execution, and the next connection is the connection. In pla
 that fails changes nothing, not even the counters (failure law), with or without {lit}`IF NOT EXISTS`. Proof
 sketch: the statement resolves to a prepare error, to a CREATE TABLE ({name}`resolveCreateTable_form`) or to
 the no-op of the clause ({name}`resolveCreateTableIf_cases`); a CREATE TABLE step and a drop without rules
-have no error output ({name}`runScriptStep_createTable`, {name}`runScriptStep_drop_plain`), and a prepare
+have no error output ({name}`runScriptStep_createTable_eq` with {name}`RunStep.isError_of_rule`,
+{name}`runScriptStep_drop_plain`), and a prepare
 error keeps the connection ({name}`runScriptStep_readOnly_keeps`). -/
 theorem runScriptStep_createTable_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
@@ -49,7 +51,9 @@ theorem runScriptStep_createTable_failed {context : ResolveContext}
         · exact .inr (.inl created)
   rcases form with ⟨error, rfl⟩ | ⟨target, created, table, rfl⟩ | rfl
   · exact runScriptStep_readOnly_keeps found (.inr ⟨error, rfl⟩) step
-  · rw [(runScriptStep_createTable found step).1] at failed
+  · have quiet := RunStep.isError_of_rule (runScriptStep_createTable_eq found)
+      (by split <;> simp [RunStep.Continuing, Output.isError]) step
+    rw [quiet] at failed
     cases failed
   · rw [(runScriptStep_drop_plain found step).1] at failed
     cases failed

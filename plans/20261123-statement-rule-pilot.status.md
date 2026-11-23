@@ -5,7 +5,9 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-Started. The task file is written. No code is changed.
+In progress. The CREATE TABLE kind rule and the generic projections are in
+the model. The plain INSERT rule, the surface bridge, `sql_run`, the tests and
+the findings record are open.
 
 ## Start revision
 
@@ -44,3 +46,25 @@ counterexample replay (#463)").
   "should" finding on the same cases. Both are fixed in the task file.
 - 2026-11-23: review `20261123T141827Z-1b4c4e51` gave no "must" finding
   and 1 "should" finding, which is fixed.
+- 2026-11-23: baseline measurements (scc, statement lines, elaboration
+  times) are in the scratch directory of the session.
+- 2026-11-23: model: the simp set `step_rule` (`StepRuleAttr.lean`), the
+  generic projections of a kind rule (`StepRuleProjections.lean`:
+  `RunStep.Continuing`, `RunStep.of_rule`, `continued_of_rule`,
+  `others_of_rule`, `ne_oneOf_of_rule`, `isError_of_rule`; `RunStep.continues`
+  moved here), `Database.createTable`, `Connection.withDatabase` (moved from
+  the surface), `Database.table_createTable_end`, and the CREATE TABLE kind
+  rule `runScriptStep_createTable_eq` (`CreateTableRule.lean`).
+  `CreateTableStepLaws.lean` (`runScriptStep_createTable`, `_frame`),
+  `runScriptStep_createTable_ok` and `runScriptStep_createTable_empty` are
+  deleted; TableKeeps, SchemaFailureLaws, CreatedTables,
+  CreateSchemaSuccess, the surface `Sql.check_send_createTable` (removed in
+  a later commit) and the fixture SchemaCreateExamples use the rule.
+  Tests: `just dev-build`, `tests/surface_schema_script_test.py`,
+  `tests/surface_s6_automation_test.py`,
+  `tests/surface_assertion_examples_test.py`, the root-import test of
+  `tests/test_model_package.py`. Two local runs fail for this machine, not
+  for the change: the Nix model build of
+  `test_installed_core_and_codec_consumer` exceeds its 120 s limit when the
+  model is not cached, and the README example of `surface_rebuild_test.py`
+  cannot clone `plausible` (no `git`). `just test-full` runs both.

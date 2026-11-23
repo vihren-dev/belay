@@ -64,6 +64,19 @@ theorem Catalog.tableAt_createTable_above (catalog : Catalog) (name : Identifier
     (catalog.createTable name table).tableAt position = none := by
   simp [Catalog.tableAt, Catalog.createTable, List.getElem?_eq_none (by simp; omega : (catalog ++ [_]).length ≤ position)]
 
+/-- For every database, name and table definition: if the database has one row list for each catalog
+object, then after CREATE TABLE ({name}`Database.createTable`) the position at the old catalog length holds a
+table with the definition and no rows. In plain words, the new table is at the end and is empty. The theorem
+says nothing about a database whose row lists and catalog differ in length. Proof sketch: the catalog entry at
+the end is the new table ({name}`Catalog.tableAt_createTable_end`), and the row list at that position is the
+appended empty list. -/
+theorem Database.table_createTable_end {database : Database} (name : Identifier) (table : CatalogTable)
+    (aligned : database.rows.length = database.catalog.length) :
+    (database.createTable name table).table database.catalog.length = some { shape := table, rows := [] } := by
+  have empty : (database.rows ++ [[]]).getD database.catalog.length [] = [] := by
+    rw [← aligned]; simp
+  simp only [Database.table, Database.createTable, Catalog.tableAt_createTable_end, Option.map_some, empty]
+
 /-- For every profile, catalog, database, name and table, assume:
 * The database satisfies {name}`Conforms` with the catalog.
 * The catalog from {name}`Catalog.createTable` satisfies {name}`Catalog.Valid`.
