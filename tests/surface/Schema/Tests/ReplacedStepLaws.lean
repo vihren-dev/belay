@@ -5,11 +5,13 @@ import Belay.Sqlite.Model.Schema.Ddl.TableByName
 import Belay.Sqlite.Model.Schema.Ddl.SchemaExtensionLaws
 
 /-! A fixture module of {lit}`tests/surface_schema_script_test.py` (statement rule pilot, "No capability loss"). The
-pilot deleted seven model laws about the step of CREATE TABLE and of INSERT. Each theorem of this module has the
+pilot deleted six model laws about the step of CREATE TABLE and of INSERT. Each theorem of this module has the
 name and the statement of one deleted law, copied from the revision before the pilot with its binders and
 premises, and proves it from the laws that remain: the kind rules {name}`runScriptStep_createTable_eq` and
-{name}`runScriptStep_plainInsert_eq`, the data facts of {name}`Database.createTable` and {name}`insertOutcome`, and
-the laws that serve all kinds. When a theorem does not compile, the new form has lost the fact. -/
+{name}`runScriptStep_plainInsert_eq`, the data facts of {name}`Database.createTable`, and the laws that serve all
+kinds. When a theorem does not compile, the new form has lost the fact. The law {lit}`runScriptStep_insert_ok`
+stays in the model with its statement as the success case law of plain INSERT, so this module does not restate
+it. -/
 
 set_option doc.verso true
 
@@ -143,41 +145,11 @@ theorem runScriptStep_insert_ne_oneOf {context : ResolveContext}
     (alternatives : List (List (List Value))) : output ≠ .oneOf alternatives :=
   runScriptStep_ne_oneOf_of_not_query found (fun _ _ same => by cases same) step alternatives
 
-/-- The deleted law {lit}`runScriptStep_insert_ok`. If a statement resolves to a plain INSERT without RETURNING or
-write rules, its clock and counters are known, its target exists, its subqueries are plain, its cell expressions
-are ready and the values satisfy {name}`InsertFits`, the step continues once with the inserted row count. Its next
-connection publishes the inserted rows and applies the insertion counts. Proof sketch: the premises select the
-success branch of the kind rule; {name}`insertReady_of_fits` and {name}`insertOutcome_of_fits` give the readiness
-check and the outcome. -/
-theorem runScriptStep_insert_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {target : Nat} {rows : List (List Resolved.Cell)} {subqueries : List Resolved.Query} {value : Int} {table : Table}
-    (found : resolveStatement context connection.resolveState statement = .ok (.insert target rows [] subqueries none, after))
-    (timed : statementClock clock index (.insert target rows [] subqueries none) = some value)
-    (known : connection.state.counters.firstUnknown (Resolved.Statement.insert target rows [] subqueries none).counterReads = none)
-    (located : connection.state.database.table target = some table) (plain : Resolved.subqueriesPlain subqueries = true) :
-    let resolved := Resolved.Statement.insert target rows [] subqueries none
-    let counters := connection.state.counters.view resolved.counterReads
-    let eval := Resolved.statementContext value counters parameters connection.state.database subqueries
-    let values := Resolved.rowsAt eval table.shape.columns rows
-    let written := connection.state.database.setRows target (LiteralData.inserted table values).rows
-    let keys := connection.state.database.keys target table
-    Resolved.cellsReady eval rows = true → InsertFits keys table values →
-      runScriptStep context clock index connection statement parameters =
-        .continued (.done rows.length) (connection.afterWrite written (LiteralData.insertCounts (.ok written) keys table values)) [] := by
-  dsimp only
-  intro ready fits
-  rw [runScriptStep_plainInsert_eq found]
-  simp only [timed, known, located]
-  rw [insertReady_of_fits fits, plain, ready, insertOutcome_of_fits fits]
-  rfl
-
 #print axioms runScriptStep_createTable
 #print axioms runScriptStep_createTable_frame
 #print axioms runScriptStep_createTable_empty
 #print axioms runScriptStep_createTable_ok
 #print axioms plainInsert_database
 #print axioms runScriptStep_insert_ne_oneOf
-#print axioms runScriptStep_insert_ok
 
 end Belay.Sqlite.Model.ReplacedStepLaws
