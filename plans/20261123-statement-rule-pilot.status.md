@@ -288,3 +288,10 @@ counterexample replay (#463)").
   imports the case laws, and `lakefile.toml` lists both modules. Tests:
   `just dev-build`, `tests/test_model_package.py` (root imports),
   `tests/surface_layers_test.py`, `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T192802Z-7dbeba93` of the case laws gave 3
+  "must" findings and 1 "should" finding, all on docstrings, all fixed in
+  a `refactor:` commit: the failure law says that a failed outcome
+  carries the database before; the constraint-violation fact says that
+  it checks the given result table; the model module docstring no longer
+  describes the surface bridge; the module docstring of the data facts
+  says how a caller uses them. Tests: `just dev-build`.

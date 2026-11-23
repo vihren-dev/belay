@@ -4,8 +4,9 @@ set_option doc.verso true
 
 /-! Data facts of a plain INSERT that fails: the counts that it reports, and the outcome of rows that SQLite refuses
 because of a constraint or a repeated rowid. The facts are about functions on tables, rows and databases; none of
-them is about the step of a statement. The case law {lit}`runScriptStep_insert_failed` uses them to give the step of
-a failed INSERT. -/
+them is about the step of a statement. The case law {lit}`runScriptStep_insert_failed` takes a failed outcome as a
+premise: a caller can prove that premise with {lit}`insertOutcome_constraintViolation`, and read the counters
+after the step with {lit}`LiteralData.insertCounts_error_changes` and {lit}`LiteralData.insertCounts_error_total`. -/
 
 namespace Belay.Sqlite.Model
 
@@ -38,9 +39,11 @@ theorem LiteralData.rowidsDistinct_eq_false_of_repeated {table : Table} {before 
 /-- For every database, target, keys, table, rows and result table: if no row has an alias cell that SQLite refuses
 ({name}`LiteralData.aliasMismatch`), and the result violates a constraint of the keys or has a repeated rowid, the
 outcome of the INSERT ({name}`insertOutcome`) is a constraint violation with the database before. In plain words,
-rows that break a NOT NULL, type, CHECK or unique constraint, or that repeat a rowid, fail with code 19 and change no
-data. The result need not be the table with the rows inserted. Proof sketch: with no alias mismatch,
-{name}`insertOutcome` is {name}`checkedWrite`, and its check fails. -/
+when no supplied row has an alias cell that SQLite refuses, and the given result table breaks a NOT NULL, type,
+CHECK or unique constraint or has a repeated rowid, the INSERT fails with code 19 and keeps the database. The theorem
+does not relate the result table to the supplied rows; in the step of an INSERT it is
+{name}`LiteralData.inserted` of the table and the rows. Proof sketch: with no alias mismatch,
+{name}`insertOutcome` is {name}`checkedWrite` of the result, and its check fails. -/
 theorem insertOutcome_constraintViolation {database : Database} {target : Nat} {keys : List UniqueKey}
     {table : Table} {values : List (List Value)} {result : Table}
     (aliasFree : ∀ row ∈ values, LiteralData.aliasMismatch table.shape row = false)
