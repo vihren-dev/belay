@@ -112,21 +112,27 @@ table and the values. A case law states one case of the rule as a short
 theorem. Each case law is a consequence of the kind rule, and its proof
 does not unfold the step function.
 
-- The success law. Its premises are the resolution equation, a clock
-  value, known counters, a table at the target, plain subqueries, ready
-  cells and values that satisfy `InsertFits`. Its conclusion is the
-  equation of the step: it continues with `.done rows.length`, with the
-  connection of `Connection.afterWrite` on the database with the
-  inserted rows and the counts of the insertion, and with no further
-  execution. This is the statement of `runScriptStep_insert_ok` at the
-  start revision.
-- The failure law. Its premises are the resolution equation, a clock
-  value, known counters, a table at the target, the three readiness
-  checks, and an outcome of `insertOutcome` that is an error with a
-  reason. Its conclusion is the equation of the step: it continues with
-  the error output of the code of the reason, with the connection of
-  `Connection.afterWrite` on the database before the statement and the
-  counts of the failed insertion, and with no further execution.
+Both laws have these premises: the resolution equation, a value of
+`statementClock` for the statement, `Counters.firstUnknown` equal to
+`none` on the counter reads of the statement, and a table that
+`Database.table` finds at the target. As in the kind rule, a clock or a
+counter that the statement does not read can be unknown.
+
+- The success law. Its other premises are plain subqueries, ready cells
+  and values that satisfy `InsertFits`. Its conclusion is the equation
+  of the step: it continues with `.done rows.length`, with no further
+  execution, and with the connection of `Connection.afterWrite` on the
+  database `database.setRows target (LiteralData.inserted table
+  values).rows` and the counts of the insertion. The law does not say
+  that the target has a row store: when it has none, `Database.setRows`
+  gives the database before. This is the statement of
+  `runScriptStep_insert_ok` at the start revision.
+- The failure law. Its other premises are the three readiness checks
+  and an outcome of `insertOutcome` that is an error with a reason. Its
+  conclusion is the equation of the step: it continues with the error
+  output of the code of the reason, with no further execution, and with
+  the connection of `Connection.afterWrite` on the database before the
+  statement and the counts of the failed insertion.
 - Data facts for the failure law, with no step, resolution or
   connection in them: the counts of a failed insertion report 0 changed
   rows, and values without an alias mismatch whose table after the
