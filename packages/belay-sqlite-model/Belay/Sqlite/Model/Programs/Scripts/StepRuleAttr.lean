@@ -2,9 +2,8 @@ import Lean.Meta.Tactic.Simp.RegisterCommand
 
 set_option doc.verso true
 
-/-! The simp set of the kind rules of the script step. The set is registered in a module of its own because a
-simp set must be registered in a module that comes before the modules that use it, and each kind rule is in the
-module of its kind. -/
+/-! This module registers the simp set {lit}`step_rule` of the kind rules of the script step. Each module of a kind
+rule imports it before it tags its theorem. -/
 
 /-- The kind rules of the script step: for each kind of resolved statement, one theorem that gives
 {lit}`runScriptStep` exactly, with the resolution of the statement as its only premise about the syntax. A tool
