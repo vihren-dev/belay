@@ -419,3 +419,8 @@ counterexample replay (#463)").
   counters make the starting context, and that only `changes` of the
   counts of a failure is fixed. Tests:
   `tests/surface_schema_script_test.py`.
+- 2026-11-23: the check `insert_any_case` of the case-type fixture splits
+  the cover through an existential instead of `generalize` on the step,
+  so that no proof of the case-type test names `runScriptStep`, as the
+  client-claims test requires of its proofs. Tests:
+  `tests/surface_schema_script_test.py`.

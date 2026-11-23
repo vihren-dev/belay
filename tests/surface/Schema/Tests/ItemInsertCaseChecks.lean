@@ -106,7 +106,7 @@ theorem insert_any_case {clock : Option Clock} {index : Nat} {counters : Counter
     (connection := Database.Raw.connection { catalog := itemsCatalog, rows } counters) (statement := statement)
     (target := 0) (rows := itemCells) (subqueries := []) (parameters := [.integer id.toInt, .text name.toUTF8.toList])
     (by rw [← named]; rfl)
-  generalize step : runScriptStep _ _ _ _ _ _ = result at cover
+  obtain ⟨result, step, cover⟩ : ∃ result, _ = result ∧ StepCase _ _ _ _ _ result := ⟨_, rfl, cover⟩
   cases cover with
   | noClock timed => simp [items_clock] at timed
   | unknownCounter timed unknown => simp [items_reads, Counters.firstUnknown] at unknown
