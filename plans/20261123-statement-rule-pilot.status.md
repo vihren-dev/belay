@@ -375,3 +375,9 @@ counterexample replay (#463)").
   names the first unknown counter, `StepCase.of_checks` lists its three
   results, and `StepCase.unique` says that its premise is for every
   clock value. Tests: `just dev-build`.
+- 2026-11-23: review `20261123T195806Z-29c82a5d` gave 3 "must" findings
+  on the docstrings of `StepCase`, all fixed in a `refactor:` commit:
+  the constructor `unknownCounter` names its clock premise, and
+  `StepCase.of_checks` names only the counters that the statement reads
+  and refers to `clockUnmodeled` with a checked reference. Tests:
+  `just dev-build`.
