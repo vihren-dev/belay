@@ -55,7 +55,8 @@ forms change, and a comparison of the three forms of plain INSERT.
 
 The main measurement scripts are in the scratch directory of the session
 (`/tmp/claude-1002/-home-codex-work/a1c729e8-ce7b-5ce0-94c1-8fab926cac49/scratchpad/pilot/`).
-Each script reads a jj revision or the working copy.
+Each script reads a jj revision or the working copy. `SCRATCH` below is
+that directory.
 
 | Script | Command | Output |
 | --- | --- | --- |
@@ -71,11 +72,14 @@ includes about 1.8 s.
 
 Other sources, named where the record uses them:
 
-- `decl_diff.py OLD NEW FILE:NAME…`, run as
-  `python3 decl_diff.py b7854558 94c3fa5e FILE:NAME…` with one
-  `FILE:NAME` argument for each declaration: the added and removed
-  lines of each declaration with its docstring (section "Changed
-  callers").
+- `decl_diff.py OLD NEW FILE:NAME[:NEWFILE[:N]]…`, run from the
+  repository root as `python3 SCRATCH/decl_diff.py b7854558 94c3fa5e
+  FILE:NAME…` with one argument for each declaration: the added and
+  removed lines of each declaration with its docstring (section
+  "Changed callers"). `NEWFILE` is the file at the new revision when the
+  declaration moved, and `N` selects the `N`-th match from 0, for
+  example `tests/surface/Programs/Reasoning/SchemaRuleExamples.lean:example::2`
+  for the third `example` of that file, which gives +7/−3.
 - `chain.py` and `probe_after_chain.py FILE M…`: compile the fixtures of
   a chain, then a scratch Lean file that imports them. The scratch file
   `kindany/KindAnyProbe.lean` holds a proof of the claim for each input
@@ -430,7 +434,8 @@ of the rows with `let`, so their checks rewrite the values with
 are an argument of the case, and `items_values` gives them in the
 constructor. With the data facts of the case laws, the kind-rule
 column is 74: the kind-rule checks use `items_taken_outcome` only by its
-statement, which did not change, so its 10-line proof replaces the 13
+statement, which did not change, so its declaration of 10 code lines (4
+statement lines and 6 proof lines) replaces the declaration of 13 code
 lines and the alias fact (2).
 
 The claim for each input (`insert_done_or_error`: the output is
@@ -699,9 +704,11 @@ model with its statement of the start revision.
   names a banned identifier. The declarations that differ for the two
   INSERT claims take 79 code lines with the kind rule (74 with the data
   facts of the case laws), 75 with the case laws and 69 with the case
-  type. The claim for each input takes 40
-  lines with the kind rule (in a scratch file), 57 with the case laws
-  and 53 with the case type.
+  type. The claim for each input takes 40 lines with the kind rule (the
+  29-line check `insert_any_rule` in a scratch file, and the 11 lines of
+  `insert_done_or_error` in `ItemInsertCaseClaims.lean` with
+  `insert_any_rule` in place of `insert_any_case`), 57 with the case
+  laws and 53 with the case type.
 
 ## Cost of the next kind
 
