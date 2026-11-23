@@ -6,10 +6,9 @@ import Belay.Sqlite.Model.Schema.Ddl.SchemaExtensionLaws
 
 /-! A fixture module of {lit}`tests/surface_schema_script_test.py` (statement rule pilot, "No capability loss"). The
 pilot deleted six model laws about the step of CREATE TABLE and of INSERT. Each theorem of this module has the
-name and the statement of one deleted law, copied from the revision before the pilot with its binders and
-premises, and proves it from the laws that remain: the kind rules {name}`runScriptStep_createTable_eq` and
-{name}`runScriptStep_plainInsert_eq`, the data facts of {name}`Database.createTable`, and the laws that serve all
-kinds. When a theorem does not compile, the new form has lost the fact. The law {lit}`runScriptStep_insert_ok`
+name and the statement of one deleted law, with its binders and premises from the revision before the pilot. The
+proofs use the kind rules {name}`runScriptStep_createTable_eq` and {name}`runScriptStep_plainInsert_eq`. They also
+use the data facts of {name}`Database.createTable` and the laws that serve all kinds. When a theorem does not compile, the new form has lost the fact. The law {lit}`runScriptStep_insert_ok`
 stays in the model with its statement as the success case law of plain INSERT, so this module does not restate
 it. -/
 

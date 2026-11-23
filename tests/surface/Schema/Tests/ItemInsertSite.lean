@@ -94,11 +94,6 @@ theorem items_keys (rows : List (List Row)) :
   rw [items_catalog]
   rfl
 
-/-- For every row lists, id and name: the alias cell of {name}`itemValues` is an integer, so no row has an alias
-that SQLite refuses. -/
-theorem items_aliases (rows : List (List Row)) (id : Int64) (name : String) :
-    [itemValues id name].findIdx? (LiteralData.aliasMismatch (itemsTable rows).shape) = none := rfl
-
 /-- For every evaluation context: no cell of {name}`itemCells` can fail. -/
 theorem items_cellsReady (context : Resolved.EvalContext) : Resolved.cellsReady context itemCells = true := rfl
 

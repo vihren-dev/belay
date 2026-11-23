@@ -11,16 +11,18 @@ counters, the table and the values, and gets the step as an equation. -/
 namespace Belay.Sqlite.Model
 
 /-- The success law of plain INSERT. For every resolution context, clock, index, connection, statement, parameter
-values, resolution state, target position, rows of cells, subqueries, clock value and table: if the statement
-resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause and without write
-rules, the statement has the clock value, no counter that it reads is unknown, the target holds the table, the
-subqueries are plain, the cells are ready, and the values satisfy {name}`InsertFits`, then the step continues with
-the output {lit}`.done rows.length` and with no further execution. Its connection is the connection after the write
-({name}`Connection.afterWrite`) of the database that {name}`Database.setRows` gives for the target and the rows of
-{name}`LiteralData.inserted`, with the counts of the insertion. The law does not say that the target has a row
-list; when it has none, {name}`Database.setRows` gives the database before. Proof sketch: rewrite the step with
-{name}`runScriptStep_plainInsert_eq`; the premises select the success case, with {name}`insertReady_of_fits` for
-the readiness check and {name}`insertOutcome_of_fits` for the outcome. -/
+values, resolution state, target position, rows of cells, subqueries, clock value and table, take these premises:
+* the statement resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause
+  and without write rules;
+* the statement has the clock value, and no counter that it reads is unknown;
+* the target holds the table, and the subqueries are plain;
+* the cells are ready, and the values satisfy {name}`InsertFits`.
+Then the step continues with the output {lit}`.done rows.length` and with no further execution. Its connection is
+the connection after the write ({name}`Connection.afterWrite`) of the database that {name}`Database.setRows` gives
+for the target and the rows of {name}`LiteralData.inserted`, with the counts of the insertion. The law does not say
+that the target has a row list; when it has none, {name}`Database.setRows` gives the database before. Proof sketch:
+rewrite the step with {name}`runScriptStep_plainInsert_eq`; the premises select the success case, with
+{name}`insertReady_of_fits` for the readiness check and {name}`insertOutcome_of_fits` for the outcome. -/
 theorem runScriptStep_insert_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {rows : List (List Resolved.Cell)} {subqueries : List Resolved.Query} {value : Int} {table : Table}
@@ -45,17 +47,20 @@ theorem runScriptStep_insert_ok {context : ResolveContext} {clock : Option Clock
   rfl
 
 /-- The failure law of plain INSERT. For every resolution context, clock, index, connection, statement, parameter
-values, resolution state, target position, rows of cells, subqueries, clock value, table and reason: if the
-statement resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause and
-without write rules, the statement has the clock value, no counter that it reads is unknown, the target holds the
-table, the subqueries are plain, the cells are ready, the values pass the readiness check
-({name}`LiteralData.insertReady`), and the outcome ({name}`insertOutcome`) is an error with the reason and the
-database before, then the step continues with the error output of the primary code of the reason and with no
-further execution. Its connection is the connection after the write ({name}`Connection.afterWrite`) of the database
-before the statement, with the counts of the failed insertion. The premise loses no case: each error outcome has
-the database before ({name}`insertOutcome_error`). {name}`LiteralData.insertCounts_error_changes` gives 0 changed
-rows, and {name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch:
-rewrite the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
+values, resolution state, target position, rows of cells, subqueries, clock value, table and reason, take these
+premises:
+* the statement resolves to an INSERT of the rows into the target with the subqueries, without a RETURNING clause
+  and without write rules;
+* the statement has the clock value, and no counter that it reads is unknown;
+* the target holds the table, and the subqueries are plain;
+* the cells are ready, and the values pass the readiness check ({name}`LiteralData.insertReady`);
+* the outcome ({name}`insertOutcome`) is an error with the reason and the database before.
+Then the step continues with the error output of the primary code of the reason and with no further execution. Its
+connection is the connection after the write ({name}`Connection.afterWrite`) of the database before the statement,
+with the counts of the failed insertion. The last premise loses no case: each error outcome has the database before
+({name}`insertOutcome_error`). {name}`LiteralData.insertCounts_error_changes` gives 0 changed rows, and
+{name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch: rewrite
+the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
 theorem runScriptStep_insert_failed {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {rows : List (List Resolved.Cell)} {subqueries : List Resolved.Query} {value : Int} {table : Table}

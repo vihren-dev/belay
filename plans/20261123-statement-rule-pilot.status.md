@@ -304,9 +304,26 @@ counterexample replay (#463)").
   sentence in the failure-law docstring) is fixed here. Tests:
   `just dev-build`, `tests/surface_schema_script_test.py`.
 - 2026-11-23: the failure law `runScriptStep_insert_failed` takes an
-  outcome with the database before, not an arbitrary database, and its
-  counts use that database. Each error outcome of `insertOutcome` has
-  the database before (`insertOutcome_error`), so the law covers the
-  same cases. With an arbitrary database the client cannot apply the
-  law with `refine`, because Lean cannot infer that database. Tests:
+  outcome with the database before, not an arbitrary database, and it
+  passes that database in the error pair of the counts, which leaves
+  the counts unchanged. Each error outcome of `insertOutcome` has the
+  database before (`insertOutcome_error`), so the law covers the same
+  cases. With an arbitrary database, Lean cannot infer that database
+  from the goal of the client. Tests:
   `just dev-build`, `tests/surface_schema_script_test.py`.
+- 2026-11-23: the two INSERT claims of the client-claims test use the
+  case laws through `Sql.check_send_of_rule` and name no kind rule:
+  `insert_new_check` uses `runScriptStep_insert_ok`, and
+  `insert_taken_check` uses `runScriptStep_insert_failed` with
+  `LiteralData.insertCounts_error_changes`. `items_taken_outcome` is
+  proved with `insertOutcome_constraintViolation` and
+  `LiteralData.rowidsDistinct_eq_false_of_repeated`, and the site fact
+  `items_aliases` is deleted. `create_then_insert` uses
+  `insert_new_check`, and `insert_keeps_names` keeps its `sql_run`
+  proof. `sql_run` does not use the case laws: tagging them `step_rule`
+  would let `sql_run` choose a case law before the kind rule and leave
+  its premises open. Review `20261123T194046Z-08cc0e45`: the "must"
+  finding on a test of the failure law is fixed here; the status text
+  and the docstring lists of the two laws are fixed here. Tests:
+  `just dev-build`, `tests/surface_schema_script_test.py`,
+  `tests/surface_s6_automation_test.py`, `tests/surface_layers_test.py`.
