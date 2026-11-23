@@ -50,7 +50,8 @@ in these ways:
   acceptance points. The findings record keeps their measurements.
 - The data facts for a failed insertion stay: the counts of a failed
   insertion, and the outcome "constraint violation" of an insertion
-  that repeats a rowid or violates a constraint of the keys.
+  in which no supplied row has an alias mismatch and the result repeats
+  a rowid or violates a constraint of the keys.
 - `runScriptStep_insert_ok` is a replaced law again. The retention test
   restates it and proves it from the kind rule.
 - The client-claims test proves its two INSERT claims with the kind
