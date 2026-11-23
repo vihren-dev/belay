@@ -40,6 +40,13 @@ def Connection.afterWrite (connection : Connection) (database : Database) (count
   { connection with state := { connection.state with
       database, counters := connection.state.counters.apply counts } }
 
+/-- The connection with another stored database and nothing else changed: the snapshot of an open transaction,
+the settings, the clock assignment and the counters stay. A statement that changes only the schema and the stored
+rows, such as CREATE TABLE, gives this connection. Use {name}`Connection.afterWrite` for a statement that also
+changes the counters. -/
+def Connection.withDatabase (connection : Connection) (database : Database) : Connection :=
+  { connection with state := { connection.state with database } }
+
 /-- For every connection, database and counts: when the database has the catalog of the database of
 the connection, the connection after the write ({name}`Connection.afterWrite`) has the
 resolution state of the connection. So a write that changes rows and counters keeps the state in

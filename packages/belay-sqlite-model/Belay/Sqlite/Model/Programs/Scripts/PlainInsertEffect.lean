@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
 import Belay.Sqlite.Model.Programs.Scripts.KeysUniqueWrites
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertEffect
+import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
 
 set_option doc.verso true
 
@@ -53,19 +54,6 @@ theorem Output.ofStep_insert_ne_oneOf (clock : Int) (parameters : List Value) (b
     · split <;> simp
     · simp
   · cases failure <;> simp
-
-/-- Whether a step of a statement continues the run. The Boolean form lets a closed check compute it
-for every clock and every counter, which an existence statement does not. -/
-def RunStep.continues : RunStep → Bool
-  | .continued .. => true
-  | .ended _ => false
-
-/-- For every step, it continues exactly when some output, next connection and list of further
-executions give it. Proof sketch:
-case split on the step. -/
-theorem RunStep.continues_iff {step : RunStep} :
-    step.continues = true ↔ ∃ output next others, step = .continued output next others := by
-  cases step <;> simp [RunStep.continues]
 
 /-- For every connection, statement that resolves to an insert, and step that continues: the output
 of the step is not a choice between results. Proof sketch: {name}`runScriptStep_ran` gives the output

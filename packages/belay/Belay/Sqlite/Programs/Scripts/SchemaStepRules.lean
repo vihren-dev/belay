@@ -11,11 +11,6 @@ no premise about a failed step. The rules use the laws of
 namespace Belay.Sqlite
 open Belay.Sqlite Model
 
-/-- The connection with another stored database. The open transaction, the settings, the clock assignment and
-the counters stay. -/
-def Model.Connection.withDatabase (connection : Connection) (database : Model.Database) : Connection :=
-  { connection with state := { connection.state with database } }
-
 /-- For every context, statement, values and post, with a valid connection in the context: the program that
 sends the statement checks the post when these premises hold.
 * {lit}`found`: the statement resolves from the connection to CREATE TABLE at position {lit}`target`.
@@ -24,9 +19,8 @@ sends the statement checks the post when these premises hold.
   ({name}`Model.Connection.withDatabase`): if that connection is valid, the post holds for the list of that
   one output and the context after it.
 In plain words, CREATE TABLE never fails because resolution places the table at the end, so there is no premise
-about a failure. Proof sketch: {name}`Sql.check_send_of_step`, the continuation law
-{name}`runScriptStep_createTable_ok` (the rows of a valid database have one list for each object) and the
-step law {name}`runScriptStep_createTable`. -/
+about a failure. Proof sketch: {name}`Sql.check_send_of_step` with the kind rule
+{name}`runScriptStep_createTable_eq`, whose condition {name}`step_guards_hold` gives on a valid database. -/
 theorem Sql.check_send_createTable {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {name : Identifier} {table : CatalogTable} {after : ResolveState}
     {post : List Output → ExecutionContext → Prop}
@@ -39,15 +33,17 @@ theorem Sql.check_send_createTable {ctx : ExecutionContext} {statement : Syntax.
            rows := ctx.connection.state.database.rows ++ [[]] } : Model.Database) →
       next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
-  obtain ⟨output, next, step, _⟩ := runScriptStep_createTable_ok (parameters := values) (clock := ctx.clock)
-    (index := ctx.index) found valid.1
+  obtain ⟨atEnd, aligned⟩ := step_guards_hold found rfl valid.1
+  have rule := runScriptStep_createTable_eq (clock := ctx.clock) (index := ctx.index) (parameters := values) found
+  simp only [atEnd, aligned, and_self, ite_true] at rule
   refine Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
-      rfl) ⟨output, next, [], step⟩
+      rfl) ⟨_, _, [], rule⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid
-  intro output next step' hvalid
-  obtain ⟨noError, -, -, -, nextEq⟩ := runScriptStep_createTable found step'
-  exact success output next noError (runScriptStep_continued step').2 nextEq hvalid
+  intro output next step hvalid
+  rw [rule] at step
+  cases step
+  exact success _ _ rfl rfl rfl hvalid
 
 /-- For every context, statement, values and post, with a valid connection in the context: the program that
 sends the statement checks the post when these premises hold.

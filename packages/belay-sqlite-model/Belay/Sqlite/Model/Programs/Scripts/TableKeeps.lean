@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Programs.Scripts.ControlStepFrames
-import Belay.Sqlite.Model.Programs.Scripts.CreateTableStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
@@ -67,9 +67,12 @@ theorem runScriptStep_keepsTable {context : ResolveContext} {clock : Option Cloc
     rw [singleConnection member]
     exact present
   · cases kept
-    obtain ⟨_, rfl, _, _, nextEq⟩ := runScriptStep_createTable resolution step
-    rw [singleConnection member, nextEq]
-    exact Database.table_createTable _ _ present
+    rw [runScriptStep_createTable_eq resolution] at step
+    split at step
+    · cases step
+      rw [singleConnection member]
+      exact Database.table_createTable _ _ present
+    · cases step
   · split at kept <;> try contradiction
     rename_i distinct
     cases kept

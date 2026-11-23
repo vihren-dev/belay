@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepOk
 
 set_option doc.verso true
@@ -29,7 +30,9 @@ theorem runScriptStep_create_ok {context : ResolveContext} {clock : Option Clock
   have guards := step_guards_hold found rfl valid
   cases resolved <;> simp only [Resolved.Statement.createsBySchema, Bool.not_eq_true'] at creates
   all_goals try contradiction
-  case createTable => exact runScriptStep_createTable_ok found valid
+  case createTable =>
+    obtain ⟨atEnd, aligned⟩ := guards
+    simp [runScriptStep_createTable_eq found, atEnd, aligned, Output.isError]
   case createIndex =>
     obtain ⟨pos, aligned, present⟩ := guards
     obtain ⟨table, tableAt⟩ := Option.isSome_iff_exists.mp present

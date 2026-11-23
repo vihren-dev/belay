@@ -33,6 +33,12 @@ structure Database where
 def Database.table (database : Database) (position : Nat) : Option Table :=
   (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
 
+/-- The database after CREATE TABLE: the table with the name at the end of the catalog
+({name}`Catalog.createTable`) and an empty row store at the end of the rows. For example, on the empty
+database the new table is at position 0 with no rows. -/
+def Database.createTable (database : Database) (name : Identifier) (table : CatalogTable) : Database :=
+  { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
+
 /-- For every database and position of a table in it, the catalog has that table's entry at the position
 ({name}`Catalog.tableAt`). Proof sketch: {name}`Database.table` maps the entry of the catalog. -/
 theorem Database.tableAt_of_table {database : Database} {target : Nat} {table : Table}

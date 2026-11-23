@@ -26,31 +26,37 @@ def createP : Syntax.Statement := statementOf (sql r"CREATE TABLE p(id INTEGER);
 theorem createQ_resolves : resolvesShape start createQ (.createTable 2 (name! "q")) = true := by decide +kernel
 
 /-- Success and frame law of CREATE TABLE: the new table is appended at position 2, the catalog and the row lists
-keep their alignment, and the parent and the child are found at their positions with their rows. Proof sketch:
-{name}`runScriptStep_createTable` and {name}`runScriptStep_createTable_frame` with the resolution of the statement as
-a CREATE TABLE at position 2. -/
+keep their alignment, and the parent and the child are found at their positions with their rows. Proof sketch: the
+kind rule {name}`runScriptStep_createTable_eq` gives the step from the resolution of the statement as a CREATE TABLE
+at position 2, and {name}`Database.tableNamed_createTable` keeps the tables found by name. -/
 theorem create_appends_and_keeps : ∀ output next others, stepOf start createQ = .continued output next others →
     output.isError = false ∧ next.state.database.catalog.length = 3 ∧ next.state.database.rows.length = 3 ∧
     foundRows next.state.database (name! "p") = foundRows start.state.database (name! "p") ∧
     foundRows next.state.database (name! "c") = foundRows start.state.database (name! "c") := by
   intro output next others step
   obtain ⟨table, after, found⟩ := resolvesShape_createTable createQ_resolves
-  obtain ⟨noError, -, target, aligned, nextEq⟩ := runScriptStep_createTable found step
-  have frame (name : Identifier) (position : Nat) (existing : Table)
-      (present : start.state.database.tableNamed name = some (position, existing)) :
-      next.state.database.tableNamed name = some (position, existing) :=
-    runScriptStep_createTable_frame found step present
-  refine ⟨noError, ?_, ?_, ?_, ?_⟩
-  · rw [nextEq]; simpa [Catalog.createTable] using (by decide +kernel : start.state.database.catalog.length = 2)
-  · rw [nextEq]; simpa using (by decide +kernel : start.state.database.rows.length = 2)
-  · obtain ⟨existing, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "p")
-      (position := 0) (by decide +kernel)
-    unfold foundRows
-    rw [frame _ _ _ present, present]
-  · obtain ⟨existing, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "c")
-      (position := 1) (by decide +kernel)
-    unfold foundRows
-    rw [frame _ _ _ present, present]
+  rw [stepOf, runScriptStep_createTable_eq found] at step
+  split at step
+  · cases step
+    have frame (name : Identifier) (position : Nat) (existing : Table)
+        (present : start.state.database.tableNamed name = some (position, existing)) :
+        (start.withDatabase (start.state.database.createTable (name! "q") table)).state.database.tableNamed name =
+          some (position, existing) :=
+      Database.tableNamed_createTable present _ _
+    refine ⟨rfl, ?_, ?_, ?_, ?_⟩
+    · simpa [Connection.withDatabase, Database.createTable, Catalog.createTable] using
+        (by decide +kernel : start.state.database.catalog.length = 2)
+    · simpa [Connection.withDatabase, Database.createTable] using
+        (by decide +kernel : start.state.database.rows.length = 2)
+    · obtain ⟨existing, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "p")
+        (position := 0) (by decide +kernel)
+      unfold foundRows
+      rw [frame _ _ _ present, present]
+    · obtain ⟨existing, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "c")
+        (position := 1) (by decide +kernel)
+      unfold foundRows
+      rw [frame _ _ _ present, present]
+  · cases step
 
 /-- Failure law of CREATE TABLE: a CREATE TABLE of a name in use fails with an error output, and the step changes
 nothing: the connection after it is the connection before. The kernel shows that the step fails. Proof sketch:

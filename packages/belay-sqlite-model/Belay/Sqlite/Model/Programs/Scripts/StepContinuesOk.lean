@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.Scripts.CreateTableStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
 import Belay.Sqlite.Model.Programs.Scripts.StepContinues
 import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 
@@ -29,25 +29,6 @@ theorem runScriptStep_isError_false {context : ResolveContext} {clock : Option C
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
   rw [← ofStep]
   exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ notQuery (quiet value)
-
-/-- On every valid database, if resolution gives a CREATE TABLE, its step continues once
-with a successful output. Proof sketch: {name}`step_guards_hold` gives the append position and row alignment.
-The effect succeeds, so {name}`runScriptStep_continues` gives a continued step,
-and {name}`runScriptStep_createTable` gives its non-error output. -/
-theorem runScriptStep_createTable_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {target : Nat} {name : Identifier} {table : CatalogTable} {profile : Profile}
-    (found : resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after))
-    (valid : connection.state.database.Valid profile) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨atEnd, aligned⟩ := step_guards_hold found rfl valid
-  obtain ⟨output, next, step⟩ := runScriptStep_continues (parameters := parameters)
-    (clock := clock) (index := index) found rfl rfl rfl (fun reason => by
-      apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ rfl reason
-      simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun,
-        runStatement, Model.step, atEnd, aligned])
-  exact ⟨output, next, step, (runScriptStep_createTable found step).1⟩
 
 /-- For every connection, statement and values that resolve to a DROP TABLE without rules: the step continues
 without further execution, and its output is no error. In plain words, a drop that no foreign key can cascade
