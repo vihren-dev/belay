@@ -151,8 +151,11 @@ Those two proofs name no kind rule.
 Added 2026-11-23 by an owner decision, as a third form for comparison.
 The kind rule gives the step as one nested term. Each case law gives one
 case, and no theorem says that the case laws cover each input. The case
-type states the cases as a partition of the inputs: each input is in
-one case, and in no more than one.
+type states all cases with their conditions in one type. Cover says
+that each input is in a case, and one result says that the cases of an
+input give one result. The premises of two different cases contradict
+each other, so the cases are a partition of the inputs; the pilot does
+not state this as a theorem.
 
 - The case type. An inductive proposition relates the inputs of a plain
   INSERT step after resolution (the clock, the index, the connection,
@@ -174,15 +177,17 @@ one case, and in no more than one.
   INSERT uses the kind rule and does not unfold the step function.
 - One result. Two results that the case type relates to the same inputs
   are equal.
-- The step equation. With the resolution equation, a result that the
-  case type relates to the inputs is equal to the result of
-  `runScriptStep`. It follows from cover and from one result. This one
+- The step equation. With the resolution equation and a result that
+  the case type relates to the inputs, the result of `runScriptStep` is
+  equal to that result (`runScriptStep … = result`). It follows from cover and from one result. This one
   theorem gives the equation of each case, and
   `Sql.check_send_of_rule` accepts that equation.
 - The success case has the readiness checks and the outcome as its
   premises, as the kind rule does. A proof that has `InsertFits` gets
-  them from the data facts `insertReady_of_fits` and
-  `insertOutcome_of_fits`.
+  the readiness check of the table and the values, and the outcome,
+  from the data facts `insertReady_of_fits` and
+  `insertOutcome_of_fits`. It supplies the checks of the subqueries
+  and of the cells itself.
 
 A second client test uses the case type on the `items` table of the
 client-claims test:

@@ -346,3 +346,11 @@ counterexample replay (#463)").
   `statementClock`, then `Counters.firstUnknown`, then the run of the
   statement) and with the kind rule of plain INSERT (four cases that end
   the run, a success and a failure). No code changes; no tests.
+- 2026-11-23: review `20261123T194711Z-3d577446` of the amendment gave
+  3 "must" findings, all fixed in a `refactor:` commit: one result does
+  not prove that the cases exclude each other, so the text now says
+  that the premises of different cases contradict and that the pilot
+  does not state this as a theorem; the step equation has the direction
+  `runScriptStep … = result`; the data facts of `InsertFits` do not give
+  the checks of the subqueries and of the cells. No code changes; no
+  tests.
