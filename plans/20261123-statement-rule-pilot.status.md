@@ -508,3 +508,10 @@ counterexample replay (#463)").
   `Database.setRows`, and the docstring of the retention test names the
   ten laws that the pilot deleted from its start revision. Tests:
   `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T221545Z-4c0f5ec9` gave 3 "should"
+  findings, all fixed in a `refactor:` commit: the restated
+  `runScriptStep_insert_ok` says that `Database.setRows` receives all
+  rows of the table after the insertion, and the docstring of the
+  retention test limits its claim to the list "Replaced laws" of the
+  task file and gives the number of model and surface laws. Tests:
+  `tests/surface_schema_script_test.py`.
