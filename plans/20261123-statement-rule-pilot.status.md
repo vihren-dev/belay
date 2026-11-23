@@ -267,3 +267,6 @@ counterexample replay (#463)").
   success law names the database of `Database.setRows` and says what it
   does not promise; the open work names the retention-test change; this
   log says that the import-line finding is deferred.
+- 2026-11-23: review `20261123T191714Z-d2bebd76` gave 1 "must" finding:
+  the acceptance text of the INSERT kind rule promised stored rows for
+  each success. Fixed: it names `Database.setRows` and its condition.

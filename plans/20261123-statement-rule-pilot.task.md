@@ -73,9 +73,13 @@ the list is complete:
 
 An INSERT that reads no clock and no counter passes the first two
 checks without a clock and with unknown counters. It continues only
-when the target holds a table and the three readiness checks pass. A success has the output `.done rows.length`, the target with
-the rows of `LiteralData.inserted`, and the counts of
-`LiteralData.insertCounts`. A failure has an error output with the code
+when the target holds a table and the three readiness checks pass. A
+success has the output `.done rows.length`, the database that
+`Database.setRows` gives for the target and the rows of
+`LiteralData.inserted`, and the counts of `LiteralData.insertCounts`.
+`Database.setRows` stores the rows only when the target has a row store
+(`target < database.rows.length`); if not, it gives the database before.
+A failure has an error output with the code
 of the violation, the database before the statement, and the counts of
 the failed insertion. Neither has a further execution.
 
