@@ -37,7 +37,8 @@ changes.
 Counter: scc 3.7.0, sum of `Code` of the tracked `.lean` files, without
 the three frozen experiments (as
 `docs/development/lean-simplification-goal.md` counts). The "after"
-count is at the last pilot commit, before this record.
+count is on the code of commit `94c3fa5e` (`rkwwvmpt`); the later
+commits of the pilot change only comments and documents.
 
 | Scope | Before | After | Change |
 | --- | ---: | ---: | ---: |
@@ -54,8 +55,8 @@ The same change by origin:
 
 | Part | Model | Surface | Tests |
 | --- | ---: | ---: | ---: |
-| Added once: projections, `step_rule`, `Connection` helpers, bridge, `sql_run` path | +53 | +191 | +56 |
-| CREATE TABLE: rule, data facts, deleted laws, callers | −18 | −26 | +16 |
+| Added once: projections, `step_rule`, `Connection.afterError_failed`, bridge, `sql_run` path | +51 | +191 | +56 |
+| CREATE TABLE: rule, data facts, deleted laws, callers, the move of `Connection.withDatabase` | −16 | −26 | +16 |
 | Plain INSERT: rule, data lemmas, deleted laws, callers | −25 | −81 | −41 |
 | Retention test of the deleted laws (task acceptance) | 0 | 0 | +235 |
 | Client-claims test (task acceptance) | 0 | 0 | +243 |
@@ -66,10 +67,10 @@ Notes:
 - The model "once" lines are `StepRuleProjections.lean` (46, less 6
   lines of `RunStep.continues` and `RunStep.continues_iff`, which moved
   unchanged from the model `PlainInsertEffect.lean` and count as zero),
-  `StepRuleAttr.lean` (3) and `Connection.withDatabase` with
-  `Connection.afterError_failed` (10). `Connection.withDatabase` (2
-  lines) moved from the surface package to the model package; the
-  surface CREATE TABLE line counts its removal.
+  `StepRuleAttr.lean` (3) and `Connection.afterError_failed` (8).
+- `Connection.withDatabase` (2 lines) moved from the surface package to
+  the model package for the CREATE TABLE rule. Both sides of the move
+  are in the CREATE TABLE line (model +2, surface −2), so they cancel.
 - The surface "once" lines are `SqlRunKindRules.lean` (137),
   `KindRuleSend.lean` (45), and `SqlRun.lean` with `SqlRunGoals.lean`
   (9).
@@ -81,47 +82,30 @@ Notes:
 - The two acceptance tests (478 lines) are new test content, not
   maintained proof work that a client needs.
 - Without the two acceptance tests, the pilot changes the count by
-  +125: +300 once, −28 for CREATE TABLE and −147 for INSERT.
+  +125: +298 once, −26 for CREATE TABLE and −147 for INSERT.
 
 Raw data: `after-scc.json`, `baseline-scc.json` and `scc-delta.tsv` in
 the scratch directory of the session.
 
 ## Changed callers
 
-A caller is an existing declaration that used a replaced law. Lines are
-added and removed lines of `jj diff --git` from the start revision, in
-the files of the callers. Changes to the laws themselves (deleted, new
-or restated) are counted apart, also when they are in the same file.
+A caller is an existing declaration that used a replaced law. The line
+counts are the added and removed lines of each caller declaration with
+its docstring (a line diff of the declaration text at the start
+revision and now; scratch script `decl_diff.py`). Imports, module
+docstrings, moved declarations and the laws themselves are listed apart.
 
-| Scope | Files | Changed callers | Added | Removed |
-| --- | ---: | ---: | ---: | ---: |
-| Model | 6 | 4 | 37 | 17 |
-| Surface rules | 3 | 0 (docstrings and imports) | 12 | 11 |
-| Surface `sql_run` files | 3 | the tactic | 29 | 21 |
-| Test fixtures | 10 | 12 (+3 moved) | 210 | 235 |
+| Scope | Changed callers | Added | Removed |
+| --- | ---: | ---: | ---: |
+| Model | 4 | 26 | 11 |
+| Surface rules | 0 | 0 | 0 |
+| `sql_run` (`sendRule`) | 1 | 1 | 5 |
+| Test fixtures | 12 | 132 | 157 |
 
 - Model callers: `runScriptStep_create_ok` (`CreateSchemaSuccess`),
   `runScriptStep_createTable_failed` (`SchemaFailureLaws`),
   `runScriptStep_keepsTable` (`TableKeeps`) and
-  `runScriptStep_createdTables` (`CreatedTables`). The other line
-  changes are imports (`PlainDeleteEffect`, `CreatedTables`,
-  `StepContinuesOk`) and a docstring (`PlainDeleteEffect`).
-- Model laws in the same files, not in the caller count: the deleted
-  `runScriptStep_createTable_empty` (−12) and
-  `runScriptStep_createTable_ok` (−19). Laws in other existing files:
-  `runStatement_insert_ok` replaced by `insertOutcome_of_fits` and
-  `insertReady_of_fits` in `PlainInsertSuccess` (+26/−44);
-  `Database.table_createTable` and `Database.tableNamed_createTable`
-  restated with `Database.createTable` in `DatabaseLaws` and
-  `TableByName` (+10/−12).
-- Surface rules: no declaration changed. The changes are the
-  docstrings of the module and of three other rules in
-  `SchemaStepRules` (+9/−8), which named a deleted law, the imports of
-  `PlainDeleteEffect` and `SendStepRules`, and a docstring in
-  `SendStepRules`. Not
-  in the count: the deleted `Sql.check_send_createTable` and the move of
-  `Connection.withDatabase` to the model (−38).
-- `sql_run` files: `SqlRun`, `SqlRunGoals`, `SqlRunRules`.
+  `runScriptStep_createdTables` (`CreatedTables`).
 - Test callers, each with the same claim:
   `signup_keeps_by_sql_run`, `signup_keeps_global_by_sql_run`
   (`S6AutoSignup`), the abstract CREATE TABLE example of
@@ -131,11 +115,30 @@ or restated) are counted apart, also when they are in the same file.
   `addCustomer_adds_by_sql_run`, `addCustomer_adds_by_rules`,
   `addCustomer_adds_triple` (`S6AutoAddCustomer`),
   `create_appends_and_keeps` (`SchemaCreateExamples`), `signup_keeps`
-  (`SignupInvariantClaims`). Moved to the file of their other users:
-  `customer_named_after_insert`, `AccountSignupSite.keeps_of_valid` and
-  `GlobalSignupSite.keeps_of_valid`.
-- The test line counts include the moved declarations. They do not
-  include the new `sql_run` example of `SchemaRuleExamples` (+9).
+  (`SignupInvariantClaims`).
+- `sendRule` (`SqlRunRules`) named the two deleted surface rules. The
+  other changes of the tactic support the new path and are not callers:
+  `schemaKinds` (+3/−4) and the import in `SqlRunRules`, `hintedKinds`
+  and `closeFailure` in `SqlRunGoals` (+12/−8 in the file), and
+  `runSend` in `SqlRun` (+13/−3 in the file).
+- Not in the counts:
+  - imports of `PlainDeleteEffect` (model and surface),
+    `CreatedTables`, `StepContinuesOk` and `SendStepRules`;
+  - docstrings that named a deleted law: the module and three other
+    rules in `SchemaStepRules` (+9/−8), and `PlainDeleteEffect` and
+    `SendStepRules`;
+  - three declarations that moved unchanged to the file of their other
+    users: `customer_named_after_insert`,
+    `AccountSignupSite.keeps_of_valid` and
+    `GlobalSignupSite.keeps_of_valid`;
+  - the new `sql_run` example of `SchemaRuleExamples` (+6, with a
+    comment of 2 lines);
+  - the laws: the deleted `runScriptStep_createTable_empty`,
+    `runScriptStep_createTable_ok` and `Sql.check_send_createTable`;
+    `runStatement_insert_ok`, replaced by `insertOutcome_of_fits` and
+    `insertReady_of_fits`; `Database.table_createTable` and
+    `Database.tableNamed_createTable`, restated with
+    `Database.createTable`; the move of `Connection.withDatabase`.
 - `sql_run` proofs: four existing proofs changed, two in `S6AutoSignup`
   and two in `S6AutoAddCustomer` (`addCustomer_adds_by_sql_run` and
   `addCustomer_adds_triple`: their hints and their `modeled` and
@@ -145,31 +148,27 @@ or restated) are counted apart, also when they are in the same file.
 
 Lines from the theorem keyword to the `:=` that starts the proof. The
 retention test (`tests/surface/Schema/Tests/ReplacedStepLaws.lean`,
-`ReplacedSendLaws.lean`) proves each old statement. The table names the
-theorems that the pilot adds or restates and that the proof uses, and
-the sum of their statement lines.
+`ReplacedSendLaws.lean`) proves each old statement. "New" lists the
+theorems that the pilot adds or restates and that the proof uses, with
+the sum of their statement lines. "Kept" lists the theorems of the
+start revision that the proof uses unchanged, with their statement
+lines.
 
-| Replaced law | Before | New or restated theorems used | Lines |
-| --- | ---: | --- | ---: |
-| `runScriptStep_createTable` | 12 | `runScriptStep_createTable_eq` | 9 |
-| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq` | 9 |
-| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, `Database.tableNamed_createTable` (restated) | 13 |
-| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` | 12 |
-| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` | 37 |
-| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` | 30 |
-| `runScriptStep_insert_ne_oneOf` | 8 | none | 0 |
-| `Sql.check_send_createTable` | 12 | `runScriptStep_createTable_eq`, `Sql.check_send_of_rule`, `Sql.sendReached_single` | 20 |
-| `Sql.check_send_plainInsert` | 22 | `runScriptStep_plainInsert_eq` (through the restated `plainInsert_database`) | 30 |
-| `Sql.ifOk_send_plainInsert` | 18 | `runScriptStep_plainInsert_eq` (through the restated `plainInsert_database`) | 30 |
+| Replaced law | Before | New (lines) | Kept (lines) |
+| --- | ---: | --- | --- |
+| `runScriptStep_createTable` | 12 | `runScriptStep_createTable_eq` (9) | none |
+| `runScriptStep_createTable_ok` | 7 | `runScriptStep_createTable_eq` (9) | `step_guards_hold` (5) |
+| `runScriptStep_createTable_frame` | 10 | `runScriptStep_createTable_eq`, the restated `Database.tableNamed_createTable` (13) | none |
+| `runScriptStep_createTable_empty` | 6 | `runScriptStep_createTable_eq`, `Database.table_createTable_end` (12) | none |
+| `runScriptStep_insert_ok` | 16 | `runScriptStep_plainInsert_eq`, `insertReady_of_fits`, `insertOutcome_of_fits` (37) | none |
+| `plainInsert_database` | 14 | `runScriptStep_plainInsert_eq` (30) | none |
+| `runScriptStep_insert_ne_oneOf` | 8 | none (0) | `runScriptStep_ne_oneOf_of_not_query` (8) |
+| `Sql.check_send_createTable` | 12 | `runScriptStep_createTable_eq`, `Sql.check_send_of_rule`, `Sql.sendReached_single` (20) | `step_guards_hold` (5) |
+| `Sql.check_send_plainInsert` | 22 | `runScriptStep_plainInsert_eq`, through the restated `plainInsert_database` (30) | `Sql.check_send_of_step` (14), `runScriptStep_effect` (14), `runScriptStep_plainWrite_failed` (10), `runScriptStep_ne_oneOf_of_not_query` (8), `runScriptStep_continued` (4): 50 |
+| `Sql.ifOk_send_plainInsert` | 18 | `runScriptStep_plainInsert_eq`, through the restated `plainInsert_database` (30) | `check_send_single_of_step` (9), `runScriptStep_ne_oneOf_of_not_query` (8), `runScriptStep_valid` (6), `ExecutionContext.initial_holds_valid` (2): 25 |
 
-The proofs also use theorems of the start revision that the pilot does
-not change, for example `step_guards_hold`,
-`runScriptStep_ne_oneOf_of_not_query`, `Sql.check_send_of_step`,
-`check_send_single_of_step`, `runScriptStep_plainWrite_failed` and
-`runScriptStep_valid`. The table does not count them.
-
-The ten replaced laws have 125 statement lines. The new and restated
-theorems of the table have 64 statement lines in total: the two rules
+The ten replaced laws have 125 statement lines. The distinct new and
+restated theorems of the table have 64 statement lines: the two rules
 (9 and 30), the bridge with `Sql.sendReached_single` (7 and 4), three new
 data facts (10) and the restated `Database.tableNamed_createTable` (4).
 The INSERT rule alone (30 lines) is longer than any law that it
@@ -255,10 +254,11 @@ continues, without validity.
   continues by reducing the rule. `sql_run` now gives the rule as the
   hypothesis `rule`, so that the proof can rewrite the step without the
   name of the step function.
-- **Client proofs.** The four client claims of
+- **Client proofs.** The proofs of the four client claims of
   `tests/surface/Schema/Tests/ItemInsertClaims.lean` use the kind rules,
-  the bridge and data facts. They name `runScriptStep_plainInsert_eq`
-  and `runScriptStep_createTable_eq`, whose names contain
+  the bridge, `sql_run` and data facts. Three of them name
+  `runScriptStep_plainInsert_eq` or `runScriptStep_createTable_eq`
+  (through their helper checks), whose names contain
   `runScriptStep`. The task bans the identifiers `runScriptStep`,
   `runScriptStepWith`, `resolveStatement` and `SqlState.statementRun`;
   no proof names one of them.
@@ -266,7 +266,8 @@ continues, without validity.
   test, 111 are in the two modules of the site and its data facts
   (`ItemInsertSite.lean` 51, `ItemInsertOutcomes.lean` 60: the
   definitions of the table and the statement, and readiness, fit, keys,
-  counts). The rule needs these facts to select its case. The module of
+  counts). The readiness and outcome facts select the case of the rule;
+  the row and count facts give its result for the claim. The module of
   the claims (`ItemInsertClaims.lean`) has 132 lines, with its helper
   checks and program definitions.
 
@@ -274,7 +275,7 @@ continues, without validity.
 
 From the two kinds: the "once" part is done. A next kind needs:
 
-- A rule file of 30 (a kind without data, as CREATE TABLE) to 85 code
+- A rule file of 30 (a kind without data, as CREATE TABLE) to 84 code
   lines (a write kind, as plain INSERT), with a statement of 9 to 30
   lines.
 - Data lemmas for the success case, about 10 to 30 lines, when the
@@ -282,9 +283,13 @@ From the two kinds: the "once" part is done. A next kind needs:
 - No surface code: the bridge and `sql_run` do not depend on the kind.
   The kind's `Sql.check_send_…` rule and its `sendRule` and `roleOf`
   entries are deleted.
-- Caller changes of about the size measured here: 5 to 10 files.
+- Caller changes. For the two pilot kinds together: 4 model and 12
+  test declarations, and one tactic function.
 
-Estimate: a net change of −20 to −110 maintained lines for each kind.
+In the pilot, without the acceptance tests, the net change was −26
+lines for CREATE TABLE and −147 for plain INSERT. Estimate for a next
+kind: a net change in that range, larger when the kind has more
+replaced laws and callers.
 Agent wall time in the pilot, from commit times: about 40 minutes for
 CREATE TABLE with the projections, followed by three review rounds, and
 about 15 minutes for the INSERT rule, followed by two review rounds.

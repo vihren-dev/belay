@@ -202,3 +202,10 @@ counterexample replay (#463)").
   are apart from the caller lines, and the statement table counts only
   the new and restated theorems that each derivation uses (64 lines).
   No code changes; no tests.
+- 2026-11-23: review `20261123T173547Z-e870248f` gave 4 "must" and 1
+  "should" findings on the record, all fixed in a `refactor:` commit:
+  both sides of the move of `Connection.withDatabase` count for CREATE
+  TABLE, callers are counted by declaration lines, `sendRule` is the one
+  caller in `sql_run`, and the statement table lists the kept theorems
+  with their lines. This is the third review round in a row with "must"
+  findings, all on the findings record. No code changes; no tests.
