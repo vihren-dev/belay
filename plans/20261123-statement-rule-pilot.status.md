@@ -25,7 +25,6 @@ measurements of the three forms. Its last measured revision is
 
 Open:
 
-- Add the owner decision and a final measurement to the findings record.
 - Run the end checks again on the last code revision.
 
 Earlier checks on the code revision `a03e8267`: `just test-nix` passes
@@ -522,3 +521,13 @@ counterexample replay (#463)").
 - 2026-11-23: review `20261123T221745Z-ad614cf6` gave 2 "should"
   findings on sentence length in the two docstrings, both fixed in a
   `refactor:` commit. Tests: `tests/surface_schema_script_test.py`.
+- 2026-11-23: the findings record has the owner decision and the final
+  measurement at the last code revision `ee83eca7`: the totals (model
+  59,191, surface 14,749, tests 20,543, total 98,176), the change by
+  origin from the start revision (model +39, surface +81, tests +551),
+  and the client claims in repository files (74 code lines for the two
+  INSERT claims, 40 for the claim for each input). The measurements of
+  the three forms at `a03e8267` stay as dated history. The answers to
+  the pilot questions and "Cost of the next kind" describe the selected
+  form, and the recommendation is now the owner selection. Tests: none;
+  the commit changes only documents.
