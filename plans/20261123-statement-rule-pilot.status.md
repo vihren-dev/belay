@@ -16,9 +16,16 @@ new "must" findings on the findings record. The owner decided on
 2026-11-23 to continue the review loop and to add case laws of plain
 INSERT; the task file has a section for them.
 
-Open: the case laws and their use in the client-claims test; the open
-findings of review `20261123T174042Z-90ccc457` on the findings record,
-and its measurements after the import fix and the case laws.
+Open:
+
+- The case laws and their use in the client-claims test.
+- The retention test: remove the restated `runScriptStep_insert_ok` and
+  its axiom report from `ReplacedStepLaws.lean`, and change the number of
+  model laws that `tests/surface_schema_script_test.py` expects from
+  seven to six.
+- The open findings of review `20261123T174042Z-90ccc457` on the
+  findings record, and the measurements of the record after the import
+  fix and the case laws.
 
 Checks: `just test-full` passes on the commit of the import fix, and
 `just verdict` gives the same result as the start revision (see the
@@ -251,5 +258,12 @@ counterexample replay (#463)").
   replaced laws, because its statement is the success law. Review
   `20261123T191311Z-67a9dc4b` of the import fix gave 1 "must" finding
   (the State section of this file, fixed here) and 1 "should" finding
-  (the findings record does not count the three removed import lines),
-  which the new measurement of the record resolves.
+  (the findings record does not count the three removed import lines).
+  The "should" finding is deferred until the record is measured again
+  after the case laws.
+- 2026-11-23: review `20261123T191422Z-2e2d367c` of the task-file change
+  gave 3 "must" findings and 1 "should" finding. Fixed: the case laws
+  state the clock and counter premises as the kind rule does; the
+  success law names the database of `Database.setRows` and says what it
+  does not promise; the open work names the retention-test change; this
+  log says that the import-line finding is deferred.
