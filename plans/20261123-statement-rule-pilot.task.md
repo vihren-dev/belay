@@ -239,8 +239,7 @@ chooses between success, code 20 (`aliasMismatch`) and code 19.
 For a target that holds no table, `runStatement`
 (`Schema/Dispatch/StatementStep.lean`) gives a ready run with the effect
 `.error (.unmodeled, database)`, and the step ends because
-`Output.ofStep` gives `.unmodeled unmodeledHere`. `Output.ofStep` also
-ends the run when `statementOutput` gives no output. For a present
+`Output.ofStep` gives `.unmodeled unmodeledHere`. For a present
 target the run is not ready when `LiteralData.insertReady`,
 `Resolved.subqueriesPlain` or `Resolved.cellsReady` fails. Its fourth
 check, on the RETURNING expressions, always passes for a plain INSERT.

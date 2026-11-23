@@ -42,3 +42,5 @@ counterexample replay (#463)").
   limit. All three are fixed in the task file.
 - 2026-11-23: review `20261123T141711Z-4f02a69d` gave 1 "must" and 1
   "should" finding on the same cases. Both are fixed in the task file.
+- 2026-11-23: review `20261123T141827Z-1b4c4e51` gave no "must" finding
+  and 1 "should" finding, which is fixed.
