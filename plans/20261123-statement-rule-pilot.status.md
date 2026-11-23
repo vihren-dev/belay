@@ -295,3 +295,7 @@ counterexample replay (#463)").
   it checks the given result table; the model module docstring no longer
   describes the surface bridge; the module docstring of the data facts
   says how a caller uses them. Tests: `just dev-build`.
+- 2026-11-23: review `20261123T193002Z-828230ef` gave 1 "must" finding:
+  the failure law binds the database of the error outcome as `reached`,
+  so the docstring now says that it is the database before and that the
+  counts do not use it. Tests: `just dev-build`.
