@@ -47,6 +47,21 @@ changes the counters. -/
 def Connection.withDatabase (connection : Connection) (database : Database) : Connection :=
   { connection with state := { connection.state with database } }
 
+/-- For every connection, resolution state, counts, position, error other than
+{lean}`ExecutionError.constraintRollback` and database: the connection after the failure of the statement with the
+error and the database ({name}`SqlState.failed`) is the connection after the write of the database with the counts
+({name}`Connection.afterWrite`), with the settings of the resolution state. In plain words, such a failure keeps
+the snapshot of an open transaction and the clock assignment, and stores the database and the counts. Proof sketch:
+split on the snapshot; {name}`SqlState.finish` gives a failure without a snapshot and a pending outcome with it. -/
+theorem Connection.afterError_failed (connection : Connection) (after : ResolveState) (counts : Counts)
+    (position : Nat) {reason : ExecutionError} (other : reason ≠ .constraintRollback) (database : Database) :
+    connection.afterError after counts (connection.state.failed position reason database) =
+      { connection.afterWrite database counts with
+        foreignKeys := after.foreignKeys, recursiveTriggers := after.recursiveTriggers } := by
+  unfold SqlState.failed SqlState.finish
+  cases snapshot : connection.state.snapshot <;>
+    simp [Connection.afterError, Connection.afterWrite, snapshot, other]
+
 /-- For every connection, database and counts: when the database has the catalog of the database of
 the connection, the connection after the write ({name}`Connection.afterWrite`) has the
 resolution state of the connection. So a write that changes rows and counters keeps the state in
