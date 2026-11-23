@@ -43,9 +43,10 @@ theorem choice_case_stays (ctx : ExecutionContext) (results : List (List (List V
   subst member
   exact ⟨trivial, fun _ _ => trivial⟩
 
-/-- For every resolution context, connection, statement, target, name, table and resolution state: the statement
-resolves from the connection to a CREATE TABLE of the table with the name at the target. A reducible name for the
-resolution equation, which a kind rule may use for its premise. -/
+/-- For every resolution context, connection, statement, target, name, table and resolution state: the resolution
+of the statement from the connection succeeds with a CREATE TABLE of the table with the name at the target, and it
+returns the given resolution state as the new state. A reducible name for the resolution equation, which a kind rule
+may use for its premise. -/
 abbrev ResolvesToCreate (context : ResolveContext) (connection : Connection) (statement : Syntax.Statement)
     (target : Nat) (name : Identifier) (table : CatalogTable) (after : ResolveState) : Prop :=
   resolveStatement context connection.resolveState statement = .ok (.createTable target name table, after)

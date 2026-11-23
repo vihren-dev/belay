@@ -127,7 +127,8 @@ def closeModeledByGuards (found valid : Expr) (goal : MVarId) : TacticM Bool := 
 the guards of the step ({name}`closeModeledByGuards`). When neither closes it,
 {name}`Model.RunStep.continues_of_rule` carries it over the kind rule {lit}`rule` to the step itself, and the hints
 and the hypotheses get one more attempt. The result is the premise that stays open, with the tag {lit}`modeled`:
-about the step when the carry-over applies, else unchanged. -/
+about the step when the carry-over applies, else unchanged. The open premise about the step has the kind rule as the
+hypothesis {lit}`rule`, so that a proof can rewrite the step to its cases without the name of the step function. -/
 def closeModeled (hints : Hints) (rule found valid : Expr) (goal : MVarId) : TacticM (List MVarId) := do
   if ← closeSide hints `modeled goal then return []
   if ← closeModeledByGuards found valid goal then return []
@@ -138,6 +139,8 @@ def closeModeled (hints : Hints) (rule found valid : Expr) (goal : MVarId) : Tac
     let step ← getMainGoal
     step.setTag `modeled
     if ← closeSide hints `modeled step then return []
+    let (_, step) ← (← step.assert `rule (← inferType rule) rule).intro1P
+    step.setTag `modeled
     return [step]
   catch _ =>
     saved.restore
