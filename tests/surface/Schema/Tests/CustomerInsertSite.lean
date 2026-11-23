@@ -87,8 +87,9 @@ def noCustomerHasTheId (id : Int64) : Script := sql r"SELECT 1 WHERE NOT EXISTS 
 /-- For every script that holds on the database with the new row appended to the table, the fresh run of
 the statement, from a database with the site and without a customer of the id, checks the script in every
 final state without an error. The new row has the cells of the bound values; its rowid is not named.
-Proof sketch: {name}`Sql.ifOk_send_plainInsert` with the rows of {name}`inserted_rows`; the final context sees
-the database with the rows, and it is valid. -/
+Proof sketch: {name}`Sql.check_send_of_rule` with the kind rule {name}`runScriptStep_plainInsert_eq`, split on
+its cases after the table of the site selects one; a failure gives an error and requires nothing, and after a
+success the final context sees the database with the rows of {name}`inserted_rows`, and it is valid. -/
 theorem insert_then_holds (id : Int64) (name : String) (query : Script) (isQuery : query.isQuery = true)
     (afterwards : ∀ (db : Database) (site : CustomerInsertSite db id name), Holds (noCustomerHasTheId id) db →
       ∀ (row : Row), row.values = [.integer id.toInt, .text name.toUTF8.toList] →
@@ -100,16 +101,22 @@ theorem insert_then_holds (id : Int64) (name : String) (query : Script) (isQuery
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db ⟨guard, ⟨site⟩⟩ env _complete
   rw [site.script]
-  refine Sql.ifOk_send_plainInsert (table := ⟨site.table, db.raw.rows.getD site.position []⟩)
-    site.resolves (Database.table_of_findTable db.raw _ site.position site.table site.found)
-    (RunStep.continues_iff.1 (site.modeled env)) ?_
-  intro value outputs final reached valid _allOk
-  show Holds.reached query final isQuery
-  rw [Holds.reached_iff_holds_of_valid query final isQuery valid]
-  rw [inserted_rows site] at reached
-  generalize hv : final.connection.state.database = reachedDatabase at reached valid ⊢
-  subst reached
-  exact afterwards db site guard _ rfl valid
+  have rule := runScriptStep_plainInsert_eq (connection := db.raw.connection env.counters) (clock := env.clock)
+    (index := 0) (parameters := [.integer id.toInt, .text name.toUTF8.toList]) site.resolves
+  refine Sql.check_send_of_rule rule (ExecutionContext.initial_holds_valid _ _)
+    (RunStep.continues_of_rule rule (site.modeled env)) ?_
+  dsimp only
+  erw [Database.table_of_findTable db.raw _ site.position site.table site.found]
+  dsimp only
+  repeat' split
+  all_goals first
+    | exact trivial
+    | refine Sql.sendReached_single (fun _ same => by cases same) fun valid allOk => ?_
+  · refine (Holds.reached_iff_holds_of_valid query _ isQuery valid.1).2 ?_
+    revert valid
+    erw [inserted_rows site]
+    exact fun valid => afterwards db site guard _ rfl valid.1
+  · simp [ExecutionContext.next, List.allOk, Output.isError] at allOk
 
 #print axioms inserted_rows
 #print axioms insert_then_holds

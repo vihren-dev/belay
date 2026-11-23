@@ -17,8 +17,8 @@ CHAIN_TIMEOUT_SECONDS = 400
 def test_sql_run_proves_the_insertion_claim_and_its_triple(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` reduces the guide's insertion program (a query, a branch, an insert) to goals about the model's
     coverage and the final property, for the fresh-run claim and for the triple that `mvcgen` unfolds. Each
-    claim also has a proof with `Sql.check_single_select` and `Sql.check_send_plainInsert` alone, and all
-    three proofs use only ordinary logical axioms."""
+    claim also has a proof with `Sql.check_single_select` and `Sql.check_send_of_rule` with the kind rule of plain
+    INSERT alone, and all three proofs use only ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("AddCustomerQueries", 0), ("S6AutoAddCustomer", 3)),
                        timeout=CHAIN_TIMEOUT_SECONDS)
 

@@ -65,13 +65,29 @@ theorem one_live_iff (db : Database) (position emailIx deletedIx : Nat)
   rw [keyGroupsShort_iff_pairwise]
   simp [keptTableRows, emailAt, Resolved.Expr.eval_column]
 
+/-- Over every site of the signup with NOT NULL on the email and every valid database with the catalog of the
+site: no email has two live accounts. Plain words: the global invariant of the guide holds in every valid database
+with the catalog of the site. Proof sketch: as for {name}`AccountSignupSite.keeps_of_valid`, with
+{name}`Database.Valid.keptRows_pairwise` for the live rows, whose emails are never NULL, and {name}`one_live_iff`
+for the query. -/
+theorem GlobalSignupSite.keeps_of_valid {db : Database} {e : String} (site : GlobalSignupSite db e)
+    {reached : Model.Database} (valid : reached.Valid Profile.pinned) (sameCatalog : reached.catalog = db.raw.catalog) :
+    Holds oneLive ⟨reached, valid⟩ := by
+  have foundAfter : reached.catalog.findTable (name! "accounts") = some (site.position, site.table) := by
+    rw [sameCatalog]; exact site.found
+  rw [one_live_iff ⟨reached, valid⟩ site.position site.emailIx site.deletedIx site.table
+    site.emailCell site.deletedCell foundAfter site.emailColumn site.emailAt site.deletedColumn site.deletedAt]
+  have member : site.index.uniqueKey ∈ reached.catalog.uniqueKeys site.position site.table :=
+    CatalogIndex.uniqueKey_mem_uniqueKeys (sameCatalog ▸ site.indexed) _ _ site.indexTable site.indexUnique
+  refine valid.keptRows_pairwise (Database.table_of_findTable reached _ site.position site.table foundAfter)
+    member site.indexKeys site.emailAt site.emailNotNull _ _ fun row guard => ?_
+  simpa [liveCondition, sql_simp, CatalogIndex.uniqueKey, site.indexFilter] using guard
+
 /-- Over every admitted database with a site of the signup and NOT NULL on the email, and every email: if no email has two
 live accounts and the signup runs without an error, no email has two live accounts afterwards. Plain words: the global
 invariant of the guide is kept by the signup. The premise on the database is the site, which names the partial unique
 index of live emails and the NOT NULL of the email; it does not state the invariant of the final database. Proof sketch:
-as for {name}`signup_keeps`, the final database is valid, so its table obeys the unique index; with NOT NULL on the
-email, {name}`Table.KeysUnique.keptRows_pairwise` says that no two live rows have equal emails, which is the
-right side of {name}`one_live_iff`. -/
+as for {name}`signup_keeps`, with {name}`GlobalSignupSite.keeps_of_valid` for the final database. -/
 theorem signup_keeps_global (e : String) :
     FreshEnsures (send (signupAccount e))
       (fun db => Holds oneLive db ∧ Nonempty (GlobalSignupSite db e))
@@ -79,24 +95,15 @@ theorem signup_keeps_global (e : String) :
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db ⟨_, ⟨site⟩⟩ env _complete
   rw [site.script]
-  refine Sql.ifOk_send_plainInsert (table := ⟨site.table, db.raw.rows.getD site.position []⟩)
-    site.resolves (Database.table_of_findTable db.raw _ site.position site.table site.found)
-    (RunStep.continues_iff.1 (site.modeled env)) ?_
-  intro value outputs final reached valid _allOk
-  show Holds.reached oneLive final (by check_query)
-  rw [Holds.reached_iff_holds_of_valid _ final _ valid]
-  generalize hv : final.connection.state.database = reachedDatabase at reached valid ⊢
-  obtain ⟨rows, rfl⟩ : ∃ rows, reachedDatabase = db.raw.setRows site.position rows := ⟨_, reached⟩
-  have foundAfter : (db.raw.setRows site.position rows).catalog.findTable (name! "accounts") =
-      some (site.position, site.table) := site.found
-  rw [one_live_iff ⟨db.raw.setRows site.position rows, valid⟩ site.position site.emailIx site.deletedIx site.table
-    site.emailCell site.deletedCell foundAfter site.emailColumn site.emailAt site.deletedColumn site.deletedAt]
-  have present := Database.table_of_findTable (db.raw.setRows site.position rows) _ site.position site.table foundAfter
-  have member : site.index.uniqueKey ∈ (db.raw.setRows site.position rows).catalog.uniqueKeys site.position site.table :=
-    List.mem_append_right _ (List.mem_filterMap.2 ⟨_, site.indexed, by simp [site.indexTable, site.indexUnique]⟩)
-  refine Table.KeysUnique.keptRows_pairwise (valid.unique _ _ present) (valid.admitted.rowsWide _ _ present)
-    (valid.notNull _ _ present) member site.indexKeys site.emailAt site.emailNotNull _ _ fun row guard => ?_
-  simpa [liveCondition, sql_simp, CatalogIndex.uniqueKey, site.indexFilter] using guard
+  refine Sql.check_send_of_rule (runScriptStep_plainInsert_eq site.resolves) (ExecutionContext.initial_holds_valid _ _)
+    (RunStep.continues_of_rule (runScriptStep_plainInsert_eq site.resolves) (site.modeled env)) ?_
+  dsimp only
+  repeat' split
+  all_goals first
+    | exact trivial
+    | refine Sql.sendReached_single (fun _ same => by cases same) fun valid allOk => ?_
+  · exact (Holds.reached_iff_holds_of_valid _ _ _ valid.1).2 (site.keeps_of_valid valid.1 rfl)
+  · simp [ExecutionContext.next, List.allOk, Output.isError] at allOk
 
 /-- In {name}`nullableUnique` no email has two live accounts before the signup of {lit}`a@x`, the signup succeeds, and
 afterwards two live accounts have the email: an ordinary {lit}`UNIQUE` over a column that can be NULL does not keep the

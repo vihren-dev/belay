@@ -1,4 +1,3 @@
-import Belay.Sqlite.Programs.Scripts.PlainInsertStepRule
 import Belay.Sqlite.Programs.Scripts.PlainUpdateStepRule
 import Belay.Sqlite.Programs.Scripts.PlainDeleteStepRule
 import Belay.Sqlite.Programs.Scripts.AddColumnStepRule
@@ -41,11 +40,10 @@ def premiseNames : List Name :=
   [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect,
     `notInsertSelect]
 
-/-- The kinds of statement whose step never fails and does not read the clock: CREATE TABLE, DROP TABLE, a
-rename and a pragma that sets a value. Their rules have one outcome premise. -/
+/-- The kinds of statement whose step never fails and does not read the clock, and that have no kind rule: DROP
+TABLE, a rename and a pragma that sets a value. Their rules have one outcome premise. -/
 def schemaKinds : List Name :=
-  [``Model.Syntax.Statement.createTable, ``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable,
-    ``Model.Syntax.Pragma.setting]
+  [``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting]
 
 /-- The kinds of statement of a transaction: BEGIN and COMMIT. Their rules have one outcome premise, in which
 the output is an error exactly when the state of the transaction says so. -/
@@ -69,16 +67,12 @@ def roleOf (kind : Name) (premise : Name) : Role :=
 /-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a
 rule of its own is sent with the general rule {name}`Sql.check_send_of_step_notInsertSelect`, whose premises stay open. -/
 def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
-  if kind == ``Model.Syntax.Statement.insert then
-    `(tactic| refine' Sql.check_send_plainInsert ?valid ?found ?present ?modeled ?success ?failure)
-  else if kind == ``Model.Syntax.Statement.update then
+  if kind == ``Model.Syntax.Statement.update then
     `(tactic| refine' Sql.check_send_plainUpdate ?valid ?found ?present ?modeled ?success ?failure)
   else if kind == ``Model.Syntax.Statement.delete then
     `(tactic| refine' Sql.check_send_plainDelete ?valid ?found ?present ?modeled ?success ?failure)
   else if kind == ``Model.Syntax.Statement.addColumn then
     `(tactic| refine' Sql.check_send_addColumn ?valid ?found ?present ?modeled ?success ?failure)
-  else if kind == ``Model.Syntax.Statement.createTable then
-    `(tactic| refine' Sql.check_send_createTable ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.dropTable then
     `(tactic| refine' Sql.check_send_dropPlain ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.renameTable then

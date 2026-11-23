@@ -1,4 +1,7 @@
-import Belay.Sqlite.Model.Programs.Scripts.PlainInsertEffect
+import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
+import Belay.Sqlite.Model.Programs.Scripts.KeysUniqueWrites
+import Belay.Sqlite.Model.Schema.Writes.PlainInsertEffect
+import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
 
 set_option doc.verso true
 
@@ -39,7 +42,7 @@ theorem plainDelete_database {context : ResolveContext}
   rfl
 
 /-- For every clock, statement values, state, run, transition, target and rule fields: the output of a step
-of a delete is never a choice between results. Proof sketch: as {name}`Output.ofStep_insert_ne_oneOf`;
+of a delete is never a choice between results. Proof sketch: unfold the output and split on the halt reason;
 every case gives a done count, an error or an unmodeled stop. -/
 theorem Output.ofStep_delete_ne_oneOf (clock : Int) (parameters : List Value) (before : SqlState)
     (run : StatementRun) (transition : SqlTransition) (target : Nat) (filter returning subqueries rules)

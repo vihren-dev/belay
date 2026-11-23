@@ -38,13 +38,13 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
     catch _ => pure ()
   return false
 
-/-- The kinds of statement that have a rule of their own, in the order in which {lit}`kindFromHints` tries
-them. -/
+/-- The kinds of statement that have a send rule of their own in {name}`sendRule`, in the order in which
+{lit}`kindFromHints` tries them. The kinds with a kind rule are not in the list: the path of the kind rules tries
+them first. -/
 def hintedKinds : List Name :=
-  [``Model.Syntax.Statement.insert, ``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete,
-    ``Model.Syntax.Statement.addColumn, ``Model.Syntax.Statement.createTable, ``Model.Syntax.Statement.dropTable,
-    ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting, ``Model.Syntax.Statement.begin,
-    ``Model.Syntax.Statement.commit]
+  [``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete, ``Model.Syntax.Statement.addColumn,
+    ``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting,
+    ``Model.Syntax.Statement.begin, ``Model.Syntax.Statement.commit]
 
 /-- Choose the rule of a sent statement that Lean cannot read, for example a statement that is a field of a
 structure. The kind is the first of {name}`hintedKinds` whose rule has all its blocking premises closed by the
@@ -81,11 +81,15 @@ def enterOutcome (names : List Name) (replacesNext : Bool) (goal : MVarId) : Tac
     throwError "sql_run: the rule gave no equation for the next connection"
 
 /-- Close the goal of a failed step when its trace is not error-free: the final property of a conditional
-claim ({name}`Sql.ifOk`) then requires nothing. -/
+claim ({name}`Sql.ifOk`) then requires nothing. The error is a hypothesis of the step rule, or the output
+{lit}`.error` that a kind rule gives. -/
 def closeFailure (goal : MVarId) : TacticM (List MVarId) := goal.withContext do
   setGoals [goal]
   try
-    evalTactic (← `(tactic| (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk)))
+    evalTactic (← `(tactic| first
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk; done)
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, Model.Output.isError] at allOk; done)
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk)))
     return (← getGoals)
   catch _ => return [goal]
 

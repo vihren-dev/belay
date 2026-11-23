@@ -1,10 +1,10 @@
-import Belay.Sqlite.Programs.Reasoning.PlainInsertEffect
+import Belay.Sqlite.Programs.Reasoning.SendSingleStep
 
 set_option doc.verso true
 
 /-!
 The step of one sent statement at any context (ADR 0017, S6). The rules of
-{lit}`Belay.Sqlite.PlainInsertEffect` and its siblings start a fresh run. The rules built on this module work at
+{lit}`Belay.Sqlite.PlainDeleteEffect` and its siblings start a fresh run. The rules built on this module work at
 the context that a program has reached, so a program of several statements needs one rule for each
 statement, not one proof for the whole program.
 -/
