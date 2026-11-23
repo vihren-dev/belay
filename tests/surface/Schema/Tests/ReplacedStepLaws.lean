@@ -147,8 +147,8 @@ theorem runScriptStep_insert_ne_oneOf {context : ResolveContext}
 write rules, {name}`statementClock` gives a value for it, each counter that it reads is known, its target holds a
 table, its subqueries are plain, its cell expressions are ready and the values satisfy {name}`InsertFits`, then the
 step continues once with the inserted row count and no further execution. The database of its next connection is
-{name}`Database.setRows` of the target and all rows of the table after the insertion: the old rows and the new rows
-of {name}`LiteralData.inserted`. When the target has no row store, that database is the database before. The next
+{name}`Database.setRows` of the target and the rows of {name}`LiteralData.inserted`. These rows are the old rows
+followed by the new rows. When the target has no row store, that database is the database before. The next
 connection applies the insertion counts. Proof sketch: the premises select the success branch of the kind rule; {name}`insertReady_of_fits` and {name}`insertOutcome_of_fits` give the readiness
 check and the outcome. -/
 theorem runScriptStep_insert_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
