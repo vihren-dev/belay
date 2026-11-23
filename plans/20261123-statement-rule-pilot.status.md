@@ -27,7 +27,7 @@ plain INSERT, before the end checks; the task file has the section
 The case type of plain INSERT, its part for all statement kinds
 (`StepCase.lean`, `PlainInsertCase.lean`) and the second client test
 (`ItemInsertCaseChecks.lean`, `ItemInsertCaseClaims.lean`) are done. The
-findings record has the measurements of each pilot commit, the
+findings record has the measurements of the milestone revisions, the
 comparison of the three forms and a recommendation for the owner.
 
 Open:
@@ -428,7 +428,8 @@ counterexample replay (#463)").
   client-claims test requires of its proofs. Tests:
   `tests/surface_schema_script_test.py`.
 - 2026-11-23: the findings record has the measurements again, each with
-  its revision and its script, from the start revision to `a03e8267`. It
+  its revision and its script, for the milestone revisions from the
+  start revision to `a03e8267`. It
   fixes the open findings of review `20261123T174042Z-90ccc457`: the
   import of `PlainInsertRule` and the line of `hintedKinds` are no
   longer counted as lines added once, and the module docstrings of
@@ -440,3 +441,14 @@ counterexample replay (#463)").
   claim for each input, `fun_cases`, the comparison of the three forms
   with a marked recommendation, and the answers to the three pilot
   questions. Tests: none; the commit changes only documents.
+- 2026-11-23: review `20261123T204519Z-642c0f35` gave 6 "must" and 3
+  "should" findings on the findings record, all fixed in a `refactor:`
+  commit. The record now gives a proof of the claim for each input with
+  the kind rule (40 code lines, in a scratch file), which is shorter
+  than the proof with the case type (53); the recommendation now keeps
+  the kind rule as the one maintained form. It also gives the 21-line
+  derivation of the kind rule from the case type, the shared site facts
+  of the client claims (63 code lines), the premises of each case law,
+  the statement lines of the two count facts, the milestone revisions,
+  and the other measurement sources. Tests: none; the commit changes
+  only documents.
