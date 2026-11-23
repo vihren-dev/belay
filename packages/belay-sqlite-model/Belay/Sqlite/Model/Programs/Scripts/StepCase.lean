@@ -25,8 +25,8 @@ inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection
   /-- The statement reads the clock and the run has no clock value for it, so the run ends. -/
   | noClock (timed : statementClock clock index resolved = none) :
       StepCase clock index connection resolved kindCase (.ended clockUnmodeled)
-  /-- The statement reads a counter that the connection does not know, so the run ends with the reason of the first
-  such counter. -/
+  /-- The statement has a clock value and reads a counter that the connection does not know, so the run ends with
+  the reason of the first such counter in the read order. -/
   | unknownCounter {value : Int} {kind : CounterKind} (timed : statementClock clock index resolved = some value)
       (unknown : connection.state.counters.firstUnknown resolved.counterReads = some kind) :
       StepCase clock index connection resolved kindCase (.ended (counterUnknownReason kind))
@@ -36,10 +36,12 @@ inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection
       StepCase clock index connection resolved kindCase result
 
 /-- For every clock, index, connection, resolved statement, cases of a kind and function {lit}`body` from clock
-values to results: if, for each clock value that the statement has and with no unknown counter, the kind relates
-the clock value to the result of {lit}`body` at it, then the case type relates the inputs to this result:
-* {lit}`.ended clockUnmodeled` when the statement has no clock value;
-* else the end of the run with {name}`counterUnknownReason` of the first unknown counter, when there is one;
+values to results: if, for each clock value that the statement has, when the connection knows each counter that
+the statement reads, the kind relates the clock value to the result of {lit}`body` at it, then the case type
+relates the inputs to this result:
+* the end of the run with {name}`clockUnmodeled` when the statement has no clock value;
+* else the end of the run with {name}`counterUnknownReason` of the first counter in the read order of the
+  statement that the connection does not know, when there is one;
 * else {lit}`body` at the clock value.
 Only the last result needs the premise. In plain words, a step that makes the two checks and then gives the
 function of the clock value is in a case, when the kind covers the function. Use it to prove the cover of a kind
