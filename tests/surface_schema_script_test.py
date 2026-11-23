@@ -70,10 +70,10 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
 def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
-    """The fixtures ReplacedStepLaws and ReplacedSendLaws prove each step law of CREATE TABLE and plain INSERT in
-    the list "Replaced laws" of the task file of the statement rule pilot (seven model laws and three surface laws),
-    with its old statement, from the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the
-    data facts of CREATE TABLE and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
+    """The fixtures ReplacedStepLaws and ReplacedSendLaws restate, with their old statements, the seven model laws
+    and the three surface laws in the list "Replaced laws" of the task file of the statement rule pilot. The proofs
+    use the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the data facts of CREATE TABLE
+    and plain INSERT, and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
     old laws loses no fact. Every theorem uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
 
