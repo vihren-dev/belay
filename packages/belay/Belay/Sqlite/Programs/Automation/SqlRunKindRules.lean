@@ -144,10 +144,11 @@ def closeModeled (hints : Hints) (rule found valid : Expr) (goal : MVarId) : Tac
     return [goal]
 
 /-- The premise of a kind rule that the resolution of the statement closes: the first new goal whose type is an
-equation for {name}`Model.resolveStatement`. The name of the premise does not matter. -/
+equation for {name}`Model.resolveStatement`, after reducible definitions around it are unfolded. The name of the
+premise does not matter. -/
 def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
   goals.findM? fun new => do
-    let some (_, side, _) := (← instantiateMVars (← new.getType)).eq? | return false
+    let some (_, side, _) := (← whnfR (← instantiateMVars (← new.getType))).eq? | return false
     return side.isAppOf ``Model.resolveStatement
 
 /-- Apply the first kind rule whose resolution premise ({name}`resolutionPremise`) the hints or the hypotheses
