@@ -15,8 +15,9 @@ open ItemInsertSite (insertItem itemsCatalog itemRow itemCells items_clock items
   items_ready items_fits items_taken_outcome items_cellsReady items_counts_ok items_inserted)
 
 /-- The statement of {name}`ItemInsertSite.insert_new_check`, proved with the case type. Take a clock, an index,
-counters, outputs, row lists, an id, a name and a post, and a context whose connection has the database with
-{name}`itemsCatalog` and the rows. Take these premises:
+counters, outputs, row lists, an id, a name and a post. The starting context has the clock, the index, the outputs and
+the connection ({name}`Database.Raw.connection`) of the database with {name}`itemsCatalog` and the rows, with the
+counters. Take these premises:
 * the connection is valid;
 * no stored item has the id as its rowid;
 * the post holds for the output {lean}`Output.done 1` in the context after the connection that stores
@@ -45,13 +46,14 @@ theorem insert_new_case {clock : Option Clock} {index : Nat} {counters : Counter
   simp only [items_counts_ok, items_inserted]
   exact holds
 
-/-- The statement of {name}`ItemInsertSite.insert_taken_check`, proved with the case type. Take a clock, an
-index, counters, outputs, row lists, an id, a name and a post, and a context whose connection has the database with
-{name}`itemsCatalog` and the rows. Take these premises:
+/-- The statement of {name}`ItemInsertSite.insert_taken_check`, proved with the case type. Take a clock, an index,
+counters, outputs, row lists, an id, a name and a post. The starting context has the clock, the index, the outputs and
+the connection ({name}`Database.Raw.connection`) of the database with {name}`itemsCatalog` and the rows, with the
+counters. Take these premises:
 * the connection is valid;
 * a stored item has the id as its rowid;
-* for all counts with no change, the post holds for the output {lean}`Output.error 19` in the context after the
-  connection with the same database and those counts.
+* for all counts whose {lit}`changes` is {lit}`some 0`, with any total and last rowid, the post holds for the
+  output {lean}`Output.error 19` in the context after the connection with the same database and those counts.
 Then the insert checks the post. Proof sketch: the bridge with the step equation of the case {lit}`checked` with
 {lit}`failure`; {name}`items_taken_outcome` gives the failed outcome. -/
 theorem insert_taken_case {clock : Option Clock} {index : Nat} {counters : Counters} {outputs : List Output}
@@ -72,9 +74,10 @@ theorem insert_taken_case {clock : Option Clock} {index : Nat} {counters : Count
       (items_taken_outcome rows id name taken _ _)))) valid rfl ?_
   exact Sql.sendReached_single (fun _ same => by cases same) fun _ => holds _ LiteralData.insertCounts_error_changes
 
-/-- The check of the insert for each input, proved with the case type. Take a clock, an index, counters, outputs,
-row lists, an id, a name and a post, and a context whose connection has the database with {name}`itemsCatalog` and
-the rows. Take these premises:
+/-- The check of the insert for each input, proved with the case type. Take a clock, an index, counters, outputs, row
+lists, an id, a name and a post. The starting context has the clock, the index, the outputs and the connection
+({name}`Database.Raw.connection`) of the database with {name}`itemsCatalog` and the rows, with the counters. Take these
+premises:
 * the connection is valid;
 * the post holds for the output {lean}`Output.done 1` in the context after the connection that stores the old rows
   and {name}`itemRow` after them, and counts one change with the id as the last rowid;

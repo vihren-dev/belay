@@ -412,3 +412,10 @@ counterexample replay (#463)").
   their docstrings can list each premise and both files stay under 200
   lines. Tests: `tests/surface_schema_script_test.py`,
   `tests/surface_layers_test.py`.
+- 2026-11-23: review `20261123T201544Z-3f4178a1` gave 2 "should"
+  findings on the docstrings of `ItemInsertCaseChecks.lean`, both fixed
+  in a `refactor:` commit: the docstrings say that the clock, the
+  index, the outputs and the connection of the database and the
+  counters make the starting context, and that only `changes` of the
+  counts of a failure is fixed. Tests:
+  `tests/surface_schema_script_test.py`.
