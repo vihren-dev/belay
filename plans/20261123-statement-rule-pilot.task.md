@@ -103,6 +103,39 @@ execution:
 - The output is not a choice between results.
 - The output is not an error, for a kind or a case without failure.
 
+### Case laws of plain INSERT
+
+Added 2026-11-23 by an owner decision, after the first measurements. The
+kind rule of plain INSERT has 30 statement lines, and a client proof
+must select its case with facts about the clock, the counters, the
+table and the values. A case law states one case of the rule as a short
+theorem. Each case law is a consequence of the kind rule, and its proof
+does not unfold the step function.
+
+- The success law. Its premises are the resolution equation, a clock
+  value, known counters, a table at the target, plain subqueries, ready
+  cells and values that satisfy `InsertFits`. Its conclusion is the
+  equation of the step: it continues with `.done rows.length`, with the
+  connection of `Connection.afterWrite` on the database with the
+  inserted rows and the counts of the insertion, and with no further
+  execution. This is the statement of `runScriptStep_insert_ok` at the
+  start revision.
+- The failure law. Its premises are the resolution equation, a clock
+  value, known counters, a table at the target, the three readiness
+  checks, and an outcome of `insertOutcome` that is an error with a
+  reason. Its conclusion is the equation of the step: it continues with
+  the error output of the code of the reason, with the connection of
+  `Connection.afterWrite` on the database before the statement and the
+  counts of the failed insertion, and with no further execution.
+- Data facts for the failure law, with no step, resolution or
+  connection in them: the counts of a failed insertion report 0 changed
+  rows, and values without an alias mismatch whose table after the
+  insertion has a repeated rowid or violates a constraint of the keys
+  give the outcome "constraint violation" with the database before.
+
+The client-claims test proves its two INSERT claims with the case laws.
+Those two proofs name no kind rule.
+
 ### Replaced laws
 
 These laws are deleted, and their callers use the new form. No alias
@@ -110,8 +143,8 @@ remains.
 
 - Model: `runScriptStep_createTable`, `runScriptStep_createTable_ok`,
   `runScriptStep_createTable_frame`, `runScriptStep_createTable_empty`,
-  `runScriptStep_insert_ok`, `plainInsert_database`,
-  `runScriptStep_insert_ne_oneOf`. The last law holds for every INSERT,
+  `plainInsert_database`, `runScriptStep_insert_ne_oneOf`. The last law
+  holds for every INSERT,
   also with a RETURNING clause or write rules. The existing law
   `runScriptStep_ne_oneOf_of_not_query` gives it for every statement
   that is not a query, so its callers use that law.
@@ -120,7 +153,9 @@ remains.
 
 A law of this list can stay only when the findings record gives the
 reason, for example a caller outside the two kinds that needs it
-unchanged.
+unchanged. `runScriptStep_insert_ok` was on this list until the case
+laws were added. Its statement is the success law, so the retention
+test does not restate it.
 
 ### No capability loss
 
@@ -187,6 +222,9 @@ allowed only when it computes the same value for every input.
 - The facts that the new form cannot give, or gives only with stronger
   premises.
 - What the next kind costs, as an estimate from the two kinds.
+- For the case laws: their statement and code lines, and the code lines
+  of the two INSERT claims of the client test and of their helper
+  theorems with the kind rule alone and with the case laws.
 
 ## Tests
 
