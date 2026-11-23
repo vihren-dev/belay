@@ -1,9 +1,8 @@
 # Pilot: one exact rule for each statement kind
 
 Created 2026-11-23.
-Status: on 2026-11-23 the owner selected the kind rule as the one
-maintained form. The open work is the removal of the other two forms and
-the end checks.
+Status: DONE (2026-11-23). The owner selected the kind rule as the one
+maintained form, and the pilot removed the other two forms.
 Status: [20261123-statement-rule-pilot.status.md](20261123-statement-rule-pilot.status.md).
 [Belay issue 468](https://github.com/vihren-dev/belay/issues/468).
 
