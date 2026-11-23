@@ -81,8 +81,17 @@ counterexample replay (#463)").
   `insertOutcome_of_fits` and `insertReady_of_fits` (they replace
   `runStatement_insert_ok`, whose only caller was
   `runScriptStep_insert_ok`), and `Connection.afterError_failed`.
-  `runScriptStep_insert_ok` is proved from the rule; it and the other
-  replaced INSERT laws are deleted together with their surface callers.
+  This revision only rewrites the proof of `runScriptStep_insert_ok` with
+  the rule; the deletion of the replaced INSERT laws and their surface
+  callers is planned.
   Tests: `just dev-build`, `tests/surface_schema_script_test.py`,
   `tests/surface_s6_automation_test.py`,
   `tests/surface_assertion_examples_test.py`.
+- 2026-11-23: review `20261123T152239Z-2a4b78b2` gave 7 "must" findings,
+  all fixed in a `refactor:` commit: `runScriptStep_insert_ok` and
+  `PlainInsertStep.lean` are deleted, and the fixture PlainInsertStepCases
+  (`two_rows`) rewrites with the set `step_rule`; the docstrings of the
+  data lemmas, the rule and `Connection.afterError_failed` say exactly
+  what the formulas say. Tests: `just dev-build`,
+  `tests/surface_schema_script_test.py`, the root-import test of
+  `tests/test_model_package.py`.

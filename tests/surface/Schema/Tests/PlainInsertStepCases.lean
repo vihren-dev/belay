@@ -1,5 +1,5 @@
 import InsertSelectExamples
-import Belay.Sqlite.Model.Programs.Scripts.PlainInsertStep
+import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
 
 set_option doc.verso true
 set_option maxRecDepth 8192
@@ -58,17 +58,24 @@ theorem fits_with_unique_name :
   · exact (Table.keysUnique_iff _ _).1 (by decide +kernel)
   · decide +kernel
 
-/-- The literal insert writes both rows once, reports two changes, and leaves the last rowid at 2.
-Proof sketch: instantiate the library step law, then evaluate its resulting connection. -/
+/-- The literal insert writes both rows once, reports two changes, and leaves the last rowid at 2. The proof
+rewrites with the simp set {lit}`step_rule`, so it checks that the kind rule {name}`runScriptStep_plainInsert_eq` is
+in the set. Proof sketch: the kind rule gives the step; the clock, the counters and the table select its success
+case, with {name}`insertReady_of_fits` and {name}`insertOutcome_of_fits` for the rows that fit; then evaluate the
+resulting connection. -/
 theorem two_rows : ∃ next, stepOf begin insertTwo = .continued (.done 2) next [] ∧
     (next.state.database.table 1).map (fun t => t.rows.map (·.values)) = some selected ∧
     next.state.counters.lastInsertRowid = some 2 := by
   have resolves : resolvesTo begin insertTwo (.insert 1 literalCells [] [] none) = true := by decide +kernel
   obtain ⟨after, found⟩ := resolvesTo_sound resolves
-  have step := runScriptStep_insert_ok (clock := environment.clock) (index := 0) (parameters := [])
-    (value := 0) (table := dstTable) found (by decide +kernel) (by decide +kernel) dst_present (by decide +kernel)
-    (by decide +kernel) (by exact two_fit)
-  exact ⟨_, step, by decide +kernel, by decide +kernel⟩
+  have timed : statementClock environment.clock 0 (.insert 1 literalCells [] [] none) = some 0 := by decide +kernel
+  have known : begin.state.counters.firstUnknown (Resolved.Statement.insert 1 literalCells [] [] none).counterReads =
+      none := by decide +kernel
+  simp (disch := assumption) only [stepOf, step_rule]
+  simp only [timed, known, dst_present]
+  simp only [literalCells, Resolved.rowsAt_values, cellsReady_values, insertReady_of_fits two_fit,
+    insertOutcome_of_fits two_fit, Resolved.subqueriesPlain, List.all_nil, Bool.and_self, ite_true]
+  exact ⟨_, rfl, by decide +kernel, by decide +kernel⟩
 
 /-- Neither new id occurs in the old table, but their duplicate still fails in the same INSERT. -/
 example : outputOf begin (statementOf (sql r"INSERT INTO dst VALUES (1,'a'), (1,'b')")) = some (.error 19) := by

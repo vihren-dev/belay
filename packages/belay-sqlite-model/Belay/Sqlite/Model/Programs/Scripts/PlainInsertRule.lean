@@ -27,10 +27,11 @@ rules, the step of the statement is exactly this:
   ({name}`LiteralData.insertReady`), the subquery check ({name}`Resolved.subqueriesPlain`) or the cell check
   ({name}`Resolved.cellsReady`) fails, the run ends with {name}`unmodeledHere`.
 * Else, when the outcome succeeds, the step continues with the output {lit}`.done rows.length`, with the connection
-  after the write of the database with the inserted rows at the target and the counts ({name}`Connection.afterWrite`),
-  and with no further execution.
+  after the write ({name}`Connection.afterWrite`) of the database that {name}`Database.setRows` gives for the target
+  and the rows of the inserted table, with the counts, and with no further execution. A valid database has a row list
+  at each table position, so the rows are then stored at the target.
 * Else the outcome fails with an error, and the step continues with the output of the primary code of the error,
-  with the connection after the write of the database before the statement and the counts, and with no further
+  with the connection after the write of the database before the statement with the counts, and with no further
   execution.
 In each case that continues, the settings, the snapshot of an open transaction and the clock assignment stay. An
 INSERT that reads no clock and no counter passes the first two checks for every clock and all counters. Proof
