@@ -9,8 +9,12 @@ In progress. The CREATE TABLE and plain INSERT kind rules, the generic
 projections, the surface bridge, the path of `sql_run` through the kind
 rules, the no-capability-loss test and the client-claims test are done, and
 the replaced laws are deleted. The findings record
-(`docs/records/statement-rule-pilot-findings.md`) is written. The
-end-of-task checks are open.
+(`docs/records/statement-rule-pilot-findings.md`) is written. Work is
+stopped for the owner: four review rounds in a row gave new "must"
+findings on the findings record (the last one,
+`20261123T174042Z-90ccc457`, is open). The end-of-task checks
+(`just test-full`, `just verdict`, `just test-nix`,
+`just test-scheduled-checks`) have not run.
 
 ## Start revision
 
@@ -209,3 +213,11 @@ counterexample replay (#463)").
   caller in `sql_run`, and the statement table lists the kept theorems
   with their lines. This is the third review round in a row with "must"
   findings, all on the findings record. No code changes; no tests.
+- 2026-11-23: review `20261123T174042Z-90ccc457` gave 1 "must" and 1
+  "should" finding on the record: the import of `PlainInsertRule` in
+  `SqlRunKindRules` and a one-line change in `hintedKinds` are counted
+  as "once" but are specific to the pilot kinds, and the record calls
+  two module docstrings references to a deleted law. Both are open. This
+  is the fourth review round in a row with new "must" findings, so the
+  work stops here and goes to the owner, as the task file and
+  `CLAUDE.md` require.
