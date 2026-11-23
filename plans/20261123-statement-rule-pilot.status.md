@@ -17,11 +17,11 @@ new "must" findings on the findings record. The owner decided on
 INSERT; the task file has a section for them.
 
 The case laws of plain INSERT and their data facts are in the model
-(`PlainInsertCases.lean`, `PlainInsertFailure.lean`).
+(`PlainInsertCases.lean`, `PlainInsertFailure.lean`), and the two INSERT
+claims of the client-claims test use them.
 
 Open:
 
-- The use of the case laws in the client-claims test.
 - The open findings of review `20261123T174042Z-90ccc457` on the
   findings record, and the measurements of the record after the import
   fix and the case laws.
@@ -327,3 +327,8 @@ counterexample replay (#463)").
   and the docstring lists of the two laws are fixed here. Tests:
   `just dev-build`, `tests/surface_schema_script_test.py`,
   `tests/surface_s6_automation_test.py`, `tests/surface_layers_test.py`.
+- 2026-11-23: review `20261123T194335Z-9b5b9759` gave 1 "must" finding
+  (the State section listed the client claims as open) and 1 "should"
+  finding (a long sentence in the docstring of the client-claims test);
+  both fixed in a `refactor:` commit. Tests:
+  `tests/surface_schema_script_test.py`.
