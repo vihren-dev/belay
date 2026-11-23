@@ -33,7 +33,8 @@ the first form, the kind rule. This ADR adopts it for all statement kinds:
 - **Data facts.** A fact that selects a case of a rule, or that describes the result of a case,
   is a theorem about a function on data. It names no step and no resolution.
 - **One set of projections and one surface rule for all kinds.** They read facts from the
-  equation of a rule. The surface rules for each kind and the table of kinds in `sql_run` go.
+  equation of a rule. The surface rules that take the resolution to one kind, and the table of
+  kinds in `sql_run`, go.
 
 The ADR also gives the order of the work and what each part must show.
 
@@ -84,14 +85,14 @@ and a table entry.
 ### The pilot
 
 The pilot replaced the laws of CREATE TABLE and plain INSERT, and measured three forms of the
-laws of plain INSERT. All numbers are scc code lines from the findings record. The numbers of the
-three forms are from revision `a03e8267`, the last revision that holds the three forms.
+laws of plain INSERT. All numbers are scc code lines from the findings record. Its last measured
+revision is `a03e8267`, which holds the three forms.
 
-| Form | What it is | Lines for plain INSERT |
+| Form | What it is | Model lines for plain INSERT |
 | --- | --- | ---: |
-| Kind rule | One equation for the step with each case visible; data facts select a case | −147 against the laws that it replaces |
-| Case laws | One theorem for the success and one for the failure, proved from the kind rule | +80 more than the kind rule alone |
-| Case type | An inductive proposition with one constructor for each case, with theorems for cover and for one result | +146 more than the kind rule alone, 49 of them once for all kinds |
+| Kind rule | One equation for the step with each case visible; data facts select a case | 84 in the rule file |
+| Case laws | One theorem for the success and one for the failure, proved from the kind rule | +52, and 28 for the data facts of a failed insertion |
+| Case type | An inductive proposition with one constructor for each case, with theorems for cover and for one result | +146, of which 49 once for all kinds |
 
 Other results of the pilot:
 
@@ -100,26 +101,29 @@ Other results of the pilot:
 - **Cost that is paid once.** The projections, the simp set `step_rule`, the surface rule
   `Sql.check_send_of_rule` and the path of `sql_run` through the rules add 296 lines. They do not
   depend on the kind.
-- **Saving for each kind.** −26 lines for CREATE TABLE and −147 lines for plain INSERT. With the
-  kind rules alone, the pilot changed the total by +125 lines at revision `94c3fa5e`, without its
+- **Saving for each kind.** With the deleted laws and the changed callers, the kind rule changes
+  the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. With the kind
+  rules alone, the pilot changed the total by +125 lines at revision `94c3fa5e`, without its
   acceptance tests.
-- **Client proofs.** The two client claims about INSERT take 79 lines with the kind rule (74 with
-  the data facts of a failed insertion), 75 with the case laws and 69 with the case type. The
-  claim about each input ("the INSERT has the output `.done 1` and the new row, or an error and
-  the database before") takes 40 lines with the kind rule, 57 with the case laws and 53 with the
-  case type. No client proof names the step function.
-- **Where the client lines are.** Of the 239 lines of the client test, 106 define the table and
-  the statement and prove their data facts: readiness, fit, keys and counts. These lines are the
-  same in each form.
+- **Client proofs.** For the two client claims about INSERT, the declarations that differ
+  between the forms take 79 lines with the kind rule (at `94c3fa5e`), 75 with the case laws and
+  69 with the case type. With the data facts of a failed insertion, the kind rule takes 74
+  lines. The claim about each input ("the INSERT has the output `.done 1` and the new row, or
+  an error and the database before") takes 40 lines with the kind rule, 57 with the case laws
+  and 53 with the case type. No client proof names the step function.
+- **Where the client lines are.** The two modules that define the table and the statement of
+  the client test and prove their data facts (readiness, fit, keys and counts) have 106 lines
+  at `a03e8267`. Site facts of 63 lines have the same code in each form.
 - **Elaboration time.** No model or surface module that the pilot changed differs by more than
   0.1 s. One test fixture with two new proofs went from 2.18 s to 5.02 s; the other changed
   fixtures differ by less than 0.4 s.
 
-The case laws and the case type cost 80 and 146 lines to save 4 and 10 lines in two client
-proofs, and the proof of the claim about each input is shortest with the kind rule. The owner
-selected the kind rule alone. The pilot task now removes the other two forms and keeps the data
-facts of a failed insertion (its section "Owner decision of 2026-11-23"); the findings record
-keeps the measurements.
+With the same data facts, the 52 lines of the case laws make the two client proofs 1 line
+longer (75 against 74), and the 146 lines of the case type make them 5 lines shorter. The proof
+of the claim about each input is shortest with the kind rule. The owner selected the kind rule
+alone. The pilot task now removes the other two forms and keeps the data facts of a failed
+insertion (its section "Owner decision of 2026-11-23"); the findings record keeps the
+measurements.
 
 ### What the pilot did not test
 
@@ -192,7 +196,8 @@ A data fact is a theorem about the functions that a rule names. It has no step, 
 and no connection in its statement. Examples from the pilot:
 
 - `insertReady_of_fits` and `insertOutcome_of_fits`: rows that fit the table pass the support
-  check and give a successful outcome. They select the success case.
+  check of the table and the values, and give a successful outcome. With the subquery check and
+  the cell check of the rule, they select the success case.
 - `insertOutcome_constraintViolation`: when no supplied row has an alias cell that SQLite
   refuses, a result that repeats a rowid or violates a constraint of the keys gives the outcome
   "constraint violation" with the database before. It selects the failure case.
@@ -213,10 +218,11 @@ It is not a law about the step of the kind.
 - The laws that hold for each statement kind stay as they are, for example
   `runScriptStep_valid`, `runScriptStep_effect`, `runScriptStep_resolved`, `step_guards_hold`,
   `runScriptStep_counters` and `runScriptStep_index`. A kind rule does not replace them.
-- A law for a group of kinds, such as `runScriptStep_plainWrite_frame` for the plain writes, is
-  the business of the slice that gives the last kind of the group its rule. The slice keeps the
-  law when callers use it for more than one kind, and proves it from the rules if that is
-  shorter.
+- A law for a group of kinds stays with its statement while a kind of the group has no rule.
+  For example, `runScriptStep_plainWrite_frame` and `runScriptStep_plainWrite_failed` hold for
+  each INSERT, UPDATE and DELETE without write rules (`Resolved.Statement.plainWriteTarget`),
+  with or without RETURNING columns. The slice that gives the last kind of the group its rule
+  keeps the law when callers use it for more than one kind.
 
 ### D6. One surface rule and one path of `sql_run`
 
@@ -224,11 +230,17 @@ It is not a law about the step of the kind.
   rule. Its premises are the equation of the rule, the validity of the connection, `modeled`
   (the result continues) and `reached` (each continuing case gives the post). It has no premise
   about the kind.
-- A slice deletes the rules `Sql.check_send_<kind>` and `Sql.ifOk_send_<kind>` of its kinds, and
-  the branch of `sendRule` and the hypothesis names in `roleOf` for them. The slice that moves
-  the last kind deletes `sendRule`, `roleOf` and the lists of kinds.
+- A slice deletes the surface rules of its kinds that have the resolution to the kind as a
+  premise (`Sql.check_send_<kind>` and `Sql.ifOk_send_<kind>` with the premise `found`), and
+  the branch of `sendRule` for them. The slice that moves the last kind deletes `sendRule` and
+  the parts of `roleOf` and of the lists of kinds that only `sendRule` uses. `roleOf` also
+  serves the read path of `sql_run` (`query` and `single`); that part stays.
 - `sql_run` finds the kind rules in the set `step_rule`. A new kind rule needs no change of the
   tactic.
+- Today, the path of `sql_run` through the kind rules splits the cases of a rule. It does not
+  enter the further executions of a case or the results of an output that is a choice. The
+  first slice whose kind has one of the two extends the path, so that `sql_run` enters each
+  execution and each result as it does for a sent SELECT today.
 - `Sql.check_exec` stays. It is the exact rule for one executed statement, and it needs no kind
   rule. The kind rules are thus not the only way to a fact about a send.
 - The general rules for a send without a kind rule (`Sql.check_send_of_step`,
@@ -240,7 +252,8 @@ It is not a law about the step of the kind.
 The repository does not keep these forms for a kind that has a rule:
 
 - A partial law of the kind: "if the statement resolves to the kind and the step continued,
-  then …". `RunStep.of_rule` gives each such fact from the rule.
+  then …". `RunStep.of_rule` gives each such fact from the rule. A law for a group of kinds is
+  not such a law (D5).
 - Case laws: one theorem for one case of the rule.
 - A case type: an inductive proposition over the cases, with cover and one result.
 - The named forms of issue #468 for a step of one kind: the bundle `ContinuedStep`, the
@@ -282,12 +295,21 @@ with the most callers first.
 | Slice | Kinds | Notes |
 | --- | --- | --- |
 | 1 | CREATE TABLE, plain INSERT | The pilot. |
-| 2 | Plain UPDATE, plain DELETE | Deletes `Sql.check_send_plainUpdate`, `Sql.check_send_plainDelete` and their `ifOk` rules. Decides the laws of the plain writes (D5). |
+| 2 | Plain UPDATE, plain DELETE | Deletes `Sql.check_send_plainUpdate`, `Sql.check_send_plainDelete` and their `ifOk` rules. The laws for the group of the plain writes stay (D5). |
 | 3 | BEGIN, COMMIT, ROLLBACK, a pragma that sets a value | Deletes `Sql.check_send_begin`, `Sql.check_send_commit` and `Sql.check_send_setting`. ROLLBACK has no step law and no surface rule today. |
 | 4 | CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, DROP without write rules, the catalog rewrite of a rename, DROP COLUMN, a statement that SQLite refuses to prepare | Deletes `Sql.check_send_addColumn`, `Sql.ifOk_send_addColumn`, `Sql.check_send_dropPlain` and `Sql.check_send_rewrite`. |
-| 5 | A query | Deletes `Sql.check_send_select`. The first kind whose output can be a choice between results. The contracts of ADR 0027 do not change. |
+| 5 | A query | The first kind whose output can be a choice between results (D6). The contracts of ADR 0027 do not change. See the note on `Sql.check_send_select` below. |
 | 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. The general rules for a send exclude INSERT from a query today. |
 | 7 | The kinds with write rules, and the kinds with RETURNING columns | Subject to owner decision 2. |
+
+`Sql.check_send_select` is not a rule of the form that D6 deletes. Its premise is the syntax of a
+SELECT, not a resolution, and it has no premise about validity. It thus holds for a context
+that is not valid and for a SELECT that SQLite refuses to prepare, where the surface rule of D6
+does not apply. Slice 5 deletes it only when both of these hold: the retention test proves it
+with its premises (D8), and `sql_run` enters each result of a choice through the kind rules
+(D6). If not, the rule and its branch of `sendRule` stay, and the status file of the slice
+records the reason. The rules for the programs `query` and `single` (`Sql.check_query_select`,
+`Sql.check_single_select`) are not rules for a send, and this ADR does not change them.
 
 ### D11. What each slice records
 
@@ -315,15 +337,18 @@ revision. The last slice adds a milestone row to the simplification goal.
   surface rule and no change of `sql_run`.
 - **A rule is longer than each law that it replaces.** The rule of plain INSERT has 30 statement
   lines. A reader sees the whole step of the kind in one place, in the order of its checks.
-- **The saving in lines is small.** The pilot saved 26 and 147 lines for its two kinds after a
-  cost of 296 lines that is paid once. A rough estimate for the other kinds: nine kinds have
-  surface rules of their own today; in the range of the pilot, they save about 230 to 1,300
-  lines. ROLLBACK and the kinds of slices 6 and 7, about ten kinds, have few laws of their own
-  to delete; at 30 to 84 lines for a rule file, they add about 300 to 840 lines. The result is
-  between a small growth and a saving of about 1,000 lines, which is about 1% of the 97,505
-  lines at `b7854558`. This ADR is not a large step to the 45,000 lines of the simplification
-  goal. Its value is in the first two consequences, and in the laws that later facts and kinds
-  do not need.
+- **The saving in lines is small, and the total can grow.** The pilot saved 26 and 147 lines
+  for its two kinds after a cost of 296 lines that is paid once. A rough subtotal for the other
+  kinds: nine kinds have surface rules of their own today; in the range of the pilot, they save
+  about 230 to 1,300 lines. ROLLBACK and the kinds of slices 6 and 7, about ten kinds, have few
+  laws of their own to delete; at 30 to 84 lines for a rule file, they add about 300 to 840
+  lines. The subtotal does not include the five kinds of slice 4 without a surface rule of
+  their own (CREATE INDEX, CREATE VIEW, CREATE TRIGGER, DROP COLUMN, a statement that SQLite
+  refuses to prepare), the client tests of D9 (239 lines for plain INSERT in the pilot) and
+  the retention tests while they stay. The best case of the subtotal is a saving of about
+  1,000 lines, which is about 1% of the 97,505 lines at `b7854558`. This ADR is not a step to
+  the 45,000 lines of the simplification goal. Its value is in the first two consequences, and
+  in the laws that later facts and kinds do not need.
 - **`sql_run` proofs change at the goals of a send.** A proof that names the cases `success` and
   `failure` of a kind's rule gets the goals `modeled` and the cases of the rule. The pilot
   changed four such proofs.
@@ -377,12 +402,16 @@ revision. The last slice adds a milestone row to the simplification goal.
    surface rule of their own, and ROLLBACK has no step law. Options:
    (a) each kind gets a rule, in the order of D10; slice 7 starts with one kind, INSERT with
    write rules, and records its cost before the other kinds; (b) slices 2 to 6 only, and a rule
-   for a kind of slice 7 when a client claim needs it; `sendRule` then keeps its general branch
-   for those kinds. Recommendation: (a). It gives `sql_run` one path and each statement an
+   for a kind of slice 7 when a client claim needs it. With (b), `sendRule` keeps its general
+   branch (`Sql.check_send_of_step_notInsertSelect`) for the kinds of slice 7 other than INSERT
+   from a query, and `Sql.check_exec` is the rule for INSERT from a query with write rules or
+   RETURNING columns. Recommendation: (a). It gives `sql_run` one path and each statement an
    exact step, and the record after the first kind of slice 7 lets the owner stop there.
-3. **The retention tests.** Options: (a) a slice deletes its retention test after the Nix checks
-   pass on a revision that holds it, and its status file records the revision; the pilot's test
-   goes in the same way; (b) the retention tests stay in the test suite. Recommendation: (a).
-   It follows the witnesses of ADR 0025 and ADR 0026, which passed Nix at `53a346e1` before
-   their copies were retired. At `a03e8267`, the pilot's test has 212 lines for nine laws; the updated callers
-   continue to use the rules, and an exact rule cannot become weaker without a new premise.
+3. **The retention tests.** Options: (a) the rules of ADR 0025 (D4) and ADR 0026 for temporary
+   witnesses apply: a retention test stays through the last slice that changes the rule, the
+   projections or the surface rule that its proofs use; the status file records the Nix
+   acceptance of that final revision; then the test is deleted. A witness that is the only
+   check of a premise or of a distinction between cases stays until a caller or a focused test
+   covers it. An example is a partial law that needs no validity. (b) The retention tests stay
+   in the test suite with no end. Recommendation: (a). At `a03e8267`, the pilot's test has 212
+   lines for nine laws, and the tests of the next slices are of the same kind.
