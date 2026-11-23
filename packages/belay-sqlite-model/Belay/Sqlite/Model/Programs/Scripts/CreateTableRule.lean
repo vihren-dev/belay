@@ -4,9 +4,12 @@ import Belay.Sqlite.Model.Programs.Scripts.StepRuleAttr
 
 set_option doc.verso true
 
-/-! The exact kind rule of CREATE TABLE. A client derives each fact about the step of a CREATE TABLE, such as its
-output, the next connection or the absence of a further execution, from the one equation of
-{lit}`runScriptStep_createTable_eq` and a case split on its condition. -/
+/-! The exact kind rule of CREATE TABLE. For a statement that resolves to {lit}`Resolved.Statement.createTable`, a
+client derives each fact about the step, such as its output, the next connection or the absence of a further
+execution, from the one equation of {lit}`runScriptStep_createTable_eq` and a case split on its condition. A CREATE
+TABLE text can also resolve to a prepare error (a name in use) or to a no-op ({lit}`IF NOT EXISTS`). This rule does
+not apply to them; {lit}`runScriptStep_createTable_failed` says that a step of a CREATE TABLE text that continues
+with an error keeps the connection. -/
 
 namespace Belay.Sqlite.Model
 
