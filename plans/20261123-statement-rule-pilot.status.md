@@ -519,3 +519,6 @@ counterexample replay (#463)").
   findings, all fixed in a `refactor:` commit: shorter sentences in the
   two docstrings, and a correct earlier entry of this log. Tests:
   `tests/surface_schema_script_test.py`.
+- 2026-11-23: review `20261123T221745Z-ad614cf6` gave 2 "should"
+  findings on sentence length in the two docstrings, both fixed in a
+  `refactor:` commit. Tests: `tests/surface_schema_script_test.py`.
