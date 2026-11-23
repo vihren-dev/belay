@@ -381,3 +381,8 @@ counterexample replay (#463)").
   `StepCase.of_checks` names only the counters that the statement reads
   and refers to `clockUnmodeled` with a checked reference. Tests:
   `just dev-build`.
+- 2026-11-23: review `20261123T200007Z-e662b6d8` gave 1 "must" finding:
+  "read order" does not name the order of
+  `Resolved.Statement.counterReads`, which puts `changes()` first. The
+  docstrings of `StepCase` now name that list; fixed in a `refactor:`
+  commit. Tests: `just dev-build`.

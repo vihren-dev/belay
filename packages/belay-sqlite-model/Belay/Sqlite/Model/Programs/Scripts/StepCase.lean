@@ -17,7 +17,7 @@ the run of the statement gives the result. A result is in a case when one of the
   with {name}`clockUnmodeled`;
 * {lit}`unknownCounter`: the statement has a clock value, the connection does not know a counter that the
   statement reads, and the result is the end of the run with {name}`counterUnknownReason` of the first such counter
-  in the read order ({name}`Counters.firstUnknown`);
+  in the list {name}`Resolved.Statement.counterReads` ({name}`Counters.firstUnknown`);
 * {lit}`checked`: the statement has the clock value, no counter that it reads is unknown, and the kind relates the
   clock value to the result. -/
 inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection) (resolved : Resolved.Statement)
@@ -26,7 +26,7 @@ inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection
   | noClock (timed : statementClock clock index resolved = none) :
       StepCase clock index connection resolved kindCase (.ended clockUnmodeled)
   /-- The statement has a clock value and reads a counter that the connection does not know, so the run ends with
-  the reason of the first such counter in the read order. -/
+  the reason of the first such counter in the list of the counters that it reads. -/
   | unknownCounter {value : Int} {kind : CounterKind} (timed : statementClock clock index resolved = some value)
       (unknown : connection.state.counters.firstUnknown resolved.counterReads = some kind) :
       StepCase clock index connection resolved kindCase (.ended (counterUnknownReason kind))
@@ -40,8 +40,8 @@ values to results: if, for each clock value that the statement has, when the con
 the statement reads, the kind relates the clock value to the result of {lit}`body` at it, then the case type
 relates the inputs to this result:
 * the end of the run with {name}`clockUnmodeled` when the statement has no clock value;
-* else the end of the run with {name}`counterUnknownReason` of the first counter in the read order of the
-  statement that the connection does not know, when there is one;
+* else the end of the run with {name}`counterUnknownReason` of the first counter in the list
+  {name}`Resolved.Statement.counterReads` that the connection does not know, when there is one;
 * else {lit}`body` at the clock value.
 Only the last result needs the premise. In plain words, a step that makes the two checks and then gives the
 function of the clock value is in a case, when the kind covers the function. Use it to prove the cover of a kind
