@@ -31,3 +31,9 @@ counterexample replay (#463)").
 ## Progress log
 
 - 2026-11-23: wrote the task file and this file.
+- 2026-11-23: review `20261123T141236Z-52986bdc` of the task file gave 9
+  "must" and 2 "should" findings. Ten are fixed in the task file: the
+  retention test covers the surface laws, the ended case of INSERT
+  names the three readiness checks, the new fixtures belong to the
+  existing surface suites, and the end-of-task checks are restored.
+  Finding 5 (module timing) is rejected with its reason in the record.
