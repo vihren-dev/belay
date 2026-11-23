@@ -464,3 +464,9 @@ counterexample replay (#463)").
   exact call of `decl_diff.py` and says that a milestone has the net
   change since the one before. Tests: none; the commit changes only
   documents.
+- 2026-11-23: review `20261123T205224Z-07b21bd4` gave 3 "should"
+  findings, all fixed in a `refactor:` commit: the record gives the full
+  call of `decl_diff.py` with the selection of the `N`-th match, the
+  statement and proof lines of `items_taken_outcome`, and both sources
+  of the 40 lines of the kind-rule proof for each input. Tests: none;
+  the commit changes only documents.
