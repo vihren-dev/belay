@@ -71,9 +71,11 @@ includes about 1.8 s.
 
 Other sources, named where the record uses them:
 
-- `decl_diff.py REV FILE NAME…`: the added and removed lines of a
-  declaration between the start revision and a revision (section
-  "Changed callers").
+- `decl_diff.py OLD NEW FILE:NAME…`, run as
+  `python3 decl_diff.py b7854558 94c3fa5e FILE:NAME…` with one
+  `FILE:NAME` argument for each declaration: the added and removed
+  lines of each declaration with its docstring (section "Changed
+  callers").
 - `chain.py` and `probe_after_chain.py FILE M…`: compile the fixtures of
   a chain, then a scratch Lean file that imports them. The scratch file
   `kindany/KindAnyProbe.lean` holds a proof of the claim for each input
@@ -90,9 +92,9 @@ lines), `LiteralData.insertCounts_error_changes` and
 
 ## Code lines
 
-Totals of `count_rev.py` for the milestone revisions of the pilot. A
-revision that this table does not list changes code between two
-milestones, and the next milestone includes its lines.
+Totals of `count_rev.py` for the milestone revisions of the pilot. The
+change from one milestone to the next is the net change of all commits
+between them.
 
 | Revision | Content | Model | Surface | Tests | Total |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -426,8 +428,10 @@ case-type column uses the same outcome. The case laws state the values
 of the rows with `let`, so their checks rewrite the values with
 `items_values` in separate goals. In the case-type checks, the values
 are an argument of the case, and `items_values` gives them in the
-constructor. The kind-rule column was not measured again with the data
-facts of the case laws.
+constructor. With the data facts of the case laws, the kind-rule
+column is 74: the kind-rule checks use `items_taken_outcome` only by its
+statement, which did not change, so its 10-line proof replaces the 13
+lines and the alias fact (2).
 
 The claim for each input (`insert_done_or_error`: the output is
 `.done 1` with the inserted row, or an error output with the database
@@ -435,7 +439,7 @@ before) has two proofs in the client test and one in a scratch file:
 
 | Proof | Declarations | Code lines |
 | --- | --- | ---: |
-| With the kind rule (scratch `kindany/KindAnyProbe.lean`) | a check with the statement of `insert_any_case` (29), and the claim as `insert_done_or_error` (11) | 40 |
+| With the kind rule | the check `insert_any_rule` in the scratch file `kindany/KindAnyProbe.lean`, with the statement of `insert_any_case` (29); the claim with the proof of `insert_done_or_error` in `ItemInsertCaseClaims.lean`, with `insert_any_rule` in place of `insert_any_case` (11) | 40 |
 | With the case laws | `insert_done_or_error_by_laws` (14), with the checks `insert_new_check` (22) and `insert_taken_check` (21) | 57 |
 | With the case type | `insert_any_case` (42), `insert_done_or_error` (11) | 53 |
 
@@ -551,7 +555,7 @@ A cover proof with `fun_cases` instead of the kind rule was not tried.
 | --- | --- | --- | --- |
 | Model code lines for plain INSERT | 84 (the rule file; rule 30 statement and 78 code lines) | +80 on the kind rule (28 of them data facts) | +146 on the kind rule (49 once for all kinds, 97 for INSERT) |
 | Elaboration of its modules | 0.84 s | 0.63 s and 0.43 s | 0.51 s and 0.75 s |
-| Two INSERT claims, subtotal of the declarations that differ | 79 | 75 | 69 |
+| Two INSERT claims, subtotal of the declarations that differ | 79 (74 with the data facts of the case laws) | 75 | 69 |
 | Claim for each input | 40 (scratch) | 57 (14 when the two checks exist) | 53 |
 | Inputs covered | all, as one term | one case each: success, failure | all, as named cases |
 
@@ -564,9 +568,11 @@ What each form gives that the other two do not:
   from it. In the pilot, it gives the shortest proof of the claim for
   each input.
 - The case laws give no fact that the case type does not give. The
-  success law takes `InsertFits` directly, so a forward proof of a
-  success needs no readiness or outcome argument; with the case type,
-  the client gets these from `insertReady_of_fits` and
+  success law takes `InsertFits`, which gives the readiness check of
+  the table and the values (`LiteralData.insertReady`) and the
+  successful outcome; the caller supplies the plain subqueries and the
+  ready cells. With the case type, the client gets the readiness check
+  and the outcome from `insertReady_of_fits` and
   `insertOutcome_of_fits`. The failure law takes the readiness checks
   and an error outcome, as the case `failure` does.
 - The case type gives cover: each input is in a named case, with named
@@ -616,8 +622,9 @@ The part for all kinds (`StepCase.lean`) is done. A next kind needs no
 case laws.
 
 In plain numbers: on top of the kind rule, the case type costs 97 model
-lines for plain INSERT and 49 once, and saves 10 lines on the two
-INSERT claims against the kind rule and 6 against the case laws. For
+lines for plain INSERT and 49 once, and saves 5 lines on the two
+INSERT claims against the kind rule with the same data facts, and 6
+against the case laws. For
 the claim for each input, the proof with the kind rule is 13 lines
 shorter than the proof with the case type.
 
@@ -625,7 +632,7 @@ shorter than the proof with the case type.
 the kind rule as the one maintained form of each kind, with data facts
 for the outcomes of the kind such as those of `PlainInsertFailure.lean`,
 and add neither case laws nor a case type for the next kinds, because
-in this pilot the case type saves 10 lines of client proof on the two
+in this pilot the case type saves 5 lines of client proof on the two
 INSERT claims together and costs about 90 model lines for each write
 kind, and the kind rule gives the shortest proof of the claim for each
 input.
@@ -690,8 +697,9 @@ model with its statement of the start revision.
 - **Can a client prove claims about programs without the step function
   in the proof?** Yes, in each of the three forms: no client proof
   names a banned identifier. The declarations that differ for the two
-  INSERT claims take 79 code lines with the kind rule, 75 with the case
-  laws and 69 with the case type. The claim for each input takes 40
+  INSERT claims take 79 code lines with the kind rule (74 with the data
+  facts of the case laws), 75 with the case laws and 69 with the case
+  type. The claim for each input takes 40
   lines with the kind rule (in a scratch file), 57 with the case laws
   and 53 with the case type.
 
