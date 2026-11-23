@@ -11,14 +11,19 @@ the section "Owner decision of 2026-11-23", which changes the
 acceptance points.
 
 The CREATE TABLE and plain INSERT kind rules, the generic projections,
-the surface bridge, the path of `sql_run` through the kind rules, the
-no-capability-loss test and the client-claims test are done, and the
-replaced laws are deleted. The case laws, the case type
+the surface bridge and the path of `sql_run` through the kind rules are
+done. The replaced laws of the task file are deleted, except
+`runScriptStep_insert_ok`, which the owner decision makes a replaced law
+again. The case laws (with `runScriptStep_insert_ok`), the case type
 (`PlainInsertCases.lean`, `StepCase.lean`, `PlainInsertCase.lean`) and
 the second client test (`ItemInsertCaseChecks.lean`,
-`ItemInsertCaseClaims.lean`) are still in the code. The findings record
-(`docs/records/statement-rule-pilot-findings.md`) has the measurements
-of the three forms at `a03e8267`.
+`ItemInsertCaseClaims.lean`) are still in the code. The two INSERT
+claims of the client-claims test still use the case laws, and the
+retention test does not restate `runScriptStep_insert_ok`. The findings
+record (`docs/records/statement-rule-pilot-findings.md`) has the
+measurements of the three forms. Its last measured revision is
+`a03e8267`; it measures the client proofs with the kind rule at
+`94c3fa5e` and in the scratch file `KindAnyProbe.lean`.
 
 Open:
 
@@ -483,3 +488,9 @@ counterexample replay (#463)").
   `runScriptStep_insert_ok` is a replaced law again, and the build with
   `--wfail` is the build of the three packages that the Nix checks
   build with it. Tests: none; the commit changes only documents.
+- 2026-11-23: review `20261123T220329Z-2e7e5f9b` gave 2 "must" and 1
+  "should" finding, all fixed in a `refactor:` commit: the data fact of
+  a constraint violation keeps its premise that no supplied row has an
+  alias mismatch, and the State section says which parts of the owner
+  decision are still open and at which revisions the record measures
+  the forms. Tests: none; the commit changes only documents.
