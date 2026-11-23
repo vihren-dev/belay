@@ -1,7 +1,5 @@
 import Belay.Sqlite.Programs.Automation.SqlRunGoals
 import Belay.Sqlite.Programs.Scripts.KindRuleSend
-import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
-import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 
 set_option doc.verso true
 

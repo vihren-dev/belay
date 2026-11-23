@@ -1,5 +1,4 @@
 import Belay.Sqlite.Programs.Scripts.SendStepRules
-import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
 
 set_option doc.verso true
 
