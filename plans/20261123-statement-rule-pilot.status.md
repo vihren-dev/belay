@@ -20,8 +20,14 @@ The case laws of plain INSERT and their data facts are in the model
 (`PlainInsertCases.lean`, `PlainInsertFailure.lean`), and the two INSERT
 claims of the client-claims test use them.
 
+The owner decided on 2026-11-23 to add a third form, a case type of
+plain INSERT, before the end checks; the task file has the section
+"Case type of plain INSERT".
+
 Open:
 
+- The case type, its part for all statement kinds, and the second
+  client test.
 - The open findings of review `20261123T174042Z-90ccc457` on the
   findings record, and the measurements of the record after the import
   fix and the case laws.
@@ -332,3 +338,11 @@ counterexample replay (#463)").
   finding (a long sentence in the docstring of the client-claims test);
   both fixed in a `refactor:` commit. Tests:
   `tests/surface_schema_script_test.py`.
+- 2026-11-23: the owner decided to add a third form, a case type of
+  plain INSERT. The task file has the new section "Case type of plain
+  INSERT", three new bullets in "Findings record", one new bullet in
+  "Tests", and one sentence in "Not in this task". The statements of
+  fact in the new text agree with `runScriptStepWith` (resolution, then
+  `statementClock`, then `Counters.firstUnknown`, then the run of the
+  statement) and with the kind rule of plain INSERT (four cases that end
+  the run, a success and a failure). No code changes; no tests.
