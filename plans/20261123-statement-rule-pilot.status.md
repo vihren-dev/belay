@@ -5,6 +5,9 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
+DONE (2026-11-23). Each acceptance point of the task file, as the owner
+decision of 2026-11-23 changes them, holds.
+
 On 2026-11-23 the owner selected the kind rule as the one maintained
 form for plain INSERT and the next statement kinds. The task file has
 the section "Owner decision of 2026-11-23", which changes the
@@ -23,12 +26,13 @@ decision and the final measurement at the last code revision
 `ee83eca7`, with the client proofs in the repository fixtures. Its
 comparison of the three forms at `a03e8267` stays as dated history.
 
-Open:
-
-- Run the end checks again on the last code revision.
-
-Earlier checks on the code revision `a03e8267`: `just test-nix` passes
-(99 tests) and `just test-scheduled-checks` passes (53 tests).
+Checks on `8297f897`, which has the code of the last code revision
+`ee83eca7` and changes only documents after it (the working copy then
+held only review records and this file): `just test-nix` passes (99
+tests) and `just test-scheduled-checks` passes (53 tests).
+`just test-full` passes, and `just verdict` gives `counts.json` and
+`report.json` that are byte-equal to the reference files of the
+workspace `belay-hoare-rules`.
 
 ## Start revision
 
@@ -532,9 +536,17 @@ counterexample replay (#463)").
   form, and the recommendation is now the owner selection. Tests: none;
   the commit changes only documents.
 - 2026-11-23: review `20261123T222457Z-6d5bda62` gave 2 "must" and 3
-  "should" findings, all fixed in a `refactor:` commit: the State
-  section names the final measurement at `ee83eca7`, the answer on lost
-  facts names the kept laws for all kinds, `a03e8267` is the last
-  measured revision with the three forms, and two claims about
-  unchanged sources are limited to their revisions. Tests: none; the
-  commit changes only documents.
+  "should" findings. A `refactor:` commit fixes all of them. The State
+  section names the final measurement at `ee83eca7`. The answer on lost
+  facts names the kept laws for all kinds. The record calls `a03e8267`
+  the last measured revision with the three forms. Two claims about
+  unchanged sources name their revisions. Tests: none; the commit
+  changes only documents.
+- 2026-11-23: end checks on `8297f897`, which has the code of
+  `ee83eca7`, with review records and this file only in the working
+  copy. `just test-full` passes at the first
+  run. `just verdict` passes, and its `counts.json` and `report.json`
+  are byte-equal to the reference files in
+  `/home/codex/work/belay-hoare-rules/build/verdict/`. `just test-nix`
+  passes (99 tests), and `just test-scheduled-checks` passes (53
+  tests). The task and this file are marked DONE.
