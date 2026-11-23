@@ -19,8 +19,10 @@ counterexample replay (#463)").
 - `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRun.lean`:
   `runScriptStepWith`, `ranScriptStep`, `runScriptStep`.
 - `…/Programs/Scripts/ScriptRunContinued.lean`: `runScriptStep_continued_spec`.
-- `…/Programs/Scripts/CreateTableStepLaws.lean`, `CreatedTables.lean`,
-  `StepContinuesOk.lean`, `ResolvedStepGuards.lean`: the CREATE TABLE laws.
+- `…/Programs/Scripts/CreateTableRule.lean`: the CREATE TABLE kind rule;
+  `StepRuleProjections.lean`, `StepRuleAttr.lean`: the generic projections
+  and the simp set of the kind rules; `CreatedTables.lean`,
+  `ResolvedStepGuards.lean`: users of the rule and its condition.
 - `…/Programs/Scripts/PlainInsertStep.lean`, `PlainInsertEffect.lean`,
   `…/Schema/Writes/PlainInsertSuccess.lean`, `LiteralInsertFits.lean`,
   `StatementRun.lean`, `PlainCounts.lean`: the plain INSERT laws and
@@ -58,8 +60,9 @@ counterexample replay (#463)").
   `CreateTableStepLaws.lean` (`runScriptStep_createTable`, `_frame`),
   `runScriptStep_createTable_ok` and `runScriptStep_createTable_empty` are
   deleted; TableKeeps, SchemaFailureLaws, CreatedTables,
-  CreateSchemaSuccess, the surface `Sql.check_send_createTable` (removed in
-  a later commit) and the fixture SchemaCreateExamples use the rule.
+  CreateSchemaSuccess, the surface `Sql.check_send_createTable` (its
+  removal is planned for the commit of the surface bridge) and the fixture
+  SchemaCreateExamples use the rule.
   Tests: `just dev-build`, `tests/surface_schema_script_test.py`,
   `tests/surface_s6_automation_test.py`,
   `tests/surface_assertion_examples_test.py`, the root-import test of
@@ -67,4 +70,5 @@ counterexample replay (#463)").
   for the change: the Nix model build of
   `test_installed_core_and_codec_consumer` exceeds its 120 s limit when the
   model is not cached, and the README example of `surface_rebuild_test.py`
-  cannot clone `plausible` (no `git`). `just test-full` runs both.
+  cannot clone `plausible` (no `git`). `just test-full` runs the README
+  example and `just test-nix` runs the installed consumer test.

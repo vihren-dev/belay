@@ -4,6 +4,10 @@ import Belay.Sqlite.Model.Programs.Scripts.StepRuleAttr
 
 set_option doc.verso true
 
+/-! The exact kind rule of CREATE TABLE. A client derives each fact about the step of a CREATE TABLE, such as its
+output, the next connection or the absence of a further execution, from the one equation of
+{lit}`runScriptStep_createTable_eq` and a case split on its condition. -/
+
 namespace Belay.Sqlite.Model
 
 /-- The kind rule of CREATE TABLE. For every resolution context, clock, index, connection, statement, parameter

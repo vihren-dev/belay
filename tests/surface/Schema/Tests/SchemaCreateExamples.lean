@@ -26,8 +26,9 @@ def createP : Syntax.Statement := statementOf (sql r"CREATE TABLE p(id INTEGER);
 theorem createQ_resolves : resolvesShape start createQ (.createTable 2 (name! "q")) = true := by decide +kernel
 
 /-- Success and frame law of CREATE TABLE: the new table is appended at position 2, the catalog and the row lists
-keep their alignment, and the parent and the child are found at their positions with their rows. Proof sketch: the
-kind rule {name}`runScriptStep_createTable_eq` gives the step from the resolution of the statement as a CREATE TABLE
+keep their alignment, and the parent and the child are found at their positions with their rows. The proof
+rewrites with the simp set {lit}`step_rule`, so it checks that the kind rule {name}`runScriptStep_createTable_eq`
+is in the set. Proof sketch: the kind rule gives the step from the resolution of the statement as a CREATE TABLE
 at position 2, and {name}`Database.tableNamed_createTable` keeps the tables found by name. -/
 theorem create_appends_and_keeps : ∀ output next others, stepOf start createQ = .continued output next others →
     output.isError = false ∧ next.state.database.catalog.length = 3 ∧ next.state.database.rows.length = 3 ∧
@@ -35,7 +36,7 @@ theorem create_appends_and_keeps : ∀ output next others, stepOf start createQ 
     foundRows next.state.database (name! "c") = foundRows start.state.database (name! "c") := by
   intro output next others step
   obtain ⟨table, after, found⟩ := resolvesShape_createTable createQ_resolves
-  rw [stepOf, runScriptStep_createTable_eq found] at step
+  simp (disch := assumption) only [stepOf, step_rule] at step
   split at step
   · cases step
     have frame (name : Identifier) (position : Nat) (existing : Table)
