@@ -1,0 +1,51 @@
+{
+  "caller": "claude",
+  "commit": "828230ef77ffc5d30eb99cf2b0049e4fdb66ae2a",
+  "date": "2026-11-23T19:30:02+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainInsertCases.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/PlainInsertFailure.lean",
+    "plans/20261123-statement-rule-pilot.status.md",
+    "reviews/20261123T192802Z-7dbeba93/resolution-1-20261123T192926Z.json",
+    "reviews/20261123T192802Z-7dbeba93/resolution-2-20261123T192927Z.json",
+    "reviews/20261123T192802Z-7dbeba93/resolution-3-20261123T192927Z.json",
+    "reviews/20261123T192802Z-7dbeba93/resolution-4-20261123T192928Z.json",
+    "reviews/20261123T192802Z-7dbeba93/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261123T193002Z-828230ef#1",
+      "line": 56,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainInsertCases.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring says the law does not name the failed outcome’s database, but the theorem binds it as `reached` in the outcome premise and passes it to `LiteralData.insertCounts` in the conclusion. Fix: State that `insertOutcome_error` forces `reached` to equal the input database and that the error branch of `LiteralData.insertCounts` ignores `reached`."
+    }
+  ],
+  "id": "20261123T193002Z-828230ef",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -52,8 +52,9 @@ table, the subqueries are plain, the cells are ready, the values pass the readin
 ({name}`LiteralData.insertReady`), and the outcome ({name}`insertOutcome`) is an error with the reason, then the
 step continues with the error output of the primary code of the reason and with no further execution. Its
 connection is the connection after the write ({name}`Connection.afterWrite`) of the database before the statement,
-with the counts of the failed insertion. A failed outcome carries the database before ({name}`insertOutcome_error`),
-and {name}`LiteralData.insertCounts` gives the same counts for each error, so the law does not name that database.
+with the counts of the failed insertion. The database {lit}`reached` of the error outcome is the database before
+({name}`insertOutcome_error`), and the error case of {name}`LiteralData.insertCounts` does not use it, so a caller
+need not prove what it is.
 {name}`LiteralData.insertCounts_error_changes` gives 0 changed rows, and
 {name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch: rewrite
 the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
