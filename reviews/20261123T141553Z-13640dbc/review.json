@@ -1,0 +1,73 @@
+{
+  "caller": "claude",
+  "commit": "13640dbca8fb4624a1fe72ddf89e269a6319b228",
+  "date": "2026-11-23T14:15:53+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261123-statement-rule-pilot.status.md",
+    "plans/20261123-statement-rule-pilot.task.md",
+    "reviews/20261123T141236Z-52986bdc/resolution-1-20261123T141345Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-10-20261123T141349Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-11-20261123T141349Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-2-20261123T141346Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-3-20261123T141346Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-4-20261123T141347Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-5-20261123T141350Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-6-20261123T141347Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-7-20261123T141348Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-8-20261123T141348Z.json",
+    "reviews/20261123T141236Z-52986bdc/resolution-9-20261123T141349Z.json",
+    "reviews/20261123T141236Z-52986bdc/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261123T141553Z-13640dbc#1",
+      "line": 61,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The acceptance rule says an unknown clock or counter ends a plain INSERT, but a literal INSERT can continue without a clock and with unknown counters when it reads neither. Fix: State that the run ends at these checks when `statementClock` returns `none` or `Counters.firstUnknown` finds an unknown counter among `resolved.counterReads`."
+    },
+    {
+      "id": "20261123T141553Z-13640dbc#2",
+      "line": 228,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task says `runStatement` returns a run that is not ready for a missing target, but that branch sets `ready := true` and returns an `.unmodeled` effect. Fix: State that the missing target ends the step through `Output.ofStep`, and reserve readiness failures for the three checks on a present target."
+    },
+    {
+      "id": "20261123T141553Z-13640dbc#3",
+      "line": 270,
+      "path": "plans/20261123-statement-rule-pilot.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The blanket prohibition on adding imports conflicts with the requirement for two new Lean fixtures that use the pilot laws and must import modules exposing them. Fix: Limit the prohibition to new external dependencies and imports outside the permitted package boundaries."
+    }
+  ],
+  "id": "20261123T141553Z-13640dbc",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
