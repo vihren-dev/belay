@@ -15,9 +15,9 @@ namespace Belay.Sqlite.Model
 the run of the statement gives the result. A result is in a case when one of these holds:
 * {lit}`noClock`: the statement has no clock value ({name}`statementClock`), and the result is the end of the run
   with {name}`clockUnmodeled`;
-* {lit}`unknownCounter`: the statement has a clock value, a counter that it reads is unknown
-  ({name}`Counters.firstUnknown`), and the result is the end of the run with {name}`counterUnknownReason` of that
-  counter;
+* {lit}`unknownCounter`: the statement has a clock value, the connection does not know a counter that the
+  statement reads, and the result is the end of the run with {name}`counterUnknownReason` of the first such counter
+  in the read order ({name}`Counters.firstUnknown`);
 * {lit}`checked`: the statement has the clock value, no counter that it reads is unknown, and the kind relates the
   clock value to the result. -/
 inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection) (resolved : Resolved.Statement)
@@ -25,7 +25,8 @@ inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection
   /-- The statement reads the clock and the run has no clock value for it, so the run ends. -/
   | noClock (timed : statementClock clock index resolved = none) :
       StepCase clock index connection resolved kindCase (.ended clockUnmodeled)
-  /-- The statement reads a counter that the connection does not know, so the run ends. -/
+  /-- The statement reads a counter that the connection does not know, so the run ends with the reason of the first
+  such counter. -/
   | unknownCounter {value : Int} {kind : CounterKind} (timed : statementClock clock index resolved = some value)
       (unknown : connection.state.counters.firstUnknown resolved.counterReads = some kind) :
       StepCase clock index connection resolved kindCase (.ended (counterUnknownReason kind))
@@ -34,12 +35,16 @@ inductive StepCase (clock : Option Clock) (index : Nat) (connection : Connection
       (known : connection.state.counters.firstUnknown resolved.counterReads = none) (case : kindCase value result) :
       StepCase clock index connection resolved kindCase result
 
-/-- For every clock, index, connection, resolved statement, cases of a kind and function from clock values to
-results: if the kind relates each clock value that passes both checks to the result of the function at it, then
-the case type relates the inputs to the result of the two checks with the function after them. In plain words, a
-step that makes the two checks and then gives the function of the clock value is in a case, when the kind covers
-the function. Use it to prove the cover of a kind from its kind rule. Proof sketch: split on the clock value and on
-the first unknown counter; each branch is one constructor. -/
+/-- For every clock, index, connection, resolved statement, cases of a kind and function {lit}`body` from clock
+values to results: if, for each clock value that the statement has and with no unknown counter, the kind relates
+the clock value to the result of {lit}`body` at it, then the case type relates the inputs to this result:
+* {lit}`.ended clockUnmodeled` when the statement has no clock value;
+* else the end of the run with {name}`counterUnknownReason` of the first unknown counter, when there is one;
+* else {lit}`body` at the clock value.
+Only the last result needs the premise. In plain words, a step that makes the two checks and then gives the
+function of the clock value is in a case, when the kind covers the function. Use it to prove the cover of a kind
+from its kind rule. Proof sketch: split on the clock value and on the first unknown counter; each branch is one
+constructor. -/
 theorem StepCase.of_checks {clock : Option Clock} {index : Nat} {connection : Connection}
     {resolved : Resolved.Statement} {kindCase : Int → RunStep → Prop} {body : Int → RunStep}
     (kind : ∀ value, statementClock clock index resolved = some value →
@@ -57,10 +62,11 @@ theorem StepCase.of_checks {clock : Option Clock} {index : Nat} {connection : Co
     | some kind => exact .unknownCounter timed known
     | none => exact .checked timed known (kind value timed known)
 
-/-- For every clock, index, connection, resolved statement and cases of a kind: if the kind gives one result for
-each clock value, then two results that the case type relates to the inputs are equal. In plain words, one result
-of the kind gives one result of the step. The premise is needed only at the clock value of the statement. Proof
-sketch: the clock value and the first unknown counter select the same constructor on both sides. -/
+/-- For every clock, index, connection, resolved statement and cases of a kind: if, for every integer clock value,
+the kind relates that value to at most one result, then two results that the case type relates to the inputs are
+equal. In plain words, one result of the kind gives one result of the step. The premise is for every integer, also
+when the statement has no clock value; the proof uses it only when both results are in the case {lit}`checked`.
+Proof sketch: the clock value and the first unknown counter select the same constructor on both sides. -/
 theorem StepCase.unique {clock : Option Clock} {index : Nat} {connection : Connection}
     {resolved : Resolved.Statement} {kindCase : Int → RunStep → Prop}
     (kindUnique : ∀ value first second, kindCase value first → kindCase value second → first = second)

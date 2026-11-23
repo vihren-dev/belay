@@ -369,3 +369,9 @@ counterexample replay (#463)").
   review `20261123T194819Z-602f9059` (a long sentence in this file) is
   fixed here. Tests: `just dev-build`,
   `tests/test_model_package.py`, `tests/surface_layers_test.py`.
+- 2026-11-23: review `20261123T195608Z-18dc743f` of the case type gave
+  4 "must" findings on docstrings, all fixed in a `refactor:` commit:
+  the success case names the database of the outcome, `unknownCounter`
+  names the first unknown counter, `StepCase.of_checks` lists its three
+  results, and `StepCase.unique` says that its premise is for every
+  clock value. Tests: `just dev-build`.
