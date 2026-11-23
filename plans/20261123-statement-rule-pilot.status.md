@@ -22,10 +22,6 @@ The case laws of plain INSERT and their data facts are in the model
 Open:
 
 - The use of the case laws in the client-claims test.
-- The retention test: remove the restated `runScriptStep_insert_ok` and
-  its axiom report from `ReplacedStepLaws.lean`, and change the number of
-  model laws that `tests/surface_schema_script_test.py` expects from
-  seven to six.
 - The open findings of review `20261123T174042Z-90ccc457` on the
   findings record, and the measurements of the record after the import
   fix and the case laws.
@@ -299,3 +295,11 @@ counterexample replay (#463)").
   the failure law binds the database of the error outcome as `reached`,
   so the docstring now says that it is the database before and that the
   counts do not use it. Tests: `just dev-build`.
+- 2026-11-23: the retention test no longer restates
+  `runScriptStep_insert_ok`, because the model has it again as the
+  success case law, with the statement of the start revision.
+  `ReplacedStepLaws.lean` proves six deleted model laws, and
+  `tests/surface_schema_script_test.py` expects six axiom reports. The
+  "should" finding of review `20261123T193144Z-ba44164b` (a long
+  sentence in the failure-law docstring) is fixed here. Tests:
+  `just dev-build`, `tests/surface_schema_script_test.py`.

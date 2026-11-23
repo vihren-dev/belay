@@ -74,7 +74,7 @@ def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: 
     with its old statement, from the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the
     data facts of CREATE TABLE and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
     old laws loses no fact. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
+    check_module_chain(runtime_root, tmp_path, (("ReplacedStepLaws", 6), ("ReplacedSendLaws", 3)))
 
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
