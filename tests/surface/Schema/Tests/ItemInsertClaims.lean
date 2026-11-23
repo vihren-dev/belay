@@ -4,10 +4,11 @@ set_option doc.verso true
 
 /-! A fixture module of {lit}`tests/surface_schema_script_test.py` (statement rule pilot, "Client claims"): claims
 that a client can state and prove about programs on databases with the catalog {name}`ItemInsertSite.itemsCatalog`
-and arbitrary valid rows. They check the kind rules {name}`Belay.Sqlite.Model.runScriptStep_plainInsert_eq` and
-{name}`Belay.Sqlite.Model.runScriptStep_createTable_eq` through the bridge
-{name}`Belay.Sqlite.Sql.check_send_of_rule`, and the path of
-{lit}`sql_run` through the kind rules. The proofs use the kind rules, the bridge and the data facts of
+and arbitrary valid rows. The two INSERT claims use the case laws {name}`Belay.Sqlite.Model.runScriptStep_insert_ok`
+and {name}`Belay.Sqlite.Model.runScriptStep_insert_failed` through the bridge
+{name}`Belay.Sqlite.Sql.check_send_of_rule`, and name no kind rule. The claim about CREATE TABLE and INSERT also uses
+the kind rule {name}`Belay.Sqlite.Model.runScriptStep_createTable_eq`. The preservation claim uses the path of
+{lit}`sql_run` through the kind rules. The proofs use these laws, the bridge and the data facts of
 {lit}`ItemInsertSite` and {lit}`ItemInsertOutcomes`; they do not name the step function, its implementation, the
 resolver or the statement run. -/
 
@@ -19,7 +20,8 @@ open Belay.Sqlite.Model hiding Database
 database with {name}`itemsCatalog` and the rows: if that connection is valid, no stored item has the id as its rowid,
 and the post holds for the output {lean}`Output.done 1` in the context after the connection that stores
 {name}`itemRow` and counts one change with the id as the last rowid, then the insert checks the post. Proof sketch:
-the bridge with the kind rule of plain INSERT; the data facts select the success case of the rule. -/
+the bridge with the success law {name}`runScriptStep_insert_ok`; the site facts give its premises, and
+{name}`items_fits` gives the fit of the new row. -/
 theorem insert_new_check {clock : Option Clock} {index : Nat} {counters : Counters} {outputs : List Output}
     {rows : List (List Row)} {id : Int64} {name : String} {post : List Output → ExecutionContext → Prop}
     (valid : (Database.Raw.connection { catalog := itemsCatalog, rows } counters).state.Holds
@@ -32,15 +34,15 @@ theorem insert_new_check {clock : Option Clock} {index : Nat} {counters : Counte
     (send (insertItem id name)).check post ⟨clock, index, Database.Raw.connection { catalog := itemsCatalog, rows } counters,
       outputs⟩ := by
   unfold insertItem
-  refine Sql.check_send_of_rule (runScriptStep_plainInsert_eq (target := 0) (rows := itemCells) (subqueries := [])
-    (by rfl)) valid ?_ ?_
-  all_goals dsimp only [Database.Raw.connection, List.headD]
-  all_goals simp only [items_clock, items_reads, items_table, items_values, Counters.firstUnknown, List.find?_nil,
-    items_ready rows valid.1, Resolved.subqueriesPlain, List.all_nil, items_cellsReady, Bool.and_self, ↓reduceIte,
-    insertOutcome_of_fits (items_fits rows valid.1 id name fresh)]
-  · rfl
+  refine Sql.check_send_of_rule (runScriptStep_insert_ok (target := 0) (rows := itemCells) (subqueries := [])
+    (by rfl) (items_clock _ _) (by rw [items_reads]; rfl) (items_table rows) rfl (items_cellsReady _) ?_)
+    valid rfl ?_
+  · dsimp only [Database.Raw.connection, List.headD]
+    rw [items_values]
+    exact items_fits rows valid.1 id name fresh
   refine Sql.sendReached_single (fun _ same => by cases same) fun _ => ?_
-  simp only [items_counts_ok, items_inserted]
+  dsimp only [Database.Raw.connection, List.headD] at holds ⊢
+  simp only [items_values, items_counts_ok, items_inserted]
   exact holds
 
 /-- Client claim "an insert of a new key succeeds". For every id and name, every database whose catalog is
@@ -65,7 +67,8 @@ theorem new_key_inserts (id : Int64) (name : String) :
 database with {name}`itemsCatalog` and the rows: if that connection is valid, a stored item has the id as its rowid,
 and for all counts with no change the post holds for the output {lean}`Output.error 19` in the context after the
 connection with the same database and those counts, then the insert checks the post. Proof sketch: the bridge with
-the kind rule of plain INSERT; the data facts select the failure case of the rule. -/
+the failure law {name}`runScriptStep_insert_failed`; {name}`items_taken_outcome` gives the failed outcome, and
+{name}`LiteralData.insertCounts_error_changes` gives no change. -/
 theorem insert_taken_check {clock : Option Clock} {index : Nat} {counters : Counters} {outputs : List Output}
     {rows : List (List Row)} {id : Int64} {name : String} {post : List Output → ExecutionContext → Prop}
     (valid : (Database.Raw.connection { catalog := itemsCatalog, rows } counters).state.Holds
@@ -78,14 +81,15 @@ theorem insert_taken_check {clock : Option Clock} {index : Nat} {counters : Coun
     (send (insertItem id name)).check post ⟨clock, index, Database.Raw.connection { catalog := itemsCatalog, rows } counters,
       outputs⟩ := by
   unfold insertItem
-  refine Sql.check_send_of_rule (runScriptStep_plainInsert_eq (target := 0) (rows := itemCells) (subqueries := [])
-    (by rfl)) valid ?_ ?_
+  refine Sql.check_send_of_rule (runScriptStep_insert_failed (target := 0) (rows := itemCells) (subqueries := [])
+    (reason := .constraintViolation) (by rfl) (items_clock _ _) (by rw [items_reads]; rfl) (items_table rows) rfl
+    (items_cellsReady _) ?_ ?_) valid rfl ?_
   all_goals dsimp only [Database.Raw.connection, List.headD]
-  all_goals simp only [items_clock, items_reads, items_table, items_values, Counters.firstUnknown, List.find?_nil,
-    items_ready rows valid.1, Resolved.subqueriesPlain, List.all_nil, items_cellsReady, Bool.and_self, ↓reduceIte,
-    items_taken_outcome rows id name taken]
-  · rfl
-  exact Sql.sendReached_single (fun _ same => by cases same) fun _ => holds _ rfl
+  · rw [items_values]
+    exact items_ready rows valid.1 id name
+  · rw [items_values]
+    exact items_taken_outcome rows id name taken _ _
+  exact Sql.sendReached_single (fun _ same => by cases same) fun _ => holds _ LiteralData.insertCounts_error_changes
 
 /-- Client claim "an insert of a key that the table holds fails". For every id and name, every database whose
 catalog is {name}`itemsCatalog` and whose table {lit}`items` has a row with the id as its rowid, and every complete

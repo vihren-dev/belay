@@ -66,20 +66,18 @@ theorem items_fits (rows : List (List Row)) (valid : ({ catalog := itemsCatalog,
 
 /-- For every row lists, id and name such that a stored row of {lit}`items` has the id as its rowid, and for every
 database and keys: the outcome of the insert of {name}`itemValues` is a constraint violation that keeps the
-database. The theorem needs no validity. Proof sketch: the alias cell is an integer, so the alias check passes;
-the repeated rowid fails the check of distinct rowids, so the checked write gives a constraint violation. -/
+database. The theorem needs no validity. Proof sketch: the alias cell is an integer, and the new row repeats the
+rowid of the stored row ({name}`LiteralData.rowidsDistinct_eq_false_of_repeated`), so
+{name}`insertOutcome_constraintViolation` applies. -/
 theorem items_taken_outcome (rows : List (List Row)) (id : Int64) (name : String)
     (taken : ∃ row ∈ rows.getD 0 [], row.rowid = id.toInt) (database : Model.Database) (keys : List UniqueKey) :
     insertOutcome database 0 keys (itemsTable rows) [itemValues id name]
       (LiteralData.inserted (itemsTable rows) [itemValues id name]) = .error (.constraintViolation, database) := by
-  have repeated : LiteralData.rowidsDistinct (LiteralData.inserted (itemsTable rows) [itemValues id name]) = false := by
-    apply Bool.eq_false_iff.mpr
-    intro distinct
-    have nodup := (Table.rowidsDistinct_iff _).1 distinct
-    rw [Table.RowidsDistinct, items_inserted, List.map_append, List.nodup_append] at nodup
-    obtain ⟨row, member, same⟩ := taken
-    exact nodup.2.2 row.rowid (List.mem_map_of_mem member) id.toInt (by simp [itemRow]) same
-  rw [insertOutcome, items_aliases]
-  simp [checkedWrite, repeated]
+  obtain ⟨row, member, same⟩ := taken
+  refine insertOutcome_constraintViolation (fun _ added => ?_) (.inr ?_)
+  · obtain rfl := List.mem_singleton.1 added
+    rfl
+  · exact LiteralData.rowidsDistinct_eq_false_of_repeated (items_inserted rows id name) member
+      (List.mem_singleton_self (itemRow id name)) same
 
 end ItemInsertSite
