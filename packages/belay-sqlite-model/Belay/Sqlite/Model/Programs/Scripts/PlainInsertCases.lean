@@ -6,8 +6,7 @@ set_option doc.verso true
 /-! The case laws of plain INSERT: an INSERT of rows without a RETURNING clause and without write rules. Each case
 law states one case of the kind rule {lit}`runScriptStep_plainInsert_eq` as a short theorem, and its proof uses
 the kind rule and does not unfold the step function. A client selects a case with facts about the clock, the
-counters, the table and the values, and gets the step as an equation. The equation fits the premise of the bridge
-{lit}`Sql.check_send_of_rule` of the surface. -/
+counters, the table and the values, and gets the step as an equation. -/
 
 namespace Belay.Sqlite.Model
 
@@ -53,8 +52,8 @@ table, the subqueries are plain, the cells are ready, the values pass the readin
 ({name}`LiteralData.insertReady`), and the outcome ({name}`insertOutcome`) is an error with the reason, then the
 step continues with the error output of the primary code of the reason and with no further execution. Its
 connection is the connection after the write ({name}`Connection.afterWrite`) of the database before the statement,
-with the counts of the failed insertion. The premise on the outcome does not fix its database, and the step does
-not depend on it: {name}`LiteralData.insertCounts` gives the same counts for each error.
+with the counts of the failed insertion. A failed outcome carries the database before ({name}`insertOutcome_error`),
+and {name}`LiteralData.insertCounts` gives the same counts for each error, so the law does not name that database.
 {name}`LiteralData.insertCounts_error_changes` gives 0 changed rows, and
 {name}`insertOutcome_constraintViolation` gives the outcome of rows that break a constraint. Proof sketch: rewrite
 the step with {name}`runScriptStep_plainInsert_eq`; the premises select the failure case. -/
