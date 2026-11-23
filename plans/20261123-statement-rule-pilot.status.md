@@ -26,10 +26,10 @@ decision and the final measurement at the last code revision
 `ee83eca7`, with the client proofs in the repository fixtures. Its
 comparison of the three forms at `a03e8267` stays as dated history.
 
-Checks on `8297f897`, which has the code of the last code revision
-`ee83eca7` and changes only documents after it (the working copy then
-held only review records and this file): `just test-nix` passes (99
-tests) and `just test-scheduled-checks` passes (53 tests).
+The end checks ran on `8297f897`. Its code is the code of the last code
+revision `ee83eca7`; after it, only documents change. The working copy
+then held only review records and this file. `just test-nix` passes (99
+tests), and `just test-scheduled-checks` passes (53 tests).
 `just test-full` passes, and `just verdict` gives `counts.json` and
 `report.json` that are byte-equal to the reference files of the
 workspace `belay-hoare-rules`.
@@ -550,3 +550,6 @@ counterexample replay (#463)").
   `/home/codex/work/belay-hoare-rules/build/verdict/`. `just test-nix`
   passes (99 tests), and `just test-scheduled-checks` passes (53
   tests). The task and this file are marked DONE.
+- 2026-11-23: review `20261123T230926Z-d28cbc9c` gave 1 "should"
+  finding on a long sentence about the checked revision, fixed in this
+  file.
