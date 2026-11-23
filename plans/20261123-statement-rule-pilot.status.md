@@ -501,3 +501,10 @@ counterexample replay (#463)").
   `tests/surface_assertion_examples_test.py`,
   `tests/surface_layers_test.py` and
   `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
+- 2026-11-23: review `20261123T221444Z-c519a705` gave 3 "should"
+  findings, all fixed in a `refactor:` commit: the docstring of the
+  restated `runScriptStep_insert_ok` names the clock value, the known
+  counters that the statement reads and the database of
+  `Database.setRows`, and the docstring of the retention test names the
+  ten laws that the pilot deleted from its start revision. Tests:
+  `tests/surface_schema_script_test.py`.
