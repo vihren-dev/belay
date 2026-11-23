@@ -401,3 +401,14 @@ counterexample replay (#463)").
   axiom reports. Tests: `tests/surface_schema_script_test.py`,
   `tests/surface_layers_test.py`,
   `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
+- 2026-11-23: review `20261123T201356Z-24d517a0` gave 3 "should"
+  findings, all fixed in a `refactor:` commit. The case-type fixtures
+  join the chain of the first client test, so that each module compiles
+  once; the test is now `test_client_claims_on_items_in_three_rule_forms`,
+  and `test_client_claims_on_items_use_the_case_type` is gone. The test
+  docstring gives the output and the database of each side of the claim
+  for each input. The checks with the case type moved to the new
+  fixture `ItemInsertCaseChecks.lean` (root in `surfaceS6`), so that
+  their docstrings can list each premise and both files stay under 200
+  lines. Tests: `tests/surface_schema_script_test.py`,
+  `tests/surface_layers_test.py`.
