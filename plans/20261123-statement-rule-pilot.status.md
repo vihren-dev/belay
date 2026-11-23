@@ -5,9 +5,9 @@ Created 2026-11-23. Task: [20261123-statement-rule-pilot.task.md](20261123-state
 
 ## State
 
-In progress. The CREATE TABLE kind rule and the generic projections are in
-the model. The plain INSERT rule, the surface bridge, `sql_run`, the tests and
-the findings record are open.
+In progress. The CREATE TABLE and plain INSERT kind rules and the generic
+projections are in the model. The surface bridge, `sql_run`, the deletion
+of the replaced INSERT laws, the tests and the findings record are open.
 
 ## Start revision
 
@@ -72,3 +72,17 @@ counterexample replay (#463)").
   model is not cached, and the README example of `surface_rebuild_test.py`
   cannot clone `plausible` (no `git`). `just test-full` runs the README
   example and `just test-nix` runs the installed consumer test.
+- 2026-11-23: reviews `20261123T150247Z-c86380e4` (4 must, 5 should),
+  `20261123T150746Z-657e7308` (1 must, 1 should) and
+  `20261123T151159Z-dc483d3a` (1 should): all fixed in two `refactor:`
+  commits and in the next commit.
+- 2026-11-23: model: the plain INSERT kind rule
+  `runScriptStep_plainInsert_eq` (`PlainInsertRule.lean`), the data lemmas
+  `insertOutcome_of_fits` and `insertReady_of_fits` (they replace
+  `runStatement_insert_ok`, whose only caller was
+  `runScriptStep_insert_ok`), and `Connection.afterError_failed`.
+  `runScriptStep_insert_ok` is proved from the rule; it and the other
+  replaced INSERT laws are deleted together with their surface callers.
+  Tests: `just dev-build`, `tests/surface_schema_script_test.py`,
+  `tests/surface_s6_automation_test.py`,
+  `tests/surface_assertion_examples_test.py`.
