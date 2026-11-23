@@ -26,9 +26,9 @@ plain INSERT, before the end checks; the task file has the section
 
 Open:
 
-- The second client test of the case type. The case type and its
-  part for all statement kinds are in the model (`StepCase.lean`,
-  `PlainInsertCase.lean`).
+- The findings record for the case type. The case type, its part for
+  all statement kinds (`StepCase.lean`, `PlainInsertCase.lean`) and the
+  second client test (`ItemInsertCaseClaims.lean`) are done.
 - The open findings of review `20261123T174042Z-90ccc457` on the
   findings record, and the measurements of the record after the import
   fix and the case laws.
@@ -386,3 +386,18 @@ counterexample replay (#463)").
   `Resolved.Statement.counterReads`, which puts `changes()` first. The
   docstrings of `StepCase` now name that list; fixed in a `refactor:`
   commit. Tests: `just dev-build`.
+- 2026-11-23: the second client test uses the case type.
+  `tests/surface/Schema/Tests/ItemInsertCaseClaims.lean` proves the two
+  INSERT claims of `ItemInsertClaims` with the same statements through
+  `runScriptStep_plainInsert_of_case` and one case each, and names no
+  kind rule and no case law. It also proves the claim for each input
+  (`insert_done_or_error`: `.done 1` and the new row, or an error and
+  the database before) with the cover `runScriptStep_plainInsert_cover`,
+  and again (`insert_done_or_error_by_laws`) with a split on the key and
+  the case-law claims of `ItemInsertClaims`. The root is in
+  `tests/surface_fixture_roots.json` (`surfaceS6`), and
+  `test_client_claims_on_items_use_the_case_type` in
+  `tests/surface_schema_script_test.py` compiles it and expects four
+  axiom reports. Tests: `tests/surface_schema_script_test.py`,
+  `tests/surface_layers_test.py`,
+  `tests/test_model_package.py::test_root_imports_the_core_and_only_the_prelude`.
