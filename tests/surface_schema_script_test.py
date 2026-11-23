@@ -80,9 +80,10 @@ def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
 def test_client_claims_on_items_use_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
     """The fixtures ItemInsertSite, ItemInsertOutcomes and ItemInsertClaims prove client claims about a table with
-    an INTEGER PRIMARY KEY alias through the kind rules of CREATE TABLE and plain INSERT, the case laws of plain
-    INSERT and the bridge Sql.check_send_of_rule. On arbitrary valid rows, a new key inserts one row (success law),
-    and an existing key fails with code 19 and keeps the database (failure law). CREATE TABLE on an empty catalog then INSERT gives a table with exactly the new row.
+    an INTEGER PRIMARY KEY alias. The proofs use the bridge Sql.check_send_of_rule. The INSERT claims use the case
+    laws of plain INSERT, and the other claims use the kind rules of CREATE TABLE and plain INSERT. On arbitrary
+    valid rows, a new key inserts one row (success law), and an existing key fails with code 19 and keeps the
+    database (failure law). CREATE TABLE on an empty catalog then INSERT gives a table with exactly the new row.
     sql_run proves that the insert keeps the condition that every stored item has a name that is not NULL. Every
     theorem uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ItemInsertSite", 0), ("ItemInsertOutcomes", 0),
