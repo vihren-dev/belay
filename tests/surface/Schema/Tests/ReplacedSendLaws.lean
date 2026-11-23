@@ -105,14 +105,13 @@ plain insert that resolves from the initial connection and is modeled, and a pos
 about every clock value, output list and final context. It requires the post for that output list and that context
 when these three conditions hold:
 
-* The database of the context is the given database, with the rows of the target table replaced by the rows that
-  the insert gives for that clock value.
+* The database of the context is the given database, except that the target table has the rows of the insert.
 * That database is valid.
 * No output of the context is an error or ends the run.
 
-The output list is independent of the outputs of the context. Under this premise, a program that sends the insert
-satisfies {lit}`Sql.ifOk` of the post at its fresh start. That is, every branch stays modeled, and only a branch
-whose outputs have no error must satisfy the post. Proof sketch:
+The rows of the insert depend on the clock value. The output list is independent of the outputs of the context.
+Under this premise, a program that sends the insert satisfies {lit}`Sql.ifOk` of the post at its fresh start. That
+is, every branch stays modeled, and only a branch whose outputs have no error must satisfy the post. Proof sketch:
 {name}`check_send_single_of_step` with the step of the model; {name}`ReplacedStepLaws.plainInsert_database` gives
 the database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
