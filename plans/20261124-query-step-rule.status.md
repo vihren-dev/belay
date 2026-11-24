@@ -113,3 +113,19 @@ The file stems below use the directory in their row and the extension .lean.
 | `tests/surface/Tooling/Tests` | SelectCheckCases |
 
 The query output and context witnesses cover universal claims (S04), equivalence (S06), SQL execution and search, M06–M08 query behavior, M11 clock and counter outcomes, and M12 key-check pragmas. CatalogOutputCases supplies a lasting caller for the broadened contract. No mutant table changed.
+
+### Measurements on the complete schema stack
+
+The slice starts at 33c2bb37 with 98,598 selected Lean code lines. At
+ea83eeff the count is 99,400. Model, surface and tests change from
+59,128 / 14,321 / 21,456 to 59,216 / 14,316 / 22,175. SQL text (1,945),
+conformance (1,042), public documentation tools (134) and other files (572)
+are constant. The faster of two elaborations for each changed sql_run
+fixture, in seconds, was:
+
+| Fixture | Start | End |
+| --- | ---: | ---: |
+| S6AutoKindRuleCases | 1.49 | 1.55 |
+| S6AutoPaths | 32.36 | 51.44 |
+| SelectContextCases | 8.76 | 9.15 |
+| QuerySendClaims | new | 1.33 |
