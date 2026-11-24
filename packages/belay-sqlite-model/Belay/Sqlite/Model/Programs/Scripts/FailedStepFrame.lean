@@ -1,5 +1,4 @@
 import Belay.Sqlite.Model.Programs.Scripts.PlainWriteFrame
-import Belay.Sqlite.Model.Programs.Scripts.NonQueryOutput
 
 set_option doc.verso true
 

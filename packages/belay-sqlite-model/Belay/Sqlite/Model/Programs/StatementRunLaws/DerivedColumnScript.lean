@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Programs.StatementRunLaws.AddColumnPlainStep
 import Belay.Sqlite.Model.Programs.StatementRunLaws.CreateTriggerStep
 import Belay.Sqlite.Model.Programs.StatementRunLaws.DerivedColumnBackfillStep
+import Belay.Sqlite.Model.Schema.Triggers.BackfillStatementResolution
 import Belay.Sqlite.Model.Schema.Columns.DerivedColumnScript
 
 set_option doc.verso true
@@ -51,7 +52,7 @@ column, to an expression of the old columns whose assigned form is context-free,
 absent from the table. Both settings are off, and the catalog after ADD COLUMN must select no trigger for an
 UPDATE of the new column. Other triggers, indexes and tables are unrestricted. Proof sketch: peel the
 successful steps; ADD COLUMN gives the extended table ({name}`addColumn_plain_step`), the backfill stores
-the computed rows ({name}`backfill_step`) under the premises that the extended catalog and table laws
+the computed rows ({name}`Connection.afterWrite_backfill`) under the premises that the extended catalog and table laws
 establish, and the triggers append ({name}`createTriggers_state`). -/
 theorem derivedColumn_state {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {tableName : Identifier} {definition : Syntax.ColumnDefinition}
@@ -112,9 +113,30 @@ theorem derivedColumn_state {context : ResolveContext} {clock : Option Clock} {i
   have added : columnPosition (table.shape.columns ++ [definedColumn table.shape.strict definition])
       definition.name = some table.shape.columns.length :=
     columnPosition_append_new fresh (by simp [definedColumn])
-  obtain ⟨k2, h2⟩ := backfill_step (connection := c1) table (definedColumn table.shape.strict definition)
-    extended extendedPresent added (by simp [definedColumn]) operand below contextFree wide aliased plain
-    (by rw [h1]; exact foreign) (by rw [h1]; exact recursive) noTrigger s2 e2
+  let column := definedColumn table.shape.strict definition
+  have newPlain : column.generated = none := by simp [column, definedColumn]
+  have reached : ∃ counters, c2 = { c1 with state := { c1.state with
+      database := c1.state.database.setRows position (table.addDerivedColumn column (assignedExpression (backfillScope position tableName table.shape column)
+        table.shape.columns.length value derived)).rows, counters } } := by
+    obtain ⟨_, _, -, resolution, -⟩ := runScriptStep_ran s2
+    obtain ⟨rfl, rfl⟩ := backfill_resolution (state := c1.resolveState) (tableName := tableName)
+      (table := table.shape) extended added newPlain operand (by rw [h1]; exact foreign)
+      (by rw [h1]; exact recursive) noTrigger resolution
+    have step := s2
+    rw [runScriptStep_plainUpdate_eq resolution] at step
+    split at step <;> try contradiction
+    dsimp only at step
+    split at step <;> try contradiction
+    simp only [extendedPresent] at step
+    split at step <;> try contradiction
+    split at step
+    · cases step
+      apply Connection.afterWrite_backfill _ _ _ (statementContext_nil_rowFree _ _ _ _) _ wide aliased
+        (assignedExpression_readsBelow (scope := backfillScope position tableName table.shape column)
+          (position := table.shape.columns.length) (expression := value) below) plain newPlain contextFree
+    · cases step
+      cases e2
+  obtain ⟨k2, h2⟩ := reached
   obtain ⟨k3, h3, count⟩ := createTriggers_state triggers success
   have run : runScriptFrom context clock index connection
       (derivedColumnScript tableName definition value addValues updateValues triggers) =
@@ -127,7 +149,7 @@ theorem derivedColumn_state {context : ResolveContext} {clock : Option Clock} {i
     subst h2
     rw [h3]
     subst h1
-    simp [Database.addDerivedColumn, Database.addColumn]
+    simp [Database.addDerivedColumn, Database.addColumn, column]
   · simp only [List.length_cons, count]
 
 end Belay.Sqlite.Model

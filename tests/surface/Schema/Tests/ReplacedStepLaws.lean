@@ -1,6 +1,6 @@
+import ReplacedNonQueryOutputs
 import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
 import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
-import Belay.Sqlite.Model.Programs.Scripts.NonQueryOutput
 import Belay.Sqlite.Model.Schema.Ddl.TableByName
 import Belay.Sqlite.Model.Schema.Ddl.SchemaExtensionLaws
 
