@@ -98,7 +98,8 @@ def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     no result in the default environment but the count of the delete after it. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
-                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 4)),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 3),
+                       ("SelectCounterContextCases", 1)),
                        timeout=120)
 
 

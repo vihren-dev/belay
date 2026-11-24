@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:09:48+00:00",
+  "finding": "20261124T120404Z-ddf1cc2e#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "A21 and A22 now describe the step-output contract and their reached connections."
+}
