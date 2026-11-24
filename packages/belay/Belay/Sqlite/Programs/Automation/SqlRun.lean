@@ -67,7 +67,7 @@ where
       evalTactic (← `(tactic| refine Sql.check_single_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
     else
       evalTactic (← `(tactic| refine Sql.check_query_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
-    processPremises hints fuel ``Model.Syntax.Statement.select (← getGoals)
+    processPremises hints fuel (← getGoals)
   /-- Whether the procedure of {lit}`sql_select` closes the check of a query. When it does not, the state,
 the goal and the messages stay as they were, and the step rule of the read applies. -/
   closesBySelect (hints : Hints) (goal : MVarId) : TacticM Bool := do
@@ -79,8 +79,7 @@ the goal and the messages stay as they were, and the step rule of the read appli
     return false
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
   statement, so that each statement gets its own rule at the context that the earlier ones reach. A visible SELECT uses its syntax rule, which
-  requires only its syntax. For other sends {name}`applyKindRule` tries the resolved kind rules before the
-  fallback in {name}`sendRule`.
+  requires only its syntax. For other sends {name}`applyKindRule` tries the exact equations using the supplied resolutions.
   The cases of a kind rule that fail are closed when their trace is not error-free. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
@@ -97,8 +96,8 @@ the goal and the messages stay as they were, and the step rule of the read appli
     let syntaxKind ← statementKind? statement
     if syntaxKind == some ``Model.Syntax.Statement.select then
       setGoals [goal]
-      evalTactic (← sendRule ``Model.Syntax.Statement.select)
-      return ← processPremises hints fuel ``Model.Syntax.Statement.select (← getGoals)
+      evalTactic (← `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached))
+      return ← processPremises hints fuel (← getGoals)
     if let some (open_, cases) ← applyKindRule hints goal then
       let mut result := open_
       for case_ in cases do
@@ -106,15 +105,11 @@ the goal and the messages stay as they were, and the step rule of the read appli
         for rest in ← runGoal hints false (fuel - 1) case_ do
           result := result ++ (← if failed then closeFailure rest else pure [rest])
       return result
-    let some kind := syntaxKind
-      | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule."
-    setGoals [goal]
-    evalTactic (← sendRule kind)
-    processPremises hints fuel kind (← getGoals)
+    stuck first goal "no hint or hypothesis gives a resolved kind for this send."
   /-- Process the premises that a rule leaves. A premise about the context is closed from the hints or stays
   open. An outcome premise is entered, and the rest of the program runs inside it. The outcome premises stay
   open when a premise that they depend on is open. -/
-  processPremises (hints : Hints) (fuel : Nat) (kind : Name) (goals : List MVarId) : TacticM (List MVarId) := do
+  processPremises (hints : Hints) (fuel : Nat) (goals : List MVarId) : TacticM (List MVarId) := do
     let mut open_ := []
     let mut blocked := false
     -- A variable of the rule, such as the resolution state, takes the tag of the goal that the rule is applied to,
@@ -124,17 +119,16 @@ the goal and the messages stay as they were, and the step rule of the read appli
     let variables := goals.filter fun new => !premises.contains new
     for new in premises do
       let tag := (← new.getTag).eraseMacroScopes
-      match roleOf kind tag with
-      | .side =>
-        unless ← closeSide hints tag new do
-          open_ := open_ ++ [new]
-          blocked := blocked || blockingPremises.contains tag
-      | .outcome names =>
+      if tag == `reached then
         if blocked then
           open_ := open_ ++ [new]
         else
-          let (_, entered) ← new.introN names.length names
+          let (_, entered) ← new.introN 2 [`selected, `choice]
           open_ := open_ ++ (← runGoal hints false (fuel - 1) entered)
+      else
+        unless ← closeSide hints tag new do
+          open_ := open_ ++ [new]
+          blocked := blocked || blockingPremises.contains tag
     return (← variables.filterM fun data => return !(← data.isAssigned)) ++ open_
 
 /-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not

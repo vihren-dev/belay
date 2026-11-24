@@ -1,3 +1,4 @@
+import ReplacedGeneralSend
 import ReplacedPlainWriteLaws
 
 set_option doc.verso true
@@ -69,7 +70,7 @@ that sends the statement checks the post at {lit}`ctx` if these premises hold.
   one output and the context after it. The premise does not tie the integer to the clock, so a proof of it
   cannot use the clock.
 
-Proof sketch: {name}`Sql.check_send_of_step`; {name}`runScriptStep_effect` and {name}`plainDelete_database` give the connection
+Proof sketch: {name}`ReplacedGeneral.Sql.check_send_of_step`; {name}`runScriptStep_effect` and {name}`plainDelete_database` give the connection
 after a success, and {name}`runScriptStep_plainWrite_failed` gives it after a failure. -/
 theorem Sql.check_send_plainDelete {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {filter : Option Resolved.Expr} {after : ResolveState}
@@ -93,7 +94,7 @@ theorem Sql.check_send_plainDelete {ctx : ExecutionContext} {statement : Syntax.
         (ctx.connection.state.statementRun value values (.delete target filter [] [] none)).counts →
       next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) modeled (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (fun _ _ eq => by cases eq) step) ?_ valid
   intro output next step' hvalid

@@ -1,3 +1,4 @@
+import ReplacedGeneralSend
 import ReplacedStepLaws
 import Belay.Sqlite.Programs.Scripts.KindRuleSend
 
@@ -5,7 +6,7 @@ import Belay.Sqlite.Programs.Scripts.KindRuleSend
 pilot deleted three surface rules for a program that sends one CREATE TABLE or one plain INSERT. Each theorem of
 this module has the name and the statement of one deleted rule, copied from the revision before the pilot with its
 binders and premises, and proves it from the rules that remain: the bridge {name}`Sql.check_send_of_rule` with the
-kind rule of CREATE TABLE, and {name}`Sql.check_send_of_step` with the model laws of
+kind rule of CREATE TABLE, and {name}`ReplacedGeneral.Sql.check_send_of_step` with the model laws of
 {lit}`ReplacedStepLaws`, which the kind rule of plain INSERT proves. When a theorem does not compile, the new form
 has lost the fact. -/
 
@@ -57,7 +58,7 @@ premises hold.
   value, and for every connection that is {name}`Model.Connection.afterWrite` with the unchanged database and the
   counts of the statement for that value: if that connection is valid, the post holds for the list of that one
   output and the context after it.
-Proof sketch: {name}`Sql.check_send_of_step`; {name}`runScriptStep_effect` and
+Proof sketch: {name}`ReplacedGeneral.Sql.check_send_of_step`; {name}`runScriptStep_effect` and
 {name}`ReplacedStepLaws.plainInsert_database` give the connection after a success, and
 {name}`runScriptStep_plainWrite_failed` gives it after a failure. -/
 theorem Sql.check_send_plainInsert {ctx : ExecutionContext} {statement : Syntax.Statement}
@@ -82,7 +83,7 @@ theorem Sql.check_send_plainInsert {ctx : ExecutionContext} {statement : Syntax.
         (ctx.connection.state.statementRun value values (.insert target cells [] [] none)).counts →
       next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) modeled
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (fun _ _ same => by cases same) step) ?_ valid

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
+import Belay.Sqlite.Programs.Scripts.KindRuleSend
 import Belay.Sqlite.Programs.Claims.SingleStatementChecks
 
 set_option doc.verso true

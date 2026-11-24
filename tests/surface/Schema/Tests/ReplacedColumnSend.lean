@@ -1,3 +1,4 @@
+import ReplacedGeneralSend
 import ReplacedAddColumn
 
 set_option doc.verso true
@@ -44,7 +45,7 @@ theorem Sql.check_send_addColumn {ctx : ExecutionContext} {statement : Syntax.St
         (ctx.connection.state.statementRun value values (.addColumn target column refusesPopulated)).counts →
       next.state.Holds (Database.Valid Profile.pinned) → post [output] (ctx.next output next)) :
     (send ⟨[(statement, values)]⟩).check post ctx := by
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) modeled
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid

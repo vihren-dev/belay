@@ -63,7 +63,7 @@
     "ControlSendClaims", "InsertWithRulesClaim", "ReplacedProgramDrop", "ReplacedProductionSuccess", "ReplacedWriteChoices", "ProgramWriteClaims", "ReturningWriteClaims", "SourceWriteClaims", "RowWriteSendClaims", "ReplacedControlSend",
     "ReplacedDeleteSendLaws", "ReplacedUpdateSendLaws",
     "ReplacedCatalogSend", "ReplacedColumnIfOk", "ReplacedConditionalCreation", "SchemaSendClaims",
-    "ReplacedSendLaws", "ReplacedStepLaws", "S6AutoAddCustomer", "S6AutoAuto", "S6AutoCommute",
+    "ReplacedGeneralSend", "ReplacedSendLaws", "ReplacedStepLaws", "S6AutoAddCustomer", "S6AutoAuto", "S6AutoCommute",
     "S6AutoCommuteNegative", "S6AutoEffects", "S6AutoKindRuleCases", "S6AutoPaths", "S6AutoShapes",
     "S6AutoSignup",
     "S6CheckLabels", "S6CheckPrograms", "S6ColumnLookups", "S6Equivalence", "S6Footprints",

@@ -1,3 +1,4 @@
+import ReplacedGeneralSend
 import ReplacedPlainDrop
 import ReplacedCatalogRewrite
 import ReplacedCatalogContinuation
@@ -28,7 +29,7 @@ theorem Sql.check_send_dropPlain {ctx : ExecutionContext} {statement : Syntax.St
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, step⟩ := runScriptStep_drop_continues (parameters := values) (clock := ctx.clock)
     (index := ctx.index) found
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) ⟨output, next, [], step⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid
@@ -55,7 +56,7 @@ theorem Sql.check_send_rewrite {ctx : ExecutionContext} {statement : Syntax.Stat
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, step, _⟩ := runScriptStep_rewrite_ok (parameters := values) (clock := ctx.clock)
     (index := ctx.index) found valid.1
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) ⟨output, next, [], step⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid
