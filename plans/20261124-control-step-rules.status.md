@@ -38,3 +38,6 @@ Registered both new Nix fixture roots and corrected the witness proof sketch and
 
 Repaired links in the resolver and query-observation records after the
 full source checks found two references to deleted control modules.
+
+The historical target rows link to the pilot revision and preserve the
+original lists alongside dated slice 3 migration notes.
