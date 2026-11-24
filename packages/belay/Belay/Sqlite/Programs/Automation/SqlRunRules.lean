@@ -21,4 +21,9 @@ def blockingPremises : List Name := [`isSelect]
 /-- The premises used by the syntax rules for SELECT, query and single. -/
 def premiseNames : List Name := [`modeled, `reached, `isSelect]
 
+/-- The outcome premise of a read rule introduces the selected output and its choice witness.
+The other premises ask the tactic to establish a condition before visiting the continuation. -/
+def roleOf (premise : Name) : Option (List Name) :=
+  if premise == `reached then some [`selected, `choice] else none
+
 end Belay.Sqlite.Run
