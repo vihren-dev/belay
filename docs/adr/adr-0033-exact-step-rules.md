@@ -280,33 +280,40 @@ The removal of the old laws is a part of each slice. It is not a step after the 
 - A slice deletes each law that the rule and the data facts replace, and updates each caller in
   the packages, the tests and the examples. It keeps no alias and no second path.
 - A slice also moves each proof that reaches the step of one of its kinds without the kind rule.
-  After the slice, a proof in the packages, the tests or the examples about a statement of such
-  a kind does not unfold `runScriptStep` or `runScriptStepWith`, and it does not use a general
-  rule for a send (D6). It uses the kind rule, a projection (D5), the surface rule (D6) or
-  `sql_run`. Examples at the end of the pilot (`11488c6e`):
-  - `runScriptStep_insertSelect_ok` and `runScriptStep_copyOf` in the model unfold the step
-    function for INSERT from a query (slice 6). The example `examples/table-rebuild` uses
-    `runScriptStep_copyOf`.
+  The proof of the kind rule itself is not such a proof (D1). After the slice, each other proof
+  in the packages, the tests or the examples about a statement of such a kind does not unfold
+  `runScriptStep` or `runScriptStepWith`, and it does not use a general rule for a send (D6).
+  It uses the kind rule, a projection (D5), the surface rule (D6) or `sql_run`. Examples at the
+  end of the pilot (`11488c6e`):
+  - `runScriptStep_copyOf` in the model unfolds the step function for an INSERT from a query
+    without conflict clauses, RETURNING columns and write rules (slice 6). The example
+    `examples/table-rebuild` uses it.
   - A proof in `tests/surface/Queries/Tests/SelectOutcomeCases.lean` unfolds the step function
     for a query that reads the clock (slice 5).
 - These proofs do not move:
   - The proof of a law for all kinds or for a group of kinds (D5). The statement in such a law
-    is a variable or resolves to more than one kind, so no one kind rule applies.
+    is a variable or resolves to more than one kind, so no one kind rule applies. For example,
+    `runScriptStep_insertSelect_ok` holds for an INSERT from a query with each list of
+    RETURNING columns, which is a group of kinds of slices 6 and 7.
   - A proof that computes the step of a concrete statement on a concrete connection, for example
     with `decide`. It checks the definition of the step function.
   - A test whose subject is `Sql.check_exec` or a general rule for a send.
-  - A retention test. The pilot's test proves the deleted `Sql.check_send_plainInsert` with
-    `Sql.check_send_of_step`. A retention test is temporary (owner decision 3).
-- A text that names a deleted law changes in the same slice: a docstring, the guide, the skill
-  in `skills/belay` and the READMEs. At `11488c6e`, the guide and the skill name no step law and
-  no surface rule of a kind.
+  - A retention test, while it stays. The pilot's test proves the deleted
+    `Sql.check_send_plainInsert` with `Sql.check_send_of_step`.
+- A text that names a deleted law changes in the same slice: a docstring, a diagnostic of
+  `sql_run` together with the test that expects its message, the guide, the skill in
+  `skills/belay` and the READMEs. The docstring of a retention test names the deleted law that
+  the test proves; it does not change. At `11488c6e`, the guide and the skill name no step law
+  and no surface rule of a kind. The diagnostic "sql_run cannot start" names
+  `Sql.check_send_of_step`, and `tests/surface/Queries/Tests/S6AutoShapes.lean` expects its
+  message.
 - The slice has a retention test. For each deleted law, the test states the law as it was at the
   start revision of the slice, with the same premises, and proves it from the new laws. This is
   the evidence that the original claims stay derivable, which the simplification goal asks for.
 - When a slice cannot prove a deleted statement with the same premises, or cannot move a proof,
   the work stops and the owner decides.
-- The retention tests are temporary witnesses (owner decision 3). The final slice deletes them
-  (D12).
+- The retention tests are temporary witnesses. Owner decision 3 gives the end of each test. The
+  final slice applies the decision to each test that is left (D12).
 
 ### D9. Client claims
 
@@ -382,21 +389,28 @@ for it. At the end of the slice, these conditions hold:
 
 - **Rules.** The kind rules cover each constructor of `Resolved.Statement` (D2).
 - **Step laws.** Callers use each law for a group of kinds for more than one kind (D5). No
-  theorem about the step of one kind is a partial law (D7) or a consequence of a case that a
-  data fact can state (D4). For each theorem about the step of one kind that stays, the
-  inventory gives the reason, and the proof of the theorem uses the kind rule.
+  theorem about the step of one kind has a form that D7 excludes, such as a partial law or a
+  case law, and none is a consequence of a case that a data fact can state (D4). For each
+  theorem about the step of one kind that stays, the inventory gives the reason, and the proof
+  of the theorem uses the kind rule.
 - **Proofs.** In the packages, the tests and the examples, a proof that unfolds `runScriptStep`
   or `runScriptStepWith` is the proof of a kind rule or of a law for all kinds or for a group
   of kinds, or it is one of the proofs that D8 does not move.
-- **Texts.** No docstring, guide, skill or README names a deleted law.
-- **Retention tests.** The final slice is the last planned change to the shared contracts. Its
-  status file records the Nix acceptance of its last code revision. Then the slice deletes the
-  retention tests, except the witnesses that owner decision 3 keeps.
+- **Retention tests, before the deletions.** Each retention test that is left uses only
+  declarations that stay after the slice. The slice proves a test again when its proof uses a
+  rule that the slice deletes, as the pilot's proof with `Sql.check_send_of_step` does.
 - **Surface.** No surface rule has the resolution to one kind as a premise, and `sendRule` has
   no branch for a kind with a rule. A `sendRule` without a branch is deleted, and so is each
-  general rule for a send that has no caller after the retention tests (D6). `Sql.check_exec`
-  stays. When slice 5 kept `Sql.check_send_select`, its branch stays, and the inventory gives
-  the reason.
+  general rule for a send that has no caller (D6). `Sql.check_exec` stays. When slice 5 kept
+  `Sql.check_send_select`, its branch stays, and the inventory gives the reason.
+- **Texts.** No docstring, diagnostic, guide, skill or README names a deleted law. The
+  docstring of a retention test that stays is the exception.
+- **Retention tests, the end.** The slice applies owner decision 3 to each retention test. The
+  revision with the conditions above is the last planned change to the contracts that the
+  tests use, and it holds the tests. The status file records its Nix acceptance. Then the
+  slice deletes each test, except a witness that is the only check of a premise, of a
+  distinction between cases or of a trust guarantee. Such a witness stays until a caller or a
+  focused test covers it.
 - **Record.** The slice adds a milestone row to the simplification goal, with the code lines at
   the start revision of the pilot and at its own end revision.
 
