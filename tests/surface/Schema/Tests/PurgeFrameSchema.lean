@@ -48,12 +48,12 @@ def sessionsSite (db : Database) (schema : db.HasCatalog sessions) : PurgeFrameS
     rw [show db.raw.catalog = sessions.raw.catalog from schema]
     decide +kernel
 
-/-- The client statement of the guide's frame claim of the purge. For every pair of values, NULL and text included,
-every admitted database with the catalog of {name}`sessions`, and every complete environment: every run of the purge
-from the fresh start that has no error ends in a database in which every session of the start that is not an
-expired session of the customer is still there ({name}`purgeKeeps`, read with the start as its initial database).
-A run with an error requires nothing. The statement has no premise other than the catalog. Proof sketch:
-{name}`purge_frame` with the site {name}`sessionsSite`. -/
+/-- The client statement of the guide's frame claim of the purge. Take two values, NULL and text included. Take an
+admitted database with the catalog of {name}`sessions` and a complete environment. Run the purge from the fresh
+start. If the run has no error, each session of the start that is not an expired session of the customer is still
+in the reached database ({name}`purgeKeeps`, read with the start as its initial database). A run with an error
+requires nothing. The statement has no premise other than the catalog. Proof sketch: {name}`purge_frame` with the
+site {name}`sessionsSite`. -/
 theorem purge_frame_on_sessions (c now : Value) :
     FreshEnsuresFrom (send (purge c now)) (·.HasCatalog sessions)
       (fun start => ifOk (holdsSince start (purgeKeeps c now))) :=

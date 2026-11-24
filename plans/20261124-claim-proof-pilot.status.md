@@ -42,6 +42,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   docstring of `anyMayFail_eq_false_iff`, the reach of the UPDATE checks).
 - 2026-11-24, base form: the weaker site, `purge_continues` and the frame
   client statement over the catalog of `sessions`.
+- 2026-11-24, base form: review fixes of the frame commit (docstrings in
+  short sentences, the fields of `sessionsSite`).
 
 ## Base form
 
@@ -101,8 +103,7 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
 - New fixture `tests/surface/Schema/Tests/PurgeFrameSchema.lean`: the
   database `sessions` and `sessionsEntry` (moved from the instances), the
   lookup `sessions_found`, the site `sessionsSite` for each database with
-  `db.HasCatalog sessions` (each field by a catalog rewrite and
-  `decide +kernel`), and the frame client statement
+  `db.HasCatalog sessions`, and the frame client statement
   `purge_frame_on_sessions` with the catalog as its only premise.
 - `tests/surface/Schema/Tests/PurgeFrameInstances.lean`: the site-for-values
   theorems (`null_customer_has_a_site`, `null_time_has_a_site`,
@@ -113,6 +114,11 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
 - `big_after_delete` in `SelectContextCases.lean` still has a premise
   `modeled` that its DELETE step continues. It does not use the site and is
   outside this task.
+- The fields of `sessionsSite`: the position, the entry, the names and the
+  two states after the resolution are values of `sessions`. `keyAlias` is
+  decided by the kernel. `found`, `purgeResolves` and `claimResolves` rewrite
+  the catalog of the database to that of `sessions` with the premise, then
+  the kernel decides them.
 - Tests: `test_purge_frame_claim_over_every_database` compiles the chain
   with `PurgeFrameSchema`; the new module is in the `surface` roots.
 

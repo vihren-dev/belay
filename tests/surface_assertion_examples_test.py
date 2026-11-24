@@ -172,10 +172,9 @@ def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Pat
     The claim also holds for every database with the site of the purge (the schema with a rowid alias and the
     resolution of the purge and of the claim). The step of the purge continues by the kind rule of the plain
     DELETE and the readiness fact of a row-wise filter; no premise assumes it. The fixture shows the actual run
-    for NULL parameters, for a text time that deletes every session of the customer, and for an integer time; it
-    keeps the counterexamples that the claim and its form exclude: the variant of the purge with OR for AND, the
-    claim with NOT instead of IS NOT 1 that requires nothing for a NULL parameter, and an aborted purge whose
-    rollback leaves the start."""
+    for NULL parameters, for a text time that deletes every session of the customer, and for an integer time.
+    It keeps three counterexamples. The variant of the purge with OR for AND breaks the claim. The claim with NOT
+    instead of IS NOT 1 requires nothing for a NULL parameter. An aborted purge rolls back to the start."""
     check_module_chain(runtime_root, tmp_path, (
         ("PurgeFrameQueries", 4), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
         ("PurgeFrameInstances", 11)), timeout=300)
