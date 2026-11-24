@@ -36,7 +36,9 @@ the first form, the kind rule. This ADR adopts it for all statement kinds:
   equation of a rule. The surface rules that take the resolution to one kind, and their
   branches in the table of kinds of `sql_run`, go.
 
-The ADR also gives the order of the work and what each part must show.
+The ADR also gives the order of the work and what each part must show. Each part removes the
+laws that its rules replace and moves the proofs that used them. A final part checks that no
+law of the old form is left.
 
 ## Context
 
@@ -270,15 +272,38 @@ The repository does not keep these forms for a kind that has a rule:
 The triples on programs (`Sql.check`, `Std.Do.Triple` on `Sql`) do not change: the surface rule
 of D6 gives the check of a send, and the program rules compose it.
 
-### D8. Replaced laws and retention
+### D8. Replaced laws, their callers and retention
 
-- A slice deletes each law that the rule and the data facts replace, and updates each caller.
-  It keeps no alias and no second path.
+The removal of the old laws is a part of each slice. It is not a step after the slices.
+
+- A slice deletes each law that the rule and the data facts replace, and updates each caller in
+  the packages, the tests and the examples. It keeps no alias and no second path.
+- A slice also moves each proof that reaches the step of one of its kinds without the kind rule.
+  After the slice, a proof in the packages, the tests or the examples about a statement of such
+  a kind does not unfold `runScriptStep` or `runScriptStepWith`, and it does not use a general
+  rule for a send (D6). It uses the kind rule, a projection (D5), the surface rule (D6) or
+  `sql_run`. Examples at the end of the pilot (`11488c6e`):
+  - `runScriptStep_insertSelect_ok` and `runScriptStep_copyOf` in the model unfold the step
+    function for INSERT from a query (slice 6). The example `examples/table-rebuild` uses
+    `runScriptStep_copyOf`.
+  - A proof in `tests/surface/Queries/Tests/SelectOutcomeCases.lean` unfolds the step function
+    for a query that reads the clock (slice 5).
+- These proofs do not move:
+  - The proof of a law for all kinds or for a group of kinds (D5). The statement in such a law
+    is a variable or resolves to more than one kind, so no one kind rule applies.
+  - A proof that computes the step of a concrete statement on a concrete connection, for example
+    with `decide`. It checks the definition of the step function.
+  - A test whose subject is `Sql.check_exec` or a general rule for a send.
+  - A retention test. The pilot's test proves the deleted `Sql.check_send_plainInsert` with
+    `Sql.check_send_of_step`. A retention test is temporary (owner decision 3).
+- A text that names a deleted law changes in the same slice: a docstring, the guide, the skill
+  in `skills/belay` and the READMEs. At `11488c6e`, the guide and the skill name no step law and
+  no surface rule of a kind.
 - The slice has a retention test. For each deleted law, the test states the law as it was at the
   start revision of the slice, with the same premises, and proves it from the new laws. This is
   the evidence that the original claims stay derivable, which the simplification goal asks for.
-- When a slice cannot prove a deleted statement with the same premises, the work stops and the
-  owner decides.
+- When a slice cannot prove a deleted statement with the same premises, or cannot move a proof,
+  the work stops and the owner decides.
 - How long the retention tests stay is owner decision 3.
 
 ### D9. Client claims
@@ -309,6 +334,7 @@ test.
 | 5 | A query | The first kind whose output can be a choice between results (D6). The contracts of ADR 0027 do not change. See the note on `Sql.check_send_select` below. |
 | 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. The general rules for a send exclude INSERT from a query today. |
 | 7 | The kinds with write rules, and the kinds with RETURNING columns | Subject to owner decision 2. |
+| 8 | No kind | The final slice (D12). It makes the end state true and records it. |
 
 `Sql.check_send_select` is not a rule of the form that D6 deletes. Its premise is the syntax of a
 SELECT, not a resolution, and it has no premise about validity. The surface rule of D6 needs a
@@ -333,6 +359,7 @@ The status file of a slice records, for its start and end revisions:
 - The code lines of the packages and of the tests, with the counter and the file selection of
   the simplification goal.
 - The list of the replaced laws and of the deleted surface rules.
+- The list of the moved proofs (D8), each with its file.
 - The elaboration time of each test fixture that uses `sql_run` and that the slice changes, at
   the two revisions.
 - The capability groups of the simplification goal that the replaced laws belong to, with the
@@ -340,7 +367,42 @@ The status file of a slice records, for its start and end revisions:
 
 A slice changes no definition that the step function uses, except to give a name to an existing
 term (D3). Its end checks therefore include that the verdict files are the same as at its start
-revision. The last slice adds a milestone row to the simplification goal.
+revision.
+
+### D12. The final slice
+
+Slice 8 gives no kind a rule. It removes what the slices before it had to keep, and it records
+that no law of the old form is left. Its status file has an inventory: each theorem in the
+packages whose statement names `runScriptStep` and that is not a kind rule and not a law for all
+kinds. The inventory gives the class of each theorem: a law for a group of kinds, or a theorem
+about the step of one kind. The inventory is a record in the status file; the slice adds no tool
+for it. At the end of the slice, these conditions hold:
+
+- **Rules.** The kind rules cover each constructor of `Resolved.Statement` (D2). With option (b)
+  of owner decision 2, the inventory names the kinds without a rule, and the conditions below
+  apply to the other kinds.
+- **Step laws.** Callers use each law for a group of kinds for more than one kind (D5). No
+  theorem about the step of one kind is a partial law (D7) or a consequence of a case that a
+  data fact can state (D4). For each theorem about the step of one kind that stays, the
+  inventory gives the reason, and the proof of the theorem uses the kind rule.
+- **Proofs.** In the packages, the tests and the examples, a proof that unfolds `runScriptStep`
+  or `runScriptStepWith` is the proof of a kind rule or of a law for all kinds or for a group
+  of kinds, or it is one of the proofs that D8 does not move.
+- **Texts.** No docstring, guide, skill or README names a deleted law.
+- **Retention tests.** With option (a) of owner decision 3, the final slice is the last planned
+  change to the shared contracts. Its status file records the Nix acceptance of its last code
+  revision. Then the slice deletes the retention tests, except the witnesses that option (a)
+  keeps.
+- **Surface.** No surface rule has the resolution to one kind as a premise, and `sendRule` has
+  no branch for a kind with a rule. A `sendRule` without a branch is deleted, and so is each
+  general rule for a send that has no caller after the retention tests (D6). `Sql.check_exec`
+  stays. When slice 5 kept `Sql.check_send_select`, its branch stays, and the inventory gives
+  the reason.
+- **Record.** The slice adds a milestone row to the simplification goal, with the code lines at
+  the start revision of the pilot and at its own end revision.
+
+When a condition does not hold and the slice cannot make it true, the work stops and the owner
+decides.
 
 ## Consequences
 
@@ -360,8 +422,8 @@ revision. The last slice adds a milestone row to the simplification goal.
   laws of their own to delete; at 30 to 84 lines for a rule file, they add about 300 to 840
   lines. The subtotal does not include a query, the five kinds of slice 4 without a surface
   rule of their own (CREATE INDEX, CREATE VIEW, CREATE TRIGGER, DROP COLUMN, a statement that
-  SQLite refuses to prepare), the client tests of D9 (239 lines for plain INSERT in the pilot)
-  and the retention tests while they stay. The best case of the subtotal is a saving of about
+  SQLite refuses to prepare), the client tests of D9 (239 lines for plain INSERT in the pilot),
+  the proofs that D8 moves and the retention tests while they stay. The best case of the subtotal is a saving of about
   900 lines, which is about 1% of the 97,505 lines at `b7854558`. This ADR is not a step to
   the 45,000 lines of the simplification goal. Its value is in the first two consequences, and
   in the laws that later facts and kinds do not need.
@@ -423,8 +485,8 @@ revision. The last slice adds a milestone row to the simplification goal.
 2. **The kinds without a surface rule today.** ROLLBACK and the kinds of slices 6 and 7 have no
    surface rule of their own, and ROLLBACK has no step law of its own. Options:
    (a) each kind gets a rule, in the order of D10; slice 7 starts with one kind, INSERT with
-   write rules, and records its cost before the other kinds; (b) slices 2 to 6 only, and a rule
-   for a kind of slice 7 when a client claim needs it. With (b), `sendRule` keeps its general
+   write rules, and records its cost before the other kinds; (b) slices 2 to 6 and the final
+   slice only, and a rule for a kind of slice 7 when a client claim needs it. With (b), `sendRule` keeps its general
    branch (`Sql.check_send_of_step_notInsertSelect`) for the kinds of slice 7 other than INSERT
    from a query, and `Sql.check_exec` is the rule for INSERT from a query with write rules or
    RETURNING columns. Recommendation: (a). It gives `sql_run` one path and each statement an
