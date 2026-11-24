@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.Scripts.QueryStepOutput
+import Belay.Sqlite.Model
 import Lean.Meta.AppBuilder
 import Lean.Util.Recognizers
 import Lean.Meta.Tactic.Util

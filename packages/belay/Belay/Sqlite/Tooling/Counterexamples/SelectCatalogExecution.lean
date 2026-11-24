@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectTableOutput
+import Belay.Sqlite.Model
 import Belay.Sqlite.Tooling.Counterexamples.SelectCalmExecution
 import Belay.Sqlite.Programs.StatementRunLaws.SelectCatalogExecution
 import Belay.Sqlite.Schema.Dispatch.SelectCatalogExecution

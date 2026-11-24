@@ -151,3 +151,9 @@ On the final rule-selection code, the D11 total goes from 98,630 to 99,436 lines
 | S6AutoPaths | 32.01 | 36.19 |
 | SelectContextCases | 8.18 | 11.04 |
 | QuerySendClaims | new | 1.29 |
+
+The surface layer test found that the catalog proof and its evaluator
+imported two internal model modules. SelectCatalogExecution and
+SqlSelectEval now use the model's public root for the same declarations.
+The affected checks are surface_layers_test, the catalog output cases and
+the checker replay of source and computed schemas.
