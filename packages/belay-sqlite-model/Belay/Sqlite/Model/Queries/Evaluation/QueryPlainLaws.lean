@@ -60,6 +60,14 @@ theorem Expr.fault_of_plain (context : EvalContext) (quiet : context.Quiet) (row
     (plain : expression.any Expr.isFallibleCall = false) : (expression.evaluate context row).2 = .none :=
   Expr.fault_of_plain_at context row (quiet.at row) expression plain
 
+/-- For every context, list of rows and list of expressions: the test {name}`anyMayFail` is false exactly when
+each expression has the fault {lean}`Fault.none` over each row in the context. The readiness checks of the writes
+read this test. Proof sketch: unfold the two {lit}`any` tests and {name}`Expr.mayFailOn`. -/
+theorem anyMayFail_eq_false_iff {context : EvalContext} {rows : List (List Value)} {expressions : List Expr} :
+    anyMayFail context rows expressions = false ↔
+      ∀ row ∈ rows, ∀ expression ∈ expressions, (expression.evaluate context row).2 = .none := by
+  simp [anyMayFail, Expr.mayFailOn]
+
 /-- For every context, rows and query without a fallible call in any of its expressions
 ({name}`Query.expressions`), whose expressions have no fault over the empty row and over each of the rows,
 no call of the query may fail over the rows in the context ({name}`Query.mayFail`). Proof sketch: each

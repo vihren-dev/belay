@@ -2,6 +2,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.StatementCalm
 import Belay.Sqlite.Model.Queries.Evaluation.ExprEvalLaws
 import Belay.Sqlite.Model.Queries.Evaluation.ExprCongruence
 import Belay.Sqlite.Model.Queries.Evaluation.IntegerCompareLaws
+import Belay.Sqlite.Model.Queries.Evaluation.QueryPlainLaws
 
 set_option doc.verso true
 
@@ -9,7 +10,8 @@ set_option doc.verso true
 {lit}`customer_id = $c AND expires_at < $now` names columns, literals and parameters, and combines
 them with comparisons and logic. Its value does not depend on the subqueries of the context, so a
 subquery that runs in a context other than the statement's context still evaluates it in the same way.
-The module proves this independence, that such an expression is calm and has no fault, and the
+The module proves this independence, that such an expression is calm and has no fault, that no call
+of a list of such expressions may fail over rows ({lit}`anyMayFail`), and the
 complement law of the guide's purge claim: a row for which the condition {lit}`IS NOT 1` is true is
 not selected by the condition. -/
 
@@ -63,6 +65,13 @@ theorem Expr.Rowwise.fault_none {expression : Expr} (rowwise : expression.Rowwis
   | or _ _ left right => simp [Expr.evaluate, left, right, Fault.join, Fault.soften]
   | not _ ih => simp [Expr.evaluate, ih]
   | isNull _ _ ih => simp [Expr.evaluate, ih]
+
+/-- For every list of row-wise expressions, context and list of rows, the test {name}`anyMayFail` is false: no call
+of the expressions may fail over the rows. The readiness checks of a DELETE and of an UPDATE read this test for
+their filter. Proof sketch: {name}`anyMayFail_eq_false_iff` with {name}`Expr.Rowwise.fault_none`. -/
+theorem anyMayFail_of_rowwise {expressions : List Expr} (rowwise : ∀ expression ∈ expressions, expression.Rowwise)
+    (context : EvalContext) (rows : List (List Value)) : anyMayFail context rows expressions = false :=
+  anyMayFail_eq_false_iff.2 fun row _ expression member => (rowwise expression member).fault_none context row
 
 /-- Every row-wise expression is calm ({name}`Expr.Calm`): it has no fallible call, reads no clock and calls
 no counter function. Proof sketch: induction over the expression; the parts of each form are calm. -/
