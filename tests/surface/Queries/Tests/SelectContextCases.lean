@@ -88,7 +88,7 @@ theorem big_eq : Big = fun order => Resolved.truthy (bigCondition.eval (Resolved
 {name}`ReadsBig` at {lit}`state`: the SELECT returns the rows of the database that
 {lit}`first` reached, not of the database of {lit}`state`. Proof sketch: {name}`Sql.check_bind`,
 then at each reached context the procedure {lit}`sql_select`, which applies
-{name}`Sql.check_query_ofResolveState` with the resolution state of the context and closes the result
+{name}`Sql.check_query_catalog_rows_at` with the resolution state of the context and closes the result
 with the hints {name}`bigAt`, {name}`big_eq` and {name}`bigCondition`; {name}`big_at` is the same read
 by explicit steps. -/
 theorem big_after {α : Type} (first : Sql α) (state : ExecutionContext)

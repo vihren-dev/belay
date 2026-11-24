@@ -160,7 +160,7 @@ def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_run_delegation(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` (`Belay/Sqlite/Programs/Automation/SqlRun.lean`) gives the check of one query to `sql_select`, whose
-    execution rule `Sql.check_query_ofCatalog` (`Belay/Sqlite/Tooling/Counterexamples/SelectCatalogCheck.lean`) proves the check at
+    execution rule `Sql.check_query_catalog_rows` (`Belay/Sqlite/Tooling/Counterexamples/SelectCatalogCheck.lean`) proves the check at
     a context with the connection of the database. Both tactics prove A04 and A08 as a check at the initial
     context, and `sql_run` also as a Hoare triple, over every database with the catalog of the case. Every
     proof has only logical axioms."""
@@ -186,8 +186,9 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
 def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
     """ReplacedKeyCheck, ReplacedQueryOutputs and ReplacedPragmaOutputs prove the former query
     and pragma contracts with their original premises. ReplacedContextRules checks both former
-    public context rules with Sql.check_query_of_step_rows. The query fixtures include the scan computed by
+    public context rules with Sql.check_query_of_step_rows. ReplacedCatalogRules checks the three original catalog contracts. CatalogOutputCases uses a write with the output of a scan. The query fixtures include the scan computed by
     runScriptStep_query_eq. QuerySendClaims exercises ruleCases and Sql.sendReached_each for
     every modeled output. Each proof uses only ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("ReplacedQueryOutputs", 3),
-                       ("ReplacedPragmaOutputs", 2), ("ReplacedContextRules", 2), ("QuerySendClaims", 1)), timeout=60)
+                       ("ReplacedPragmaOutputs", 2), ("ReplacedContextRules", 2),
+                       ("ReplacedCatalogRules", 3), ("CatalogOutputCases", 2), ("QuerySendClaims", 1)), timeout=60)

@@ -34,6 +34,15 @@ def resolvedStepOutput (clock : Option Clock) (index : Nat) (connection : Connec
       if !run.ready then .unmodeled unmodeledHere
       else Output.ofStep value parameters resolved connection.state run (advanceRun index resolved connection.state run) initial
 
+/-- Compute a statement's output using the given state for name resolution and the supplied
+connection for execution. This allows a known catalog to determine the statement while the
+database rows and counters of the actual connection are still variables. -/
+def statementOutputAt (context : ResolveContext) (schema : ResolveState) (statement : Syntax.Statement)
+    (clock : Option Clock) (index : Nat) (connection : Connection) (parameters : List Value) : Output :=
+  match resolveStatement context schema statement with
+  | .error restriction => .unmodeled restriction.reason
+  | .ok (resolved, _) => resolvedStepOutput clock index connection parameters resolved
+
 /-- For every statement that ran with a run whose alternative executions all have an output, its step
 ({name}`ranScriptStep`) has the output of {name}`Output.ofStep`. Proof sketch: an output other than
 {name}`Output.unmodeled` continues with it, and {name}`Output.unmodeled` ends the run with the same
@@ -79,6 +88,17 @@ theorem runScriptStep_output (context : ResolveContext) (clock : Option Clock) (
         · rename_i ready
           rw [ranScriptStep_output _ _ _ _ _ _ _ _
             (StatementExecution.ofAlternatives_ok_of_ready _ _ _ _ _ _ (by simpa using ready))]
+
+/-- At every context, clock, index, connection, statement and list of parameters, a resolution
+state equal to the connection's gives its step output via {name}`statementOutputAt`. Proof sketch:
+substitute the state in {name}`runScriptStep_output`. -/
+theorem runScriptStep_output_at {context : ResolveContext} {schema : ResolveState} {statement : Syntax.Statement}
+    {clock : Option Clock} {index : Nat} {connection : Connection} {parameters : List Value}
+    (same : connection.resolveState = schema) :
+    (runScriptStep context clock index connection statement parameters).output =
+      statementOutputAt context schema statement clock index connection parameters := by
+  subst schema
+  exact runScriptStep_output ..
 
 /-- For every context, clock, index, connection, statement, values and later statements, the first
 output of the run of a script that starts with that statement is the output of its step. Proof

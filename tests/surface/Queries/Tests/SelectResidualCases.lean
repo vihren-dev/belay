@@ -29,11 +29,11 @@ def withSubquery : Script := sql r"SELECT customer FROM orders WHERE id IN (SELE
 /-- The script {name}`withSubquery` has one statement. -/
 theorem withSubquery_one : withSubquery.statements.length = 1 := rfl
 
-/-- warning: sql_select stopped in the execution phase: the rule Belay.Sqlite.Run.query_returnsResult_ofCatalog matches, but its premise
-  orders.selectQuery? -/
+/-- warning: sql_select stopped in the execution phase: the rule Belay.Sqlite.Run.query_returns_catalog_rows matches, but its premise
+  statementOutputAt runContext orders.raw.connection.resolveState -/
 #guard_msgs (warning, substring := true) in
-/-- A claim outside the rules: the execution rule matches, but its premise that the query resolves to a
-query without subqueries ({name}`Database.selectQuery?`) is not proved. The procedure stops in the
+/-- A claim outside the rules: the execution rule matches, but its output equation for a scan without
+subqueries ({name}`statementOutputAt`) is not proved. The procedure stops in the
 execution phase and shows the premise; the claim of the user is not the cause. -/
 example (db : Database) (env : Env) (schema : db.HasCatalog orders) :
     (db.run (query withSubquery withSubquery_one) env).returnsResult fun _ => True := by

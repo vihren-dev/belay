@@ -51,3 +51,16 @@ counter (A22), including native instances. The catalog caller now derives
 the output from model data. Its public interface is the next migration.
 
 [ADR 0033, owner decision 4](../docs/adr/adr-0033-exact-step-rules.md#owner-decisions) records the scope. The A21 and A22 fixtures each audit their own proofs.
+
+The three catalog run and check rules now use a statementOutputAt
+equation on the runtime connection. The resolver can inspect a fixed
+catalog while the runtime rows and counters remain variables.
+SelectCatalogExecution shares the calm table scan proof with
+SelectCatalogCheck. SqlSelectRules registers the new rules, and
+SqlSelectEval computes the closed catalog resolution to infer a
+candidate, then checks the entire output equation in the kernel.
+ReplacedCatalogRules proves all three original statements.
+CatalogOutputCases uses an UPDATE with RETURNING on an empty table:
+it resolves to a write, and its output equals that of the empty scan.
+SelectCheckCases and SelectResidualCases check the rule audit and the
+diagnostic. The four surface_select suites exercise the migrated callers.
