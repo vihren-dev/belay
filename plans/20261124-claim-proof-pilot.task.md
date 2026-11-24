@@ -128,8 +128,9 @@ law, and a proof of a claim composes the laws.
   when `resolveTwoState` gives a resolved statement,
   `Holds.inContextSince` holds exactly when the output of the resolved
   statement has rows. The output is `resolvedStepOutput` with the initial
-  database when the query or one of its subqueries names a schema
-  (`usesSchema`), and without an initial database when none does.
+  database when the query or one of its subqueries has a source with a
+  schema name (`usesSchema`), and without an initial database when no
+  source has one.
 - The model or the surface package has laws for these parts, and each
   law is about one part. No statement of a law fixes a combination of two
   of them:
@@ -200,18 +201,22 @@ the base form.
   filter of the DELETE.
 - Each check accepts only a row-wise filter, and it compares the
   resolved filters of the two statements, so that a parameter has one
-  number in both. The value of a filter with a subquery can change when
+  number in both. A script carries its own values, and two scripts can
+  bind one parameter number to different values. The theorem of
+  soundness therefore binds the statement of the DELETE and the
+  statement of the claim to one shared list of values. The value of a filter with a subquery can change when
   the DELETE changes the table: after `DELETE FROM t WHERE id = (SELECT
   min(id) FROM t)`, a row can satisfy the same filter.
 - The frame check accepts a filter only when it establishes that the
   DELETE selects no row for which the condition `IS NOT 1` is true. A
   comparison, `AND`, `OR`, `NOT` and `IS NULL` give 0, 1 or NULL, so
-  they qualify. A literal or a column does not: `DELETE FROM t WHERE 2`
-  deletes each row, and `2 IS NOT 1` is true for each row.
+  they qualify. A literal or a column alone gives no such guarantee:
+  `DELETE FROM t WHERE 2` deletes each row, and `2 IS NOT 1` is true for
+  each row.
 - A theorem of soundness for each check: when the check gives `true` for
-  a schema, a DELETE and a claim, the client statement holds for the
-  DELETE and the claim with each list of values, for each database with
-  the catalog of the schema. The theorem follows the pattern of
+  a schema, a DELETE and a claim, the client statement holds for the two
+  statements with each shared list of values, for each database with the
+  catalog of the schema. The theorem follows the pattern of
   `KeptRead.preserves_of_check`.
 - Both client statements are proved with the theorems of soundness and
   an evaluation of the check.
@@ -306,9 +311,9 @@ empty list is true by computation.
 **`IS NOT 1` and the selected rows.** `Resolved.Expr.truthy_isNot_one_and`
 says for `AND` that a row for which the condition `IS NOT 1` is true is
 not selected. The same holds for each expression whose value is 0, 1 or
-NULL. It is false for a literal or a column: 2 selects a row, and
-`2 IS NOT 1` is true. A row-wise expression can be a literal or a
-column.
+NULL. A literal or a column alone gives no such guarantee: 2 selects a
+row, and `2 IS NOT 1` is true. A row-wise expression can be a literal or
+a column.
 
 **Two contexts for one filter.** The DELETE evaluates its filter in the
 context of the statement (`Resolved.statementContext`). The claim
@@ -319,8 +324,9 @@ proof connects them with `Resolved.Expr.Rowwise.evaluate_congr`.
 `Holds.inContextSince` at the default observation of the context.
 `Script.observeTwoStateIn` and `Model.observeTwoState` resolve the query
 with `resolveTwoState` and give `resolvedStepOutput`. They pass the
-initial database when the query or a subquery names a schema
-(`usesSchema`), and `none` when none does, as for the effect claim. No
+initial database when the query or a subquery has a source with a schema
+name (`usesSchema`), and `none` when no source has one, as for the
+effect claim. No
 law connects the assertion to `resolvedStepOutput` for a
 known resolution; `purge_keeps_rows` unfolds the definitions.
 `resolvedStepOutput_query_hasRows_of_clean_from`
