@@ -1,6 +1,6 @@
 # Exact steps of transaction control and setting pragmas
 
-Created 2026-11-24. Status OPEN. Audience: implementers and reviewers.
+Created 2026-11-24. Status DONE. Audience: implementers and reviewers.
 
 Slice 3 of [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md) gives
 BEGIN, COMMIT, ROLLBACK and setting pragmas exact step rules. Resolution
