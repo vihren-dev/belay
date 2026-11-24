@@ -80,14 +80,14 @@ labelled_sql "named-refuted" in
 def selectStatement : MetaM Expr := return (← getConstInfo ``selectClaim).value!
 
 /-- The proof route of the checker, with no candidates: it proves {name}`selectClaim`, and with its
-execution rule {name}`Run.query_returnsResult_ofCatalog` excluded, the audit refuses the proof that uses
+execution rule {name}`Run.query_returns_catalog_rows` excluded, the audit refuses the proof that uses
 the rule, so the result is unknown. -/
 def excludedRule : TermElabM Unit := do
   let statement ← selectStatement
   let .proved _ ← Check.checkCandidates statement (pure #[]) Check.defaultProof
     | throwError "the checker did not prove the A01 claim"
   let .unknown ← Check.checkCandidates statement (pure #[]) Check.defaultProof
-      #[``Run.query_returnsResult_ofCatalog]
+      #[``Run.query_returns_catalog_rows]
     | throwError "the checker proved the A01 claim with its execution rule excluded"
   logInfo "excluded rule: unknown"
 

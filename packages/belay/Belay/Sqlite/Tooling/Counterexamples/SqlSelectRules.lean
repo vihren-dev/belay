@@ -12,7 +12,7 @@ step there makes the kernel unfold the evaluator, which can exceed its recursion
 
 namespace Belay.Sqlite.Select
 
-attribute [sql_select_rule execution] Run.query_returnsResult_ofCatalog Sql.check_query_ofCatalog
-  Sql.check_query_ofResolveState
+attribute [sql_select_rule execution] Run.query_returns_catalog_rows Sql.check_query_catalog_rows
+  Sql.check_query_catalog_rows_at
 
 end Belay.Sqlite.Select
