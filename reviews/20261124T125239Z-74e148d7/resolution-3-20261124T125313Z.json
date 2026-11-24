@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:53:13+00:00",
+  "finding": "20261124T125239Z-74e148d7#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The witness test names the contracts it checks."
+}

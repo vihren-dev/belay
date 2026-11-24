@@ -22,9 +22,8 @@ theorem Script.outputOn_eq_step (script : Script) (db : Database) (statement : S
   rw [head, runScriptFrom_head_cons, runScriptStep_output]
   rfl
 
-/-- For a script beginning with a successfully resolved statement of any kind, its observed
-output is the resolved statement's output on the observation connection, at its clock and
-index. Proof sketch: take the first step output and substitute the resolution. -/
+/-- For a script beginning with a successfully resolved statement of any kind, its output on a database
+is the resolved statement's output on that database's connection with no clock at index zero. Proof sketch: take the first step output and substitute the resolution. -/
 theorem Script.outputOn_resolved (script : Script) (db : Database) (statement : Syntax.Statement)
     (parameters : List Value) (rest : List (Syntax.Statement × List Value))
     (kind : Resolved.Statement) (after : ResolveState)

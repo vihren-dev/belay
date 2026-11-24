@@ -82,3 +82,5 @@ check the original statements. The not-blocked, assertion-context and select
 automation suites exercise the callers.
 
 The all-kinds output projection lives beside runScriptStep_output in the model. The run rules name the clock of the comparison query in their statements and explanations.
+
+The observation bridges now document their distinct clock and index inputs and the tests name their original contracts.
