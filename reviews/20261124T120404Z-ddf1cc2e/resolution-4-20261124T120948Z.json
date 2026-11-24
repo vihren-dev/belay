@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:09:48+00:00",
+  "finding": "20261124T120404Z-ddf1cc2e#4",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Linked owner decision 4 in ADR 0033, included in the parent stack."
+}

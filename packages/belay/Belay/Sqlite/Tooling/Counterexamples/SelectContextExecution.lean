@@ -10,12 +10,16 @@ namespace Belay.Sqlite
 
 open Belay.Sqlite.Model
 
-/-- At every context, suppose the output of a single SELECT returns rows satisfying a
-property. If the post holds for each such result and every reached context with the same
-connection, then the query checks the post. The caller can prove the output premise by
-computation or by reasoning about its evaluation phases.
-Proof sketch: an ended step cannot return rows. For a continuing SELECT, use
-{name}`Sql.check_query_select` and {name}`OutputChoice.forall_queryResult_iff` for each selected output. -/
+/-- For every one-statement script, statement, parameter values, starting context, row
+property and postcondition, {name}`query` checks the postcondition at that context if:
+* {name}`Script.isSelect` holds and the script consists of that statement with those values;
+* the output of {name}`runScriptStep` at the starting clock, index and connection satisfies
+  {name}`Output.returnsResult` for the property (every choice returns rows with the property);
+* for every row list satisfying the property, including lists outside the actual outputs,
+  the postcondition holds for its successful result at every context with the starting connection.
+
+An error requires no postcondition proof because the output premise excludes it. Proof sketch:
+apply {name}`Sql.check_query_select` and {name}`OutputChoice.forall_queryResult_iff`. -/
 theorem Sql.check_query_of_step_rows {script : Script} {one : script.statements.length = 1}
     {statement : Syntax.Statement} {parameters : List Value} (select : script.isSelect = true)
     (head : script.statements = [(statement, parameters)]) (state : ExecutionContext)

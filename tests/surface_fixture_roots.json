@@ -78,7 +78,7 @@
     "S6CheckLabels", "SelectAutoCases", "SelectAutomationCore", "SelectAutomationExecution",
     "SelectAutomationSchema", "SelectAutomationSources", "SelectBudgetCases", "SelectCardinalityCases",
     "SelectCheckCases", "SelectComparisonCases", "SelectCompoundCases", "SelectCompoundSupport",
-    "SelectContextCases", "SelectCountCases", "SelectDerivedCases", "SelectDerivedSupport",
+    "SelectContextCases", "SelectCounterContextCases", "SelectCountCases", "SelectDerivedCases", "SelectDerivedSupport",
     "SelectDistinctCases", "SelectExecutionRules", "SelectExistenceCases", "SelectExistsCases",
     "SelectExpressionCases", "SelectExtremumCases", "SelectFilterCases", "SelectFunctionFaultCases",
     "SelectGroupCases", "SelectGroupSupport", "SelectHavingCases", "SelectInCases", "SelectJoinCases",

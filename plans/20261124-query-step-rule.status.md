@@ -49,3 +49,5 @@ takes a property of the actual output. Test test_context_cases checks
 the read at the reached connection (A21) and the witnessed changes()
 counter (A22), including native instances. The catalog caller now derives
 the output from model data. Its public interface is the next migration.
+
+[ADR 0033, owner decision 4](../docs/adr/adr-0033-exact-step-rules.md#owner-decisions) records the scope. The A21 and A22 fixtures each audit their own proofs.
