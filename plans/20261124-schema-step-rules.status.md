@@ -1,6 +1,6 @@
 # Exact steps for schema changes and prepare errors
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 [Task](20261124-schema-step-rules.task.md) ·
 [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md)
@@ -94,3 +94,5 @@ On the final rule-selection code, the D11 total goes from 98,362 to 98,630 lines
 | S6AutoPaths | 51.80 | 32.01 |
 | SchemaRuleExamples | 15.58 | 15.89 |
 | SchemaSendClaims | new | 1.36 |
+
+Nix accepted the completed slice through `7ea6b3ffde37` in `04g9fmca729lr7q2dafqf0k5k9ajhvv2-belay-test-reports`. The conformance verdict `7x0wipxb4j14x4pm411k64cjbw2r3awx-belay-verdict` is byte-for-byte identical to the preceding slice’s `88m86jvy8hk374zi93yjzb3a3animn5a-belay-verdict`. No mutant table changed.

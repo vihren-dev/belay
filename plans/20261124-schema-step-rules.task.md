@@ -1,6 +1,6 @@
 # Exact steps for schema changes and prepare errors
 
-Created 2026-11-24. Status OPEN. Audience: implementers and reviewers.
+Created 2026-11-24. Status DONE. Audience: implementers and reviewers.
 
 Slice 4 of [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md) covers
 CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, plain DROP, catalog
