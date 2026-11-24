@@ -83,7 +83,7 @@ The end measurements include the final checker allocation. Other builds were run
 
 | Changed sql_run fixture | Start | End |
 | --- | ---: | ---: |
-| S6AutoEffects | 2.05 | 4.23 |
+| S6AutoEffects | 4.38 | 5.80 |
 | S6AutoPaths | 27.02 | 35.36 |
 | S6AutoShapes | 0.91 | 1.23 |
 | PurgeFrameClaims | 0.94 | 1.68 |
@@ -100,3 +100,5 @@ Documented the pass flags and the cost of retrying an exhausted route.
 With the final checker allocation at b55f05bc, the surface has 14,583 code lines and the total is 98,317. The remaining counts above are unchanged.
 
 Nix accepted the complete suite at the final code revision b55f05bc. The report is /nix/store/18im2mxkvi1zpxbrcpwc8nc1wrnq9myw-belay-test-reports. The original and final verdict directories are byte-identical.
+
+The original S6AutoEffects readings (2.05 s and 4.23 s) were taken under different loads. Repeated back to back on this VM, the pilot and final fixtures took 4.38 s and 5.80 s (lower of two each). The pilot workspace at 177fbf37 and the start of this slice have identical tracked Lean sources. This paired result is 1.32 times the start.
