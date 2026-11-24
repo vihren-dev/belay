@@ -23,7 +23,7 @@ sketch: the statement resolves to a prepare error, to a CREATE TABLE ({name}`res
 the no-op of the clause ({name}`resolveCreateTableIf_cases`); a CREATE TABLE step and a drop without rules
 have no error output ({name}`runScriptStep_createTable_eq` with {name}`RunStep.isError_of_rule`,
 {name}`runScriptStep_dropPlain_eq`), and a prepare
-error keeps the connection ({name}`runScriptStep_readOnly_keeps`). -/
+error keeps the connection ({name}`runScriptStep_prepareError_eq`). -/
 theorem runScriptStep_createTable_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {name : Identifier} {columns : List Syntax.ColumnDefinition} {constraints : List Syntax.TableConstraint}
@@ -66,7 +66,7 @@ foreign keys off a DROP TABLE that fails (the table does not exist, or it is a s
 even the counters (failure law). Proof sketch: the statement resolves to a drop without rules or a prepare error
 ({name}`resolveStatement_dropTable_off_form`); a plain drop step has no error output
 ({name}`runScriptStep_dropPlain_eq`), and a prepare error keeps the connection
-({name}`runScriptStep_readOnly_keeps`). -/
+({name}`runScriptStep_prepareError_eq`). -/
 theorem runScriptStep_dropTable_off_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {dropped : Identifier} {ifExists : Bool} {parameters : List Value} {output : Output}

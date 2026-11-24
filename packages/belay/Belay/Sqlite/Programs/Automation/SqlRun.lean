@@ -123,15 +123,12 @@ the goal and the messages stay as they were, and the step rule of the read appli
         unless ← closeSide hints tag new do
           open_ := open_ ++ [new]
           blocked := blocked || blockingPremises.contains tag
-      | .outcome names replacesNext =>
+      | .outcome names =>
         if blocked then
           open_ := open_ ++ [new]
         else
-          let entered ← enterOutcome names replacesNext new
-          let rest ← runGoal hints false (fuel - 1) entered
-          if tag == `failure then
-            for goal in rest do open_ := open_ ++ (← closeFailure goal)
-          else open_ := open_ ++ rest
+          let (_, entered) ← new.introN names.length names
+          open_ := open_ ++ (← runGoal hints false (fuel - 1) entered)
     return (← variables.filterM fun data => return !(← data.isAssigned)) ++ open_
 
 /-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not

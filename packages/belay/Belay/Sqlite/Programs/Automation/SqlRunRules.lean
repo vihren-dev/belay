@@ -16,33 +16,28 @@ open Lean Elab Tactic
 program that unfolds without end; a real program is far below it. -/
 def traversalFuel : Nat := 400
 
-/-- The premises that, when they stay open, block the entry into the outcomes of their rule: the outcome
-goals speak of the reached connection, and the reached connection is not known without the resolution, the
-table, and the shape of the statement. -/
-def blockingPremises : List Name := [`found, `present, `isStatement, `isSelect]
+/-- A syntax premise left open prevents entry into the outcome of the read or send rule. -/
+def blockingPremises : List Name := [`isStatement, `isSelect]
 
 /-- What the tactic does with one premise of a rule. -/
 inductive Role where
   /-- A premise about the context, the statement or the model. The tactic tries the hints and the
   hypotheses, and leaves the goal open when none fits. -/
   | side
-  /-- A premise that holds for every outcome of the step: the tactic introduces variables and hypotheses
-  with the given names, and replaces the variable named {lit}`next` by the connection that an equation among
-  the hypotheses gives. The goal that remains is a check of the rest of the program. -/
-  | outcome (names : List Name) (replacesNext : Bool)
+  /-- The continuation runs under these binders of the reached postcondition. -/
+  | outcome (names : List Name)
 
 /-- The names of the premises of the rules. A goal with another name is a variable of the rule, such as the
 position of a table. A premise that is closed sets it. -/
 def premiseNames : List Name :=
-  [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect,
+  [`valid, `modeled, `notChoice, `reached, `isStatement, `isSelect,
     `notInsertSelect]
 
-/-- The role of a premise, by the name that the rule application gives it. The premises of a failed step
-and of a successful step are outcomes. All other premises are side goals. -/
+/-- The reached post is an outcome. Each other named premise is a side goal. -/
 def roleOf (kind : Name) (premise : Name) : Role :=
   if premise == `reached then
-    if kind == ``Model.Syntax.Statement.select then .outcome [`selected, `choice] false
-    else .outcome [`output, `next, `step, `valid] false
+    if kind == ``Model.Syntax.Statement.select then .outcome [`selected, `choice]
+    else .outcome [`output, `next, `step, `valid]
   else .side
 
 /-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a

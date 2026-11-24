@@ -38,20 +38,6 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
     catch _ => pure ()
   return false
 
-/-- Introduce the variables and hypotheses of an outcome premise under the given names, and replace the
-variable {lit}`next` by the connection that the equation {lit}`nextIs` gives. -/
-def enterOutcome (names : List Name) (replacesNext : Bool) (goal : MVarId) : TacticM MVarId := do
-  let (fvars, goal) ← goal.introN names.length names
-  unless replacesNext do return goal
-  goal.withContext do
-    for fvar in fvars do
-      let type ← instantiateMVars (← fvar.getType)
-      if let some (_, .fvar local_, _) := type.eq? then
-        if (← local_.getUserName) == `next then
-          let (_, goal) ← substCore goal fvar (symm := false) (tryToSkip := true)
-          return goal
-    throwError "sql_run: the rule gave no equation for the next connection"
-
 /-- Close the goal of a failed step when its trace is not error-free: the final property of a conditional
 claim ({name}`Sql.ifOk`) then requires nothing. The error is a hypothesis of the step rule, or the output
 {lit}`.error` that a kind rule gives. -/

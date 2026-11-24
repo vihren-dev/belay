@@ -17,9 +17,10 @@ position of the name, and error-free step of ADD COLUMN that continues: if the t
 admits the declared type, the next connection is the connection with the database in which the table
 has {name}`definedColumn` appended and NULL appended to every row, with some counters. In plain words, a
 column without a default starts as NULL in every row, and clock, snapshot and settings stay. Proof
-sketch: resolution gives the addition ({name}`addColumn_resolution_cases`); a prepare error is excluded by
-the error-free output; {name}`runScriptStep_addColumn_eq` gives the stored database, in which the default of a
-column without one reads as NULL; {name}`runScriptStep_next_of_database` gives the connection. -/
+sketch: {name}`addColumn_resolution_cases` identifies the prepare error or the addition.
+{name}`runScriptStep_prepareError_eq` contradicts the successful output in the first case.
+{name}`runScriptStep_addColumn_eq` gives the next connection in the second, since a column
+without constraints reads a NULL default. -/
 theorem addColumn_plain_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
     {tableName : Identifier} {definition : Syntax.ColumnDefinition} {position : Nat} {table : Table}

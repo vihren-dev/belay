@@ -39,3 +39,7 @@ At the start the scc package and test counts are 59,132 model, 14,481 surface,
 59,128 model, 14,326 surface and 21,453 tests (98,600 total). Other counts
 are unchanged. The retained laws cover schema changes, statement execution,
 conditional creation and surface sends. No mutant table changed.
+
+The slice review identified three proof sketches, two fixture descriptions and
+obsolete tactic premise handling. Updated the texts and removed the obsolete
+success and failure branches and the unused next-connection substitution.

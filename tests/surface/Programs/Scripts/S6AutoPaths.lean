@@ -33,8 +33,8 @@ def widen : Script := sql r"ALTER TABLE items ADD COLUMN note TEXT"
 
 /-- For every complete environment, every run of the ADD COLUMN that has no error ends with the one item row
 extended by a NULL cell. The claim holds for the one database {name}`sample`. Proof sketch: {lit}`sql_run`
-applies the exact ADD COLUMN rule; the premise that gives the default value is closed by the fact that a
-column without a default reads NULL, and evaluation gives the rows. -/
+splits the exact ADD COLUMN rule. The table hint supplies the stored rows, and the default of
+the unconstrained column gives NULL in the successful case. -/
 theorem widen_adds_null_cells :
     FreshEnsures (send widen) (fun db => db = sample)
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 5, .null]]⌝ : ContextAssertion)) := by
