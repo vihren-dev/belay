@@ -54,9 +54,38 @@ theorem runScriptStep_select_others {context : ResolveContext} {clock : Option C
   subst isSelect
   exact (runScriptStep_select_keeps step).1
 
+/-- The original row premise rules out a stopped SELECT and its frame gives the full step. -/
+theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    (isSelect : statement =
+      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+    {rows : List (List Value)}
+    (output : (runScriptStep context clock index connection statement parameters).output = .rows rows) :
+    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection [] := by
+  subst isSelect
+  exact RunStep.eq_of_rows (fun _ _ _ => runScriptStep_select_keeps) output
+
+#print axioms runScriptStep_select_rows
+
 #print axioms runScriptStep_executions
 #print axioms runScriptStep_others_of_single
 #print axioms runScriptStep_select_connection
 #print axioms runScriptStep_select_others
 
 end Belay.Sqlite.Model
+
+namespace Belay.Sqlite
+open Model
+
+/-- The former SELECT wrapper supplies the same row step from its syntax witness. -/
+theorem IsSelectStatement.step_of_rows {statement : Syntax.Statement} (isSelect : IsSelectStatement statement)
+    {clock : Option Clock} {index : Nat} {connection : Connection} {values : List Value} {rows : List (List Value)}
+    (output : (runScriptStep runContext clock index connection statement values).output = .rows rows) :
+    runScriptStep runContext clock index connection statement values = .continued (.rows rows) connection [] := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ := isSelect
+  exact RunStep.eq_of_rows (fun _ _ _ => runScriptStep_select_keeps) output
+
+#print axioms IsSelectStatement.step_of_rows
+
+end Belay.Sqlite

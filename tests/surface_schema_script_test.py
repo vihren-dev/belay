@@ -75,7 +75,7 @@ def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: 
     use the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the data facts of CREATE TABLE
     and plain INSERT, and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
     old laws loses no fact. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 4), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
+    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
 
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
@@ -95,14 +95,14 @@ def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, t
 def test_exact_plain_write_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
     """The exact UPDATE and DELETE rules prove both former database effects and all four former
     send rules with their original premises and ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 4), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedPlainWriteLaws", 2),
+    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedPlainWriteLaws", 2),
                        ("ReplacedDeleteSendLaws", 2), ("ReplacedUpdateSendLaws", 2)))
 
 
 def test_exact_control_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
     """The exact transaction and pragma rules imply the original step and send statements
     and prove client claims about an arbitrary valid connection, using ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 4), ("ReplacedGeneralSend", 3), ("ReplacedTransaction", 4), ("ReplacedControlFrame", 3),
+    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedTransaction", 4), ("ReplacedControlFrame", 3),
                        ("ReplacedSetting", 2), ("ReplacedControlContinuation", 6), ("ReplacedControlSend", 3),
                        ("ControlSendClaims", 4)))
 
@@ -113,7 +113,7 @@ def test_exact_schema_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path
     Eight clients check the effect of each schema kind on variable databases, including
     refused preparations, colliding unique indexes and restricted defaults."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 4), ("ReplacedGeneralSend", 3), ("ReplacedPlainDrop", 3), ("ReplacedCatalogRewrite", 1), ("ReplacedCatalogContinuation", 6),
+        ("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedPlainDrop", 3), ("ReplacedCatalogRewrite", 1), ("ReplacedCatalogContinuation", 6),
         ("ReplacedConditionalCreation", 3), ("ReplacedAddColumn", 2), ("ReplacedCatalogSend", 2),
         ("ReplacedColumnSend", 1), ("ReplacedColumnIfOk", 1), ("SchemaSendClaims", 8)))
 
