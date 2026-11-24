@@ -84,3 +84,32 @@ automation suites exercise the callers.
 The all-kinds output projection lives beside runScriptStep_output in the model. The run rules name the clock of the comparison query in their statements and explanations.
 
 The observation bridges now document their distinct clock and index inputs and the tests name their original contracts.
+
+### Proof and fixture files
+
+The file stems below use the directory in their row and the extension .lean.
+
+| Directory | Files |
+| --- | --- |
+| `packages/belay/Belay/Sqlite/Programs/Automation` | SqlRun, SqlRunKindRules, SqlRunModeled, SqlSelectEval |
+| `packages/belay/Belay/Sqlite/Programs/Claims` | SelectOverflow |
+| `packages/belay/Belay/Sqlite/Programs/Reasoning` | CertifiedQueryCommutation |
+| `packages/belay/Belay/Sqlite/Programs/Scripts` | ContextObservationBridge, KindRuleSend, QueryBridge |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws` | DerivedColumnReads, NotInQuery, SelectCatalogExecution, SelectExecution |
+| `packages/belay/Belay/Sqlite/Tooling/Counterexamples` | QueryBridge, SelectCalmExecution, SelectCatalogCheck, SelectCatalogExecution, SelectContextExecution, SelectExecution, SqlSelectRules |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Claims` | SelectExecutionRule |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts` | QueryRule, QueryStepOutput, SchemaSuccess |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws` | CertifiedQueryOutputs, ForeignKeyCheckContinues, SelectTableOutput |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples` | ForeignKeyCheckContinues, SelectExecutionRule |
+| `packages/belay-sqlite-model/Belay/Sqlite` | Model |
+| `tests/surface/Programs/Automation` | S6AutoKindRuleCases |
+| `tests/surface/Programs/Claims` | SelectFunctionFaultCases, SelectPrepareErrorCases |
+| `tests/surface/Programs/Scripts` | S6AutoPaths |
+| `tests/surface/Programs/Tests` | AddCustomerQueries, ClaimsMayFail |
+| `tests/surface/Queries/Evaluation` | SelectOneWhereSupport, SelectSumCases |
+| `tests/surface/Queries/Tests` | CatalogOutputCases, QuerySendClaims, ReplacedCalmRuns, ReplacedCatalogRules, ReplacedContextRules, ReplacedFailedRuns, ReplacedKeyCheck, ReplacedObservations, ReplacedOverflowRuns, ReplacedPragmaOutputs, ReplacedQueryOutputs, ReplacedRowPredicates, ReplacedSelectRuns, ReplacedSubqueryEquivalence, S6NotBlockedLaw, SelectAutomationSchema, SelectCardinalityCases, SelectComparisonCases, SelectCompoundSupport, SelectContextCases, SelectCountCases, SelectCounterContextCases, SelectDerivedSupport, SelectDistinctCases, SelectExecutionRules, SelectExistenceCases, SelectExpressionCases, SelectExtremumCases, SelectFilterCases, SelectGroupCases, SelectHavingCases, SelectJoinSupport, SelectNullAggregateCases, SelectOrderCases, SelectOutcomeCases, SelectParameterWindowCases, SelectProjectionCases, SelectResidualCases, SelectScalarCases, SelectSourceCases, SelectSubquerySupport, SuccessBalanceObservation, SuccessBalanceSuccess |
+| `tests/surface/Schema/ForeignKeys` | ForeignKeyAtoms |
+| `tests/surface/Schema/Tests` | ClaimsTableInfo, CustomerInsertQueries |
+| `tests/surface/Tooling/Tests` | SelectCheckCases |
+
+The query output and context witnesses cover universal claims (S04), equivalence (S06), SQL execution and search, M06–M08 query behavior, M11 clock and counter outcomes, and M12 key-check pragmas. CatalogOutputCases supplies a lasting caller for the broadened contract. No mutant table changed.
