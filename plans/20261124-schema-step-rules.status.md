@@ -51,3 +51,21 @@ its discharge for a CREATE INDEX.
 
 The fallback regression now checks the binders of its open reached goal,
 so removing the notInsertSelect gate changes the fixture result.
+
+At 22c62a48 the final simplification count is 98,589, including 59,128
+model, 14,312 surface and 21,456 test code lines. The other scopes match
+the start. Timings below are the faster of two elaborations in seconds.
+
+| Changed sql_run fixture | Start | End |
+| --- | ---: | ---: |
+| S6AutoPaths | 51.80 | 50.74 |
+| SchemaRuleExamples | 15.58 | 29.19 |
+| SchemaSendClaims | new | 4.79 |
+
+The regression check for the open fallback continuation is
+test_sql_run_covers_every_statement_rule in surface_s6_automation_test.py.
+
+The earlier setting witness in ReplacedControlSend now describes its proof
+directly. Its former documentation reference named the removed DROP
+surface rule. The complete verdict output matches slice 3 byte for byte
+(store paths 88m86jvy8hk374zi93yjzb3a3animn5a and 7x0wipxb4j14x4pm411k64cjbw2r3awx).
