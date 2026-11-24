@@ -96,6 +96,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   shorter frame proof with `purgeKeepsSubqueries`.
 - 2026-11-24, form B: review fixes (the note on the consumer test of the
   model package, the clock and the index in the retention output law).
+- 2026-11-24, form B: measurements (replaced laws, lines per claim, code
+  lines, tactic steps, elaboration times).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -443,6 +445,94 @@ the gates. `tests/test_model_package.py` starts `nix-build` itself; the run
 stopped at its timeout of 120 seconds and is not run again. Its consumer
 test has the marker `requires_nix`, so `just test-nix` runs it once, before
 the pull request of the selected branch, as the task file says.
+
+### Measurements (local)
+
+Laws that form B replaces, and what replaces them:
+
+| Deleted | Replaced by |
+| --- | --- |
+| `resolvedStepOutput_query_hasRows_of_clean_from` | `resolvedStepOutput_calm_hasRows` (an iff, optional initial database) |
+| `resolvedStepOutput_notExistsExcept_hasRows` | `Script.observeTwoStateIn_resolved`, `resolvedStepOutput_selectOneWhere_hasRows`, `Resolved.Expr.truthy_notExists`, `Resolved.statementContext_subqueries`, `Resolved.subqueryContext_subqueries`, `Resolved.Query.PlainExcept.subqueryRun`, `Resolved.Query.simple_subqueryRun` |
+| `Resolved.notExistsExcept_subset` | `LiteralData.mem_deleted`, `mem_sourceRows_iff`, `Resolved.Expr.truthy_isNot_one` (the subset step of the client proof) |
+| `Resolved.notExistsExcept_identical` | `Resolved.equalRowsIdentical_rowidFirst` |
+| `Resolved.Expr.truthy_isNot_one_and`, `Value.and_cases`, `truthy_isNot_one_of_cases` | `Resolved.Expr.eval_isLogical`, `Value.truthy_isNot_one`, `Resolved.Expr.truthy_isNot_one` |
+
+The effect proof no longer uses the fixture `SelectOneWhereSupport`
+(`resolveStatement_selectOne_notExists`, `tableOne_run`, `whereOne_claims`);
+other fixtures still use it, so it stays.
+
+Lines of the client proofs (code lines, without docstrings; the statement
+is the lines up to `:= by`):
+
+| Claim | Base: statement / proof | Form B: statement / proof | Form B helpers |
+| --- | --- | --- | --- |
+| `purge_keeps_rows` | 6 / 27 | 6 / 71 | `PurgeFrameQueries`: `purgeKeepsInitialTerm` 3, `purgeKeepsCurrentTerm` 2, `purgeKeepsSubqueries` 2, `purgeKeepsResolved_calm` 2 |
+| `purge_frame` | 3 / 7 | 3 / 7 | none |
+| `purgeClears_iff` | 4 / 16 | 4 / 30 | `purgeClearsStatement` 1, `purgeClearsSubquery` 3 |
+| `purge_clears` | 2 / 21 | 2 / 20 | none |
+
+In the base form, `purge_keeps_rows` used the laws of the fixed form
+(`resolvedStepOutput_notExistsExcept_hasRows` and its two premise laws,
+about 290 package lines), and `purgeClears_iff` used the 72 code lines of
+`SelectOneWhereSupport`. In form B, the client proofs carry the
+composition.
+
+Code lines with scc 3.7.0 (`Code` field), over the Lean files that the
+branch changes, base revision `xvwqrnqr` against `wmklzsxl`:
+
+- Packages: 790 to 729 (net -61). The new laws add 231 lines (by a
+  count without docstrings and comments); the deletions remove 292. Each
+  new law serves each claim of its kind; none names a purge table, column
+  or value.
+- Tests: 147 to 364 (+217). The client fixtures add 70 lines; the
+  retention fixtures (`PurgeLawRetention`, `PurgeLawRetentionOutput`) add
+  147 lines.
+
+Steps that form C (a tactic) could do, as the two client proofs show them:
+
+- The chain from the observation to the subquery runs: rewrite with
+  `Script.observeTwoStateIn_resolved` or `Holds.inContext_iff_hasRows`,
+  apply `resolvedStepOutput_selectOneWhere_hasRows`, rewrite with
+  `Resolved.Expr.fault_not`, `Resolved.Expr.fault_exists`,
+  `Resolved.Expr.truthy_notExists` and
+  `Resolved.statementContext_subqueries`, then
+  `Resolved.subqueryContext_subqueries` for each term of a compound. Each
+  step is syntax-directed by the resolved statement.
+- The side goals: the calm check of the statement (decided by `rfl`), the
+  row-wise proofs of the filter and the columns, and the faults of each read
+  (`Resolved.Expr.Rowwise.fault_none`).
+- The read of each table: `Resolved.Query.simple_subqueryRun` with
+  `Query.source_first_from` or `Query.source_initialTable`, and the `erw`
+  steps that unfold the named terms of the claim.
+- The membership goals over `filter` and `map` of the source rows
+  (`List.mem_map`, `List.mem_filter`, `mem_sourceRows_iff`).
+
+The steps that remain for the user are the core of each claim: the subset
+step (`LiteralData.mem_deleted` with the truth of the condition) and the
+identity premise of `EXCEPT` (`Resolved.equalRowsIdentical_rowidFirst`
+with the admitted table).
+
+`CompoundOperator.except_combine_eq_nil` gives only the sufficient
+direction: `EXCEPT` is empty when each row of the first term is a row of the
+second. The converse needs equality under the collations, not membership,
+so the frame proof proves the claim and not an iff.
+
+Elaboration time (lower of two runs, local):
+
+- Fixtures (the compile of the purge test): `PurgeFrameQueries` 1.2 s
+  (base 1.0 s), `PurgeFrameSite` 1.0 s, `PurgeFrameClaims` 1.4 s (base
+  1.3 s), `PurgeFrameSchema` 1.4 s, `PurgeEffectClaims` 1.3 s (base 1.2 s,
+  plus 1.0 s for `SelectOneWhereSupport`), `PurgeFrameInstances` 3.3 s,
+  `PurgeEffectInstances` 1.7 s, `PurgeLawRetention` 0.9 s,
+  `PurgeLawRetentionOutput` 1.1 s.
+- New and changed model modules (`lake env lean`):
+  `LogicalValueLaws` 1.25 s, `RowwiseExpr` 0.50 s, `ExprEvalLaws` 0.46 s,
+  `RowidOutputIdentity` 0.35 s, `RowDelete` 0.27 s, `SelectSubqueryRules`
+  0.44 s, `Subqueries` 0.41 s, `TwoStateQuerySteps` 1.57 s.
+- `ResolvedOutputBridge` (surface package): 1.0 s, the lowest time that
+  `just dev-build` printed; `lake env lean` does not find its imports
+  because the two packages share the prefix `Belay.Sqlite`.
 
 ## Findings record
 
