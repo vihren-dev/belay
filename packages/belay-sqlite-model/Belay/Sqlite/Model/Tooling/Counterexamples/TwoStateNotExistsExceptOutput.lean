@@ -20,7 +20,7 @@ compound is empty when each row of the first term, which reads the initial table
 reads the current table. Proof sketch: subquery 0 of the context has no row and no fault
 ({name}`Resolved.notExistsExcept_context_zero`), so {lit}`NOT EXISTS` is true over the one row with no cells and has no
 fault, so the run of the query has no fault ({name}`Resolved.Query.run_of_faultless`), {lit}`WHERE` keeps the row
-({name}`Resolved.Query.results_eq_nil_iff_plain`), and {name}`resolvedStepOutput_query_hasRows_of_clean_from` gives
+({name}`Resolved.Query.results_eq_nil_iff_plain`), and {name}`resolvedStepOutput_calm_hasRows` gives
 the rows. -/
 theorem resolvedStepOutput_notExistsExcept_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
     (initial : Database) (compound : Resolved.Query) (position : Nat) (condition : Resolved.Expr)
@@ -53,10 +53,11 @@ theorem resolvedStepOutput_notExistsExcept_hasRows (index : Nat) (connection : C
     have : row = [] := by simpa using member
     subst this
     exact Resolved.Query.selectOneWhere_faultless _ _ (by rw [value]) expression inside
-  refine resolvedStepOutput_query_hasRows_of_clean_from index connection parameters _ _ _ initial
-    { rows := [[]], width := 0, fault := .none } _ calm (Resolved.Query.source_noFrom_from _ _ _ _ rfl)
-    (Resolved.Query.bindWindow_literal _ _ rfl rfl)
-    (Resolved.Query.run_of_faultless _ rfl rfl rfl calm.query_plain faultless rfl rfl) rfl rfl rfl rfl ?_
+  refine (resolvedStepOutput_calm_hasRows none index connection parameters _ _ _ (some initial)
+    { rows := [[]], width := 0, fault := .none } calm (Resolved.Query.source_noFrom_from _ _ _ _ rfl)
+    (Resolved.Query.bindWindow_literal _ _ rfl rfl)).2 ?_
+  rw [Resolved.Query.run_of_faultless _ rfl rfl rfl calm.query_plain faultless rfl rfl]
+  refine ⟨by simp, rfl, rfl, rfl, ?_⟩
   rw [Ne, Resolved.Query.results_eq_nil_iff_plain _ rfl rfl rfl rfl (by simp [Resolved.Query.simple])]
   intro empty
   have kept := (Resolved.mem_filtered _ (Resolved.Query.selectOneWhere (.not (.exists 0))) [[]] []).mpr

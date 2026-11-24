@@ -5,11 +5,13 @@ import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyLookupRemoval
 
 set_option doc.verso true
 
-/-! Output rows whose first cell is the rowid of a table row (ADR 0017, S6). A compound {lit}`SELECT` keeps one row
-of each set of rows that compare equal, so its rows can depend on the plan of SQLite. When the first output column
-reads the rowid alias of the table, two output rows that compare equal come from rows with the same rowid, which are
-one row. Then rows that compare equal are identical ({lit}`Resolved.equalRowsIdentical`), and the rows of the
-compound do not depend on the plan. -/
+/-! Output rows whose first cell is the rowid of a table row (ADR 0017, S6). The rows of {lit}`q1 EXCEPT q2` are the
+first row of each set of rows of {lit}`q1` that compare equal and that equal no row of {lit}`q2`
+({lit}`CompoundOperator.combine`). When two rows of {lit}`q1` compare equal but are not identical, the row that SQLite
+keeps can depend on its plan. The law here is about one list of output rows: when the first output column reads the
+rowid alias of the table, two output rows that compare equal come from rows with the same rowid, which are one row. So
+the output rows that compare equal are identical ({lit}`Resolved.equalRowsIdentical`). For the first term of
+{lit}`EXCEPT`, this is the premise of the law of the compound that the rows do not depend on the plan. -/
 
 namespace Belay.Sqlite.Model.Resolved
 

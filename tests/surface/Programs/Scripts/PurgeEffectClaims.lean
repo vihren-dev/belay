@@ -105,6 +105,6 @@ statement {name}`purge_clears` has no premise other than the catalog. The proof 
 claim: the bridge {name}`Holds.inContext_iff_hasRows`, {lit}`SELECT 1 WHERE`
 ({name}`resolvedStepOutput_selectOneWhere_hasRows`), {lit}`NOT EXISTS` ({name}`Resolved.Expr.truthy_notExists`), the
 read of one table ({name}`Resolved.Query.simple_subqueryRun`) and the rows that a delete keeps
-({name}`LiteralData.mem_deleted`). The proof of the frame claim uses the same laws. -/
+({name}`LiteralData.mem_deleted`). -/
 
 end AssertionExamples

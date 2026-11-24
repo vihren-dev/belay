@@ -78,6 +78,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   WHERE, EXISTS and NOT EXISTS, a subquery of the statement, the read of
   one table, the rows that a DELETE keeps, the logical values) and the new
   proof of the effect claim with them.
+- 2026-11-24, form B: review fixes of the laws of the parts (the wrapper
+  `resolvedStepOutput_query_hasRows_of_clean_from` is deleted, each form of
+  `Resolved.Expr.isLogical` is listed, docstrings and status text).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -277,7 +280,8 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   has no fault `may`, the run has no mismatch, no overflow and no fault,
   and the one result of the bound query has a row. An iff. It replaces
   `resolvedStepOutput_query_hasRows_of_clean_from`, which gave only the
-  sufficient direction for an initial database that is present.
+  sufficient direction for an initial database that is present. The
+  wrapper is deleted, and its caller uses the iff.
   `Connection.queryContextFrom` now takes an optional initial database.
 - `resolvedStepOutput_selectOneWhere_hasRows` (same module): for
   `SELECT 1 WHERE c` with any list of subqueries and an optional initial
@@ -301,16 +305,20 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   and the ending `done`. With `Query.source_first_from` it reads the table of
   the current database, and with `Query.source_initialTable` the table of the
   initial database. Equations under the premises; it leaves out a query with
-  a fallible call, a join or an ordering.
+  a fallible call, an ordering, a window or a grouping, and a source with a
+  fault.
 - `Resolved.equalRowsIdentical_rowidFirst` (new module
   `Schema/Columns/RowidOutputIdentity.lean`): for a table with distinct
-  rowids whose first column is the rowid alias, the outputs of column 0
+  rowids whose first column is the rowid alias, and each of whose rows
+  stores its rowid in that column (`Table.RowsAliased`), the outputs of
+  column 0
   followed by any columns, over any list of source rows of the table, are
   identical where they compare equal. This is the premise `identical` of
   `Resolved.Query.PlainExcept.subqueryRun`, the law of the EXCEPT compound
   (an equation of its rows with `CompoundOperator.combine` of the rows of its
-  terms). It replaces `Resolved.notExistsExcept_identical`, which fixed the
-  term of the two-state form.
+  terms). It is to replace `Resolved.notExistsExcept_identical`, which fixes
+  the term of the two-state form; the frame proof still uses the old law
+  until its new proof.
 - `LiteralData.mem_deleted` (`Schema/Columns/RowDelete.lean`): a row is in
   the table that a DELETE leaves exactly when it is in the table and the
   filter does not select it. An iff with no premise.

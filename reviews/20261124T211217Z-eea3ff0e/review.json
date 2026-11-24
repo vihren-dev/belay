@@ -1,0 +1,124 @@
+{
+  "caller": "claude",
+  "commit": "eea3ff0ed13db39c2db3f86ddbb838605479ad95",
+  "date": "2026-11-24T21:12:17+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ExprEvalLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/LogicalValueLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowDelete.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowidOutputIdentity.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/SelectSubqueryRules.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/Subqueries.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Dispatch/TwoStateQuerySteps.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/TwoStateQuerySteps.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261124-claim-proof-pilot.status.md",
+    "reviews/20261124T204956Z-f405f45a/resolution-1-20261124T210114Z.json",
+    "reviews/20261124T204956Z-f405f45a/resolution-2-20261124T210115Z.json",
+    "reviews/20261124T204956Z-f405f45a/resolution-3-20261124T210116Z.json",
+    "reviews/20261124T210150Z-eadfec30/resolution-1-20261124T210159Z.json",
+    "reviews/20261124T210150Z-eadfec30/review.json",
+    "tests/surface/Programs/Scripts/PurgeEffectClaims.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261124T211217Z-eea3ff0e#1",
+      "line": 99,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Tooling/Counterexamples/TwoStateQuerySteps.lean",
+      "rule": "R4",
+      "severity": "must",
+      "text": "`resolvedStepOutput_query_hasRows_of_clean_from` remains as a wrapper around the new equivalence solely for its existing caller in `TwoStateNotExistsExceptOutput.lean`. Fix: Apply the sufficient direction of `resolvedStepOutput_calm_hasRows` in that caller and delete the wrapper."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#2",
+      "line": 44,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/LogicalValueLaws.lean",
+      "rule": "R5",
+      "severity": "must",
+      "text": "The catch-all in `Expr.isLogical` silently classifies every future expression constructor as false. Fix: List the constructors that return false explicitly so that Lean requires a decision for each new constructor."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#3",
+      "line": 41,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/LogicalValueLaws.lean",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The docstring says rejected expressions can produce any value, although a counter expression can produce only an integer or NULL and even the literal `1` is rejected. Fix: Describe the check as recognizing the listed outer constructors and state that a false result gives no conclusion about the evaluated value."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#4",
+      "line": 8,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowidOutputIdentity.lean",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The module says every compound SELECT keeps one representative per equality class, although `UNION ALL` preserves duplicates and `UNION` compares rows across both terms. Fix: Describe the theorem’s guarantee for one projected row list and its use to establish representative identity for the left term of `EXCEPT`."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#5",
+      "line": 108,
+      "path": "tests/surface/Programs/Scripts/PurgeEffectClaims.lean",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The module says the frame proof uses the same laws as the effect proof, but `purge_keeps_rows` in this commit still calls `resolvedStepOutput_notExistsExcept_hasRows`. Fix: Remove the last sentence until the frame proof uses the listed laws."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#6",
+      "line": 282,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status says `Query.simple_subqueryRun` excludes joins, although its `sources` argument accepts joined sources whenever the source and expression premises hold. Fix: Remove joins from the list of exclusions."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#7",
+      "line": 285,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status omits the separate `Table.RowsAliased` premise, so it claims output identity even for a table whose first-column values disagree with its stored rowids. Fix: State that every row must store its rowid in the alias column."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#8",
+      "line": 290,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status says `equalRowsIdentical_rowidFirst` has replaced `notExistsExcept_identical`, although `purge_keeps_rows` still calls the latter in this commit. Fix: Record that the general law is available and that migration of the frame proof is pending."
+    },
+    {
+      "id": "20261124T211217Z-eea3ff0e#9",
+      "line": 319,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status records passing host-check results although `AGENTS.md` permits status files to cite results only from Nix checks. Fix: Keep the names of the checks run and remove their local pass verdicts."
+    }
+  ],
+  "id": "20261124T211217Z-eea3ff0e",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

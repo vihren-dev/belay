@@ -94,22 +94,4 @@ theorem resolvedStepOutput_selectOneWhere_hasRows (clock : Option Clock) (index 
   rw [Resolved.Query.results_eq_nil_iff_plain _ rfl rfl rfl rfl (by simp [Resolved.Query.simple])]
   simp [Resolved.filtered, Resolved.Query.simple, Resolved.Expr.eval]
 
-/-- For every calm query statement observed with an initial database whose run is clean and whose one result has a
-row, the output of its step has rows. Proof sketch: {name}`resolvedStepOutput_calm_hasRows`. -/
-theorem resolvedStepOutput_query_hasRows_of_clean_from (index : Nat) (connection : Connection)
-    (parameters : List Value) (query bound : Resolved.Query) (subqueries : List Resolved.Query) (initial : Database)
-    (source : Resolved.SourceRows) (run : Resolved.QueryRun)
-    (calm : (Resolved.Statement.query query subqueries).Calm)
-    (found : query.source (connection.queryContextFrom parameters query subqueries (some initial))
-      connection.state.database (some initial) = some source)
-    (window : query.bindWindow parameters = some bound)
-    (ran : query.run (connection.queryContextFrom parameters query subqueries (some initial)) source.rows = run)
-    (sourceClean : source.fault = .none) (mismatch : run.mismatch = false) (overflow : run.overflow = false)
-    (fault : run.fault = .none)
-    (results : bound.results (connection.queryContextFrom parameters query subqueries (some initial)) source.rows ≠ []) :
-    (resolvedStepOutput none index connection parameters (.query query subqueries) (some initial)).hasRows = true := by
-  subst ran
-  exact (resolvedStepOutput_calm_hasRows none index connection parameters query bound subqueries (some initial) source
-    calm found window).2 ⟨by simp [sourceClean], mismatch, overflow, fault, results⟩
-
 end Belay.Sqlite.Model

@@ -36,12 +36,14 @@ end Belay.Sqlite.Model
 
 namespace Belay.Sqlite.Model.Resolved
 
-/-- Whether the top node of an expression gives a value that is NULL, 0 or 1: a comparison, {lit}`AND`, {lit}`OR`,
-{lit}`NOT`, {lit}`IS NULL`, {lit}`EXISTS` or {lit}`IN`. A column, a literal, a parameter and the other forms give
-false, because their value can be any value. -/
+/-- Whether the outer node of an expression is one of the forms that always give NULL, 0 or 1: a comparison,
+{lit}`AND`, {lit}`OR`, {lit}`NOT`, {lit}`IS NULL`, {lit}`EXISTS` or {lit}`IN`. The check reads only the outer node.
+For every other form it is false, and then it gives no conclusion about the value: the literal {lit}`1` has the value
+1, and the column with the value 2 has the value 2. -/
 def Expr.isLogical : Expr → Bool
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .exists _ | .inQuery .. | .inList .. => true
-  | _ => false
+  | .column _ | .literal _ | .arithmetic .. | .cast .. | .coalesce .. | .json .. | .now _ | .parameter _
+  | .counter _ | .date .. | .scalar .. | .subquery _ | .aggregateValue _ => false
 
 /-- For every affinity, collation, negation, value and candidates, the value of {lit}`IN` ({name}`inValue`) is NULL,
 0 or 1. Proof sketch: each branch of the definition gives NULL or {name}`truth` of a Boolean. -/
