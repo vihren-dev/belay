@@ -27,49 +27,4 @@ theorem runScriptStep_isError_false {context : ResolveContext} {clock : Option C
   rw [← ofStep]
   exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ notQuery (quiet value)
 
-/-- For every connection, statement and values that resolve to a DROP TABLE without rules: the step continues
-without further execution, and its output is no error. In plain words, a drop that no foreign key can cascade
-from succeeds. Proof sketch: {name}`runScriptStep_drop_continues` gives the step and
-{name}`runScriptStep_isError_false` certifies the output. -/
-theorem runScriptStep_drop_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {positions : List Nat}
-    (found : resolveStatement context connection.resolveState statement = .ok (.drop positions none, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨output, next, step⟩ := runScriptStep_drop_continues (parameters := parameters) (clock := clock)
-    (index := index) found
-  refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, StatementRun.withKeys]
-
-/-- For every connection, statement and values that resolve to a rewrite of the catalog that keeps its outline:
-the step continues without further execution, and its output is no error. In plain words, a rename that keeps the
-outline of the catalog succeeds. Proof sketch: as {name}`runScriptStep_drop_ok`, with
-{name}`runScriptStep_rewrite_continues`. -/
-theorem runScriptStep_rewrite_ok_of_outline {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {renamed : Catalog}
-    (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
-    (outline : connection.state.database.catalog.sameOutline renamed = true) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨output, next, step⟩ := runScriptStep_rewrite_continues (parameters := parameters) (clock := clock)
-    (index := index) found outline
-  refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, outline]
-
-/-- On every valid database, if resolution gives a catalog rewrite, its step continues once
-with a successful output. Proof sketch: the outline equality from {name}`resolveStatement_certificate`
-supplies the premise of {name}`runScriptStep_rewrite_ok_of_outline`. -/
-theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {renamed : Catalog} {profile : Profile}
-    (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
-    (valid : connection.state.database.Valid profile) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false :=
-  runScriptStep_rewrite_ok_of_outline found (step_guards_hold found rfl valid)
-
 end Belay.Sqlite.Model

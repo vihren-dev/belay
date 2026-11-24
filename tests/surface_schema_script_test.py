@@ -105,3 +105,14 @@ def test_exact_control_rules_retain_the_deleted_laws(runtime_root: Path, tmp_pat
     check_module_chain(runtime_root, tmp_path, (("ReplacedTransaction", 4), ("ReplacedControlFrame", 3),
                        ("ReplacedSetting", 2), ("ReplacedControlContinuation", 6), ("ReplacedControlSend", 3),
                        ("ControlSendClaims", 4)))
+
+
+@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
+def test_exact_schema_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
+    """The former schema laws follow with their original premises and only logical axioms.
+    Eight clients check the effect of each schema kind on variable databases, including
+    refused preparations, colliding unique indexes and restricted defaults."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ReplacedPlainDrop", 3), ("ReplacedCatalogRewrite", 1), ("ReplacedCatalogContinuation", 6),
+        ("ReplacedConditionalCreation", 3), ("ReplacedAddColumn", 2), ("ReplacedCatalogSend", 2),
+        ("ReplacedColumnSend", 1), ("ReplacedColumnIfOk", 1), ("SchemaSendClaims", 8)))

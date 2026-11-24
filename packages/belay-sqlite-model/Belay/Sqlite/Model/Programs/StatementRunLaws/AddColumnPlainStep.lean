@@ -1,4 +1,5 @@
-import Belay.Sqlite.Model.Programs.StatementRunLaws.AddColumnEffect
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
+import Belay.Sqlite.Model.Programs.Scripts.AddColumnRule
 import Belay.Sqlite.Model.Programs.Scripts.ScriptStepDatabase
 import Belay.Sqlite.Model.Schema.Columns.AddColumnPlainStep
 
@@ -17,7 +18,7 @@ admits the declared type, the next connection is the connection with the databas
 has {name}`definedColumn` appended and NULL appended to every row, with some counters. In plain words, a
 column without a default starts as NULL in every row, and clock, snapshot and settings stay. Proof
 sketch: resolution gives the addition ({name}`addColumn_resolution_cases`); a prepare error is excluded by
-the error-free output; {name}`addColumn_database` gives the stored database, in which the default of a
+the error-free output; {name}`runScriptStep_addColumn_eq` gives the stored database, in which the default of a
 column without one reads as NULL; {name}`runScriptStep_next_of_database` gives the connection. -/
 theorem addColumn_plain_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
@@ -41,16 +42,15 @@ theorem addColumn_plain_step {context : ResolveContext} {clock : Option Clock} {
     obtain ⟨resolvedBody, catalog⟩ := pair
     cases body
     rcases addColumn_resolution_cases plain admitted found bodyOk with ⟨error, rfl, rfl⟩ | ⟨rfl, rfl⟩
-    · obtain ⟨value, database, -, effect, -⟩ := runScriptStep_effect resolution rfl step noError
-      simp [SqlState.statementRun, runStatement, Belay.Sqlite.Model.step] at effect
-    · obtain ⟨cell, clockNull, clockRead, stored⟩ := addColumn_database resolution present step noError
-      have noClock : (definedColumn table.shape.strict definition).clockDefault = false := by
+    · rw [runScriptStep_prepareError_eq resolution] at step
+      cases step; cases noError
+    · have quiet : (definedColumn table.shape.strict definition).clockDefault = false := by
         simp [definedColumn, CatalogColumn.clockDefault]
-      have same : cell = .null := by
-        have read : readDefaultValue (definedColumn table.shape.strict definition) = .ok .null := rfl
-        rw [clockRead noClock] at read
-        exact Except.ok.inj read
-      rw [same] at stored
-      exact runScriptStep_next_of_database resolution rfl step noError stored
+      have read : readDefaultValue (definedColumn table.shape.strict definition) = .ok .null := rfl
+      rw [runScriptStep_addColumn_eq resolution] at step
+      simp only [quiet, read, present, Except.toOption, Option.isSome_some, Bool.or_true, ite_true, Bool.false_eq_true, ite_false] at step
+      repeat' split at step
+      all_goals cases step
+      all_goals first | contradiction | exact ⟨_, rfl⟩
 
 end Belay.Sqlite.Model

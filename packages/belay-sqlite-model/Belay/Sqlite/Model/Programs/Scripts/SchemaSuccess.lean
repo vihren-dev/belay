@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Programs.Scripts.ControlRules
 import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
 import Belay.Sqlite.Model.Programs.Scripts.CreateSchemaSuccess
@@ -48,7 +49,7 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
   split at checked
   · rw [runScriptStep_setting_eq resolution]
     exact ⟨_, _, rfl, rfl⟩
-  · exact runScriptStep_drop_ok resolution
+  · rw [runScriptStep_dropPlain_eq resolution]; exact ⟨_, _, rfl, rfl⟩
   · rw [runScriptStep_begin_eq resolution]
     cases snapshot : c.state.snapshot with
     | none => exact ⟨_, _, rfl, rfl⟩
@@ -58,8 +59,10 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
     cases snapshot : c.state.snapshot with
     | none => simp [Connection.resolveState, snapshot] at open_
     | some original => rw [runScriptStep_commit_eq resolution, snapshot]; exact ⟨_, _, rfl, rfl⟩
-  · exact runScriptStep_rewrite_ok resolution valid.1
-  · exact runScriptStep_dropColumn_ok resolution valid.1
+  · simp only [runScriptStep_rewrite_eq resolution, show _ = true from step_guards_hold resolution rfl valid.1, ite_true]
+    exact ⟨_, _, rfl, rfl⟩
+  · simp only [runScriptStep_dropColumn_eq resolution, show _ = true from step_guards_hold resolution rfl valid.1, ite_true]
+    exact ⟨_, _, rfl, rfl⟩
   · obtain ⟨table, _, accepts⟩ := List.any_eq_true.mp checked
     simp only [Bool.and_eq_true] at accepts
     obtain ⟨kind, ordered⟩ := accepts

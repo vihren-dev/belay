@@ -100,9 +100,7 @@ the goal and the messages stay as they were, and the step rule of the read appli
         for rest in ← runGoal hints false (fuel - 1) case_ do
           result := result ++ (← if failed then closeFailure rest else pure [rest])
       return result
-    let some kind ← (do match ← statementKind? statement with
-        | some kind => pure (some kind)
-        | none => kindFromHints hints goal)
+    let some kind ← statementKind? statement
       | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule."
     setGoals [goal]
     evalTactic (← sendRule kind)

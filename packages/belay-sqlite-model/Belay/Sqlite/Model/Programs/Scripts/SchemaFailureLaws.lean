@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
 import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
@@ -21,7 +22,7 @@ that fails changes nothing, not even the counters (failure law), with or without
 sketch: the statement resolves to a prepare error, to a CREATE TABLE ({name}`resolveCreateTable_form`) or to
 the no-op of the clause ({name}`resolveCreateTableIf_cases`); a CREATE TABLE step and a drop without rules
 have no error output ({name}`runScriptStep_createTable_eq` with {name}`RunStep.isError_of_rule`,
-{name}`runScriptStep_drop_plain`), and a prepare
+{name}`runScriptStep_dropPlain_eq`), and a prepare
 error keeps the connection ({name}`runScriptStep_readOnly_keeps`). -/
 theorem runScriptStep_createTable_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
@@ -50,20 +51,21 @@ theorem runScriptStep_createTable_failed {context : ResolveContext}
         · exact .inl error
         · exact .inr (.inl created)
   rcases form with ⟨error, rfl⟩ | ⟨target, created, table, rfl⟩ | rfl
-  · exact runScriptStep_readOnly_keeps found (.inr ⟨error, rfl⟩) step
+  · rw [runScriptStep_prepareError_eq found] at step
+    cases step; exact ⟨rfl, rfl⟩
   · have quiet := RunStep.isError_of_rule (runScriptStep_createTable_eq found)
       (by split <;> simp [RunStep.Continuing, Output.isError]) step
     rw [quiet] at failed
     cases failed
-  · rw [(runScriptStep_drop_plain found step).1] at failed
-    cases failed
+  · rw [runScriptStep_dropPlain_eq found] at step
+    cases step; cases failed
 
 /-- For every connection with foreign keys off and DROP TABLE statement, and every step that continues with an
 error output: the step has no further execution, and the next connection is the connection. In plain words, with
 foreign keys off a DROP TABLE that fails (the table does not exist, or it is a schema table) changes nothing, not
 even the counters (failure law). Proof sketch: the statement resolves to a drop without rules or a prepare error
 ({name}`resolveStatement_dropTable_off_form`); a plain drop step has no error output
-({name}`runScriptStep_drop_plain`), and a prepare error keeps the connection
+({name}`runScriptStep_dropPlain_eq`), and a prepare error keeps the connection
 ({name}`runScriptStep_readOnly_keeps`). -/
 theorem runScriptStep_dropTable_off_failed {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
@@ -75,8 +77,9 @@ theorem runScriptStep_dropTable_off_failed {context : ResolveContext}
   obtain ⟨resolved, after, -, found, -⟩ := runScriptStep_continued_spec step
   rcases resolveStatement_dropTable_off_form context _ after dropped ifExists off found with
     ⟨positions, rfl⟩ | ⟨error, rfl⟩
-  · rw [(runScriptStep_drop_plain found step).1] at failed
-    cases failed
-  · exact runScriptStep_readOnly_keeps found (.inr ⟨error, rfl⟩) step
+  · rw [runScriptStep_dropPlain_eq found] at step
+    cases step; cases failed
+  · rw [runScriptStep_prepareError_eq found] at step
+    cases step; exact ⟨rfl, rfl⟩
 
 end Belay.Sqlite.Model
