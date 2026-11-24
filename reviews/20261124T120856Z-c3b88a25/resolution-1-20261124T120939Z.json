@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:09:39+00:00",
+  "finding": "20261124T120856Z-c3b88a25#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Documented the per-pass flag and the bounded cost of repeated failed proofs."
+}
