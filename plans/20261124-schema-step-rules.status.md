@@ -48,3 +48,6 @@ The second review found a stale module description and a missing syntax
 premise in the list that gates continuation traversal. The fallback now waits
 for its notInsertSelect premise. S6AutoPaths exercises this open premise and
 its discharge for a CREATE INDEX.
+
+The fallback regression now checks the binders of its open reached goal,
+so removing the notInsertSelect gate changes the fixture result.
