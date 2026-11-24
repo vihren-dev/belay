@@ -38,5 +38,6 @@ def test_select_execution_success_and_vacuity(runtime_root: Path, tmp_path: Path
 
 
 def test_positive_in_equivalence_allows_nullable_inner_values(runtime_root: Path, tmp_path: Path) -> None:
-    """The positive IN and EXISTS equivalence has no non-NULL premise on the inner column. Audit its original contract."""
+    """ReplacedSubqueryEquivalence proves the original Sql.EquivAt.in_exists_of_rowidAlias
+    contract for positive IN, including when the inner column can contain NULL."""
     check_module_chain(runtime_root, tmp_path, (("SelectSyntaxFrame", 0), ("ReplacedSubqueryEquivalence", 1)), timeout=60)

@@ -8,13 +8,16 @@ Created 2026-11-24. Status OPEN.
 The implementation spans Programs/Scripts in the model, the common send
 rule and the SqlRun modules in the surface. The syntax SELECT contract
 still applies without a resolution equation or a database validity proof.
-The remaining general send uses in the tests are temporary witnesses through ReplacedGeneralSend.
+ReplacedGeneralSend retains the two-way, single-statement send contract on
+an arbitrary connection. Its focused test compiles this module directly.
+
+## Implementation history
 
 Removed the general send fallback and ported its two original statements
 to ReplacedGeneralSend. The earlier send witnesses use this test module.
 The automation checks include a chosen output that supplies the row to
-the postcondition. The remaining work includes the group-law inventory
-and Nix acceptance before deleting the temporary witnesses.
+the postcondition. At this point the group-law inventory and Nix acceptance of the temporary
+witnesses were still pending.
 
 The remaining callers of the general single-execution send equivalence were
 ReplacedColumnIfOk, ReplacedSendLaws, ReplacedUpdateSendLaws and ReplacedDeleteSendLaws. Its original statement and proof
@@ -158,9 +161,9 @@ Removed 46 temporary fixture modules. ReplacedGeneralSend now checks just the tw
 
 ## Final measures
 
-Change `tnpnkkynsupz` retires the accepted witnesses. The same scc 3.7.0 selection as the pilot counts 100,980 maintained Lean code lines at the end of slice 7, and 98,829 after slice 8 (-2,151). The final count includes 59,944 model, 14,304 surface, 1,945 SQL text, 1,042 conformance, 134 public documentation tool, 20,888 test and 572 other lines. The start of the pilot was 97,505 lines. The net change across all eight slices is +1,324 lines.
+Change `tnpnkkynsupz` retires the accepted witnesses. The local D11 measurement uses the same pinned scc 3.7.0 and file selection as the pilot. It counts 100,980 maintained Lean code lines at the end of slice 7, and 98,829 after slice 8 (-2,151). The final count includes 59,944 model, 14,304 surface, 1,945 SQL text, 1,042 conformance, 134 public documentation tool, 20,888 test and 572 other lines. The start of the pilot was 97,505 lines. The net change across all eight slices is +1,324 lines.
 
-The table gives seconds for the faster of two elaborations of each changed `sql_run` module.
+The table gives local wall-clock seconds for the faster of two elaborations of each changed `sql_run` module.
 
 | Changed fixture | Slice 7 | Slice 8 |
 | --- | ---: | ---: |
