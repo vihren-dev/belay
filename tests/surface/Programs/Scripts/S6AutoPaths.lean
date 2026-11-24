@@ -33,22 +33,15 @@ def widen : Script := sql r"ALTER TABLE items ADD COLUMN note TEXT"
 
 /-- For every complete environment, every run of the ADD COLUMN that has no error ends with the one item row
 extended by a NULL cell. The claim holds for the one database {name}`sample`. Proof sketch: {lit}`sql_run`
-applies {name}`Sql.check_send_addColumn`; the premise that gives the default value is closed by the fact that a
+applies the exact ADD COLUMN rule; the premise that gives the default value is closed by the fact that a
 column without a default reads NULL, and evaluation gives the rows. -/
 theorem widen_adds_null_cells :
     FreshEnsures (send widen) (fun db => db = sample)
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 5, .null]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  sql_run [rfl, ⟨_, _, _, rfl⟩]
-  case success =>
-    have stored := clockRead rfl
-    have plain : default = Value.null := by
-      have same := stored.symm.trans (by rfl)
-      exact Except.ok.inj same
-    subst plain
-    intro _
-    rfl
+  sql_run [rfl, ⟨_, _, _, rfl⟩, sample_items]
+  all_goals first | (intro _; rfl) | (exfalso; apply_assumption; rfl) | (exfalso; assumption)
 
 /-- The read of all quantities. -/
 def quantities : Script := sql r"SELECT qty FROM items"

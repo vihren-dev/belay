@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
-import Belay.Sqlite.Model.Programs.Scripts.RewriteStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 
 set_option doc.verso true
 
@@ -82,15 +82,18 @@ theorem runScriptStep_keepsTable {context : ResolveContext} {clock : Option Cloc
   · split at kept <;> try contradiction
     rename_i survives
     cases kept
-    obtain ⟨_, rfl, nextEq⟩ := runScriptStep_drop_plain resolution step
-    rw [singleConnection member, nextEq]
+    rw [runScriptStep_dropPlain_eq resolution] at step
+    cases step
+    rw [singleConnection member]
     exact (Database.table_drop_kept _ _ (by simpa using survives)).trans present
   · split at kept <;> try contradiction
     rename_i equal
     cases kept
-    obtain ⟨_, rfl, _, nextEq⟩ := runScriptStep_rewrite resolution step
-    rw [singleConnection member, nextEq]
-    simpa only [Database.table, eq_of_beq equal] using present
+    rw [runScriptStep_rewrite_eq resolution] at step
+    dsimp only at step
+    split at step <;> cases step
+    rw [singleConnection member]
+    simpa only [Connection.withDatabase, Database.table, eq_of_beq equal] using present
   all_goals try contradiction
   all_goals
     obtain ⟨target, plain, destinationEq⟩ := Option.bind_eq_some_iff.mp kept

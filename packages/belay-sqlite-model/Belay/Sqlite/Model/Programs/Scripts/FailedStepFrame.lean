@@ -1,6 +1,5 @@
 import Belay.Sqlite.Model.Programs.Scripts.PlainWriteFrame
 import Belay.Sqlite.Model.Programs.Scripts.NonQueryOutput
-import Belay.Sqlite.Model.Programs.StatementRunLaws.AddColumnEffect
 
 set_option doc.verso true
 
@@ -94,28 +93,5 @@ theorem runScriptStep_plainWrite_failed {context : ResolveContext}
   refine runScriptStep_failed_frame found ordinary notQuery step failed fun value reason reached effect => ?_
   exact (runStatement_plainWrite_effect plain value
     (connection.state.counters.view resolved.counterReads) parameters connection.state.database).2 reason reached effect
-
-/-- For every connection, ADD COLUMN and step that continues with an error output: the next connection is
-the connection with the counters of the run, for some clock value. In plain words, a refused ADD COLUMN
-changes nothing but the counters. Proof sketch: {name}`runScriptStep_failed_frame`; each error of the
-effect of an ADD COLUMN has the reason of a refused default or an unmodeled column, never a failed
-constraint action. -/
-theorem runScriptStep_addColumn_failed {context : ResolveContext}
-    {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
-    {after : ResolveState} {target : Nat} {column : CatalogColumn} {refusesPopulated : Bool}
-    (found : resolveStatement context connection.resolveState statement =
-      .ok (.addColumn target column refusesPopulated, after))
-    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
-    (failed : output.isError = true) :
-    ∃ value, next = { connection with state := { connection.state with
-        counters := connection.state.counters.apply
-          (connection.state.statementRun value parameters (.addColumn target column refusesPopulated)).counts } } := by
-  refine runScriptStep_failed_frame found (by simp [Resolved.Statement.isControl])
-    (by intro _ _ same; cases same) step failed fun value reason reached effect => ?_
-  simp only [SqlState.statementRun, runStatement, Model.step] at effect
-  repeat' split at effect
-  all_goals first | (cases effect; simp; done) | skip
-  all_goals simp_all
 
 end Belay.Sqlite.Model

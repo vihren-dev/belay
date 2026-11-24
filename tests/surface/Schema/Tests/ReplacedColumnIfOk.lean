@@ -1,26 +1,19 @@
-import Belay.Sqlite.Programs.Reasoning.SendSingleStep
+import ReplacedColumnSend
 
 set_option doc.verso true
 
-/-!
-What a program that sends one ADD COLUMN checks in a fresh run (ADR 0017, S6). The model law about what
-its run stores is {name}`Belay.Sqlite.Model.addColumn_database`. A claim about a migration that adds a
-column then needs only the column and its default value, not the engine.
--/
+/-! The former schema statements of ADR 0033, derived with their original premises. -/
 
-namespace Belay.Sqlite
-open Belay.Sqlite Model
+namespace Belay.Sqlite.ReplacedSchema
+open Belay.Sqlite Model Model.ReplacedSchema
 
-/-- For every database, environment, ADD COLUMN that resolves from the initial connection and is
+/-- The deleted law {lit}`Sql.ifOk_send_addColumn`. For every database, environment, ADD COLUMN that resolves from the initial connection and is
 modeled, and post: a program that sends the statement checks the post at its fresh start when the post
 holds for every error-free final context whose connection sees the database with the column appended and a
 default value in every row, and that database is valid. The default value is NULL when the default reads the
 clock, and the value that {name}`readDefaultValue` reads otherwise. In plain words, to prove a claim about
 the table after an ADD COLUMN, it is enough to prove it for the database with the new column and its
-default in every old row; a refused ADD COLUMN is outside the premise. Proof sketch:
-{name}`check_send_single_of_step` with the step of the model; {name}`addColumn_database` gives the database,
-{name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
-choice. -/
+default in every old row; a refused ADD COLUMN is outside the premise. Proof sketch: apply the common send bridge and the model witnesses for the cases. -/
 theorem Sql.ifOk_send_addColumn {db : Database} {env : Env} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {column : CatalogColumn} {refusesPopulated : Bool}
     {after : ResolveState} {table : Table}
@@ -55,4 +48,6 @@ theorem Sql.ifOk_send_addColumn {db : Database} {env : Env} {statement : Syntax.
       { output, next } (by rw [step]; simp [RunStep.executions])
   exact reached value [output] _ clockNull clockRead effect valid.1 allOk
 
-end Belay.Sqlite
+#print axioms Sql.ifOk_send_addColumn
+
+end Belay.Sqlite.ReplacedSchema

@@ -84,7 +84,7 @@ def noteColumn : CatalogColumn :=
 
 /-- For every complete environment, every run of the addition that has no error ends with the cells
 {lit}`[1, 5, 'x']` in the one row of the items table: the new column holds its default value in the old row.
-The claim holds for the one database {name}`sample`. Proof sketch: {name}`Sql.ifOk_send_addColumn` reduces the
+The claim holds for the one database {name}`sample`. Proof sketch: the exact ADD COLUMN rule reduces the
 claim to the database with the column appended and the default value read from the column; the default is
 the text {lit}`'x'` and does not read the clock, which kernel evaluation shows, so the cells follow. -/
 theorem add_note_keeps_old_cells :
@@ -95,18 +95,10 @@ theorem add_note_keeps_old_cells :
   rintro db rfl env _
   obtain ⟨after, found⟩ : ∃ after, resolveStatement runContext (sample.raw.connection env.counters).resolveState
       addNoteStatement = .ok (.addColumn 0 noteColumn false, after) := ⟨_, rfl⟩
-  have modeled : RunStep.continues (runScriptStep runContext env.clock 0 (sample.raw.connection env.counters)
-      addNoteStatement []) = true := rfl
-  refine Sql.ifOk_send_addColumn (statement := addNoteStatement) (values := []) found sample_items
-    (RunStep.continues_iff.1 modeled) ?_
-  intro value outputs final _ readDefault reached _ _
-  have clockFree : noteColumn.clockDefault = false := rfl
-  have stored : readDefaultValue noteColumn = .ok (.text [120]) := rfl
-  rw [readDefault clockFree] at stored
-  cases Except.ok.inj stored
-  show tableValues 0 final.connection = _
-  unfold tableValues
-  rw [reached]
+  refine Sql.check_send_of_rule (statement := addNoteStatement) (values := []) (runScriptStep_addColumn_eq found)
+    (ExecutionContext.initial_holds_valid _ _) rfl ?_
+  apply Sql.sendReached_single (by intro _ same; cases same)
+  intro _ _
   rfl
 
 #print axioms bump_stores_new_quantity

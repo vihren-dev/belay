@@ -1,5 +1,4 @@
-import Belay.Sqlite.Programs.Scripts.AddColumnStepRule
-import Belay.Sqlite.Programs.Scripts.SchemaStepRules
+import Belay.Sqlite.Programs.Scripts.SendStepRules
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Programs.Automation.SqlRunShape
 
@@ -38,20 +37,10 @@ def premiseNames : List Name :=
   [`valid, `found, `present, `modeled, `notChoice, `success, `failure, `reached, `isStatement, `isSelect,
     `notInsertSelect]
 
-/-- The kinds of statement whose step never fails and does not read the clock, and that have no kind rule: DROP
-TABLE and a rename. Their rules have one outcome premise. -/
-def schemaKinds : List Name :=
-  [``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable]
-
 /-- The role of a premise, by the name that the rule application gives it. The premises of a failed step
 and of a successful step are outcomes. All other premises are side goals. -/
 def roleOf (kind : Name) (premise : Name) : Role :=
-  if premise == `success then
-    if schemaKinds.contains kind then .outcome [`output, `next, `noError, `ongoing, `nextIs, `valid] true
-    else
-      .outcome [`output, `value, `default, `next, `noError, `ongoing, `timed, `clockNull, `clockRead, `nextIs, `valid] true
-  else if premise == `failure then .outcome [`output, `value, `next, `failed, `ongoing, `nextIs, `valid] true
-  else if premise == `reached then
+  if premise == `reached then
     if kind == ``Model.Syntax.Statement.select then .outcome [`selected, `choice] false
     else .outcome [`output, `next, `step, `valid] false
   else .side
@@ -59,13 +48,7 @@ def roleOf (kind : Name) (premise : Name) : Role :=
 /-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a
 rule of its own is sent with the general rule {name}`Sql.check_send_of_step_notInsertSelect`, whose premises stay open. -/
 def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
-  if kind == ``Model.Syntax.Statement.addColumn then
-    `(tactic| refine' Sql.check_send_addColumn ?valid ?found ?present ?modeled ?success ?failure)
-  else if kind == ``Model.Syntax.Statement.dropTable then
-    `(tactic| refine' Sql.check_send_dropPlain ?valid ?found ?success)
-  else if kind == ``Model.Syntax.Statement.renameTable then
-    `(tactic| refine' Sql.check_send_rewrite ?valid ?found ?success)
-  else if kind == ``Model.Syntax.Statement.select then
+  if kind == ``Model.Syntax.Statement.select then
     `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached)
   else
     `(tactic| refine' Sql.check_send_of_step_notInsertSelect ?notInsertSelect ?modeled ?notChoice ?reached ?valid)

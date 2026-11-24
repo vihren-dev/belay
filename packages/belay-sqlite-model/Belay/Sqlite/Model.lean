@@ -1,3 +1,5 @@
+import Belay.Sqlite.Model.Programs.Scripts.CreateObjectRules
+import Belay.Sqlite.Model.Programs.Scripts.AddColumnRule
 import Belay.Sqlite.Model.Queries.Evaluation.NormalFormLaws
 import Belay.Sqlite.Model.Programs.Scripts.CreatedTables
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyActionCoverage
@@ -74,7 +76,7 @@ import Belay.Sqlite.Model.Programs.Clock.ExprCalmRules
 import Belay.Sqlite.Model.Queries.Evaluation.ExprCalmRules
 import Belay.Sqlite.Model.Queries.Evaluation.ComparisonTruthRules
 import Belay.Sqlite.Model.Programs.Scripts.ControlRules
-import Belay.Sqlite.Model.Programs.Scripts.RewriteStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule

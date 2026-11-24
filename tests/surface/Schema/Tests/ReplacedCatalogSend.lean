@@ -1,22 +1,22 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
+import ReplacedPlainDrop
+import ReplacedCatalogRewrite
+import ReplacedCatalogContinuation
 
 set_option doc.verso true
 
-/-! Surface rules for a plain DROP and a catalog rename. Each describes the reached connection
-for a valid input when the statement resolves. Both steps have zero changes and one execution. -/
+/-! The former schema statements of ADR 0033, derived with their original premises. -/
 
-namespace Belay.Sqlite
-open Belay.Sqlite Model
+namespace Belay.Sqlite.ReplacedSchema
+open Belay.Sqlite Model Model.ReplacedSchema
 
-/-- For every context, statement, values and post, with a valid connection in the context: the program that
+/-- The deleted law {lit}`Sql.check_send_dropPlain`. For every context, statement, values and post, with a valid connection in the context: the program that
 sends the statement checks the post when these premises hold.
 * {lit}`found`: the statement resolves from the connection to DROP TABLE of the objects at {lit}`positions`
   without rules, which is the resolution while foreign-key enforcement is off and no trigger fires.
 * {lit}`success`: for every output that is not an error and does not end the run, and for the connection with the
   database without the objects ({name}`Model.Database.drop`): if that connection is valid, the post holds for
   the list of that one output and the context after it.
-In plain words, a drop without rules never fails. Proof sketch: {name}`Sql.check_send_of_step`, with
-{name}`runScriptStep_drop_continues` for the step and {name}`runScriptStep_drop_plain` for the reached connection. -/
+In plain words, a drop without rules never fails. Proof sketch: apply the common send bridge and the model witnesses for the cases. -/
 theorem Sql.check_send_dropPlain {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {positions : List Nat} {after : ResolveState}
     {post : List Output → ExecutionContext → Prop}
@@ -36,15 +36,14 @@ theorem Sql.check_send_dropPlain {ctx : ExecutionContext} {statement : Syntax.St
   obtain ⟨noError, -, nextEq⟩ := runScriptStep_drop_plain found step'
   exact success output next noError (runScriptStep_continued step').2 nextEq hvalid
 
-/-- For every context, statement, values and post, with a valid connection in the context: the program that
+/-- The deleted law {lit}`Sql.check_send_rewrite`. For every context, statement, values and post, with a valid connection in the context: the program that
 sends the statement checks the post when these premises hold.
 * {lit}`found`: the statement resolves from the connection to a rewrite of the catalog to {lit}`renamed`, as a
   rename does.
 * {lit}`success`: for every output that is not an error and does not end the run, and for the connection with the
   database whose catalog is {lit}`renamed` and whose rows stay: if that connection is valid, the post holds for
   the list of that one output and the context after it.
-In plain words, a resolved rename keeps the outline and succeeds. Proof sketch: as
-{name}`Sql.check_send_dropPlain`, with {name}`runScriptStep_rewrite_ok` and {name}`runScriptStep_rewrite`. -/
+In plain words, a resolved rename keeps the outline and succeeds. Proof sketch: apply the common send bridge and the model witnesses for the cases. -/
 theorem Sql.check_send_rewrite {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {renamed : Catalog} {after : ResolveState}
     {post : List Output → ExecutionContext → Prop}
@@ -64,4 +63,7 @@ theorem Sql.check_send_rewrite {ctx : ExecutionContext} {statement : Syntax.Stat
   obtain ⟨noError, -, -, nextEq⟩ := runScriptStep_rewrite found step'
   exact success output next noError (runScriptStep_continued step').2 nextEq hvalid
 
-end Belay.Sqlite
+#print axioms Sql.check_send_dropPlain
+#print axioms Sql.check_send_rewrite
+
+end Belay.Sqlite.ReplacedSchema

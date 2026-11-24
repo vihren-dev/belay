@@ -31,7 +31,7 @@ theorem drop_resolves_with_rules : resolvesShape enforcing dropParent (.dropWith
 
 /-- Frame law of DROP TABLE with foreign keys off: the child is found by its name at position 0 after the drop of
 the parent that stood before it, with the rows that it had at position 1. Proof sketch:
-{name}`runScriptStep_dropTable_frame`; the kernel shows that the step continues and that the child had its three
+{name}`Database.tableNamed_drop_kept`; the kernel shows that the step continues and that the child had its three
 rows at position 1. -/
 theorem drop_off_keeps_the_child : ∀ output next others, stepOf start dropParent = .continued output next others →
     foundRows next.state.database (name! "c") =
@@ -41,24 +41,28 @@ theorem drop_off_keeps_the_child : ∀ output next others, stepOf start dropPare
   obtain ⟨after, found⟩ := resolvesTo_sound drop_resolves_plain
   obtain ⟨table, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "c") (position := 1)
     (by decide +kernel)
-  have kept := runScriptStep_dropTable_frame (connection := start) (dropped := name! "p") (ifExists := false) rfl found
-    step (other := name! "c") (by decide +kernel) present
+  change runScriptStep _ _ _ _ _ _ = _ at step
+  rw [runScriptStep_dropPlain_eq found] at step
+  cases step
+  have kept := Database.tableNamed_drop_kept (positions := [0]) present (by decide +kernel)
   have rows := start_rows.2
   unfold foundRows at rows ⊢
   rw [present] at rows
   have moved : keptBelow [0] 1 = 0 := by decide +kernel
+  simp only [Connection.withDatabase] at *
   rw [kept, moved]
   simpa using rows
 
 /-- Success law of DROP TABLE with foreign keys off: the database after is the database without the dropped
-table and its rows. Proof sketch: {name}`runScriptStep_drop_plain`. -/
+table and its rows. Proof sketch: {name}`runScriptStep_dropPlain_eq`. -/
 theorem drop_off_removes_the_parent : ∀ output next others, stepOf start dropParent = .continued output next others →
     output.isError = false ∧ others = [] ∧ foundRows next.state.database (name! "p") = none := by
   intro output next others step
   obtain ⟨after, found⟩ := resolvesTo_sound drop_resolves_plain
-  obtain ⟨noError, single, nextEq⟩ := runScriptStep_drop_plain found step
-  refine ⟨noError, single, ?_⟩
-  rw [nextEq]
+  change runScriptStep _ _ _ _ _ _ = _ at step
+  rw [runScriptStep_dropPlain_eq found] at step
+  cases step
+  refine ⟨rfl, rfl, ?_⟩
   decide +kernel
 
 -- With foreign keys on

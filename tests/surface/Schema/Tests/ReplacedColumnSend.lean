@@ -1,15 +1,13 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
-import Belay.Sqlite.Programs.StatementRunLaws.AddColumnEffect
+import ReplacedAddColumn
 
 set_option doc.verso true
 
-/-! The rule for one sent ADD COLUMN at any context (ADR 0017, S6): the premises that a proof of a program
-needs, and nothing about the other statements of the program. -/
+/-! The former schema statements of ADR 0033, derived with their original premises. -/
 
-namespace Belay.Sqlite
-open Belay.Sqlite Model
+namespace Belay.Sqlite.ReplacedSchema
+open Belay.Sqlite Model Model.ReplacedSchema
 
-/-- For every context {lit}`ctx`, statement, values and post, with a valid connection in {lit}`ctx`: the program
+/-- The deleted law {lit}`Sql.check_send_addColumn`. For every context {lit}`ctx`, statement, values and post, with a valid connection in {lit}`ctx`: the program
 that sends the statement checks the post at {lit}`ctx` if these premises hold.
 
 * {lit}`found`: the statement resolves from the connection of {lit}`ctx` to an ADD COLUMN on position {lit}`target`.
@@ -24,10 +22,7 @@ that sends the statement checks the post at {lit}`ctx` if these premises hold.
 * {lit}`failure`: for every output that is an error and does not end the run, for every integer taken as the clock
   value, and for every connection that is {name}`Model.Connection.afterWrite` with the unchanged database and the
   counts of the statement for that value: if that connection is valid, the post holds for the list of that
-  one output and the context after it. The premise does not tie the integer to the clock.
-
-Proof sketch: {name}`Sql.check_send_of_step`; {name}`runScriptStep_effect` and {name}`addColumn_database` give the
-connection after a success, and {name}`runScriptStep_addColumn_failed` gives it after a refusal. -/
+  one output and the context after it. The premise does not tie the integer to the clock. Proof sketch: apply the common send bridge and the model witnesses for the cases. -/
 theorem Sql.check_send_addColumn {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {column : CatalogColumn} {refusesPopulated : Bool}
     {after : ResolveState} {table : Table} {post : List Output → ExecutionContext → Prop}
@@ -66,4 +61,6 @@ theorem Sql.check_send_addColumn {ctx : ExecutionContext} {statement : Syntax.St
   · obtain ⟨value, rfl⟩ := runScriptStep_addColumn_failed found step' noError
     exact failure output value _ noError ends rfl hvalid
 
-end Belay.Sqlite
+#print axioms Sql.check_send_addColumn
+
+end Belay.Sqlite.ReplacedSchema

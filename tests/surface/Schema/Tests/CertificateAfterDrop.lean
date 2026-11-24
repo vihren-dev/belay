@@ -69,7 +69,7 @@ theorem moved_statement : (certificate.moved 0).statement ["note"] = lookupResol
 
 /-- The obligations of the certificate hold between the connection before the drop and the connection after it.
 The child is found by its name at position 1 before and at position 0 after, and the rows are the same (no cell is
-appended). Proof sketch: the frame law {name}`runScriptStep_dropTable_frame` gives the table at the new position
+appended). Proof sketch: the frame law {name}`Database.tableNamed_drop_kept` gives the table at the new position
 with the same rows; the kernel checks that every row has the width. -/
 theorem obligations : certificate.Obligations runContext lookupStatement start dropped := by
   refine ⟨ReadAnalysis.resolvesOriginal (resolvesTo_sound resolves_before).choose_spec analysis, ?_⟩
@@ -78,8 +78,11 @@ theorem obligations : certificate.Obligations runContext lookupStatement start d
   obtain ⟨table, present⟩ := tableNamed_exists (database := start.state.database) (name := name! "c") (position := 1)
     (by decide +kernel)
   obtain ⟨output, others, stepped⟩ := dropped_step
-  have moved := runScriptStep_dropTable_frame (connection := start) (dropped := name! "p") (ifExists := false) rfl
-    dropFound stepped (other := name! "c") (by decide +kernel) present
+  change runScriptStep _ _ _ _ _ _ = _ at stepped
+  rw [runScriptStep_dropPlain_eq dropFound] at stepped
+  have nextEq := (RunStep.continued.inj stepped).2.1
+  have moved := Database.tableNamed_drop_kept (positions := [0]) present (by decide +kernel)
+  rw [← nextEq]
   have wide : (Resolved.sourceRows table).all (fun row => decide (3 ≤ row.length)) = true := by
     have check : ((start.state.database.tableNamed (name! "c")).map fun (_, t) =>
         (Resolved.sourceRows t).all fun row => decide (3 ≤ row.length)) = some true := by decide +kernel
@@ -88,6 +91,7 @@ theorem obligations : certificate.Obligations runContext lookupStatement start d
   refine ⟨name! "c", 0, table, table, fun _ => [], ?_, ?_, ⟨["note"], after, ?_⟩, by simp, ?_⟩
   · rw [certificate_position]; exact present
   · have same : keptBelow [0] 1 = 0 := by decide +kernel
+    simp only [Connection.withDatabase]
     rw [moved, same]
   · rw [moved_statement]; exact found
   · intro row member
