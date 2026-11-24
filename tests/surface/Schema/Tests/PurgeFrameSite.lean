@@ -62,7 +62,8 @@ theorem PurgeFrameSite.purge_continues {db : Database} (site : PurgeFrameSite db
 
 #print axioms PurgeFrameSite.purge_continues
 
-/-! The structure of the site is {name}`PurgeFrameSite`. The model runs the purge on each database with a site. The kind rule of the plain DELETE and the readiness fact of
-a row-wise filter give this ({name}`PurgeFrameSite.purge_continues`). -/
+/-! The structure of the site is {name}`PurgeFrameSite`. The model runs the purge on each database with a site. The
+kind rule of the plain DELETE and the readiness fact of a row-wise filter give this
+({name}`PurgeFrameSite.purge_continues`). -/
 
 end AssertionExamples
