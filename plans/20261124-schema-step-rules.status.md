@@ -69,3 +69,4 @@ The earlier setting witness in ReplacedControlSend now describes its proof
 directly. Its former documentation reference named the removed DROP
 surface rule. The complete verdict output matches slice 3 byte for byte
 (store paths 88m86jvy8hk374zi93yjzb3a3animn5a and 7x0wipxb4j14x4pm411k64cjbw2r3awx).
+After incorporating the checker allocation and control review, the start has 98,362 code lines. The schema rules at f9a36cf1 have 14,321 surface lines and 98,598 total. The three fixtures in the timing table contain the changed sql_run proofs.
