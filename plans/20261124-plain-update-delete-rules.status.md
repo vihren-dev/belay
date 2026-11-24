@@ -98,3 +98,4 @@ surface_s6_check_programs_test, surface_s6_check_editor_test and
 surface_s6_automation_test, including proof replay and bounded search.
 Review moved the retry policy to Check.searchPasses and documented the default. The bounded interactive search test passed.
 Documented the pass flags and the cost of retrying an exhausted route.
+With the final checker allocation at b55f05bc, the surface has 14,583 code lines and the total is 98,317. The remaining counts above are unchanged.
