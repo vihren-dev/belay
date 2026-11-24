@@ -40,7 +40,7 @@
     "PurgeEffectClaims", "PurgeEffectInstances", "PurgeEffectTactic", "PurgeFrameClaims", "PurgeFrameInstances",
     "PurgeFrameQueries", "PurgeFrameSchema", "PurgeFrameSite", "PurgeFrameTactic", "PurgeLawRetention",
     "PurgeLawRetentionOutput",
-    "PurgeTacticLimits", "PurgeTriggerCounterexample", "RebuildAffinity", "RebuildRuns", "Rejected",
+    "PurgeTacticCases", "PurgeTriggerCounterexample", "RebuildAffinity", "RebuildRuns", "Rejected",
     "SelectCountWhereSupport", "SelectDuplicateKeySupport", "SelectGroupSupport",
     "SelectOneWhereSupport", "SignupInvariantClaims", "SqlDocBindings", "SqlDocCasesBindings",
     "SqlDocCasesComments", "SqlDocCasesExplicit", "SqlDocCasesFailures", "SqlDocCasesText",

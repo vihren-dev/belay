@@ -28,23 +28,12 @@ theorem Database.Raw.resolveState_of_catalog {raw schema : Database.Raw} (same :
     (counters : Counters) : (raw.connection counters).resolveState = (schema.connection {}).resolveState := by
   simp only [Connection.resolveState, Database.Raw.connection, same]
 
-/-- For every two raw databases with the same catalog and every position that has a table in that catalog: the
-first database has at the position the table of the catalog entry with the rows that it stores at the position.
-Proof sketch: {name}`Model.Database.table` maps the entry of the catalog. -/
-theorem Database.Raw.table_of_catalog {raw schema : Database.Raw} (same : raw.catalog = schema.catalog)
-    (position : Nat) (present : (schema.catalog.tableAt position).isSome = true) :
-    raw.table position =
-      some { shape := (schema.catalog.tableAt position).get present, rows := raw.rows.getD position [] } := by
-  unfold Model.Database.table
-  rw [same]
-  conv => lhs; rw [← Option.some_get present]
-  rfl
-
 /-- For every script of exactly one read-only statement with values, every context and every raw database
 {lit}`schema` with the catalog of the context's database: if the statement resolves on the catalog of
 {lit}`schema` to {lit}`resolved`, the default assertion {name}`Holds.reached` holds exactly when the output of
 {lit}`resolved` at the idle connection of the context's database, without a clock, at index zero and without an
-initial database, has rows ({name}`Output.hasRows`). Proof sketch: the resolution state reads only the catalog
+initial database, has rows ({name}`Output.hasRows`): the output is rows that are not empty, or at least one result
+that SQLite may give, each of which has a row. Proof sketch: the resolution state reads only the catalog
 ({name}`Database.Raw.resolveState_of_catalog`), so {name}`Holds.inContext_iff_hasRows` applies at the default
 observation. -/
 theorem Holds.reached_iff_of_catalog {script : Script} {statement : Syntax.Statement} {parameters : List Value}
@@ -68,7 +57,8 @@ theorem Holds.reached_iff_of_catalog {script : Script} {statement : Syntax.State
 {lit}`initialSchema` and {lit}`schema` with the catalog of the initial database and of the context's database: if the
 query resolves on these two catalogs ({name}`resolveTwoState`) to {lit}`resolved`, the default two-state assertion
 {name}`Holds.reachedSince` holds exactly when the output of {lit}`resolved` at the idle connection of the context's
-database, without a clock and at index zero, has rows ({name}`Output.hasRows`). The output receives
+database, without a clock and at index zero, has rows ({name}`Output.hasRows`): the output is rows that are not
+empty, or at least one result that SQLite may give, each of which has a row. The output receives
 {lit}`chosen`, the initial database when the query or one of its subqueries has a source with a schema name
 ({name}`usesSchema`), else no database. Proof sketch: rewrite the two catalogs and apply
 {name}`Holds.inContextSince_iff_hasRows` at the default observation. -/

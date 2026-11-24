@@ -152,8 +152,9 @@ list of values. Let the source rows {lit}`source` of the query have no fault, le
 the parameters of the context, and let each expression of the sources, the filter and each column be row-wise. Then
 the run of the query for the outer row:
 
-* has as rows the values of the columns over each source row for which the filter is true, in the order of the
-  source rows, with each expression evaluated in the context of the values alone ({name}`EvalContext.bound`);
+* has as rows the values of the columns over each source row for which the filter is true, or over each source
+  row when there is no filter, in the order of the source rows, with each expression evaluated in the context of
+  the values alone ({name}`EvalContext.bound`);
 * has no fault;
 * ends done.
 

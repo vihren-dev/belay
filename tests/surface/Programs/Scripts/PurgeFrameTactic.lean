@@ -49,7 +49,7 @@ theorem purge_frame_by_tactic (c now : Value) :
     simp only [LiteralData.selected, Option.all_some]
     rw [← unselected]
     exact congrArg (fun pair => Resolved.truthy pair.1) (purgeFilter_rowwise.evaluate_congr _ _ row.values rfl)
-  · have admitted := db.valid.admitted.table (Database.Raw.table_of_catalog schema 0 (by decide +kernel))
+  · have admitted := db.valid.admitted.table (Model.Database.table_of_sameCatalog schema 0 (by decide +kernel))
     exact Resolved.equalRowsIdentical_rowidFirst admitted.rowidsDistinct admitted.rowsAliased
       (by dsimp only; decide +kernel) .binary [.binary, .binary] _ [.column 1, .column 2]
       fun cells member => (List.mem_filter.1 member).1
@@ -87,7 +87,7 @@ theorem purge_adds_none (c now : Value) :
       LiteralData.mem_deleted] at inside
     exact (mem_sourceRows_iff _ _).2 ⟨row, inside.1, rfl⟩
   · have admitted := valid.1.admitted.table
-      (Database.Raw.table_of_catalog (raw := Database.setRows db.raw sessionsEntry.1 _) schema 0 (by decide +kernel))
+      (Model.Database.table_of_sameCatalog (database := Database.setRows db.raw sessionsEntry.1 _) schema 0 (by decide +kernel))
     exact Resolved.equalRowsIdentical_rowidFirst admitted.rowidsDistinct admitted.rowsAliased
       (by dsimp only; decide +kernel) .binary [.binary, .binary] _ [.column 1, .column 2]
       fun cells member => (List.mem_filter.1 member).1

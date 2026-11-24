@@ -2,14 +2,42 @@ import PurgeFrameSchema
 
 set_option doc.verso true
 
-/-! A fixture module of {lit}`tests/surface_assertion_examples_test.py`: the claims for which {lit}`sql_holds` has
-no law, and its messages. Each message names the part of the claim that has no law. Most examples state a claim about
-a context whose database has the catalog of {name}`AssertionExamples.sessions`. The last two show a missing hint and
-a goal that is not a claim. -/
+/-! A fixture module of {lit}`tests/surface_assertion_examples_test.py`: small cases of {lit}`sql_holds`. Each
+example states a claim about a context whose database has the catalog of {name}`AssertionExamples.sessions`. The first
+proves an {lit}`EXISTS` claim with a witness row, as the first goal of a conjunction: the tactic keeps the second goal.
+The other examples are claims for which the tactic has no law, and its messages. Each message names the part of the
+claim that has no law. The last two show a missing hint and a goal that is not a claim. -/
 
 namespace AssertionExamples
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
+
+/-- For every context whose database has the catalog of {name}`sessions` and stores a row in the table
+{lit}`sessions`, the claim that the table has a row holds, and {lean}`True` holds. -/
+theorem sessions_exists (context : ExecutionContext)
+    (same : context.connection.state.database.catalog = sessions.raw.catalog)
+    (stored : context.connection.state.database.rows.getD 0 [] ≠ []) :
+    Holds.reached (sql r"SELECT 1 WHERE EXISTS (SELECT id FROM sessions)") context ∧ True := by
+  constructor
+  sql_holds [same]
+  · obtain ⟨row, member⟩ := List.exists_mem_of_ne_nil _ stored
+    exact ⟨_, List.mem_map_of_mem (List.mem_filter.2 ⟨(mem_sourceRows_iff _ _).2 ⟨row, member, rfl⟩, rfl⟩)⟩
+  · trivial
+
+#print axioms sessions_exists
+
+/--
+error: sql_holds has no law for the names of the result columns in the query
+  { sources := [], filter := some (Resolved.Expr.exists 0).not, aggregate := false, groupBy := [],
+    columns := [Resolved.Output.scalar (Resolved.Expr.literal (Value.integer (Int.ofNat 1)))], names := ["verdict"],
+    orderBy := [], offset := 0,
+    limit :=
+      none }. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+-/
+#guard_msgs in
+example (context : ExecutionContext) (same : context.connection.state.database.catalog = sessions.raw.catalog) :
+    Holds.reached (sql r"SELECT 1 AS verdict WHERE NOT EXISTS (SELECT id FROM sessions)") context := by
+  sql_holds [same]
 
 /--
 error: sql_holds has no law for the result column
@@ -95,7 +123,12 @@ example (context : ExecutionContext) (same : context.connection.state.database.c
   sql_holds [same]
 
 /--
-error: sql_holds has no law for a claim that reads the clock or a counter, or calls a function that can fail. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+error: sql_holds has no law for the expression
+  Resolved.Expr.compare Comparison.lt none
+    (Resolved.Expr.scalar Resolved.ScalarFunction.abs
+      (Resolved.Arguments.cons (Resolved.Expr.column 2) Resolved.Arguments.nil))
+    (Resolved.Expr.literal (Value.integer (Int.ofNat 3)))
+which reads the clock or a counter, or calls a function that can fail. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
 -/
 #guard_msgs in
 example (context : ExecutionContext) (same : context.connection.state.database.catalog = sessions.raw.catalog) :

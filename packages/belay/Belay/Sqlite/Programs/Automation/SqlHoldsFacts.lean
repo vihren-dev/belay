@@ -44,7 +44,7 @@ def tableFact (hints : Array Expr) (database position : Expr) : MetaM (Expr × E
   let entry ← mkAppM ``Catalog.tableAt #[← mkAppM ``Model.Database.catalog #[schema], position]
   let some present ← Select.evaluationProof? (← mkEq (← mkAppM ``Option.isSome #[entry]) (mkConst ``Bool.true))
     | noLaw m!"a source at the catalog position {position}, which has no table"
-  let proof ← mkAppM ``Database.Raw.table_of_catalog #[same, position, present]
+  let proof ← mkAppM ``Model.Database.table_of_sameCatalog #[same, position, present]
   let_expr Eq _ _ found := ← inferType proof | noLaw m!"the table at the catalog position {position}"
   return (found.appArg!, proof)
 
@@ -98,7 +98,7 @@ def applyLaw (hints : Array Expr) (law : Name) (target : Expr) : MetaM (Expr × 
 /-- The parts of a resolved query, with the words that a message uses for each. -/
 def queryParts : List (Name × String) :=
   [(`sources, "FROM"), (`filter, "WHERE"), (`aggregate, "an aggregate"), (`groupBy, "GROUP BY"),
-    (`columns, "the result columns"), (`orderBy, "ORDER BY"), (`offset, "OFFSET"), (`limit, "LIMIT"),
+    (`columns, "the result columns"), (`names, "the names of the result columns"), (`orderBy, "ORDER BY"), (`offset, "OFFSET"), (`limit, "LIMIT"),
     (`limitParameter, "LIMIT with a parameter"), (`offsetParameter, "OFFSET with a parameter"),
     (`outer, "a column of an outer query"), (`aggregates, "an aggregate"), (`having, "HAVING"),
     (`distinct, "DISTINCT"), (`compound, "a compound SELECT")]

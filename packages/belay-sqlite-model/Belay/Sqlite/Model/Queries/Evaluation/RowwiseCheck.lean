@@ -15,7 +15,8 @@ def Expr.rowwiseCheck : Expr → Bool
   | .column _ | .literal _ | .parameter _ => true
   | .compare _ _ left right _ | .and left right | .or left right => left.rowwiseCheck && right.rowwiseCheck
   | .not operand | .isNull operand _ => operand.rowwiseCheck
-  | _ => false
+  | .arithmetic .. | .cast .. | .coalesce .. | .json .. | .now _ | .counter _ | .date .. | .scalar .. | .exists _
+  | .inQuery .. | .subquery _ | .inList .. | .aggregateValue _ => false
 
 /-- For every expression that passes {name}`Expr.rowwiseCheck`, the expression is row-wise
 ({name}`Expr.Rowwise`). Proof sketch: induction on the expression; each form that the check accepts is a

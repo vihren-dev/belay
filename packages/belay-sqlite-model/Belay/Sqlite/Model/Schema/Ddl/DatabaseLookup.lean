@@ -19,4 +19,17 @@ theorem Database.table_of_findTable (database : Database) (name : Identifier) (p
   cases entry
   simp [Database.table, Catalog.tableAt, atPosition]
 
+/-- For every two databases with the same catalog and every position that has a table in that catalog: the first
+database has at the position the table of the catalog entry with the rows that it stores at the position. A proof
+that knows the second database, for example a fixed schema, computes the entry there. Proof sketch:
+{name}`Database.table` maps the entry of the catalog. -/
+theorem Database.table_of_sameCatalog {database schema : Database} (same : database.catalog = schema.catalog)
+    (position : Nat) (present : (schema.catalog.tableAt position).isSome = true) :
+    database.table position =
+      some { shape := (schema.catalog.tableAt position).get present, rows := database.rows.getD position [] } := by
+  unfold Database.table
+  rw [same]
+  conv => lhs; rw [← Option.some_get present]
+  rfl
+
 end Belay.Sqlite.Model

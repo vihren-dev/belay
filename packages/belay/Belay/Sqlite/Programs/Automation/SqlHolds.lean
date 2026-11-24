@@ -47,6 +47,19 @@ def bridge (hints : Array Expr) (goal : MVarId) : MetaM MVarId := do
       hint gives the catalog of each database that the claim reads.{indentD (← open_.mapM inferType)}"
   return next
 
+/-- The words for the first clock expression of a statement without variables that fails
+{name}`Belay.Sqlite.Model.Resolved.Expr.calmCheck`: it reads the clock or a counter, or calls a function that can
+fail. -/
+def restlessPart (statement : Expr) : MetaM MessageData := do
+  let expressions ← Select.kernelNormalize (← mkAppM ``Resolved.Statement.clockExpressions #[statement])
+  for expression in (← listElements? expressions).getD [] do
+    let check ← mkAppM ``Resolved.Expr.calmCheck #[expression]
+    if let .ok value := Kernel.whnf (← getEnv) (← getLCtx) check then
+      if value.isConstOf ``Bool.false then
+        return m!"the expression{indentExpr expression}\nwhich reads the clock or a counter, or calls a function \
+          that can fail"
+  return "a claim that reads the clock or a counter, or calls a function that can fail"
+
 /-- Bring the output of {lit}`SELECT 1 WHERE c` to the truth of {lit}`c`. The result is the goal, the premise that
 {lit}`c` has no fault, and {lit}`c`. -/
 def selectOneWhere (hints : Array Expr) (goal : MVarId) : MetaM (MVarId × Expr × Expr) := do
@@ -59,9 +72,8 @@ def selectOneWhere (hints : Array Expr) (goal : MVarId) : MetaM (MVarId × Expr 
   unless ← isDefEq query expected do noLaw (← differingPart query expected)
   let (next, open_) ← applyEquivalence hints ``resolvedStepOutput_selectOneWhere_hasRows goal
   let #[calm, quiet] := open_ | throwError "sql_holds: unexpected premises of the law of SELECT 1 WHERE"
-  let some calmProof ← decidedLaw? ``Resolved.Statement.calm_of_calmCheck
-      (← mkAppM ``Resolved.Statement.query #[expected, subqueries])
-    | noLaw "a claim that reads the clock or a counter, or calls a function that can fail"
+  let statement ← mkAppM ``Resolved.Statement.query #[expected, subqueries]
+  let some calmProof ← decidedLaw? ``Resolved.Statement.calm_of_calmCheck statement | noLaw (← restlessPart statement)
   calm.mvarId!.assign calmProof
   return (next, quiet, condition)
 
@@ -90,7 +102,7 @@ def existsCondition (hints : Array Expr) (goal : MVarId) (quiet condition : Expr
 /-- {lit}`sql_holds [h₁, …]` proves the goal that {lit}`sql_run` leaves for a claim {lit}`holds q` or
 {lit}`holdsSince start q` down to goals about rows of tables. Each hint is a proof of {lit}`db.HasCatalog schema`
 for a database that the claim reads. For example, after {lit}`sql_run` in a proof of a claim
-{lit}`holds (sql! "SELECT 1 WHERE NOT EXISTS (SELECT * FROM t WHERE c = ?1)" x)` about each database with the
+{lit}`holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT * FROM t WHERE c = $x)")` about each database with the
 catalog of {lit}`schema`, {lit}`sql_holds [catalog]` leaves the goal that each row of {lit}`t` does not satisfy
 the condition. -/
 syntax (name := sqlHolds) "sql_holds" (" [" term,* "]")? : tactic
@@ -101,6 +113,7 @@ applies the laws in order and simplifies each goal that stays open. -/
   let hintTerms := match syntax_ with
     | `(tactic| sql_holds [$hints,*]) => hints.getElems
     | _ => #[]
+  let siblings := (← getUnsolvedGoals).drop 1
   let (_, goal) ← (← getMainGoal).intros
   setGoals [goal]
   evalTactic (← `(tactic| try simp only [Belay.Sqlite.holds, Belay.Sqlite.holdsSince, Std.Do.SPred.down_pure_nil]))
@@ -117,6 +130,6 @@ applies the laws in order and simplifies each goal that stays open. -/
     evalTactic (← `(tactic| try dsimp only [Belay.Sqlite.Database.Raw.connection, Belay.Sqlite.ExecutionContext.next,
       Belay.Sqlite.ExecutionContext.initial, Belay.Sqlite.Model.Connection.afterWrite]))
     remaining := remaining ++ (← getGoals)
-  replaceMainGoal remaining.toList
+  setGoals (remaining.toList ++ siblings)
 
 end Belay.Sqlite.ClaimTactic
