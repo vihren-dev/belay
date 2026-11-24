@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:08:38+00:00",
+  "finding": "20261124T120436Z-41f6bc68#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Check.searchPasses defines the retry policy beside the checker budget shares."
+}
