@@ -109,9 +109,10 @@ Other results of the pilot:
   `Sql.check_send_of_rule` and the path of `sql_run` through the rules add 296 lines, of which
   56 are test lines. The shared model and surface code has no code for one kind.
 - **Saving for each kind.** With the deleted laws and the changed callers, the kind rule changes
-  the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. The data facts of
-  a failed insertion add 29 lines. At `ee83eca7`, the pilot adds 151 lines without its
-  acceptance tests, and the acceptance tests add 520 lines.
+  the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. A list of kinds
+  in `sql_run` is 1 line shorter for the two kinds together. The data facts of a failed
+  insertion add 29 lines. At `ee83eca7`, the pilot thus adds 151 lines without its acceptance
+  tests, and the acceptance tests add 520 lines.
 - **Client proofs.** For the two client claims about INSERT, the declarations that differ
   between the forms take 74 lines with the kind rule (at `ee83eca7`, with the data facts of a
   failed insertion), 75 with the case laws and 69 with the case type. Before these data facts,
@@ -440,7 +441,7 @@ decides.
   laws of their own to delete; at 30 to 84 lines for a rule file, they add about 300 to 840
   lines. The subtotal does not include a query, the five kinds of slice 4 without a surface
   rule of their own (CREATE INDEX, CREATE VIEW, CREATE TRIGGER, DROP COLUMN, a statement that
-  SQLite refuses to prepare), the client tests of D9 (285 lines for plain INSERT in the pilot),
+  SQLite refuses to prepare), the client tests of D9 (285 lines in the pilot),
   the proofs that D8 moves and the retention tests while they stay. The best case of the
   subtotal is a saving of about 900 lines, which is about 1% of the 97,505 lines at
   `b7854558`. This ADR is not a step to the 45,000 lines of the simplification goal. Its value
@@ -517,5 +518,5 @@ decides.
    deleted. A witness that is the only check of a premise, of a distinction between cases or
    of a trust guarantee stays until a caller or a focused test covers it. (b) The retention
    tests stay in the test suite with no end. Recommendation: (a). At `ee83eca7`, the pilot's
-   test has 235 lines for ten step laws and three surface rules. **DECIDED 2026-11-24: (a)** (owner: "We handle the
+   test has 235 lines for seven step laws and three surface rules. **DECIDED 2026-11-24: (a)** (owner: "We handle the
    retention tests as you recommend").
