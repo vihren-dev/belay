@@ -94,6 +94,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   of `Resolved.Query.simple_results_congr` and of the retention statements,
   the record of the replaced truth laws, the note on `nix-build`), and a
   shorter frame proof with `purgeKeepsSubqueries`.
+- 2026-11-24, form B: review fixes (the note on the consumer test of the
+  model package, the clock and the index in the retention output law).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -438,8 +440,9 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
 passed (local); `python3 -m pytest tests/test_lean_categories.py` passed
 (local). The brief of this form does not allow a direct `nix-build` between
 the gates. `tests/test_model_package.py` starts `nix-build` itself; the run
-stopped at its timeout of 120 seconds and is not run again. `just test-full`
-at the end of the form runs the package checks.
+stopped at its timeout of 120 seconds and is not run again. Its consumer
+test has the marker `requires_nix`, so `just test-nix` runs it once, before
+the pull request of the selected branch, as the task file says.
 
 ## Findings record
 

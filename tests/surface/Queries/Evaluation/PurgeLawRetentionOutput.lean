@@ -27,7 +27,8 @@ abbrev Resolved.notExistsExcept (compound : Resolved.Query) (position : Nat) (co
 and 2 under the collations ({name}`Resolved.Query.PlainExcept`), every connection, values and initial database: if
 the condition and each column are row-wise, the initial table and the current table are present, every row of the
 first term is a row of the second term (in the context of the values), and the rows of the first term are identical
-where they compare equal, then the output of the step of the statement, observed with the initial database, has rows.
+where they compare equal, then at each statement index the step of the statement, with no clock and with the initial
+database, gives an output that has rows.
 The statement of the base form. Proof sketch: the statement is calm, because its terms are row-wise
 ({name}`Resolved.Query.simple_expressions_rowwise`). The laws of the parts then apply in turn: {lit}`SELECT 1 WHERE`
 ({name}`resolvedStepOutput_selectOneWhere_hasRows`), {lit}`NOT EXISTS` ({name}`Resolved.Expr.truthy_notExists`), the
