@@ -65,6 +65,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, base form: `JsonReadyLaws` is listed in the core library of
   the model package (folded into the readiness commit). Final checks run;
   the base form is DONE.
+- 2026-11-24, form B: the bridge laws from the one-state and two-state
+  assertions to the output of the resolved statement
+  (`ResolvedOutputBridge.lean`).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -226,6 +229,34 @@ evidence: `just dev-build`, `just test-full` and `just verdict` passed
 (local). For form C, `just test-full` ran at `3c505c1d`, and
 `just dev-build` and `just verdict` ran at `5bc3c323`, which changes one
 docstring line.
+
+## Form B
+
+In progress on the branch `claim-proof-pilot-laws`.
+
+### The bridge laws (surface package)
+
+New module `packages/belay/Belay/Sqlite/Programs/Claims/ResolvedOutputBridge.lean`.
+
+- `Script.observeTwoStateIn_resolved`: for a script of one SELECT
+  statement with values, an initial database and a context, when
+  `resolveTwoState` gives a resolved statement, the two-state observation
+  equals `resolvedStepOutput` of that statement at the clock, index and
+  connection of the context, with the initial database exactly when
+  `usesSchema` is true. An equation, with no other premise.
+- `Holds.inContextSince_iff_hasRows`: the same premises; the two-state
+  assertion holds exactly when that output has rows. This is the law that
+  the task file asks for.
+- `Holds.inContext_iff_hasRows`: the one-state analog. When the one
+  statement resolves in the resolution state of the context's connection,
+  `Holds.inContext` holds exactly when the output of the resolved statement
+  (without an initial database) has rows.
+- What they leave out: a script of more than one statement. The laws
+  replace the unfolding of `Script.observeTwoStateIn` and
+  `Model.observeTwoState` in the frame proof.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local).
 
 ## Findings record
 
