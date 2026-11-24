@@ -92,7 +92,8 @@ and a table entry.
 
 The pilot replaced the laws of CREATE TABLE and plain INSERT, and measured three forms of the
 laws of plain INSERT. All numbers are scc code lines from the findings record. Its last measured
-revision is `a03e8267`, which holds the three forms.
+revision with the three forms is `a03e8267`. Its last code revision, `ee83eca7`, holds the kind
+rule alone.
 
 | Form | What it is | Model lines for plain INSERT |
 | --- | --- | ---: |
@@ -108,19 +109,20 @@ Other results of the pilot:
   `Sql.check_send_of_rule` and the path of `sql_run` through the rules add 296 lines, of which
   56 are test lines. The shared model and surface code has no code for one kind.
 - **Saving for each kind.** With the deleted laws and the changed callers, the kind rule changes
-  the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. With the kind
-  rules alone, the pilot changed the total by +125 lines at revision `94c3fa5e`, without its
-  acceptance tests.
+  the total by −26 lines for CREATE TABLE and by −147 lines for plain INSERT. The data facts of
+  a failed insertion add 29 lines. At `ee83eca7`, the pilot adds 151 lines without its
+  acceptance tests, and the acceptance tests add 520 lines.
 - **Client proofs.** For the two client claims about INSERT, the declarations that differ
-  between the forms take 79 lines with the kind rule (at `94c3fa5e`), 75 with the case laws and
-  69 with the case type. With the data facts of a failed insertion, the kind rule takes 74
-  lines. The claim about each input ("the INSERT has the output `.done 1` and the new row, or
-  an error and the database before") takes 40 lines with the kind rule, 57 with the case laws
-  and 53 with the case type. No client proof names `runScriptStep`, `runScriptStepWith`,
+  between the forms take 74 lines with the kind rule (at `ee83eca7`, with the data facts of a
+  failed insertion), 75 with the case laws and 69 with the case type. Before these data facts,
+  at `94c3fa5e`, the kind rule took 79 lines. The claim about each input ("the INSERT has the
+  output `.done 1` and the new row, or an error and the database before") takes 40 lines with
+  the kind rule, 57 with the case laws and 53 with the case type. No client proof names `runScriptStep`, `runScriptStepWith`,
   `resolveStatement` or `SqlState.statementRun`.
 - **Where the client lines are.** The two modules that define the table and the statement of
-  the client test and prove their data facts (readiness, fit, keys and counts) have 106 lines
-  at `a03e8267`. Site facts of 63 lines have the same code in each form.
+  the client test and prove their data facts (readiness, fit, keys and counts) have 106 of the
+  285 lines of the client test at `ee83eca7`. Site facts of 63 lines have the same code in
+  each form.
 - **Elaboration time.** No model or surface module that the pilot changed differs by more than
   0.1 s. One test fixture with two new proofs went from 2.18 s to 5.02 s; the other changed
   fixtures differ by less than 0.4 s.
@@ -128,9 +130,8 @@ Other results of the pilot:
 With the same data facts, the 52 lines of the case laws make the two client proofs 1 line
 longer (75 against 74), and the 146 lines of the case type make them 5 lines shorter. The proof
 of the claim about each input is shortest with the kind rule. The owner selected the kind rule
-alone. The pilot task now removes the other two forms and keeps the data facts of a failed
-insertion (its section "Owner decision of 2026-11-23"); the findings record keeps the
-measurements.
+alone. The pilot then removed the other two forms (commit `c519a705`) and kept the data facts
+of a failed insertion; the findings record keeps the measurements of the three forms.
 
 ### What the pilot did not test
 
@@ -439,11 +440,11 @@ decides.
   laws of their own to delete; at 30 to 84 lines for a rule file, they add about 300 to 840
   lines. The subtotal does not include a query, the five kinds of slice 4 without a surface
   rule of their own (CREATE INDEX, CREATE VIEW, CREATE TRIGGER, DROP COLUMN, a statement that
-  SQLite refuses to prepare), the client tests of D9 (239 lines for plain INSERT in the pilot),
-  the proofs that D8 moves and the retention tests while they stay. The best case of the subtotal is a saving of about
-  900 lines, which is about 1% of the 97,505 lines at `b7854558`. This ADR is not a step to
-  the 45,000 lines of the simplification goal. Its value is in the first two consequences, and
-  in the laws that later facts and kinds do not need.
+  SQLite refuses to prepare), the client tests of D9 (285 lines for plain INSERT in the pilot),
+  the proofs that D8 moves and the retention tests while they stay. The best case of the
+  subtotal is a saving of about 900 lines, which is about 1% of the 97,505 lines at
+  `b7854558`. This ADR is not a step to the 45,000 lines of the simplification goal. Its value
+  is in the first two consequences, and in the laws that later facts and kinds do not need.
 - **`sql_run` proofs change at the goals of a send.** A proof that names the cases `success` and
   `failure` of a kind's rule gets the goals `modeled` and the cases of the rule. The pilot
   changed four such proofs.
@@ -453,7 +454,7 @@ decides.
   - `sql_run` tries each rule of `step_rule` in turn. With about 20 rules this can cost
     elaboration time. D11 records the time. When the time of a fixture becomes two times as
     long or more, the record of the slice names the proof that causes it.
-  - The client still writes the data facts of its tables and statements (106 of 239 lines in
+  - The client still writes the data facts of its tables and statements (106 of 285 lines in
     the pilot). This ADR does not make them shorter.
 
 ## Alternatives considered
@@ -515,6 +516,6 @@ decides.
    The status file records the Nix acceptance of that final revision; then the test is
    deleted. A witness that is the only check of a premise, of a distinction between cases or
    of a trust guarantee stays until a caller or a focused test covers it. (b) The retention
-   tests stay in the test suite with no end. Recommendation: (a). At `a03e8267`, the pilot's
-   test has 212 lines for nine laws. **DECIDED 2026-11-24: (a)** (owner: "We handle the
+   tests stay in the test suite with no end. Recommendation: (a). At `ee83eca7`, the pilot's
+   test has 235 lines for ten step laws and three surface rules. **DECIDED 2026-11-24: (a)** (owner: "We handle the
    retention tests as you recommend").
