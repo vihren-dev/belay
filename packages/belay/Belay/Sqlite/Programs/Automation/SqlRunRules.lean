@@ -1,4 +1,3 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Programs.Automation.SqlRunShape
 
@@ -16,37 +15,10 @@ open Lean Elab Tactic
 program that unfolds without end; a real program is far below it. -/
 def traversalFuel : Nat := 400
 
-/-- The SELECT rules need SELECT syntax, and the general send rule excludes INSERT from a query.
-An open shape premise blocks traversal of the continuation while the rule's applicability is unknown. -/
-def blockingPremises : List Name := [`isSelect, `notInsertSelect]
+/-- Only an open SELECT syntax check blocks traversal of its continuation. -/
+def blockingPremises : List Name := [`isSelect]
 
-/-- What the tactic does with one premise of a rule. -/
-inductive Role where
-  /-- A premise about the context, the statement or the model. The tactic tries the hints and the
-  hypotheses, and leaves the goal open when none fits. -/
-  | side
-  /-- The continuation runs under these binders of the reached postcondition. -/
-  | outcome (names : List Name)
-
-/-- The names of the premises of the rules. A goal with another name is a variable of the rule, such as the
-position of a table. A premise that is closed sets it. -/
-def premiseNames : List Name :=
-  [`valid, `modeled, `notChoice, `reached, `isSelect,
-    `notInsertSelect]
-
-/-- The reached post is an outcome. Each other named premise is a side goal. -/
-def roleOf (kind : Name) (premise : Name) : Role :=
-  if premise == `reached then
-    if kind == ``Model.Syntax.Statement.select then .outcome [`selected, `choice]
-    else .outcome [`output, `next, `step, `valid]
-  else .side
-
-/-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a
-rule of its own is sent with the general rule {name}`Sql.check_send_of_step_notInsertSelect`, whose premises stay open. -/
-def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
-  if kind == ``Model.Syntax.Statement.select then
-    `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached)
-  else
-    `(tactic| refine' Sql.check_send_of_step_notInsertSelect ?notInsertSelect ?modeled ?notChoice ?reached ?valid)
+/-- The premises used by the syntax rules for SELECT, query and single. -/
+def premiseNames : List Name := [`modeled, `reached, `isSelect]
 
 end Belay.Sqlite.Run

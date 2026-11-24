@@ -1,3 +1,4 @@
+import ReplacedGeneralSend
 import ReplacedTransaction
 import ReplacedControlFrame
 import ReplacedSetting
@@ -37,7 +38,7 @@ sends the statement checks the post when these premises hold.
   run, and for the connection that {name}`Model.Connection.afterBegin` gives: if that connection is valid, the post
   holds for the list of that one output and the context after it.
 In plain words, BEGIN opens a transaction when none is open, and fails without a change when one is open. Proof
-sketch: {name}`Sql.check_send_of_step`, the continuation law {name}`Model.ReplacedControls.runScriptStep_begin_continues` and the step
+sketch: {name}`ReplacedGeneral.Sql.check_send_of_step`, the continuation law {name}`Model.ReplacedControls.runScriptStep_begin_continues` and the step
 laws {name}`Model.ReplacedControls.runScriptStep_begin_idle` and {name}`Model.ReplacedControls.runScriptStep_begin_active`. -/
 theorem Sql.check_send_begin {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {after : ResolveState} {post : List Output → ExecutionContext → Prop}
@@ -50,7 +51,7 @@ theorem Sql.check_send_begin {ctx : ExecutionContext} {statement : Syntax.Statem
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, step⟩ := runScriptStep_begin_continues (parameters := values) (clock := ctx.clock)
     (index := ctx.index) found
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) ⟨output, next, [], step⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid
@@ -86,7 +87,7 @@ theorem Sql.check_send_commit {ctx : ExecutionContext} {statement : Syntax.State
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, step⟩ := runScriptStep_commit_continues (parameters := values) (clock := ctx.clock)
     (index := ctx.index) found
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) ⟨output, next, [], step⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid
@@ -122,7 +123,7 @@ theorem Sql.check_send_setting {ctx : ExecutionContext} {statement : Syntax.Stat
     (send ⟨[(statement, values)]⟩).check post ctx := by
   obtain ⟨output, next, step⟩ := runScriptStep_setting_continues (parameters := values) (clock := ctx.clock)
     (index := ctx.index) found
-  refine Sql.check_send_of_step (fun _ _ resolved => by
+  refine ReplacedGeneral.Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl) ⟨output, next, [], step⟩
     (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (by intro _ _ same; cases same) step) ?_ valid

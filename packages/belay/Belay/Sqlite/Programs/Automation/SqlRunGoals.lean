@@ -15,7 +15,7 @@ open Lean Meta Elab Tactic Term
 abbrev Hints := Array (TSyntax `term)
 
 /-- The premises that hold by {lit}`rfl` once the program is known: the shape of a script. -/
-def premisesByRfl : List Name := [`isSelect, `notInsertSelect]
+def premisesByRfl : List Name := [`isSelect]
 
 /-- Try to close a premise about the context. The attempts are, in order, the hints, each also with all definitions
 unfolded (a resolution of CREATE TABLE needs it), the hypotheses and the facts that follow from a fresh start. A premise that no attempt closes stays open. -/
@@ -65,7 +65,7 @@ that an alternative such as {lit}`first` can try another tactic from the unchang
 goal stays as an obligation and the reason is a warning. -/
 def stuck (first : Bool) (goal : MVarId) (reason : String) : TacticM (List MVarId) := do
   if first then
-    throwError "sql_run cannot start: {reason} Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step."
+    throwError "sql_run cannot start: {reason} Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec."
   logWarning m!"sql_run stopped: {reason} The goal stays open."
   return [goal]
 

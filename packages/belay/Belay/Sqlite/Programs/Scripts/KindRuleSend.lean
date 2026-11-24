@@ -1,4 +1,4 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
+import Belay.Sqlite.Programs.Reasoning.SendSingleStep
 
 set_option doc.verso true
 
@@ -94,5 +94,13 @@ theorem Sql.sendReached_single {post : List Output → ExecutionContext → Prop
   cases output with
   | oneOf results => exact absurd rfl (plain results)
   | done _ | rows _ | error _ | unmodeled _ => trivial
+
+/-- For every admitted database and environment: the connection of the fresh start satisfies the validity
+condition that the step rules ask of the connection of their context. In plain words, a run that starts from
+an admitted database starts valid, and it has no open transaction. Proof sketch: the database of the start is
+the admitted database; the start has no snapshot. -/
+theorem ExecutionContext.initial_holds_valid (db : Database) (env : Env) :
+    (ExecutionContext.initial db env).connection.state.Holds (Database.Valid Profile.pinned) :=
+  ⟨db.valid, fun _ same => by simp [ExecutionContext.initial, Database.Raw.connection] at same⟩
 
 end Belay.Sqlite

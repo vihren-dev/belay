@@ -4,7 +4,7 @@ set_option doc.verso true
 
 /-!
 The check of a program that sends one statement whose step continues with one execution (ADR 0017, S6): the
-check is the post at the context after the step. The send rules of {lit}`Belay.Sqlite.SendStepRules` and the
+check is the post at the context after the step. The fresh-send rules and the
 fresh-run rules of UPDATE, DELETE and ADD COLUMN build on it.
 -/
 
