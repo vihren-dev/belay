@@ -14,8 +14,9 @@ namespace AssertionExamples
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 
-/-- The client statement of the effect claim applies to {name}`sessions`: for the customer 1 and the integer time 50,
-every run of the purge with no error leaves no expired session of the customer. -/
+/-- The client statement of the effect claim applies to {name}`sessions`. Take the customer 1, the integer time 50
+and a complete environment. A run of the purge from the fresh start with no error leaves no expired session of the
+customer. -/
 theorem integer_time_clears : ∀ env : Env, env.Complete →
     (send (purge (.integer 1) (.integer 50))).ifOk
       (fun _ final => Holds.reached (purgeClears (.integer 1) (.integer 50)) final)
@@ -36,8 +37,8 @@ theorem text_time_makes_the_claim_true : ¬ Holds (purgeClears (.integer 1) text
     Holds.reached (purgeClears (.integer 1) textTime) (purgeFinal sessions (.integer 1) textTime) := by
   decide +kernel
 
-/-- With a NULL customer the filter is true for no row: the claim is true before and after the purge, which deletes
-nothing. -/
+/-- With a NULL customer the filter is true for no row, so the claim is true before and after the purge.
+{name}`null_customer_deletes_nothing` shows that this purge keeps all rows. -/
 theorem null_customer_needs_no_delete : Holds (purgeClears .null (.integer 50)) sessions ∧
     Holds.reached (purgeClears .null (.integer 50)) (purgeFinal sessions .null (.integer 50)) := by
   decide +kernel

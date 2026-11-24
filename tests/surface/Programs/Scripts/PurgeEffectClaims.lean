@@ -2,11 +2,11 @@ import PurgeFrameSchema
 import SelectOneWhereSupport
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the effect claim of the guide's purge for each
-database with the catalog of the pilot schema. The claim {name}`AssertionExamples.purgeClears` says that no session
-for which the filter of the purge is true is left. Its client statement {name}`AssertionExamples.purge_clears` has
+database with the catalog of the pilot schema. The claim `purgeClears` says that no session
+for which the filter of the purge is true is left. Its client statement `purge_clears` has
 no premise other than the catalog. The proof uses the laws of the query form
-`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)`: {name}`resolveStatement_selectOne_notExists`,
-{name}`tableOne_run` and {name}`whereOne_claims`. -/
+`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)`: `resolveStatement_selectOne_notExists`,
+`tableOne_run` and `whereOne_claims`. -/
 
 set_option doc.verso true
 
@@ -22,8 +22,9 @@ def purgeClears (c now : Value) : Script :=
 exactly when the filter of the purge, with the two values, is true for no row of the table {lit}`sessions`. Proof
 sketch: the claim resolves to {lit}`SELECT 1 WHERE NOT EXISTS` over the subquery of the table with the filter
 ({name}`resolveStatement_selectOne_notExists`). The kernel decides the lookup and the resolution of the filter on the
-catalog of {name}`sessions`. {name}`whereOne_claims` gives the value of the condition, and {name}`tableOne_run` gives
-the rows of the subquery. -/
+catalog of {name}`sessions`. {name}`whereOne_claims` reduces the claim to the truth of {lit}`NOT EXISTS`.
+{name}`tableOne_run` shows that the subquery has no fault and that it is empty exactly when the filter is true for
+no row. -/
 theorem purgeClears_iff (db : Database) (schema : db.HasCatalog sessions) (c now : Value) :
     Holds (purgeClears c now) db ↔
       ∀ row ∈ Resolved.sourceRows ⟨sessionsEntry.2, db.raw.rows.getD sessionsEntry.1 []⟩,

@@ -3,8 +3,8 @@ import PurgeFrameClaims
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the guide's purge frame claim for each database
 with the catalog of the pilot schema (ADR 0017, S6). The schema is the database {lit}`sessions` with one table
 `sessions (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`. A database with its
-catalog has the site of the purge ({name}`AssertionExamples.sessionsSite`), and the client statement
-{name}`AssertionExamples.purge_frame_on_sessions` follows from {name}`AssertionExamples.purge_frame`. It has no
+catalog has the site of the purge (`sessionsSite`), and the client statement
+`purge_frame_on_sessions` follows from `purge_frame`. It has no
 premise other than the catalog. -/
 
 set_option doc.verso true
@@ -50,9 +50,9 @@ def sessionsSite (db : Database) (schema : db.HasCatalog sessions) : PurgeFrameS
 
 /-- The client statement of the guide's frame claim of the purge. Take two values, NULL and text included. Take an
 admitted database with the catalog of {name}`sessions` and a complete environment. Run the purge from the fresh
-start. If the run has no error, each session of the start that the filter of the purge does not select is still in
-the reached database. The claim {name}`purgeKeeps` says this, with the start as its initial database. A run with
-an error requires nothing. The statement has no premise other than the catalog. Proof sketch: {name}`purge_frame`
+start. After a run with no error, the reached database has each session of the start that the filter did not select.
+The claim {name}`purgeKeeps` says this, with the start as its initial database. A run with an error requires
+nothing. The statement has no premise other than the catalog. Proof sketch: {name}`purge_frame`
 with the site {name}`sessionsSite`. -/
 theorem purge_frame_on_sessions (c now : Value) :
     FreshEnsuresFrom (send (purge c now)) (·.HasCatalog sessions)

@@ -46,6 +46,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   short sentences, the fields of `sessionsSite`).
 - 2026-11-24, base form: the effect claim `purgeClears` and its client
   statement `purge_clears`.
+- 2026-11-24, base form: review fixes of the effect commit (module
+  docstrings without unchecked references, the proof sketch of
+  `purgeClears_iff`, the docstrings of the instances and of the test).
 
 ## Base form
 

@@ -4,7 +4,7 @@ import PurgeFrameQueries
 S6). The purge `DELETE FROM sessions WHERE customer_id = :c AND expires_at < :now` removes the rows for which the
 filter is true. The claim compares the start with the reached database. It holds when the schema and the resolution
 of the purge and of the claim are as the fields of `PurgeFrameSite` say. The site does not assume that the model runs
-the purge: the kind rule of the plain DELETE and the facts of its readiness give it ({name}`PurgeFrameSite.purge_continues`).
+the purge: the kind rule of the plain DELETE and the facts of its readiness give it (`PurgeFrameSite.purge_continues`).
 The final property of the claim is not a field of the site. -/
 
 set_option doc.verso true
