@@ -113,6 +113,14 @@ where
         try goal := (← substCore goal fvar (symm := false) (tryToSkip := true)).2 catch _ => pure ()
     return goal
 
+/-- The premise of a kind rule that the resolution of the statement closes: the first new goal whose type is an
+equation for {name}`Model.resolveStatement`, after reducible definitions around it are unfolded. The name of the
+premise does not matter. -/
+def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
+  goals.findM? fun new => do
+    let some (_, side, _) := (← whnfR (← instantiateMVars (← new.getType))).eq? | return false
+    return side.isAppOf ``Model.resolveStatement
+
 /-- Ask the hints for the resolution of this step with the resolved statement and
 post-resolution state left as variables. A proof lets rule selection compare the
 resolved data without elaborating all the hints again for each candidate. If a hint

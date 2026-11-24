@@ -144,14 +144,6 @@ def closeModeled (hints : Hints) (rule found valid : Expr) (goal : MVarId) : Tac
     saved.restore
     return [goal]
 
-/-- The premise of a kind rule that the resolution of the statement closes: the first new goal whose type is an
-equation for {name}`Model.resolveStatement`, after reducible definitions around it are unfolded. The name of the
-premise does not matter. -/
-def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
-  goals.findM? fun new => do
-    let some (_, side, _) := (← whnfR (← instantiateMVars (← new.getType))).eq? | return false
-    return side.isAppOf ``Model.resolveStatement
-
 /-- Apply the common send bridge once, then look for a registered rule whose resolution
 is witnessed. A resolution inferred without specifying a kind is tried first. If it
 does not select a rule, the hints can still elaborate against each rule's own premise.
@@ -163,7 +155,9 @@ def applyKindRule (hints : Hints) (goal : MVarId) : TacticM (Option (List MVarId
     initial.restore
     return none
   let tagged := taggedGoals goals
-  let some equation := (← tagged `rule).head? | initial.restore; return none
+  let some equation := (← tagged `rule).head? |
+    initial.restore
+    return none
   let known ← hintedResolution hints equation
   let names ← kindRuleNames
   for witness in (known.toList.map some ++ [none]) do
