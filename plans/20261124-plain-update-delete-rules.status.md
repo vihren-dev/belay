@@ -69,3 +69,23 @@ This removes one further surface line (14,574 surface, 98,308 total).
 
 The review of c2df605a asked for the two outcome theorems to be named
 as the facts about the update. The module description now does so.
+
+Registered the two send witness roots and their imported model witness for Nix.
+
+The Nix verdict after the change is
+`/nix/store/ij7ch4wx5cbhrfw2bgqdqzka346kx288-belay-verdict`.
+A recursive diff against the starting verdict found identical files.
+The two retention fixture roots compile with the test target definitions
+(8 tests passed). No mutant table changed.
+
+Fixture elaboration times in seconds, the lower of two runs on this VM.
+The end measurements use the implementation before the documentation and
+fixture-manifest corrections.
+
+| Changed sql_run fixture | Start | End |
+| --- | ---: | ---: |
+| S6AutoEffects | 2.05 | 2.81 |
+| S6AutoPaths | 27.02 | 27.01 |
+| S6AutoShapes | 0.91 | 1.01 |
+| PurgeFrameClaims | 0.94 | 1.34 |
+| SelectContextCases | 7.16 | 7.09 |

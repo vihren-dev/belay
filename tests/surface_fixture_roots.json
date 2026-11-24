@@ -60,6 +60,7 @@
     "DerivedColumnOnSchema", "DerivedColumnSuccessBoundaries", "GlobalSignupInvariant",
     "InsertSelectExamples", "ItemInsertAnyClaims", "ItemInsertClaims", "ItemInsertOutcomes", "ItemInsertSite", "KeptReadChecks",
     "PlainInsertStepCases", "RebuildCopyChecks", "RebuildRefutation", "RebuildReplays", "RebuildTableFrames",
+    "ReplacedDeleteSendLaws", "ReplacedUpdateSendLaws",
     "ReplacedSendLaws", "ReplacedStepLaws", "S6AutoAddCustomer", "S6AutoAuto", "S6AutoCommute",
     "S6AutoCommuteNegative", "S6AutoEffects", "S6AutoKindRuleCases", "S6AutoPaths", "S6AutoShapes",
     "S6AutoSignup",
