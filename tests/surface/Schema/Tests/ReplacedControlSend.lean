@@ -109,7 +109,7 @@ sends the statement checks the post when these premises hold.
   the setting at the value ({name}`Model.Connection.set`): if that connection is valid, the post holds for the
   list of that one output and the context after it.
 In plain words, a setting changes the setting and nothing else, whether or not a transaction is open. Proof
-sketch: as {name}`Sql.check_send_dropPlain`, with {name}`Model.ReplacedControls.runScriptStep_setting_continues` and
+sketch: apply the send rule with {name}`Model.ReplacedControls.runScriptStep_setting_continues` and
 {name}`Model.ReplacedControls.runScriptStep_setting`. -/
 theorem Sql.check_send_setting {ctx : ExecutionContext} {statement : Syntax.Statement}
     {values : List Value} {setting : Syntax.PragmaSetting} {«on» : Bool} {after : ResolveState}
