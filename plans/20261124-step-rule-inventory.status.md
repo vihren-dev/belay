@@ -41,3 +41,5 @@ backfill uses the full successful UPDATE equation, and CREATE TRIGGER
 uses the prepare-error and creation equations. surface_schema_script_test
 checks the retention, and surface_derived_column_test checks the installed
 guide example and the derived-row claims.
+
+The group-frame test identifies the four laws used in ReplacedOrdinaryFrames.
