@@ -55,3 +55,5 @@ No mutant table changed.
 After incorporating the checker allocation at 5ca0e596, the start has 14,583 surface lines and 98,317 total. The control changes have 14,490 surface lines and 98,362 total. The model and fixture counts above still apply.
 
 The completed control slice uses 3af5b4d8 through 41457d43. Nix accepted the full suite in `pq7799f0zhyrsf9x573hy0h8z3956cz5-belay-test-reports`. The accepted verdict `88m86jvy8hk374zi93yjzb3a3animn5a-belay-verdict` matches the plain-write verdict byte for byte.
+
+Independent review of the completion record had no findings. Both accepted outputs are present in the task runner’s Nix store.
