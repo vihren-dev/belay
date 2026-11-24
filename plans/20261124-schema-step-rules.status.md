@@ -43,3 +43,8 @@ conditional creation and surface sends. No mutant table changed.
 The slice review identified three proof sketches, two fixture descriptions and
 obsolete tactic premise handling. Updated the texts and removed the obsolete
 success and failure branches and the unused next-connection substitution.
+
+The second review found a stale module description and a missing syntax
+premise in the list that gates continuation traversal. The fallback now waits
+for its notInsertSelect premise. S6AutoPaths exercises this open premise and
+its discharge for a CREATE INDEX.

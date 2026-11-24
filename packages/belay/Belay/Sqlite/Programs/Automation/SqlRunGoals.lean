@@ -4,7 +4,7 @@ import Belay.Sqlite.Programs.Reasoning.SqlRunTriples
 set_option doc.verso true
 
 /-! The goal operations of {lit}`sql_run` (ADR 0017, S6): closing a premise from the hints and hypotheses,
-entering the goal of an outcome, bringing a triple to its check, and reporting where the tactic stopped.
+bringing a triple to its check, and reporting where the tactic stopped.
 Each operation changes the goal only by applying a theorem or by introducing variables, so the proof term
 that the tactic builds is checked by the kernel. -/
 
@@ -15,7 +15,7 @@ open Lean Meta Elab Tactic Term
 abbrev Hints := Array (TSyntax `term)
 
 /-- The premises that hold by {lit}`rfl` once the program is known: the shape of a script. -/
-def premisesByRfl : List Name := [`isStatement, `isSelect, `notInsertSelect]
+def premisesByRfl : List Name := [`isSelect, `notInsertSelect]
 
 /-- Try to close a premise about the context. The attempts are, in order, the hints, each also with all definitions
 unfolded (a resolution of CREATE TABLE needs it), the hypotheses and the facts that follow from a fresh start. A premise that no attempt closes stays open. -/
