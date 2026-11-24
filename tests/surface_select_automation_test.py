@@ -42,3 +42,10 @@ def test_replaced_run_contracts(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (
         ("ReplacedSelectRuns", 2), ("ReplacedCalmRuns", 4), ("ReplacedOverflowRuns", 2), ("ReplacedFailedRuns", 3),
     ), timeout=60)
+
+
+def test_replaced_observation_contracts(runtime_root: Path, tmp_path: Path) -> None:
+    """The query observations and subquery equivalences still follow under the original assumptions."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ReplacedObservations", 4), ("ReplacedRowPredicates", 3), ("ReplacedSubqueryEquivalence", 2),
+    ), timeout=60)

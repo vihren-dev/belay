@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:51:23+00:00",
+  "finding": "20261124T124431Z-677df4af#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The projection now lives beside runScriptStep_output in the model."
+}

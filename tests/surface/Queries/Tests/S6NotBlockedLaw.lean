@@ -104,7 +104,7 @@ theorem notBlocked_equivalent {db : Database} (site : NotBlockedSite db) (noNull
     site.customersPosition site.blockedPosition site.customers.columns.length 0 0 _ _ [0] ["id"] ["customer_id"]
     ["1"] site.affinity site.inCollation site.equalsCollation ?_ presentCustomers presentBlocked site.idAlias
     (db.valid.admitted.rowsAliased _ _ presentCustomers) ?_ ?_ site.inScript site.existsScript
-    site.resolvesIn site.resolvesExists
+    (runScriptStep_output_of_resolved site.resolvesIn) (runScriptStep_output_of_resolved site.resolvesExists)
   · exact (List.getElem?_eq_some_iff.1 site.idFirst).1
   · rw [site.affinityIs, site.idInteger]
     exact comparisonAffinity_integer_ne_text _

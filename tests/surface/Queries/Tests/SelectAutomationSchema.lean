@@ -34,7 +34,7 @@ theorem schema_projection (script : Script) (db : Database)
     ∃ rows, (db.run script).outputs = [.rows rows] ∧
       ∀ row ∈ rows, ∃ value, row = [value] ∧ value ≠ .null := by
   fail_if_success sql_auto [db.notNull]
-  have output := Script.outputOn_query script db statement parameters [] _ [] after head resolved
+  have output := Script.outputOn_resolved script db statement parameters [] _ after head resolved
   rw [resolvedStepOutput_calm_unordered none 0 db.raw.connection parameters
     (source := { rows := Resolved.sourceRows table, width := table.shape.columns.length, fault := .none }) calm
     rfl rfl rfl rfl rfl rfl (Resolved.Query.source_first _ _ _ position table rfl present) (by simp) rfl rfl] at output

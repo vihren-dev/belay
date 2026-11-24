@@ -127,7 +127,7 @@ theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable
     {shape := table, rows := db.raw.rows.getD position []} cell 3 (db.raw.table_of_findTable _ _ _ found)
   have faultless := Resolved.Query.selectOneWhere_faultless
     (db.raw.connection.queryContext [] query queries) guardCondition ran.1
-  have output := Script.outputOn_query balanceGuard db _ [] [] query queries _ rfl
+  have output := Script.outputOn_resolved balanceGuard db _ [] [] (.query query queries) _ rfl
     (guard_statement db position index table cell found notTable notView column atIndex)
   have calm := guard_calm position index table cell
   have context := Connection.queryContext_calm db.raw.connection [] query queries calm

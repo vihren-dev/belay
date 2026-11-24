@@ -6,7 +6,7 @@ set_option doc.verso true
 /-! The equivalence of {lit}`x NOT IN (SELECT c FROM u)` and the correlated {lit}`NOT EXISTS (SELECT 1 FROM u WHERE
 u.c = x)` as {lit}`Sql.EquivAt` (ADR 0017, S4 and S6), and of {lit}`x IN (SELECT c FROM u)` and the correlated
 {lit}`EXISTS`. The lemmas are general over the tables, the columns, the names and the syntax of the two statements:
-they take the resolution of each statement as a hypothesis, in the form that the resolution laws of the model give
+they take the modeled output of each statement as a hypothesis, which can follow from the resolution laws
 ({lit}`resolveStatement_selectFrom_inQuery` and {lit}`resolveStatement_selectFrom_existsTest`), and the structural
 premises as facts about the tables of the connection. -/
 
@@ -48,9 +48,9 @@ theorem IsSelectStatement.step_of_rows {statement : Syntax.Statement} (isSelect 
   exact runScriptStep_select_rows same output
 
 /-- **NOT IN against NOT EXISTS, as execution equivalence.** For every context, two scripts of one statement each (both
-statements are SELECT statements, {name}`IsSelectStatement`), and two tables of the connection at positions: if the first statement resolves to the query of the outer table whose
+statements are SELECT statements, {name}`IsSelectStatement`), and two tables of the connection at positions: if the first statement has the output of the query of the outer table whose
 condition is {lit}`x NOT IN` subquery 0 on the column {lit}`key`, with the one subquery that selects the column
-{lit}`column` of the inner table with no condition, and the second statement resolves to the query of the outer table
+{lit}`column` of the inner table with no condition, and the second statement has the output of the query of the outer table
 whose condition is {lit}`NOT EXISTS` subquery 0, with the one subquery that selects 1 from the inner table where
 {lit}`u.c = x` ({lit}`.compare .eq`) with the same affinity, then the two scripts are equivalent at the context
 ({lit}`Sql.EquivAt`), under these premises:
@@ -63,13 +63,12 @@ whose condition is {lit}`NOT EXISTS` subquery 0, with the one subquery that sele
 * the comparison affinity is not TEXT ({lit}`notText`);
 * no cell of the column in any row of the inner table is NULL ({lit}`known`).
 The collations of the two tests are free. Without {lit}`known` the scripts can differ: a NULL cell makes {lit}`NOT IN`
-NULL for every row without a match, and {lit}`NOT EXISTS` is true. The statements are any syntax of the select kind that resolves so;
-the resolution laws of the model give the hypotheses for the forms of the guide. Proof sketch: the output of each step
-is the output of its resolved query ({name}`runScriptStep_output`), the two outputs are the same rows
+NULL for every row without a match, and {lit}`NOT EXISTS` is true. The resolution laws give the output hypotheses for the SELECT forms in the guide.
+Proof sketch: by the two output hypotheses, it suffices to show the comparison queries give the same rows
 ({name}`resolvedStepOutput_notIn_eq_notExists_of_rowidAlias`), a SELECT step that gives rows keeps the connection
 ({name}`IsSelectStatement.step_of_rows`), and {name}`Sql.EquivAt.of_select_steps` closes the goal. -/
 theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state : ExecutionContext}
-    {parameters : List Value} {afterFirst afterSecond : ResolveState}
+    {parameters : List Value}
     {firstStatement secondStatement : Syntax.Statement}
     (firstSelect : IsSelectStatement firstStatement) (secondSelect : IsSelectStatement secondStatement)
     (outerPosition innerPosition outer column key : Nat) (outerTable innerTable : Table) (columns : List Nat)
@@ -82,24 +81,22 @@ theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state
     (known : ∀ cells ∈ Resolved.sourceRows innerTable, (cells.getD column .null).isNull = false)
     (firstStatements : first.statements = [(firstStatement, parameters)])
     (secondStatements : second.statements = [(secondStatement, parameters)])
-    (firstResolves : resolveStatement runContext state.connection.resolveState
-      firstStatement =
-      .ok (.query (Resolved.Query.oneTable outerPosition 0
+    (firstOutput : (runScriptStep runContext state.clock state.index state.connection firstStatement parameters).output =
+      resolvedStepOutput state.clock state.index state.connection parameters (.query (Resolved.Query.oneTable outerPosition 0
           (some (.inQuery (.column key) 0 affinity inCollation true)) (columns.map .column) namesMain)
-        [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn], afterFirst))
-    (secondResolves : resolveStatement runContext state.connection.resolveState
-      secondStatement =
-      .ok (.query (Resolved.Query.oneTable outerPosition 0 (some (.not (.exists 0))) (columns.map .column) namesMain)
+        [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]))
+    (secondOutput : (runScriptStep runContext state.clock state.index state.connection secondStatement parameters).output =
+      resolvedStepOutput state.clock state.index state.connection parameters (.query (Resolved.Query.oneTable outerPosition 0 (some (.not (.exists 0))) (columns.map .column) namesMain)
         [Resolved.Query.oneTable innerPosition outer
           (some (.compare .eq affinity (.column (outer + column)) (.column key) equalsCollation))
-          [.literal (.integer 1)] namesExists], afterSecond)) :
+          [.literal (.integer 1)] namesExists])) :
     Sql.EquivAt (send first) (send second) state := by
   obtain ⟨rows, leftRows, rightRows⟩ := resolvedStepOutput_notIn_eq_notExists_of_rowidAlias state.clock state.index
     outerPosition innerPosition outer column key state.connection parameters outerTable innerTable columns namesMain
     namesIn namesExists affinity inCollation equalsCollation keyInside presentOuter presentInner alias aliased notText known
   exact Sql.EquivAt.of_select_steps firstStatements secondStatements
-    (firstSelect.step_of_rows (by rw [runScriptStep_output, firstResolves]; exact leftRows))
-    (secondSelect.step_of_rows (by rw [runScriptStep_output, secondResolves]; exact rightRows))
+    (firstSelect.step_of_rows (by rw [firstOutput]; exact leftRows))
+    (secondSelect.step_of_rows (by rw [secondOutput]; exact rightRows))
 
 /-- **IN against EXISTS, as execution equivalence.** For the same context, tables, columns and key as in
 {name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with SELECT statements, but with {lit}`x IN` subquery 0 for the first statement and
@@ -108,7 +105,7 @@ theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state
 free. Proof sketch: as for {name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with
 {name}`resolvedStepOutput_in_eq_exists_of_rowidAlias`. -/
 theorem Sql.EquivAt.in_exists_of_rowidAlias {first second : Script} {state : ExecutionContext}
-    {parameters : List Value} {afterFirst afterSecond : ResolveState}
+    {parameters : List Value}
     {firstStatement secondStatement : Syntax.Statement}
     (firstSelect : IsSelectStatement firstStatement) (secondSelect : IsSelectStatement secondStatement)
     (outerPosition innerPosition outer column key : Nat) (outerTable innerTable : Table) (columns : List Nat)
@@ -120,23 +117,21 @@ theorem Sql.EquivAt.in_exists_of_rowidAlias {first second : Script} {state : Exe
     (notText : affinity ≠ some .text)
     (firstStatements : first.statements = [(firstStatement, parameters)])
     (secondStatements : second.statements = [(secondStatement, parameters)])
-    (firstResolves : resolveStatement runContext state.connection.resolveState
-      firstStatement =
-      .ok (.query (Resolved.Query.oneTable outerPosition 0
+    (firstOutput : (runScriptStep runContext state.clock state.index state.connection firstStatement parameters).output =
+      resolvedStepOutput state.clock state.index state.connection parameters (.query (Resolved.Query.oneTable outerPosition 0
           (some (.inQuery (.column key) 0 affinity inCollation false)) (columns.map .column) namesMain)
-        [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn], afterFirst))
-    (secondResolves : resolveStatement runContext state.connection.resolveState
-      secondStatement =
-      .ok (.query (Resolved.Query.oneTable outerPosition 0 (some (.exists 0)) (columns.map .column) namesMain)
+        [Resolved.Query.oneTable innerPosition outer none [.column (outer + column)] namesIn]))
+    (secondOutput : (runScriptStep runContext state.clock state.index state.connection secondStatement parameters).output =
+      resolvedStepOutput state.clock state.index state.connection parameters (.query (Resolved.Query.oneTable outerPosition 0 (some (.exists 0)) (columns.map .column) namesMain)
         [Resolved.Query.oneTable innerPosition outer
           (some (.compare .eq affinity (.column (outer + column)) (.column key) equalsCollation))
-          [.literal (.integer 1)] namesExists], afterSecond)) :
+          [.literal (.integer 1)] namesExists])) :
     Sql.EquivAt (send first) (send second) state := by
   obtain ⟨rows, leftRows, rightRows⟩ := resolvedStepOutput_in_eq_exists_of_rowidAlias state.clock state.index
     outerPosition innerPosition outer column key state.connection parameters outerTable innerTable columns namesMain
     namesIn namesExists affinity inCollation equalsCollation keyInside presentOuter presentInner alias aliased notText
   exact Sql.EquivAt.of_select_steps firstStatements secondStatements
-    (firstSelect.step_of_rows (by rw [runScriptStep_output, firstResolves]; exact leftRows))
-    (secondSelect.step_of_rows (by rw [runScriptStep_output, secondResolves]; exact rightRows))
+    (firstSelect.step_of_rows (by rw [firstOutput]; exact leftRows))
+    (secondSelect.step_of_rows (by rw [secondOutput]; exact rightRows))
 
 end Belay.Sqlite

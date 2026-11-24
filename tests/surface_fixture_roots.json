@@ -75,6 +75,7 @@
   ],
   "surfaceSelect": [
     "ReplacedKeyCheck", "ReplacedQueryOutputs", "ReplacedPragmaOutputs", "ReplacedContextRules", "ReplacedCatalogRules", "CatalogOutputCases",
+    "ReplacedObservations", "ReplacedRowPredicates", "ReplacedSubqueryEquivalence",
     "ReplacedSelectRuns", "ReplacedCalmRuns", "ReplacedOverflowRuns", "ReplacedFailedRuns", "QuerySendClaims",
     "S6CheckLabels", "SelectAutoCases", "SelectAutomationCore", "SelectAutomationExecution",
     "SelectAutomationSchema", "SelectAutomationSources", "SelectBudgetCases", "SelectCardinalityCases",
