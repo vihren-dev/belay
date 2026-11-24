@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:59:12+00:00",
+  "finding": "20261124T135842Z-09b9239b#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Identify runGoal as the site of the SELECT exception and record deletion of sendRule."
+}
