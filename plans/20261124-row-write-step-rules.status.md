@@ -1,6 +1,6 @@
 # Exact steps for UPSERT and INSERT from a query
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 [Task](20261124-row-write-step-rules.task.md) ·
 [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md)
@@ -38,3 +38,5 @@ On the final rule-selection code, the D11 total goes from 99,436 to 99,758 lines
 | Changed sql_run fixture | Start (s) | End (s) |
 | --- | ---: | ---: |
 | RowWriteSendClaims | new | 3.15 |
+
+Nix accepted the completed slice through `2ac6306b56f8` in `lqc09i2cgak4iy1w69c7w2y10rxnak31-belay-test-reports`. The conformance verdict `73cpz2ka1ri8p1l484crp78ya3gcda3v-belay-verdict` is byte-for-byte identical to the preceding slice’s `g924a0byhr9raapn4krb3kr525773vw4-belay-verdict`. No mutant table changed.

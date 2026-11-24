@@ -1,6 +1,6 @@
 # Exact steps for UPSERT and INSERT from a query
 
-Created 2026-11-24. Status OPEN. Audience is implementers and reviewers.
+Created 2026-11-24. Status DONE. Audience is implementers and reviewers.
 
 Slice 6 of [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md) gives
 resolution-only rules for the UPSERT and INSERT from a query modes without
