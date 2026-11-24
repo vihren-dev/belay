@@ -14,7 +14,7 @@ open Belay.Sqlite.Model
 /-- For every site, move of a read, connection on the site's database and connection on the migrated
 database, with an aligned table of wide aliased rows, the steps of the original and replacement statements
 have equal outputs, at any clocks and statement indexes. Proof sketch:
-{name}`Model.derivedColumn_lookup_outputs` with the resolutions, calm facts and agreement of the move. -/
+{name}`Model.derivedColumn_lookup_outputs` with the scan output witnesses, calm facts and agreement of the move. -/
 theorem Site.LookupMove.outputs {database : Database.Raw} {tableName : Identifier}
     {definition : Syntax.ColumnDefinition} {value : Syntax.Expr} {site : Site database tableName definition value}
     {triggers : List (Identifier × CatalogTrigger)} {original replacement : Syntax.Statement}
@@ -25,15 +25,16 @@ theorem Site.LookupMove.outputs {database : Database.Raw} {tableName : Identifie
     (wide : site.table.RowsWide) (aliased : site.table.RowsAliased) :
     (runScriptStep runContext clock before connection original parameters).output =
       (runScriptStep runContext clock after migrated replacement parameters).output := by
-  obtain ⟨names, beforeState, resolvedBefore⟩ := lookup.resolvesBefore connection.resolveState
+  obtain ⟨names, outputBefore⟩ := lookup.outputBefore connection
     (by simp [Connection.resolveState, same])
-  obtain ⟨afterNames, afterState, resolvedAfter⟩ := lookup.resolvesAfter migrated.resolveState
+  obtain ⟨afterNames, outputAfter⟩ := lookup.outputAfter migrated
     (by simp [Connection.resolveState, reached])
-  refine derivedColumn_lookup_outputs runContext clock before after connection migrated original replacement
+  rw [outputBefore clock before, outputAfter clock after]
+  refine derivedColumn_lookup_outputs clock before after connection migrated
     parameters site.position site.table site.column site.assigned triggers lookup.beforeFilter lookup.afterFilter
     lookup.columns names afterNames (by rw [same]; exact site.present) (by rw [same]; exact aligned)
     (by rw [reached, same]; rfl) wide aliased (assignedExpression_readsBelow site.below) site.keysInside site.plain
-    (by simp [Site.column, definedColumn]) resolvedBefore resolvedAfter (lookup.calmBefore names)
+    (by simp [Site.column, definedColumn]) (lookup.calmBefore names)
     (lookup.calmAfter afterNames) lookup.columnsBelow (lookup.agree wide)
 
 /-- For the premises of {name}`Site.LookupMove.outputs`, the original statement's step on the first
@@ -51,22 +52,21 @@ theorem Site.LookupMove.rows {database : Database.Raw} {tableName : Identifier}
     (wide : site.table.RowsWide) (aliased : site.table.RowsAliased) :
     ∃ rows, (runScriptStep runContext clock before connection original parameters).output = .rows rows ∧
       (runScriptStep runContext clock after migrated replacement parameters).output = .rows rows := by
-  obtain ⟨names, beforeState, resolvedBefore⟩ := lookup.resolvesBefore connection.resolveState
+  obtain ⟨names, outputBefore⟩ := lookup.outputBefore connection
     (by simp [Connection.resolveState, same])
   have calm := lookup.calmBefore names
   have present : connection.state.database.table site.position = some site.table := by rw [same]; exact site.present
   have rows : (runScriptStep runContext clock before connection original parameters).output =
       .rows (Resolved.normalForm ((Resolved.Query.simple [Resolved.QuerySource.first site.position] lookup.beforeFilter
         lookup.columns names).results (Resolved.EvalContext.bound parameters) (Resolved.sourceRows site.table))) := by
-    simp [runScriptStep_query_eq resolvedBefore, statementClock, calm.readsClock, calm.counterReads,
-      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons, Resolved.stableSort,
-      Resolved.insertStable, RunStep.output]
+    rw [outputBefore clock before]
+    exact resolvedStepOutput_simpleTable clock before connection parameters present calm
   exact ⟨_, rows, (lookup.outputs clock before after same aligned reached wide aliased).symm.trans rows⟩
 
 /-- For every site, read kept by {name}`Site.ReadPreserved`, connection on the site's database and connection
 on the migrated database, with an aligned table of wide aliased rows, the steps of the statement on the two
 connections have equal outputs, at any clocks and statement indexes. Proof sketch:
-{name}`Model.derivedColumn_preserved_outputs` with the resolutions and calm facts of the read. -/
+{name}`Model.derivedColumn_preserved_outputs` with the witnessed scan outputs and calmness of the read. -/
 theorem Site.ReadPreserved.outputs {database : Database.Raw} {tableName : Identifier}
     {definition : Syntax.ColumnDefinition} {value : Syntax.Expr} {site : Site database tableName definition value}
     {triggers : List (Identifier × CatalogTrigger)} {statement : Syntax.Statement}
@@ -77,14 +77,15 @@ theorem Site.ReadPreserved.outputs {database : Database.Raw} {tableName : Identi
     (wide : site.table.RowsWide) (aliased : site.table.RowsAliased) :
     (runScriptStep runContext clock before connection statement parameters).output =
       (runScriptStep runContext clock after migrated statement parameters).output := by
-  obtain ⟨names, beforeState, resolvedBefore⟩ := read.resolvesBefore connection.resolveState
+  obtain ⟨names, outputBefore⟩ := read.outputBefore connection
     (by simp [Connection.resolveState, same])
-  obtain ⟨afterNames, afterState, resolvedAfter⟩ := read.resolvesAfter migrated.resolveState
+  obtain ⟨afterNames, outputAfter⟩ := read.outputAfter migrated
     (by simp [Connection.resolveState, reached])
-  exact derivedColumn_preserved_outputs runContext clock before after connection migrated statement parameters
+  rw [outputBefore clock before parameters, outputAfter clock after parameters]
+  exact derivedColumn_preserved_outputs clock before after connection migrated parameters
     site.position site.table site.column site.assigned triggers read.filter read.columns names afterNames
     (by rw [same]; exact site.present) (by rw [same]; exact aligned) (by rw [reached, same]; rfl) wide aliased
     (assignedExpression_readsBelow site.below) site.keysInside site.plain (by simp [Site.column, definedColumn])
-    resolvedBefore resolvedAfter (read.calm names) read.filterBelow read.columnsBelow
+    (read.calm names) read.filterBelow read.columnsBelow
 
 end Belay.Sqlite.DerivedColumnMigration

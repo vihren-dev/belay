@@ -6,16 +6,9 @@ import Belay.Sqlite.Model.Programs.Scripts.QueryRule
 
 set_option doc.verso true
 
-/-!
-The outputs of a simple read of one table on two connections whose scans of the table differ by appended
-cells (ADR 0017, S6). Both connections run the same statement. The statement resolves to the same
-simple query on each connection, which reads the table that a name finds there (the positions can differ),
-with a filter and scalar result columns that read only columns below a width. The scan of the table on the second connection is the scan on the
-first with a computed list of cells appended to each row. Then the steps of the two connections give
-the same output, whatever the clock and the statement indexes. This is the statement-level fact that
-turns a dependency certificate of a read into the preservation of the read by a migration that adds
-columns.
--/
+/-! Data facts for one-table scans. Two calm scans can use different filters, result
+names and table positions. Their modeled outputs agree if the second table adds cells
+to each source row, the filters keep the same rows, and the projections read old cells. -/
 
 namespace Belay.Sqlite.Model
 open Resolved
@@ -71,39 +64,33 @@ theorem Resolved.Query.simpleTable_checks {db : Database} {position : Nat} {tabl
       Query.possibleResults_unordered (query := query) _ rfl rfl rfl]
     rfl
 
-/-- For every two connections, two statements and parameters that satisfy the premises below, the steps of
-the statements on the two connections give the same output, at any clocks and statement indexes. The
-premises are:
+/-- At every clock and index on a connection with the specified table, the modeled
+output of a calm one-table scan is the normalized result on the table's scanned
+rows and bound values. Proof sketch: apply the six checks of the simple query
+to its output at clock value zero and empty counters. -/
+theorem resolvedStepOutput_simpleTable (clock : Option Clock) (index : Nat) (connection : Connection)
+    (parameters : List Value) {position : Nat} {filter : Option Expr} {columns : List Resolved.Output}
+    {names : List String} {table : Table} (present : connection.state.database.table position = some table)
+    (calm : (Resolved.Statement.query (Query.simple [QuerySource.first position] filter columns names) []).Calm) :
+    let query := Query.simple [QuerySource.first position] filter columns names
+    resolvedStepOutput clock index connection parameters (.query query []) =
+      .rows (normalForm (query.results (EvalContext.bound parameters) (sourceRows table))) := by
+  dsimp only
+  rw [resolvedStepOutput_query_at clock index connection parameters _ [] (value := 0)
+    (by simp [statementClock, calm.readsClock]) (by simp [calm.counterReads])]
+  simp [calm.counterReads, Query.simpleTable_checks parameters present calm, Query.outputOn,
+    Belay.Sqlite.Model.Output.ofResults, List.eraseDups_cons, stableSort, insertStable]
 
-* The first statement resolves on the first connection to a simple query of the table at one position,
-  and the second statement resolves on the second connection to a simple query of the table at one
-  position, with the same result columns and possibly different filters and result names. Both
-  queries are calm: they call no function that can fail and read no clock and no counter.
-* The table of the second connection has a scan that is the scan of the table of the first connection with
-  cells appended to each row. The cells can depend on the row.
-* Every row of the first scan has at least {lit}`width` cells, and the result columns read only columns
-  below the width ({name}`Output.readsBelow`).
-* On each row of the first scan, the second filter on the row with its cells appended keeps the row exactly
-  when the first filter keeps the row, in the context of the bound parameters.
-
-In plain words, a query on the extended table that keeps the same rows as a query on the original table, and
-returns columns of the original table, gives the same output. The two filters can be different
-expressions, and the second can read the appended cells. For example, the query {lit}`SELECT id FROM t WHERE
-lower(name) = lower(?1)` before a migration that stores {lit}`lower(name)` in a new column, and the query
-{lit}`SELECT id FROM t WHERE stored = lower(?1)` after it, give the same output when the stored column
-compares as {lit}`lower(name)` does. A query that selects every column does not resolve to the same columns, so
-the premise about resolution fails for it. Proof sketch: {name}`Resolved.Query.simpleTable_checks` and {name}`runScriptStep_query_eq` for each
-connection, then {name}`Query.simple_results_agree` with the row-free context of bound parameters. -/
-theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock : Option Clock)
-    (before after : Nat) (connection expanded : Connection) (beforeStatement afterStatement : Syntax.Statement)
+/-- The modeled outputs of two calm single-table scans agree when their projections read
+only the old cells and their filters keep the same rows after cells are appended. Each
+original row must be at least the stated width. Positions, result names and statement
+indexes can differ. Proof sketch: compute both normalized outputs and use the agreement
+of simple query results on the two row lists. -/
+theorem resolvedStepOutput_simpleTable_agree (clock : Option Clock)
+    (before after : Nat) (connection expanded : Connection)
     (parameters : List Value) (beforePosition afterPosition : Nat) (table extended : Table)
     (beforeFilter afterFilter : Option Expr) (columns : List Resolved.Output)
     (beforeNames afterNames : List String) (width : Nat) (extra : List Value → List Value)
-    {beforeState afterState : ResolveState}
-    (resolvedBefore : resolveStatement context connection.resolveState beforeStatement =
-      .ok (.query (Query.simple [QuerySource.first beforePosition] beforeFilter columns beforeNames) [], beforeState))
-    (resolvedAfter : resolveStatement context expanded.resolveState afterStatement =
-      .ok (.query (Query.simple [QuerySource.first afterPosition] afterFilter columns afterNames) [], afterState))
     (presentBefore : connection.state.database.table beforePosition = some table)
     (presentAfter : expanded.state.database.table afterPosition = some extended)
     (calmBefore : (Resolved.Statement.query
@@ -116,21 +103,12 @@ theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock
     (agree : ∀ row ∈ sourceRows table,
       (afterFilter.all fun condition => truthy (condition.eval (EvalContext.bound parameters) (row ++ extra row))) =
         (beforeFilter.all fun condition => truthy (condition.eval (EvalContext.bound parameters) row))) :
-    (runScriptStep context clock before connection beforeStatement parameters).output =
-      (runScriptStep context clock after expanded afterStatement parameters).output := by
-  have rowsBefore : (runScriptStep context clock before connection beforeStatement parameters).output =
-      .rows (normalForm ((Query.simple [QuerySource.first beforePosition] beforeFilter columns beforeNames).results
-        (EvalContext.bound parameters) (sourceRows table))) := by
-    simp [runScriptStep_query_eq resolvedBefore, statementClock, calmBefore.readsClock, calmBefore.counterReads,
-      Query.simpleTable_checks parameters presentBefore calmBefore, List.eraseDups_cons, Resolved.stableSort,
-      Resolved.insertStable, RunStep.output]
-  have rowsAfter : (runScriptStep context clock after expanded afterStatement parameters).output =
-      .rows (normalForm ((Query.simple [QuerySource.first afterPosition] afterFilter columns afterNames).results
-        (EvalContext.bound parameters) (sourceRows extended))) := by
-    simp [runScriptStep_query_eq resolvedAfter, statementClock, calmAfter.readsClock, calmAfter.counterReads,
-      Query.simpleTable_checks parameters presentAfter calmAfter, List.eraseDups_cons, Resolved.stableSort,
-      Resolved.insertStable, RunStep.output]
-  rw [rowsBefore, rowsAfter,
+    resolvedStepOutput clock before connection parameters
+      (.query (Query.simple [QuerySource.first beforePosition] beforeFilter columns beforeNames) []) =
+      resolvedStepOutput clock after expanded parameters
+        (.query (Query.simple [QuerySource.first afterPosition] afterFilter columns afterNames) []) := by
+  rw [resolvedStepOutput_simpleTable clock before connection parameters presentBefore calmBefore,
+    resolvedStepOutput_simpleTable clock after expanded parameters presentAfter calmAfter,
     scans, Query.simple_results_agree (EvalContext.bound parameters) (EvalContext.plain_rowFree 0) (sourceRows table)
       extra [QuerySource.first beforePosition] [QuerySource.first afterPosition] beforeFilter afterFilter columns
       beforeNames afterNames width wide columnsBelow agree]

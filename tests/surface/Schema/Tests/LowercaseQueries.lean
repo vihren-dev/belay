@@ -59,12 +59,14 @@ def LowercaseSite.lookupMove {database : Database.Raw} {tableName idName sourceN
       cases List.mem_singleton.mp member
       simp [Output.readsBelow, Expr.readsBelow, Expr.any, Expr.isColumnFrom]
       exact idInside
-    resolvesBefore := fun state same => by
+    outputBefore := fun connection same => by
+      let state := connection.resolveState
       obtain ⟨names, resolved⟩ := resolve_original_lookup runContext state (tableReference tableName alias)
         site.position site.table.shape idName sourceName text number rfl rfl rfl (by rw [same]; exact site.found)
         site.idFound site.sourceFound
-      exact ⟨names, state, resolved⟩
-    resolvesAfter := fun state same => by
+      exact ⟨names, fun _ _ => runScriptStep_output_of_resolved resolved⟩
+    outputAfter := fun connection same => by
+      let state := connection.resolveState
       have extended : state.catalog.findTable tableName = some (site.position,
           { site.table.shape with columns := site.table.shape.columns ++ [textColumn storedName site.table.shape.strict] }) := by
         rw [same]
@@ -75,7 +77,7 @@ def LowercaseSite.lookupMove {database : Database.Raw} {tableName idName sourceN
         site.position _ idName storedName text number rfl rfl rfl extended
         (columnPosition_append site.idFound _) (columnPosition_append_new site.fresh (by simp [textColumn]))
         (by simp [strict]) (by simp [textColumn])
-      exact ⟨names, state, resolved⟩
+      exact ⟨names, fun _ _ => runScriptStep_output_of_resolved resolved⟩
     calmBefore := fun names => simpleColumn_calm _ _ _ names (originalFilter_calm _ _)
     calmAfter := fun names => simpleColumn_calm _ _ _ names (storedFilter_calm _ _)
     agree := fun wide => by
@@ -115,12 +117,14 @@ def LowercaseSite.originalPreserved {database : Database.Raw}
       cases List.mem_singleton.mp member
       simp [Output.readsBelow, Expr.readsBelow, Expr.any, Expr.isColumnFrom]
       exact idInside
-    resolvesBefore := fun state same => by
+    outputBefore := fun connection same => by
+      let state := connection.resolveState
       obtain ⟨names, resolved⟩ := resolve_original_lookup runContext state (tableReference tableName alias)
         site.position site.table.shape idName sourceName text number rfl rfl rfl (by rw [same]; exact site.found)
         site.idFound site.sourceFound
-      exact ⟨names, state, resolved⟩
-    resolvesAfter := fun state same => by
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolved⟩
+    outputAfter := fun connection same => by
+      let state := connection.resolveState
       have extended : state.catalog.findTable tableName = some (site.position,
           { site.table.shape with columns := site.table.shape.columns ++ [textColumn storedName site.table.shape.strict] }) := by
         rw [same]
@@ -130,7 +134,7 @@ def LowercaseSite.originalPreserved {database : Database.Raw}
       obtain ⟨names, resolved⟩ := resolve_original_lookup runContext state (tableReference tableName alias)
         site.position _ idName sourceName text number rfl rfl rfl extended
         (columnPosition_append site.idFound _) (columnPosition_append site.sourceFound _)
-      exact ⟨names, state, resolved⟩
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolved⟩
     calm := fun names => simpleColumn_calm _ _ _ names (originalFilter_calm _ _) }
 
 /-- For every table, names, text, number, value and triggers of the lowercase expansion, on every valid

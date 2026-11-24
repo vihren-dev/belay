@@ -74,3 +74,11 @@ and S6RulesNegativeCertificates check moved tables, a widened SELECT star
 and an unmodeled schema read. The sql_commute diagnostic describes the scan.
 
 KeptReadChecks uses distinct parameter bindings for the read and its reference. The checker contract documents this and its success domain. The scan obligations name the two table positions and the moved certificate.
+
+Site.LookupMove and Site.ReadPreserved compare the output of each actual statement
+with a calm one-table scan on the corresponding catalog. Their callers in
+DerivedColumnReads and DerivedColumnReadCheck use output witnesses.
+The model's two derived-column output laws and resolvedStepOutput_simpleTable_agree
+compare scan data. ReplacedSiteOutputs, ReplacedSiteCertificates and ReplacedSiteClaims
+check the earlier model laws, certificate constructors, preservation and translation
+claims. LowercaseQueries, ConcatExpansion and S6ColumnLookups exercise real callers.
