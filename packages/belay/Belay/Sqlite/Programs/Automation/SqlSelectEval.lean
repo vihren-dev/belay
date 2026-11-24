@@ -77,15 +77,18 @@ def evaluateNatural? (term : Expr) : MetaM (Option Nat) := do
   try return naturalValue? (← kernelNormalize term) catch _ => return none
 
 /-- The proof of a closed equation that evaluation decides, as an auxiliary theorem that the kernel
-checks at once: a decision of the equation, which the kernel reduces to {lean}`true`, when the type has
-decidable equality, else reflexivity. The result is {lean}`(none : Option Nat)` when the kernel accepts
-neither, for example when its recursion is too deep. -/
+checks at once. For a catalog output equation, try reflexivity first because both sides can
+compute the same output with variable runtime rows. Other equations try a decision first. The result
+is {lit}`none` when the kernel accepts neither proof, for example when its recursion is too deep. -/
 def evaluationProof? (equation : Expr) : MetaM (Option Expr) := do
   let some (_, left, _) := equation.eq? | return none
   let decision : MetaM Expr := do
     let instance_ ← synthInstance (mkApp (mkConst ``Decidable) equation)
     return mkApp3 (mkConst ``of_decide_eq_true) equation instance_ (← mkEqRefl (mkConst ``Bool.true))
-  for proof in [decision, mkEqRefl left] do
+  let proofs := if left.isAppOfArity ``Model.statementOutputAt 7 then
+    [mkEqRefl left, decision]
+  else [decision, mkEqRefl left]
+  for proof in proofs do
     try return some (← mkAuxTheorem equation (← proof)) catch _ => pure ()
   return none
 
