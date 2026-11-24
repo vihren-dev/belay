@@ -149,5 +149,6 @@ def test_replaced_write_mode_laws(runtime_root: Path, tmp_path: Path) -> None:
 def test_replaced_group_frames(runtime_root: Path, tmp_path: Path) -> None:
     """The original CREATE and DROP frames use runScriptStep_createTable_eq, runScriptStep_dropPlain_eq and
     runScriptStep_prepareError_eq. The pragma frame uses resolveStatementPragma_readOnly and runScriptStep_readOnly_keeps.
-    ReplacedOrdinaryFrames checks nonquery error and state frames and both forms of conditional creation."""
+    ReplacedOrdinaryFrames checks runScriptStep_continued_spec, Output.ofStep_isError_of_noHalt,
+    runScriptStep_effect and runScriptStep_congr_resolve on nonquery errors, state frames and conditional creation."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedOrdinaryFrames", 5), ("ReplacedSchemaFailures", 2), ("ReplacedReadPragma", 1)))
