@@ -2,8 +2,8 @@ import PurgeFrameSite
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the guide's purge frame claim as a fresh-run
 triple over every admitted database (ADR 0017, S6). For every pair of values, also NULL and text, a purge that
-succeeds leaves every session of the start that is not an expired session of the customer, when the schema, the
-resolution and the model of the purge are as the fields of `PurgeFrameSite` say. The claim compares the reached
+succeeds leaves every session of the start that is not an expired session of the customer, when the schema and the
+resolution of the purge and of the claim are as the fields of `PurgeFrameSite` say. The claim compares the reached
 database with the captured start through the schema `before`, and uses the NULL-aware condition `IS NOT 1`. -/
 
 set_option doc.verso true
@@ -21,7 +21,7 @@ two facts about the tables. A row with a condition that is not 1 is not selected
 are ({name}`Resolved.Expr.truthy_isNot_one_and`), so the delete keeps it
 ({name}`Resolved.notExistsExcept_subset`); and the first cell of a row is its rowid, which no other row shares, so the
 rows of the first term are identical where they compare equal ({name}`Resolved.notExistsExcept_identical`). -/
-theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite db c now)
+theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite db)
     (deleteContext : Resolved.EvalContext) (parameters : deleteContext.parameters = [c, now]) :
     ((purgeKeeps c now).observeTwoStateIn db.raw
       (Database.Raw.observationContext (db.raw.setRows site.position
@@ -60,17 +60,18 @@ purge and every complete environment, every run of the purge from the fresh star
 in which every session of the start that is not an expired session of the customer is still there. The values may be
 NULL or text. The claim reads the start through {lit}`before` and states the unchanged rows with the condition
 {lit}`IS NOT 1`, so a NULL parameter does not weaken it. A purge that fails requires nothing, and the model's rollback
-decides what a failed run leaves. Proof sketch: the check of the one statement; the plain delete stores the rows that
-{name}`LiteralData.deleted` keeps ({name}`runScriptStep_plainDelete_eq`), and {name}`purge_keeps_rows` shows that
-the observation of the claim over the start and that database has rows. -/
+decides what a failed run leaves. Proof sketch: the check of the one statement; the step of the purge continues
+({name}`PurgeFrameSite.purge_continues`), the plain delete stores the rows that {name}`LiteralData.deleted` keeps
+({name}`runScriptStep_plainDelete_eq`), and {name}`purge_keeps_rows` shows that the observation of the claim over the
+start and that database has rows. -/
 theorem purge_frame (c now : Value) :
-    FreshEnsuresFrom (send (purge c now)) (fun db => Nonempty (PurgeFrameSite db c now))
+    FreshEnsuresFrom (send (purge c now)) (fun db => Nonempty (PurgeFrameSite db))
       (fun start => ifOk (holdsSince start (purgeKeeps c now))) := by
   refine (FreshEnsuresFrom.ifOk_iff _ _ _).2 ?_
   rintro db ⟨site⟩ env _complete
   rw [purge_script]
   have present := Database.table_of_findTable db.raw _ site.position site.table site.found
-  sql_run [site.purgeResolves, site.purgeModeled env, present]
+  sql_run [site.purgeResolves, site.purge_continues env c now, present]
   intro _allOk
   exact purge_keeps_rows site _ rfl
 

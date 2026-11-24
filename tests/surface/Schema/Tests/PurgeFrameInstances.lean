@@ -1,7 +1,7 @@
-import PurgeFrameClaims
+import PurgeFrameSchema
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: instances of the purge frame claim (ADR 0017, S6).
-The kernel checks that the site of `PurgeFrameSite` holds on a database of sessions, and then runs the purge from the
+The client statement `purge_frame_on_sessions` applies to the database `sessions`. The kernel runs the purge from the
 fresh start, for values that the claim must cover: NULL parameters, a text time and an integer time. The run is the
 actual run of the purge with its trigger rules and its rollback; the claim is read with the actual two-state
 observation over the start and the reached database. -/
@@ -13,39 +13,6 @@ set_option exponentiation.threshold 2000
 namespace AssertionExamples
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
-
-/-- Three sessions: an expired and a live session of customer 1, and an expired session of customer 2. -/
-def sessions : Database := db! r"
-  CREATE TABLE sessions (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, expires_at INTEGER NOT NULL);
-  INSERT INTO sessions VALUES (1, 1, 10);
-  INSERT INTO sessions VALUES (2, 2, 10);
-  INSERT INTO sessions VALUES (3, 1, 100);"
-
-/-- The catalog position and entry of {lit}`sessions` in {name}`sessions`. -/
-def sessionsEntry : Nat × CatalogTable := (sessions.raw.catalog.findTable (name! "sessions")).get (by decide +kernel)
-
-/-- The site of the purge in {name}`sessions` for two values, given that the model runs the purge with them. Every
-other field holds for any values, as the kernel checks by evaluation. -/
-def sessionsSite (c now : Value) (modeled : ∀ env : Env, (runScriptStep runContext env.clock 0
-    (sessions.raw.connection env.counters) purgeStatement [c, now]).continues = true) :
-    PurgeFrameSite sessions c now where
-  position := sessionsEntry.1
-  table := sessionsEntry.2
-  names := ["id", "customer_id", "expires_at"]
-  purgeAfter := (sessions.raw.connection {}).resolveState
-  claimAfter := sessions.raw.catalog
-  found := by decide +kernel
-  keyAlias := by decide +kernel
-  purgeResolves := by decide +kernel
-  claimResolves := by decide +kernel
-  purgeModeled := modeled
-
-/-- The model runs the purge of {name}`sessions` for the customer 1 and the integer time 50, for every environment. -/
-theorem modeledAtFifty : ∀ env : Env, (runScriptStep runContext env.clock 0 (sessions.raw.connection env.counters)
-    purgeStatement [.integer 1, .integer 50]).continues = true := fun env => by with_unfolding_all rfl
-
-/-- The site of the purge for the customer 1 and the integer time 50. -/
-def fiftySite : PurgeFrameSite sessions (.integer 1) (.integer 50) := sessionsSite _ _ modeledAtFifty
 
 /-- The final context of the purge from the fresh start of a database, with no clock and the counters of a new
 connection. -/
@@ -86,24 +53,31 @@ theorem text_time_deletes_every_session_of_the_customer : (purgeFinal sessions (
     ¬ Holds.reached (sessionExists 3) (purgeFinal sessions (.integer 1) textTime) ∧
     Holds.reached (sessionExists 2) (purgeFinal sessions (.integer 1) textTime) := by decide +kernel
 
-/-- The site holds for the NULL customer. -/
-theorem null_customer_has_a_site : Nonempty (PurgeFrameSite sessions .null (.integer 50)) :=
-  ⟨sessionsSite _ _ fun env => by with_unfolding_all rfl⟩
+/-- The client statement of the frame claim applies to {name}`sessions`: for the NULL customer, every run of the
+purge with no error keeps every session of the start that is not an expired session of the customer. -/
+theorem null_customer_keeps_the_frame : ∀ env : Env, env.Complete →
+    (send (purge .null (.integer 50))).ifOk (fun _ final => Holds.reachedSince (purgeKeeps .null (.integer 50)) sessions final)
+      (ExecutionContext.initial sessions env) :=
+  purge_frame_on_sessions .null (.integer 50) sessions rfl
 
-/-- The site holds for the NULL time. -/
-theorem null_time_has_a_site : Nonempty (PurgeFrameSite sessions (.integer 1) .null) :=
-  ⟨sessionsSite _ _ fun env => by with_unfolding_all rfl⟩
+/-- The client statement of the frame claim applies to {name}`sessions` for the NULL time. -/
+theorem null_time_keeps_the_frame : ∀ env : Env, env.Complete →
+    (send (purge (.integer 1) .null)).ifOk (fun _ final => Holds.reachedSince (purgeKeeps (.integer 1) .null) sessions final)
+      (ExecutionContext.initial sessions env) :=
+  purge_frame_on_sessions (.integer 1) .null sessions rfl
 
-/-- The site holds for the text time. -/
-theorem text_time_has_a_site : Nonempty (PurgeFrameSite sessions (.integer 1) textTime) :=
-  ⟨sessionsSite _ _ fun env => by with_unfolding_all rfl⟩
+/-- The client statement of the frame claim applies to {name}`sessions` for the text time. -/
+theorem text_time_keeps_the_frame : ∀ env : Env, env.Complete →
+    (send (purge (.integer 1) textTime)).ifOk (fun _ final => Holds.reachedSince (purgeKeeps (.integer 1) textTime) sessions final)
+      (ExecutionContext.initial sessions env) :=
+  purge_frame_on_sessions (.integer 1) textTime sessions rfl
 
 /-- The purge with the time as a Lean integer, the convenience of the guide: the frame claim for the integer time is the
-claim for the value of that integer. Proof sketch: {name}`purge_frame` at the value. -/
+claim for the value of that integer. Proof sketch: {name}`purge_frame_on_sessions` at the value. -/
 theorem purge_frame_typed (c : Value) (now : Int64) :
-    FreshEnsuresFrom (send (purge c (.integer now.toInt))) (fun db => Nonempty (PurgeFrameSite db c (.integer now.toInt)))
+    FreshEnsuresFrom (send (purge c (.integer now.toInt))) (·.HasCatalog sessions)
       (fun start => ifOk (holdsSince start (purgeKeeps c (.integer now.toInt)))) :=
-  purge_frame c (.integer now.toInt)
+  purge_frame_on_sessions c (.integer now.toInt)
 
 /-- The purge with OR for AND, the variant that the guide warns about. -/
 def purgeOr := sql r"DELETE FROM sessions WHERE customer_id = :c OR expires_at < :now"
@@ -165,10 +139,9 @@ theorem an_aborted_purge_rolls_back :
 #print axioms or_variant_breaks_the_frame_claim
 #print axioms not_instead_of_is_not_one_requires_nothing_for_null
 #print axioms an_aborted_purge_rolls_back
-#print axioms fiftySite
-#print axioms null_customer_has_a_site
-#print axioms null_time_has_a_site
-#print axioms text_time_has_a_site
+#print axioms null_customer_keeps_the_frame
+#print axioms null_time_keeps_the_frame
+#print axioms text_time_keeps_the_frame
 #print axioms purge_frame_typed
 
 end AssertionExamples

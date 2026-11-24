@@ -37,7 +37,7 @@
     "GuideParameters", "GuidePrograms", "InsertLookupClaims", "InvalidUtf8", "LowercaseExpansion",
     "LowercaseFilters", "LowercaseLookups", "LowercasePlan", "LowercaseQueries", "LowercaseSimulation",
     "NameTokenPaths", "NameTraceSpans", "ParameterErrors", "ProgramErrors", "ProgramExamples",
-    "PurgeFrameClaims", "PurgeFrameInstances", "PurgeFrameQueries", "PurgeFrameSite",
+    "PurgeFrameClaims", "PurgeFrameInstances", "PurgeFrameQueries", "PurgeFrameSchema", "PurgeFrameSite",
     "PurgeTriggerCounterexample", "RebuildAffinity", "RebuildRuns", "Rejected",
     "SelectCountWhereSupport", "SelectDuplicateKeySupport", "SelectGroupSupport",
     "SelectOneWhereSupport", "SignupInvariantClaims", "SqlDocBindings", "SqlDocCasesBindings",

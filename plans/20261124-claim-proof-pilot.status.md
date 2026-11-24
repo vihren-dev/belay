@@ -40,6 +40,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   (`anyMayFail`, `deleteJsonReady`).
 - 2026-11-24, base form: review fixes of the readiness facts (the
   docstring of `anyMayFail_eq_false_iff`, the reach of the UPDATE checks).
+- 2026-11-24, base form: the weaker site, `purge_continues` and the frame
+  client statement over the catalog of `sessions`.
 
 ## Base form
 
@@ -83,6 +85,45 @@ runs, local): `QueryPlainLaws` 1.98 s, `RowwiseExpr` 0.46 s,
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local).
+
+### The weaker site and the frame client statement (fixtures)
+
+- `PurgeFrameSite` (`tests/surface/Schema/Tests/PurgeFrameSite.lean`) has
+  only the database as its parameter. The field `purgeModeled` is removed;
+  the values of the parameters are no longer part of the site.
+- `PurgeFrameSite.purge_continues` (same file, a client lemma, not a package
+  theorem): for each site, environment and pair of values, the step of the
+  purge continues. Its proof applies `runScriptStep_plainDelete_eq` with
+  `Resolved.Statement.Calm` of the delete and `deleteJsonReady_of_rowwise`.
+- `purge_keeps_rows` and `purge_frame`
+  (`tests/surface/Programs/Scripts/PurgeFrameClaims.lean`) take the weaker
+  site. The pre of `purge_frame` is `Nonempty (PurgeFrameSite db)`.
+- New fixture `tests/surface/Schema/Tests/PurgeFrameSchema.lean`: the
+  database `sessions` and `sessionsEntry` (moved from the instances), the
+  lookup `sessions_found`, the site `sessionsSite` for each database with
+  `db.HasCatalog sessions` (each field by a catalog rewrite and
+  `decide +kernel`), and the frame client statement
+  `purge_frame_on_sessions` with the catalog as its only premise.
+- `tests/surface/Schema/Tests/PurgeFrameInstances.lean`: the site-for-values
+  theorems (`null_customer_has_a_site`, `null_time_has_a_site`,
+  `text_time_has_a_site`, with `modeledAtFifty` and `fiftySite`) are replaced
+  by uses of `purge_frame_on_sessions` (`null_customer_keeps_the_frame`,
+  `null_time_keeps_the_frame`, `text_time_keeps_the_frame`).
+  `purge_frame_typed` has the catalog as its pre. The decide checks stay.
+- `big_after_delete` in `SelectContextCases.lean` still has a premise
+  `modeled` that its DELETE step continues. It does not use the site and is
+  outside this task.
+- Tests: `test_purge_frame_claim_over_every_database` compiles the chain
+  with `PurgeFrameSchema`; the new module is in the `surface` roots.
+
+Elaboration time of the fixtures (lower of two runs, local):
+`PurgeFrameQueries` 1.0 s, `PurgeFrameSite` 1.0 s, `PurgeFrameClaims`
+1.3 s, `PurgeFrameSchema` 1.3 s, `PurgeFrameInstances` 3.1 s.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
+passed (local); `python3 -m pytest tests/test_source_identity_derivations.py`
+passed (local).
 
 ## Form A
 
