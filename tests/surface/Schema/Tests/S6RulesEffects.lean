@@ -42,7 +42,7 @@ def tableValues (position : Nat) (connection : Connection) : List (List Value) :
 
 /-- For every complete environment, every run of the update that has no error ends with the rows
 {lit}`[[1, 6]]` in the items table. The claim holds for the one database {name}`sample`. A run with an error
-needs nothing. Proof sketch: {name}`Sql.ifOk_send_plainUpdate` reduces the claim to the rows that
+needs nothing. Proof sketch: {name}`runScriptStep_plainUpdate_eq` reduces the claim to the rows that
 {name}`LiteralData.updated` computes; the statement resolves to {name}`bumpResolved` and the step is modeled
 for every environment, so kernel evaluation gives the rows. -/
 theorem bump_stores_new_quantity :
@@ -50,44 +50,24 @@ theorem bump_stores_new_quantity :
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 6]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  obtain ⟨after, found⟩ : ∃ after, resolveStatement runContext (sample.raw.connection env.counters).resolveState
-      bumpStatement = .ok (bumpResolved, after) := ⟨_, rfl⟩
-  have modeled : RunStep.continues (runScriptStep runContext env.clock 0 (sample.raw.connection env.counters)
-      bumpStatement [.integer 1]) = true := rfl
-  refine Sql.ifOk_send_plainUpdate (statement := bumpStatement) (values := [.integer 1]) found sample_items
-    (RunStep.continues_iff.1 modeled) ?_
-  intro value outputs final reached _ _
-  show tableValues 0 final.connection = _
-  unfold tableValues
-  rw [reached]
-  rfl
+  refine Sql.check_send_of_rule (runScriptStep_plainUpdate_eq (statement := bumpStatement)
+    (target := 0) (subqueries := []) (assignments := _) (filter := _) (by rfl))
+    (ExecutionContext.initial_holds_valid sample env) rfl ?_
+  exact Sql.sendReached_single (fun _ same => by cases same) (fun _ _ => rfl)
 
 /-- For every complete environment, every run of the update ends with the rows {lit}`[[1, 6]]` in the items
 table, and no run has an error or stops without a result. The claim holds for the one database
 {name}`sample`. In plain words, this is the total form of {name}`bump_stores_new_quantity`: the update also
-succeeds. Proof sketch: the step of the update is modeled and gives the count of one change for every
-environment, which is not an error and not a choice, so {name}`check_send_single_of_step` leaves the
-claim about the next context; {name}`plainUpdate_database` gives its database and kernel evaluation gives the
-rows. -/
+succeeds. Proof sketch: the kind rule gives one change and one execution. Evaluation gives the stored cells. -/
 theorem bump_succeeds_with_new_quantity :
     FreshEnsures (send bump) (fun db => db = sample)
       (andOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 6]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.andOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  obtain ⟨after, found⟩ : ∃ after, resolveStatement runContext (sample.raw.connection env.counters).resolveState
-      bumpStatement = .ok (bumpResolved, after) := ⟨_, rfl⟩
-  obtain ⟨next, step⟩ : ∃ next, runScriptStep runContext env.clock 0 (sample.raw.connection env.counters)
-      bumpStatement [.integer 1] = .continued (.done 1) next [] := ⟨_, rfl⟩
-  refine (check_send_single_of_step (state := ExecutionContext.initial sample env) step
-    (fun _ _ resolved => by
-      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
-      rfl)
-    (by intro alternatives same; cases same)).2 ⟨rfl, ?_⟩
-  obtain ⟨value, -, stored⟩ := plainUpdate_database found sample_items step rfl
-  show tableValues 0 next = _
-  unfold tableValues
-  rw [show next.state.database = _ from stored]
-  rfl
+  refine Sql.check_send_of_rule (runScriptStep_plainUpdate_eq (statement := bumpStatement)
+    (target := 0) (subqueries := []) (assignments := _) (filter := _) (by rfl))
+    (ExecutionContext.initial_holds_valid sample env) rfl ?_
+  exact Sql.sendReached_single (fun _ same => by cases same) (fun _ => ⟨rfl, rfl⟩)
 
 -- The ADD COLUMN with a default value.
 

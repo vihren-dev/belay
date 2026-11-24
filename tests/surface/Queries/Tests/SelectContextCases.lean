@@ -99,7 +99,7 @@ and environment, if the model runs the statement of {name}`deleteScript` on the 
 the environment to a step that continues, then the program that sends {name}`deleteScript` and
 then runs {name}`bigScript` checks {name}`ReadsBig` from the new connection of the environment:
 the SELECT returns the rows of the database after the delete, also when the delete fails. Proof
-sketch: {name}`Sql.check_send_plainDelete`; a write keeps the catalog, so each reached context
+sketch: {name}`runScriptStep_plainDelete_eq`; a write keeps the catalog, so each reached context
 has the resolution state of {name}`shop`, and {name}`big_after` applies. -/
 theorem big_after_delete (db : Database) (env : Env) (schema : db.HasCatalog shop)
     (modeled : ∀ entry ∈ deleteScript.statements, ∃ output next others,
@@ -113,17 +113,13 @@ theorem big_after_delete (db : Database) (env : Env) (schema : db.HasCatalog sho
   have script : deleteScript = ⟨[(statement, [])]⟩ := by rw [← head]
   refine big_after _ _ ?_
   rw [script]
-  refine Sql.check_send_plainDelete (ExecutionContext.initial_holds_valid db env)
-    (by show resolveStatement runContext (db.raw.connection env.counters).resolveState statement = _
-        rw [shop_state db env schema]; exact resolves)
-    (Database.table_of_findTable db.raw _ 1 ordersShape (shop_found db schema).2)
-    (modeled (statement, []) (by rw [head]; exact List.mem_singleton_self _)) ?_ ?_
-  · intro output value next _ _ _ same _
-    subst same
-    exact (Connection.resolveState_afterWrite _ _ (by rfl)).trans (shop_state db env schema)
-  · intro output value next _ _ same _
-    subst same
-    exact (Connection.resolveState_afterWrite _ _ (by rfl)).trans (shop_state db env schema)
+  have found := resolves
+  rw [← shop_state db env schema] at found
+  have present := Database.table_of_findTable db.raw _ 1 ordersShape (shop_found db schema).2
+  have covered := RunStep.continues_iff.2 (modeled (statement, []) (by rw [head]; exact List.mem_singleton_self _))
+  sql_run [found, covered, present]
+  exact (Connection.resolveState_afterWrite _ _ (by rfl)).trans (shop_state db env schema)
+
 
 /-- A21 contrast on {name}`partial_`, with the rows of native SQLite 3.51.0: from the start,
 {name}`bigScript` returns the orders 1 and 3; after {name}`deleteScript`, which deletes order 3,

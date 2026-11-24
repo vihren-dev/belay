@@ -46,8 +46,7 @@ example (statement : Syntax.Statement) (values : List Value) (post : List Output
   sql_run
 
 /-- A statement that Lean cannot read, for example a field of a structure, takes the rule from the hypotheses:
-here the resolution is a plain DELETE, so the tactic applies {name}`Sql.check_send_plainDelete` and leaves its
-two outcome goals, which the trivial post closes. -/
+here the resolution is a plain DELETE, so the tactic finds {name}`runScriptStep_plainDelete_eq`. Its single continuing case satisfies the trivial post. -/
 theorem unreadable_statement_takes_the_rule_of_its_resolution (statement : Syntax.Statement)
     (values : List Value) (context : ExecutionContext) (target : Nat) (filter : Option Resolved.Expr)
     (after : ResolveState) (table : Table) (valid : context.connection.state.Holds (Database.Valid Profile.pinned))
@@ -57,7 +56,7 @@ theorem unreadable_statement_takes_the_rule_of_its_resolution (statement : Synta
     (modeled : ∃ output next others, runScriptStep runContext context.clock context.index context.connection
       statement values = .continued output next others) :
     (send ⟨[(statement, values)]⟩).check (fun _ _ => True) context := by
-  sql_run
-  all_goals (intros; trivial)
+  sql_run [RunStep.continues_iff.2 modeled]
+  all_goals trivial
 
 end S6AutoShapes

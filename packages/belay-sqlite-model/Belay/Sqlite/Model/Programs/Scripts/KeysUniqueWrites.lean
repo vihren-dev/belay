@@ -35,7 +35,7 @@ theorem runStatement_update_keysUnique (clock : Int) (counters : Counters) (para
     (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String))
     (subqueries : List Resolved.Query) {database : Database} (unique : database.KeysUnique) :
     (runStatement clock counters parameters (.update target assignments filter returning subqueries none) database).effect.Satisfies Database.KeysUnique := by
-  simp only [runStatement, Option.map_none, StatementRun.withKeys]
+  simp only [runStatement, updateOutcome, Option.map_none, StatementRun.withKeys]
   split
   · exact Effect.satisfies_of_database unique rfl
   · rename_i table found

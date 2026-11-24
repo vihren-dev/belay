@@ -18,7 +18,7 @@ def purge : Script := sql r"DELETE FROM items WHERE id = ?1" (Value.integer 1)
 
 /-- For every complete environment, every run of the delete that has no error ends with no rows in the items
 table. The claim holds for the one database {name}`sample`. Proof sketch: {lit}`sql_run` applies
-{name}`Sql.check_send_plainDelete`; the hints close the resolution and the model coverage, and evaluation gives
+the plain DELETE kind rule; the hints close the resolution and the model coverage, and evaluation gives
 the rows. -/
 theorem purge_empties_items :
     FreshEnsures (send purge) (fun db => db = sample)

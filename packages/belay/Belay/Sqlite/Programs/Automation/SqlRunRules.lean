@@ -1,5 +1,3 @@
-import Belay.Sqlite.Programs.Scripts.PlainUpdateStepRule
-import Belay.Sqlite.Programs.Scripts.PlainDeleteStepRule
 import Belay.Sqlite.Programs.Scripts.AddColumnStepRule
 import Belay.Sqlite.Programs.Scripts.ControlStepRules
 import Belay.Sqlite.Programs.Claims.ReadStepRule
@@ -67,11 +65,7 @@ def roleOf (kind : Name) (premise : Name) : Role :=
 /-- The tactic that applies the rule for a sent statement of the given kind. A statement of a kind without a
 rule of its own is sent with the general rule {name}`Sql.check_send_of_step_notInsertSelect`, whose premises stay open. -/
 def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
-  if kind == ``Model.Syntax.Statement.update then
-    `(tactic| refine' Sql.check_send_plainUpdate ?valid ?found ?present ?modeled ?success ?failure)
-  else if kind == ``Model.Syntax.Statement.delete then
-    `(tactic| refine' Sql.check_send_plainDelete ?valid ?found ?present ?modeled ?success ?failure)
-  else if kind == ``Model.Syntax.Statement.addColumn then
+  if kind == ``Model.Syntax.Statement.addColumn then
     `(tactic| refine' Sql.check_send_addColumn ?valid ?found ?present ?modeled ?success ?failure)
   else if kind == ``Model.Syntax.Statement.dropTable then
     `(tactic| refine' Sql.check_send_dropPlain ?valid ?found ?success)

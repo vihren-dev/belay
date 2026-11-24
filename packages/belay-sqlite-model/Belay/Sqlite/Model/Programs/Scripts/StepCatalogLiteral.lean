@@ -81,7 +81,7 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
   | update target assignments filter returning subqueries foreignKeys =>
     cases foreignKeys with
     | none =>
-      simp only [literalStep, runStatement, checkedWrite, StatementRun.withKeys, Option.map] at success
+      simp only [literalStep, runStatement, updateOutcome, checkedWrite, StatementRun.withKeys, Option.map] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
     | some depth =>

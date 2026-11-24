@@ -32,4 +32,12 @@ def insertOutcome (database : Database) (target : Nat) (keys : List UniqueKey) (
     else .error (.constraintViolation, database)
   | none => checkedWrite database target keys result
 
+/-- The effect of updating a table without trigger or foreign-key rules. A rowid alias that
+cannot hold its assigned value gives a datatype mismatch. Otherwise {name}`checkedWrite`
+checks the resulting rows and stores them on success. -/
+def updateOutcome (database : Database) (target : Nat) (keys : List UniqueKey) (context : Resolved.EvalContext)
+    (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) (result : Table) : Effect :=
+  if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
+  else checkedWrite database target keys result
+
 end Belay.Sqlite.Model

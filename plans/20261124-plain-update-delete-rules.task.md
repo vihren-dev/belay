@@ -8,7 +8,7 @@ Given only a resolution to either kind, a client can read the complete step
 from its registered equation. The clock and first unknown counter take
 precedence over table lookup. The equation states which readiness checks end
 the run, the output and counts of each continuing case, the next connection
-and its further executions. Plain UPDATE can fail a type or uniqueness check.
+and its further executions. Plain UPDATE can fail with a datatype mismatch or a constraint violation.
 Plain DELETE has no SQL error after its support checks pass.
 
 Clients use the same projections, send rule and tactic path as the pilot.
