@@ -1,4 +1,6 @@
-import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
+import Belay.Sqlite.Model.Programs.Scripts.StepContinues
+import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 
 set_option doc.verso true
 

@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.Schema.Triggers.BackfillStatementResolution
 import Belay.Sqlite.Model.Schema.Columns.DerivedColumnTable
-import Belay.Sqlite.Model.Programs.Scripts.ScriptStepDatabase
+import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
 import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateRule
 
 set_option doc.verso true
@@ -55,7 +55,6 @@ theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index :
   obtain ⟨resolved, after, -, resolution, -⟩ := runScriptStep_ran step
   obtain ⟨rfl, rfl⟩ := backfill_resolution (state := connection.resolveState) (tableName := tableName)
     (table := table.shape) found added newPlain operand foreign recursive noneFiring resolution
-  refine runScriptStep_next_of_database resolution rfl step noError ?_
   have reached := step
   rw [runScriptStep_plainUpdate_eq resolution] at reached
   split at reached <;> try contradiction
@@ -67,6 +66,12 @@ theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index :
   · cases reached
     have assignedBelow := assignedExpression_readsBelow (scope := backfillScope position tableName table.shape column)
       (position := table.shape.columns.length) (expression := value) below
+    have frame (actual expected : Database) (counts : Counts) (stored : actual = expected) :
+        ∃ counters, connection.afterWrite actual counts =
+          { connection with state := { connection.state with database := expected, counters } } := by
+      subst expected
+      exact ⟨_, rfl⟩
+    apply frame
     change connection.state.database.setRows _ _ = _
     rw [updated_derived_append _ (statementContext_nil_rowFree _ _ _ _) table column _ wide aliased assignedBelow plain
       newPlain]

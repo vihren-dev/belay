@@ -1,16 +1,13 @@
 import Belay.Sqlite.Model.Programs.StatementRunLaws.CreateIndexSuccessLaws
 import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Schema.Ddl.DropTableResolution
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
 import Belay.Sqlite.Model.Schema.Ddl.TableByName
 import Belay.Sqlite.Model.Schema.Ddl.ConditionalCreationSteps
 
 set_option doc.verso true
 
-/-! The step laws of {lit}`IF NOT EXISTS` on the CREATE statements (ADR 0030, D3 and D7): a
-statement that resolves to the no-op {lit}`.drop []` outputs done with zero changes and keeps the
-connection, and when the name does not make CREATE TABLE or CREATE INDEX a no-op, the clause
-changes nothing. -/
+/-! Steps at equal resolutions have the same behavior on a connection. -/
 
 namespace Belay.Sqlite.Model
 
@@ -24,31 +21,5 @@ theorem runScriptStep_congr_resolve {context : ResolveContext} {clock : Option C
     runScriptStep context clock index connection first parameters =
       runScriptStep context clock index connection second parameters := by
   simp only [runScriptStep, runScriptStepWith, same]
-
-/-- For every context, clock, statement index, connection, CREATE TABLE and bound values: if
-no table or view has the name, or the name is reserved ({name}`createTableKept` is false),
-then one step of the statement with {lit}`IF NOT EXISTS` is the step without it. Proof
-sketch: both resolve with {name}`resolveCreateTable`. -/
-theorem runScriptStep_createTable_ifNotExists_free {context : ResolveContext} {clock : Option Clock}
-    {index : Nat} {connection : Connection} {name : Identifier} {columns : List Syntax.ColumnDefinition}
-    {constraints : List Syntax.TableConstraint} {options : Syntax.TableOptions} {parameters : List Value}
-    (free : createTableKept connection.state.database.catalog name = false) :
-    runScriptStep context clock index connection (.createTable name columns constraints options true) parameters =
-      runScriptStep context clock index connection (.createTable name columns constraints options) parameters :=
-  runScriptStep_congr_resolve (by
-    simp [statement_arms, resolveCreateTableIf, Connection.resolveState, free])
-
-/-- For every context, clock, statement index, connection, CREATE INDEX and bound values: if
-{name}`createIndexKept` is false (the table is missing, a name is reserved, or no index has
-the name), then one step of the statement with {lit}`IF NOT EXISTS` is the step without it.
-Proof sketch: both resolve with {name}`resolveCreateIndex`. -/
-theorem runScriptStep_createIndex_ifNotExists_free {context : ResolveContext} {clock : Option Clock}
-    {index : Nat} {connection : Connection} {name tableName : Identifier} {unique : Bool}
-    {terms : List Syntax.OrderTerm} {filter : Option Syntax.Expr} {parameters : List Value}
-    (free : createIndexKept connection.state.database.catalog name tableName = false) :
-    runScriptStep context clock index connection (.createIndex name unique tableName terms filter true) parameters =
-      runScriptStep context clock index connection (.createIndex name unique tableName terms filter) parameters :=
-  runScriptStep_congr_resolve (by
-    simp [statement_arms, resolveCreateIndexIf, Connection.resolveState, free])
 
 end Belay.Sqlite.Model

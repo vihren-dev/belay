@@ -32,3 +32,12 @@ concrete cases. Historical source links in the resolver inventory now point
 at the original revision.
 
 The D5 example identifies the pilot revision. Each group witness names the model laws it checks.
+
+ReplacedOrdinaryFrames proves five original contracts: the nonquery
+no-error projection, the unmodeled-error frame, the ordinary database
+frame, and both IF NOT EXISTS congruences. The conditional CREATE fixture
+uses the general equal-resolution congruence directly. The derived-column
+backfill uses the full successful UPDATE equation, and CREATE TRIGGER
+uses the prepare-error and creation equations. surface_schema_script_test
+checks the retention, and surface_derived_column_test checks the installed
+guide example and the derived-row claims.

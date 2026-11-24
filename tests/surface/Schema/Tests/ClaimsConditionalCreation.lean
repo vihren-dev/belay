@@ -98,7 +98,7 @@ theorem free_table {context : ResolveContext} {clock : Option Clock} {index : Na
     (free : createTableKept connection.state.database.catalog name = false) :
     runScriptStep context clock index connection (.createTable name columns constraints options true) parameters =
       runScriptStep context clock index connection (.createTable name columns constraints options) parameters :=
-  runScriptStep_createTable_ifNotExists_free free
+  runScriptStep_congr_resolve (by simp [statement_arms, resolveCreateTableIf, Connection.resolveState, free])
 
 /-- For every database whose catalog has no index of the name, the public run of CREATE INDEX
 with the clause succeeds exactly when the index conditions hold. Proof sketch: the public
