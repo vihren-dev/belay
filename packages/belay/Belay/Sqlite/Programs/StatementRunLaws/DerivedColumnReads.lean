@@ -40,7 +40,7 @@ theorem Site.LookupMove.outputs {database : Database.Raw} {tableName : Identifie
 connection has the rows of some result as its output, and the replacement statement's step on the migrated
 connection has the same rows. Plain words: a moved read returns rows, and the same rows before and after.
 Proof sketch: the output of a calm read of one table is the normal form of the query result
-({name}`Model.runScriptStep_simpleTable_output`), and {name}`Site.LookupMove.outputs` equates the two. -/
+({name}`Model.Resolved.Query.simpleTable_checks`), and {name}`Site.LookupMove.outputs` equates the two. -/
 theorem Site.LookupMove.rows {database : Database.Raw} {tableName : Identifier}
     {definition : Syntax.ColumnDefinition} {value : Syntax.Expr} {site : Site database tableName definition value}
     {triggers : List (Identifier × CatalogTrigger)} {original replacement : Syntax.Statement}
@@ -53,13 +53,15 @@ theorem Site.LookupMove.rows {database : Database.Raw} {tableName : Identifier}
       (runScriptStep runContext clock after migrated replacement parameters).output = .rows rows := by
   obtain ⟨names, beforeState, resolvedBefore⟩ := lookup.resolvesBefore connection.resolveState
     (by simp [Connection.resolveState, same])
-  refine ⟨_, runScriptStep_simpleTable_output runContext clock before connection original parameters site.position
-    site.table lookup.beforeFilter lookup.columns names resolvedBefore (by rw [same]; exact site.present)
-    (lookup.calmBefore names), ?_⟩
-  rw [← lookup.outputs clock before after same aligned reached wide aliased]
-  exact runScriptStep_simpleTable_output runContext clock before connection original parameters site.position
-    site.table lookup.beforeFilter lookup.columns names resolvedBefore (by rw [same]; exact site.present)
-    (lookup.calmBefore names)
+  have calm := lookup.calmBefore names
+  have present : connection.state.database.table site.position = some site.table := by rw [same]; exact site.present
+  have rows : (runScriptStep runContext clock before connection original parameters).output =
+      .rows (Resolved.normalForm ((Resolved.Query.simple [Resolved.QuerySource.first site.position] lookup.beforeFilter
+        lookup.columns names).results (Resolved.EvalContext.bound parameters) (Resolved.sourceRows site.table))) := by
+    simp [runScriptStep_query_eq resolvedBefore, statementClock, calm.readsClock, calm.counterReads,
+      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons, Resolved.stableSort,
+      Resolved.insertStable, RunStep.output]
+  exact ⟨_, rows, (lookup.outputs clock before after same aligned reached wide aliased).symm.trans rows⟩
 
 /-- For every site, read kept by {name}`Site.ReadPreserved`, connection on the site's database and connection
 on the migrated database, with an aligned table of wide aliased rows, the steps of the statement on the two

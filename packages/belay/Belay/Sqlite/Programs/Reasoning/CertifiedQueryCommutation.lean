@@ -22,7 +22,7 @@ open Model
 /-- For every valid certificate, statement resolution and present table: the step of the statement continues,
 has no execution other than its own, and ends at the connection where it started. In plain words, a
 certified read is read-only. Proof sketch: the step does not stop, because its output is a list of rows
-({name}`runScriptStep_simpleTable_output`), and a continuing read-only step keeps the connection
+({name}`Resolved.Query.simpleTable_checks`), and a continuing read-only step keeps the connection
 ({name}`runScriptStep_readOnly_keeps`). -/
 theorem ReadCertificate.step_keeps {certificate : ReadCertificate} (valid : certificate.Valid)
     {context : ResolveContext} {statement : Syntax.Statement} {connection : Connection}
@@ -32,9 +32,17 @@ theorem ReadCertificate.step_keeps {certificate : ReadCertificate} (valid : cert
     (present : connection.state.database.table certificate.position = some table)
     (clock : Option Clock) (index : Nat) (parameters : List Value) :
     ∃ output, runScriptStep context clock index connection statement parameters = .continued output connection [] := by
-  have rows := runScriptStep_simpleTable_output context clock index connection statement parameters
-    certificate.position table certificate.filter certificate.columns names resolved present
-    (valid.statement_calm names)
+  have calm := valid.statement_calm names
+  change (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.first certificate.position]
+    certificate.filter certificate.columns names) []).Calm at calm
+  change resolveStatement context connection.resolveState statement = .ok (.query (Resolved.Query.simple
+    [Resolved.QuerySource.first certificate.position] certificate.filter certificate.columns names) [], state) at resolved
+  have rows : (runScriptStep context clock index connection statement parameters).output =
+      .rows (Resolved.normalForm ((Resolved.Query.simple [Resolved.QuerySource.first certificate.position]
+        certificate.filter certificate.columns names).results (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table))) := by
+    simp [runScriptStep_query_eq resolved, statementClock, calm.readsClock, calm.counterReads,
+      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons, Resolved.stableSort,
+      Resolved.insertStable, RunStep.output]
   cases step : runScriptStep context clock index connection statement parameters with
   | ended reason => rw [step] at rows; cases rows
   | continued output next others =>

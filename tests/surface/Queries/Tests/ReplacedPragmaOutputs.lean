@@ -1,23 +1,11 @@
-import Belay.Sqlite.Model.Schema.Ddl.StatementArms
-import Belay.Sqlite.Model.Schema.Dispatch.StatementArms
-import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyPragmaQuery
+import Belay
 
 set_option doc.verso true
 
-/-! The full foreign-key pragma statement, with preparation stated separately from rows.
-The conditions permit missing parents; empty violation results do not prove compatible
-parent schemas. -/
+namespace Belay.Sqlite.Model.ReplacedQueries
+open Resolved
 
-namespace Belay.Sqlite.Model
-
-/-- For every execution context, clock, index, connection and bound values, if no catalog
-position has a foreign-key mismatch, the full database-wide pragma statement returns exactly
-one empty row result if and only if the database has valid row references under its selected
-mapping. A missing parent is permitted by the preparation condition; it can still invalidate
-non-NULL child rows. The condition is exactly the successful-query preparation condition
-of {name}`resolvePragma_keyCheck_iff`.
-Proof sketch: resolve to the pragma query, apply its exact empty-output law, then apply
-{name}`Database.keyCheck_nil_iff`. Clock, counters and transaction state are unrestricted. -/
+/-- Retain the original premises and conclusion of {lit}`runScriptStep_keyCheck_empty`. -/
 theorem runScriptStep_keyCheck_empty (context : ResolveContext) (clock : Option Clock)
     (index : Nat) (connection : Connection) (parameters : List Value)
     (prepares : ∀ position < connection.state.database.catalog.length,
@@ -30,13 +18,9 @@ theorem runScriptStep_keyCheck_empty (context : ResolveContext) (clock : Option 
   rw [resolvedStepOutput_keyCheck_clock, resolvedStepOutput_keyCheck_empty]
   exact connection.state.database.keyCheck_nil_iff
 
-/-- For every named table found at a catalog position, every execution context, clock, index,
-connection and bound values, if that position has no foreign-key mismatch, the full named
-pragma returns exactly one empty row result if and only if that table has valid row references
-under the catalog-selected mapping. Other child tables need not satisfy their row references
-or prepare successfully. Parent rows still determine the named table's references.
-Proof sketch: the name and mismatch condition resolve to the table-specific query;
-its exact empty-output law and {name}`Database.tableKeyCheck_nil_iff` give the result. -/
+#print axioms runScriptStep_keyCheck_empty
+
+/-- Retain the original premises and conclusion of {lit}`runScriptStep_tableKeyCheck_empty`. -/
 theorem runScriptStep_tableKeyCheck_empty (context : ResolveContext) (clock : Option Clock)
     (index : Nat) (connection : Connection) (parameters : List Value) (name : Identifier)
     (position : Nat) (table : Table)
@@ -51,4 +35,6 @@ theorem runScriptStep_tableKeyCheck_empty (context : ResolveContext) (clock : Op
   rw [resolvedStepOutput_keyCheck_clock, resolvedStepOutput_keyCheck_empty]
   exact connection.state.database.tableKeyCheck_nil_iff present
 
-end Belay.Sqlite.Model
+#print axioms runScriptStep_tableKeyCheck_empty
+
+end Belay.Sqlite.Model.ReplacedQueries

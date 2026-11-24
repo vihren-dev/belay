@@ -30,7 +30,7 @@ that it has one statement, context {lit}`state`, clock value {lit}`value`, sourc
 
 then the program {name}`query` of the script checks {lit}`P` at {lit}`state`. The premises read
 the context of {lit}`state` and not of a run from the start. Proof sketch:
-{name}`runScriptStep_select_returnsResult` gives a step that continues and whose output returns
+{name}`resolvedStepOutput_select` gives a step that continues and whose output returns
 one of the permitted results; {name}`Sql.check_query_select` reads the step and keeps the
 connection. -/
 theorem check_query_select_at {script : Script} {one : script.statements.length = 1}
@@ -48,9 +48,12 @@ theorem check_query_select_at {script : Script} {one : script.statements.length 
     same⟩ := Script.select_shape select
   obtain ⟨rfl, rfl⟩ : statement = .select columns from_ joins filter groupBy orderBy limit offset nested having
       distinct compound ∧ parameters = values := by simpa [head] using same
-  have returns := (runScriptStep_select_returnsResult runContext state.clock state.index state.connection _ _
-    resolved clocked ready (· ∈ bound.possibleResults (state.connection.queryContextAt value parameters query subqueries)
-      source.rows)).2 fun _ member => member
+  have returns : (runScriptStep runContext state.clock state.index state.connection
+      (.select columns from_ joins filter groupBy orderBy limit offset nested having distinct compound) parameters).output.returnsResult
+      (· ∈ bound.possibleResults (state.connection.queryContextAt value parameters query subqueries) source.rows) := by
+    simp only [runScriptStep_output, resolved]
+    rw [resolvedStepOutput_select state.clock state.index _ parameters clocked ready]
+    exact (bound.returnsResult_possible _ _ _).2 fun _ member => member
   cases step : runScriptStep runContext state.clock state.index state.connection
       (.select columns from_ joins filter groupBy orderBy limit offset nested having distinct compound) parameters with
   | ended reason =>
