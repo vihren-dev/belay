@@ -2,7 +2,8 @@ import Belay
 
 set_option doc.verso true
 
-/-! Original group contracts under ADR 0033, checked through the last change to their dependencies. -/
+/-! Temporary retention evidence for ADR 0033 in {lit}`tests/surface_schema_script_test.py`.
+The CREATE and DROP failure contracts follow from the exact CREATE TABLE, plain DROP and prepare-error equations. -/
 
 namespace Belay.Sqlite.ReplacedFrames
 open Belay.Sqlite.Model

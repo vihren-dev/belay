@@ -147,5 +147,6 @@ def test_replaced_write_mode_laws(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_replaced_group_frames(runtime_root: Path, tmp_path: Path) -> None:
-    """The original CREATE, DROP and read-only pragma frame statements use the retained model laws."""
+    """The original CREATE and DROP frames use runScriptStep_createTable_eq, runScriptStep_dropPlain_eq and
+    runScriptStep_prepareError_eq. The pragma frame uses resolveStatementPragma_readOnly and runScriptStep_readOnly_keeps."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedSchemaFailures", 2), ("ReplacedReadPragma", 1)))
