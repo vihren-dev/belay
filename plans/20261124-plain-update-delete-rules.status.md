@@ -89,3 +89,10 @@ fixture-manifest corrections.
 | S6AutoShapes | 0.91 | 1.01 |
 | PurgeFrameClaims | 0.94 | 1.34 |
 | SelectContextCases | 7.16 | 7.09 |
+
+The default checker could no longer prove the concrete quantity UPDATE
+in S6CheckPrograms within its first route allocation. It now retries an
+exhausted route once if other routes left work in the same checker budget.
+Interactive sql_auto retains its single pass. The affected suites are
+surface_s6_check_programs_test, surface_s6_check_editor_test and
+surface_s6_automation_test, including proof replay and bounded search.
