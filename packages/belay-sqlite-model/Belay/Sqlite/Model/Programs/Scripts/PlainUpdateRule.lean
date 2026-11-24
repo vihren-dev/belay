@@ -3,8 +3,8 @@ import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
 set_option doc.verso true
 
 /-! The exact step of an UPDATE statement without RETURNING or write rules. Its subqueries
-may read the clock or a counter. The data facts about {name}`Belay.Sqlite.Model.updateOutcome_ok` and
-{name}`Belay.Sqlite.Model.updateOutcome_error` describe the resulting database. -/
+may read the clock or a counter. The theorems {name}`Belay.Sqlite.Model.updateOutcome_ok` and
+{name}`Belay.Sqlite.Model.updateOutcome_error` describe the database after success or failure. -/
 
 namespace Belay.Sqlite.Model
 
