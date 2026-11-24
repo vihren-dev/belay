@@ -81,3 +81,8 @@ candidate. The same original work budget and ordered rule set apply.
 The affected suites are surface_s6_check_programs_test (including printed proof
 replay), surface_s6_check_editor_test, surface_s6_automation_test and
 surface_schema_script_test.
+
+Both forms of resolution-premise inspection now live with the goal helpers in
+SqlRunGoals. After the allocation change at 78e27e58, S6AutoPaths elaborated in
+32.01 s, SchemaRuleExamples in 15.89 s and SchemaSendClaims in 1.36 s (faster
+of two). Each is below twice its starting time or is a new fixture.
