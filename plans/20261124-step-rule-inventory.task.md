@@ -1,6 +1,6 @@
 # Complete the exact step rules
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 Every resolved statement has one applicable exact equation. Client proofs
 can use each output, next connection and further execution in that

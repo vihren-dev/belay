@@ -1,6 +1,6 @@
 # Exact step rule inventory
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 [Task](20261124-step-rule-inventory.task.md) ·
 [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md)
@@ -221,3 +221,12 @@ The table compares the final slice with slice 7. Each row lists the named theore
 | `tests/surface/Schema/Tests/DerivedColumnOnSchema.lean` | — | `named_read_preserved`, `read_matching_named_columns`, `lookup_read_preserved` |
 | `tests/surface/Schema/Tests/LowercaseSimulation.lean` | — | `Plan.lookup_steps` |
 | `tests/surface/Schema/Tests/SchemaCreateExamples.lean` | — | `create_existing_keeps_the_connection`, `drop_missing_keeps_the_connection` |
+
+## Acceptance
+
+Nix accepted the completed inventory through `e7a10b713b15`. The full suite is
+`47krw28mh5fr9yx9l92zn2v85pc8aw06-belay-test-reports`. Its conformance verdict `05mjiv952vfsf2pd0nww09x959k1b3bx-belay-verdict` is
+byte-for-byte identical to slice 7's `l91j5fjwzgbx67jflfkyckakvi0qpm0r-belay-verdict`.
+The host Nix checks passed with the configured runtime. The scheduled
+non-mutant checks passed in `8l1qg77r1wkhh97wi43w9gad6dnw6l5d-belay-scheduled-check-reports`. No slice adds or
+changes a mutant table.
