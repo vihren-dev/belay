@@ -68,6 +68,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, form B: the bridge laws from the one-state and two-state
   assertions to the output of the resolved statement
   (`ResolvedOutputBridge.lean`).
+- 2026-11-24, form B: review fixes of the bridge laws (the plain words of
+  `Output.hasRows`, `usesSchema` and `Script.isQuery`, checked names in the
+  module docstring).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -251,9 +254,9 @@ New module `packages/belay/Belay/Sqlite/Programs/Claims/ResolvedOutputBridge.lea
   statement resolves in the resolution state of the context's connection,
   `Holds.inContext` holds exactly when the output of the resolved statement
   (without an initial database) has rows.
-- What they leave out: a script of more than one statement. The laws
-  replace the unfolding of `Script.observeTwoStateIn` and
-  `Model.observeTwoState` in the frame proof.
+- What they leave out: a script of more than one statement. The frame
+  proof does not use them yet: it still unfolds `Script.observeTwoStateIn`
+  and `Model.observeTwoState`. Its new proof will use the two-state law.
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local).
