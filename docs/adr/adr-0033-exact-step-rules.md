@@ -344,7 +344,7 @@ test.
 | 2 | Plain UPDATE, plain DELETE | Deletes `Sql.check_send_plainUpdate`, `Sql.check_send_plainDelete` and their `ifOk` rules. The laws for the group of `plainWriteTarget` stay (D5). |
 | 3 | BEGIN, COMMIT, ROLLBACK, a pragma that sets a value | Deletes `Sql.check_send_begin`, `Sql.check_send_commit` and `Sql.check_send_setting`. ROLLBACK has no step law of its own and no surface rule today. |
 | 4 | CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, DROP without write rules, the catalog rewrite of a rename, DROP COLUMN, a statement that SQLite refuses to prepare | Deletes `Sql.check_send_addColumn`, `Sql.ifOk_send_addColumn`, `Sql.check_send_dropPlain` and `Sql.check_send_rewrite`. |
-| 5 | A query | The first kind whose output can be a choice between results (D6). Preserve the SELECT behavior and acceptance cases of ADR 0027. Migrate callers of public query rules whose resolution premise D12 excludes. See the note on `Sql.check_send_select` below. |
+| 5 | A query | The first kind whose output can be a choice between results (D6). Preserve the SELECT behavior and acceptance cases of ADR 0027. Apply owner decision 4 to the public query rules. See the note on `Sql.check_send_select` below. |
 | 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. For INSERT from a query without write rules, neither general send rule applies. |
 | 7 | The kinds with write rules, and the kinds with RETURNING columns | Starts with one kind, INSERT with write rules, and records its cost before the other kinds (owner decision 2). |
 | 8 | No kind | The final slice (D12). It makes the end state true and records it. |
@@ -522,3 +522,12 @@ decides.
    tests stay in the test suite with no end. Recommendation: (a). At `ee83eca7`, the pilot's
    test has 235 lines for seven step laws and three surface rules. **DECIDED 2026-11-24: (a)** (owner: "We handle the
    retention tests as you recommend").
+
+4. **Public query proofs.** **DECIDED 2026-11-24:** apply the surface condition in D12 as
+   written. It covers public rules for checks, runs and observations with a premise that
+   requires resolution to one kind, including a catalog lookup that establishes such a
+   resolution. For example, replace `check_query_select_at` and
+   `check_query_select_faultless` and migrate the catalog and context proofs that use them.
+   Follow D8 for the original statements. Keep the A21 read-after-write and A22 counter
+   claims and their trust checks. Their proofs may use resolution internally. The
+   syntax-only rules for a SELECT continue to meet D12.
