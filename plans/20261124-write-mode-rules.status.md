@@ -65,3 +65,12 @@ times in paired end measurements are 2.23 seconds for InsertWithRulesClaim,
 6.81 for ProgramWriteClaims, 3.76 for ReturningWriteClaims, and 3.67 for
 SourceWriteClaims. The relevant model groups are M03–M05 and M11 and
 the surface groups S03 and S04. No mutant table changed.
+
+On the final rule-selection code, the D11 total goes from 99,754 to 100,976 lines. The end has 60,319 model, 14,348 surface and 22,616 test lines. The SQL text, conformance, public-doc-tools and other scopes are unchanged.
+
+| Changed sql_run fixture | Start (s) | End (s) |
+| --- | ---: | ---: |
+| InsertWithRulesClaim | new | 1.26 |
+| ProgramWriteClaims | new | 3.22 |
+| ReturningWriteClaims | new | 2.17 |
+| SourceWriteClaims | new | 2.63 |
