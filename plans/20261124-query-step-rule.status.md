@@ -142,3 +142,12 @@ second. The two diagnostic examples separately check an expected failure. SqlSel
 an equation that reflexivity cannot establish. The focused owners are
 test_sql_run_covers_every_statement_rule, test_context_cases and
 test_query_rule_checks_selected_outputs_and_retains_pragma_laws.
+
+On the final rule-selection code, the D11 total goes from 98,630 to 99,436 lines. The end has 59,216 model, 14,352 surface and 22,175 test lines. The SQL text, conformance, public-doc-tools and other scopes are unchanged.
+
+| Changed sql_run fixture | Start (s) | End (s) |
+| --- | ---: | ---: |
+| S6AutoKindRuleCases | 1.46 | 1.47 |
+| S6AutoPaths | 32.01 | 36.19 |
+| SelectContextCases | 8.18 | 11.04 |
+| QuerySendClaims | new | 1.29 |
