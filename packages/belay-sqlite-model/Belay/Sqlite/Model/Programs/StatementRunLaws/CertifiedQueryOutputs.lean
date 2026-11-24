@@ -81,11 +81,19 @@ theorem resolvedStepOutput_simpleTable (clock : Option Clock) (index : Nat) (con
   simp [calm.counterReads, Query.simpleTable_checks parameters present calm, Query.outputOn,
     Belay.Sqlite.Model.Output.ofResults, List.eraseDups_cons, stableSort, insertStable]
 
-/-- The modeled outputs of two calm single-table scans agree when their projections read
-only the old cells and their filters keep the same rows after cells are appended. Each
-original row must be at least the stated width. Positions, result names and statement
-indexes can differ. Proof sketch: compute both normalized outputs and use the agreement
-of simple query results on the two row lists. -/
+/-- At a common clock and with the same bound values, two calm scans have equal
+modeled outputs under the following conditions.
+
+* Each connection has its table at the specified position. Their result names,
+  positions and statement indexes can differ.
+* The second table's source rows are the first table's source rows with the
+  extra cells for each row appended. Every original row has at least the given width.
+* The scans have the same result columns, all of which read only below the width.
+* On every original row, the second filter on the extended row agrees with the
+  first filter on the original row in the bound-parameter context.
+
+Proof sketch: {name}`resolvedStepOutput_simpleTable` computes both normalized
+outputs. Apply {name}`Query.simple_results_agree` to the source rows. -/
 theorem resolvedStepOutput_simpleTable_agree (clock : Option Clock)
     (before after : Nat) (connection expanded : Connection)
     (parameters : List Value) (beforePosition afterPosition : Nat) (table extended : Table)

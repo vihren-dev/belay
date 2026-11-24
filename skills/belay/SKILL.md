@@ -121,11 +121,11 @@ open Belay.Sqlite
 
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 theorem lookup_read_preserved : ∀ email : Value,
     addEmailLower preserves (customerIdByEmail email) on shop :=
-  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null
+  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null id
     (fun _ => rfl) (by decide +kernel)
 
 theorem email_lower_succeeds :

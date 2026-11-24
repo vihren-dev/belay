@@ -46,13 +46,28 @@ theorem star_read_changes :
 customers with named columns gives the same result after the migration as before it. -/
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check id (by decide +kernel)
+
+/-- Any one-statement read with the output of the named-column scan at every input
+is preserved. The actual statement is an arbitrary argument to the proof. -/
+theorem read_matching_named_columns (actual : Model.Syntax.Statement) (values : List Value)
+    (reads : actual.readsOnly = true)
+    (agrees : ∀ clock index conn params,
+      (Model.runScriptStep runContext clock index conn actual params).output =
+        (Model.runScriptStep runContext clock index conn namedCustomers.statements[0].1 params).output) :
+    Migration.QueryPreserves (send addEmailLower) ⟨[(actual, values)]⟩ (·.HasCatalog shop) reads := by
+  apply DerivedColumnMigration.preserves_of_check (query := ⟨[(actual, values)]⟩) (fun _ => namedCustomers.statements[0].1)
+    (by change DerivedColumnMigration.preservesCheck shop addEmailLower [namedCustomers.statements[0].1] = true; decide +kernel) reads (agrees := ?_)
+  intro statement member
+  simp only [List.map_cons, List.map_nil, List.mem_singleton] at member
+  subst statement
+  exact agrees
 
 /-- For every email, on every database with the catalog of {lit}`shop` where the migration succeeds, the
 lookup of a customer id by email gives the same result after the migration as before it. -/
 theorem lookup_read_preserved : ∀ email : Value,
     addEmailLower preserves (customerIdByEmail email) on shop :=
-  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null (fun _ => rfl) (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null id (fun _ => rfl) (by decide +kernel)
 
 /-- On every database with the catalog of {lit}`shop` and in every complete environment, the migration runs
 without an error. -/
@@ -61,6 +76,7 @@ theorem email_lower_succeeds :
   DerivedColumnMigration.succeeds_of_check (by decide +kernel)
 
 #print axioms star_read_changes
+#print axioms read_matching_named_columns
 #print axioms named_read_preserved
 #print axioms lookup_read_preserved
 #print axioms email_lower_succeeds

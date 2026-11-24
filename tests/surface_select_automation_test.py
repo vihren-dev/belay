@@ -61,7 +61,7 @@ def test_replaced_certificate_contracts(runtime_root: Path, tmp_path: Path) -> N
 
 
 def test_replaced_site_certificates(runtime_root: Path, tmp_path: Path) -> None:
-    """The original resolver witnesses establish the observed outputs and migrated application claims."""
+    """Site.LookupMove, Site.ReadPreserved, queryTranslates and queryPreserves recover their original contracts."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedSiteCertificates", 2), ("ReplacedSiteClaims", 5),
+        ("ReplacedSiteCertificates", 2), ("ReplacedSiteClaims", 5), ("ReplacedSiteCheckers", 2),
     ), timeout=60)

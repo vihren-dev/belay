@@ -82,3 +82,9 @@ The model's two derived-column output laws and resolvedStepOutput_simpleTable_ag
 compare scan data. ReplacedSiteOutputs, ReplacedSiteCertificates and ReplacedSiteClaims
 check the earlier model laws, certificate constructors, preservation and translation
 claims. LowercaseQueries, ConcatExpansion and S6ColumnLookups exercise real callers.
+
+The derived-column schema checker now checks a reference for the actual read and
+transports its scan outputs. The single and parameter-family proof rules, the
+computed certificate, sql_auto, the agent guide and skill use this contract.
+ReplacedSiteCheckers audits both original formulas. DerivedColumnOnSchema also
+proves preservation for an arbitrary read with the named-column scan's outputs.

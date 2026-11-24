@@ -80,7 +80,7 @@ def bigEntries (limit : Value) : Script := sql r"SELECT id, memo FROM entries WH
 /-- For every limit, on every database with the catalog of {name}`ledger` where the migration succeeds, the
 read of the entries above the limit gives the same result after the migration as before it. -/
 theorem big_entries_preserved : ∀ limit : Value, addDollars preserves (bigEntries limit) on ledger :=
-  preserves_of_check_forall bigEntries .null (fun _ => rfl) (by decide +kernel)
+  preserves_of_check_forall bigEntries .null id (fun _ => rfl) (by decide +kernel)
 
 #print axioms big_entries_preserved
 

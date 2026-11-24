@@ -251,7 +251,7 @@ def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 
 #sql_check addEmailLower preserves namedCustomers on shop
 -- SQL check: proved.
--- Checked proof: by exact DerivedColumnMigration.preserves_of_check (by decide +kernel)
+-- Checked proof: by exact DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 def found : Database := db! r"
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
@@ -278,7 +278,7 @@ evaluates on the catalog of `shop`. You can also apply the laws directly:
 ```lean
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 theorem email_lower_succeeds :
     addEmailLower succeeds on shop :=

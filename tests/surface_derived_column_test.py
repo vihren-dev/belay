@@ -44,7 +44,7 @@ def test_derived_column_example_of_the_page_for_agents(runtime_root: Path, tmp_p
     own = "\n".join(line for line in result.stdout.splitlines() if "DerivedColumnOnSchema.lean" in line)
     assert "warning" not in own and "sorryAx" not in own, result.diagnostic()
     reports = axiom_reports(own)
-    assert len(reports) == 4, result.diagnostic()
+    assert len(reports) == 5, result.diagnostic()
     for report in reports:
         assert report <= ALLOWED_PROOF_AXIOMS, result.diagnostic()
 
