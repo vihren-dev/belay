@@ -60,6 +60,7 @@ import Belay.Sqlite.Model.Schema.Dispatch.SelectOutputShape
 import Belay.Sqlite.Model.Tooling.Counterexamples.SelectExecutionRule
 import Belay.Sqlite.Model.Programs.Claims.SelectFailureRule
 import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectOverflowRule
+import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectTableOutput
 import Belay.Sqlite.Model.Queries.Evaluation.AggregateValueRules
 import Belay.Sqlite.Model.Queries.Evaluation.SelectWindowOrderRules
 import Belay.Sqlite.Model.Queries.Select.SelectJoinRules

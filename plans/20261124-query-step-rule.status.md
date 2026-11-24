@@ -64,3 +64,5 @@ CatalogOutputCases uses an UPDATE with RETURNING on an empty table:
 it resolves to a write, and its output equals that of the empty scan.
 SelectCheckCases and SelectResidualCases check the rule audit and the
 diagnostic. The four surface_select suites exercise the migrated callers.
+
+The shared model fact resolvedStepOutput_calm_scan now lives in Programs/StatementRunLaws/SelectTableOutput.lean. The fixture also checks catalog inference on a concrete database and environment.
