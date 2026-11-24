@@ -5,6 +5,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.IntegerCompareLaws
 import Belay.Sqlite.Model.Queries.Evaluation.QueryPlainLaws
 import Belay.Sqlite.Model.Queries.Evaluation.PlainQueryRules
 import Belay.Sqlite.Model.Queries.Evaluation.SelectSubqueryRules
+import Belay.Sqlite.Model.Schema.Dispatch.SelectSubqueryRules
 
 set_option doc.verso true
 
@@ -14,8 +15,9 @@ them with comparisons and logic. Its value does not depend on the subqueries of 
 subquery that runs in a context other than the statement's context still evaluates it in the same way.
 The module proves this independence, that such an expression is calm and has no fault, that no call
 of a list of such expressions may fail over rows ({lit}`anyMayFail`), that each expression of a simple
-query over such expressions is row-wise, and that such a simple query gives the same results over one list of input
-rows in two contexts with the same bound values. -/
+query over such expressions is row-wise, that such a simple query gives the same results over one list of input
+rows in two contexts with the same bound values, and the rows of its run as a subquery with the bound values
+alone. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -143,5 +145,48 @@ theorem Query.simple_results_congr (sources : List QuerySource) (filter : Option
   dsimp only [Query.rowOutput, Query.simple]
   simp only [List.map_map, Function.comp_def]
   exact List.map_congr_left fun column member => by simp [each column (columnsOk column member) row]
+
+/-- Read rule of a simple query ({name}`Query.simple`) with row-wise expressions, as a subquery. Take a context, a
+database, an outer row, an optional initial database, the sources, an optional filter, the columns, their names and a
+list of values. Let the source rows {lit}`source` of the query have no fault, let the values be the values bound to
+the parameters of the context, and let each expression of the sources, the filter and each column be row-wise. Then
+the run of the query for the outer row:
+
+* has as rows the values of the columns over each source row for which the filter is true, in the order of the
+  source rows, with each expression evaluated in the context of the values alone ({name}`EvalContext.bound`);
+* has no fault;
+* ends done.
+
+Proof sketch: {name}`Query.simple_subqueryRun`, because a row-wise expression is calm and has no fault; then each
+row-wise expression has the same value in the context and with the values alone ({name}`Expr.Rowwise.evaluate_congr`).
+-/
+theorem Query.simple_subqueryRun_rowwise (context : EvalContext) (database : Database) (outer : List Value)
+    (initial : Option Database) (sources : List QuerySource) (filter : Option Expr) (columns : List Expr)
+    (names : List String) (parameters : List Value) {source : SourceRows}
+    (found : (Query.simple sources filter (columns.map .scalar) names).source context database initial = some source)
+    (clean : source.fault = .none) (bound : context.parameters = parameters)
+    (sourcesOk : ∀ join ∈ sources, ∀ e ∈ join.expressions, e.Rowwise) (filterOk : ∀ e ∈ filter.toList, e.Rowwise)
+    (columnsOk : ∀ c ∈ columns, c.Rowwise) :
+    ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).rows =
+        (source.rows.filter fun row => filter.all fun condition =>
+          truthy (condition.eval (.bound parameters) row)).map
+          (fun row => columns.map (·.eval (.bound parameters) row)) ∧
+      ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).fault =
+        .none ∧
+      ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).ending =
+        .done := by
+  have rowwise := Query.simple_expressions_rowwise sources filter columns names sourcesOk filterOk columnsOk
+  obtain ⟨rows, fault, ending⟩ := Query.simple_subqueryRun context database outer initial sources filter columns
+    names found clean (List.all_eq_true.2 fun e member => by simp [(rowwise e member).calm.1])
+    (fun row _ e member => (rowwise e member).fault_none context row)
+  have each : ∀ e : Expr, e.Rowwise → ∀ row, e.eval context row = e.eval (.bound parameters) row :=
+    fun e rowwise row => by simp only [Expr.eval, rowwise.evaluate_congr context (.bound parameters) row bound]
+  refine ⟨?_, fault, ending⟩
+  rw [rows]
+  refine congr (congrArg List.map (funext fun row => List.map_congr_left fun column member =>
+    each column (columnsOk column member) row)) (List.filter_congr fun row _ => ?_)
+  cases filter with
+  | none => rfl
+  | some condition => simp only [Option.all_some, each condition (filterOk condition (by simp)) row]
 
 end Belay.Sqlite.Model.Resolved

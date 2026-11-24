@@ -185,3 +185,15 @@ def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Pat
         ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
         ("PurgeEffectClaims", 2), ("PurgeFrameInstances", 11), ("PurgeEffectInstances", 5),
         ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)
+
+
+def test_purge_claims_by_the_claim_tactic(runtime_root: Path, tmp_path: Path) -> None:
+    """The tactic `sql_holds` of the surface package proves the client statements of the effect claim and of the
+    frame claim of the guide's purge, and a third claim that the purge adds no session, after `sql_run`. Each
+    statement has only the catalog premise. After the tactic, the proofs only reason about rows of tables. The
+    module `PurgeTacticLimits` checks the messages of the tactic for claims that it has no law for, such as an
+    aggregate, ORDER BY or LIMIT in the subquery, and for a missing catalog hint."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
+        ("PurgeEffectClaims", 2), ("PurgeEffectTactic", 1), ("PurgeFrameTactic", 2), ("PurgeTacticLimits", 0)),
+        timeout=300)

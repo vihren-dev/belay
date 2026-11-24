@@ -98,6 +98,10 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   model package, the clock and the index in the retention output law).
 - 2026-11-24, form B: measurements (replaced laws, lines per claim, code
   lines, tactic steps, elaboration times).
+- 2026-11-24, form C: the tactic `sql_holds`, the bridge laws over a
+  catalog, the decidable row-wise check, the read law with the bound values,
+  the client proofs of the effect and frame claims, a third claim and the
+  negative cases.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -533,6 +537,372 @@ Elaboration time (lower of two runs, local):
 - `ResolvedOutputBridge` (surface package): 1.0 s, the lowest time that
   `just dev-build` printed; `lake env lean` does not find its imports
   because the two packages share the prefix `Belay.Sqlite`.
+
+## Form C
+
+In progress on the branch `claim-proof-pilot-tactic`, on top of form B.
+
+### The tactic (surface package)
+
+Name and syntax: `sql_holds [h₁, …]`. Each hint is a proof of
+`db.HasCatalog schema`, or of an equation of a catalog with the catalog of a
+database without variables, for each database that the claim reads. Use it
+after `sql_run`, on the goal of a post `holds q` or `holdsSince start q`.
+
+Mechanism. The tactic introduces the premises and unfolds `holds` and
+`holdsSince`. Then it applies these laws in order; each law is a theorem,
+and each premise is closed by a hint or by a computation that the kernel
+checks:
+
+- The bridge `Holds.reached_iff_of_catalog` or
+  `Holds.reachedSince_iff_of_catalog` (new module
+  `Programs/Claims/CatalogClaimBridge.lean`). The kernel resolves the claim
+  on the catalog of the hint.
+- `resolvedStepOutput_selectOneWhere_hasRows` for `SELECT 1 WHERE c`. The
+  calm premise comes from `Resolved.Statement.calm_of_calmCheck`, which the
+  kernel decides.
+- `Resolved.Expr.truthy_notExists` or `Resolved.Expr.truthy_exists`. The
+  premise that `c` has no fault comes from `Resolved.Expr.fault_not`,
+  `Resolved.Expr.fault_exists` and the fault of the run of the subquery.
+- For each subquery: `Resolved.statementContext_subqueries` or
+  `Resolved.subqueryContext_subqueries`, then the law of its form:
+  - one table of the current or the initial database, with row-wise
+    expressions and no other clause: the new law
+    `Resolved.Query.simple_subqueryRun_rowwise`, with
+    `Query.source_first_from` or `Query.source_initialTable`. The row-wise
+    premises come from `Resolved.Expr.rowwise_of_all` and
+    `Resolved.QuerySource.rowwise_of_all`, which the kernel decides;
+  - `EXCEPT` of two terms: `Resolved.Query.PlainExcept.subqueryRun`. The
+    shape premise is closed by `constructor` and `rfl`. The premise
+    `equalRowsIdentical` stays open as the goal `identical`.
+- Each open goal is simplified with `List.isEmpty_iff`,
+  `List.map_eq_nil_iff`, `List.filter_eq_nil_iff`, `Option.all_some`,
+  `Option.all_none`, `Bool.not_eq_true`, `Bool.not_eq_true'` and
+  `List.isEmpty_eq_false_iff_exists_mem`, and the connection and context
+  functions are unfolded.
+
+No step names the purge, `sessions` or a claim shape as a whole. The query
+of the claim selects the laws by its resolved form.
+
+Code lines (without docstrings, comments and blank lines):
+
+| File | Code lines | All lines |
+| --- | --- | --- |
+| `Programs/Automation/SqlHoldsFacts.lean` (applying one law, messages) | 78 | 113 |
+| `Programs/Automation/SqlHoldsRuns.lean` (the runs of subqueries) | 94 | 127 |
+| `Programs/Automation/SqlHolds.lean` (bridge, SELECT 1 WHERE, EXISTS, syntax) | 80 | 122 |
+| Tactic total | 252 | 362 |
+| `Programs/Claims/CatalogClaimBridge.lean` (bridge laws over a catalog) | 57 | 94 |
+| Model: `Queries/Evaluation/RowwiseCheck.lean` (decidable row-wise check) | 31 | 52 |
+| Model: `Resolved.Query.simple_subqueryRun_rowwise` in `RowwiseExpr.lean` | 28 | 43 |
+| Model: `Resolved.Statement.calm_of_calmCheck` in `ExprFormChecks.lean` | 3 | 5 |
+
+Other changes:
+
+- `Belay.Sqlite.Select.evaluationProof?` (`SqlSelectEval.lean`, the
+  helper of `sql_select`) now checks its auxiliary theorem synchronously
+  and restores the state when the kernel refuses it. Before, with
+  `Elab.async`, the kernel check ran in a background task: a false
+  equation gave a proof, and the error came only at the end of the
+  declaration. The docstring said that the result is `none` when the
+  kernel accepts no proof; that is now true. The tests of `sql_select`
+  pass (local).
+- `Holds.reachedSince_iff_of_catalog` takes the choice of the initial
+  database as a premise `(if usesSchema … then some initial.raw else none)
+  = chosen`, so that the kernel computes the choice.
+
+### The client proofs (fixtures)
+
+New fixtures, roots of the suite `surface`, in the test
+`test_purge_claims_by_the_claim_tactic`:
+
+- `tests/surface/Programs/Scripts/PurgeEffectTactic.lean`:
+  `purge_clears_by_tactic`, the statement of `purge_clears`.
+- `tests/surface/Programs/Scripts/PurgeFrameTactic.lean`:
+  `purge_frame_by_tactic`, the statement of `purge_frame_on_sessions`; the
+  third claim `purgeAddsNone` and `purge_adds_none`.
+- `tests/surface/Programs/Scripts/PurgeTacticLimits.lean`: ten negative
+  cases with `#guard_msgs`.
+
+The proofs of form B stay in `PurgeEffectClaims.lean`,
+`PurgeFrameClaims.lean` and `PurgeFrameSchema.lean`. The new proofs use the
+base helpers `sessions_found`, `sessionsSite` (for `purgeResolves`) and
+`PurgeFrameSite.purge_continues`, as form B does, before `sql_run`.
+
+Each proof has 10 lines up to `sql_run` (as in form B), then `sql_holds
+[schema]`, then the steps about rows:
+
+- Effect: `mem_sourceRows_iff`, `Model.Database.rows_getD_setRows`,
+  `LiteralData.mem_deleted` and the congruence of the row-wise filter
+  (`Resolved.Expr.Rowwise.evaluate_congr`).
+- Frame: `CompoundOperator.except_combine_eq_nil` with the subset step
+  (`mem_sourceRows_iff`, `rows_getD_setRows`, `LiteralData.mem_deleted`,
+  `Resolved.Expr.truthy_isNot_one`, `Rowwise.evaluate_congr`), and the goal
+  `identical` from `Resolved.equalRowsIdentical_rowidFirst` with the
+  admitted table of `Database.Raw.table_of_catalog`.
+- Third claim: the same, with the terms of `EXCEPT` in the other order.
+  The subset step is `LiteralData.mem_deleted` (a kept row is a row of the
+  start). The identity premise uses the validity of the reached database
+  (`valid.1.admitted.table`).
+
+Client lines per claim (lines; the statement is the lines up to `:= by`):
+
+| Claim | Form B: statement / proof / helpers | Form C: statement / proof (after `sql_holds`) / helpers |
+| --- | --- | --- |
+| Effect | `purgeClears_iff` 4 / 30 and `purge_clears` 2 / 20; helpers `purgeClearsStatement` 1, `purgeClearsSubquery` 3 | `purge_clears_by_tactic` 2 / 18 (7); none |
+| Frame | `purge_keeps_rows` 6 / 71, `purge_frame` 3 / 7, `purge_frame_on_sessions` 3 / 1; helpers in `PurgeFrameQueries` 9 | `purge_frame_by_tactic` 3 / 29 (18); none |
+| Adds no session | not proved | `purge_adds_none` 3 / 24 (13), `purgeAddsNone` 2; none |
+
+What the third claim took: the claim (2 lines) and its proof (27 lines with
+the statement). The tactic needed no change: the run of `EXCEPT` with the
+current table first and the initial table second goes through the same
+laws.
+
+The goals that the tactic leaves, verbatim (targets only; `_` is the proof
+of the catalog entry):
+
+```text
+case success
+⊢ ∀ (a : List Value),
+    a ∈
+        Resolved.sourceRows
+          { shape := (sessions.raw.catalog.tableAt 0).get _,
+            rows :=
+              (Database.setRows db.raw sessionsEntry.fst
+                      (LiteralData.deleted
+                          (Resolved.statementContext 0
+                            (env.counters.view
+                              (Resolved.Statement.delete sessionsEntry.fst (some purgeFilter) []).counterReads)
+                            [c, now] db.raw [])
+                          { shape := sessionsEntry.snd, rows := db.raw.rows.getD sessionsEntry.fst [] }
+                          (some purgeFilter)).rows).rows.getD
+                0 [] } →
+      Resolved.truthy
+          (Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) a
+            ((Resolved.Expr.compare Comparison.eq (some Affinity.integer) (Resolved.Expr.column 1)
+                  (Resolved.Expr.parameter 1)).and
+              (Resolved.Expr.compare Comparison.lt (some Affinity.integer) (Resolved.Expr.column 2)
+                (Resolved.Expr.parameter 2)))) =
+        false
+--- end of claim ---
+case success
+⊢ CompoundOperator.combine [Collation.binary, Collation.binary, Collation.binary] CompoundOperator.except
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter
+          (fun row =>
+            Resolved.truthy
+              (Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) row
+                (Resolved.Expr.compare Comparison.isNot none
+                  ((Resolved.Expr.compare Comparison.eq (some Affinity.integer) (Resolved.Expr.column 1)
+                        (Resolved.Expr.parameter 1)).and
+                    (Resolved.Expr.compare Comparison.lt (some Affinity.integer) (Resolved.Expr.column 2)
+                      (Resolved.Expr.parameter 2)))
+                  (Resolved.Expr.literal (Value.integer (Int.ofNat 1))))))
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows := db.raw.rows.getD 0 [] })))
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter (fun row => true)
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows :=
+                (Database.setRows db.raw sessionsEntry.fst
+                        (LiteralData.deleted
+                            (Resolved.statementContext 0
+                              (env.counters.view
+                                (Resolved.Statement.delete sessionsEntry.fst (some purgeFilter) []).counterReads)
+                              [c, now] db.raw [])
+                            { shape := sessionsEntry.snd, rows := db.raw.rows.getD sessionsEntry.fst [] }
+                            (some purgeFilter)).rows).rows.getD
+                  0 [] }))) =
+    []
+case identical
+⊢ Resolved.equalRowsIdentical [Collation.binary, Collation.binary, Collation.binary]
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter
+          (fun row =>
+            Resolved.truthy
+              (Resolved.Expr.eval (Resolved.EvalContext.bound [c, now]) row
+                (Resolved.Expr.compare Comparison.isNot none
+                  ((Resolved.Expr.compare Comparison.eq (some Affinity.integer) (Resolved.Expr.column 1)
+                        (Resolved.Expr.parameter 1)).and
+                    (Resolved.Expr.compare Comparison.lt (some Affinity.integer) (Resolved.Expr.column 2)
+                      (Resolved.Expr.parameter 2)))
+                  (Resolved.Expr.literal (Value.integer (Int.ofNat 1))))))
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows := db.raw.rows.getD 0 [] }))) =
+    true
+--- end of claim ---
+case success
+⊢ CompoundOperator.combine [Collation.binary, Collation.binary, Collation.binary] CompoundOperator.except
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound []) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter (fun row => true)
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows :=
+                (Database.setRows db.raw sessionsEntry.fst
+                        (LiteralData.deleted
+                            (Resolved.statementContext 0
+                              (env.counters.view
+                                (Resolved.Statement.delete sessionsEntry.fst (some purgeFilter) []).counterReads)
+                              [c, now] db.raw [])
+                            { shape := sessionsEntry.snd, rows := db.raw.rows.getD sessionsEntry.fst [] }
+                            (some purgeFilter)).rows).rows.getD
+                  0 [] })))
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound []) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter (fun row => true)
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows := db.raw.rows.getD 0 [] }))) =
+    []
+case identical
+⊢ Resolved.equalRowsIdentical [Collation.binary, Collation.binary, Collation.binary]
+      (List.map
+        (fun row =>
+          List.map (fun x => Resolved.Expr.eval (Resolved.EvalContext.bound []) row x)
+            [Resolved.Expr.column 0, Resolved.Expr.column 1, Resolved.Expr.column 2])
+        (List.filter (fun row => true)
+          (Resolved.sourceRows
+            { shape := (sessions.raw.catalog.tableAt 0).get _,
+              rows :=
+                (Database.setRows db.raw sessionsEntry.fst
+                        (LiteralData.deleted
+                            (Resolved.statementContext 0
+                              (env.counters.view
+                                (Resolved.Statement.delete sessionsEntry.fst (some purgeFilter) []).counterReads)
+                              [c, now] db.raw [])
+                            { shape := sessionsEntry.snd, rows := db.raw.rows.getD sessionsEntry.fst [] }
+                            (some purgeFilter)).rows).rows.getD
+                  0 [] }))) =
+    true
+--- end of claim ---
+```
+
+The messages of the negative cases, verbatim (each preceded by its claim):
+
+```text
+-- SELECT 1 WHERE NOT EXISTS (SELECT count(*) FROM sessions)
+sql_holds has no law for the result column
+  Resolved.Output.aggregate Resolved.Aggregate.countRows
+which is not a scalar expression. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT id FROM sessions ORDER BY expires_at)
+sql_holds has no law for ORDER BY in the query
+  { sources := [{ kind := Resolved.JoinKind.inner, source := Resolved.Source.table 0, condition := none }],
+    filter := none, aggregate := false, groupBy := [], columns := [Resolved.Output.scalar (Resolved.Expr.column 0)],
+    names := ["id"], orderBy := [{ key := Resolved.SortKey.expression (Resolved.Expr.column 2) }], offset := 0,
+    limit :=
+      none }. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT id FROM sessions LIMIT 1)
+sql_holds has no law for LIMIT in the query
+  { sources := [{ kind := Resolved.JoinKind.inner, source := Resolved.Source.table 0, condition := none }],
+    filter := none, aggregate := false, groupBy := [], columns := [Resolved.Output.scalar (Resolved.Expr.column 0)],
+    names := ["id"], orderBy := [], offset := 0,
+    limit :=
+      some
+        1 }. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM sessions WHERE expires_at IN (1, 2))
+sql_holds has no law for an expression of
+  [(Resolved.Expr.column 2).inList
+      (Resolved.Arguments.cons (Resolved.Expr.literal (Value.integer (Int.ofNat 1)))
+        (Resolved.Arguments.cons (Resolved.Expr.literal (Value.integer (Int.ofNat 2))) Resolved.Arguments.nil))
+      (some Affinity.integer) Collation.binary false]
+that is not made of columns, literals and parameters with comparisons, AND, OR, NOT and IS NULL. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM sessions AS a JOIN sessions AS b ON a.id = b.id)
+sql_holds has no law for a FROM clause without exactly one source in
+  {
+    sources :=
+      [{ kind := Resolved.JoinKind.inner, source := Resolved.Source.table 0, condition := none },
+        { kind := Resolved.JoinKind.inner, source := Resolved.Source.table 0,
+          condition :=
+            some
+              (Resolved.Expr.compare Comparison.eq (some Affinity.numeric) (Resolved.Expr.column 0)
+                (Resolved.Expr.column 3)) }],
+    filter := none, aggregate := false, groupBy := [],
+    columns := [Resolved.Output.scalar (Resolved.Expr.literal (Value.integer (Int.ofNat 1)))], names := ["1"],
+    orderBy := [], offset := 0,
+    limit :=
+      none }. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE (SELECT count(*) FROM sessions) = 0
+sql_holds has no law for the condition
+  Resolved.Expr.compare Comparison.eq none (Resolved.Expr.subquery 0)
+    (Resolved.Expr.literal (Value.integer (Int.ofNat 0)))
+which is not EXISTS or NOT EXISTS of a subquery. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM sessions WHERE abs(expires_at) < 3)
+sql_holds has no law for a claim that reads the clock or a counter, or calls a function that can fail. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT count(*) FROM sessions
+sql_holds has no law for a claim without WHERE
+  { sources := [{ kind := Resolved.JoinKind.inner, source := Resolved.Source.table 0, condition := none }],
+    filter := none, aggregate := true, groupBy := [],
+    columns := [Resolved.Output.aggregate Resolved.Aggregate.countRows], names := ["count(*)"], orderBy := [],
+    offset := 0,
+    limit :=
+      none }. Prove this goal with the laws of the parts, for example Resolved.Query.simple_subqueryRun and Resolved.Expr.truthy_notExists.
+
+-- SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM sessions)
+sql_holds needs the catalog of the database
+  context.connection.state.database
+Give a hint db.HasCatalog schema or an equation of its catalog, with a schema that has no variable.
+
+-- goal: a proposition that is not a claim
+sql_holds proves the goal that sql_run leaves for a claim holds q or holdsSince start q. Use it after sql_run, on the goal of the claim.
+```
+
+Elaboration time (lower of two runs, local; the compile of the purge
+test): `PurgeEffectTactic` 1.6 s (form B: `PurgeEffectClaims` 1.2 s),
+`PurgeFrameTactic` 3.6 s for two claims (form B: `PurgeFrameClaims` 1.3 s
+and `PurgeFrameSchema` 1.3 s), `PurgeTacticLimits` 3.5 s. With the
+profiler, `sql_holds` takes 0.32 s in the effect proof and 0.64 s and
+0.82 s in the two frame proofs; the negative cases take 0.23 s to 0.30 s
+each. The surface modules build in 1.5 s (`SqlHoldsFacts`), 1.5 s
+(`SqlHoldsRuns`) and 1.6 s (`SqlHolds`) in `just dev-build`.
+
+Limits:
+
+- The claim is `SELECT 1 WHERE c` with `c` an `EXISTS` or `NOT EXISTS` of
+  one subquery. A claim with another top-level form, or another condition,
+  stops with a message.
+- A subquery is one table of the current or the initial database, without
+  a join condition, with scalar columns and row-wise expressions (columns,
+  literals and parameters with comparisons, AND, OR, NOT and IS NULL), and
+  no aggregate, GROUP BY, ORDER BY, LIMIT, OFFSET, DISTINCT or HAVING; or an
+  `EXCEPT` of two such subqueries. `IN`, `LIKE`, a function call and a
+  correlated subquery stop with a message.
+- The identity premise of `EXCEPT` stays as a goal, because it depends on
+  the table (distinct rowids in column 0).
+- `List.filter (fun row => true)` stays in the goals of a term without a
+  filter: core Lean has no simp lemma for it.
+- The tactic introduces all premises of the goal, so it must be the first
+  step after `sql_run`.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k
+"claim_tactic or purge_frame_claim_over"` passed (local);
+`tests/surface_select_sources_test.py`, `surface_select_rules_test.py` and
+`surface_select_procedure_test.py` passed (local);
+`tests/test_lean_categories.py` passed (local).
 
 ## Findings record
 

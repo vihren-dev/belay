@@ -82,7 +82,9 @@ private def isCatalogOutput (term : Expr) : Bool := term.isAppOfArity ``Model.st
 /-- The proof of a closed equation that evaluation decides, as an auxiliary theorem that the kernel
 checks at once. For a catalog output equation, try reflexivity first because both sides can
 compute the same output with variable runtime rows. Other equations try a decision first. The result
-is {lit}`none` when the kernel accepts neither proof, for example when its recursion is too deep. -/
+is {lit}`none` when the kernel accepts neither proof, for example when the equation is false or the recursion is
+too deep. The check is synchronous, because a check in a background task reports its failure only after the
+tactic has used the proof. -/
 def evaluationProof? (equation : Expr) : MetaM (Option Expr) := do
   let some (_, left, _) := equation.eq? | return none
   let decision : MetaM Expr := do
@@ -92,7 +94,9 @@ def evaluationProof? (equation : Expr) : MetaM (Option Expr) := do
     [mkEqRefl left, decision]
   else [decision, mkEqRefl left]
   for proof in proofs do
-    try return some (← mkAuxTheorem equation (← proof)) catch _ => pure ()
+    let saved ← saveState
+    try return some (← withOptions (Elab.async.set · false) do mkAuxTheorem equation (← proof))
+    catch _ => saved.restore
   return none
 
 /-- For a catalog output equation, normalize just the closed resolution and infer the resolved
