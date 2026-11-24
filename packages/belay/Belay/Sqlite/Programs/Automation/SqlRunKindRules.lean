@@ -60,7 +60,8 @@ and a pattern match by the hints ({name}`reduceMatchByHint`) or else by its spli
 requires nothing and is closed. A case that continues with an output that is no choice and with no further
 execution becomes, through {name}`Sql.sendReached_single`, the post at the reached context, with the hypothesis
 {lit}`valid` on the reached connection; its tag is {lit}`failure` for an error output and {lit}`success` for any
-other output. Any other goal, such as a case with a choice between results, is returned unchanged. -/
+other output. For a choice or further executions the post is entered with the execution, its membership and validity,
+and the selected output with its choice hypothesis. -/
 partial def ruleCases (hints : Hints) (goal : MVarId) : TacticM (List MVarId) := goal.withContext do
   let target ← zetaReduce (← instantiateMVars (← goal.getType))
   let target ← Meta.transform target (pre := fun e => return if e.isMData then .visit e.consumeMData else .continue)
@@ -93,7 +94,16 @@ partial def ruleCases (hints : Hints) (goal : MVarId) : TacticM (List MVarId) :=
       return [leaf]
     catch _ =>
       saved.restore
-      return [goal]
+      let [holds] ← applyTagged goal ``Sql.sendReached_each
+        | throwError "sql_run: expected an obligation for each execution"
+      setGoals [holds]
+      evalTactic (← `(tactic|
+        (intro execution member
+         try (simp only [Model.RunStep.executions, List.mem_singleton] at member; subst execution)
+         intro valid selected choice)))
+      let leaf ← getMainGoal
+      leaf.setTag `reached
+      return [leaf]
   if (← isMatcherApp result) then
     if let .reduced alternative ← reduceMatcher? result then
       return ← ruleCases hints (← goal.replaceTargetDefEq (mkApp target.appFn! alternative.headBeta))

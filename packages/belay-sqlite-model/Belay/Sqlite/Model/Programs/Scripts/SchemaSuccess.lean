@@ -67,10 +67,20 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
     simp only [Bool.and_eq_true] at accepts
     obtain ⟨kind, ordered⟩ := accepts
     rw [eq_of_beq kind] at resolution
-    obtain ⟨_, rows⟩ := Database.keyCheckRows_modeled ordered
-    obtain ⟨output, step, ok⟩ := runScriptStep_keyCheck_resolved (clock := clock) (index := index)
-      (parameters := parameters) resolution rows
-    exact ⟨output, _, step, ok⟩
+    obtain ⟨actualRows, found⟩ := Database.keyCheckRows_modeled ordered
+    have out := runScriptStep_output context clock index c statement parameters
+    rw [resolution] at out
+    simp only [] at out
+    rw [resolvedStepOutput_keyCheck_clock] at out
+    obtain ⟨noError, modeled⟩ := resolvedStepOutput_keyCheck_rows index c parameters table actualRows found
+    cases step : runScriptStep context clock index c statement parameters with
+    | ended reason =>
+      rw [step] at out
+      exact absurd out.symm (modeled reason)
+    | continued output next others =>
+      rw [step] at out
+      obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolution (.inl ⟨_, _, rfl⟩) step
+      exact ⟨output, _, rfl, by rw [show output = _ from out]; exact noError⟩
   all_goals first | exact runScriptStep_create_ok resolution checked valid.1 | contradiction
 
 end Belay.Sqlite.Model
