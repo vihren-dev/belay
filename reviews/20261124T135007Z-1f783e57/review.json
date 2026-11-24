@@ -1,0 +1,63 @@
+{
+  "caller": "codex",
+  "commit": "1f783e572317ab9962cea855ae8d513913ff244e",
+  "date": "2026-11-24T13:50:07+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay/Belay/Sqlite/Programs/StatementRunLaws/NotInQuery.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/QueryStepOutput.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/SelectStepFrame.lean",
+    "plans/20261124-step-rule-inventory.status.md",
+    "reviews/20261124T134516Z-7f6cc963/resolution-1-20261124T134535Z.json",
+    "reviews/20261124T134516Z-7f6cc963/review.json",
+    "tests/surface/Queries/Tests/ReplacedExecutionProjections.lean",
+    "tests/surface/Queries/Tests/ReplacedSubqueryEquivalence.lean",
+    "tests/surface/Queries/Tests/S6NotBlockedLaw.lean",
+    "tests/surface/Schema/Tests/LowercaseSimulation.lean",
+    "tests/surface_schema_script_test.py",
+    "tests/surface_select_automation_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261124T135007Z-1f783e57#1",
+      "line": 39,
+      "path": "packages/belay/Belay/Sqlite/Programs/StatementRunLaws/NotInQuery.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The new plain-words statement of `Sql.EquivAt.notIn_notExists_of_rowidAlias` says only \"the specified NOT IN and NOT EXISTS queries\", so it no longer restates the formula: it omits the quantifiers, the shared parameter values, and the shape of the two output premises (outer query on `columns` with `key NOT IN` subquery 0 that selects `column` of the inner table with no condition; `NOT EXISTS` subquery 0 that selects 1 where `u.c = x` with the same affinity and outer width `outer`), and `Sql.EquivAt.in_exists_of_rowidAlias` at line 82 still refers to this docstring for \"the same context, tables, columns and key\". Fix: restore one item for each premise of the formula (the two frame premises, the two output premises with their query shapes, and each structural premise by name) and state the conclusion as `Sql.EquivAt` for every context."
+    },
+    {
+      "id": "20261124T135007Z-1f783e57#2",
+      "line": 94,
+      "path": "tests/surface/Queries/Tests/S6NotBlockedLaw.lean",
+      "rule": "R12",
+      "severity": "should",
+      "text": "The added `selectFrame` helper brings the file to 204 lines (196 before the commit), which is above the 200-line limit. Fix: move `selectFrame` out of this file, for example into one shared test module that `ReplacedSubqueryEquivalence.lean` also imports instead of its own copy."
+    }
+  ],
+  "id": "20261124T135007Z-1f783e57",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

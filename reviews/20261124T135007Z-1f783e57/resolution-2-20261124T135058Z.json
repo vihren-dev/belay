@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:50:58+00:00",
+  "finding": "20261124T135007Z-1f783e57#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Share the test frame in SelectSyntaxFrame and import it from both fixtures."
+}
