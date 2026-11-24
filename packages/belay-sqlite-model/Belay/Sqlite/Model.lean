@@ -82,6 +82,8 @@ import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
+import Belay.Sqlite.Model.Programs.Scripts.UpsertRule
+import Belay.Sqlite.Model.Programs.Scripts.PlainInsertSelectRule
 import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateRule
 import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteRule
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertFailure
