@@ -153,3 +153,68 @@ include the last changes used by these proofs. Nix ran all eleven pytest owners 
 | Context and certificates | `ReplacedCatalogRules`, `ReplacedCertificateChecks`, `ReplacedCertificateClaims`, `ReplacedCertificateObligations`, `ReplacedContextRules`, `ReplacedSiteCertificates`, `ReplacedSiteCheckers`, `ReplacedSiteClaims`, `ReplacedSiteOutputs` | CatalogOutputCases, KeptReadChecks, CertificateAfterDrop, DerivedColumnOnSchema, LowercaseSimulation, A21/A22, counter and NULL/stale-certificate checks. |
 | Write modes and execution properties | `ReplacedExecutionProjections`, `ReplacedNonQueryOutputs`, `ReplacedProductionSuccess`, `ReplacedProgramDrop`, `ReplacedWriteChoices` | InsertWithRulesClaim, ProgramWriteClaims, ReturningWriteClaims, SourceWriteClaims, RowWriteSendClaims and the execution-branch checks. |
 | Partial retention | `ReplacedSubqueryEquivalence`, `ReplacedGeneralSend` | Keep one validity-free send equivalence until another client audits both directions without a validity hypothesis. Keep one positive IN/EXISTS witness until a dedicated client checks nullable inner values without a non-NULL premise. The negative form has S6NotBlockedLaw. |
+
+Removed 46 temporary fixture modules. ReplacedGeneralSend now checks just the two-way send contract without a validity premise. ReplacedSubqueryEquivalence now checks just the positive IN contract with nullable inner values. Both compile using lasting package or client declarations. The three pytest suites continue to run the real client claims independently.
+
+## Final measures
+
+Change `tnpnkkynsupz` retires the accepted witnesses. The same scc 3.7.0 selection as the pilot counts 100,980 maintained Lean code lines at the end of slice 7, and 98,829 after slice 8 (-2,151). The final count includes 59,944 model, 14,304 surface, 1,945 SQL text, 1,042 conformance, 134 public documentation tool, 20,888 test and 572 other lines. The start of the pilot was 97,505 lines. The net change across all eight slices is +1,324 lines.
+
+The table gives seconds for the faster of two elaborations of each changed `sql_run` module.
+
+| Changed fixture | Slice 7 | Slice 8 |
+| --- | ---: | ---: |
+| S6AutoPaths | 46.96 | 42.04 |
+| S6AutoShapes | 1.78 | 1.67 |
+
+The D12 inventory names the replaced laws, their proof owners and the remaining execution and application contracts. The retention table links the original statements to the client checks. The read-after-write, NULL, counter and stale-certificate claims retain S02–S04, S06, S07, S10, S11 and M03–M05, M11–M13. The budget, editor and printed-proof checks exercise S05, S09 and S16. The other baseline groups keep their existing clients. All five essential groups remain, with no unknown or lost groups. The operational step evaluator and the native SQLite oracle continue to define the conformance comparison.
+
+### Proofs by source file
+
+The table compares the final slice with slice 7. Each row lists the named theorems removed from that file and the surviving or new theorems whose statements or proofs changed. The retention table above records the temporary modules separately. File paths are relative to the repository root.
+
+| File | Removed | Revised or added |
+| --- | --- | --- |
+| `examples/table-rebuild/Proof/RebuildKeeps.lean` | — | `makeStrict_preserves_allSessions` |
+| `packages/belay/Belay/Sqlite/Programs/Claims/KeptRead.lean` | — | `preserves` |
+| `packages/belay/Belay/Sqlite/Programs/Claims/KeptReadCheck.lean` | — | `preserves_of_check` |
+| `packages/belay/Belay/Sqlite/Programs/Claims/SingleStatementObservations.lean` | — | `sendStatements_single_branch`, `sendStatements_single_observations` |
+| `packages/belay/Belay/Sqlite/Programs/Reasoning/CertifiedQueryCommutation.lean` | `ReadCertificate.step_keeps` | `ReadCertificate.commutesOn` |
+| `packages/belay/Belay/Sqlite/Programs/Reasoning/ReadCertificatePreservation.lean` | — | `ReadCertificate.preservesAt` |
+| `packages/belay/Belay/Sqlite/Programs/Reasoning/SendSingleStep.lean` | `check_send_single_of_step` | — |
+| `packages/belay/Belay/Sqlite/Programs/Scripts/KindRuleSend.lean` | — | `ExecutionContext.initial_holds_valid` |
+| `packages/belay/Belay/Sqlite/Programs/Scripts/SendStepRules.lean` | `Sql.check_send_of_step`, `Sql.check_send_of_step_notInsertSelect`, `ExecutionContext.initial_holds_valid` | — |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnQueries.lean` | — | `translatesAt_of_outputs` |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnReads.lean` | — | `Site.LookupMove.outputs`, `Site.LookupMove.rows`, `Site.ReadPreserved.outputs` |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws/DerivedColumnSchema.lean` | — | `preserves_of_check`, `preserves_of_check_forall` |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws/NotInQuery.lean` | `IsSelectStatement.step_of_rows` | `Sql.EquivAt.notIn_notExists_of_rowidAlias`, `Sql.EquivAt.in_exists_of_rowidAlias` |
+| `packages/belay/Belay/Sqlite/Programs/StatementRunLaws/ReadCertificate.lean` | `ReadCertificate.Obligations.single_original`, `ReadCertificate.Obligations.single_other` | `ReadCertificate.output_eq`, `ReadCertificate.step_keeps` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ConditionalCreationSteps.lean` | `runScriptStep_createTable_ifNotExists_free`, `runScriptStep_createIndex_ifNotExists_free` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/FailedStepFrame.lean` | `runScriptStep_failed_frame`, `runScriptStep_plainWrite_failed` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/OrdinaryStepEffects.lean` | `runScriptStep_effect_of_unmodeled` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/QueryStepOutput.lean` | — | `RunStep.eq_of_rows` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptRunSingleton.lean` | `runScriptStep_executions`, `runScriptStep_others_of_single` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/ScriptStepDatabase.lean` | `runScriptStep_next_of_database` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/SelectStepFrame.lean` | — | `runScriptStep_select_keeps` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/SelectStepKeeps.lean` | `runScriptStep_select_connection`, `runScriptStep_select_others`, `runScriptStep_select_rows` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/StepContinuesOk.lean` | `runScriptStep_isError_false` | — |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/CertifiedQueryOutputs.lean` | `runScriptStep_simpleTable_output_agree`, `runScriptStep_simpleTable_output_append` | `resolvedStepOutput_simpleTable`, `resolvedStepOutput_simpleTable_agree` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/CreateTriggerStep.lean` | — | `createTrigger_step` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/DerivedColumnBackfillStep.lean` | `backfill_step` | `Connection.afterWrite_backfill` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/DerivedColumnOutputs.lean` | — | `derivedColumn_lookup_outputs`, `derivedColumn_preserved_outputs` |
+| `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/StatementRunLaws/DerivedColumnScript.lean` | — | `derivedColumn_state` |
+| `tests/surface/Programs/Scripts/ControlStepExamples.lean` | — | `check_keeps_the_connection` |
+| `tests/surface/Programs/Scripts/KeptReadChecks.lean` | — | `checkedWithDifferentBindings` |
+| `tests/surface/Programs/Scripts/S6RulesNegativeCertificates.lean` | — | `schema_read_no_certificate` |
+| `tests/surface/Programs/Scripts/S6RulesNegativeReads.lean` | — | `star_obligations_fail` |
+| `tests/surface/Queries/Tests/CatalogOutputCases.lean` | — | `empty_write_realizes_scan` |
+| `tests/surface/Queries/Tests/S6NotBlockedLaw.lean` | — | `notBlocked_equivalent` |
+| `tests/surface/Queries/Tests/S6RulesQueryPattern.lean` | — | `obligations` |
+| `tests/surface/Queries/Tests/SelectSyntaxFrame.lean` | — | `selectFrame` |
+| `tests/surface/Schema/Tests/AddCustomerClaims.lean` | — | `addCustomer_adds` |
+| `tests/surface/Schema/Tests/CertificateAfterDrop.lean` | — | `obligations` |
+| `tests/surface/Schema/Tests/ClaimsConditionalCreation.lean` | — | `free_table` |
+| `tests/surface/Schema/Tests/DerivedColumnCheckBoundaries.lean` | — | `big_entries_preserved` |
+| `tests/surface/Schema/Tests/DerivedColumnOnSchema.lean` | — | `named_read_preserved`, `read_matching_named_columns`, `lookup_read_preserved` |
+| `tests/surface/Schema/Tests/LowercaseSimulation.lean` | — | `Plan.lookup_steps` |
+| `tests/surface/Schema/Tests/SchemaCreateExamples.lean` | — | `create_existing_keeps_the_connection`, `drop_missing_keeps_the_connection` |

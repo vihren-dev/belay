@@ -182,13 +182,6 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
                        ("SelectRuleRegistry", 3)), timeout=90)
 
 
-
-def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """ReplacedKeyCheck, ReplacedQueryOutputs and ReplacedPragmaOutputs prove the former query
-    and pragma contracts with their original premises. ReplacedContextRules checks both former
-    public context rules with Sql.check_query_of_step_rows. ReplacedCatalogRules checks the three original catalog contracts and the former catalog lookup lemma. CatalogOutputCases checks ReadCertificate.Scans on a zero-change write, Run.query_returns_catalog_rows on a write with the output of a scan, and closeByEvaluation in SqlSelectEval.lean infers a concrete scan from statementOutputAt. The query fixtures include the scan computed by
-    runScriptStep_query_eq. QuerySendClaims exercises ruleCases and Sql.sendReached_each for
-    every modeled output. Each proof uses only ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("ReplacedQueryOutputs", 3),
-                       ("ReplacedPragmaOutputs", 2), ("ReplacedContextRules", 2),
-                       ("ReplacedCatalogRules", 4), ("CatalogOutputCases", 3), ("QuerySendClaims", 1)), timeout=60)
+def test_query_checks_cover_scan_outputs_and_choices(runtime_root: Path, tmp_path: Path) -> None:
+    """CatalogOutputCases tests catalog checks on a scan and a write with RETURNING. QuerySendClaims checks every selected output."""
+    check_module_chain(runtime_root, tmp_path, (("CatalogOutputCases", 3), ("QuerySendClaims", 1)), timeout=60)

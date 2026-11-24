@@ -68,14 +68,9 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
             assert expected in line, (name, line, expected)
 
 
-@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
-def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
-    """The fixtures ReplacedStepLaws and ReplacedSendLaws restate seven model laws and three surface laws with their
-    old statements. The task file of the statement rule pilot lists these laws in "Replaced laws". The proofs
-    use the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the data facts of CREATE TABLE
-    and plain INSERT, and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
-    old laws loses no fact. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
+def test_single_send_equivalence_requires_no_validity_premise(runtime_root: Path, tmp_path: Path) -> None:
+    """ReplacedGeneralSend checks both directions of the singleton send iff on an arbitrary connection with only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 1),), timeout=60)
 
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
@@ -92,30 +87,14 @@ def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, t
                                                 ("ItemInsertClaims", 4), ("ItemInsertAnyClaims", 1)))
 
 
-def test_exact_plain_write_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """The exact UPDATE and DELETE rules prove both former database effects and all four former
-    send rules with their original premises and ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedPlainWriteLaws", 2),
-                       ("ReplacedDeleteSendLaws", 2), ("ReplacedUpdateSendLaws", 2)))
+def test_control_rules_check_each_reached_connection(runtime_root: Path, tmp_path: Path) -> None:
+    """ControlSendClaims checks the observed results and next connections for BEGIN, COMMIT, ROLLBACK and setting pragmas."""
+    check_module_chain(runtime_root, tmp_path, (("ControlSendClaims", 4),), timeout=60)
 
 
-def test_exact_control_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """The exact transaction and pragma rules imply the original step and send statements
-    and prove client claims about an arbitrary valid connection, using ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedTransaction", 4), ("ReplacedControlFrame", 3),
-                       ("ReplacedSetting", 2), ("ReplacedControlContinuation", 6), ("ReplacedControlSend", 3),
-                       ("ControlSendClaims", 4)))
-
-
-@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
-def test_exact_schema_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """The former schema laws follow with their original premises and only logical axioms.
-    Eight clients check the effect of each schema kind on variable databases, including
-    refused preparations, colliding unique indexes and restricted defaults."""
-    check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedNonQueryOutputs", 2), ("ReplacedExecutionProjections", 6), ("ReplacedGeneralSend", 3), ("ReplacedPlainDrop", 3), ("ReplacedCatalogRewrite", 1), ("ReplacedCatalogContinuation", 6),
-        ("ReplacedConditionalCreation", 3), ("ReplacedAddColumn", 2), ("ReplacedCatalogSend", 2),
-        ("ReplacedColumnSend", 1), ("ReplacedColumnIfOk", 1), ("SchemaSendClaims", 8)))
+def test_schema_rules_check_each_ddl_outcome(runtime_root: Path, tmp_path: Path) -> None:
+    """SchemaSendClaims exercises all eight schema and prepare-error equations on variable connections."""
+    check_module_chain(runtime_root, tmp_path, (("SchemaSendClaims", 8),), timeout=90)
 
 
 def test_row_write_send_observes_every_production(runtime_root: Path, tmp_path: Path) -> None:
@@ -136,20 +115,3 @@ def test_all_returning_and_program_write_modes(runtime_root: Path, tmp_path: Pat
     check_module_chain(runtime_root, tmp_path, (
         ("ProgramWriteClaims", 7), ("ReturningWriteClaims", 4), ("SourceWriteClaims", 4)
     ), timeout=180)
-
-
-def test_replaced_write_mode_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """Check the original DROP program, single-source INSERT SELECT and UPDATE/DELETE
-    no-choice declarations using their original premises and only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedProgramDrop", 2), ("ReplacedProductionSuccess", 2), ("ReplacedNonQueryOutputs", 2), ("ReplacedWriteChoices", 4)
-    ), timeout=120)
-
-
-def test_replaced_group_frames(runtime_root: Path, tmp_path: Path) -> None:
-    """The original CREATE and DROP frames use runScriptStep_createTable_eq, runScriptStep_dropPlain_eq and
-    runScriptStep_prepareError_eq. The pragma frame uses resolveStatementPragma_readOnly and runScriptStep_readOnly_keeps.
-    ReplacedBackfill checks the plain UPDATE rule and Connection.afterWrite_backfill.
-    ReplacedOrdinaryFrames checks runScriptStep_continued_spec, Output.ofStep_isError_of_noHalt,
-    runScriptStep_effect and runScriptStep_congr_resolve on nonquery errors, state frames and conditional creation."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedBackfill", 1), ("ReplacedOrdinaryFrames", 5), ("ReplacedSchemaFailures", 2), ("ReplacedReadPragma", 1)))
