@@ -59,10 +59,13 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, base form: the first module docstring of `PurgeFrameSite.lean`
   no longer names the structure; the last one names it with a checked
   reference.
+- 2026-11-24, base form: `JsonReadyLaws` is listed in the core library of
+  the model package (folded into the readiness commit). Final checks run;
+  the base form is DONE.
 
 ## Base form
 
-In progress on the branch `claim-proof-pilot`.
+DONE on the branch `claim-proof-pilot`. Forms A to D are not started.
 
 ### Readiness facts (model package)
 
@@ -183,6 +186,20 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
 (local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
 passed (local); `python3 -m pytest tests/test_source_identity_derivations.py`
 passed (local).
+
+### Final checks of the base form
+
+Checks run on the last commit, local outcome only, not evidence:
+
+- `just dev-build`: passed (local).
+- `just test-full`: the first run failed in `tests/test_model_package.py`,
+  because the new module `JsonReadyLaws` was not in the core library of
+  `lakefile.toml`. The readiness commit now lists it. The second run failed
+  with a timeout of 120 s in `test_stateful_modes[True]` of
+  `tests/conformance_generation_test.py` at a load average of about 15. The
+  third run, at a lower load, passed (local).
+- `just verdict`: passed (local), with no change in the counts of the
+  corpora.
 
 ## Form A
 

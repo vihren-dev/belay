@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T19:33:34+00:00",
+  "finding": "20261124T193328Z-f9844e4d#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "Same finding as 20261124T185214Z-a34379a6#3 on the earlier version of this commit. The pilot rules require the status file to name the checks run with their local outcome marked as local; the text says the outcome is local and not evidence."
+}

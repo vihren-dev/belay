@@ -1,0 +1,58 @@
+{
+  "caller": "claude",
+  "commit": "f9844e4d0a3a0e9e5496f31138e0c8191f1be698",
+  "date": "2026-11-24T19:33:28+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryPlainLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/RowwiseExpr.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Writes/JsonReadyLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261124-claim-proof-pilot.status.md",
+    "reviews/20261124T183803Z-2f311fe4/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261124T193328Z-f9844e4d#1",
+      "line": 59,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status says both tests in `updateJsonReady` use `anyMayFail`, but its third test scans `RETURNING` expressions for fallible calls even when the `WHERE` and `SET` checks pass. Fix: Name `WHERE` and `SET` as the two checks covered by `anyMayFail_of_rowwise` and identify the separate `RETURNING` check."
+    },
+    {
+      "id": "20261124T193328Z-f9844e4d#2",
+      "line": 80,
+      "path": "plans/20261124-claim-proof-pilot.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status cites a passing local `just dev-build` result, although `AGENTS.md` and ADR 0020 permit status files to cite only Nix check results. Fix: Remove the local pass result and cite the corresponding Nix check when its result is available."
+    }
+  ],
+  "id": "20261124T193328Z-f9844e4d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "sspswvkl",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
