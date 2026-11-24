@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T14:22:38+00:00",
+  "finding": "20261124T142214Z-430175e3#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Both sites recognize the catalog output through isCatalogOutput."
+}

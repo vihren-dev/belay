@@ -121,7 +121,7 @@ ea83eeff the count is 99,400. Model, surface and tests change from
 59,128 / 14,321 / 21,456 to 59,216 / 14,316 / 22,175. SQL text (1,945),
 conformance (1,042), public documentation tools (134) and other files (572)
 are constant. The faster of two elaborations for each changed sql_run
-fixture, in seconds, was:
+fixture at ea83eeff, before the final catalog-proof change, was:
 
 | Fixture | Start | End |
 | --- | ---: | ---: |
@@ -134,8 +134,11 @@ D11 exposed a slowdown in S6AutoPaths. Instrumenting each proof identified
 query_keeps_connection. The original slice 4 proof used 8,082,223 raw Lean
 heartbeats. Deciding the generalized output equality took 173,993,878 in
 slice 5. Checking reflexivity first for a catalog output equality reduced
-the same proof to 7,587,931. The other five tactic proofs each took under a
-second in the instrumented run. SqlSelectEval keeps the decision proof for
+the same proof to 7,587,931. The complete fixture took 41.23 seconds at
+430175e3 (faster of two). The five other successful proofs instrumented
+were purge_empties_items, widen_adds_null_cells, single_keeps_connection,
+sent_select_keeps_connection and second_goal_stays. Each took under a
+second. The two diagnostic examples separately check an expected failure. SqlSelectEval keeps the decision proof for
 an equation that reflexivity cannot establish. The focused owners are
 test_sql_run_covers_every_statement_rule, test_context_cases and
 test_query_rule_checks_selected_outputs_and_retains_pragma_laws.

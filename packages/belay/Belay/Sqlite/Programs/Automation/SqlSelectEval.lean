@@ -76,6 +76,9 @@ def evaluateNatural? (term : Expr) : MetaM (Option Nat) := do
   if term.hasMVar || term.hasFVar || term.hasLooseBVars then return none
   try return naturalValue? (← kernelNormalize term) catch _ => return none
 
+/-- A catalog output term supplies all seven arguments of {name}`Model.statementOutputAt`. -/
+private def isCatalogOutput (term : Expr) : Bool := term.isAppOfArity ``Model.statementOutputAt 7
+
 /-- The proof of a closed equation that evaluation decides, as an auxiliary theorem that the kernel
 checks at once. For a catalog output equation, try reflexivity first because both sides can
 compute the same output with variable runtime rows. Other equations try a decision first. The result
@@ -85,7 +88,7 @@ def evaluationProof? (equation : Expr) : MetaM (Option Expr) := do
   let decision : MetaM Expr := do
     let instance_ ← synthInstance (mkApp (mkConst ``Decidable) equation)
     return mkApp3 (mkConst ``of_decide_eq_true) equation instance_ (← mkEqRefl (mkConst ``Bool.true))
-  let proofs := if left.isAppOfArity ``Model.statementOutputAt 7 then
+  let proofs := if isCatalogOutput left then
     [mkEqRefl left, decision]
   else [decision, mkEqRefl left]
   for proof in proofs do
@@ -114,7 +117,7 @@ def closeByEvaluation (goal : MVarId) : MetaM Bool := goal.withContext do
   let some (_, left, right) := type.eq? | return false
   let saved ← saveState
   try
-    let unified ← if left.isAppOfArity ``Model.statementOutputAt 7 && right.hasMVar then
+    let unified ← if isCatalogOutput left && right.hasMVar then
       inferOutputStatement left right
     else if left.hasMVar || left.hasFVar || left.hasLooseBVars then
       pure false
