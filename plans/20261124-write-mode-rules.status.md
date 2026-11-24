@@ -50,3 +50,8 @@ ReplacedDeleteSendLaws use the nonquery projection. The group frame for
 INSERT SELECT still serves callers with varying RETURNING and program modes.
 The D11 count before the final stack rebase is 100,275 selected Lean lines,
 including 60,287 model, 14,339 surface and 21,956 test lines.
+
+The independent review found a reference to the removed DROP module, two
+missing premises in the ordinary-write proof sketch, and the articles
+before INSERT, UPDATE and UPSERT. The corrected descriptions build with
+their checked references.

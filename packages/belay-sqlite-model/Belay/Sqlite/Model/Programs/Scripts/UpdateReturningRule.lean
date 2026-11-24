@@ -2,11 +2,11 @@ import Belay.Sqlite.Model.Programs.Scripts.WriteRuleProofs
 
 set_option doc.verso true
 
-/-! A UPDATE returning the values of its written rows. -/
+/-! An UPDATE returning the values of its written rows. -/
 
 namespace Belay.Sqlite.Model
 
-/-- For every connection, clock, index and parameter list, suppose resolution gives a UPDATE
+/-- For every connection, clock, index and parameter list, suppose resolution gives an UPDATE
 with RETURNING columns and no write programs. A missing clock or unknown counter ends the run.
 An absent target or unsupported write ends the run as unmodeled. A successful write installs
 the changed rows, applies its counters and returns the normalized projections of the written rows.

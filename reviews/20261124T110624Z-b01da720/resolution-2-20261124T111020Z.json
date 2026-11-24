@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:10:20+00:00",
+  "finding": "20261124T110624Z-b01da720#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Specified both assumptions on the successful output and its projection."
+}

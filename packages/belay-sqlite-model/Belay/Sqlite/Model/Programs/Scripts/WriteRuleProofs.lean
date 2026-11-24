@@ -34,8 +34,9 @@ theorem runScriptStep_of_clock_counter {context : ResolveContext} {clock : Optio
       cases ready : (connection.state.statementRun value parameters resolved).ready <;> simpa [ready] using result
 
 /-- An ordinary write with one execution, a post-resolution state differing only by application of its
-catalog edit, and a known successful output installs its database
-and applies its counts on success. Its unmodeled effect ends the step. Each modeled refusal
+catalog edit, installs its database and applies its counts on success. The proposed
+output is modeled. For each successful effect, {name}`Output.ofStep` after advancing the run
+gives that output. Its unmodeled effect ends the step. Each modeled refusal
 gives the primary code and the connection selected by the conflict algorithm.
 Proof sketch: a successful effect advances to the published state. A failed effect halts,
 and the halted state's reason determines the output. -/
