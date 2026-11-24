@@ -4,14 +4,22 @@ import Belay.Sqlite.Programs.Scripts.ContextObservationBridge
 set_option doc.verso true
 
 /-!
-From an assertion on a query script to the output of its resolved statement. When the one statement of
-a script resolves, {name}`Belay.Sqlite.Holds.inContext` and {name}`Belay.Sqlite.Holds.inContextSince` hold
-exactly when the output of the resolved statement ({name}`Belay.Sqlite.Model.resolvedStepOutput`) has rows
-({name}`Belay.Sqlite.Model.Output.hasRows`): the output describes at least one result that SQLite may give,
-and each such result has a row. The laws of the model about that output then decide the assertion: the laws
-for a calm query, for {lit}`SELECT 1 WHERE c`, for {lit}`EXISTS` and for a compound. The two-state law
-observes the statement with the initial database when the query or one of its subqueries has a source with a
-schema name ({name}`Belay.Sqlite.Model.usesSchema`), and without it otherwise.
+From an assertion on a query script to the output of its resolved statement. Each law covers a script of exactly
+one statement whose resolution succeeds:
+
+* {name}`Belay.Sqlite.Holds.inContext` for one read-only statement that resolves with
+  {name}`Belay.Sqlite.Model.resolveStatement`;
+* {name}`Belay.Sqlite.Holds.inContextSince` for one {lit}`SELECT` that resolves with
+  {name}`Belay.Sqlite.Model.resolveTwoState`.
+
+Then the assertion holds exactly when the output of the resolved statement
+({name}`Belay.Sqlite.Model.resolvedStepOutput`) has rows ({name}`Belay.Sqlite.Model.Output.hasRows`): the output
+describes at least one result that SQLite may give, and each such result has a row. A read-only statement that is not
+a {lit}`SELECT`, such as a {lit}`PRAGMA`, has the one-state law only: the two-state observation does not model it.
+The laws of the model about that output then decide the assertion: the laws for a calm query, for
+{lit}`SELECT 1 WHERE c`, for {lit}`EXISTS` and for a compound. In the two-state law,
+{name}`Belay.Sqlite.Model.resolvedStepOutput` receives the initial database exactly when the query or one of its
+subqueries has a source with a schema name ({name}`Belay.Sqlite.Model.usesSchema`).
 -/
 
 namespace Belay.Sqlite
@@ -38,8 +46,8 @@ theorem Script.observeTwoStateIn_resolved {script : Script} {statement : Syntax.
 /-- For every query script, initial database and context as in {name}`Script.observeTwoStateIn_resolved`: the
 two-state assertion {name}`Holds.inContextSince` holds exactly when the output of the resolved statement has rows
 ({name}`Output.hasRows`): it describes at least one result that SQLite may give, and each such result has a row.
-The output reads the initial database exactly when the query or one of its subqueries has a source with a schema
-name. Proof sketch: {name}`Script.observeTwoStateIn_resolved`. -/
+{name}`resolvedStepOutput` receives the initial database exactly when the query or one of its subqueries has a
+source with a schema name. Proof sketch: {name}`Script.observeTwoStateIn_resolved`. -/
 theorem Holds.inContextSince_iff_hasRows {script : Script} {statement : Syntax.Statement}
     {parameters : List Value} {query : Syntax.Subquery} {subqueries : List Syntax.Subquery}
     (initial : Database) (context : ExecutionContext) {resolved : Resolved.Statement} {after : Catalog}

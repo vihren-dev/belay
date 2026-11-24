@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T20:49:11+00:00",
+  "finding": "20261124T203833Z-d7e51d87#5",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The brief of each pilot form allows edits only to its own section and to the progress log, because the forms run in parallel; the coordinator updates the base summary when it merges the forms."
+}

@@ -71,6 +71,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, form B: review fixes of the bridge laws (the plain words of
   `Output.hasRows`, `usesSchema` and `Script.isQuery`, checked names in the
   module docstring).
+- 2026-11-24, form B: second review fixes of the bridge laws (the module
+  docstring names the resolution of each law; the two-state law says which
+  argument of `resolvedStepOutput` is the initial database).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
