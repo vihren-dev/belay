@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.ControlRules
 import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
 import Belay.Sqlite.Model.Programs.Scripts.CreateSchemaSuccess
 import Belay.Sqlite.Model.Programs.Scripts.SchemaKeyCheck
@@ -45,15 +46,18 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
       output.isError = false := by
   unfold Resolved.Statement.succeedsBySchema at checked
   split at checked
-  · exact runScriptStep_setting_ok resolution
+  · rw [runScriptStep_setting_eq resolution]
+    exact ⟨_, _, rfl, rfl⟩
   · exact runScriptStep_drop_ok resolution
-  · apply runScriptStep_begin_ok resolution
-    simpa [Connection.resolveState] using checked
+  · rw [runScriptStep_begin_eq resolution]
+    cases snapshot : c.state.snapshot with
+    | none => exact ⟨_, _, rfl, rfl⟩
+    | some _ => simp [Connection.resolveState, snapshot] at checked
   · simp only [Bool.and_eq_true] at checked
     obtain ⟨open_, _⟩ := checked
     cases snapshot : c.state.snapshot with
     | none => simp [Connection.resolveState, snapshot] at open_
-    | some original => exact runScriptStep_commit_ok resolution snapshot
+    | some original => rw [runScriptStep_commit_eq resolution, snapshot]; exact ⟨_, _, rfl, rfl⟩
   · exact runScriptStep_rewrite_ok resolution valid.1
   · exact runScriptStep_dropColumn_ok resolution valid.1
   · obtain ⟨table, _, accepts⟩ := List.any_eq_true.mp checked

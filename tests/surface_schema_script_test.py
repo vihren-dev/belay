@@ -97,3 +97,11 @@ def test_exact_plain_write_rules_retain_the_deleted_laws(runtime_root: Path, tmp
     send rules with their original premises and ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedPlainWriteLaws", 2),
                        ("ReplacedDeleteSendLaws", 2), ("ReplacedUpdateSendLaws", 2)))
+
+
+def test_exact_control_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
+    """The exact transaction and pragma rules imply the original step and send statements
+    and prove client claims about an arbitrary valid connection, using ordinary logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedTransaction", 4), ("ReplacedControlFrame", 3),
+                       ("ReplacedSetting", 2), ("ReplacedControlContinuation", 6), ("ReplacedControlSend", 3),
+                       ("ControlSendClaims", 4)))

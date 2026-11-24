@@ -1,5 +1,5 @@
 import Belay.Sqlite.Programs.Scripts.AddColumnStepRule
-import Belay.Sqlite.Programs.Scripts.ControlStepRules
+import Belay.Sqlite.Programs.Scripts.SchemaStepRules
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Programs.Automation.SqlRunShape
 
@@ -39,20 +39,15 @@ def premiseNames : List Name :=
     `notInsertSelect]
 
 /-- The kinds of statement whose step never fails and does not read the clock, and that have no kind rule: DROP
-TABLE, a rename and a pragma that sets a value. Their rules have one outcome premise. -/
+TABLE and a rename. Their rules have one outcome premise. -/
 def schemaKinds : List Name :=
-  [``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting]
-
-/-- The kinds of statement of a transaction: BEGIN and COMMIT. Their rules have one outcome premise, in which
-the output is an error exactly when the state of the transaction says so. -/
-def controlKinds : List Name := [``Model.Syntax.Statement.begin, ``Model.Syntax.Statement.commit]
+  [``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable]
 
 /-- The role of a premise, by the name that the rule application gives it. The premises of a failed step
 and of a successful step are outcomes. All other premises are side goals. -/
 def roleOf (kind : Name) (premise : Name) : Role :=
   if premise == `success then
     if schemaKinds.contains kind then .outcome [`output, `next, `noError, `ongoing, `nextIs, `valid] true
-    else if controlKinds.contains kind then .outcome [`output, `next, `errorIs, `ongoing, `nextIs, `valid] true
     else
       .outcome [`output, `value, `default, `next, `noError, `ongoing, `timed, `clockNull, `clockRead, `nextIs, `valid] true
   else if premise == `failure then .outcome [`output, `value, `next, `failed, `ongoing, `nextIs, `valid] true
@@ -70,12 +65,6 @@ def sendRule (kind : Name) : TacticM (TSyntax `tactic) :=
     `(tactic| refine' Sql.check_send_dropPlain ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.renameTable then
     `(tactic| refine' Sql.check_send_rewrite ?valid ?found ?success)
-  else if kind == ``Model.Syntax.Pragma.setting then
-    `(tactic| refine' Sql.check_send_setting ?valid ?found ?success)
-  else if kind == ``Model.Syntax.Statement.begin then
-    `(tactic| refine' Sql.check_send_begin ?valid ?found ?success)
-  else if kind == ``Model.Syntax.Statement.commit then
-    `(tactic| refine' Sql.check_send_commit ?valid ?found ?success)
   else if kind == ``Model.Syntax.Statement.select then
     `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached)
   else

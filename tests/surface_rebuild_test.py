@@ -45,7 +45,7 @@ PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "R
 
 def test_sql_run_rules_for_schema_and_transaction_statements(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` applies its rules for CREATE TABLE, DROP TABLE, a rename, a pragma setting, BEGIN and COMMIT
-    (the modules SchemaStepRules and ControlStepRules) to one program on a database with the schema of the
+    (the schema and transaction rules) to one program on a database with the schema of the
     guide, for every complete environment. The fixture SchemaRuleExamples closes every premise except the final
     claim, which says that the program leaves no open transaction and foreign keys on, and uses only logical
     axioms."""

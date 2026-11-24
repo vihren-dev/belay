@@ -4,10 +4,7 @@ import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 
 set_option doc.verso true
 
-/-! Steps that continue without an error (ADR 0017, S6). The laws of {lit}`StepContinues` say that the step of a
-schema or transaction statement continues. A proof that a script succeeds also needs that the output of the
-step is no error. This module adds that to each of them, under the condition that makes the effect of the
-statement succeed. -/
+/-! A successful plain DROP or catalog rewrite continues once without an error. The shared output law reads success from the transition. -/
 
 namespace Belay.Sqlite.Model
 
@@ -74,51 +71,5 @@ theorem runScriptStep_rewrite_ok {context : ResolveContext} {clock : Option Cloc
     ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
       output.isError = false :=
   runScriptStep_rewrite_ok_of_outline found (step_guards_hold found rfl valid)
-
-/-- For every connection, statement and values that resolve to a setting: the step continues without further
-execution, and its output is no error. Proof sketch: as {name}`runScriptStep_drop_ok`, with
-{name}`runScriptStep_setting_continues`. -/
-theorem runScriptStep_setting_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {setting : Syntax.PragmaSetting} {on : Bool}
-    (found : resolveStatement context connection.resolveState statement = .ok (.setting setting on, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨output, next, step⟩ := runScriptStep_setting_continues (parameters := parameters) (clock := clock)
-    (index := index) found
-  refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step]
-
-/-- For every connection with no open transaction, statement and values that resolve to BEGIN: the step continues
-without further execution, and its output is no error. In plain words, BEGIN outside a transaction succeeds.
-Proof sketch: as {name}`runScriptStep_drop_ok`, with {name}`runScriptStep_begin_continues`; with no open
-transaction the transition continues. -/
-theorem runScriptStep_begin_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    (found : resolveStatement context connection.resolveState statement = .ok (.begin, after))
-    (closed : connection.state.snapshot = none) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨output, next, step⟩ := runScriptStep_begin_continues (parameters := parameters) (clock := clock)
-    (index := index) found
-  refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, haltError, SqlState.statementRun, runStatement,
-    closed]
-
-/-- For every connection with an open transaction, statement and values that resolve to COMMIT: the step
-continues without further execution, and its output is no error. In plain words, COMMIT inside a transaction
-succeeds. Proof sketch: as {name}`runScriptStep_begin_ok`. -/
-theorem runScriptStep_commit_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {original : Database}
-    (found : resolveStatement context connection.resolveState statement = .ok (.commit, after))
-    (open_ : connection.state.snapshot = some original) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  obtain ⟨output, next, step⟩ := runScriptStep_commit_continues (parameters := parameters) (clock := clock)
-    (index := index) found
-  refine ⟨output, next, step, runScriptStep_isError_false found (by intro _ _ same; cases same) step fun value => ?_⟩
-  simp [advanceRun, advanceWith, SqlTransition.counted, haltError, SqlState.statementRun, runStatement, open_]
 
 end Belay.Sqlite.Model
