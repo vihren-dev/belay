@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.StepCatalogLiteral
-import Belay.Sqlite.Model.Programs.Scripts.PragmaStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
 
 set_option doc.verso true
 

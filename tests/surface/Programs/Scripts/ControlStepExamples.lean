@@ -121,13 +121,14 @@ theorem pragma_inside_a_transaction_is_ignored : ∀ output next others,
   rfl
 
 /-- Law of {lit}`PRAGMA foreign_key_check`: the pragma reads and changes nothing, not even the counters. Proof
-sketch: {name}`runScriptStep_pragma_keeps`. -/
+sketch: {name}`runScriptStep_readOnly_keeps` and {name}`resolveStatementPragma_readOnly`. -/
 theorem check_keeps_the_connection : ∀ output next others,
     stepOf enforcing checkStatement = .continued output next others → others = [] ∧ next = enforcing := by
   intro output next others step
   obtain ⟨resolved, after, found⟩ := resolves_sound (connection := enforcing) (statement := checkStatement) (by decide +kernel)
   rw [checkStatement_parses] at found step
-  exact runScriptStep_pragma_keeps (by rfl) found step
+  exact runScriptStep_readOnly_keeps found
+    (resolveStatementPragma_readOnly (pragma := .foreignKeyCheck none) (by rfl) (by simpa only [statement_arms] using found)) step
 
 #print axioms begin_snapshots_the_database
 #print axioms begin_active_keeps_the_connection
