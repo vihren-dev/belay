@@ -397,8 +397,8 @@ for it. At the end of the slice, these conditions hold:
   or `runScriptStepWith` is the proof of a kind rule or of a law for all kinds or for a group
   of kinds, or it is one of the proofs that D8 does not move.
 - **Retention tests, before the deletions.** Each retention test that is left uses only
-  declarations of the packages that stay after the slice, and retention tests that go at the
-  same time as the test. The slice proves a test again when its proof uses a rule that the
+  declarations of the packages that stay after the slice, and retention tests that stay at
+  least as long as the test. The slice proves a test again when its proof uses a rule that the
   slice deletes, as the pilot's proof with `Sql.check_send_of_step` does.
 - **Surface.** No surface rule has the resolution to one kind as a premise, and `sendRule` has
   no branch for a kind with a rule. A `sendRule` without a branch is deleted, and so is each
