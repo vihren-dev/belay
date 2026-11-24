@@ -129,3 +129,13 @@ fixture, in seconds, was:
 | S6AutoPaths | 32.36 | 51.44 |
 | SelectContextCases | 8.76 | 9.15 |
 | QuerySendClaims | new | 1.33 |
+
+D11 exposed a slowdown in S6AutoPaths. Instrumenting each proof identified
+query_keeps_connection. The original slice 4 proof used 8,082,223 raw Lean
+heartbeats. Deciding the generalized output equality took 173,993,878 in
+slice 5. Checking reflexivity first for a catalog output equality reduced
+the same proof to 7,587,931. The other five tactic proofs each took under a
+second in the instrumented run. SqlSelectEval keeps the decision proof for
+an equation that reflexivity cannot establish. The focused owners are
+test_sql_run_covers_every_statement_rule, test_context_cases and
+test_query_rule_checks_selected_outputs_and_retains_pragma_laws.
