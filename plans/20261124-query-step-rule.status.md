@@ -41,3 +41,11 @@ choice obligation directly: it recovers each selected output together
 with its membership evidence. Review clarified the six scan checks and
 the proof sketch, named the new witnesses in the test, and kept the
 foreign-key fixture below 200 lines.
+
+Owner decision 4 applies D12 to query rules. ReplacedContextRules
+checks the original contracts of check_query_select_at and
+check_query_select_faultless. Their replacement, Sql.check_query_of_step_rows,
+takes a property of the actual output. Test test_context_cases checks
+the read at the reached connection (A21) and the witnessed changes()
+counter (A22), including native instances. The catalog caller now derives
+the output from model data. Its public interface is the next migration.

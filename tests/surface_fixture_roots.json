@@ -74,7 +74,7 @@
     "SchemaSuccessChecks", "SignupInvariantClaims", "SqlFileProbe"
   ],
   "surfaceSelect": [
-    "ReplacedKeyCheck", "ReplacedQueryOutputs", "ReplacedPragmaOutputs", "QuerySendClaims",
+    "ReplacedKeyCheck", "ReplacedQueryOutputs", "ReplacedPragmaOutputs", "ReplacedContextRules", "QuerySendClaims",
     "S6CheckLabels", "SelectAutoCases", "SelectAutomationCore", "SelectAutomationExecution",
     "SelectAutomationSchema", "SelectAutomationSources", "SelectBudgetCases", "SelectCardinalityCases",
     "SelectCheckCases", "SelectComparisonCases", "SelectCompoundCases", "SelectCompoundSupport",
