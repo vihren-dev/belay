@@ -8,13 +8,15 @@ set_option doc.verso true
 /-! Output rows whose first cell is the rowid of a table row (ADR 0017, S6). The rows of {lit}`q1 EXCEPT q2` are the
 first row of each set of rows of {lit}`q1` that compare equal and that equal no row of {lit}`q2`
 ({name}`Belay.Sqlite.Model.CompoundOperator.combine`). When two rows of {lit}`q1` compare equal but are not identical,
-the values of the row that SQLite keeps can depend on its plan. The law here is about one list of output rows of a
-table with two premises: its rows have distinct rowids ({name}`Belay.Sqlite.Model.Table.RowidsDistinct`), and each row
-stores its rowid in the rowid alias ({name}`Belay.Sqlite.Model.Table.RowsAliased`). When the first output column reads
-that alias, two output rows that compare equal come from rows with the same rowid, which are one row. So the output
-rows that compare equal are identical ({name}`Belay.Sqlite.Model.Resolved.equalRowsIdentical`). For fixed rows of the
-first term of {lit}`EXCEPT`, the rows that the compound keeps then have the same values for each choice of the kept
-row. The law gives nothing about the order of the rows. -/
+the values of the row that SQLite keeps can depend on its plan. The law here is about one list of output rows over
+source rows of a table, with three premises on the table: its rows have distinct rowids
+({name}`Belay.Sqlite.Model.Table.RowidsDistinct`), each row stores its rowid in the rowid alias
+({name}`Belay.Sqlite.Model.Table.RowsAliased`), and the rowid alias is the column 0 of the table. The first output
+column is the column 0 of the source row, and any output columns follow it. Then two output rows that compare equal have
+the same rowid, so they come from one row. So the output rows that compare equal are identical
+({name}`Belay.Sqlite.Model.Resolved.equalRowsIdentical`). For fixed rows of the first term of {lit}`EXCEPT`, the rows
+that the compound keeps then have the same values for each choice of the kept row. The law gives nothing about the order
+of the rows. -/
 
 namespace Belay.Sqlite.Model.Resolved
 

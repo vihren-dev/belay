@@ -81,9 +81,10 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, form B: review fixes of the laws of the parts (the wrapper
   `resolvedStepOutput_query_hasRows_of_clean_from` is deleted, each form of
   `Resolved.Expr.isLogical` is listed, docstrings and status text).
-- 2026-11-24, form B: the module text of `RowidOutputIdentity` names its two
-  table premises and says that the law fixes the values of the kept rows of
-  EXCEPT for fixed term rows, not their order.
+- 2026-11-24, form B: the module text of `RowidOutputIdentity` names its
+  three table premises (distinct rowids, each row stores its rowid in the
+  alias, the alias is the column 0) and says that the law fixes the values
+  of the kept rows of EXCEPT for fixed term rows, not their order.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
