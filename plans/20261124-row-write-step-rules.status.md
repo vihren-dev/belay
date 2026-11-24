@@ -32,3 +32,9 @@ the tests from 22,175 to 22,221. The surface has 14,316 lines, SQL text
 RowWriteSendClaims elaborates in 5.65 seconds on this stack (faster of
 two runs). The CopyStep migration and the new client exercise M03 writes,
 M11 execution outcomes, S03 programs and S04 universal claims.
+
+On the final rule-selection code, the D11 total goes from 99,432 to 99,754 lines. The end has 59,492 model, 14,348 surface and 22,221 test lines. The SQL text, conformance, public-doc-tools and other scopes are unchanged.
+
+| Changed sql_run fixture | Start (s) | End (s) |
+| --- | ---: | ---: |
+| RowWriteSendClaims | new | 3.15 |
