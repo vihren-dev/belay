@@ -3,6 +3,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.ExprEvalLaws
 import Belay.Sqlite.Model.Queries.Evaluation.ExprCongruence
 import Belay.Sqlite.Model.Queries.Evaluation.IntegerCompareLaws
 import Belay.Sqlite.Model.Queries.Evaluation.QueryPlainLaws
+import Belay.Sqlite.Model.Queries.Evaluation.PlainQueryRules
 
 set_option doc.verso true
 
@@ -11,9 +12,9 @@ set_option doc.verso true
 them with comparisons and logic. Its value does not depend on the subqueries of the context, so a
 subquery that runs in a context other than the statement's context still evaluates it in the same way.
 The module proves this independence, that such an expression is calm and has no fault, that no call
-of a list of such expressions may fail over rows ({lit}`anyMayFail`), and the
-complement law of the guide's purge claim: a row for which the condition {lit}`IS NOT 1` is true is
-not selected by the condition. -/
+of a list of such expressions may fail over rows ({lit}`anyMayFail`), that each expression of a simple
+query over such expressions is row-wise, and the complement law of the guide's purge claim: a row for which
+the condition {lit}`IS NOT 1` is true is not selected by the condition. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -111,5 +112,31 @@ theorem Expr.truthy_isNot_one_and (left right : Expr) (context : EvalContext) (r
       truthy ((Expr.and left right).eval context row) = false := by
   simp only [Expr.eval, Expr.evaluate, comparisonOperands]
   exact truthy_isNot_one_of_cases _ (Value.and_cases _ _)
+
+/-- For every list of sources whose expressions are row-wise, every optional filter that is row-wise, every list of
+row-wise columns and every list of names: each expression of the simple query ({name}`Query.simple`,
+{name}`Query.expressions`) with these scalar columns is row-wise. With {name}`Expr.Rowwise.fault_none` it gives the
+premise of the read rule of a simple query that no expression has a fault. Proof sketch: the expressions of a simple
+query are its filter, those of its sources and its columns. -/
+theorem Query.simple_expressions_rowwise (sources : List QuerySource)
+    (filter : Option Expr) (columns : List Expr) (names : List String)
+    (sourcesOk : ∀ join ∈ sources, ∀ e ∈ join.expressions, e.Rowwise) (filterOk : ∀ e ∈ filter.toList, e.Rowwise)
+    (columnsOk : ∀ c ∈ columns, c.Rowwise) :
+    ∀ e ∈ (Query.simple sources filter (columns.map Output.scalar) names).expressions, e.Rowwise := by
+  intro e he
+  simp only [Query.expressions, Query.keptExpressions, Query.simple,
+    Output.scalars, Output.operands, List.mem_append, List.mem_flatMap, List.mem_map,
+    List.flatMap_map, List.not_mem_nil] at he
+  rcases he with (he | ⟨join, member, he⟩) |
+    (((((⟨column, member, he⟩ | ⟨column, member, he⟩) | ⟨_, no, _⟩) | ⟨_, no, _⟩) | ⟨_, no, _⟩) | he)
+  · exact filterOk e he
+  · exact sourcesOk join member e he
+  · simp only [List.mem_singleton] at he
+    exact he ▸ columnsOk column member
+  · exact he.elim
+  · exact no.elim
+  · exact no.elim
+  · exact no.elim
+  · simp at he
 
 end Belay.Sqlite.Model.Resolved

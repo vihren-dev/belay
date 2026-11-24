@@ -32,29 +32,6 @@ abbrev Resolved.notExistsExcept (compound : Resolved.Query) (position : Nat) (co
   .query (Resolved.Query.selectOneWhere (.not (.exists 0)))
     (Resolved.notExistsExceptSubqueries compound position condition columns names)
 
-/-- For every row-wise sources, condition and columns, every expression of the simple query is
-row-wise. Proof sketch: the expressions of a simple query are its condition, those of its sources and its columns. -/
-theorem Resolved.Query.simple_expressions_rowwise (sources : List Resolved.QuerySource)
-    (filter : Option Resolved.Expr) (columns : List Resolved.Expr) (names : List String)
-    (sourcesOk : ∀ join ∈ sources, ∀ e ∈ join.expressions, e.Rowwise) (filterOk : ∀ e ∈ filter.toList, e.Rowwise)
-    (columnsOk : ∀ c ∈ columns, c.Rowwise) :
-    ∀ e ∈ (Resolved.Query.simple sources filter (columns.map Resolved.Output.scalar) names).expressions, e.Rowwise := by
-  intro e he
-  simp only [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple,
-    Resolved.Output.scalars, Resolved.Output.operands, List.mem_append, List.mem_flatMap, List.mem_map,
-    List.flatMap_map, List.not_mem_nil] at he
-  rcases he with (he | ⟨join, member, he⟩) |
-    (((((⟨column, member, he⟩ | ⟨column, member, he⟩) | ⟨_, no, _⟩) | ⟨_, no, _⟩) | ⟨_, no, _⟩) | he)
-  · exact filterOk e he
-  · exact sourcesOk join member e he
-  · simp only [List.mem_singleton] at he
-    exact he ▸ columnsOk column member
-  · exact he.elim
-  · exact no.elim
-  · exact no.elim
-  · exact no.elim
-  · simp at he
-
 /-- For every simple query whose condition and columns are row-wise, every rows and two contexts with the same bound
 values, the one result is the same in both contexts. In plain words: a term of a compound gives the same rows in the
 context of the statement as in the plain context of the values. Proof sketch: the rows are the columns of the rows that

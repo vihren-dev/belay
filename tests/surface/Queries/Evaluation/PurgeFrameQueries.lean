@@ -50,10 +50,28 @@ def purgeKeepsCompound (names : List String) : Resolved.Query :=
   { Resolved.Query.simple [] none [] names with
     compound := some { first := 1, rest := [(.except, 2)], collations := [.binary, .binary, .binary] } }
 
-/-- The statement of the claim as the model resolves it, for the table at a position: it checks that no row of the
-table of the initial database with the condition is missing from the table of the current database. -/
+/-- The first term of the compound as the model resolves it, for the table at a position: {lit}`SELECT *` over the
+table of the initial database with the condition of the claim. -/
+def purgeKeepsInitialTerm (position : Nat) (names : List String) : Resolved.Query :=
+  Resolved.Query.simple [{ kind := .inner, source := .initialTable position, condition := none }]
+    (some purgeKeepsCondition) (sessionColumns.map .scalar) names
+
+/-- The second term of the compound as the model resolves it, for the table at a position: {lit}`SELECT *` over the
+table of the current database. -/
+def purgeKeepsCurrentTerm (position : Nat) (names : List String) : Resolved.Query :=
+  Resolved.Query.simple [.first position] none (sessionColumns.map .scalar) names
+
+/-- The statement of the claim as the model resolves it, for the table at a position: {lit}`SELECT 1 WHERE NOT
+EXISTS` of the compound (subquery 0), whose terms are the subqueries 1 and 2. It checks that no row of the table of
+the initial database with the condition is missing from the table of the current database. -/
 def purgeKeepsResolved (position : Nat) (names : List String) : Resolved.Statement :=
-  Resolved.notExistsExcept (purgeKeepsCompound names) position purgeKeepsCondition sessionColumns names
+  .query (Resolved.Query.selectOneWhere (.not (.exists 0)))
+    [purgeKeepsCompound names, purgeKeepsInitialTerm position names, purgeKeepsCurrentTerm position names]
+
+/-- For every position and names, the statement of the claim is calm. Proof sketch: its expressions are those of
+{lit}`SELECT 1 WHERE NOT EXISTS`, the condition of the claim and the columns, and the calm check computes. -/
+theorem purgeKeepsResolved_calm (position : Nat) (names : List String) : (purgeKeepsResolved position names).Calm :=
+  fun expression member => Resolved.Expr.calm_of_calmCheck (List.all_eq_true.mp (by rfl) expression member)
 
 /-- The filter of the purge reads only its row and the two values. -/
 theorem purgeFilter_rowwise : purgeFilter.Rowwise :=
@@ -89,5 +107,6 @@ theorem purgeKeeps_usesSchema : usesSchema purgeKeepsParts.1 purgeKeepsParts.2 =
 #print axioms purgeKeepsCondition_rowwise
 #print axioms sessionColumns_rowwise
 #print axioms purgeKeepsCompound_shape
+#print axioms purgeKeepsResolved_calm
 
 end AssertionExamples

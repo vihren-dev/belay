@@ -85,6 +85,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   three table premises (distinct rowids, each row stores its rowid in the
   alias, the alias is the column 0) and says that the law fixes the values
   of the kept rows of EXCEPT for fixed term rows, not their order.
+- 2026-11-24, form B: the proof of the frame claim composes the laws of the
+  parts.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -269,8 +271,8 @@ New module `packages/belay/Belay/Sqlite/Programs/Claims/ResolvedOutputBridge.lea
   `Holds.inContext` holds exactly when the output of the resolved statement
   (without an initial database) has rows.
 - What they leave out: a script of more than one statement. The frame
-  proof does not use them yet: it still unfolds `Script.observeTwoStateIn`
-  and `Model.observeTwoState`. Its new proof will use the two-state law.
+  proof uses `Script.observeTwoStateIn_resolved`, and the effect proof
+  uses `Holds.inContext_iff_hasRows`.
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local).
@@ -315,13 +317,13 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   `Schema/Columns/RowidOutputIdentity.lean`): for a table with distinct
   rowids whose first column is the rowid alias, and each of whose rows
   stores its rowid in that column (`Table.RowsAliased`), the outputs of
-  column 0 followed by any columns, over any list of source rows of the table, are
-  identical where they compare equal. This is the premise `identical` of
+  column 0 followed by any columns, over any list of source rows of the
+  table, are identical where they compare equal. This is the premise `identical` of
   `Resolved.Query.PlainExcept.subqueryRun`, the law of the EXCEPT compound
   (an equation of its rows with `CompoundOperator.combine` of the rows of its
-  terms). It is to replace `Resolved.notExistsExcept_identical`, which fixes
-  the term of the two-state form; the frame proof still uses the old law
-  until its new proof.
+  terms). In the frame proof it replaces
+  `Resolved.notExistsExcept_identical`, which fixes the term of the
+  two-state form.
 - `LiteralData.mem_deleted` (`Schema/Columns/RowDelete.lean`): a row is in
   the table that a DELETE leaves exactly when it is in the table and the
   filter does not select it. An iff with no premise.
@@ -348,6 +350,36 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   `resolveStatement_selectOne_notExists`, `tableOne_run` or
   `whereOne_claims`, and `PurgeEffectClaims` no longer imports
   `SelectOneWhereSupport`.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
+passed (local).
+
+### The frame claim (fixtures)
+
+- `purge_keeps_rows` and `purge_frame` keep their statements. The proof of
+  `purge_keeps_rows` composes the laws of the parts:
+  `Script.observeTwoStateIn_resolved` with `PurgeFrameSite.claimResolves`,
+  `resolvedStepOutput_selectOneWhere_hasRows`,
+  `Resolved.Expr.truthy_notExists`, `Resolved.statementContext_subqueries`
+  and `Resolved.subqueryContext_subqueries` for the three subqueries,
+  `Resolved.Query.PlainExcept.subqueryRun` for the compound, and
+  `Resolved.Query.simple_subqueryRun` with `Query.source_initialTable` and
+  `Query.source_first_from` for the two terms. The compound is empty by
+  `CompoundOperator.except_combine_eq_nil`, with `mem_sourceRows_iff`,
+  `LiteralData.mem_deleted`, `Resolved.Expr.truthy_isNot_one` and
+  `Resolved.Expr.Rowwise.evaluate_congr`. The identity premise of the
+  compound is `Resolved.equalRowsIdentical_rowidFirst`.
+- The proof uses no `resolvedStepOutput_notExistsExcept_hasRows`,
+  `Resolved.notExistsExcept_subset`, `Resolved.notExistsExcept_identical`
+  or `Resolved.Expr.truthy_isNot_one_and`. It uses the same laws for
+  SELECT 1 WHERE, NOT EXISTS, the subqueries of the statement and the read
+  of one table as the effect proof.
+- `PurgeFrameQueries` gives the two terms (`purgeKeepsInitialTerm`,
+  `purgeKeepsCurrentTerm`) and the resolved statement
+  (`purgeKeepsResolved`) of the claim, and `purgeKeepsResolved_calm`.
+  `Resolved.Query.simple_expressions_rowwise` moves to
+  `Queries/Evaluation/RowwiseExpr.lean`.
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
