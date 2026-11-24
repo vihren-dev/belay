@@ -39,7 +39,7 @@ def premiseAdvice (premise : Name) : String :=
   if premise == `valid then
     "no hint gives a valid certificate. Pass a hint of the form ReadAnalysis.analyze width resolved = .certified certificate. The analysis answers unknown for reads of counters, the clock, table metadata and SELECT star, and then no rule applies."
   else if premise == `obligations then
-    "no hint gives the obligations of the certificate: the resolution of the read before and after the migration, and the cells that the migration appends to each scan."
+    "no hint gives the obligations of the certificate: the actual scan before and after the migration, and the cells that the migration appends to each scan."
   else if premise == `constant then
     "the clock must give one date at every statement index. A clock that changes is a conflict that this rule does not cover."
   else if premise == `single then

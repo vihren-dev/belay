@@ -46,7 +46,7 @@ theorem lookup_commutes_by_sql_commute (name : Value) :
 
 /-- warning: sql_commute left the premise constant open: the clock must give one date at every statement index. A clock that changes is a conflict that this rule does not cover.
 ---
-warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the resolution of the read before and after the migration, and the cells that the migration appends to each scan.
+warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the actual scan before and after the migration, and the cells that the migration appends to each scan.
 ---
 warning: sql_commute left the premise admittedKept open: the predicate of the claim must hold again after the read has run.
 ---

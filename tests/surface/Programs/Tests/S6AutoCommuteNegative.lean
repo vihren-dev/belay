@@ -20,7 +20,7 @@ def counterScript : Script := sql r"SELECT id FROM items WHERE total_changes() =
 /--
 warning: sql_commute left the premise valid open: no hint gives a valid certificate. Pass a hint of the form ReadAnalysis.analyze width resolved = .certified certificate. The analysis answers unknown for reads of counters, the clock, table metadata and SELECT star, and then no rule applies.
 ---
-warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the resolution of the read before and after the migration, and the cells that the migration appends to each scan.
+warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the actual scan before and after the migration, and the cells that the migration appends to each scan.
 ---
 warning: declaration uses `sorry`
 -/
@@ -43,7 +43,7 @@ warning: sql_commute left the premise valid open: no hint gives a valid certific
 ---
 warning: sql_commute left the premise constant open: the clock must give one date at every statement index. A clock that changes is a conflict that this rule does not cover.
 ---
-warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the resolution of the read before and after the migration, and the cells that the migration appends to each scan.
+warning: sql_commute left the premise obligations open: no hint gives the obligations of the certificate: the actual scan before and after the migration, and the cells that the migration appends to each scan.
 ---
 warning: sql_commute left the premise admittedKept open: the predicate of the claim must hold again after the read has run.
 ---

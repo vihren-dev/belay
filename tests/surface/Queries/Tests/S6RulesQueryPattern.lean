@@ -96,10 +96,24 @@ migration, for the lookup statement. The backfill appends the lowercase of the n
 Proof sketch: the two resolutions are the checks above; the scans are compared by kernel evaluation, with
 the lowercase cell as the appended cells. -/
 theorem obligations : certificate.Obligations runContext lookupStatement initial.connection reachedConnection := by
-  refine ⟨ReadAnalysis.resolvesOriginal (resolvesTo_sound resolves_original).choose_spec analysis, ?_⟩
+  have scans {witness : ReadCertificate} (valid : witness.Valid) (connection : Connection)
+      {names state} (resolved : resolveStatement runContext connection.resolveState lookupStatement =
+        .ok (witness.statement names, state)) : witness.Scans runContext lookupStatement connection := by
+    refine ⟨names, ?_⟩
+    intro clock index parameters table present
+    have calm := valid.statement_calm names
+    change (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.first witness.position]
+      witness.filter witness.columns names) []).Calm at calm
+    change resolveStatement _ _ _ = .ok (.query (witness.query names) [], _) at resolved
+    rw [runScriptStep_query_eq resolved]
+    simp [statementClock, calm.readsClock, calm.counterReads, ReadCertificate.query,
+      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons,
+      Resolved.stableSort, Resolved.insertStable]
+  obtain ⟨names, state, first⟩ := ReadAnalysis.resolvesOriginal (resolvesTo_sound resolves_original).choose_spec analysis
+  refine ⟨scans certificate_valid _ first, ?_⟩
   obtain ⟨after, found⟩ := resolvesTo_sound resolves_reached
   refine ⟨name! "items", 0, _, _, fun row => [Resolved.mapText Resolved.lowerByte (row.getD 1 .null)], rfl, rfl,
-    ⟨["id"], after, by rw [found]; rfl⟩, ?_, ?_⟩
+    scans (certificate_valid.moved 0) _ (names := ["id"]) (state := after) (by rw [found]; rfl), ?_, ?_⟩
   · decide +kernel
   · decide +kernel
 

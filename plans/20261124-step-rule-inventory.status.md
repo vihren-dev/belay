@@ -53,3 +53,22 @@ Connection.afterWrite_backfill. That data fact identifies the stored rows
 and published counters for an assignment without referring to a script step.
 
 The backfill data contract now states its row-free context and its quantification over caller inputs and reached counters.
+
+The certificate for a read of one table now describes its scan rows, full
+connection and absence of further executions. ReadCertificate.output_eq
+compares these scans across every reached branch. Preservation and
+commutation in ReadCertificatePreservation and CertifiedQueryCommutation use
+the actual steps. KeptRead.preserves consumes scan evidence before and after
+the migration. Its static checker accepts a comparison read whose steps
+match the actual read's. The README rebuild uses its sessions read for both.
+The singly executed observation rules now take an actual absence of further
+executions. DerivedColumnQueries and the certificate callers supply it.
+
+ReplacedCertificateObligations, ReplacedCertificateClaims and
+ReplacedCertificateChecks audit the three old frames, five migration claims,
+original schema checker, single-statement observations and the former
+runScriptStep_simpleTable_output_append. CatalogOutputCases checks a write
+with RETURNING on an empty table with zero counters against a full scan
+certificate. CertificateAfterDrop, S6RulesQueryPattern, S6RulesNegativeReads
+and S6RulesNegativeCertificates check moved tables, a widened SELECT star
+and an unmodeled schema read. The sql_commute diagnostic describes the scan.

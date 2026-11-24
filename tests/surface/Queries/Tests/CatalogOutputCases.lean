@@ -41,6 +41,23 @@ theorem select_returns_empty :
   have empty : emptyTable.scanAt 0 = [] := by decide +kernel
   sql_select [empty]
 
+/-- With all counters initially zero, the empty UPDATE also keeps the full connection.
+For every clock, statement index and parameter list this write realizes the certified
+scan. The lookup identifies the concrete empty table, and both steps compute. -/
+theorem empty_write_realizes_scan :
+    (⟨0, 1, none, [.scalar (.column 0)]⟩ : ReadCertificate).Scans runContext updateRows.statements[0].1
+      (emptyTable.raw.connection Counters.newConnection) := by
+  refine ⟨["a"], ?_⟩
+  intro clock index parameters table present
+  let actual := (emptyTable.raw.table 0).get (by decide +kernel)
+  have located : (emptyTable.raw.connection Counters.newConnection).state.database.table 0 = some actual := by
+    decide +kernel
+  change (emptyTable.raw.connection Counters.newConnection).state.database.table 0 = some table at present
+  rw [located] at present
+  rw [← Option.some.inj present]
+  rfl
+
+#print axioms empty_write_realizes_scan
 #print axioms select_returns_empty
 #print axioms update_returns_empty
 

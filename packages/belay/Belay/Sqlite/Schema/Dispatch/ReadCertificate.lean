@@ -6,31 +6,30 @@ set_option doc.verso true
 namespace Belay.Sqlite
 open Model
 
-/-- The facts that a migration must give for a read, so that the statement keeps its output from the
-original connection to the other connection. In plain words, for a certificate, resolution context and
-statement, with two connections:
-* The statement resolves on the original connection to the statement of the certificate, with some result names.
-* There is a table name, a position and two tables such that the name finds, on the original connection,
-  the table at the position of the certificate, and on the other connection the second table at the
-  given other position ({name}`Model.Database.tableNamed`). The two positions can differ.
-* The statement resolves on the other connection to the statement of the certificate at the other position,
-  with some result names. This fails for a {lit}`SELECT *` after a column is added, because the new
-  resolution has more columns.
-* The rows that the other connection scans are those of the original connection with cells appended to
-  each row (the cells can depend on the row), and every original row has at least as many cells as the width. -/
+/-- One statement realizes the scan described by a read certificate on a connection.
+There are result names such that, for every clock, index and parameter list, if the table
+is at the certificate position then the step returns its normalized scan, keeps the
+connection and permits no further execution. -/
+def ReadCertificate.Scans (certificate : ReadCertificate) (context : ResolveContext)
+    (statement : Syntax.Statement) (connection : Connection) : Prop :=
+  ∃ names, ∀ clock index parameters table, connection.state.database.table certificate.position = some table →
+    runScriptStep context clock index connection statement parameters =
+      .continued (.rows (Resolved.normalForm ((certificate.query names).results
+        (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)))) connection []
+
+/-- A migration witnesses the actual scan on each connection. The same name finds the
+two tables, whose positions can differ. The second scan appends cells to each original
+row and every original row is at least as wide as the certificate requires. -/
 structure ReadCertificate.Obligations (certificate : ReadCertificate) (context : ResolveContext)
     (statement : Syntax.Statement) (original other : Connection) : Prop where
-  /-- The statement resolves to the certificate's statement on the original connection. -/
-  resolvesOriginal : ∃ names state,
-    resolveStatement context original.resolveState statement = .ok (certificate.statement names, state)
-  /-- A name finds the two tables, the statement resolves to the read of the second table, and the two
-  tables are related by appended cells with original rows wide enough. -/
+  /-- The original statement realizes the certificate on its starting connection. -/
+  originalScan : certificate.Scans context statement original
+  /-- The named tables, the other statement's actual scan, and the row relation. -/
   appended : ∃ (name : Identifier) (otherPosition : Nat) (table extended : Table)
       (extra : List Value → List Value),
     original.state.database.tableNamed name = some (certificate.position, table) ∧
     other.state.database.tableNamed name = some (otherPosition, extended) ∧
-    (∃ names state, resolveStatement context other.resolveState statement =
-      .ok ((certificate.moved otherPosition).statement names, state)) ∧
+    (certificate.moved otherPosition).Scans context statement other ∧
     Resolved.sourceRows extended = (Resolved.sourceRows table).map (fun row => row ++ extra row) ∧
     ∀ row ∈ Resolved.sourceRows table, certificate.width ≤ row.length
 

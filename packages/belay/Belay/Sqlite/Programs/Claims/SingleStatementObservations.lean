@@ -32,16 +32,14 @@ theorem sendStatements_single_actual (statement : Syntax.Statement) (values : Li
     simp [sendStatements, Sql.runFrom, step, SqlRun.observation, singleObservation, RunStep.output, quiet,
       Sql.map]
 
-/-- For every statement, values and inputs, when the statement resolves to no INSERT from a query without
-rules, an observation belongs to a branch of the program that sends
-the statement exactly when it is {name}`singleObservation` of the step's output with an output that
-{name}`OutputChoice` permits. This covers the raw output and every concrete listed rows result. Proof
-sketch: a stopping step has one branch; a continuing step has one execution
-({name}`runScriptStep_others_of_single`), selects a permitted output and then returns the one-output list. -/
+/-- For every statement, values, clock, index, connection and observation, if the
+continuing step has no further execution, a branch has the observation exactly when
+the actual output permits a selected output with that observation. Proof sketch:
+invert a stopped or continuing branch and evaluate its pure continuation. -/
 theorem sendStatements_single_branch (statement : Syntax.Statement) (values : List Value)
     (clock : Option Clock) (index : Nat) (connection : Connection) (observation : Option (List Output) × List Output)
-    (single : ∀ resolved after, resolveStatement runContext connection.resolveState statement = .ok (resolved, after) →
-      resolved.fromQuery = false) :
+    (single : ∀ output next others, runScriptStep runContext clock index connection statement values =
+      .continued output next others → others = []) :
     (∃ result, (sendStatements [(statement, values)]).Branch clock index connection result ∧
         result.observation = observation) ↔
       ∃ selected, OutputChoice (runScriptStep runContext clock index connection statement values).output selected ∧
@@ -69,25 +67,23 @@ theorem sendStatements_single_branch (statement : Syntax.Statement) (values : Li
     constructor
     · rintro ⟨result, branch, rfl⟩
       obtain ⟨selected, tail, choice, tailBranch, rfl⟩ :=
-        (Sql.branch_continued_iff step result (runScriptStep_others_of_single step single)).mp branch
+        (Sql.branch_continued_iff step result (single _ _ _ step)).mp branch
       rw [(Sql.branch_pure_iff _ _ _ _ _).mp tailBranch]
       exact ⟨selected, choice, by simp [singleObservation, quiet, SqlRun.observation]⟩
     · rintro ⟨selected, choice, rfl⟩
-      exact ⟨_, (Sql.branch_continued_iff step _ (runScriptStep_others_of_single step single)).mpr ⟨selected, { outputs := [], connection := next, value := some [selected] },
+      exact ⟨_, (Sql.branch_continued_iff step _ (single _ _ _ step)).mpr ⟨selected, { outputs := [], connection := next, value := some [selected] },
         choice, .pure _ _ _ _, rfl⟩, by simp [singleObservation, quiet, SqlRun.observation]⟩
 
-/-- For two programs that each send one statement, at any inputs, when neither statement resolves to
-INSERT from a query without rules (the premises {lit}`firstSingle` and {lit}`secondSingle`: such a statement
-can have more than one execution), if the steps have equal
+/-- For two programs that each send one statement, at any inputs, when each continuing step has no further execution, if the steps have equal
 outputs then the actual observations are equal and the sets of branch observations are equal. Proof sketch:
 {name}`sendStatements_single_actual` and {name}`sendStatements_single_branch` depend on the step only
 through its output. -/
 theorem sendStatements_single_observations (first second : Syntax.Statement) (firstValues secondValues : List Value)
     (firstClock secondClock : Option Clock) (firstIndex secondIndex : Nat) (firstConnection secondConnection : Connection)
-    (firstSingle : ∀ resolved after, resolveStatement runContext firstConnection.resolveState first =
-      .ok (resolved, after) → resolved.fromQuery = false)
-    (secondSingle : ∀ resolved after, resolveStatement runContext secondConnection.resolveState second =
-      .ok (resolved, after) → resolved.fromQuery = false)
+    (firstSingle : ∀ output next others, runScriptStep runContext firstClock firstIndex firstConnection first firstValues =
+      .continued output next others → others = [])
+    (secondSingle : ∀ output next others, runScriptStep runContext secondClock secondIndex secondConnection second secondValues =
+      .continued output next others → others = [])
     (same : (runScriptStep runContext firstClock firstIndex firstConnection first firstValues).output =
       (runScriptStep runContext secondClock secondIndex secondConnection second secondValues).output) :
     ((sendStatements [(first, firstValues)]).runFrom firstClock firstIndex firstConnection).observation =
