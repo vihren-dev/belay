@@ -12,7 +12,8 @@ sessions of one customer keeps each other session. The claim is a SQL
 query that reads the database at the start of the run through the schema
 `before`. Its proof for every database is `purge_frame` with
 `purge_keeps_rows` in `tests/surface/Programs/Scripts/PurgeFrameClaims.lean`.
-The proof costs more than its content:
+At the revision `adr-0033-phase-8-inventory`, before the pilot, the proof
+costs more than its content:
 
 - The four purge fixtures have 216 code lines.
 - The proof calls four laws from nine modules of the model package with
@@ -42,8 +43,9 @@ recommendation. The owner selects the form.
 
 Both claims are about the purge of the fixtures,
 `DELETE FROM sessions WHERE customer_id = :c AND expires_at < :now`.
-The pilot schema is the catalog of the database `sessions` of
-`tests/surface/Schema/Tests/PurgeFrameInstances.lean`: one table with the
+The pilot schema is the catalog of the database `sessions`, which the
+base form moves from `PurgeFrameInstances.lean` to
+`tests/surface/Schema/Tests/PurgeFrameSchema.lean`: one table with the
 columns `id INTEGER PRIMARY KEY`, `customer_id` and `expires_at`.
 
 - The frame claim is `purgeKeeps` of
@@ -292,12 +294,16 @@ the selected form becomes the pull request.
 
 ## Points to know
 
-**Coverage is assumed today.** No law says that a plain DELETE
-continues. `PurgeFrameSite.purgeModeled` assumes it, and
-`AssertionExamples.sessionsSite` in `PurgeFrameInstances.lean` takes it
-as an argument that each instance proves by evaluation. `big_after_delete` in
-`tests/surface/Queries/Tests/SelectContextCases.lean` assumes it too. No
-theorem is about `deleteJsonReady` or `Resolved.anyMayFail`. The kind
+**Coverage before and after the base form.** Before the pilot, no law
+says that a plain DELETE continues: `PurgeFrameSite.purgeModeled`
+assumes it, and `AssertionExamples.sessionsSite` takes it as an argument
+that each instance proves by evaluation. `big_after_delete` in
+`tests/surface/Queries/Tests/SelectContextCases.lean` assumes it too, and
+the pilot does not change it. No theorem is about `deleteJsonReady` or
+`Resolved.anyMayFail`. The base form adds
+`Resolved.anyMayFail_eq_false_iff`, `Resolved.anyMayFail_of_rowwise` and
+`deleteJsonReady_of_rowwise`, and the client lemma
+`PurgeFrameSite.purge_continues` in the fixture of the site. The kind
 rule gives the conditions: `statementClock`, `Counters.firstUnknown`,
 the table at the target, `Resolved.subqueriesPlain` and
 `deleteJsonReady`. `Resolved.Expr.Rowwise.fault_none` and
@@ -359,7 +365,8 @@ use them.
 rewrite the catalog and decide the fact on the schema.
 `Database.resolveState_of_catalog`, `Database.table_of_catalog` and
 `Database.tableNamed_of_hasCatalog` are the library laws. The decisions
-on a schema can be expensive: `PurgeFrameInstances.lean` sets
+on a schema can be expensive: `PurgeFrameInstances.lean` and
+`PurgeEffectInstances.lean` set
 `maxRecDepth 200000`. The notations `ensures` and `ensuresFrom` have no
 form with a schema; a client statement uses `FreshEnsures` and
 `FreshEnsuresFrom` directly.
