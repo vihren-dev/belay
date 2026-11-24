@@ -77,12 +77,16 @@ database `sessions`.
 The base form keeps the present way of proof: one law for one form of
 query. All other forms start from the revision of the base form.
 
-- The model package has a law for the case in which a plain DELETE
-  continues. The law is general: it holds for each plain DELETE whose
-  filter reads only its row and the parameters, on each connection in
-  which the target holds a table. It follows from the kind rule
-  `runScriptStep_plainDelete_eq`. The status file records the general
-  form that the law has and the cases that it leaves out.
+- The model package has the facts that the kind rule
+  `runScriptStep_plainDelete_eq` needs to show that a DELETE continues
+  when its filter is row-wise (`Resolved.Expr.Rowwise`) and it has no
+  subquery. The new fact is about `deleteJsonReady`: the check is true
+  for such a filter, for each context and each table. The facts are data
+  facts: they mention no step. The status file records the general form
+  of each fact and the cases that it leaves out.
+- No theorem of a package states the case in which the step of a DELETE
+  continues: ADR 0033 (D7) keeps no law for one case of a kind rule. A
+  client proof gets the continuation from the kind rule and the facts.
 - `PurgeFrameSite` has no field `purgeModeled`. A theorem states the
   frame claim for each database with a site, as `purge_frame` does today,
   with the weaker site. This theorem holds for each schema in which a
@@ -100,7 +104,7 @@ The claims are Lean propositions about rows, and no SQL query states
 them.
 
 - The frame claim says: each row of the table `sessions` of the start
-  for which the filter of the purge is not true is a row of the table of
+  that the filter of the purge does not select is a row of the table of
   the reached database. The effect claim says: the filter is true for no
   row of the table of the reached database.
 - A reader can see the condition on a row in the statement. The
@@ -123,7 +127,9 @@ law, and a proof of a claim composes the laws.
   query. For a script of one SELECT, an initial database and a context:
   when `resolveTwoState` gives a resolved statement,
   `Holds.inContextSince` holds exactly when the output of the resolved
-  statement, observed with the initial database, has rows.
+  statement has rows. The output is `resolvedStepOutput` with the initial
+  database when the query or one of its subqueries names a schema
+  (`usesSchema`), and without an initial database when none does.
 - The model or the surface package has laws for these parts, and each
   law is about one part. No statement of a law fixes a combination of two
   of them:
@@ -192,6 +198,16 @@ the base form.
   condition "the filter of the DELETE `IS NOT 1`". The effect check
   accepts a claim that says that no row of the table satisfies the
   filter of the DELETE.
+- Each check accepts only a row-wise filter, and it compares the
+  resolved filters of the two statements, so that a parameter has one
+  number in both. The value of a filter with a subquery can change when
+  the DELETE changes the table: after `DELETE FROM t WHERE id = (SELECT
+  min(id) FROM t)`, a row can satisfy the same filter.
+- The frame check accepts a filter only when it establishes that the
+  DELETE selects no row for which the condition `IS NOT 1` is true. A
+  comparison, `AND`, `OR`, `NOT` and `IS NULL` give 0, 1 or NULL, so
+  they qualify. A literal or a column does not: `DELETE FROM t WHERE 2`
+  deletes each row, and `2 IS NOT 1` is true for each row.
 - A theorem of soundness for each check: when the check gives `true` for
   a schema, a DELETE and a claim, the client statement holds for the
   DELETE and the claim with each list of values, for each database with
@@ -227,10 +243,13 @@ for the owner decision:
 - The statement of each claim in each form, as the reader sees it.
 - For each form and each claim: the code lines of the client fixture,
   split into the statement, the proof and the helper declarations.
-- For each form: the code lines added to and deleted from each package
-  (`scc`, as `docs/development/lean-simplification-goal.md` counts them),
-  split into lines that serve each claim of that kind and lines that
-  serve only these two claims.
+- For each form: the net change of the maintained Lean code lines from
+  the revision `adr-0033-phase-8-inventory`, over all files that
+  `docs/development/lean-simplification-goal.md` counts, with `scc` as
+  that document uses it. The record shows the packages and the tests
+  separately, and the retention fixture of form B as its own line. It
+  splits the lines of the packages into lines that serve each claim of
+  that kind and lines that serve only these two claims.
 - For each form: what a reader must trust to accept the claim, and which
   premises a client must prove.
 - For each form: the claims that it cannot state or prove, and what it
@@ -270,8 +289,8 @@ the selected form becomes the pull request.
 
 **Coverage is assumed today.** No law says that a plain DELETE
 continues. `PurgeFrameSite.purgeModeled` assumes it, and
-`PurgeFrameInstances.sessionsSite` takes it as an argument that each
-instance proves by evaluation. `big_after_delete` in
+`AssertionExamples.sessionsSite` in `PurgeFrameInstances.lean` takes it
+as an argument that each instance proves by evaluation. `big_after_delete` in
 `tests/surface/Queries/Tests/SelectContextCases.lean` assumes it too. No
 theorem is about `deleteJsonReady` or `Resolved.anyMayFail`. The kind
 rule gives the conditions: `statementClock`, `Counters.firstUnknown`,
@@ -279,6 +298,17 @@ the table at the target, `Resolved.subqueriesPlain` and
 `deleteJsonReady`. `Resolved.Expr.Rowwise.fault_none` and
 `Resolved.Expr.Rowwise.calm` are in
 `Queries/Evaluation/RowwiseExpr.lean` of the model package.
+`Resolved.Statement.Calm.readsClock` and
+`Resolved.Statement.Calm.firstUnknown` are in
+`Programs/Scripts/StatementCalm.lean`. `Resolved.subqueriesPlain` of the
+empty list is true by computation.
+
+**`IS NOT 1` and the selected rows.** `Resolved.Expr.truthy_isNot_one_and`
+says for `AND` that a row for which the condition `IS NOT 1` is true is
+not selected. The same holds for each expression whose value is 0, 1 or
+NULL. It is false for a literal or a column: 2 selects a row, and
+`2 IS NOT 1` is true. A row-wise expression can be a literal or a
+column.
 
 **Two contexts for one filter.** The DELETE evaluates its filter in the
 context of the statement (`Resolved.statementContext`). The claim
@@ -288,8 +318,10 @@ proof connects them with `Resolved.Expr.Rowwise.evaluate_congr`.
 **Two-state assertions.** `Holds.reachedSince` is
 `Holds.inContextSince` at the default observation of the context.
 `Script.observeTwoStateIn` and `Model.observeTwoState` resolve the query
-with `resolveTwoState` and give `resolvedStepOutput` with the initial
-database. No law connects the assertion to `resolvedStepOutput` for a
+with `resolveTwoState` and give `resolvedStepOutput`. They pass the
+initial database when the query or a subquery names a schema
+(`usesSchema`), and `none` when none does, as for the effect claim. No
+law connects the assertion to `resolvedStepOutput` for a
 known resolution; `purge_keeps_rows` unfolds the definitions.
 `resolvedStepOutput_query_hasRows_of_clean_from`
 (`Tooling/Counterexamples/TwoStateQuerySteps.lean` of the model

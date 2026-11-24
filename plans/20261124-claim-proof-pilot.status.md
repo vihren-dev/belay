@@ -7,7 +7,7 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 ## References
 
 - Owner request of 2026-11-24 (quoted in the task file).
-- ADR 0033, `docs/adr/0033-exact-step-rules.md`: the kind rules that the
+- ADR 0033, `docs/adr/adr-0033-exact-step-rules.md`: the kind rules that the
   pilot uses.
 - `docs/development/lean-simplification-goal.md`: how code lines and
   capabilities are counted.
