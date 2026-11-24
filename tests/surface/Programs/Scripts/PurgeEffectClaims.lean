@@ -1,14 +1,10 @@
 import PurgeFrameSchema
 import SelectOneWhereSupport
 
-/-! A fixture module of `tests/surface_assertion_examples_test.py`: the effect claim of the guide's purge for each
-database with the catalog of the pilot schema. The claim `purgeClears` says that no session
-for which the filter of the purge is true is left. Its client statement `purge_clears` has
-no premise other than the catalog. The proof uses the laws of the query form
-`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)`: `resolveStatement_selectOne_notExists`,
-`tableOne_run` and `whereOne_claims`. -/
-
 set_option doc.verso true
+
+/-! A fixture module of `tests/surface_assertion_examples_test.py`: the effect claim of the guide's purge for each
+database with the catalog of the pilot schema. The overview with checked names is at the end of the file. -/
 
 namespace AssertionExamples
 open Belay.Sqlite Std.Do
@@ -80,5 +76,10 @@ theorem purge_clears (c now : Value) :
 
 #print axioms purgeClears_iff
 #print axioms purge_clears
+
+/-! The claim {name}`purgeClears` says that no session is left that the filter of the purge selects. Its client
+statement {name}`purge_clears` has no premise other than the catalog. The proof uses the laws of the query form
+{lit}`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)`: {name}`resolveStatement_selectOne_notExists`,
+{name}`tableOne_run` and {name}`whereOne_claims`. -/
 
 end AssertionExamples

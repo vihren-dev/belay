@@ -46,9 +46,16 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   short sentences, the fields of `sessionsSite`).
 - 2026-11-24, base form: the effect claim `purgeClears` and its client
   statement `purge_clears`.
-- 2026-11-24, base form: review fixes of the effect commit (module
-  docstrings without unchecked references, the proof sketch of
+- 2026-11-24, base form: review fixes of the effect commit (declaration
+  names in module docstrings as plain code, the proof sketch of
   `purgeClears_iff`, the docstrings of the instances and of the test).
+- 2026-11-24, base form: `PurgeEffectClaims.lean` and
+  `PurgeFrameSchema.lean` name their declarations with checked references,
+  in a second module docstring at the end of the file. Lean refuses a Verso
+  module docstring after a Markdown one, so `set_option doc.verso true` now
+  comes before the first module docstring.
+- 2026-11-24, base form: `PurgeFrameSite.lean` gets the same layout, with a
+  checked reference to `PurgeFrameSite.purge_continues` at the end.
 
 ## Base form
 

@@ -1,13 +1,11 @@
 import PurgeFrameClaims
 
+set_option doc.verso true
+
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the guide's purge frame claim for each database
 with the catalog of the pilot schema (ADR 0017, S6). The schema is the database {lit}`sessions` with one table
-`sessions (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`. A database with its
-catalog has the site of the purge (`sessionsSite`), and the client statement
-`purge_frame_on_sessions` follows from `purge_frame`. It has no
-premise other than the catalog. -/
-
-set_option doc.verso true
+`sessions (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`. The overview with
+checked names is at the end of the file. -/
 
 namespace AssertionExamples
 open Belay.Sqlite Std.Do
@@ -62,5 +60,9 @@ theorem purge_frame_on_sessions (c now : Value) :
 #print axioms sessions_found
 #print axioms sessionsSite
 #print axioms purge_frame_on_sessions
+
+/-! Each database with the catalog of {name}`sessions` has the site of the purge ({name}`sessionsSite`). The client
+statement {name}`purge_frame_on_sessions` follows from {name}`purge_frame`. It has no premise other than the
+catalog. -/
 
 end AssertionExamples

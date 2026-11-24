@@ -1,13 +1,13 @@
 import PurgeFrameQueries
 
+set_option doc.verso true
+
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: the site of the guide's purge claim (ADR 0017,
 S6). The purge `DELETE FROM sessions WHERE customer_id = :c AND expires_at < :now` removes the rows for which the
 filter is true. The claim compares the start with the reached database. It holds when the schema and the resolution
 of the purge and of the claim are as the fields of `PurgeFrameSite` say. The site does not assume that the model runs
-the purge: the kind rule of the plain DELETE and the facts of its readiness give it (`PurgeFrameSite.purge_continues`).
-The final property of the claim is not a field of the site. -/
-
-set_option doc.verso true
+the purge. The final property of the claim is not a field of the site. The overview at the end of the file tells why
+the purge runs. -/
 
 namespace AssertionExamples
 open Belay.Sqlite Std.Do
@@ -61,5 +61,8 @@ theorem PurgeFrameSite.purge_continues {db : Database} (site : PurgeFrameSite db
     returningExpressions, RunStep.continues]
 
 #print axioms PurgeFrameSite.purge_continues
+
+/-! The model runs the purge on each database with a site. The kind rule of the plain DELETE and the readiness fact of
+a row-wise filter give this ({name}`PurgeFrameSite.purge_continues`). -/
 
 end AssertionExamples
