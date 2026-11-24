@@ -32,7 +32,7 @@ def test_sql_run_proves_an_update_claim(runtime_root: Path, tmp_path: Path) -> N
 
 
 def test_sql_run_covers_every_statement_rule(runtime_root: Path, tmp_path: Path) -> None:
-    """`sql_run` applies `runScriptStep_plainDelete_eq`, `Sql.check_send_addColumn`, `Sql.check_query_select`,
+    """`sql_run` applies `runScriptStep_plainDelete_eq`, `runScriptStep_addColumn_eq`, `Sql.check_query_select`,
     `Sql.check_single_select` and `Sql.check_send_select`, and it keeps the sibling goal of a conjunction while
     it works on the first goal. The claims are about one concrete database and every complete environment."""
     check_module_chain(runtime_root, tmp_path, (("S6RulesEffects", 3), ("S6AutoPaths", 6)),
