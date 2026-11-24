@@ -19,3 +19,7 @@ runScriptStep_keyCheck_continues. SchemaSuccess reads the foreign-key rows
 in its group proof. SelectOutcomeCases uses the query equation for a
 missing clock. QuerySendClaims checks the continuation and trace on a
 variable connection for every modeled outcome.
+
+Independent review requested a precise statement of the selected-output projection,
+the SELECT dispatch order, a smaller tactic module, exhaustive output cases and
+fixture documentation. The revision covers all five findings.
