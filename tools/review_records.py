@@ -25,6 +25,15 @@ RESOLUTION_FILE = re.compile(rf"(?P<review>{REVIEW_ID})/resolution-(?P<number>[1
 """The file of one resolution record: the finding's review and number, then the UTC second."""
 
 
+def record_moment(date: str) -> datetime:
+    """The time that an ISO 8601 date gives.
+
+    The function replaces the suffix `Z` with the offset `+00:00`: Python 3.10, which CI uses
+    on the host, does not read the suffix in `datetime.fromisoformat`.
+    """
+    return datetime.fromisoformat(date[:-1] + "+00:00" if date.endswith("Z") else date)
+
+
 def record_path(record: Mapping[str, object]) -> PurePosixPath:
     """The path of a record's file, relative to the reviews directory.
 
@@ -35,7 +44,7 @@ def record_path(record: Mapping[str, object]) -> PurePosixPath:
         return PurePosixPath(str(record["id"]), "review.json")
     if record.get("kind") == "resolution":
         review, _, number = str(record["finding"]).partition("#")
-        moment = datetime.fromisoformat(str(record["date"]))
+        moment = record_moment(str(record["date"]))
         if moment.tzinfo is None:
             raise ValueError("resolution date must include a UTC offset")
         moment = moment.astimezone(timezone.utc)
