@@ -2,9 +2,13 @@ import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
 
 set_option doc.verso true
 
+/-! The exact step of a DELETE statement without RETURNING or write rules. Its subqueries
+may read the clock or a counter. -/
+
 namespace Belay.Sqlite.Model
 
-/-- For every connection, clock, index and parameter list, if the statement resolves to a plain DELETE,
+/-- For every connection, clock, index and parameter list, if resolution from the connection gives
+a DELETE with any subqueries, no RETURNING columns and no write rules,
 the step ends with {name}`clockUnmodeled` if the statement reads a missing clock. Otherwise the
 first unknown counter that it reads ends the run with {name}`counterUnknownReason`. If both checks pass, a missing target table ends the run as unmodeled.
 For a present table, failure of the subquery or JSON check ends the run as unmodeled. Otherwise the

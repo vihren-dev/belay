@@ -2,9 +2,14 @@ import Belay.Sqlite.Model.Programs.Scripts.PlainInsertRule
 
 set_option doc.verso true
 
+/-! The exact step of an UPDATE statement without RETURNING or write rules. Its subqueries
+may read the clock or a counter. The data facts about {name}`Belay.Sqlite.Model.updateOutcome_ok` and
+{name}`Belay.Sqlite.Model.updateOutcome_error` describe the resulting database. -/
+
 namespace Belay.Sqlite.Model
 
-/-- For every connection, clock, index and parameter list, if the statement resolves to a plain UPDATE,
+/-- For every connection, clock, index and parameter list, if resolution from the connection gives
+an UPDATE with any subqueries, no RETURNING columns and no write rules,
 the step ends with {name}`clockUnmodeled` if the statement reads a missing clock. Otherwise the
 first unknown counter that it reads ends the run with {name}`counterUnknownReason`. If both checks pass, a missing target table ends the run as unmodeled.
 For a present table, failure of the support, subquery or JSON check ends the run as unmodeled. So does
