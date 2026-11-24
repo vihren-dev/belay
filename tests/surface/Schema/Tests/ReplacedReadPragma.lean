@@ -1,12 +1,11 @@
-import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
-import Belay.Sqlite.Model.Schema.Rows.PragmaStepLaws
+import Belay
 
 set_option doc.verso true
 
-/-! A pragma that only reads resolves to a query or a prepare error. A continuing step keeps the connection. -/
+/-! Original group contracts under ADR 0033, checked through the last change to their dependencies. -/
 
-namespace Belay.Sqlite.Model
+namespace Belay.Sqlite.ReplacedFrames
+open Belay.Sqlite.Model
 
 /-- For every connection and statement of a pragma that only reads, such as {lit}`PRAGMA foreign_key_check`,
 and every step that continues: the step has no further execution and the next connection is the
@@ -23,4 +22,6 @@ theorem runScriptStep_pragma_keeps {context : ResolveContext}
   runScriptStep_readOnly_keeps found
     (resolveStatementPragma_readOnly reads (by simpa only [statement_arms] using found)) step
 
-end Belay.Sqlite.Model
+#print axioms runScriptStep_pragma_keeps
+
+end Belay.Sqlite.ReplacedFrames

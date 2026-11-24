@@ -75,7 +75,7 @@ def test_replaced_laws_follow_from_the_kind_rules(runtime_root: Path, tmp_path: 
     use the kind rules runScriptStep_createTable_eq and runScriptStep_plainInsert_eq, the data facts of CREATE TABLE
     and plain INSERT, and the bridge Sql.check_send_of_rule. The check shows that the replacement of the
     old laws loses no fact. Every theorem uses only logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 3), ("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
+    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedStepLaws", 7), ("ReplacedSendLaws", 3)))
 
 
 @pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
@@ -95,7 +95,7 @@ def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, t
 def test_exact_plain_write_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
     """The exact UPDATE and DELETE rules prove both former database effects and all four former
     send rules with their original premises and ordinary logical axioms."""
-    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 3), ("ReplacedPlainWriteLaws", 2),
+    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 3), ("ReplacedFailureFrames", 2), ("ReplacedPlainWriteLaws", 2),
                        ("ReplacedDeleteSendLaws", 2), ("ReplacedUpdateSendLaws", 2)))
 
 
@@ -144,3 +144,8 @@ def test_replaced_write_mode_laws(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (
         ("ReplacedProgramDrop", 2), ("ReplacedProductionSuccess", 2), ("ReplacedWriteChoices", 4)
     ), timeout=120)
+
+
+def test_replaced_group_frames(runtime_root: Path, tmp_path: Path) -> None:
+    """The original CREATE, DROP and read-only pragma frame statements use the retained model laws."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedSchemaFailures", 2), ("ReplacedReadPragma", 1)))

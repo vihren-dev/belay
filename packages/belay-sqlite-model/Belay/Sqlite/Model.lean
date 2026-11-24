@@ -100,7 +100,6 @@ import Belay.Sqlite.Model.Programs.Scripts.PlainInsertSelectRule
 import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateRule
 import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteRule
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertFailure
-import Belay.Sqlite.Model.Programs.Scripts.SchemaFailureLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.CopyStep
 import Belay.Sqlite.Model.Schema.Writes.CopyInsertFits
@@ -114,6 +113,11 @@ import Belay.Sqlite.Model.Schema.Dispatch.SelectTableParts
 import Belay.Sqlite.Model.Schema.Columns.CopyInsertRows
 import Belay.Sqlite.Model.Tooling.Counterexamples.CopyInsertRows
 import Belay.Sqlite.Model.Queries.Preparation.RestrictionText
+
+import Belay.Sqlite.Model.Schema.Columns.SchemaFailureLaws
+import Belay.Sqlite.Model.Schema.Rows.PragmaStepLaws
+import Belay.Sqlite.Model.Schema.Ddl.DropTableResolution
+import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

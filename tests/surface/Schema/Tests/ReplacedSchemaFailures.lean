@@ -1,22 +1,11 @@
-import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
-import Belay.Sqlite.Model.Schema.Ddl.DropTableResolution
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
-import Belay.Sqlite.Model.Schema.Ddl.TableByName
-import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
-import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
-import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
-import Belay.Sqlite.Model.Schema.Columns.SchemaFailureLaws
+import Belay
 
 set_option doc.verso true
 
-/-! The failure laws of CREATE TABLE and DROP TABLE (ADR 0017, S6): a statement that SQLite refuses
-(a name that is in use, a table that does not exist) is a prepare error of the model, and a step of
-a prepare error leaves the connection as it was. A CREATE TABLE that the model runs never fails, so every
-failed step of CREATE TABLE keeps the connection. The same holds for DROP TABLE when foreign keys are off. With
-foreign keys on, the write program can fail during execution. The exact DROP equation in
-{lit}`DropWithRules.lean` gives the result for each conflict algorithm. -/
+/-! Original group contracts under ADR 0033, checked through the last change to their dependencies. -/
 
-namespace Belay.Sqlite.Model
+namespace Belay.Sqlite.ReplacedFrames
+open Belay.Sqlite.Model
 
 /-- For every connection and CREATE TABLE statement, and every step that continues with an error output: the
 step has no further execution, and the next connection is the connection. In plain words, a CREATE TABLE
@@ -84,4 +73,7 @@ theorem runScriptStep_dropTable_off_failed {context : ResolveContext}
   · rw [runScriptStep_prepareError_eq found] at step
     cases step; exact ⟨rfl, rfl⟩
 
-end Belay.Sqlite.Model
+#print axioms runScriptStep_createTable_failed
+#print axioms runScriptStep_dropTable_off_failed
+
+end Belay.Sqlite.ReplacedFrames

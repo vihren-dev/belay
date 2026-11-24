@@ -1,3 +1,4 @@
+import ReplacedFailureFrames
 import ReplacedGeneralSend
 import ReplacedStepLaws
 import Belay.Sqlite.Programs.Scripts.KindRuleSend
@@ -11,6 +12,8 @@ kind rule of CREATE TABLE, and {name}`ReplacedGeneral.Sql.check_send_of_step` wi
 has lost the fact. -/
 
 set_option doc.verso true
+
+open Belay.Sqlite.ReplacedFrames
 
 namespace Belay.Sqlite.ReplacedSendLaws
 open Belay.Sqlite Model

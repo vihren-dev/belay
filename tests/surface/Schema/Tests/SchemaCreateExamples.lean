@@ -61,24 +61,27 @@ theorem create_appends_and_keeps : ∀ output next others, stepOf start createQ 
 
 /-- Failure law of CREATE TABLE: a CREATE TABLE of a name in use fails with an error output, and the step changes
 nothing: the connection after it is the connection before. The kernel shows that the step fails. Proof sketch:
-{name}`runScriptStep_createTable_failed`. -/
+the computed preparation error has the original connection. -/
 theorem create_existing_keeps_the_connection : outputOf start createP = some (.error 1) ∧
     ∀ output next others, stepOf start createP = .continued output next others →
       output.isError = true → others = [] ∧ next = start := by
-  refine ⟨by decide +kernel, fun output next others step failed => ?_⟩
-  obtain ⟨created, columns, constraints, options, form⟩ : ∃ created columns constraints options,
-      createP = .createTable created columns constraints options := ⟨_, _, _, _, rfl⟩
-  rw [form] at step
-  exact runScriptStep_createTable_failed step failed
+  refine ⟨by decide +kernel, fun output next others step _ => ?_⟩
+  have actual : stepOf start createP = .continued (.error 1) start [] := rfl
+  rw [actual] at step
+  cases step
+  exact ⟨rfl, rfl⟩
 
 /-- Failure law of DROP TABLE with foreign keys off: the drop of a table that does not exist fails and changes
-nothing. Proof sketch: {name}`runScriptStep_dropTable_off_failed`. -/
+nothing. Proof sketch: the computed preparation error has the original connection. -/
 theorem drop_missing_keeps_the_connection :
     outputOf start (.dropTable (name! "zz") false) = some (.error 1) ∧
     ∀ output next others, stepOf start (.dropTable (name! "zz") false) = .continued output next others →
       output.isError = true → others = [] ∧ next = start := by
-  refine ⟨by decide +kernel, fun output next others step failed => ?_⟩
-  exact runScriptStep_dropTable_off_failed (connection := start) (by decide +kernel) step failed
+  refine ⟨by decide +kernel, fun output next others step _ => ?_⟩
+  have actual : stepOf start (.dropTable (name! "zz") false) = .continued (.error 1) start [] := rfl
+  rw [actual] at step
+  cases step
+  exact ⟨rfl, rfl⟩
 
 
 #print axioms create_appends_and_keeps

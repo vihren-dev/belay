@@ -22,3 +22,11 @@ now live in ReplacedGeneralSend with an axiom audit. SqlRun, SqlRunRules
 and SqlRunGoals implement the diagnostic and read traversal. KindRuleSend
 contains the common rule. The affected suites are surface_schema_script_test
 and surface_s6_automation_test.
+
+Moved the unused failed-state and plain-write frames to ReplacedFailureFrames.
+ReplacedSchemaFailures and ReplacedReadPragma check the original group contracts.
+The concrete CREATE and DROP examples use their computed error steps. The
+read-only pragma example uses the shared query/prepare-error frame.
+surface_schema_script_test checks the original premises, logical axioms and
+concrete cases. Historical source links in the resolver inventory now point
+at the original revision.

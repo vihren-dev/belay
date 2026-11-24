@@ -7,9 +7,7 @@ set_option doc.verso true
 /-! The exact kind rule of CREATE TABLE. The rule {lit}`runScriptStep_createTable_eq` applies to a statement that
 resolves to {lit}`Resolved.Statement.createTable`. A case split on the condition of its equation gives each fact
 about the step: the output, the next connection and the absence of a further execution. A CREATE
-TABLE text can also resolve to a prepare error (a name in use) or to a no-op ({lit}`IF NOT EXISTS`). This rule does
-not apply to them; {lit}`runScriptStep_createTable_failed` says that a step of a CREATE TABLE text that continues
-with an error keeps the connection. -/
+TABLE text can also resolve to a prepare error (a name in use) or to a no-op ({lit}`IF NOT EXISTS`). The resolved constructor selects the rule in each case. -/
 
 namespace Belay.Sqlite.Model
 
