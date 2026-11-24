@@ -51,3 +51,5 @@ backfill_step contract. Its sole package caller, derivedColumn_state in
 DerivedColumnScript.lean, now uses runScriptStep_plainUpdate_eq and
 Connection.afterWrite_backfill. That data fact identifies the stored rows
 and published counters for an assignment without referring to a script step.
+
+The backfill data contract now states its row-free context and its quantification over caller inputs and reached counters.
