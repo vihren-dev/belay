@@ -86,3 +86,11 @@ Both forms of resolution-premise inspection now live with the goal helpers in
 SqlRunGoals. After the rule-selection change at 78e27e58, S6AutoPaths elaborated in
 32.01 s, SchemaRuleExamples in 15.89 s and SchemaSendClaims in 1.36 s (faster
 of two). Each is below twice its starting time or is a new fixture.
+
+On the final rule-selection code, the D11 total goes from 98,362 to 98,630 lines. The end has 59,128 model, 14,353 surface and 21,456 test lines. The SQL text, conformance, public-doc-tools and other scopes are unchanged.
+
+| Changed sql_run fixture | Start (s) | End (s) |
+| --- | ---: | ---: |
+| S6AutoPaths | 51.80 | 32.01 |
+| SchemaRuleExamples | 15.58 | 15.89 |
+| SchemaSendClaims | new | 1.36 |
