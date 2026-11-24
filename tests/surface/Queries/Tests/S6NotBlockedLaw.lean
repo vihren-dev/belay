@@ -1,3 +1,4 @@
+import SelectSyntaxFrame
 import S6NotBlocked
 
 /-! A fixture module of `tests/surface_s6_not_blocked_test.py`: the guide's query equivalence of {lit}`NOT IN` and
@@ -89,14 +90,6 @@ structure NotBlockedSite (db : Database) where
 /-- No row of {lit}`blocked` has a NULL {lit}`customer_id`: the cell at position 0 of every row is not NULL. -/
 def NoNullBlockedId {db : Database} (site : NotBlockedSite db) : Prop :=
   ∀ row ∈ db.raw.rows.getD site.blockedPosition [], (row.values.getD 0 .null).isNull = false
-
-/-- The original SELECT syntax supplies the frame for both a query and a prepare error. -/
-private theorem selectFrame {statement : Syntax.Statement} (select : IsSelectStatement statement)
-    {clock : Option Clock} {index : Nat} {conn : Connection} {values : List Value} :
-    ∀ output next others, runScriptStep runContext clock index conn statement values = .continued output next others →
-      others = [] ∧ next = conn := by
-  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ := select
-  exact fun _ _ _ => runScriptStep_select_keeps
 
 /-- For every database with the site, every environment, and no NULL blocked id: the two guide scripts are
 equivalent ({name}`Sql.EquivAt`) at the initial context of the database. The premises are the rowid alias of

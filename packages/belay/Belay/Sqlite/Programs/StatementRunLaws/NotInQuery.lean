@@ -36,15 +36,28 @@ theorem Sql.EquivAt.of_select_steps {first second : Script} {state : ExecutionCo
     (by simp [Sql.hasOneBranch, sendStatements, Sql.map, rightStep, Model.Output.choosesResults]) ?_
   simp [Sql.runFrom, sendStatements, Sql.map, leftStep, rightStep]
 
-/-- Consider two single-statement scripts whose steps, whenever they continue,
-preserve the connection and have no further executions. Their outputs at this
-context must equal those of the specified NOT IN and NOT EXISTS queries.
-The outer and inner tables are present, the outer key is in range, aliases the
-rowid and has aliased rows. The comparison affinity is not TEXT. Each tested
-inner value is non-NULL. Under these conditions the scripts have equal actual
-runs and branch sets. Without the non-NULL premise, NOT IN can yield NULL.
-Proof sketch: the rowid-alias data law equates both sets of rows. Their frames
-and {name}`RunStep.eq_of_rows` give the full steps for {name}`Sql.EquivAt.of_select_steps`. -/
+/-- For every execution context, two single-statement scripts with the same bound values,
+two table positions, result names, projection columns and collations, assume all of the following.
+
+* Each continuing execution of the first statement keeps the connection and has no further executions.
+* Each continuing execution of the second statement keeps the connection and has no further executions.
+* At this context and these parameter values the first step has the output of the outer scan projecting
+  {lit}`columns` with condition {lit}`key NOT IN` subquery 0. That subquery selects {lit}`column`
+  from the inner table with no filter.
+* At the same inputs the second step has the output of the same projection with condition
+  {lit}`NOT EXISTS` subquery 0. That subquery selects 1 from the inner table where its column
+  (at offset {lit}`outer + column`) equals the outer key with the same affinity.
+* {lit}`keyInside`: the key position is below the outer width. {lit}`presentOuter` and
+  {lit}`presentInner`: the connection has the two indicated tables at their respective positions.
+* {lit}`alias`: the outer key is its rowid alias. {lit}`aliased`: its value in every outer
+  row equals that row's rowid. {lit}`notText`: comparison affinity is not TEXT.
+* {lit}`known`: the inner column is non-NULL in every source row.
+
+Then sending the two scripts gives equal actual runs and branch sets at this context
+({name}`Sql.EquivAt`). Without the non-NULL premise a NULL can change NOT IN.
+Proof sketch: {name}`resolvedStepOutput_notIn_eq_notExists_of_rowidAlias` identifies both row
+outputs. The two frames and {name}`RunStep.eq_of_rows` give the two full steps
+for {name}`Sql.EquivAt.of_select_steps`. -/
 theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state : ExecutionContext}
     {parameters : List Value}
     {firstStatement secondStatement : Syntax.Statement}

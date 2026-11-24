@@ -102,3 +102,5 @@ step projections. The positive and negative rowid-alias equivalences now accept
 the actual frames. ReplacedExecutionProjections and ReplacedSubqueryEquivalence
 check the former contracts. LowercaseSimulation and S6NotBlockedLaw use the
 common SELECT frame in their end-to-end migration and rowid proofs.
+
+SelectSyntaxFrame supplies the shared SELECT frame to the two rowid-equivalence checks. The public statement lists each frame, query, parameter and table premise.
