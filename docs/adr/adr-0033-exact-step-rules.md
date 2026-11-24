@@ -1,8 +1,9 @@
 # ADR 0033: One exact step rule for each statement kind
 
-Date: 2026-11-23. Status: PROPOSED. Owner decision 1 is decided (owner, 2026-11-23: "I accepted
-your recommendation. So we will adopt this style for all kinds of sql statements."). Owner
-decisions 2 and 3 are open.
+Date: 2026-11-23. Status: PROPOSED. The three owner decisions are decided: decision 1 on
+2026-11-23 ("I accepted your recommendation. So we will adopt this style for all kinds of sql
+statements."), decisions 2 and 3 on 2026-11-24 ("We do all kinds", "We handle the retention
+tests as you recommend").
 Audience: designers and reviewers.
 Evidence: the [findings record of the pilot](../records/statement-rule-pilot-findings.md) and its
 [task file](../../plans/20261123-statement-rule-pilot.task.md).
@@ -176,7 +177,7 @@ attribute `@[step_rule]`. The rule of CREATE TABLE, without its binders:
   `some rules`.
 - A kind fixes a mode argument only when the fixed value makes the right side of the rule
   simpler. An argument that the step uses in the same way for each value stays a variable.
-- The kinds of one constructor together cover the constructor, subject to owner decision 2.
+- The kinds of one constructor together cover the constructor (owner decision 2).
 
 ### D3. The right side of a rule
 
@@ -304,7 +305,8 @@ The removal of the old laws is a part of each slice. It is not a step after the 
   the evidence that the original claims stay derivable, which the simplification goal asks for.
 - When a slice cannot prove a deleted statement with the same premises, or cannot move a proof,
   the work stops and the owner decides.
-- How long the retention tests stay is owner decision 3.
+- The retention tests are temporary witnesses (owner decision 3). The final slice deletes them
+  (D12).
 
 ### D9. Client claims
 
@@ -333,7 +335,7 @@ test.
 | 4 | CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, DROP without write rules, the catalog rewrite of a rename, DROP COLUMN, a statement that SQLite refuses to prepare | Deletes `Sql.check_send_addColumn`, `Sql.ifOk_send_addColumn`, `Sql.check_send_dropPlain` and `Sql.check_send_rewrite`. |
 | 5 | A query | The first kind whose output can be a choice between results (D6). The contracts of ADR 0027 do not change. See the note on `Sql.check_send_select` below. |
 | 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. The general rules for a send exclude INSERT from a query today. |
-| 7 | The kinds with write rules, and the kinds with RETURNING columns | Subject to owner decision 2. |
+| 7 | The kinds with write rules, and the kinds with RETURNING columns | Starts with one kind, INSERT with write rules, and records its cost before the other kinds (owner decision 2). |
 | 8 | No kind | The final slice (D12). It makes the end state true and records it. |
 
 `Sql.check_send_select` is not a rule of the form that D6 deletes. Its premise is the syntax of a
@@ -378,9 +380,7 @@ kinds. The inventory gives the class of each theorem: a law for a group of kinds
 about the step of one kind. The inventory is a record in the status file; the slice adds no tool
 for it. At the end of the slice, these conditions hold:
 
-- **Rules.** The kind rules cover each constructor of `Resolved.Statement` (D2). With option (b)
-  of owner decision 2, the inventory names the kinds without a rule, and the conditions below
-  apply to the other kinds.
+- **Rules.** The kind rules cover each constructor of `Resolved.Statement` (D2).
 - **Step laws.** Callers use each law for a group of kinds for more than one kind (D5). No
   theorem about the step of one kind is a partial law (D7) or a consequence of a case that a
   data fact can state (D4). For each theorem about the step of one kind that stays, the
@@ -389,10 +389,9 @@ for it. At the end of the slice, these conditions hold:
   or `runScriptStepWith` is the proof of a kind rule or of a law for all kinds or for a group
   of kinds, or it is one of the proofs that D8 does not move.
 - **Texts.** No docstring, guide, skill or README names a deleted law.
-- **Retention tests.** With option (a) of owner decision 3, the final slice is the last planned
-  change to the shared contracts. Its status file records the Nix acceptance of its last code
-  revision. Then the slice deletes the retention tests, except the witnesses that option (a)
-  keeps.
+- **Retention tests.** The final slice is the last planned change to the shared contracts. Its
+  status file records the Nix acceptance of its last code revision. Then the slice deletes the
+  retention tests, except the witnesses that owner decision 3 keeps.
 - **Surface.** No surface rule has the resolution to one kind as a premise, and `sendRule` has
   no branch for a kind with a rule. A `sendRule` without a branch is deleted, and so is each
   general rule for a send that has no caller after the retention tests (D6). `Sql.check_exec`
@@ -486,11 +485,12 @@ decides.
    surface rule of their own, and ROLLBACK has no step law of its own. Options:
    (a) each kind gets a rule, in the order of D10; slice 7 starts with one kind, INSERT with
    write rules, and records its cost before the other kinds; (b) slices 2 to 6 and the final
-   slice only, and a rule for a kind of slice 7 when a client claim needs it. With (b), `sendRule` keeps its general
-   branch (`Sql.check_send_of_step_notInsertSelect`) for the kinds of slice 7 other than INSERT
-   from a query, and `Sql.check_exec` is the rule for INSERT from a query with write rules or
-   RETURNING columns. Recommendation: (a). It gives `sql_run` one path and each statement an
-   exact step, and the record after the first kind of slice 7 lets the owner stop there.
+   slice only, and a rule for a kind of slice 7 when a client claim needs it. With (b),
+   `sendRule` keeps its general branch (`Sql.check_send_of_step_notInsertSelect`) for the kinds
+   of slice 7 other than INSERT from a query, and `Sql.check_exec` is the rule for INSERT from a
+   query with write rules or RETURNING columns. Recommendation: (a). It gives `sql_run` one path
+   and each statement an exact step, and the record after the first kind of slice 7 lets the
+   owner stop there. **DECIDED 2026-11-24: (a)** (owner: "We do all kinds").
 3. **The retention tests.** Options: (a) the rules of ADR 0025 (D4) and ADR 0026 for temporary
    witnesses apply. A retention test stays through the last planned change to each shared
    contract that its proofs use: a kind rule, a data fact, a projection or the surface rule.
@@ -498,4 +498,5 @@ decides.
    deleted. A witness that is the only check of a premise, of a distinction between cases or
    of a trust guarantee stays until a caller or a focused test covers it. (b) The retention
    tests stay in the test suite with no end. Recommendation: (a). At `a03e8267`, the pilot's
-   test has 212 lines for nine laws.
+   test has 212 lines for nine laws. **DECIDED 2026-11-24: (a)** (owner: "We handle the
+   retention tests as you recommend").
