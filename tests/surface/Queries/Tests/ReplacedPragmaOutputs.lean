@@ -2,10 +2,14 @@ import Belay
 
 set_option doc.verso true
 
+/-! The two original foreign-key pragma contracts use their preparation conditions and
+the database and table row-reference criteria. -/
+
 namespace Belay.Sqlite.Model.ReplacedQueries
 open Resolved
 
-/-- Retain the original premises and conclusion of {lit}`runScriptStep_keyCheck_empty`. -/
+/-- The former {lit}`runScriptStep_keyCheck_empty` equates empty rows with valid references
+across the database when the pragma prepares. -/
 theorem runScriptStep_keyCheck_empty (context : ResolveContext) (clock : Option Clock)
     (index : Nat) (connection : Connection) (parameters : List Value)
     (prepares : ∀ position < connection.state.database.catalog.length,
@@ -20,7 +24,8 @@ theorem runScriptStep_keyCheck_empty (context : ResolveContext) (clock : Option 
 
 #print axioms runScriptStep_keyCheck_empty
 
-/-- Retain the original premises and conclusion of {lit}`runScriptStep_tableKeyCheck_empty`. -/
+/-- The former {lit}`runScriptStep_tableKeyCheck_empty` checks the named table’s references
+from its lookup, its preparation condition and the table-specific row criterion. -/
 theorem runScriptStep_tableKeyCheck_empty (context : ResolveContext) (clock : Option Clock)
     (index : Nat) (connection : Connection) (parameters : List Value) (name : Identifier)
     (position : Nat) (table : Table)

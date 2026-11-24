@@ -2,6 +2,10 @@ import Belay
 
 set_option doc.verso true
 
+/-! Retain the output of a calm single-table scan, the output of a ready query and the
+property of every possible result. The scan uses the exact query equation with its
+six data checks. The other two statements use the general output projection. -/
+
 namespace Belay.Sqlite.Model.ReplacedQueries
 open Resolved
 

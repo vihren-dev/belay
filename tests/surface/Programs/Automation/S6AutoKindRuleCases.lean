@@ -2,8 +2,7 @@ import Belay
 
 /-! A fixture module of {lit}`tests/surface_s6_automation_test.py`: the cases of a kind rule that {lit}`sql_run`
 must not take (statement rule pilot). A hint with a premise that it cannot close does not select the case of a
-match: the tactic splits the match instead, and the proof stays complete. A continuing case with a choice between
-results is not a single output, so {lit}`Belay.Sqlite.Run.ruleCases` keeps it unchanged, without an error. The
+match: the tactic splits the match instead, and the proof stays complete. For a continuing choice, the tactic asks for the post for every admissible output. The
 tactic finds the resolution premise of a kind rule by its type, whatever its name, and keeps each other premise of
 the rule as a goal, also one with the name of a premise of the bridge. -/
 
@@ -29,19 +28,16 @@ theorem conditional_hint_keeps_the_split (ctx : ExecutionContext) (stmt : Syntax
   sql_run [found, present, modeled]
   all_goals trivial
 
-/-- For every post that is always true, context, results and connection: a continuing case with the output
-{lit}`.oneOf` stays as it is after {lit}`Belay.Sqlite.Run.ruleCases`, and it holds by the definition of
-{name}`Sql.SendReached`. -/
-theorem choice_case_stays (ctx : ExecutionContext) (results : List (List (List Value))) (next : Connection) :
-    RunStep.Continuing (Sql.SendReached (fun _ _ => True) ctx) (.continued (.oneOf results) next []) := by
+/-- For every context, result list and connection, the choice case proves the post for each
+selected output, with its membership evidence from {name}`OutputChoice`. -/
+theorem choice_case_supplies_selection (ctx : ExecutionContext) (results : List (List (List Value))) (next : Connection) :
+    RunStep.Continuing (Sql.SendReached (fun outputs _ =>
+      ∃ selected, outputs = [selected] ∧ OutputChoice (.oneOf results) selected) ctx)
+      (.continued (.oneOf results) next []) := by
   run_tac do
     let goals ← Belay.Sqlite.Run.ruleCases #[] (← Lean.Elab.Tactic.getMainGoal)
     Lean.Elab.Tactic.setGoals goals
-  guard_target =ₛ RunStep.Continuing (Sql.SendReached (fun _ _ => True) ctx) (.continued (.oneOf results) next [])
-  intro found member _
-  simp only [RunStep.executions, List.mem_singleton] at member
-  subst member
-  exact ⟨trivial, fun _ _ => trivial⟩
+  exact ⟨_, rfl, by assumption⟩
 
 /-- For every resolution context, connection, statement, target, name, table and resolution state: the resolution
 of the statement from the connection succeeds with a CREATE TABLE of the table with the name at the target, and it
@@ -89,7 +85,7 @@ theorem renamed_rule_keeps_its_premise (ctx : ExecutionContext) (stmt : Syntax.S
 end RenamedRule
 
 #print axioms conditional_hint_keeps_the_split
-#print axioms choice_case_stays
+#print axioms choice_case_supplies_selection
 #print axioms renamed_rule_keeps_its_premise
 
 end S6AutoKindRuleCases

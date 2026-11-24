@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:16:29+00:00",
+  "finding": "20261124T111116Z-89464209#6",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Named both fixtures and described their kernel checks."
+}

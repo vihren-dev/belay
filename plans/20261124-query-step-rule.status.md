@@ -35,3 +35,9 @@ equation and the checks on a calm scan. The proofs in SelectExecution and
 SelectContextExecution and the ForeignKeyAtoms fixture use the general
 output projection and the corresponding data facts. These cover query
 results, program equivalence and foreign-key observations.
+
+The former goal-shape test in S6AutoKindRuleCases now exercises the new
+choice obligation directly: it recovers each selected output together
+with its membership evidence. Review clarified the six scan checks and
+the proof sketch, named the new witnesses in the test, and kept the
+foreign-key fixture below 200 lines.
