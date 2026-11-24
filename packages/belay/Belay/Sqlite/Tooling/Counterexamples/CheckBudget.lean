@@ -76,8 +76,8 @@ def shrinkShare : Share := ⟨1, 2⟩
 claim keeps most of the budget for its counterexample. -/
 def searchShare : Share := ⟨1, 3⟩
 
-/-- The first pass shares the search budget among all routes. When retries are enabled,
-one final pass shares the remaining work among routes exhausted in the first pass. -/
+/-- Each flag selects one pass: false tries all routes, and true retries the exhausted routes.
+At most one retry redistributes unused work without repeatedly paying for the same failed proof. -/
 def searchPasses (retryExhausted : Bool) : List Bool :=
   if retryExhausted then [false, true] else [false]
 

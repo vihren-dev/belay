@@ -97,3 +97,4 @@ Interactive sql_auto retains its single pass. The affected suites are
 surface_s6_check_programs_test, surface_s6_check_editor_test and
 surface_s6_automation_test, including proof replay and bounded search.
 Review moved the retry policy to Check.searchPasses and documented the default. The bounded interactive search test passed.
+Documented the pass flags and the cost of retrying an exhausted route.
