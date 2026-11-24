@@ -33,7 +33,7 @@ The state can be any context, for example the context that a write reached; the 
 index, the counters and the outputs of {lit}`state` do not matter. Proof sketch: the resolution on
 {lit}`catalog` ({name}`Database.resolve_of_selectQuery`) is the resolution at {lit}`state`, whose
 database has the catalog of {lit}`catalog` and so the table; calm expressions have no fault
-({name}`Resolved.Statement.Calm.faultless_nil`), and {name}`check_query_select_faultless` gives the
+({name}`Resolved.Statement.Calm.faultless_nil`), and {name}`Sql.check_query_of_step_rows` gives the
 check. -/
 theorem Sql.check_query_ofResolveState {script : Script} {one : script.statements.length = 1}
     {statement : Syntax.Statement} {parameters : List Value} (select : script.isSelect = true)
@@ -66,9 +66,17 @@ theorem Sql.check_query_ofResolveState {script : Script} {one : script.statement
   rw [Connection.queryContext_calm _ parameters query [] calm] at faultless
   have found := Resolved.Query.source_first (Resolved.EvalContext.statement parameters state.connection.state.database [])
     query state.connection.state.database position _ sources table
-  exact check_query_select_faultless select head state resolution calm single found (by simp)
-    (Resolved.Query.bindWindow_literal parameters query limitParameter offsetParameter) faultless noOverflow distinct
-    post each
+  refine Sql.check_query_of_step_rows select head state ?_ each
+  simp only [runScriptStep_output, resolution]
+  have ready := Connection.SelectReady.of_faultless state.connection parameters calm single
+    (Resolved.Query.bindWindow_literal parameters query limitParameter offsetParameter) found
+    (by simp) faultless noOverflow distinct
+  rw [resolvedStepOutput_select state.clock state.index _ parameters
+    (by simp [statementClock, calm.readsClock]) ready]
+  rw [show state.connection.queryContextAt 0 parameters query [] = Resolved.EvalContext.bound parameters from
+    Connection.queryContext_of_quiet _ _ _ calm.quiet]
+  exact (query.returnsResult_possible _ _ _).2 fun _ member => member
+
 
 /-- Catalog check rule: for every script of one SELECT ({name}`Script.isSelect`) with its values, proof
 that it has one statement, context {lit}`state`, database {lit}`db` with counters such that the

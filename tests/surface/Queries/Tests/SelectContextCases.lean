@@ -37,7 +37,7 @@ def ReadsBig (result : Except Nat (List (List Value))) (final : ExecutionContext
 {name}`shop` (the catalog of {name}`shop`, no open transaction, and foreign keys and recursive
 triggers off), the program {name}`query` of {name}`bigScript` checks {name}`ReadsBig`: it
 returns a permutation of {name}`bigAt` of the database of that context. The clock, the index and
-the counters of the context can be any. Proof sketch: {name}`check_query_select_faultless` over
+the counters of the context can be any. Proof sketch: {name}`Sql.check_query_of_step_rows` over
 the scan of {lit}`orders` in the database of the context; the result is a permutation of the
 output of the kept rows ({name}`Resolved.Query.perm_of_mem_possibleResults_plain`). -/
 theorem big_at (state : ExecutionContext)
@@ -49,14 +49,23 @@ theorem big_at (state : ExecutionContext)
   have catalog : state.connection.state.database.catalog = shop.raw.catalog := congrArg ResolveState.catalog shape
   have present := Database.table_of_findTable state.connection.state.database (name! "orders") 1 ordersShape
     (by rw [catalog]; decide +kernel)
-  refine check_query_select_faultless rfl head state (by rw [shape]; exact resolves)
-    (by unfold Resolved.Statement.Calm; decide +kernel) rfl (Resolved.Query.source_first _ bigQuery _ 1 _ rfl present)
-    (by simp) (Resolved.Query.bindWindow_literal _ _ rfl rfl)
-    (fun row _ expression member => by
+  have calm : (Resolved.Statement.query bigQuery []).Calm := by unfold Resolved.Statement.Calm; decide +kernel
+  have resolution : resolveStatement runContext state.connection.resolveState statement =
+      .ok (.query bigQuery [], (shop.raw.connection {}).resolveState) := by rw [shape]; exact resolves
+  have ready := Connection.SelectReady.of_faultless state.connection [] calm rfl
+    (Resolved.Query.bindWindow_literal _ _ rfl rfl) (Resolved.Query.source_first _ bigQuery _ 1 _ rfl present)
+    (by simp) (fun row _ expression member => by
       simp [bigQuery, Resolved.Query.expressions, Resolved.Query.keptExpressions,
         Resolved.QuerySource.expressions, Resolved.QuerySource.first, Resolved.Output.scalars, Resolved.Output.operands] at member
       rcases member with rfl | rfl | rfl <;> rfl)
-    (by simp [Resolved.Query.fails, bigQuery]) (by simp [Resolved.Query.distinctCertain, bigQuery]) _ ?_
+    (by simp [Resolved.Query.fails, bigQuery]) (by simp [Resolved.Query.distinctCertain, bigQuery])
+  refine Sql.check_query_of_step_rows rfl head state (property := (· ∈ bigQuery.possibleResults
+    (Resolved.EvalContext.statement [] state.connection.state.database []) (Resolved.sourceRows
+      {shape := ordersShape, rows := state.connection.state.database.rows.getD 1 []}))) ?_ ?_
+  · simp only [runScriptStep_output, resolution]
+    rw [resolvedStepOutput_select state.clock state.index _ [] (by simp [statementClock, calm.readsClock]) ready,
+      show state.connection.queryContextAt 0 [] bigQuery [] = _ from Connection.queryContext_calm _ _ _ _ calm]
+    exact (bigQuery.returnsResult_possible _ _ _).2 fun _ member => member
   intro result member final same
   have perm := Resolved.Query.perm_of_mem_possibleResults_plain rfl rfl rfl rfl rfl member
   generalize Resolved.EvalContext.statement [] state.connection.state.database [] = context at perm
@@ -139,7 +148,7 @@ def changesQuery : Resolved.Query := Resolved.Query.simple [] none [.scalar (.co
 /-- A22: for every context whose counters give {lit}`changes()` the value {lit}`count`, the
 program {name}`query` of {name}`changesScript` checks that the result is the one row
 {lit}`count` and that the reached context has the connection of the start. The clock, the index
-and the database of the context can be any. Proof sketch: {name}`check_query_select_at` with the
+and the database of the context can be any. Proof sketch: {name}`Sql.check_query_of_step_rows` with the
 readiness of {name}`Connection.SelectReady.of_phases`, whose counter premise is the premise
 {lit}`known`. -/
 theorem changes_at (state : ExecutionContext) (count : Nat) (known : state.connection.state.counters.changes = some count) :
@@ -150,8 +159,8 @@ theorem changes_at (state : ExecutionContext) (count : Nat) (known : state.conne
     (by decide +kernel) (by decide +kernel) (by decide +kernel) (FilterResolves.of_none _ _ _ _)
   rw [show Resolved.Query.simple [] none [.scalar (.counter .changes)] ["changes()"] = changesQuery from rfl] at resolved
   have reads : (Resolved.Statement.query changesQuery []).counterReads = [.changes] := by decide +kernel
-  refine check_query_select_at rfl rfl state resolved (value := 0) rfl
-    (Connection.SelectReady.of_phases rfl (by rw [reads]; simp [Counters.firstUnknown, Counters.read, known])
+  have ready : state.connection.SelectReady 0 [] changesQuery [] _ changesQuery :=
+    Connection.SelectReady.of_phases rfl (by rw [reads]; simp [Counters.firstUnknown, Counters.read, known])
       (Resolved.Query.source_none _ _ _ rfl) rfl (by simp) (Resolved.Query.bindWindow_literal _ _ rfl rfl)
       (by simp [Resolved.Query.fails, changesQuery, Resolved.Query.simple])
       (Resolved.Query.mustFail_of_faultless _ _ _ fun _ _ expression member => by
@@ -162,7 +171,12 @@ theorem changes_at (state : ExecutionContext) (count : Nat) (known : state.conne
         simp [changesQuery, Resolved.Query.simple, Resolved.Query.expressions, Resolved.Query.keptExpressions,
           Resolved.Output.scalars, Resolved.Output.operands] at member
         subst member; rfl)
-      (by simp [Resolved.Query.distinctCertain, changesQuery, Resolved.Query.simple])) _ ?_
+      (by simp [Resolved.Query.distinctCertain, changesQuery, Resolved.Query.simple])
+  refine Sql.check_query_of_step_rows rfl rfl state (property := (· ∈ changesQuery.possibleResults
+    (state.connection.queryContextAt 0 [] changesQuery []) [[]])) ?_ ?_
+  · simp only [runScriptStep_output, resolved]
+    rw [resolvedStepOutput_select state.clock state.index _ [] (value := 0) rfl ready]
+    exact (changesQuery.returnsResult_possible _ _ _).2 fun _ member => member
   intro result member final same
   have perm := Resolved.Query.perm_of_mem_possibleResults_plain rfl rfl rfl rfl rfl member
   rw [Resolved.filtered_of_filter_none _ rfl] at perm

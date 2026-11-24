@@ -2,8 +2,9 @@ import Belay
 
 set_option doc.verso true
 
-/-! The two original foreign-key pragma contracts use their preparation conditions and
-the database and table row-reference criteria. -/
+/-! This fixture reproves the former database-wide and named-table foreign-key pragma laws
+from the general output projection and the two row-reference criteria. The query-rule
+pytest checks their original premises and allowed axioms. -/
 
 namespace Belay.Sqlite.Model.ReplacedQueries
 open Resolved

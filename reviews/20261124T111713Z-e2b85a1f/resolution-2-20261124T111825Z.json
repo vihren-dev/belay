@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:18:25+00:00",
+  "finding": "20261124T111713Z-e2b85a1f#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Documented the purpose of the two foreign-key witnesses, the projection and their trust check."
+}

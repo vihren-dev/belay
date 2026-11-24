@@ -185,7 +185,9 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
     """ReplacedKeyCheck, ReplacedQueryOutputs and ReplacedPragmaOutputs prove the former query
-    and pragma contracts with their original premises. QuerySendClaims checks the post for
+    and pragma contracts with their original premises. ReplacedContextRules checks both former
+    public context rules with Sql.check_query_of_step_rows. The query fixtures include the scan computed by
+    runScriptStep_query_eq. QuerySendClaims exercises ruleCases and Sql.sendReached_each for
     every modeled output. Each proof uses only ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("ReplacedQueryOutputs", 3),
-                       ("ReplacedPragmaOutputs", 2), ("QuerySendClaims", 1)), timeout=60)
+                       ("ReplacedPragmaOutputs", 2), ("ReplacedContextRules", 2), ("QuerySendClaims", 1)), timeout=60)
