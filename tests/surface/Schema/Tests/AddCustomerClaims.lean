@@ -19,7 +19,7 @@ every run of the program {name}`addCustomer` from the fresh start: if the progra
 customer with the name exists in the final database. When the query returns no single value, the program returns
 {lean}`false` and the claim requires nothing. A trigger that removes the new customer is outside the site, and
 the next module keeps it as a counterexample. Proof sketch: the check of the query is the check of its one step;
-a SELECT keeps the connection ({name}`Belay.Sqlite.Model.runScriptStep_select_connection`); for the value of the
+a SELECT keeps the connection ({name}`Belay.Sqlite.Model.runScriptStep_select_keeps`); for the value of the
 query, the kind rule of plain INSERT ({name}`runScriptStep_plainInsert_eq`) with {name}`Sql.check_send_of_rule`
 splits the insert on its cases: a failure gives {lean}`false`, and a success stores the one row
 ({name}`customer_named_after_insert`). -/
@@ -38,7 +38,9 @@ theorem addCustomer_adds (name email : String) :
   | continued output connection others =>
     obtain ⟨columns, source, joins, filter, groupBy, orderBy, limit, offset, subqueries, having, distinct, compound, isSelect⟩ :=
       selectStatement_is_select
-    obtain rfl := runScriptStep_select_others isSelect step
+    have shape := step
+    rw [isSelect] at shape
+    obtain ⟨rfl, kept⟩ := runScriptStep_select_keeps shape
     intro found member selected choice
     obtain rfl := Sql.Branch.found_eq step member
     cases found : singleValue (queryResult selected) with
@@ -48,10 +50,6 @@ theorem addCustomer_adds (name email : String) :
       cases impossible
     | some next =>
       simp only []
-      have noError := not_error_of_single choice found
-      have kept : connection = db.raw.connection env.counters := by
-        rw [isSelect] at step
-        exact runScriptStep_select_connection step noError
       subst kept
       have stepEq : runScriptStep runContext env.clock 0 (db.raw.connection env.counters) selectStatement [] =
           .continued output (db.raw.connection env.counters) [] := step

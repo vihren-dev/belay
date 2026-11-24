@@ -1,14 +1,12 @@
-import Belay.Sqlite.Model.Programs.Scripts.SelectStepKeeps
+import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
+import Belay.Sqlite.Model.Programs.Scripts.KeysUniqueWrites
+import Belay.Sqlite.Model.Schema.Dispatch.SelectStepKeeps
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
 
 set_option doc.verso true
 
-/-!
-A SELECT step keeps the connection, also when it fails (ADR 0017, S6). {name}`Belay.Sqlite.Model.runScriptStep_select_connection`
-needs an output without an error. A step that continues always comes from a successful resolution, and a
-successful resolution of a SELECT is a query or a prepare error, so no output of a SELECT step, an error
-included, changes the connection.
--/
+/-! A continuing SELECT preserves its connection and has no further execution,
+including when its output is a modeled error. -/
 
 namespace Belay.Sqlite.Model
 
@@ -25,22 +23,27 @@ theorem runScriptStep_select_keeps {context : ResolveContext} {clock : Option Cl
       parameters = .continued output next others) :
     others = [] ∧ next = connection := by
   obtain ⟨resolved, after, value, original, -⟩ := runScriptStep_ran step
-  have found := original
-  have selected : ∃ catalog, resolveSelect context connection.resolveState.catalog
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
-        compound } subqueries = .ok (resolved, catalog) := by
-    simp only [statement_arms, ResolveState.withCatalog] at found
-    cases resolution : resolveSelect context connection.resolveState.catalog
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct,
-        compound } subqueries with
-    | error failure => rw [resolution] at found; simp [Except.map] at found
-    | ok result =>
-      obtain ⟨statement, catalog⟩ := result
-      rw [resolution] at found
-      simp only [Except.map, Except.ok.injEq, Prod.mk.injEq] at found
-      obtain ⟨rfl, -⟩ := found
-      exact ⟨catalog, rfl⟩
-  obtain ⟨catalog, ok⟩ := selected
-  exact runScriptStep_readOnly_keeps original (resolveSelect_shape _ _ _ _ _ _ ok) step
+  obtain ⟨_, _, shape⟩ := resolveStatement_select_shape original
+  exact runScriptStep_readOnly_keeps original shape step
+
+/-- For every SELECT statement and every step of it that gives rows: the step continues with those
+rows and keeps the connection. Plain words: a SELECT that gives rows changes nothing. Proof sketch: rows exclude a stopped step.
+{name}`runScriptStep_select_keeps` gives the full frame of the continuing step. -/
+theorem runScriptStep_select_rows {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    {columns source joins filter groupBy orderBy limit offset subqueries having distinct compound}
+    (isSelect : statement =
+      .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound)
+    {rows : List (List Value)}
+    (output : (runScriptStep context clock index connection statement parameters).output = .rows rows) :
+    runScriptStep context clock index connection statement parameters = .continued (.rows rows) connection [] := by
+  cases step : runScriptStep context clock index connection statement parameters with
+  | ended reason => rw [step] at output; simp [RunStep.output] at output
+  | continued out next others =>
+    subst isSelect
+    obtain ⟨rfl, rfl⟩ := runScriptStep_select_keeps step
+    rw [step] at output
+    cases output
+    rfl
 
 end Belay.Sqlite.Model

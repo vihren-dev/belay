@@ -29,19 +29,6 @@ theorem runScriptStep_executions_continue {context : ResolveContext} {clock : Op
   · exact endsRun
   · exact StatementExecution.ofAlternatives_continues listed traced inFurther
 
-/-- For every step of a statement that continues, when every statement that it resolves to is no INSERT from a
-query without rules: its executions are its one execution, the model's own, with the output and
-connection of the step. Proof sketch: the other executions are none ({name}`runScriptStep_others`). -/
-theorem runScriptStep_executions {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {output : Output}
-    {next : Connection} {others : List StatementExecution}
-    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
-    (single : ∀ resolved after, resolveStatement context connection.resolveState statement = .ok (resolved, after) →
-      resolved.fromQuery = false) :
-    (RunStep.continued output next others).executions = [{ output, next }] := by
-  obtain ⟨resolved, after, _, found, _⟩ := runScriptStep_execution_runs step
-  simp [RunStep.executions, runScriptStep_others step found (single resolved after found)]
-
 /-- For every context, optional clock, index, connection and statements with their values, when each
 statement that the run reaches resolves to a statement that is no INSERT from a query without rules
 ({name}`ScriptConditionsWith` for the condition {lit}`fromQuery = false`), the complete executions of the
@@ -66,19 +53,6 @@ theorem runScriptAllFrom_eq (context : ResolveContext) (clock : Option Clock) :
       have := runScriptAllFrom_eq context clock (index + 1) next rest (later { output, next } (by simp [RunStep.executions]))
       simp only [runScriptAllFrom] at this
       simp [runScriptAllWith, step, RunStep.executions, this]
-
-/-- For every step of a statement that continues, when every statement that it resolves to is no INSERT from a
-query without rules ({name}`Resolved.Statement.fromQuery`): the step has no further execution. Proof sketch:
-{name}`runScriptStep_execution_runs` gives the resolution of the statement and {name}`runScriptStep_others`
-the claim. -/
-theorem runScriptStep_others_of_single {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {output : Output}
-    {next : Connection} {others : List StatementExecution}
-    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
-    (single : ∀ resolved after, resolveStatement context connection.resolveState statement = .ok (resolved, after) →
-      resolved.fromQuery = false) : others = [] := by
-  obtain ⟨resolved, after, _, found, _⟩ := runScriptStep_execution_runs step
-  exact runScriptStep_others step found (single resolved after found)
 
 /-- For every condition that statements are no INSERT from a query without rules
 ({name}`ScriptConditionsWith` for {lit}`fromQuery = false`), and every step of its first statement that
