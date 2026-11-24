@@ -48,7 +48,7 @@ def test_replaced_observation_contracts(runtime_root: Path, tmp_path: Path) -> N
     """Derive the original resolution-premise contracts from Script.outputOn_resolved, Script.outputIn_resolved,
     Holds/Empty/Fails.iff_query, Holds.inContext_iff_reached and the two Sql.EquivAt IN/EXISTS laws."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedObservations", 4), ("ReplacedRowPredicates", 3), ("ReplacedSubqueryEquivalence", 2),
+        ("ReplacedObservations", 4), ("ReplacedRowPredicates", 3), ("ReplacedSubqueryEquivalence", 4),
     ), timeout=60)
 
 
@@ -56,7 +56,7 @@ def test_replaced_certificate_contracts(runtime_root: Path, tmp_path: Path) -> N
     """Check the original ReadCertificate preservation, commutation, frame and observation contracts.
     KeptRead.preserves and the single-statement branch rules recover their former resolver premises."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedCertificateObligations", 3), ("ReplacedCertificateClaims", 5), ("ReplacedSiteOutputs", 3), ("ReplacedExecutionProjections", 4), ("ReplacedCertificateChecks", 5),
+        ("ReplacedCertificateObligations", 3), ("ReplacedCertificateClaims", 5), ("ReplacedSiteOutputs", 3), ("ReplacedExecutionProjections", 6), ("ReplacedCertificateChecks", 5),
     ), timeout=60)
 
 

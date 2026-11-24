@@ -16,6 +16,20 @@ def RunStep.output : RunStep → Output
   | .continued output _ _ => output
   | .ended reason => .unmodeled reason
 
+/-- For every step with a row output, if each continuing result has the given
+connection and no further execution, the full step continues with those rows,
+that connection and no further executions. Proof sketch: a stopped step gives an
+unmodeled output. In the continuing case substitute the specified frame and rows. -/
+theorem RunStep.eq_of_rows {step : RunStep} {connection : Connection} {rows : List (List Value)}
+    (frame : ∀ output next others, step = .continued output next others → others = [] ∧ next = connection)
+    (output : step.output = .rows rows) : step = .continued (.rows rows) connection [] := by
+  cases step with
+  | ended reason => cases output
+  | continued out next others =>
+    obtain ⟨rfl, rfl⟩ := frame out next others rfl
+    cases output
+    rfl
+
 /-- The output of a resolved statement at a zero-based index on the connection with the values
 bound to its parameters, as {name}`runScriptStep` gives it: {name}`clockUnmodeled` for a statement
 that reads a clock that the run does not have, {name}`counterUnknownReason` for an unknown counter,

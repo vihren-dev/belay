@@ -90,6 +90,14 @@ structure NotBlockedSite (db : Database) where
 def NoNullBlockedId {db : Database} (site : NotBlockedSite db) : Prop :=
   ∀ row ∈ db.raw.rows.getD site.blockedPosition [], (row.values.getD 0 .null).isNull = false
 
+/-- The original SELECT syntax supplies the frame for both a query and a prepare error. -/
+private theorem selectFrame {statement : Syntax.Statement} (select : IsSelectStatement statement)
+    {clock : Option Clock} {index : Nat} {conn : Connection} {values : List Value} :
+    ∀ output next others, runScriptStep runContext clock index conn statement values = .continued output next others →
+      others = [] ∧ next = conn := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ := select
+  exact fun _ _ _ => runScriptStep_select_keeps
+
 /-- For every database with the site, every environment, and no NULL blocked id: the two guide scripts are
 equivalent ({name}`Sql.EquivAt`) at the initial context of the database. The premises are the rowid alias of
 {lit}`customers.id` (in the site) and the row premise {name}`NoNullBlockedId`. Proof sketch: the general law
@@ -100,7 +108,7 @@ theorem notBlocked_equivalent {db : Database} (site : NotBlockedSite db) (noNull
     Sql.EquivAt (send notBlockedIn) (send notBlockedExists) (ExecutionContext.initial db env) := by
   have presentCustomers := Database.table_of_findTable db.raw _ _ _ site.foundCustomers
   have presentBlocked := Database.table_of_findTable db.raw _ _ _ site.foundBlocked
-  refine Sql.EquivAt.notIn_notExists_of_rowidAlias (parameters := []) site.inSelect site.existsSelect
+  refine Sql.EquivAt.notIn_notExists_of_rowidAlias (parameters := []) (selectFrame site.inSelect) (selectFrame site.existsSelect)
     site.customersPosition site.blockedPosition site.customers.columns.length 0 0 _ _ [0] ["id"] ["customer_id"]
     ["1"] site.affinity site.inCollation site.equalsCollation ?_ presentCustomers presentBlocked site.idAlias
     (db.valid.admitted.rowsAliased _ _ presentCustomers) ?_ ?_ site.inScript site.existsScript

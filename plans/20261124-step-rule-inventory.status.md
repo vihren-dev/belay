@@ -95,3 +95,10 @@ and alternative projections (runScriptStep_select_connection, runScriptStep_sele
 The concrete AddCustomerClaims and the syntax-only row law use the combined
 SELECT frame, which covers queries and prepare errors. DerivedColumnQueries uses
 the shared execution list. The schema and SELECT fixture chains audit the original four contracts.
+
+A row output excludes a stopped step for any kind. RunStep.eq_of_rows combines
+this data fact with the caller's continuing frame. It replaces both SELECT-row
+step projections. The positive and negative rowid-alias equivalences now accept
+the actual frames. ReplacedExecutionProjections and ReplacedSubqueryEquivalence
+check the former contracts. LowercaseSimulation and S6NotBlockedLaw use the
+common SELECT frame in their end-to-end migration and rowid proofs.

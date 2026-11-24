@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:45:35+00:00",
+  "finding": "20261124T134516Z-7f6cc963#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The proof sketch now names the statement resolution that supplies both SELECT outcomes."
+}

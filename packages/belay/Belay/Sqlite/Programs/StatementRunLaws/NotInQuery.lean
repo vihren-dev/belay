@@ -6,9 +6,8 @@ set_option doc.verso true
 /-! The equivalence of {lit}`x NOT IN (SELECT c FROM u)` and the correlated {lit}`NOT EXISTS (SELECT 1 FROM u WHERE
 u.c = x)` as {lit}`Sql.EquivAt` (ADR 0017, S4 and S6), and of {lit}`x IN (SELECT c FROM u)` and the correlated
 {lit}`EXISTS`. The lemmas are general over the tables, the columns, the names and the syntax of the two statements:
-they take the modeled output of each statement as a hypothesis, which can follow from the resolution laws
-({lit}`resolveStatement_selectFrom_inQuery` and {lit}`resolveStatement_selectFrom_existsTest`), and the structural
-premises as facts about the tables of the connection. -/
+they take the continuing frame and the modeled output of each actual statement. For a SELECT, its frame and the resolution laws can supply this evidence
+({lit}`resolveStatement_selectFrom_inQuery` and {lit}`resolveStatement_selectFrom_existsTest`). The structural premises describe the tables of the connection. -/
 
 namespace Belay.Sqlite
 
@@ -37,40 +36,22 @@ theorem Sql.EquivAt.of_select_steps {first second : Script} {state : ExecutionCo
     (by simp [Sql.hasOneBranch, sendStatements, Sql.map, rightStep, Model.Output.choosesResults]) ?_
   simp [Sql.runFrom, sendStatements, Sql.map, leftStep, rightStep]
 
-/-- For every statement that is a {lit}`SELECT` and every context: if the output of its step is the rows {lit}`rows`,
-the step continues with them, keeps the connection and has no further execution. Plain words: a SELECT that gives
-rows changes nothing. Proof sketch: take the parts of the statement and apply {name}`runScriptStep_select_rows`. -/
-theorem IsSelectStatement.step_of_rows {statement : Syntax.Statement} (isSelect : IsSelectStatement statement)
-    {clock : Option Clock} {index : Nat} {connection : Connection} {values : List Value} {rows : List (List Value)}
-    (output : (runScriptStep runContext clock index connection statement values).output = .rows rows) :
-    runScriptStep runContext clock index connection statement values = .continued (.rows rows) connection [] := by
-  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, same⟩ := isSelect
-  exact runScriptStep_select_rows same output
-
-/-- **NOT IN against NOT EXISTS, as execution equivalence.** For every context, two scripts of one statement each (both
-statements are SELECT statements, {name}`IsSelectStatement`), and two tables of the connection at positions: if the first statement has the output of the query of the outer table whose
-condition is {lit}`x NOT IN` subquery 0 on the column {lit}`key`, with the one subquery that selects the column
-{lit}`column` of the inner table with no condition, and the second statement has the output of the query of the outer table
-whose condition is {lit}`NOT EXISTS` subquery 0, with the one subquery that selects 1 from the inner table where
-{lit}`u.c = x` ({lit}`.compare .eq`) with the same affinity, then the two scripts are equivalent at the context
-({lit}`Sql.EquivAt`), under these premises:
-* both statements have the same values and the same result columns (positions {lit}`columns`) of the outer table;
-* the key position is inside the width {lit}`outer` of an outer row ({lit}`keyInside`), and the connection has the outer
-  table and the inner table at their positions ({lit}`presentOuter`, {lit}`presentInner`); the subqueries see an outer
-  row of the width {lit}`outer`;
-* the key column is the rowid alias of the outer table ({lit}`alias`) and every row of the outer table has its alias cell
-  equal to its rowid ({lit}`aliased`), so the key cell is a non-NULL integer;
-* the comparison affinity is not TEXT ({lit}`notText`);
-* no cell of the column in any row of the inner table is NULL ({lit}`known`).
-The collations of the two tests are free. Without {lit}`known` the scripts can differ: a NULL cell makes {lit}`NOT IN`
-NULL for every row without a match, and {lit}`NOT EXISTS` is true. The resolution laws give the output hypotheses for the SELECT forms in the guide.
-Proof sketch: by the two output hypotheses, it suffices to show the comparison queries give the same rows
-({name}`resolvedStepOutput_notIn_eq_notExists_of_rowidAlias`), a SELECT step that gives rows keeps the connection
-({name}`IsSelectStatement.step_of_rows`), and {name}`Sql.EquivAt.of_select_steps` closes the goal. -/
+/-- Consider two single-statement scripts whose steps, whenever they continue,
+preserve the connection and have no further executions. Their outputs at this
+context must equal those of the specified NOT IN and NOT EXISTS queries.
+The outer and inner tables are present, the outer key is in range, aliases the
+rowid and has aliased rows. The comparison affinity is not TEXT. Each tested
+inner value is non-NULL. Under these conditions the scripts have equal actual
+runs and branch sets. Without the non-NULL premise, NOT IN can yield NULL.
+Proof sketch: the rowid-alias data law equates both sets of rows. Their frames
+and {name}`RunStep.eq_of_rows` give the full steps for {name}`Sql.EquivAt.of_select_steps`. -/
 theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state : ExecutionContext}
     {parameters : List Value}
     {firstStatement secondStatement : Syntax.Statement}
-    (firstSelect : IsSelectStatement firstStatement) (secondSelect : IsSelectStatement secondStatement)
+    (firstFrame : ∀ output next others, runScriptStep runContext state.clock state.index state.connection
+      firstStatement parameters = .continued output next others → others = [] ∧ next = state.connection)
+    (secondFrame : ∀ output next others, runScriptStep runContext state.clock state.index state.connection
+      secondStatement parameters = .continued output next others → others = [] ∧ next = state.connection)
     (outerPosition innerPosition outer column key : Nat) (outerTable innerTable : Table) (columns : List Nat)
     (namesMain namesIn namesExists : List String) (affinity : Option Affinity) (inCollation equalsCollation : Collation)
     (keyInside : key < outer)
@@ -95,19 +76,23 @@ theorem Sql.EquivAt.notIn_notExists_of_rowidAlias {first second : Script} {state
     outerPosition innerPosition outer column key state.connection parameters outerTable innerTable columns namesMain
     namesIn namesExists affinity inCollation equalsCollation keyInside presentOuter presentInner alias aliased notText known
   exact Sql.EquivAt.of_select_steps firstStatements secondStatements
-    (firstSelect.step_of_rows (by rw [firstOutput]; exact leftRows))
-    (secondSelect.step_of_rows (by rw [secondOutput]; exact rightRows))
+    (RunStep.eq_of_rows firstFrame (by rw [firstOutput]; exact leftRows))
+    (RunStep.eq_of_rows secondFrame (by rw [secondOutput]; exact rightRows))
 
 /-- **IN against EXISTS, as execution equivalence.** For the same context, tables, columns and key as in
-{name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with SELECT statements, but with {lit}`x IN` subquery 0 for the first statement and
-{lit}`EXISTS` subquery 0 for the second, the two scripts are equivalent at the context under the premises
+{name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, assume both continuing steps preserve the connection
+and have no further executions. With the output of {lit}`x IN` subquery 0 for the first statement and
+the output of {lit}`EXISTS` subquery 0 for the second, the two scripts are equivalent at the context under the premises
 {lit}`keyInside`, {lit}`presentOuter`, {lit}`presentInner`, {lit}`alias`, {lit}`aliased` and {lit}`notText`. It needs no premise on NULL cells of the column, and the collations are
 free. Proof sketch: as for {name}`Sql.EquivAt.notIn_notExists_of_rowidAlias`, with
 {name}`resolvedStepOutput_in_eq_exists_of_rowidAlias`. -/
 theorem Sql.EquivAt.in_exists_of_rowidAlias {first second : Script} {state : ExecutionContext}
     {parameters : List Value}
     {firstStatement secondStatement : Syntax.Statement}
-    (firstSelect : IsSelectStatement firstStatement) (secondSelect : IsSelectStatement secondStatement)
+    (firstFrame : ∀ output next others, runScriptStep runContext state.clock state.index state.connection
+      firstStatement parameters = .continued output next others → others = [] ∧ next = state.connection)
+    (secondFrame : ∀ output next others, runScriptStep runContext state.clock state.index state.connection
+      secondStatement parameters = .continued output next others → others = [] ∧ next = state.connection)
     (outerPosition innerPosition outer column key : Nat) (outerTable innerTable : Table) (columns : List Nat)
     (namesMain namesIn namesExists : List String) (affinity : Option Affinity) (inCollation equalsCollation : Collation)
     (keyInside : key < outer)
@@ -131,7 +116,7 @@ theorem Sql.EquivAt.in_exists_of_rowidAlias {first second : Script} {state : Exe
     outerPosition innerPosition outer column key state.connection parameters outerTable innerTable columns namesMain
     namesIn namesExists affinity inCollation equalsCollation keyInside presentOuter presentInner alias aliased notText
   exact Sql.EquivAt.of_select_steps firstStatements secondStatements
-    (firstSelect.step_of_rows (by rw [firstOutput]; exact leftRows))
-    (secondSelect.step_of_rows (by rw [secondOutput]; exact rightRows))
+    (RunStep.eq_of_rows firstFrame (by rw [firstOutput]; exact leftRows))
+    (RunStep.eq_of_rows secondFrame (by rw [secondOutput]; exact rightRows))
 
 end Belay.Sqlite
