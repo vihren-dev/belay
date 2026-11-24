@@ -33,3 +33,5 @@ ControlSendClaims.lean checks all four kinds over a variable connection.
 The program of SchemaRuleExamples exercises the six-statement-kind script.
 The retention and client fixtures cover M11, M12 and surface sends.
 The relevant suites are surface_schema_script_test.py and surface_rebuild_test.py.
+
+Registered both new Nix fixture roots and corrected the witness proof sketch and task background after review.

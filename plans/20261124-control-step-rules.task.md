@@ -12,9 +12,9 @@ one execution. Clients use the common send rule and the registered rules.
 
 The snapshot belongs to the connection state. Resolution determines the
 setting value, including the current foreign-key setting inside a transaction.
-The transition is defined in Shared/Execution/SqlAdvance.lean. Existing laws
-live in ControlStepLaws, ControlStepFrames, PragmaStepLaws, StepContinues and
-StepContinuesOk. The send rules and their tactic branches repeat those facts.
+The transition is defined in Shared/Execution/SqlAdvance.lean. At the start of this slice the laws
+lived in ControlStepLaws, ControlStepFrames, PragmaStepLaws, StepContinues and
+StepContinuesOk. The send rules and their tactic branches repeated those facts.
 
 Lean must prove every removed statement with its original premises. Client
 tests must cover each kind on a variable database, including the failure
