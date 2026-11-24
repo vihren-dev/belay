@@ -66,3 +66,9 @@ SelectCheckCases and SelectResidualCases check the rule audit and the
 diagnostic. The four surface_select suites exercise the migrated callers.
 
 The shared model fact resolvedStepOutput_calm_scan now lives in Programs/StatementRunLaws/SelectTableOutput.lean. The fixture also checks catalog inference on a concrete database and environment.
+
+Eleven Run contracts in SelectExecution, SelectCalmExecution and SelectOverflow
+now take output equality. Callers can supply it from successful resolution to
+any kind through runScriptStep_output_of_resolved. Four Replaced*Runs
+fixtures prove the eleven original success, error and unmodeled statements.
+The select rules, sources and automation suites cover the new premises.

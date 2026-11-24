@@ -42,7 +42,7 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     (by simp [predicate, Resolved.Expr.calm_compare, Resolved.Expr.calm_column, Resolved.Expr.calm_parameter])
     (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])
   refine (Run.send_returnsResult_iff_query (script := balance a) rfl db _ _).mpr
-    ((Run.query_returnsResult_calmTable (script := balance a) rfl rfl db Env.default resolved rfl
+    ((Run.query_returnsResult_calmTable (script := balance a) rfl rfl db Env.default (runScriptStep_output_of_resolved resolved) rfl
       (Database.table_of_findTable db.raw _ _ _ found) calm rfl rfl rfl ?_ rfl _).mpr ?_)
   rotate_left
   · simp [Resolved.Query.possibleResults_ungrouped, Resolved.Query.aggregateOf]
@@ -102,7 +102,7 @@ theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries
       rfl rfl _ (guard_select_missing_cents db.raw.catalog position table found notTable notView missing)
   intro holds
-  exact (Run.query_prepareError (script := balanceGuard) rfl rfl db Env.default resolved _ (fun _ => True)).1
+  exact (Run.query_prepareError (script := balanceGuard) rfl rfl db Env.default (runScriptStep_output_of_resolved resolved) _ (fun _ => True)).1
     ((Run.send_returnsResult_iff_query rfl db Env.default _).mp holds)
 
 /-- For every account value, the balance query succeeds in every complete environment on

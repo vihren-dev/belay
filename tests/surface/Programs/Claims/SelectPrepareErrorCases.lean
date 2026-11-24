@@ -36,9 +36,9 @@ theorem unknown_column_error (db : Database) (env : Env) :
     none, [], none, [], [], none, none, none, none, false, none, none⟩
   have resolved := resolveStatement_select_body_prepareError runContext (db.raw.connection env.counters).resolveState
     body [] [] (.noSuchColumn (name! "missing")) rfl rfl rfl (resolveSources_none _) rfl (by decide +kernel)
-  exact ⟨fun property => (Run.query_prepareError (script := unknownColumn) rfl unknownColumn_one db env resolved
+  exact ⟨fun property => (Run.query_prepareError (script := unknownColumn) rfl unknownColumn_one db env (runScriptStep_output_of_resolved resolved)
       property (fun _ => True)).1,
-    fun code => (Run.query_prepareError (script := unknownColumn) rfl unknownColumn_one db env resolved
+    fun code => (Run.query_prepareError (script := unknownColumn) rfl unknownColumn_one db env (runScriptStep_output_of_resolved resolved)
       (fun _ => True) code).2⟩
 
 /-- One table {lit}`t` whose only column is {lit}`x`, for the nested cases. -/

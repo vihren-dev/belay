@@ -102,7 +102,7 @@ theorem distinct_customers (db : Database) (env : Env) (schema : db.HasCatalog o
     by_cases equal : Collation.nocase.compare (cell 1 a) (cell 1 b) = .eq
     · simp [identical a inA b inB equal]
     · simp [Resolved.sameOutput, equal]
-  rw [Run.query_returnsResult_calmTable (script := distinctCustomers) rfl distinctCustomers_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := distinctCustomers) rfl distinctCustomers_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl rfl certain]
   exact fun result member => distinct_rule identical member

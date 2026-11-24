@@ -44,7 +44,7 @@ theorem empty_aggregates (db : Database) (env : Env) (schema : db.HasCatalog ord
       .ok (.query emptyQuery [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := emptyAggregates) rfl emptyAggregates_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := emptyAggregates) rfl emptyAggregates_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (by change emptyQuery.fails _ (ordersRows db) = false; rw [empty]; decide +kernel) rfl]
   intro result member
@@ -110,7 +110,7 @@ theorem null_customers (db : Database) (env : Env) (schema : db.HasCatalog nulla
       Resolved.queryGroups_ungrouped _ (query := nullQuery) rfl]
     simp only [nullQuery, ungroupedQuery, List.any_cons, List.any_nil, this]
     simp [Resolved.Aggregate.fails]
-  rw [Run.query_returnsResult_calmTable (script := nullCustomers) rfl nullCustomers_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := nullCustomers) rfl nullCustomers_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (nullable_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl safe rfl]
   intro result member

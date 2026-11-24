@@ -74,7 +74,7 @@ theorem ids_descending (db : Database) (env : Env) (schema : db.HasCatalog order
       .ok (.query (idsByAmount true 0 none) [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := idsDescending) rfl idsDescending_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := idsDescending) rfl idsDescending_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl rfl rfl]
   intro result member
@@ -113,7 +113,7 @@ theorem ids_window (db : Database) (env : Env) (schema : db.HasCatalog orders) :
       .ok (.query (idsByAmount false 1 (some 2)) [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := idsWindow) rfl idsWindow_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := idsWindow) rfl idsWindow_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl rfl rfl]
   intro result member

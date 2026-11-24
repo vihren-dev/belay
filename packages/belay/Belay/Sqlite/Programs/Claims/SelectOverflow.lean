@@ -15,7 +15,7 @@ open Belay.Sqlite.Model
 
 /-- Calm one-table overflow rule: for every script of one statement with its values, proof that it
 has one statement, database, environment, property {lit}`Q` of a result and property {lit}`E` of
-a result code: when the statement resolves on the connection of the environment to a calm query
+a result code: when the step output on the connection of the environment equals the output of a calm query
 ({name}`Resolved.Statement.Calm`) with no subqueries, whose sources are the first source at a
 catalog position where the database has a table, and which is no compound, has no window
 parameter, a failing aggregate ({name}`Resolved.Query.fails`) and a certain {lit}`DISTINCT` over the scan
@@ -29,9 +29,9 @@ Proof sketch: the readiness premises of {name}`Connection.SelectReady.of_calm` w
 overflow give {name}`resolvedStepOutput_select_overflow`, an error output. -/
 theorem Run.query_overflow_calmTable {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query : Resolved.Query} {after : ResolveState} {position : Nat} {table : Table}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query [], after))
+    (env : Env) {query : Resolved.Query} {position : Nat} {table : Table}
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query []))
     (sources : query.sources = [.first position]) (present : db.raw.table position = some table)
     (calm : (Resolved.Statement.query query []).Calm) (single : query.compound = none)
     (limitParameter : query.limitParameter = none) (offsetParameter : query.offsetParameter = none)
@@ -46,8 +46,7 @@ theorem Run.query_overflow_calmTable {script : Script} {statement : Syntax.State
   have faultless := calm.faultless_nil (db.raw.connection env.counters) parameters (rows := Resolved.sourceRows table)
   rw [Run.query_returnsResult_iff one, Run.query_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
-  rw [same, runScriptStep_output, resolved]
-  dsimp only
+  rw [same, observed]
   rw [resolvedStepOutput_select_overflow env.clock 0 _ parameters (value := 0) (by simp [statementClock, calm.readsClock]) single
     (calm.firstUnknown _) (by rw [context]; exact Resolved.Query.source_first _ query _ position table sources present)
     calm.subqueries_plain (by simp) (Resolved.Query.bindWindow_literal parameters query limitParameter offsetParameter)
@@ -57,8 +56,8 @@ theorem Run.query_overflow_calmTable {script : Script} {statement : Syntax.State
 
 /-- Calm mismatch rule: for every script of one statement with its values, proof that it has one
 statement, database, environment, source rows {lit}`source`, property {lit}`Q` of a result and
-property {lit}`E` of a result code: when the statement resolves on the connection of the
-environment to a calm query ({name}`Resolved.Statement.Calm`) with subqueries that is no compound,
+property {lit}`E` of a result code: when the statement output on the runtime connection equals
+the output of a calm query ({name}`Resolved.Statement.Calm`) with subqueries that is no compound,
 the query's sources give {lit}`source` over the database in the statement context
 ({name}`Resolved.EvalContext.statement`), {lit}`source` has no possible fault, and the window does
 not bind to the values ({name}`Resolved.Query.bindWindow` gives none), then
@@ -71,10 +70,10 @@ Proof sketch: {name}`resolvedStepOutput_select_mismatch` in the statement contex
 ({name}`Connection.queryContext_calm`) gives an error output. -/
 theorem Run.query_mismatch {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query : Resolved.Query} {subqueries : List Resolved.Query} {after : ResolveState}
+    (env : Env) {query : Resolved.Query} {subqueries : List Resolved.Query}
     {source : Resolved.SourceRows}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (calm : (Resolved.Statement.query query subqueries).Calm) (single : query.compound = none)
     (found : query.source (Resolved.EvalContext.statement parameters db.raw subqueries) db.raw = some source)
     (sourceCertain : source.fault ≠ .may) (mismatch : query.bindWindow parameters = none)
@@ -87,8 +86,7 @@ theorem Run.query_mismatch {script : Script} {statement : Syntax.Statement} {par
     Connection.queryContext_calm _ parameters query subqueries calm
   rw [Run.query_returnsResult_iff one, Run.query_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
-  rw [same, runScriptStep_output, resolved]
-  dsimp only
+  rw [same, observed]
   rw [resolvedStepOutput_select_mismatch env.clock 0 _ parameters (value := 0)
     (by simp [statementClock, calm.readsClock]) single (calm.firstUnknown _) (by rw [context]; exact found)
     calm.subqueries_plain sourceCertain mismatch]

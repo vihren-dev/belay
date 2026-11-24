@@ -73,7 +73,7 @@ theorem ids_parameter_window {limitValue offsetValue : Value} {limit offset : Na
       .ok (.query parameterWindow [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     exact resolves
-  rw [Run.query_returnsResult_faultless head rfl db env resolved
+  rw [Run.query_returnsResult_faultless head rfl db env (runScriptStep_output_of_resolved resolved)
     (Resolved.Query.source_first _ parameterWindow db.raw 0 _ rfl
       (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)))
     (by simp) (by unfold Resolved.Statement.Calm; decide +kernel) rfl (parameterWindow_bind limitInteger offsetInteger)
@@ -109,7 +109,7 @@ theorem limit_mismatch {limitValue : Value} (offsetValue : Value)
       .ok (.query parameterWindow [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     exact resolves
-  exact Run.query_mismatch head rfl db env resolved (by unfold Resolved.Statement.Calm; decide +kernel) rfl
+  exact Run.query_mismatch head rfl db env (runScriptStep_output_of_resolved resolved) (by unfold Resolved.Statement.Calm; decide +kernel) rfl
     (Resolved.Query.source_first _ parameterWindow db.raw 0 _ rfl
       (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)))
     (by simp)

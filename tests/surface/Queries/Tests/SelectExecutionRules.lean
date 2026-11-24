@@ -41,7 +41,7 @@ theorem calm_table (script : Script) (db : Database) (env : Env) {statement : Sy
   have context : (db.raw.connection env.counters).queryContextAt 0 parameters query [] =
       Resolved.EvalContext.bound parameters :=
     Connection.queryContext_of_quiet _ parameters query calm.quiet
-  rw [Run.send_returnsResult_select head db env resolved (by simp [statementClock, calm.readsClock]) ready property,
+  rw [Run.send_returnsResult_select head db env (runScriptStep_output_of_resolved resolved) (by simp [statementClock, calm.readsClock]) ready property,
     context]
 
 /-- One row whose absolute value overflows, so that the call {lit}`abs(value)` may fail. -/
