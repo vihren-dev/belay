@@ -2,7 +2,8 @@ import Belay
 
 set_option doc.verso true
 
-/-! Original group contracts under ADR 0033, checked through the last change to their dependencies. -/
+/-! Temporary retention evidence for ADR 0033 in {lit}`tests/surface_schema_script_test.py`.
+The ordinary and plain-write failure frames follow from {name}`Belay.Sqlite.Model.runScriptStep_continued_spec` and {name}`Belay.Sqlite.Model.runStatement_plainWrite_effect`. -/
 
 namespace Belay.Sqlite.ReplacedFrames
 open Belay.Sqlite.Model

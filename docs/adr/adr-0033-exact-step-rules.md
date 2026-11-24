@@ -232,7 +232,8 @@ It is not a law about the step of the kind.
   `runScriptStep_valid`, `runScriptStep_resolved` and `step_guards_hold`. A kind rule does not
   replace them.
 - A law for a group of kinds stays with its statement while a kind of the group has no rule.
-  For example, `runScriptStep_plainWrite_frame` and `runScriptStep_plainWrite_failed` are laws
+  At the pilot revision `ee83eca7`, `runScriptStep_plainWrite_frame` and
+  `runScriptStep_plainWrite_failed` were group laws
   for the statements with a target of `Resolved.Statement.plainWriteTarget`: the resolved
   `.insert`, `.update` and `.delete` with `rules = none` and each list of RETURNING columns.
   The slice that gives the last kind of the group its rule keeps the law when callers use it
