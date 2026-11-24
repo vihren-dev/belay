@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:16:25+00:00",
+  "finding": "20261124T111116Z-89464209#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Added a proof sketch from calm readiness and the bound parameter context."
+}

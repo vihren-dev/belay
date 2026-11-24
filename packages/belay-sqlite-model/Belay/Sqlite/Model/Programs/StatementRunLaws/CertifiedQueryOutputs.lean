@@ -20,8 +20,19 @@ columns.
 namespace Belay.Sqlite.Model
 open Resolved
 
-/-- A calm scan of a present table passes the support and fault checks and admits exactly
-its normalized result. These are the query-data checks used in the exact query equation. -/
+/-- For every database, table position, table, filter, result columns, names and parameters,
+suppose the table is at that position and the simple scan is calm. With clock value zero,
+empty counter values and no subqueries, all six checks have known results:
+* {name}`Query.described` holds.
+* {name}`Query.runOn` gives the table scan and its run in the bound parameter context.
+* The run has no window mismatch.
+* The run has no overflow.
+* The run has no fault.
+* {name}`Query.possibleOn` gives only the normalized rows.
+
+Proof sketch: {name}`Connection.SelectReady.of_calm` supplies readiness on the database.
+{name}`Connection.queryContext_of_quiet` supplies the parameter context. Unfold the three
+query data functions and apply the one-result law for an unordered scan. -/
 theorem Resolved.Query.simpleTable_checks {db : Database} {position : Nat} {table : Table}
     {filter : Option Expr} {columns : List Resolved.Output} {names : List String}
     (parameters : List Value) (present : db.table position = some table)

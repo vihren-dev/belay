@@ -136,11 +136,9 @@ example : unsupportedParents.all (fun db =>
 theorem selectedPragmaEmpty :
     (Belay.Sqlite.Model.runScriptStep runContext none 0 (repeated.raw.connection {})
       (.pragma (.foreignKeyCheck none)) []).output = .rows [] := by
-  let connection := repeated.raw.connection {}
-  have prepared := (Model.resolvePragma_keyCheck_iff connection.resolveState).mpr fun position _ =>
+  have prepared := (Model.resolvePragma_keyCheck_iff (repeated.raw.connection {}).resolveState).mpr fun position _ =>
     Model.Database.ParentSchemasCompatible.noMismatch
       (by decide +kernel : repeated.raw.ParentSchemasCompatible repeated.raw.catalog.foreignKeyMapping) position
-  dsimp only [connection] at prepared
   rw [Model.runScriptStep_output]
   simp only [statement_arms, Model.resolveStatementPragma_foreignKeyCheck, prepared]
   rw [Model.resolvedStepOutput_keyCheck_empty, Model.Database.keyCheck_nil_iff]
@@ -195,7 +193,6 @@ example : secondSelected.ParentSchemasCompatible secondSelected.catalog.foreignK
 #print axioms Belay.Sqlite.Model.Database.RowReferencesHold.drop
 #print axioms Belay.Sqlite.Model.resolvePragma_keyCheck_iff
 #print axioms Belay.Sqlite.Model.Database.ParentSchemasCompatible.noMismatch
-
 #print axioms dropPreservesRows
 #print axioms parentDeleteKeepsSchema
 #print axioms Belay.Sqlite.Model.Database.keyCheck_nil_iff
