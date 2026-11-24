@@ -128,3 +128,19 @@ def test_insert_with_rules_reports_its_count_or_error(runtime_root: Path, tmp_pa
     """Exercise runScriptStep_insertWithRules_eq through sql_run on a variable database
     and check that the client proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("InsertWithRulesClaim", 1),), timeout=90)
+
+
+def test_all_returning_and_program_write_modes(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the remaining resolved write equations via sql_run, covering the trace of each
+    successful and refused write and each production of INSERT SELECT with RETURNING."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ProgramWriteClaims", 7), ("ReturningWriteClaims", 4), ("SourceWriteClaims", 4)
+    ), timeout=180)
+
+
+def test_replaced_write_mode_laws(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the original DROP program, single-source INSERT SELECT and UPDATE/DELETE
+    no-choice declarations using their original premises and only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ReplacedProgramDrop", 2), ("ReplacedProductionSuccess", 2), ("ReplacedWriteChoices", 4)
+    ), timeout=120)

@@ -80,14 +80,18 @@ theorem drop_on_cascades_into_the_child : ∀ output next others, stepOf enforci
 
 /-- The success law of DROP TABLE with foreign keys on is the law of the key run: the catalog after is the catalog
 without the dropped objects. The rows depend on the actions of the keys, which is why the law names the key run and
-not the rows. Proof sketch: {name}`runScriptStep_drop_keys` with the resolution of the drop with rules. -/
+not the rows. Proof sketch: the successful effect in {name}`runScriptStep_dropWithRules_eq` has the catalog given by {name}`dropKeys_ok_catalog`. -/
 theorem drop_on_removes_the_parent_from_the_catalog : ∀ output next others,
     stepOf enforcing dropParent = .continued output next others → output.isError = false →
       next.state.database.catalog = enforcing.state.database.catalog.drop [0] := by
   intro output next others step noError
   obtain ⟨rules, after, found⟩ := resolvesShape_dropWithRules (statement := dropParent) (connection := enforcing) (positions := [0]) drop_resolves_with_rules
-  obtain ⟨_, _, _, catalogEq, _⟩ := runScriptStep_drop_keys found step noError
-  exact catalogEq
+  unfold stepOf at step
+  rw [runScriptStep_dropWithRules_eq found] at step
+  dsimp only at step
+  repeat' first | split at step | contradiction
+  all_goals cases step
+  all_goals first | contradiction | exact dropKeys_ok_catalog (by assumption)
 
 #print axioms drop_off_keeps_the_child
 #print axioms drop_off_removes_the_parent

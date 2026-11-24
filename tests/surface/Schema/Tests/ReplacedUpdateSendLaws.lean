@@ -16,7 +16,7 @@ prove a claim about the table after an UPDATE, it is enough to prove it for the 
 and the filter produce; a failed update, a refused statement and every other final database are outside the
 premise. The premise is about the database only, so the claim needs no engine reasoning. Proof sketch:
 {name}`check_send_single_of_step` with the step of the model; {name}`plainUpdate_database` gives the
-database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_update_ne_oneOf` rules out a
+database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
 theorem Sql.ifOk_send_plainUpdate {db : Database} {env : Env} {statement : Syntax.Statement}
     {values : List Value} {target : Nat} {assignments : List (Nat × Resolved.Expr)}
@@ -41,7 +41,7 @@ theorem Sql.ifOk_send_plainUpdate {db : Database} {env : Env} {statement : Synta
     (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl)
-    (runScriptStep_update_ne_oneOf found step)).2 ?_
+    (runScriptStep_ne_oneOf_of_not_query found (fun _ _ eq => by cases eq) step)).2 ?_
   intro allOk
   have noError : output.isError = false := by
     simp [ExecutionContext.next, List.allOk] at allOk
@@ -97,7 +97,7 @@ theorem Sql.check_send_plainUpdate {ctx : ExecutionContext} {statement : Syntax.
     (send ⟨[(statement, values)]⟩).check post ctx := by
   refine Sql.check_send_of_step (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
-      rfl) modeled (fun _ _ _ step => runScriptStep_update_ne_oneOf found step) ?_ valid
+      rfl) modeled (fun _ _ _ step => runScriptStep_ne_oneOf_of_not_query found (fun _ _ eq => by cases eq) step) ?_ valid
   intro output next step' hvalid
   have ends := (runScriptStep_continued step').2
   cases noError : output.isError
