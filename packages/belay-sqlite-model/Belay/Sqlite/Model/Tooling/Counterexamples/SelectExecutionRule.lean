@@ -12,24 +12,13 @@ them: {name}`Belay.Sqlite.Model.Resolved.Query.outputOn_clean` alone permits a p
 
 namespace Belay.Sqlite.Model
 
-/-- For every resolution context, clock, index, connection, statement, values and property
-{lit}`Q` of a result, under the premises of {name}`runScriptStep_select`: the output of the step
-returns a result with {lit}`Q` ({name}`Output.returnsResult`) exactly when every result that
-the model permits has {lit}`Q`. Proof sketch: {name}`Output.returnsResult_ofResults`; the list of
-possible results is not empty ({name}`Resolved.Query.possibleResults_ne_nil`). -/
-theorem runScriptStep_select_returnsResult (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) {query : Resolved.Query}
-    {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
-    {bound : Resolved.Query}
-    (resolved : resolveStatement context connection.resolveState statement = .ok (.query query subqueries, after))
-    (clocked : statementClock clock index (.query query subqueries) = some value)
-    (ready : connection.SelectReady value parameters query subqueries source bound)
-    (property : List (List Value) → Prop) :
-    (runScriptStep context clock index connection statement parameters).output.returnsResult property ↔
-      ∀ result ∈ bound.possibleResults (connection.queryContextAt value parameters query subqueries) source.rows,
-        property result := by
-  rw [runScriptStep_select context clock index connection statement parameters resolved clocked ready,
-    Output.returnsResult_ofResults]
+/-- Every result a query permits has the property exactly when its normalized output returns
+the property. A bound query always permits at least one result. -/
+theorem Resolved.Query.returnsResult_possible (bound : Resolved.Query) (context : Resolved.EvalContext)
+    (rows : List (List Value)) (property : List (List Value) → Prop) :
+    (Belay.Sqlite.Model.Output.ofResults (bound.possibleResults context rows)).returnsResult property ↔
+      ∀ result ∈ bound.possibleResults context rows, property result := by
+  rw [Output.returnsResult_ofResults]
   exact and_iff_right (Resolved.Query.possibleResults_ne_nil _ _ _)
 
 end Belay.Sqlite.Model

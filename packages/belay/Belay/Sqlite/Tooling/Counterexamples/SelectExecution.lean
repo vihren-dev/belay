@@ -22,7 +22,7 @@ query {lit}`bound`, the run of the script ({name}`send`) returns a result with {
 ({name}`Run.returnsResult`) exactly when every result that the model permits for {lit}`bound` over
 the source rows ({name}`Resolved.Query.possibleResults`) has {lit}`Q`. Proof sketch:
 {name}`Run.send_returnsResult_iff` reads the step, and
-{name}`runScriptStep_select_returnsResult` its output. -/
+{name}`Resolved.Query.returnsResult_possible` its output. -/
 theorem Run.send_returnsResult_select {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (db : Database) (env : Env) {query : Resolved.Query}
     {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
@@ -40,7 +40,9 @@ theorem Run.send_returnsResult_select {script : Script} {statement : Syntax.Stat
   rw [Run.send_returnsResult_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
   rw [same]
-  exact runScriptStep_select_returnsResult runContext env.clock 0 _ statement parameters resolved clocked ready property
+  simp only [runScriptStep_output, resolved]
+  rw [resolvedStepOutput_select env.clock 0 _ parameters clocked ready]
+  exact bound.returnsResult_possible _ _ property
 
 /-- For every script of one statement with its values, database, environment and property
 {lit}`Q` of a result, under the premises of {name}`Run.send_returnsResult_select`: the run of the
@@ -63,6 +65,8 @@ theorem Run.query_returnsResult_select {script : Script} {statement : Syntax.Sta
   rw [Run.query_returnsResult_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
   rw [same]
-  exact runScriptStep_select_returnsResult runContext env.clock 0 _ statement parameters resolved clocked ready property
+  simp only [runScriptStep_output, resolved]
+  rw [resolvedStepOutput_select env.clock 0 _ parameters clocked ready]
+  exact bound.returnsResult_possible _ _ property
 
 end Belay.Sqlite

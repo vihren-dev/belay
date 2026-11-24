@@ -2,6 +2,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.SimpleQueryAppend
 import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectCalmRule
 import Belay.Sqlite.Model.Schema.Dispatch.TableSourceLaws
 import Belay.Sqlite.Model.Schema.Ddl.TableByName
+import Belay.Sqlite.Model.Programs.Scripts.QueryRule
 
 set_option doc.verso true
 
@@ -19,28 +20,45 @@ columns.
 namespace Belay.Sqlite.Model
 open Resolved
 
-/-- For every connection, statement, parameters, clock and index, if the statement resolves to a simple
-query of the table at a position, with a calm filter and calm result columns, and the connection has
-that table, then the output of its step is the rows of the query over the scan of the table, in normal
-form. In plain words, such a read has the one output that the model gives for its rows, and it does not
-depend on the clock or the index. Proof sketch: {name}`runScriptStep_output` gives the output of the
-resolved statement, which {name}`resolvedStepOutput_calm_unordered` computes with the source rows of the
-table ({name}`Resolved.Query.source_first`). -/
-theorem runScriptStep_simpleTable_output (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) (position : Nat)
-    (table : Table) (filter : Option Expr) (columns : List Resolved.Output) (names : List String)
-    {afterState : ResolveState}
-    (resolved : resolveStatement context connection.resolveState statement =
-      .ok (.query (Query.simple [QuerySource.first position] filter columns names) [], afterState))
-    (present : connection.state.database.table position = some table)
+/-- A calm scan of a present table passes the support and fault checks and admits exactly
+its normalized result. These are the query-data checks used in the exact query equation. -/
+theorem Resolved.Query.simpleTable_checks {db : Database} {position : Nat} {table : Table}
+    {filter : Option Expr} {columns : List Resolved.Output} {names : List String}
+    (parameters : List Value) (present : db.table position = some table)
     (calm : (Resolved.Statement.query (Query.simple [QuerySource.first position] filter columns names) []).Calm) :
-    (runScriptStep context clock index connection statement parameters).output =
-      .rows (normalForm ((Query.simple [QuerySource.first position] filter columns names).results
-        (EvalContext.bound parameters) (sourceRows table))) := by
-  rw [runScriptStep_output, resolved]
-  exact resolvedStepOutput_calm_unordered clock index connection parameters
-    (source := { rows := sourceRows table, width := table.shape.columns.length, fault := .none }) calm rfl rfl rfl
-    rfl rfl rfl (Query.source_first _ _ _ position table rfl present) (by simp) rfl rfl
+    let query := Query.simple [QuerySource.first position] filter columns names
+    let source : SourceRows := { rows := sourceRows table, width := table.shape.columns.length, fault := .none }
+    let run := query.run (EvalContext.bound parameters) source.rows
+    query.described 0 {} parameters db [] = true ∧ query.runOn 0 {} parameters db [] = some (source, run) ∧
+      run.mismatch = false ∧ run.overflow = false ∧ run.fault = .none ∧
+      query.possibleOn 0 {} parameters db [] = some [normalForm (query.results (EvalContext.bound parameters) source.rows)] := by
+  let query := Query.simple [QuerySource.first position] filter columns names
+  let source : SourceRows := { rows := sourceRows table, width := table.shape.columns.length, fault := .none }
+  let connection : Connection := { state := { database := db } }
+  have found : query.source (EvalContext.bound parameters) db = some source :=
+    Query.source_first _ _ _ position table rfl present
+  have ready := Connection.SelectReady.of_calm connection parameters calm rfl rfl rfl found (by simp [source]) rfl rfl
+  change connection.SelectReady 0 parameters query [] source query at ready
+  have emptyContext : statementContext 0 {} parameters db [] = EvalContext.bound parameters := by
+    rw [statementContext_nil]
+    rfl
+  have ctx := Connection.queryContext_of_quiet connection parameters query calm.quiet
+  have mismatch := ready.mismatch
+  have overflow := ready.overflow
+  have fault := ready.fault
+  change (query.run (connection.queryContext parameters query []) source.rows).mismatch = false at mismatch
+  change (query.run (connection.queryContext parameters query []) source.rows).overflow = false at overflow
+  change (query.run (connection.queryContext parameters query []) source.rows).fault = .none at fault
+  rw [ctx] at mismatch overflow fault
+  have ran : query.runOn 0 {} parameters db [] = some (source, query.run (EvalContext.bound parameters) source.rows) := by
+    simp [Query.runOn, emptyContext, found]
+  refine ⟨?_, ran, mismatch, overflow, fault, ?_⟩
+  · change query.described 0 {} parameters db [] = true
+    simp [Query.described, ran, ready.plain, fault, source]
+  · change query.possibleOn 0 {} parameters db [] = _
+    simp [Query.possibleOn, emptyContext, found, ready.window,
+      Query.possibleResults_unordered (query := query) _ rfl rfl rfl]
+    rfl
 
 /-- For every two connections, two statements and parameters that satisfy the premises below, the steps of
 the statements on the two connections give the same output, at any clocks and statement indexes. The
@@ -63,7 +81,7 @@ expressions, and the second can read the appended cells. For example, the query 
 lower(name) = lower(?1)` before a migration that stores {lit}`lower(name)` in a new column, and the query
 {lit}`SELECT id FROM t WHERE stored = lower(?1)` after it, give the same output when the stored column
 compares as {lit}`lower(name)` does. A query that selects every column does not resolve to the same columns, so
-the premise about resolution fails for it. Proof sketch: {name}`runScriptStep_simpleTable_output` for each
+the premise about resolution fails for it. Proof sketch: {name}`Resolved.Query.simpleTable_checks` and {name}`runScriptStep_query_eq` for each
 connection, then {name}`Query.simple_results_agree` with the row-free context of bound parameters. -/
 theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock : Option Clock)
     (before after : Nat) (connection expanded : Connection) (beforeStatement afterStatement : Syntax.Statement)
@@ -89,10 +107,19 @@ theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock
         (beforeFilter.all fun condition => truthy (condition.eval (EvalContext.bound parameters) row))) :
     (runScriptStep context clock before connection beforeStatement parameters).output =
       (runScriptStep context clock after expanded afterStatement parameters).output := by
-  rw [runScriptStep_simpleTable_output context clock before connection beforeStatement parameters beforePosition
-      table beforeFilter columns beforeNames resolvedBefore presentBefore calmBefore,
-    runScriptStep_simpleTable_output context clock after expanded afterStatement parameters afterPosition extended
-      afterFilter columns afterNames resolvedAfter presentAfter calmAfter,
+  have rowsBefore : (runScriptStep context clock before connection beforeStatement parameters).output =
+      .rows (normalForm ((Query.simple [QuerySource.first beforePosition] beforeFilter columns beforeNames).results
+        (EvalContext.bound parameters) (sourceRows table))) := by
+    simp [runScriptStep_query_eq resolvedBefore, statementClock, calmBefore.readsClock, calmBefore.counterReads,
+      Query.simpleTable_checks parameters presentBefore calmBefore, List.eraseDups_cons, Resolved.stableSort,
+      Resolved.insertStable, RunStep.output]
+  have rowsAfter : (runScriptStep context clock after expanded afterStatement parameters).output =
+      .rows (normalForm ((Query.simple [QuerySource.first afterPosition] afterFilter columns afterNames).results
+        (EvalContext.bound parameters) (sourceRows extended))) := by
+    simp [runScriptStep_query_eq resolvedAfter, statementClock, calmAfter.readsClock, calmAfter.counterReads,
+      Query.simpleTable_checks parameters presentAfter calmAfter, List.eraseDups_cons, Resolved.stableSort,
+      Resolved.insertStable, RunStep.output]
+  rw [rowsBefore, rowsAfter,
     scans, Query.simple_results_agree (EvalContext.bound parameters) (EvalContext.plain_rowFree 0) (sourceRows table)
       extra [QuerySource.first beforePosition] [QuerySource.first afterPosition] beforeFilter afterFilter columns
       beforeNames afterNames width wide columnsBelow agree]

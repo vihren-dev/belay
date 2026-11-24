@@ -23,3 +23,15 @@ variable connection for every modeled outcome.
 Independent review requested a precise statement of the selected-output projection,
 the SELECT dispatch order, a smaller tactic module, exhaustive output cases and
 fixture documentation. The revision covers all five findings.
+
+Inventory of the earlier query claims found five more single-kind laws.
+ReplacedQueryOutputs checks runScriptStep_simpleTable_output,
+runScriptStep_select and runScriptStep_select_returnsResult with their
+original hypotheses. ReplacedPragmaOutputs covers runScriptStep_keyCheck_empty
+and runScriptStep_tableKeyCheck_empty. The readiness, possible-result and
+foreign-key criteria now supply the data facts. CertifiedQueryOutputs,
+CertifiedQueryCommutation and DerivedColumnReads use the exact query
+equation and the checks on a calm scan. The proofs in SelectExecution and
+SelectContextExecution and the ForeignKeyAtoms fixture use the general
+output projection and the corresponding data facts. These cover query
+results, program equivalence and foreign-key observations.
