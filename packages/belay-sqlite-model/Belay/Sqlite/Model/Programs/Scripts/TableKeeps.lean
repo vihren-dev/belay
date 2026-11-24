@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.Scripts.ControlStepFrames
+import Belay.Sqlite.Model.Programs.Scripts.ControlRules
 import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
@@ -51,17 +51,17 @@ theorem runScriptStep_keepsTable {context : ResolveContext} {clock : Option Cloc
   unfold Resolved.Statement.keeps at kept
   split at kept
   · cases kept
-    obtain rfl := runScriptStep_others step resolution rfl
-    rw [singleConnection member, runScriptStep_begin_frame resolution step]
-    exact present
+    rw [runScriptStep_begin_eq resolution] at step
+    split at step <;> cases step <;> rw [singleConnection member] <;> exact present
   · cases kept
-    obtain rfl := runScriptStep_others step resolution rfl
-    rw [singleConnection member, runScriptStep_commit_frame resolution step]
-    exact present
+    rw [runScriptStep_commit_eq resolution] at step
+    split at step <;> cases step <;> rw [singleConnection member] <;> exact present
   · cases kept
-    obtain rfl := runScriptStep_others step resolution rfl
-    rw [singleConnection member, runScriptStep_setting_frame resolution step]
-    exact present
+    rw [runScriptStep_setting_eq resolution] at step
+    cases step
+    rw [singleConnection member]
+    rename_i setting on
+    cases setting <;> exact present
   · cases kept
     obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolution (Or.inl ⟨_, _, rfl⟩) step
     rw [singleConnection member]

@@ -73,7 +73,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.ExprFaultRules
 import Belay.Sqlite.Model.Programs.Clock.ExprCalmRules
 import Belay.Sqlite.Model.Queries.Evaluation.ExprCalmRules
 import Belay.Sqlite.Model.Queries.Evaluation.ComparisonTruthRules
-import Belay.Sqlite.Model.Programs.Scripts.ControlStepFrames
+import Belay.Sqlite.Model.Programs.Scripts.ControlRules
 import Belay.Sqlite.Model.Programs.Scripts.RewriteStepLaws
 import Belay.Sqlite.Model.Schema.Writes.PlainScanProductions
 import Belay.Sqlite.Model.Programs.Scripts.InsertSelectStepLaws
