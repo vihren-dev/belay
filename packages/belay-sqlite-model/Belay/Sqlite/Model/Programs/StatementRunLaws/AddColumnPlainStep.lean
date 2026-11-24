@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Programs.Scripts.AddColumnRule
-import Belay.Sqlite.Model.Programs.Scripts.ScriptStepDatabase
+import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
 import Belay.Sqlite.Model.Schema.Columns.AddColumnPlainStep
 
 set_option doc.verso true

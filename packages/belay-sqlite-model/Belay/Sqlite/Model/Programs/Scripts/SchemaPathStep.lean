@@ -1,6 +1,6 @@
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.StepCatalogLiteral
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
 
 set_option doc.verso true
 

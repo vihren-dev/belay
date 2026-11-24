@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model.Programs.Scripts.ControlRules
 import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Schema.Ddl.DropTableResolution
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
 import Belay.Sqlite.Model.Schema.Ddl.TableByName
 import Belay.Sqlite.Model.Programs.Scripts.ExecutionEffects
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame

@@ -1,6 +1,8 @@
 import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
 import Belay.Sqlite.Model.Programs.Scripts.ControlRules
-import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
+import Belay.Sqlite.Model.Programs.Scripts.StepContinues
+import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 import Belay.Sqlite.Model.Programs.Scripts.CreateSchemaSuccess
 import Belay.Sqlite.Model.Programs.Scripts.SchemaKeyCheck
 
