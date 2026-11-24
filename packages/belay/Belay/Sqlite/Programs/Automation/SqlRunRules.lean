@@ -16,8 +16,9 @@ open Lean Elab Tactic
 program that unfolds without end; a real program is far below it. -/
 def traversalFuel : Nat := 400
 
-/-- A syntax premise left open prevents entry into the outcome of the read or send rule. -/
-def blockingPremises : List Name := [`isStatement, `isSelect]
+/-- The SELECT rules need SELECT syntax, and the general send rule excludes INSERT from a query.
+An open shape premise blocks traversal of the continuation while the rule's applicability is unknown. -/
+def blockingPremises : List Name := [`isSelect, `notInsertSelect]
 
 /-- What the tactic does with one premise of a rule. -/
 inductive Role where
@@ -30,7 +31,7 @@ inductive Role where
 /-- The names of the premises of the rules. A goal with another name is a variable of the rule, such as the
 position of a table. A premise that is closed sets it. -/
 def premiseNames : List Name :=
-  [`valid, `modeled, `notChoice, `reached, `isStatement, `isSelect,
+  [`valid, `modeled, `notChoice, `reached, `isSelect,
     `notInsertSelect]
 
 /-- The reached post is an outcome. Each other named premise is a side goal. -/
