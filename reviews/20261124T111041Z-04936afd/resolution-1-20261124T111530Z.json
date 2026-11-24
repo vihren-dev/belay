@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:15:30+00:00",
+  "finding": "20261124T111041Z-04936afd#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The status record now identifies the plain-words statement."
+}
