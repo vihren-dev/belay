@@ -24,3 +24,11 @@ RowWriteSendClaims is the only changed sql_run fixture. It is new and elaborated
 in 10.05 seconds (lower of two runs). The simplification counter at the first
 implementation changed from 98,742 to 99,064, including model 59,184 to 59,460
 and tests 21,512 to 21,558. No mutant table changed.
+
+On the updated query stack (ea83eeff to ff65e488), scc gives 99,400 to
+99,722 selected Lean lines. The model changes from 59,216 to 59,492 and
+the tests from 22,175 to 22,221. The surface has 14,316 lines, SQL text
+1,945, conformance 1,042, public documentation tools 134, other 572.
+RowWriteSendClaims elaborates in 5.65 seconds on this stack (faster of
+two runs). The CopyStep migration and the new client exercise M03 writes,
+M11 execution outcomes, S03 programs and S04 universal claims.
