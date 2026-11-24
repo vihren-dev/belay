@@ -117,8 +117,7 @@ theorem unmodeled_stop (db : Database) (env : Env) (noClock : env.clock = none) 
       (.select [.expression (.currentTime "CURRENT_TIMESTAMP") none "CURRENT_TIMESTAMP"] none [] none [] [] none none [] none
         false none) [] = .ended clockUnmodeled := by
     rw [noClock]
-    unfold runScriptStep runScriptStepWith
-    rw [resolved]
+    rw [runScriptStep_query_eq resolved]
     rfl
   have stopped (post : Except Nat (List (List Value)) → ExecutionContext → Prop) :
       ¬ (query clockQuery clockQuery_one).check post (ExecutionContext.initial db env) :=

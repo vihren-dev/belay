@@ -61,6 +61,18 @@ theorem Sql.check_send_of_rule {ctx : ExecutionContext} {statement : Syntax.Stat
     | oneOf results => exact fun rows listed => by simpa [Sql.map, Sql.check_pure] using alternatives rows listed
     | done _ | rows _ | error _ | unmodeled _ => trivial
 
+/-- A check of every selected output of every execution proves the send's postcondition.
+The selected output may be the raw output or a concrete member of a choice.
+Proof sketch: the universal form of {name}`OutputChoice.Checked` gives exactly these cases. -/
+theorem Sql.sendReached_each {post : List Output → ExecutionContext → Prop} {ctx : ExecutionContext}
+    {output : Output} {next : Connection} {others : List StatementExecution}
+    (holds : ∀ execution ∈ (RunStep.continued output next others).executions,
+      execution.next.state.Holds (Database.Valid Profile.pinned) →
+      ∀ selected, OutputChoice execution.output selected → post [selected] (ctx.next selected execution.next)) :
+    (RunStep.continued output next others).Continuing (Sql.SendReached post ctx) := by
+  intro execution member valid
+  exact (OutputChoice.forall_iff _ _).1 (holds execution member valid)
+
 /-- For every post, context, output and next connection: if the output is no choice between results, and the post
 holds for the list of the output and the context after it whenever the state of the next connection holds
 {name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned` (a valid database and, when the state has the

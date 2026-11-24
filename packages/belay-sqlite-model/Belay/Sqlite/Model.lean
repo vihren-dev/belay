@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Programs.Scripts.QueryRule
 import Belay.Sqlite.Model.Programs.Scripts.CreateObjectRules
 import Belay.Sqlite.Model.Programs.Scripts.AddColumnRule
 import Belay.Sqlite.Model.Queries.Evaluation.NormalFormLaws

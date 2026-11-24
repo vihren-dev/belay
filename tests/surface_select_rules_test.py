@@ -181,3 +181,9 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
                        ("SelectRuleRegistry", 3)), timeout=90)
 
+
+
+def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
+    """Read-only query sends retain all selected traces, including errors, and the original
+    foreign-key-check pragma statements follow with only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("QuerySendClaims", 1)), timeout=60)
