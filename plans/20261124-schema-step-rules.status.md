@@ -70,3 +70,14 @@ directly. Its former documentation reference named the removed DROP
 surface rule. The complete verdict output matches slice 3 byte for byte
 (store paths 88m86jvy8hk374zi93yjzb3a3animn5a and 7x0wipxb4j14x4pm411k64cjbw2r3awx).
 After incorporating the checker allocation and control review, the start has 98,362 code lines. The schema rules at f9a36cf1 have 14,321 surface lines and 98,598 total. The three fixtures in the timing table contain the changed sql_run proofs.
+
+The full suite exposed a proof-search regression after registering the DDL rules.
+The default checker exhausted its budget on the existing UPDATE triple.
+SqlRunGoals.hintedResolution now asks for the resolver's output before choosing
+a rule. SqlRunKindRules applies the common send bridge once. When the resolution
+can be inferred, each candidate compares its premise with that proof. Hints
+that require a particular expected kind can still elaborate on the individual
+candidate. The same original work budget and ordered rule set apply.
+The affected suites are surface_s6_check_programs_test (including printed proof
+replay), surface_s6_check_editor_test, surface_s6_automation_test and
+surface_schema_script_test.
