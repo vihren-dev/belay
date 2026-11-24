@@ -55,3 +55,13 @@ The independent review found a reference to the removed DROP module, two
 missing premises in the plain-words statement of the ordinary-write theorem, and the articles
 before INSERT, UPDATE and UPSERT. The corrected descriptions build with
 their checked references.
+
+On the full query and row-write stack, scc counts 99,722 selected Lean
+lines before and 100,944 after. The model goes from 59,492 to 60,319 and
+tests from 22,221 to 22,616. Surface (14,316), SQL text (1,945),
+conformance (1,042), public documentation tools (134) and other (572)
+are constant. All four changed sql_run fixtures are new. Their faster
+times in paired end measurements are 2.23 seconds for InsertWithRulesClaim,
+6.81 for ProgramWriteClaims, 3.76 for ReturningWriteClaims, and 3.67 for
+SourceWriteClaims. The relevant model groups are M03–M05 and M11 and
+the surface groups S03 and S04. No mutant table changed.
