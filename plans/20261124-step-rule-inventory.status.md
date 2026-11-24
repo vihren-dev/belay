@@ -88,3 +88,10 @@ transports its scan outputs. The single and parameter-family proof rules, the
 computed certificate, sql_auto, the agent guide and skill use this contract.
 ReplacedSiteCheckers audits both original formulas. DerivedColumnOnSchema also
 proves preservation for an arbitrary read with the named-column scan's outputs.
+
+ReplacedExecutionProjections recovers the two singleton projections
+(runScriptStep_executions, runScriptStep_others_of_single) and SELECT connection
+and alternative projections (runScriptStep_select_connection, runScriptStep_select_others).
+The concrete AddCustomerClaims and the syntax-only row law use the combined
+SELECT frame, which covers queries and prepare errors. DerivedColumnQueries uses
+the shared execution list. The schema and SELECT fixture chains audit the original four contracts.

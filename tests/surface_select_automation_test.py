@@ -56,12 +56,13 @@ def test_replaced_certificate_contracts(runtime_root: Path, tmp_path: Path) -> N
     """Check the original ReadCertificate preservation, commutation, frame and observation contracts.
     KeptRead.preserves and the single-statement branch rules recover their former resolver premises."""
     check_module_chain(runtime_root, tmp_path, (
-        ("ReplacedCertificateObligations", 3), ("ReplacedCertificateClaims", 5), ("ReplacedSiteOutputs", 3), ("ReplacedCertificateChecks", 5),
+        ("ReplacedCertificateObligations", 3), ("ReplacedCertificateClaims", 5), ("ReplacedSiteOutputs", 3), ("ReplacedExecutionProjections", 4), ("ReplacedCertificateChecks", 5),
     ), timeout=60)
 
 
 def test_replaced_site_certificates(runtime_root: Path, tmp_path: Path) -> None:
-    """Site.LookupMove, Site.ReadPreserved, queryTranslates and queryPreserves recover their original contracts."""
+    """Site.LookupMove, Site.ReadPreserved, queryTranslates and queryPreserves recover the earlier claims,
+    as do preserves_of_check and preserves_of_check_forall for catalog checks."""
     check_module_chain(runtime_root, tmp_path, (
         ("ReplacedSiteCertificates", 2), ("ReplacedSiteClaims", 5), ("ReplacedSiteCheckers", 2),
     ), timeout=60)

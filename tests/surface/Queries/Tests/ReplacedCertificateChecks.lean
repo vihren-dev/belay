@@ -1,3 +1,4 @@
+import ReplacedExecutionProjections
 import ReplacedSiteOutputs
 import ReplacedCertificateObligations
 
