@@ -364,10 +364,9 @@ use them.
 `tests/surface/Queries/Tests/SelectJoinSupport.lean` show the pattern:
 rewrite the catalog and decide the fact on the schema.
 `Database.resolveState_of_catalog`, `Database.table_of_catalog` and
-`Database.tableNamed_of_hasCatalog` are the library laws. The decisions
-on a schema can be expensive: `PurgeFrameInstances.lean` and
-`PurgeEffectInstances.lean` set
-`maxRecDepth 200000`. The notations `ensures` and `ensuresFrom` have no
+`Database.tableNamed_of_hasCatalog` are the library laws.
+`PurgeFrameSchema.lean` decides the catalog facts of the pilot schema
+in this way. The notations `ensures` and `ensuresFrom` have no
 form with a schema; a client statement uses `FreshEnsures` and
 `FreshEnsuresFrom` directly.
 
