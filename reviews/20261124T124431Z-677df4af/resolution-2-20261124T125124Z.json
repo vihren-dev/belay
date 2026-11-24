@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:51:24+00:00",
+  "finding": "20261124T124431Z-677df4af#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The explanations now describe the clock of the comparison query."
+}

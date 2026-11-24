@@ -16,7 +16,7 @@ open Belay.Sqlite.Model
 
 /-- For every script of one statement with its values, database, environment and property
 {lit}`Q` of a result: when the output at the new connection equals the output of the query
-statement, the step runs it at a clock value ({name}`statementClock`), and the
+statement, the named query has a clock value at index zero ({name}`statementClock`), and the
 query is ready there ({name}`Connection.SelectReady`) with source rows {lit}`source` and bound
 query {lit}`bound`, the run of the script ({name}`send`) returns a result with {lit}`Q`
 ({name}`Run.returnsResult`) exactly when every result that the model permits for {lit}`bound` over

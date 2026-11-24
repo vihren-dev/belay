@@ -72,3 +72,13 @@ now take output equality. Callers can supply it from successful resolution to
 any kind through runScriptStep_output_of_resolved. Four Replaced*Runs
 fixtures prove the eleven original success, error and unmodeled statements.
 The select rules, sources and automation suites cover the new premises.
+
+The head-output projections Script.outputOn_resolved and Script.outputIn_resolved
+work for all kinds. Holds, Empty, Fails and context independence now consume
+the observed outputs. Both IN/EXISTS equivalence laws use equations on their
+two actual steps. The old catalog lookup lemma also moved to the retention
+fixture. ReplacedObservations, ReplacedRowPredicates and ReplacedSubqueryEquivalence
+check the original statements. The not-blocked, assertion-context and select
+automation suites exercise the callers.
+
+The all-kinds output projection lives beside runScriptStep_output in the model. The run rules name the clock of the comparison query in their statements and explanations.

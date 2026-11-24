@@ -12,17 +12,6 @@ namespace Belay.Sqlite
 
 open Belay.Sqlite.Model
 
-/-- For any successfully resolved statement and any clock, index and parameter values, the
-step output is the output of that resolved statement on the actual connection. Proof sketch:
-substitute the resolution into the all-kinds projection {name}`runScriptStep_output`. -/
-theorem runScriptStep_output_of_resolved {context : ResolveContext} {connection : Connection}
-    {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState}
-    {clock : Option Clock} {index : Nat} {parameters : List Value}
-    (found : resolveStatement context connection.resolveState statement = .ok (resolved, after)) :
-    (runScriptStep context clock index connection statement parameters).output =
-      resolvedStepOutput clock index connection parameters resolved := by
-  simp only [runScriptStep_output, found]
-
 /-- For every script of one statement, database, environment and property {lit}`Q`: the run of the
 program {name}`query` of the script returns a result with {lit}`Q` ({name}`Run.returnsResult`) exactly
 when the output of the step of the statement on the new connection returns one. The step reads the

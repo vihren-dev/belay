@@ -8,7 +8,7 @@ open Belay.Sqlite.Model
 
 /-- For every script of one statement with its values, database, environment, property {lit}`Q`
 of a result and property {lit}`E` of a result code: when the output on the new connection equals the output of a query
-statement, the step runs it at a clock value with known counters and source
+statement, the named query has a clock value at index zero with known counters and source
 rows {lit}`source`, and a nested subquery has a fallible call, the source possibly fails, or the
 run possibly fails, then the run of the script returns neither a result with {lit}`Q` nor an error
 with {lit}`E`. Proof sketch: {name}`resolvedStepOutput_select_unready` gives an unmodeled output,
@@ -37,8 +37,8 @@ theorem Run.send_unready {script : Script} {statement : Syntax.Statement} {param
 
 /-- Failure rule of a run: for every script of one statement with its values, database,
 environment, property {lit}`Q` of a result and property {lit}`E` of a result code: when the
-step output equals the output of a query statement that is no compound on the new connection, the step runs
-it at a clock value with known counters, source rows {lit}`source` and a window that binds to the
+step output equals the output of a query statement that is no compound on the new connection, the named query has
+a clock value at index zero with known counters, source rows {lit}`source` and a window that binds to the
 query {lit}`bound`, no nested subquery has a fallible call, the source does not possibly fail, and
 {lit}`bound` over the source rows has no failing aggregate and certainly fails
 ({name}`Resolved.Query.mustFail`), then
