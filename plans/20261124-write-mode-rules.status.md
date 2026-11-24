@@ -1,6 +1,6 @@
 # Exact steps for writes with rules or RETURNING
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 [Task](20261124-write-mode-rules.task.md) ·
 [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md)
@@ -74,3 +74,5 @@ On the final rule-selection code, the D11 total goes from 99,758 to 100,980 line
 | ProgramWriteClaims | new | 3.22 |
 | ReturningWriteClaims | new | 2.17 |
 | SourceWriteClaims | new | 2.63 |
+
+Nix accepted the completed slice through `f52aa6b0b73a` in `km4yq34knila1vb1mhvz41ifigkig880-belay-test-reports`. The conformance verdict `l91j5fjwzgbx67jflfkyckakvi0qpm0r-belay-verdict` is byte-for-byte identical to the preceding slice’s `73cpz2ka1ri8p1l484crp78ya3gcda3v-belay-verdict`. No mutant table changed.

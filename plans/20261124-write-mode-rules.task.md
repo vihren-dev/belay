@@ -1,6 +1,6 @@
 # Exact steps for writes with rules or RETURNING
 
-Created 2026-11-24. Status OPEN. Audience is implementers and reviewers.
+Created 2026-11-24. Status DONE. Audience is implementers and reviewers.
 
 Slice 7 of [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md) covers every
 remaining resolved write. For INSERT, UPSERT, UPDATE, DELETE, INSERT SELECT
