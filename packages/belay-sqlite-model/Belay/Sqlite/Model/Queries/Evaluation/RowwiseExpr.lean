@@ -4,6 +4,7 @@ import Belay.Sqlite.Model.Queries.Evaluation.ExprCongruence
 import Belay.Sqlite.Model.Queries.Evaluation.IntegerCompareLaws
 import Belay.Sqlite.Model.Queries.Evaluation.QueryPlainLaws
 import Belay.Sqlite.Model.Queries.Evaluation.PlainQueryRules
+import Belay.Sqlite.Model.Queries.Evaluation.SelectSubqueryRules
 
 set_option doc.verso true
 
@@ -13,8 +14,8 @@ them with comparisons and logic. Its value does not depend on the subqueries of 
 subquery that runs in a context other than the statement's context still evaluates it in the same way.
 The module proves this independence, that such an expression is calm and has no fault, that no call
 of a list of such expressions may fail over rows ({lit}`anyMayFail`), that each expression of a simple
-query over such expressions is row-wise, and the complement law of the guide's purge claim: a row for which
-the condition {lit}`IS NOT 1` is true is not selected by the condition. -/
+query over such expressions is row-wise, and that such a simple query gives the same rows in two contexts with the
+same bound values. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -85,34 +86,6 @@ theorem Expr.Rowwise.calm {expression : Expr} (rowwise : expression.Rowwise) : e
   | not _ ih | isNull _ _ ih =>
     simp_all [Expr.Calm, Expr.any, Expr.isFallibleCall, Expr.readsClockHere, Expr.readsCounterHere]
 
-/-- For every two values, {lit}`a AND b` is NULL, 0 or 1. Proof sketch: the definition of the value has three
-results. -/
-theorem Value.and_cases (a b : Value) :
-    Value.and a b = .null ∨ Value.and a b = .integer 0 ∨ Value.and a b = .integer 1 := by
-  unfold Value.and
-  by_cases h : (falsy a || falsy b) = true
-  · simp [h, truth]
-  · by_cases n : (a.isNull || b.isNull) = true <;> simp [h, n, truth]
-
-/-- For every value that is NULL, 0 or 1: if {lit}`value IS NOT 1` is true, the value is not true. In plain
-words: a row that the condition {lit}`IS NOT 1` accepts is a row that the condition itself does not select, even
-when the condition is NULL. Proof sketch: the three values, with the comparison of the integers 0 and 1. -/
-theorem truthy_isNot_one_of_cases (value : Value)
-    (cases : value = .null ∨ value = .integer 0 ∨ value = .integer 1) :
-    truthy (Comparison.apply .isNot value (.integer 1)) = true → truthy value = false := by
-  rcases cases with rfl | rfl | rfl <;>
-    simp [Comparison.apply, truth, truthy, Value.isNull, Collation.compare_integer, Comparison.holds]
-
-/-- For every two conditions, context and row: if {lit}`(left AND right) IS NOT 1` is true for the row, then
-{lit}`left AND right` is not true for it. In plain words: a row that the NULL-aware condition accepts is a row that a
-{lit}`DELETE` with the condition {lit}`left AND right` does not select, whatever the values of the parameters are
-(NULL and text included). Proof sketch: {name}`Value.and_cases` and {name}`truthy_isNot_one_of_cases`. -/
-theorem Expr.truthy_isNot_one_and (left right : Expr) (context : EvalContext) (row : List Value) :
-    truthy ((Expr.compare .isNot none (.and left right) (.literal (.integer 1))).eval context row) = true →
-      truthy ((Expr.and left right).eval context row) = false := by
-  simp only [Expr.eval, Expr.evaluate, comparisonOperands]
-  exact truthy_isNot_one_of_cases _ (Value.and_cases _ _)
-
 /-- For every list of sources whose expressions are row-wise, every optional filter that is row-wise, every list of
 row-wise columns and every list of names: each expression of the simple query ({name}`Query.simple`,
 {name}`Query.expressions`) with these scalar columns is row-wise. With {name}`Expr.Rowwise.fault_none` it gives the
@@ -138,5 +111,36 @@ theorem Query.simple_expressions_rowwise (sources : List QuerySource)
   · exact no.elim
   · exact no.elim
   · simp at he
+
+/-- For every simple query whose condition and columns are row-wise, every rows and two contexts with the same bound
+values, the one result is the same in both contexts. In plain words: such a query gives the same rows in any two
+contexts with the same bound values, for example in the context of a subquery and in the plain context of the values.
+Proof sketch: the rows are the columns of the rows that
+{lit}`WHERE` keeps ({name}`Query.results_plain_unordered`), and a row-wise expression evaluates in the same way in
+both contexts ({name}`Expr.Rowwise.evaluate_congr`). -/
+theorem Query.simple_results_congr (sources : List QuerySource) (filter : Option Expr)
+    (columns : List Expr) (names : List String) (filterOk : ∀ e ∈ filter.toList, e.Rowwise)
+    (columnsOk : ∀ c ∈ columns, c.Rowwise) (first second : EvalContext)
+    (same : first.parameters = second.parameters) (rows : List (List Value)) :
+    (Query.simple sources filter (columns.map Output.scalar) names).results first rows =
+      (Query.simple sources filter (columns.map Output.scalar) names).results second rows := by
+  have each : ∀ e : Expr, e.Rowwise → ∀ row, e.eval first row = e.eval second row := fun e rowwise row => by
+    simp only [Expr.eval, rowwise.evaluate_congr first second row same]
+  rw [Query.results_plain_unordered first rfl rfl rfl rfl rfl rfl,
+    Query.results_plain_unordered second rfl rfl rfl rfl rfl rfl]
+  have kept : filtered first (Query.simple sources filter (columns.map Output.scalar) names) rows =
+      filtered second (Query.simple sources filter (columns.map Output.scalar) names) rows := by
+    unfold filtered
+    refine List.filter_congr fun row _ => ?_
+    cases filter with
+    | none => rfl
+    | some condition =>
+      dsimp only [Query.simple]
+      simp [each condition (filterOk condition (by simp)) row]
+  rw [kept]
+  refine List.map_congr_left fun row _ => ?_
+  dsimp only [Query.rowOutput, Query.simple]
+  simp only [List.map_map, Function.comp_def]
+  exact List.map_congr_left fun column member => by simp [each column (columnsOk column member) row]
 
 end Belay.Sqlite.Model.Resolved

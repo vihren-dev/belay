@@ -87,6 +87,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   of the kept rows of EXCEPT for fixed term rows, not their order.
 - 2026-11-24, form B: the proof of the frame claim composes the laws of the
   parts.
+- 2026-11-24, form B: the laws of the form `NOT EXISTS (… EXCEPT …)` and the
+  truth law of `(a AND b) IS NOT 1` are deleted; retention fixtures prove
+  their base statements from the laws of the parts.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -334,7 +337,8 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   AND, OR, NOT, IS NULL, EXISTS and IN give NULL, 0 or 1; for such an
   expression `e IS NOT 1` is true exactly when `e` is not true. An equation.
   It generalizes `Resolved.Expr.truthy_isNot_one_and` (AND only, one
-  direction). It leaves out a column, a literal and the other forms, whose
+  direction), which is deleted with `Value.and_cases` and
+  `truthy_isNot_one_of_cases`. It leaves out a column, a literal and the other forms, whose
   value can be 2: then `e` and `e IS NOT 1` are both true.
 
 ### The effect claim (fixtures)
@@ -384,6 +388,50 @@ passed (local).
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
 passed (local).
+
+### Deletions and retention
+
+- Deleted modules of the model package, with their entries in `Model.lean`
+  and `lakefile.toml`: `Queries/Evaluation/TwoStateNotExistsExcept`,
+  `Queries/Evaluation/TwoStateKeptRows`,
+  `Queries/Evaluation/TwoStateNotExistsExceptOutput`,
+  `Schema/Dispatch/TwoStateNotExistsExcept`,
+  `Schema/Columns/TwoStateKeptRows` and
+  `Tooling/Counterexamples/TwoStateNotExistsExceptOutput`. With them go
+  `Resolved.notExistsExcept`, `Resolved.initialTerm`,
+  `Resolved.currentTerm`, `Resolved.notExistsExceptSubqueries`,
+  `Resolved.notExistsExcept_calm`, `Resolved.notExistsExcept_context_zero`,
+  `Resolved.initialTerm_mem_results`, `Resolved.currentTerm_mem_results`,
+  `Resolved.notExistsExcept_subset`, `Resolved.notExistsExcept_identical`
+  and `resolvedStepOutput_notExistsExcept_hasRows`.
+- `Resolved.Query.simple_results_congr` is a general law, not a law of the
+  form: it moves to `Queries/Evaluation/RowwiseExpr.lean`, which now
+  imports `SelectSubqueryRules`. `Model.lean` now imports
+  `Tooling/Counterexamples/TwoStateQuerySteps` directly; the deleted
+  module imported it before.
+- `Resolved.Expr.Rowwise` and its laws stay.
+- The records `docs/records/spec-proof-agreement-targets.md` and
+  `docs/records/select-automation-retirement.md` get a dated note on the
+  deleted declarations.
+- Retention fixtures `tests/surface/Queries/Evaluation/PurgeLawRetention.lean`
+  and `PurgeLawRetentionOutput.lean` restate `initialTerm`, `currentTerm`,
+  `notExistsExceptSubqueries` and `notExistsExcept` in the namespace
+  `PurgeLawRetention`, and prove the statements of the base revision of
+  `Resolved.Expr.truthy_isNot_one_and`, `Resolved.notExistsExcept_subset`,
+  `Resolved.notExistsExcept_identical` and
+  `resolvedStepOutput_notExistsExcept_hasRows` from the laws that remain.
+  The statement text is the text of the base revision; the namespace of the
+  fixture is the only change. Each has a `#print axioms` report, and the
+  purge test checks the counts (3 and 1). Both modules are roots of the
+  suite `surface`.
+- `purge_frame` (each database with a site) stays proved.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
+passed (local); `python3 -m pytest tests/test_lean_categories.py` passed
+(local). `tests/test_model_package.py` starts `nix-build`, which the rules of
+this form do not allow; it stopped at its timeout of 120 seconds and is not
+run again.
 
 ## Findings record
 

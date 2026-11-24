@@ -38,7 +38,7 @@
     "LowercaseFilters", "LowercaseLookups", "LowercasePlan", "LowercaseQueries", "LowercaseSimulation",
     "NameTokenPaths", "NameTraceSpans", "ParameterErrors", "ProgramErrors", "ProgramExamples",
     "PurgeEffectClaims", "PurgeEffectInstances", "PurgeFrameClaims", "PurgeFrameInstances", "PurgeFrameQueries",
-    "PurgeFrameSchema", "PurgeFrameSite",
+    "PurgeFrameSchema", "PurgeFrameSite", "PurgeLawRetention", "PurgeLawRetentionOutput",
     "PurgeTriggerCounterexample", "RebuildAffinity", "RebuildRuns", "Rejected",
     "SelectCountWhereSupport", "SelectDuplicateKeySupport", "SelectGroupSupport",
     "SelectOneWhereSupport", "SignupInvariantClaims", "SqlDocBindings", "SqlDocCasesBindings",

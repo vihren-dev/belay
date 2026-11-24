@@ -178,8 +178,10 @@ def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Pat
     after it. The fixture keeps three counterexamples. The variant of the purge with OR for AND breaks the frame
     claim. The second counterexample has only expired sessions. With a NULL customer, the condition of the claim
     with NOT instead of IS NOT 1 is NULL on each row. Thus that claim requires nothing of a row, and it is still
-    true after a statement deletes every session. An aborted purge rolls back to the start, and the effect claim is false there."""
+    true after a statement deletes every session. An aborted purge rolls back to the start, and the effect claim is false there.
+    The retention modules prove the statements of the four laws that the base proofs of the purge claims used, from the
+    laws of the parts that replace them."""
     check_module_chain(runtime_root, tmp_path, (
         ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
-        ("SelectOneWhereSupport", 3), ("PurgeEffectClaims", 2), ("PurgeFrameInstances", 11),
-        ("PurgeEffectInstances", 5)), timeout=300)
+        ("PurgeEffectClaims", 2), ("PurgeFrameInstances", 11), ("PurgeEffectInstances", 5),
+        ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)

@@ -109,7 +109,7 @@ not an extra deletion inventory.
 | [TwoStateQuery.lean][twostate] | `observeTwoState_initial_irrelevant` uses the output independence law. |
 | `SelectOneSubqueryOutput.lean` (removed by ADR 0027) | `Connection.queryContext_selectOne` used subquery-context replacement. |
 | `SelectOneRowsOutput.lean` (removed by ADR 0027) | `Connection.queryContext_selectOne_rows` used both strengthened context laws. |
-| [TwoStateNotExistsExcept.lean][except] | `Resolved.Query.simple_results_congr` uses rowwise congruence. |
+| [RowwiseExpr.lean][rowwise] (`TwoStateNotExistsExcept.lean` until 2026-11-24) | `Resolved.Query.simple_results_congr` uses rowwise congruence. |
 | [KeysUniqueAddColumn.lean][keys] | `LiteralData.termValue_append`; `LiteralData.keyEqual_append` use `Resolved.Expr.eval_append`. |
 | [RowLocalAddColumnTheorems.lean][rowlocal] | `Table.ChecksHold.appendColumn` uses `Resolved.Expr.eval_append`. |
 | [SimpleQueryAppend.lean][simpleappend] | `Resolved.Query.filterKeeps_append`, `.simple_results_agree`, `.simple_results_append`; retain the existing common proof and its specialization. |
@@ -124,6 +124,8 @@ Retain `Resolved.Expr.Rowwise`, `Resolved.Expr.Rowwise.fault_none` and
 distinct hypotheses. The same file's `Resolved.Value.and_cases`,
 `Resolved.truthy_isNot_one_of_cases` and `Resolved.Expr.truthy_isNot_one_and`
 are separate truth laws. Expression locality does not replace these facts.
+(2026-11-24: the claim-proof pilot, form B, replaces the three laws with
+`Resolved.Expr.truthy_isNot_one` in `LogicalValueLaws.lean` and deletes them.)
 `evaluate_dropColumn` changes the expression and is outside the four required
 replacements; the fixed-expression prototype does not establish that stronger
 abstraction. Moving `RowFree` must still compile this consumer and its CHECK/key
@@ -176,7 +178,6 @@ evaluators, accepted SQL, conformance inputs and judge claims remain unchanged.
 [rowwise]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/RowwiseExpr.lean
 [queryform]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/QueryForm.lean
 [twostate]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/TwoStateQuery.lean
-[except]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/TwoStateNotExistsExcept.lean
 [keys]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Rows/KeysUniqueAddColumn.lean
 [rowlocal]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Schema/Columns/RowLocalAddColumnTheorems.lean
 [simpleappend]: ../../packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/SimpleQueryAppend.lean

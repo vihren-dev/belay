@@ -86,7 +86,7 @@ per-family characterization. The owners are named as they exist on main.
 | `SelectNoFromOutput` | 68 | Deleted, with `SelectNoFrom.lean`; a certainly failing call uses `resolvedStepOutput_select_mustFail` in `SelectFailureRule` |
 | `TableInfoOutput` | 68 | Deleted, with `TableInfoQuery.lean`; `Resolved.Statement.Calm.selectOne_pragma` moved to `SelectSourceRules` |
 | `QueryStatementOutput`, `QueryStepOutput`, `QueryOutputOn`, `QueryOutputRows`, `QueryOutputCases`, `Output`, `StatementOutput`, `OneTableStatementOutput`, `NonQueryOutput`, `PrepareErrorOutput`, `PossibleOutput` | — | Retained: generic observation and execution laws |
-| `TwoStateNotExistsExceptOutput` | 86 | Retained: two-state observation |
+| `TwoStateNotExistsExceptOutput` | 86 | Retained: two-state observation. Deleted on 2026-11-24 by the claim-proof pilot (form B): the laws of the parts of a query replace it |
 
 ## Model per-family laws and steps
 

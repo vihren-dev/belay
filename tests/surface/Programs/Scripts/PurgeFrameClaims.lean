@@ -24,7 +24,8 @@ the {lit}`EXCEPT` compound ({name}`Resolved.Query.PlainExcept.subqueryRun`) and 
 ({name}`Resolved.Query.simple_subqueryRun`). The compound is empty when each row of its first term is a row of the
 second ({name}`CompoundOperator.except_combine_eq_nil`): a row with a condition that is not 1 is not selected by the
 filter ({name}`Resolved.Expr.truthy_isNot_one`), so the delete keeps it ({name}`LiteralData.mem_deleted`). The first
-cell of a row is its rowid, so the rows of the first term are identical where they compare equal
+cell of a row is its stored rowid ({name}`Table.RowsAliased`), and the rowids of the admitted table are distinct
+({name}`Table.RowidsDistinct`), so two rows of the first term that compare equal come from one row and are identical
 ({name}`Resolved.equalRowsIdentical_rowidFirst`). -/
 theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite db)
     (deleteContext : Resolved.EvalContext) (parameters : deleteContext.parameters = [c, now]) :
