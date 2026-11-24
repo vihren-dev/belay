@@ -138,8 +138,10 @@ of a failed insertion; the findings record keeps the measurements of the three f
 
 - A step with further executions (`others` is not empty) or with an output that is a choice
   between results. `Sql.check_send_of_rule` allows both, but the two pilot kinds have neither.
-  On main, the output of a query can be a choice, and the general rules for a send exclude
-  INSERT from a query (`Sql.check_send_of_step_notInsertSelect`).
+  On main, the output of a query can be a choice, and the syntax-based
+  rule `Sql.check_send_of_step_notInsertSelect` excludes INSERT from a query. The resolution-based
+  rule `Sql.check_send_of_step` can apply to an INSERT from a query with write rules when its other
+  premises hold.
 - A kind with write rules (foreign keys, triggers) or with RETURNING columns.
 - More than two rules in the set `step_rule`. `sql_run` tries the rules in the order of their
   names until the resolution premise of one closes.
@@ -343,7 +345,7 @@ test.
 | 3 | BEGIN, COMMIT, ROLLBACK, a pragma that sets a value | Deletes `Sql.check_send_begin`, `Sql.check_send_commit` and `Sql.check_send_setting`. ROLLBACK has no step law of its own and no surface rule today. |
 | 4 | CREATE INDEX, CREATE VIEW, CREATE TRIGGER, ADD COLUMN, DROP without write rules, the catalog rewrite of a rename, DROP COLUMN, a statement that SQLite refuses to prepare | Deletes `Sql.check_send_addColumn`, `Sql.ifOk_send_addColumn`, `Sql.check_send_dropPlain` and `Sql.check_send_rewrite`. |
 | 5 | A query | The first kind whose output can be a choice between results (D6). The contracts of ADR 0027 do not change. See the note on `Sql.check_send_select` below. |
-| 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. The general rules for a send exclude INSERT from a query today. |
+| 6 | INSERT with conflict clauses or a conflict algorithm, INSERT from a query, both without write rules and RETURNING | Row-by-row writes. For INSERT from a query without write rules, neither general send rule applies. |
 | 7 | The kinds with write rules, and the kinds with RETURNING columns | Starts with one kind, INSERT with write rules, and records its cost before the other kinds (owner decision 2). |
 | 8 | No kind | The final slice (D12). It makes the end state true and records it. |
 
