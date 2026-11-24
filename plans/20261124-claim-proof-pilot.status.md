@@ -107,6 +107,10 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   as `Model.Database.table_of_sameCatalog`, the messages name the column
   names and the expression that is not calm, the fixture `PurgeTacticCases`
   with an `EXISTS` claim, status text and `scc` counts).
+- 2026-11-24, form C: second review fixes (a two-state claim without a
+  schema name needs no catalog of the start, the message when the kernel
+  does not decide the calm check, a checked docstring example, plain words
+  of `Model.Database.table_of_sameCatalog`).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -563,6 +567,9 @@ closes each premise of a law with a hint or with a computation that the
 kernel checks, except one: the identity premise of the `EXCEPT` law, which it
 returns as the goal `identical`:
 
+- For `holdsSince start q`, when the kernel decides that `q` is a `SELECT`
+  that names no schema: `Holds.reachedSince_iff_reached`, which makes it a
+  one-state claim. It then needs no catalog of the start.
 - The bridge `Holds.reached_iff_of_catalog` or
   `Holds.reachedSince_iff_of_catalog` (new module
   `Programs/Claims/CatalogClaimBridge.lean`). The kernel resolves the claim
@@ -597,10 +604,10 @@ Code lines (without docstrings, comments and blank lines):
 
 | File | Code lines | All lines |
 | --- | --- | --- |
-| `Programs/Automation/SqlHoldsFacts.lean` (applying one law, messages) | 78 | 113 |
+| `Programs/Automation/SqlHoldsFacts.lean` (applying one law, messages) | 79 | 114 |
 | `Programs/Automation/SqlHoldsRuns.lean` (the runs of subqueries) | 94 | 127 |
-| `Programs/Automation/SqlHolds.lean` (bridge, SELECT 1 WHERE, EXISTS, syntax) | 89 | 135 |
-| Tactic total | 261 | 375 |
+| `Programs/Automation/SqlHolds.lean` (bridge, SELECT 1 WHERE, EXISTS, syntax) | 100 | 151 |
+| Tactic total | 273 | 392 |
 | `Programs/Claims/CatalogClaimBridge.lean` (bridge laws over a catalog) | 50 | 86 |
 | Model: `Queries/Evaluation/RowwiseCheck.lean` (decidable row-wise check) | 32 | 54 |
 | Model: `Resolved.Query.simple_subqueryRun_rowwise` in `RowwiseExpr.lean` | 28 | 43 |
@@ -638,8 +645,9 @@ New fixtures, roots of the suite `surface`, in the test
   third claim `purgeAddsNone` and `purge_adds_none`.
 - `tests/surface/Programs/Scripts/PurgeTacticCases.lean`: `sessions_exists`,
   an `EXISTS` claim with a witness row as the first goal of `∧`, where the
-  tactic keeps the second goal; then eleven negative cases with
-  `#guard_msgs`.
+  tactic keeps the second goal; `sessions_exists_since`, the same claim as
+  a two-state claim with no catalog of the initial database; then eleven
+  negative cases with `#guard_msgs`.
 
 The proofs of form B stay in `PurgeEffectClaims.lean`,
 `PurgeFrameClaims.lean` and `PurgeFrameSchema.lean`. The new proofs use the
@@ -903,7 +911,7 @@ sql_holds proves the goal that sql_run leaves for a claim holds q or holdsSince 
 Elaboration time (lower of two runs, local; the compile of the purge
 test): `PurgeEffectTactic` 1.6 s (form B: `PurgeEffectClaims` 1.2 s),
 `PurgeFrameTactic` 3.6 s for two claims (form B: `PurgeFrameClaims` 1.3 s
-and `PurgeFrameSchema` 1.3 s), `PurgeTacticCases` 4.1 s (one claim and
+and `PurgeFrameSchema` 1.3 s), `PurgeTacticCases` 4.4 s (two claims and
 eleven negative cases). With the
 profiler, `sql_holds` takes 0.32 s in the effect proof and 0.64 s and
 0.82 s in the two frame proofs; the negative cases take 0.23 s to 0.30 s
@@ -928,13 +936,11 @@ Limits:
 - The claim of the client must be the conclusion of the main goal. The
   tactic introduces the premises of that goal.
 - The result columns of the claim must have the names of `SELECT 1`. An
-  alias, as in `SELECT 1 AS verdict`, stops with a message.
-- A `holdsSince start q` claim needs a catalog hint for the start database,
-  also when `q` reads no table of `before`. The pilot claims have it: the
-  precondition of `FreshEnsuresFrom` gives the catalog of the start, and a
-  run computes the catalog that it reaches from it. A law for a claim
-  without `before` that needs no such hint is not written (review finding
-  `20261124T231252Z-0e92aa69#3`, deferred).
+  alias that changes the name of the column from `1`, as in
+  `SELECT 1 AS verdict`, stops with a message.
+- A `holdsSince start q` claim whose query names a schema needs a catalog
+  hint for the start database. A claim whose query names no schema needs
+  none (`Holds.reachedSince_iff_reached`).
 
 The tests of this form: `just dev-build`; `python3 -m pytest
 tests/surface_assertion_examples_test.py -k "claim_tactic or

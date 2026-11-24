@@ -98,7 +98,8 @@ def applyLaw (hints : Array Expr) (law : Name) (target : Expr) : MetaM (Expr × 
 /-- The parts of a resolved query, with the words that a message uses for each. -/
 def queryParts : List (Name × String) :=
   [(`sources, "FROM"), (`filter, "WHERE"), (`aggregate, "an aggregate"), (`groupBy, "GROUP BY"),
-    (`columns, "the result columns"), (`names, "the names of the result columns"), (`orderBy, "ORDER BY"), (`offset, "OFFSET"), (`limit, "LIMIT"),
+    (`columns, "the result columns"), (`names, "the names of the result columns"), (`orderBy, "ORDER BY"),
+    (`offset, "OFFSET"), (`limit, "LIMIT"),
     (`limitParameter, "LIMIT with a parameter"), (`offsetParameter, "OFFSET with a parameter"),
     (`outer, "a column of an outer query"), (`aggregates, "an aggregate"), (`having, "HAVING"),
     (`distinct, "DISTINCT"), (`compound, "a compound SELECT")]

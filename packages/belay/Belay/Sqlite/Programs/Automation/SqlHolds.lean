@@ -1,4 +1,5 @@
 import Belay.Sqlite.Programs.Automation.SqlHoldsRuns
+import Belay.Sqlite.Frontend.Embedding.SqlTerm
 
 set_option doc.verso true
 
@@ -34,11 +35,25 @@ def applyEquivalence (hints : Array Expr) (law : Name) (goal : MVarId) : MetaM (
   goal.assign (← mkAppM ``Iff.mpr #[equivalence, next])
   return (next.mvarId!, open_)
 
+/-- Bring a two-state claim whose query names no schema to the one-state claim
+({name}`Belay.Sqlite.Holds.reachedSince_iff_reached`), so that it needs no catalog of the initial database. The
+result is {lean}`(none : Option MVarId)` when the kernel does not decide that the query is a {lit}`SELECT` that names
+no schema. -/
+def oneStateClaim? (goal : MVarId) : MetaM (Option MVarId) := do
+  let saved ← saveState
+  let (next, open_) ← applyEquivalence #[] ``Holds.reachedSince_iff_reached goal
+  for premise in open_ do
+    let some proof ← Select.evaluationProof? (← instantiateMVars (← inferType premise)) | saved.restore; return none
+    premise.mvarId!.assign proof
+  return some next
+
 /-- Bring the claim to the output of its resolved query. -/
 def bridge (hints : Array Expr) (goal : MVarId) : MetaM MVarId := do
-  let law ← match_expr ← instantiateMVars (← goal.getType) with
-    | Holds.reached _ _ _ => pure ``Holds.reached_iff_of_catalog
-    | Holds.reachedSince _ _ _ _ => pure ``Holds.reachedSince_iff_of_catalog
+  let (law, goal) ← match_expr ← instantiateMVars (← goal.getType) with
+    | Holds.reached _ _ _ => pure (``Holds.reached_iff_of_catalog, goal)
+    | Holds.reachedSince _ _ _ _ => match ← oneStateClaim? goal with
+      | some next => pure (``Holds.reached_iff_of_catalog, next)
+      | none => pure (``Holds.reachedSince_iff_of_catalog, goal)
     | _ => throwError "sql_holds proves the goal that sql_run leaves for a claim holds q or holdsSince start q. \
         Use it after sql_run, on the goal of the claim."
   let (next, open_) ← applyEquivalence hints law goal
@@ -49,7 +64,7 @@ def bridge (hints : Array Expr) (goal : MVarId) : MetaM MVarId := do
 
 /-- The words for the first clock expression of a statement without variables that fails
 {name}`Belay.Sqlite.Model.Resolved.Expr.calmCheck`: it reads the clock or a counter, or calls a function that can
-fail. -/
+fail. When the kernel shows no such expression, the words say that the kernel does not decide the check. -/
 def restlessPart (statement : Expr) : MetaM MessageData := do
   let expressions ← Select.kernelNormalize (← mkAppM ``Resolved.Statement.clockExpressions #[statement])
   for expression in (← listElements? expressions).getD [] do
@@ -58,7 +73,8 @@ def restlessPart (statement : Expr) : MetaM MessageData := do
       if value.isConstOf ``Bool.false then
         return m!"the expression{indentExpr expression}\nwhich reads the clock or a counter, or calls a function \
           that can fail"
-  return "a claim that reads the clock or a counter, or calls a function that can fail"
+  return "a claim for which the kernel does not decide that it reads no clock and no counter and calls no function \
+    that can fail"
 
 /-- Bring the output of {lit}`SELECT 1 WHERE c` to the truth of {lit}`c`. The result is the goal, the premise that
 {lit}`c` has no fault, and {lit}`c`. -/
@@ -102,9 +118,9 @@ def existsCondition (hints : Array Expr) (goal : MVarId) (quiet condition : Expr
 /-- {lit}`sql_holds [h₁, …]` proves the goal that {lit}`sql_run` leaves for a claim {lit}`holds q` or
 {lit}`holdsSince start q` down to goals about rows of tables. Each hint is a proof of {lit}`db.HasCatalog schema`
 for a database that the claim reads. For example, after {lit}`sql_run` in a proof of a claim
-{lit}`holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT * FROM t WHERE c = $x)")` about each database with the
-catalog of {lit}`schema`, {lit}`sql_holds [catalog]` leaves the goal that each row of {lit}`t` does not satisfy
-the condition. -/
+{lean}`fun x : Value => holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT * FROM t WHERE c = $x)")` about each
+database with the catalog of {lit}`schema`, {lit}`sql_holds [catalog]` leaves the goal that each row of {lit}`t`
+does not satisfy the condition. -/
 syntax (name := sqlHolds) "sql_holds" (" [" term,* "]")? : tactic
 
 /-- The elaborator of {lit}`sql_holds`: it introduces the premises, unfolds {lit}`holds` and {lit}`holdsSince`,

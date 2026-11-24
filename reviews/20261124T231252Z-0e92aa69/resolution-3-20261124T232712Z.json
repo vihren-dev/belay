@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T23:27:12+00:00",
+  "finding": "20261124T231252Z-0e92aa69#3",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "No claim of the pilot needs it. A run computes the catalog that it reaches from the catalog of the start, and the precondition of FreshEnsuresFrom gives the start's catalog, so a hint for the start exists whenever one for the reached database exists. The status file records it as a limit of form C."
+}
