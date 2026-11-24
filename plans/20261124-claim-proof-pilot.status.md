@@ -38,6 +38,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   `adr-0033-phase-8-inventory`.
 - 2026-11-24, base form: the readiness facts of a row-wise filter
   (`anyMayFail`, `deleteJsonReady`).
+- 2026-11-24, base form: review fixes of the readiness facts (the
+  docstring of `anyMayFail_eq_false_iff`, the reach of the UPDATE checks).
 
 ## Base form
 
@@ -52,15 +54,17 @@ facts. They mention no step.
 
 - `Resolved.anyMayFail_eq_false_iff` (`Queries/Evaluation/QueryPlainLaws.lean`):
   for each context, list of rows and list of expressions, `anyMayFail` is
-  false exactly when each expression has the fault `none` over each row. This
-  is the general form: an equivalence with no premise.
+  false exactly when each listed expression, evaluated in the context over
+  each listed row, has the fault `none`. This is the general form: an
+  equivalence with no premise.
 - `Resolved.anyMayFail_of_rowwise` (`Queries/Evaluation/RowwiseExpr.lean`):
   for each list of row-wise expressions, each context and each list of rows,
-  `anyMayFail` is false. The WHERE test of `deleteJsonReady` and both tests of
-  `updateJsonReady` have this form, so the fact serves a later UPDATE fact
-  too. It leaves out an expression that is not row-wise, for example one with
-  a subquery or a function call; for such an expression the equivalence above
-  still applies.
+  `anyMayFail` is false. The WHERE test of `deleteJsonReady` and the WHERE
+  and SET tests of `updateJsonReady` have this form, so the fact serves a
+  later UPDATE fact too. The RETURNING test of `updateJsonReady` is a
+  separate test that this fact does not cover. The fact leaves out an
+  expression that is not row-wise, for example one with a subquery or a
+  function call; for such an expression the equivalence above still applies.
 - `deleteJsonReady_of_rowwise` (`Schema/Writes/JsonReadyLaws.lean`, new
   module, imported by `Model.lean`): for each optional filter whose
   expression is row-wise, each context, each table and each list of
@@ -77,7 +81,8 @@ Elaboration time of the changed model modules (`lake env lean`, lower of two
 runs, local): `QueryPlainLaws` 1.98 s, `RowwiseExpr` 0.46 s,
 `JsonReadyLaws` 0.26 s.
 
-Checks (local): `just dev-build` passed.
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local).
 
 ## Form A
 
