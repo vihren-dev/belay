@@ -7,6 +7,8 @@ set_option doc.verso true
 {lit}`holdsSince start q` down to goals about rows of tables. A hint is a proof of {lit}`db.HasCatalog schema` for
 each database that the claim reads. The tactic applies these laws, in order:
 
+* for {lit}`holdsSince start q` with a query that names no schema, the law to the one-state claim
+  ({name}`Belay.Sqlite.Holds.reachedSince_iff_reached`), so that the claim needs no catalog of {lit}`start`;
 * the bridge from the claim to the output of the resolved query, with the resolution that the kernel computes on
   the catalog of the hint ({name}`Belay.Sqlite.Holds.reached_iff_of_catalog`,
   {name}`Belay.Sqlite.Holds.reachedSince_iff_of_catalog`);
