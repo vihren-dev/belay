@@ -78,8 +78,9 @@ the goal and the messages stay as they were, and the step rule of the read appli
     saved.restore
     return false
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
-  statement, so that each statement gets its own rule at the context that the earlier ones reach. A kind rule
-  ({name}`applyKindRule`) goes first; the rule of the syntax kind ({name}`sendRule`) applies when no kind rule fits.
+  statement, so that each statement gets its own rule at the context that the earlier ones reach. A visible SELECT uses its syntax rule, which
+  requires only its syntax. For other sends {name}`applyKindRule` tries the resolved kind rules before the
+  fallback in {name}`sendRule`.
   The cases of a kind rule that fail are closed when their trace is not error-free. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script

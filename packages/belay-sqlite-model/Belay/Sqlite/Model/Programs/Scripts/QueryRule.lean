@@ -45,7 +45,7 @@ equation and the read-only frame determine the whole step. Expand the output on 
           else .ended unmodeledHere := by
   let fromOutput : Output → RunStep
     | .unmodeled reason => .ended reason
-    | output => .continued output connection []
+    | out@(.rows _) | out@(.oneOf _) | out@(.done _) | out@(.error _) => .continued out connection []
   have read : runScriptStep context clock index connection statement parameters =
       fromOutput (resolvedStepOutput clock index connection parameters (.query query subqueries)) := by
     have output := runScriptStep_output context clock index connection statement parameters

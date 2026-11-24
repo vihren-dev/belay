@@ -61,9 +61,13 @@ theorem Sql.check_send_of_rule {ctx : ExecutionContext} {statement : Syntax.Stat
     | oneOf results => exact fun rows listed => by simpa [Sql.map, Sql.check_pure] using alternatives rows listed
     | done _ | rows _ | error _ | unmodeled _ => trivial
 
-/-- A check of every selected output of every execution proves the send's postcondition.
-The selected output may be the raw output or a concrete member of a choice.
-Proof sketch: the universal form of {name}`OutputChoice.Checked` gives exactly these cases. -/
+/-- For every postcondition, context and continued step with an output, next connection and further executions,
+suppose that for every member of its {name}`RunStep.executions` whose next state satisfies
+{name}`SqlState.Holds` for {lean}`Database.Valid Profile.pinned`, and for each output selected from that
+execution by {name}`OutputChoice`, the postcondition holds for the singleton selected output and the context
+advanced with that output and the execution's next connection. Then the continued step satisfies
+{name}`RunStep.Continuing` for {name}`Sql.SendReached` at that postcondition and context.
+Proof sketch: use the universal form of {name}`OutputChoice.Checked` for each valid execution. -/
 theorem Sql.sendReached_each {post : List Output → ExecutionContext → Prop} {ctx : ExecutionContext}
     {output : Output} {next : Connection} {others : List StatementExecution}
     (holds : ∀ execution ∈ (RunStep.continued output next others).executions,

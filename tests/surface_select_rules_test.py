@@ -184,6 +184,6 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
-    """Read-only query sends retain all selected traces, including errors, and the original
-    foreign-key-check pragma statements follow with only logical axioms."""
+    """Check runScriptStep_query_eq and ruleCases with Sql.sendReached_each for each selected trace,
+    and reprove runScriptStep_keyCheck_resolved and runScriptStep_keyCheck_continues under the axiom check."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("QuerySendClaims", 1)), timeout=60)
