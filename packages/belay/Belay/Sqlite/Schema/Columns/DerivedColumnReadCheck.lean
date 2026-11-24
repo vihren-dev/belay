@@ -57,13 +57,15 @@ def Site.ReadPreserved.ofCheck {database : Database.Raw} {tableName : Identifier
       simp only [Option.mem_def] at member
       subst member
       simpa using filterBelow
-    · intro state same
+    · intro connection same
+      let state := connection.resolveState
       obtain ⟨names, resolves⟩ := readParts_resolves (state := state) (same ▸ before)
-      exact ⟨names, state, resolves⟩
-    · intro state same
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolves⟩
+    · intro connection same
+      let state := connection.resolveState
       rw [Site.reached_nil_catalog] at same
       obtain ⟨names, resolves⟩ := readParts_resolves (state := state) (same ▸ after)
-      exact ⟨names, state, resolves⟩
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolves⟩
     · exact fun names => Resolved.Statement.simpleTable_calm _ filter columns names
         (by
           intro expression member

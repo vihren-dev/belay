@@ -87,12 +87,14 @@ def columnPreserved {database : Database.Raw} {tableName idName sourceName store
       cases List.mem_singleton.mp member
       simp [Output.readsBelow, Expr.readsBelow, Expr.any, Expr.isColumnFrom]
       exact idInside
-    resolvesBefore := fun state same => by
+    outputBefore := fun connection same => by
+      let state := connection.resolveState
       obtain ⟨names, resolved⟩ := resolve_column_lookup runContext state (tableReference tableName alias)
         site.position site.table.shape idName sourceName text number rfl rfl rfl (by rw [same]; exact site.found)
         site.idFound site.sourceFound atSource
-      exact ⟨names, state, resolved⟩
-    resolvesAfter := fun state same => by
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolved⟩
+    outputAfter := fun connection same => by
+      let state := connection.resolveState
       have extended : state.catalog.findTable tableName = some (site.position,
           { site.table.shape with
             columns := site.table.shape.columns ++ [textColumn storedName site.table.shape.strict] }) := by
@@ -104,7 +106,7 @@ def columnPreserved {database : Database.Raw} {tableName idName sourceName store
         site.position _ idName sourceName text number rfl rfl rfl extended
         (columnPosition_append site.idFound _) (columnPosition_append site.sourceFound _)
         (by rw [List.getElem?_append_left sourceInside]; exact atSource)
-      exact ⟨names, state, resolved⟩
+      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolved⟩
     calm := fun names => simpleColumn_calm _ _ _ names (columnFilter_calm _ _ _) }
 
 end S6RulesQuerySites

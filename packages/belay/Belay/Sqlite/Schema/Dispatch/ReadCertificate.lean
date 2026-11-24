@@ -17,11 +17,12 @@ def ReadCertificate.Scans (certificate : ReadCertificate) (context : ResolveCont
       .continued (.rows (Resolved.normalForm ((certificate.query names).results
         (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table)))) connection []
 
-/-- A migration witnesses the actual scan on each connection. The table name finds the original table
-at the certificate position and the second table at the stated other position. The
-other step realizes the scan of the certificate moved to that second position.
-Its table scan appends cells to each original row, and every original row is at
-least as wide as the certificate requires. -/
+/-- The statement realizes the certificate on the original connection. There are a name,
+a second position, two tables and a function that gives extra cells for each original row.
+The name finds the tables at the certificate position and the second position respectively.
+The statement on the second connection realizes the certificate moved to that position.
+The second table's source rows are the first table's source rows with their extra cells
+appended, and each original source row is at least as wide as the certificate requires. -/
 structure ReadCertificate.Obligations (certificate : ReadCertificate) (context : ResolveContext)
     (statement : Syntax.Statement) (original other : Connection) : Prop where
   /-- The original statement realizes the certificate on its starting connection. -/
