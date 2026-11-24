@@ -60,9 +60,9 @@ theorem Expr.fault_of_plain (context : EvalContext) (quiet : context.Quiet) (row
     (plain : expression.any Expr.isFallibleCall = false) : (expression.evaluate context row).2 = .none :=
   Expr.fault_of_plain_at context row (quiet.at row) expression plain
 
-/-- Take a context, a list of rows and a list of expressions. The test {name}`anyMayFail` is false exactly when this
-is true: each expression of the list, evaluated with the context on each row of the list, has the fault
-{lean}`Fault.none`. When one list is empty, the test is false. The readiness checks of the writes read this test. Proof
+/-- Take a context, a list of rows and a list of expressions. The test {name}`anyMayFail` is false exactly when each
+listed expression has the fault {lean}`Fault.none` on each listed row in the context. When one list is empty, the
+test is false. The readiness checks of the writes read this test. Proof
 sketch: unfold the two {lit}`any` tests and {name}`Expr.mayFailOn`. -/
 theorem anyMayFail_eq_false_iff {context : EvalContext} {rows : List (List Value)} {expressions : List Expr} :
     anyMayFail context rows expressions = false ↔

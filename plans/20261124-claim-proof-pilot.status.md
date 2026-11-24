@@ -44,6 +44,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   client statement over the catalog of `sessions`.
 - 2026-11-24, base form: review fixes of the frame commit (docstrings in
   short sentences, the fields of `sessionsSite`).
+- 2026-11-24, base form: the effect claim `purgeClears` and its client
+  statement `purge_clears`.
 
 ## Base form
 
@@ -116,15 +118,53 @@ Checks run, local outcome only, not evidence: `just dev-build` passed
   outside this task.
 - The fields of `sessionsSite`: the position, the entry, the names and the
   two states after the resolution are values of `sessions`. `keyAlias` is
-  decided by the kernel. `found`, `purgeResolves` and `claimResolves` rewrite
-  the catalog of the database to that of `sessions` with the premise, then
-  the kernel decides them.
+  decided by the kernel. `found` and `claimResolves` rewrite the catalog of
+  the database to that of `sessions` with the premise, then the kernel
+  decides them. `purgeResolves` rewrites the resolution state of the idle
+  connection with `Database.resolveState_of_catalog`, then the kernel
+  decides it.
 - Tests: `test_purge_frame_claim_over_every_database` compiles the chain
   with `PurgeFrameSchema`; the new module is in the `surface` roots.
 
 Elaboration time of the fixtures (lower of two runs, local):
 `PurgeFrameQueries` 1.0 s, `PurgeFrameSite` 1.0 s, `PurgeFrameClaims`
 1.3 s, `PurgeFrameSchema` 1.3 s, `PurgeFrameInstances` 3.1 s.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
+passed (local); `python3 -m pytest tests/test_source_identity_derivations.py`
+passed (local).
+
+### The effect claim (fixtures)
+
+- New fixture `tests/surface/Programs/Scripts/PurgeEffectClaims.lean`:
+  - `purgeClears`: `SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM sessions WHERE
+    customer_id = $c AND expires_at < $now)`.
+  - `purgeClears_iff`: on a database with the catalog of `sessions`, the
+    claim holds exactly when the filter is true for no row of the table.
+    The proof uses `resolveStatement_selectOne_notExists`, `tableOne_run`
+    and `whereOne_claims`, as the task file says.
+  - `purge_clears`: the effect client statement, with the catalog as its
+    only premise. The proof runs the purge with `sql_run`, with
+    `PurgeFrameSite.purge_continues` as the hint for the step. It reads the
+    rows that `LiteralData.deleted` keeps and uses
+    `Resolved.Expr.Rowwise.evaluate_congr` to move the filter from the
+    context of the statement to the two values.
+- New fixture `tests/surface/Schema/Tests/PurgeEffectInstances.lean`: a use
+  of `purge_clears` on `sessions`, and decide checks that the claim is false
+  before the purge and true after it (integer time and text time), true
+  before and after for a NULL customer, and false after an aborted purge.
+- Tests: `test_purge_frame_claim_over_every_database` compiles the chain
+  with `SelectOneWhereSupport`, `PurgeEffectClaims` and
+  `PurgeEffectInstances`, timeout 300 s. Both new modules are in the
+  `surface` roots.
+- Effort, for the findings record: `purge_clears` and `purgeClears_iff` are
+  about 45 proof lines. No package code was needed beyond the readiness
+  facts.
+
+Elaboration time of the fixtures (lower of two runs, local):
+`SelectOneWhereSupport` 1.0 s, `PurgeEffectClaims` 1.2 s,
+`PurgeEffectInstances` 1.7 s.
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
