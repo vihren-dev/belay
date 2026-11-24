@@ -66,3 +66,6 @@ descriptions now state the resolution domain and distinguish the group
 laws from exact rules. The three retention modules describe their subjects.
 The tactic no longer assigns obsolete binder names to an outcome.
 This removes one further surface line (14,574 surface, 98,308 total).
+
+The review of c2df605a asked for the two outcome theorems to be named
+as the facts about the update. The module description now does so.
