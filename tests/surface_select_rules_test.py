@@ -186,7 +186,7 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
 def test_query_rule_checks_selected_outputs_and_retains_pragma_laws(runtime_root: Path, tmp_path: Path) -> None:
     """ReplacedKeyCheck, ReplacedQueryOutputs and ReplacedPragmaOutputs prove the former query
     and pragma contracts with their original premises. ReplacedContextRules checks both former
-    public context rules with Sql.check_query_of_step_rows. ReplacedCatalogRules checks the three original catalog contracts. CatalogOutputCases uses a write with the output of a scan. The query fixtures include the scan computed by
+    public context rules with Sql.check_query_of_step_rows. ReplacedCatalogRules checks the three original catalog contracts. CatalogOutputCases uses Run.query_returns_catalog_rows on a write with the output of a scan, and closeByEvaluation in SqlSelectEval.lean infers a concrete scan from statementOutputAt. The query fixtures include the scan computed by
     runScriptStep_query_eq. QuerySendClaims exercises ruleCases and Sql.sendReached_each for
     every modeled output. Each proof uses only ordinary logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("ReplacedKeyCheck", 2), ("ReplacedQueryOutputs", 3),

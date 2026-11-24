@@ -19,7 +19,7 @@ def updateRows : Script := sql r"UPDATE t SET a = 7 RETURNING a"
 def scan : Resolved.Query := Resolved.Query.simple [.first 0] none [.scalar (.column 0)] ["a"]
 
 /-- The UPDATE on the empty table resolves to a nonquery and returns no rows. Proof sketch:
-compute the catalog lookup and output equality, then use the catalog rule with the empty scan. -/
+compute the catalog lookup and output equality, then apply {name}`Run.query_returns_catalog_rows` to the empty scan. -/
 theorem update_returns_empty :
     emptyTable.selectQuery? updateRows.statements[0].1 = none ∧
     (emptyTable.run (query updateRows rfl)).returnsResult (· = []) := by
@@ -34,8 +34,8 @@ theorem update_returns_empty :
   change rows.Perm [] at perm
   exact List.perm_nil.mp perm
 
-/-- At the concrete empty database and default environment, the built-in catalog rule can infer
-the scan while proving a SELECT over its rows. -/
+/-- At the concrete empty database and default environment, {name}`Select.closeByEvaluation` infers
+the query in the {name}`statementOutputAt` equation used by {name}`Run.query_returns_catalog_rows`. -/
 theorem select_returns_empty :
     (emptyTable.run (query (sql r"SELECT a FROM t") rfl)).returnsResult (fun rows => rows = []) := by
   have empty : emptyTable.scanAt 0 = [] := by decide +kernel

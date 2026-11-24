@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:40:40+00:00",
+  "finding": "20261124T123310Z-6337b320#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Both concrete examples identify their respective rule and catalog inference."
+}
