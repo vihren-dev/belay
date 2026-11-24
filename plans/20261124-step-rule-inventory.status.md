@@ -136,3 +136,20 @@ The original one-send equivalence now proves the empty execution list directly
 from the package. It will keep testing both directions on a context with no
 validity proof. The positive IN/EXISTS witness will keep testing the absence
 of a non-NULL premise on the inner column. Both final witnesses can stand alone.
+
+## Retention evidence before deletion
+
+Nix compiled and audited each module below at revision `8a898446a7e4a88b87f72869e7ef9d01844c73c4` (tag `adr-0033-retention-witnesses`). Its package contracts
+include the last changes used by these proofs. Nix ran all eleven pytest owners of the temporary modules in the surfaceS6 and surfaceSelect derivations. Each original proof passed its ordinary-axiom check. The JUnit records contain the six expected schema/script owners and the five expected query owners. The suite outputs are `/nix/store/741wf1pv5ci4lhqa06abrad2wff4l03d-belay-test-surfaceS6-1` and
+`/nix/store/mbvcgkgqzikw6356nki8s5v1bdx2qgiy-belay-test-surfaceSelect-1`. The accepted revision contains 48 retention modules and
+143 audited declarations.
+
+| Group | Accepted modules | Durable evidence |
+| --- | --- | --- |
+| Pilot and plain writes | `ReplacedDeleteSendLaws`, `ReplacedFailureFrames`, `ReplacedPlainWriteLaws`, `ReplacedSendLaws`, `ReplacedStepLaws`, `ReplacedUpdateSendLaws` | ItemInsertClaims, ItemInsertAnyClaims, PlainInsertStepCases, S6AutoEffects and schema/row-effect claims. |
+| Control and settings | `ReplacedControlContinuation`, `ReplacedControlFrame`, `ReplacedControlSend`, `ReplacedSetting`, `ReplacedTransaction` | ControlSendClaims, ControlStepExamples and SchemaRuleExamples check active/idle and pragma transitions. |
+| Schema and backfill | `ReplacedAddColumn`, `ReplacedBackfill`, `ReplacedCatalogContinuation`, `ReplacedCatalogRewrite`, `ReplacedCatalogSend`, `ReplacedColumnIfOk`, `ReplacedColumnSend`, `ReplacedConditionalCreation`, `ReplacedOrdinaryFrames`, `ReplacedPlainDrop`, `ReplacedSchemaFailures` | SchemaSendClaims, the rebuild and derived-column applications, check boundaries and native schema replays. |
+| Query outcomes and rows | `ReplacedCalmRuns`, `ReplacedFailedRuns`, `ReplacedKeyCheck`, `ReplacedObservations`, `ReplacedOverflowRuns`, `ReplacedPragmaOutputs`, `ReplacedQueryOutputs`, `ReplacedRowPredicates`, `ReplacedSelectRuns`, `ReplacedReadPragma` | SelectOutcomeCases, SelectContextCases, QuerySendClaims and the execution, mismatch, overflow and pragma fixtures. |
+| Context and certificates | `ReplacedCatalogRules`, `ReplacedCertificateChecks`, `ReplacedCertificateClaims`, `ReplacedCertificateObligations`, `ReplacedContextRules`, `ReplacedSiteCertificates`, `ReplacedSiteCheckers`, `ReplacedSiteClaims`, `ReplacedSiteOutputs` | CatalogOutputCases, KeptReadChecks, CertificateAfterDrop, DerivedColumnOnSchema, LowercaseSimulation, A21/A22, counter and NULL/stale-certificate checks. |
+| Write modes and execution properties | `ReplacedExecutionProjections`, `ReplacedNonQueryOutputs`, `ReplacedProductionSuccess`, `ReplacedProgramDrop`, `ReplacedWriteChoices` | InsertWithRulesClaim, ProgramWriteClaims, ReturningWriteClaims, SourceWriteClaims, RowWriteSendClaims and the execution-branch checks. |
+| Partial retention | `ReplacedSubqueryEquivalence`, `ReplacedGeneralSend` | Keep one validity-free send equivalence until another client audits both directions without a validity hypothesis. Keep one positive IN/EXISTS witness until a dedicated client checks nullable inner values without a non-NULL premise. The negative form has S6NotBlockedLaw. |
