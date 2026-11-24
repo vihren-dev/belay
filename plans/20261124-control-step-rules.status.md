@@ -35,3 +35,6 @@ The retention and client fixtures cover M11, M12 and surface sends.
 The relevant suites are surface_schema_script_test.py and surface_rebuild_test.py.
 
 Registered both new Nix fixture roots and corrected the witness proof sketch and task background after review.
+
+Repaired links in the resolver and query-observation records after the
+full source checks found two references to deleted control modules.
