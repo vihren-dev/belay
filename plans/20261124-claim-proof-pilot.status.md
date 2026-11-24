@@ -56,6 +56,9 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   comes before the first module docstring.
 - 2026-11-24, base form: `PurgeFrameSite.lean` gets the same layout, with a
   checked reference to `PurgeFrameSite.purge_continues` at the end.
+- 2026-11-24, base form: the first module docstring of `PurgeFrameSite.lean`
+  no longer names the structure; the last one names it with a checked
+  reference.
 
 ## Base form
 
