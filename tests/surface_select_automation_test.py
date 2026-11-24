@@ -45,7 +45,8 @@ def test_replaced_run_contracts(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_replaced_observation_contracts(runtime_root: Path, tmp_path: Path) -> None:
-    """The query observations and subquery equivalences still follow under the original assumptions."""
+    """Derive the original resolution-premise contracts from Script.outputOn_resolved, Script.outputIn_resolved,
+    Holds/Empty/Fails.iff_query, Holds.inContext_iff_reached and the two Sql.EquivAt IN/EXISTS laws."""
     check_module_chain(runtime_root, tmp_path, (
         ("ReplacedObservations", 4), ("ReplacedRowPredicates", 3), ("ReplacedSubqueryEquivalence", 2),
     ), timeout=60)

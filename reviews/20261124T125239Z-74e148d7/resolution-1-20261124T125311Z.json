@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:53:11+00:00",
+  "finding": "20261124T125239Z-74e148d7#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The database projection states its fixed clock and index."
+}

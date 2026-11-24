@@ -4,8 +4,9 @@ set_option doc.verso true
 
 /-!
 When the real-context observation ({lit}`Script.outputIn`) equals the default observation. The
-bridge covers a query statement that reads no clock and no counter, and that resolution turns into
-the same query in both contexts over equal databases. It does not cover every read-only query.
+bridge compares observations over equal databases when each output equals that of the same query
+and the query reads no clock or counter. Successful resolution can supply the two output equations
+through {lit}`Script.outputIn_resolved`.
 -/
 
 namespace Belay.Sqlite
