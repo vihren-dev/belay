@@ -25,13 +25,14 @@ def test_sql_run_proves_the_insertion_claim_and_its_triple(runtime_root: Path, t
 
 def test_sql_run_proves_an_update_claim(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` proves the stored row of an UPDATE on a concrete database for every complete environment, and
-    the same claim has a proof with `Sql.check_send_plainUpdate` alone."""
-    check_module_chain(runtime_root, tmp_path, (("S6RulesEffects", 3), ("S6AutoEffects", 2)),
+    the exact rule proves the same claim. For every modeled plain UPDATE, a send reports a count or
+    reports an error and preserves the database."""
+    check_module_chain(runtime_root, tmp_path, (("S6RulesEffects", 3), ("S6AutoEffects", 3)),
                        timeout=CHAIN_TIMEOUT_SECONDS)
 
 
 def test_sql_run_covers_every_statement_rule(runtime_root: Path, tmp_path: Path) -> None:
-    """`sql_run` applies `Sql.check_send_plainDelete`, `Sql.check_send_addColumn`, `Sql.check_query_select`,
+    """`sql_run` applies `runScriptStep_plainDelete_eq`, `Sql.check_send_addColumn`, `Sql.check_query_select`,
     `Sql.check_single_select` and `Sql.check_send_select`, and it keeps the sibling goal of a conjunction while
     it works on the first goal. The claims are about one concrete database and every complete environment."""
     check_module_chain(runtime_root, tmp_path, (("S6RulesEffects", 3), ("S6AutoPaths", 6)),

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteEffect
+import Belay.Sqlite.Model.Schema.Writes.PlainWriteFrame
 
 set_option doc.verso true
 
@@ -29,13 +30,7 @@ theorem runStatement_update_ok (clock : Int) (counters : Counters) (parameters :
     after = database.setRows target
       (LiteralData.updated (statementContext clock counters parameters database subqueries)
         table assignments filter).rows := by
-  simp only [runStatement, present, Option.map_none, StatementRun.withKeys] at success
-  split at success
-  · cases success
-  · unfold checkedWrite at success
-    split at success
-    · cases success; rfl
-    · cases success
+  exact updateOutcome_ok (by simpa only [runStatement, present, Option.map_none, StatementRun.withKeys] using success)
 
 /-- Under the successful plain UPDATE assumptions of {name}`runStatement_update_ok`,
 if the target has a storage slot, its resulting table is exactly the computed
@@ -53,38 +48,6 @@ theorem table_after_update_ok (clock : Int) (counters : Counters) (parameters : 
         table assignments filter) := by
   rw [runStatement_update_ok clock counters parameters assignments filter returning subqueries present success]
   exact Database.table_setRows _ present aligned
-
-/-- For every connection, plain update and error-free step that continues: the next connection has the
-database in which the table at the target holds the rows that {name}`LiteralData.updated` computes. The
-statement context is that of the clock value of the step and of the counters that the update reads, with
-the values bound to its parameters. Proof sketch: {name}`runScriptStep_effect` gives the effect of the run,
-and {name}`runStatement_update_ok` reads the stored rows from a successful effect. -/
-theorem plainUpdate_database {context : ResolveContext}
-    {clock : Option Clock} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
-    {target : Nat} {assignments : List (Nat × Resolved.Expr)} {filter : Option Resolved.Expr}
-    {after : ResolveState} {table : Table}
-    (found : resolveStatement context connection.resolveState statement =
-      .ok (.update target assignments filter [] [] none, after))
-    (present : connection.state.database.table target = some table)
-    (step : runScriptStep context clock index connection statement parameters = .continued output next others)
-    (noError : output.isError = false) :
-    ∃ value : Int, statementClock clock index (.update target assignments filter [] [] none) = some value ∧
-      next.state.database = connection.state.database.setRows target
-        (LiteralData.updated (Resolved.statementContext value
-          (connection.state.counters.view
-            (Resolved.Statement.update target assignments filter [] [] none).counterReads)
-          parameters connection.state.database []) table assignments filter).rows := by
-  obtain ⟨value, database, timed, effect, nextEq⟩ :=
-    runScriptStep_effect found (by simp [Resolved.Statement.isControl]) step noError
-  refine ⟨value, timed, ?_⟩
-  simp only [SqlState.statementRun] at effect
-  have stored := runStatement_update_ok value
-    (connection.state.counters.view (Resolved.Statement.update target assignments filter [] [] none).counterReads)
-    parameters assignments filter [] [] present (by
-      simpa [runStatement, present, StatementRun.withKeys, Option.map_none] using effect)
-  rw [nextEq]
-  exact stored
 
 /-- For every clock, statement values, state, run, transition, target and rule fields: the output of a step
 of an update is never a choice between results. Proof sketch: as {name}`Output.ofStep_delete_ne_oneOf`;

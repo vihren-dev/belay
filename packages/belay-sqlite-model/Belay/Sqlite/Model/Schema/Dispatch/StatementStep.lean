@@ -76,8 +76,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
       let context := Resolved.statementContext clock counters parameters database subqueries
       let keys := database.keys target table
       let result := LiteralData.updated context table assignments filter
-      let effect := if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
-        else checkedWrite database target keys result
+      let effect := updateOutcome database target keys context table assignments filter result
       StatementRun.withKeys effect
         (LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
           updateJsonReady context table assignments filter returning &&

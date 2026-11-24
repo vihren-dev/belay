@@ -1,15 +1,57 @@
-import Belay.Sqlite.Programs.Scripts.SendStepRules
-import Belay.Sqlite.Programs.Scripts.PlainUpdateEffect
+import ReplacedPlainWriteLaws
 
 set_option doc.verso true
 
-/-! The rule for one sent plain update at any context (ADR 0017, S6): the premises that a proof of a program
-needs, and nothing about the other statements of the program. -/
+namespace Belay.Sqlite.ReplacedPlainWriteLaws
+open Belay.Sqlite Model Model.ReplacedPlainWriteLaws
 
-namespace Belay.Sqlite
-open Belay.Sqlite Model
+/-- The deleted law {lit}`Sql.ifOk_send_plainUpdate`. For every database, environment, plain update that resolves from the initial connection and is
+modeled, and post: a program that sends the update checks the post at its fresh start when the post
+holds for every error-free final context whose connection sees the database in which the target table
+holds the rows that {name}`LiteralData.updated` computes, and that database is valid. In plain words, to
+prove a claim about the table after an UPDATE, it is enough to prove it for the rows that the assignments
+and the filter produce; a failed update, a refused statement and every other final database are outside the
+premise. The premise is about the database only, so the claim needs no engine reasoning. Proof sketch:
+{name}`check_send_single_of_step` with the step of the model; {name}`plainUpdate_database` gives the
+database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_update_ne_oneOf` rules out a
+choice. -/
+theorem Sql.ifOk_send_plainUpdate {db : Database} {env : Env} {statement : Syntax.Statement}
+    {values : List Value} {target : Nat} {assignments : List (Nat × Resolved.Expr)}
+    {filter : Option Resolved.Expr} {after : ResolveState} {table : Table}
+    (found : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
+      .ok (.update target assignments filter [] [] none, after))
+    (present : db.raw.table target = some table)
+    (modeled : ∃ output next others, runScriptStep runContext env.clock 0 (db.raw.connection env.counters)
+      statement values = .continued output next others)
+    {post : List Output → ExecutionContext → Prop}
+    (reached : ∀ (value : Int) (outputs : List Output) (final : ExecutionContext),
+      final.connection.state.database = db.raw.setRows target
+        (LiteralData.updated (Resolved.statementContext value
+          ((db.raw.connection env.counters).state.counters.view
+            (Resolved.Statement.update target assignments filter [] [] none).counterReads)
+          values db.raw []) table assignments filter).rows →
+      final.connection.state.database.Valid Profile.pinned → final.outputs.allOk = true →
+      post outputs final) :
+    (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
+  obtain ⟨output, next, others, step⟩ := modeled
+  refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+    (fun _ _ resolved => by
+      obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
+      rfl)
+    (runScriptStep_update_ne_oneOf found step)).2 ?_
+  intro allOk
+  have noError : output.isError = false := by
+    simp [ExecutionContext.next, List.allOk] at allOk
+    exact allOk.2.1
+  obtain ⟨value, -, effect⟩ := plainUpdate_database found present step noError
+  have start : (db.raw.connection env.counters).state.Holds (Database.Valid Profile.pinned) :=
+    ⟨db.valid, fun _ same => by simp [Database.Raw.connection] at same⟩
+  have valid : next.state.Holds (Database.Valid Profile.pinned) :=
+    runScriptStep_valid (profile := Profile.pinned) runContext env.clock 0 statement values rfl rfl start
+      { output, next } (by rw [step]; simp [RunStep.executions])
+  exact reached value [output] _ effect valid.1 allOk
 
-/-- For every context {lit}`ctx`, statement, values and post, with a valid connection in {lit}`ctx`: the program
+/-- The deleted law {lit}`Sql.check_send_plainUpdate`. For every context {lit}`ctx`, statement, values and post, with a valid connection in {lit}`ctx`: the program
 that sends the statement checks the post at {lit}`ctx` if these premises hold.
 
 * {lit}`found`: the statement resolves from the connection of {lit}`ctx` to a plain update on position {lit}`target`.
@@ -67,4 +109,7 @@ theorem Sql.check_send_plainUpdate {ctx : ExecutionContext} {statement : Syntax.
   · obtain ⟨value, rfl⟩ := runScriptStep_plainWrite_failed found rfl step' noError
     exact failure output value _ noError ends rfl hvalid
 
-end Belay.Sqlite
+#print axioms Sql.ifOk_send_plainUpdate
+#print axioms Sql.check_send_plainUpdate
+
+end Belay.Sqlite.ReplacedPlainWriteLaws

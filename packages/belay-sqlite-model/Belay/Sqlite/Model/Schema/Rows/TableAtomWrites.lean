@@ -101,7 +101,7 @@ theorem runStatement_update_atom {atom : Table → Prop} (clock : Int) (counters
         assignments filter)) :
     (runStatement clock counters parameters (.update target assignments filter returning subqueries none) database).effect.Satisfies
       fun after => after.EachTable atom := by
-  simp only [runStatement, Option.map_none, StatementRun.withKeys]
+  simp only [runStatement, updateOutcome, Option.map_none, StatementRun.withKeys]
   split
   · exact Effect.satisfies_of_database every rfl
   · rename_i table found

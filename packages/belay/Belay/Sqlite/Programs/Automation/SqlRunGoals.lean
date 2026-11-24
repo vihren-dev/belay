@@ -42,7 +42,7 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
 {lit}`kindFromHints` tries them. The kinds with a kind rule are not in the list: the path of the kind rules tries
 them first. -/
 def hintedKinds : List Name :=
-  [``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete, ``Model.Syntax.Statement.addColumn,
+  [``Model.Syntax.Statement.addColumn,
     ``Model.Syntax.Statement.dropTable, ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting,
     ``Model.Syntax.Statement.begin, ``Model.Syntax.Statement.commit]
 

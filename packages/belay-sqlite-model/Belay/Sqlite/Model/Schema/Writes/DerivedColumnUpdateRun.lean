@@ -93,7 +93,7 @@ theorem runStatement_backfill_ok (clock : Int) (counters : Counters) (parameters
       unfold Resolved.Expr.mayFailOn
       rw [Resolved.Expr.fault_of_plain_at _ row (quiet.at row) derived safe]
       rfl
-  simp only [run, runStatement, present, StatementRun.withKeys, Option.map_none, noMismatch, Bool.false_eq_true,
+  simp only [run, runStatement, updateOutcome, present, StatementRun.withKeys, Option.map_none, noMismatch, Bool.false_eq_true,
     ite_false,
     checkedWrite]
   rw [result]

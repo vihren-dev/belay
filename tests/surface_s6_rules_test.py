@@ -30,7 +30,7 @@ def check_fixture(runtime_root: Path, tmp_path: Path, name: str, reports_expecte
 
 
 def test_effect_rules_prove_statements(runtime_root: Path, tmp_path: Path) -> None:
-    """The rules `Sql.ifOk_send_plainUpdate`, `Sql.ifOk_send_addColumn` and `plainUpdate_database` prove
+    """The rules `runScriptStep_plainUpdate_eq` and `Sql.ifOk_send_addColumn` prove
     conditional and total fresh-run claims about an UPDATE and an ADD COLUMN for every complete environment."""
     check_fixture(runtime_root, tmp_path, "S6RulesEffects.lean", 3)
 

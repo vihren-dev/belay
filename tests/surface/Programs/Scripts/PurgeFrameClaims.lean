@@ -61,7 +61,7 @@ in which every session of the start that is not an expired session of the custom
 NULL or text. The claim reads the start through {lit}`before` and states the unchanged rows with the condition
 {lit}`IS NOT 1`, so a NULL parameter does not weaken it. A purge that fails requires nothing, and the model's rollback
 decides what a failed run leaves. Proof sketch: the check of the one statement; the plain delete stores the rows that
-{name}`LiteralData.deleted` keeps ({name}`Sql.ifOk_send_plainDelete`), and {name}`purge_keeps_rows` shows that
+{name}`LiteralData.deleted` keeps ({name}`runScriptStep_plainDelete_eq`), and {name}`purge_keeps_rows` shows that
 the observation of the claim over the start and that database has rows. -/
 theorem purge_frame (c now : Value) :
     FreshEnsuresFrom (send (purge c now)) (fun db => Nonempty (PurgeFrameSite db c now))
@@ -69,14 +69,11 @@ theorem purge_frame (c now : Value) :
   refine (FreshEnsuresFrom.ifOk_iff _ _ _).2 ?_
   rintro db ⟨site⟩ env _complete
   rw [purge_script]
-  refine Sql.ifOk_send_plainDelete (table := ⟨site.table, db.raw.rows.getD site.position []⟩)
-    site.purgeResolves (Database.table_of_findTable db.raw _ site.position site.table site.found)
-    (RunStep.continues_iff.1 (site.purgeModeled env)) ?_
-  intro value outputs final reached _valid _allOk
-  show Holds.reachedSince (purgeKeeps c now) db final (by check_two_state_query)
-  unfold Holds.reachedSince Holds.inContextSince ExecutionContext.defaultObservation
-  rw [reached] at *
+  have present := Database.table_of_findTable db.raw _ site.position site.table site.found
+  sql_run [site.purgeResolves, site.purgeModeled env, present]
+  intro _allOk
   exact purge_keeps_rows site _ rfl
+
 
 #print axioms purge_keeps_rows
 #print axioms purge_frame

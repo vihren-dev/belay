@@ -117,7 +117,7 @@ theorem failingConstraints_ne_nil {clock : Int} {counters : Counters} {parameter
               simp [SourceFailure.toError_not_constraint] at constraint
   | update target assignments filter returning subqueries rules =>
     cases plain
-    simp only [runStatement] at failed ⊢
+    simp only [runStatement, updateOutcome] at failed ⊢
     cases found : database.table target with
     | none => simp [found] at failed; cases failed.1; simp [ExecutionError.isConstraint] at constraint
     | some table =>

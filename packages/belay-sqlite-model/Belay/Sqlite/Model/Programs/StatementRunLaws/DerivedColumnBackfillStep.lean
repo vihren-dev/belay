@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model.Schema.Triggers.BackfillStatementResolution
 import Belay.Sqlite.Model.Schema.Columns.DerivedColumnTable
 import Belay.Sqlite.Model.Programs.Scripts.ScriptStepDatabase
-import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateEffect
+import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateRule
 
 set_option doc.verso true
 
@@ -23,7 +23,7 @@ generated expression, and the name must resolve to the appended column. Both set
 exact UPDATE event fires no trigger in the extended catalog. The expression, the table shape and the
 other tables and triggers are arbitrary otherwise. Proof sketch: the statement resolves to the plain
 UPDATE of the assignment ({name}`backfill_resolution`); the actual effect stores the rows of
-{name}`LiteralData.updated` ({name}`plainUpdate_database`); {name}`updated_derived_append` computes them
+{name}`LiteralData.updated` ({name}`runScriptStep_plainUpdate_eq`); {name}`updated_derived_append` computes them
 and context-freeness moves the evaluation to the canonical context. -/
 theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection next : Connection} {parameters : List Value} {output : Output} {others : List StatementExecution}
@@ -55,15 +55,25 @@ theorem backfill_step {context : ResolveContext} {clock : Option Clock} {index :
   obtain ⟨resolved, after, -, resolution, -⟩ := runScriptStep_ran step
   obtain ⟨rfl, rfl⟩ := backfill_resolution (state := connection.resolveState) (tableName := tableName)
     (table := table.shape) found added newPlain operand foreign recursive noneFiring resolution
-  obtain ⟨_, -, stored⟩ := plainUpdate_database resolution present step noError
-  have assignedBelow := assignedExpression_readsBelow (scope := backfillScope position tableName table.shape column)
-    (position := table.shape.columns.length) (expression := value) below
-  rw [updated_derived_append _ (statementContext_nil_rowFree _ _ _ _) table column _ wide aliased assignedBelow plain
-    newPlain] at stored
   refine runScriptStep_next_of_database resolution rfl step noError ?_
-  rw [stored]
-  congr 1
-  simp only [Table.addDerivedColumn]
-  exact congrArg (fun rows : List Row => rows) (List.map_congr_left fun row _ => by rw [contextFree])
+  have reached := step
+  rw [runScriptStep_plainUpdate_eq resolution] at reached
+  split at reached <;> try contradiction
+  dsimp only at reached
+  split at reached <;> try contradiction
+  simp only [present] at reached
+  split at reached <;> try contradiction
+  split at reached
+  · cases reached
+    have assignedBelow := assignedExpression_readsBelow (scope := backfillScope position tableName table.shape column)
+      (position := table.shape.columns.length) (expression := value) below
+    change connection.state.database.setRows _ _ = _
+    rw [updated_derived_append _ (statementContext_nil_rowFree _ _ _ _) table column _ wide aliased assignedBelow plain
+      newPlain]
+    congr 1
+    simp only [Table.addDerivedColumn]
+    exact congrArg (fun rows : List Row => rows) (List.map_congr_left fun row _ => by rw [contextFree])
+  · cases reached
+    cases noError
 
 end Belay.Sqlite.Model

@@ -30,7 +30,7 @@ theorem runStatement_plain_rowsOnly (clock : Int) (counters : Counters) (paramet
     split
     · exact .inl rfl
     · exact insertOutcome_rowsOnly ‹_› _ _ _
-  · simp only [runStatement, Option.map_none, StatementRun.withKeys]
+  · simp only [runStatement, updateOutcome, Option.map_none, StatementRun.withKeys]
     split
     · exact .inl rfl
     · rename_i found

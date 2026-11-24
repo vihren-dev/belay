@@ -90,3 +90,10 @@ def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, t
     axioms."""
     check_module_chain(runtime_root, tmp_path, (("ItemInsertSite", 0), ("ItemInsertOutcomes", 0),
                                                 ("ItemInsertClaims", 4), ("ItemInsertAnyClaims", 1)))
+
+
+def test_exact_plain_write_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path: Path) -> None:
+    """The exact UPDATE and DELETE rules prove both former database effects and all four former
+    send rules with their original premises and ordinary logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedPlainWriteLaws", 2),
+                       ("ReplacedDeleteSendLaws", 2), ("ReplacedUpdateSendLaws", 2)))
