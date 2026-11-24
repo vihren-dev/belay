@@ -75,25 +75,19 @@ sketch: kernel evaluation. -/
 theorem star_columns : columnCount initial.connection.resolveState star = 3 ∧
     columnCount reachedConnection.resolveState star = 4 := by decide +kernel
 
-/-- The obligations of the star certificate fail: the star read does not resolve to the certificate's
-statement after the migration, because it has a fourth column. Proof sketch: the resolution would have as many
-columns as the certificate, which is 3. -/
-theorem star_obligations_fail : ¬ (⟨0, 3, none, [.scalar (.column 0), .scalar (.column 1), .scalar (.column 2)]⟩ :
-    ReadCertificate).Obligations runContext star initial.connection reachedConnection := by
-  intro obligations
-  obtain ⟨_, _, _, _, _, _, _, ⟨names, state, resolved⟩, _⟩ := obligations.appended
-  have count : columnCount reachedConnection.resolveState star = 3 := by
-    unfold columnCount
-    rw [resolved]
-    rfl
-  have := star_columns.2
-  omega
-
 /-- The claim that the rule would give is false: the outputs of the star read differ before and after the
 migration. Proof sketch: kernel evaluation of the two steps. -/
 theorem star_outputs_differ :
     (runScriptStep runContext initial.clock 0 initial.connection star []).output ≠
       (runScriptStep runContext initial.clock 1 reachedConnection star []).output := by decide +kernel
+
+/-- The widened star read gives a different output. A valid witnessed scan on both
+connections would give equal outputs by {name}`ReadCertificate.output_eq`. -/
+theorem star_obligations_fail : ¬ (⟨0, 3, none, [.scalar (.column 0), .scalar (.column 1), .scalar (.column 2)]⟩ :
+    ReadCertificate).Obligations runContext star initial.connection reachedConnection := by
+  intro obligations
+  exact star_outputs_differ (ReadCertificate.output_eq (ReadAnalysis.analyze_sound star_analysis).1 obligations
+    initial.clock 0 1 [])
 
 -- Metadata after ADD COLUMN
 

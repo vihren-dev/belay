@@ -8,7 +8,7 @@ Full commutation of a certified read with a migration (ADR 0017, S6). Preservati
 ({lit}`ReadCertificate.preservesAt`) compares only values and outputs. Commutation also compares the
 final connection and the statement count of the two orders, so it needs two more facts, which this
 module proves for a certified read. First, a certified read keeps the connection: its step continues, has one
-execution and ends at the connection where it started, also when the read fails. Second, the read counts
+execution and returns the scan rows on the connection where it started. Second, the read counts
 no change. The module does not prove that the migration reaches one connection with one output count; the
 caller gives that fact as a premise ({lit}`uniform`), and the premise holds for a sent script
 ({lit}`sendStatements_branch_shape`) when no statement of the script is written as INSERT from a query: such a
@@ -18,36 +18,6 @@ moves the statement index must not change the migration.
 
 namespace Belay.Sqlite
 open Model
-
-/-- For every valid certificate, statement resolution and present table: the step of the statement continues,
-has no execution other than its own, and ends at the connection where it started. In plain words, a
-certified read is read-only. Proof sketch: the step does not stop, because its output is a list of rows
-({name}`Resolved.Query.simpleTable_checks`), and a continuing read-only step keeps the connection
-({name}`runScriptStep_readOnly_keeps`). -/
-theorem ReadCertificate.step_keeps {certificate : ReadCertificate} (valid : certificate.Valid)
-    {context : ResolveContext} {statement : Syntax.Statement} {connection : Connection}
-    {names : List String} {state : ResolveState} {table : Table}
-    (resolved : resolveStatement context connection.resolveState statement =
-      .ok (certificate.statement names, state))
-    (present : connection.state.database.table certificate.position = some table)
-    (clock : Option Clock) (index : Nat) (parameters : List Value) :
-    ∃ output, runScriptStep context clock index connection statement parameters = .continued output connection [] := by
-  have calm := valid.statement_calm names
-  change (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.first certificate.position]
-    certificate.filter certificate.columns names) []).Calm at calm
-  change resolveStatement context connection.resolveState statement = .ok (.query (Resolved.Query.simple
-    [Resolved.QuerySource.first certificate.position] certificate.filter certificate.columns names) [], state) at resolved
-  have rows : (runScriptStep context clock index connection statement parameters).output =
-      .rows (Resolved.normalForm ((Resolved.Query.simple [Resolved.QuerySource.first certificate.position]
-        certificate.filter certificate.columns names).results (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table))) := by
-    simp [runScriptStep_query_eq resolved, statementClock, calm.readsClock, calm.counterReads,
-      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons, Resolved.stableSort,
-      Resolved.insertStable, RunStep.output]
-  cases step : runScriptStep context clock index connection statement parameters with
-  | ended reason => rw [step] at rows; cases rows
-  | continued output next others =>
-    obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolved (Or.inl ⟨_, _, rfl⟩) step
-    exact ⟨output, rfl⟩
 
 /-- For every statement and values, and step that continues with no other execution and keeps the
 connection: every branch of the program that sends the statement is the run with one selected output, at the
@@ -104,19 +74,16 @@ theorem ReadCertificate.commutesOn {μ : Type} (migration : Sql μ) {certificate
         ∃ output, runScriptStep runContext state.clock state.index state.connection statement values =
           .continued output state.connection [] := by
     intro state domain ran ran'
-    obtain ⟨names, resolved, resolvedOriginal⟩ := (obligations state domain ran ran').resolvesOriginal
-    obtain ⟨_, _, _, _, _, found, _⟩ := (obligations state domain ran ran').appended
-    exact ReadCertificate.step_keeps valid resolvedOriginal (Database.tableNamed_some found).2 state.clock
-      state.index values
+    have cert := obligations state domain ran ran'
+    obtain ⟨_, _, _, _, _, found, _⟩ := cert.appended
+    exact ReadCertificate.step_keeps cert.originalScan (Database.tableNamed_some found).2 state.clock state.index values
   have stepOther : ∀ state, Migration.Domain migration admitted state → ∀ ran,
       migration.Branch state.clock state.index state.connection ran →
         ∃ output, runScriptStep runContext state.clock (state.index + ran.outputs.length) ran.connection statement
           values = .continued output ran.connection [] := by
     intro state domain ran ran'
-    obtain ⟨_, otherPosition, _, _, _, _, found, ⟨names, resolved, resolvedOther⟩, _⟩ :=
-      (obligations state domain ran ran').appended
-    exact ReadCertificate.step_keeps (valid.moved otherPosition) resolvedOther (Database.tableNamed_some found).2
-      state.clock (state.index + ran.outputs.length) values
+    obtain ⟨_, _, _, _, _, _, found, scan, _⟩ := (obligations state domain ran ran').appended
+    exact ReadCertificate.step_keeps scan (Database.tableNamed_some found).2 state.clock (state.index + ran.outputs.length) values
   refine Migration.TranslatesOn.commutes_of_query translation ⟨?_, ?_, ?_, ?_⟩ constant uniform
   · intro state domain first branch
     obtain ⟨output, step⟩ := stepOriginal state domain _

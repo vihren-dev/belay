@@ -27,17 +27,28 @@ def preservesCheck (name : Identifier) (schema : Database) (migration query : Sc
     | _, _, _, _ => false
   | _, _ => false
 
-/-- If {name}`preservesCheck` passes, the migration preserves the given read on every
-database with the given schema, for every complete environment in which the migration
-succeeds. For a concrete migration use {lit}`preserves_of_check (name! "sessions") (by decide +kernel)`.
-Proof sketch: unpack the two resolutions and lookups, the table check and the read
-analysis, then apply {name}`preserves` to those certificates. -/
+/-- For every schema, migration and single read, a positive check on a reference
+script proves preservation of the read when its step agrees with the reference step
+on every connection, clock, index and parameter list. The reference can be the read
+itself. Proof sketch: the checker supplies the table frame and resolutions of the
+reference. Use step agreement to transport its scans to the actual read and apply
+{name}`preserves`. -/
 theorem preserves_of_check (name : Identifier) {schema : Database} {migration query : Script}
-    (checked : preservesCheck name schema migration query = true) (readOnly : query.isQuery = true := by check_query) :
+    (reference : Script) (checked : preservesCheck name schema migration reference = true)
+    (readOnly : query.isQuery = true := by check_query)
+    (same : ∀ statement values, query.statements = [(statement, values)] →
+      ∃ compared bindings, reference.statements = [(compared, bindings)] ∧
+        ∀ clock index connection parameters,
+          runScriptStep runContext clock index connection statement parameters =
+            runScriptStep runContext clock index connection compared parameters := by
+      intro statement values head
+      exact ⟨statement, values, head, fun _ _ _ _ => rfl⟩) :
     Migration.QueryPreserves (send migration) query (·.HasCatalog schema) readOnly := by
   obtain ⟨statements⟩ := query
   rcases statements with _ | ⟨⟨statement, values⟩, _ | ⟨_, _⟩⟩ <;>
-    simp only [preservesCheck] at checked <;> try contradiction
+    simp only [Script.isQuery] at readOnly <;> try contradiction
+  obtain ⟨compared, bindings, head, agrees⟩ := same statement values rfl
+  simp only [preservesCheck, head] at checked
   split at checked <;> try contradiction
   rename_i _ _ _ _ _ _ listed _
   cases listed
@@ -45,9 +56,31 @@ theorem preserves_of_check (name : Identifier) {schema : Database} {migration qu
   split at checked <;> try contradiction
   simp only [Bool.and_eq_true, beq_iff_eq] at checked
   obtain ⟨⟨place, frame⟩, moved⟩ := checked
-  apply preserves values readOnly (name := name) (by assumption) (by assumption) (by assumption)
-    (by assumption) place frame (by assumption)
-  rw [← moved]
-  assumption
+  rename_i certified
+  have analyzed := ReadAnalysis.analyze_sound certified
+  have scans {witness : ReadCertificate} (valid : witness.Valid) (connection : Connection)
+      {names state} (resolved : resolveStatement runContext connection.resolveState compared =
+        .ok (witness.statement names, state)) : witness.Scans runContext statement connection := by
+    refine ⟨names, ?_⟩
+    intro clock index parameters table present
+    have calm := valid.statement_calm names
+    change (Resolved.Statement.query (Resolved.Query.simple [Resolved.QuerySource.first witness.position]
+      witness.filter witness.columns names) []).Calm at calm
+    change resolveStatement _ _ _ = .ok (.query (witness.query names) [], _) at resolved
+    rw [agrees clock index connection parameters, runScriptStep_query_eq resolved]
+    simp [statementClock, calm.readsClock, calm.counterReads, ReadCertificate.query,
+      Resolved.Query.simpleTable_checks parameters present calm, List.eraseDups_cons,
+      Resolved.stableSort, Resolved.insertStable]
+  apply preserves values readOnly (name := name) (by assumption) (by assumption) analyzed.1 analyzed.2.1
+    ?_ place frame (by assumption) ?_
+  · intro connection same
+    obtain ⟨names, equal⟩ := analyzed.2.2
+    apply scans analyzed.1 connection (names := names)
+    rw [same, ← equal]
+    assumption
+  · intro connection same
+    apply scans (analyzed.1.moved _) connection
+    rw [same, ← moved]
+    assumption
 
 end Belay.Sqlite.KeptRead

@@ -19,7 +19,7 @@ nothing. Proof sketch: the checked read law follows the original sessions table 
 rebuild and compares the certified SELECT before and after it. -/
 theorem makeStrict_preserves_allSessions :
     Migration.QueryPreserves (send makeStrict) allSessions (fun db => db.raw.catalog = sample.raw.catalog) :=
-  KeptRead.preserves_of_check (name! "sessions") (by decide +kernel)
+  KeptRead.preserves_of_check (name! "sessions") allSessions (by decide +kernel)
 
 #print axioms makeStrict_preserves_allSessions
 

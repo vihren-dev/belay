@@ -20,9 +20,7 @@ open Model
 
 /-- For every width, context, statement, connection and resolution of the statement on the connection: if the
 analysis certifies the resolved statement with a certificate, then the statement resolves on the connection
-to the statement of the certificate, with some result names. In plain words, this is the first obligation of
-the certificate ({name}`ReadCertificate.Obligations.resolvesOriginal`) for the connection where the analysis
-looked. Proof sketch: {name}`ReadAnalysis.analyze_sound` gives the statement of the certificate. -/
+to the statement of the certificate, with some result names. The client can use this resolution with the query equation to prove the observed scan. Proof sketch: {name}`ReadAnalysis.analyze_sound` gives the statement of the certificate. -/
 theorem ReadAnalysis.resolvesOriginal {width : Nat} {context : ResolveContext} {statement : Syntax.Statement}
     {connection : Connection} {resolved : Resolved.Statement} {state : ResolveState} {certificate : ReadCertificate}
     (found : resolveStatement context connection.resolveState statement = .ok (resolved, state))

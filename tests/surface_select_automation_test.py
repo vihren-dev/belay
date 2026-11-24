@@ -50,3 +50,11 @@ def test_replaced_observation_contracts(runtime_root: Path, tmp_path: Path) -> N
     check_module_chain(runtime_root, tmp_path, (
         ("ReplacedObservations", 4), ("ReplacedRowPredicates", 3), ("ReplacedSubqueryEquivalence", 2),
     ), timeout=60)
+
+
+def test_replaced_certificate_contracts(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the original ReadCertificate preservation, commutation, frame and observation contracts.
+    KeptRead.preserves and the single-statement branch rules recover their former resolver premises."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ReplacedCertificateObligations", 3), ("ReplacedCertificateClaims", 5), ("ReplacedCertificateChecks", 5),
+    ), timeout=60)

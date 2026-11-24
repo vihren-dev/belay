@@ -88,16 +88,18 @@ theorem schema_read_ends_run :
     rw [step] at ended
     cases ended
 
-/-- No certificate has the obligations for the schema read: the statement does not resolve. Proof sketch: the
-first obligation names a resolution, which the model refuses. -/
+/-- The refused schema read cannot realize any certificate scan on the initial
+connection. Proof sketch: the obligations supply a present table and a continuing
+step, whereas the concrete schema read ends the run. -/
 theorem schema_read_no_certificate (certificate : ReadCertificate) :
     ¬ certificate.Obligations runContext schemaRead initial.connection reachedConnection := by
   intro obligations
-  obtain ⟨names, state, resolved⟩ := obligations.resolvesOriginal
-  have refused : (match resolveStatement runContext initial.connection.resolveState schemaRead with
-      | .error _ => true | .ok _ => false) = true := by decide +kernel
-  rw [resolved] at refused
-  cases refused
+  obtain ⟨_, _, table, _, _, found, _⟩ := obligations.appended
+  obtain ⟨_, step⟩ := ReadCertificate.step_keeps obligations.originalScan (Model.Database.tableNamed_some found).2
+    initial.clock 0 []
+  obtain ⟨reason, stopped⟩ := schema_read_ends_run
+  rw [step] at stopped
+  cases stopped
 
 -- An invalid certificate
 
