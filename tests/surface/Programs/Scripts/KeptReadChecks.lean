@@ -19,3 +19,19 @@ private def replaceNamedTable : Script := sql r"
 
 example : KeptRead.preservesCheck (name! "sessions") sample replaceNamedTable allSessions = false :=
   by decide +kernel
+
+/-- A sessions lookup whose bound id matters to the result. -/
+private def sessionsById (id : Value) : Script := sql r"SELECT id FROM sessions WHERE id = ?1" id
+
+/-- A check using id 2 as its reference proves preservation of the lookup for id 1.
+The two scripts have distinct bindings. The actual step is compared to the reference
+statement with the supplied values. Proof sketch: compute the reference check and
+use the common syntax at each clock, index, connection and parameter list. -/
+theorem checkedWithDifferentBindings :
+    Migration.QueryPreserves (send makeStrict) (sessionsById (.integer 1)) (·.HasCatalog sample) := by
+  apply KeptRead.preserves_of_check (name! "sessions") (sessionsById (.integer 2)) (by decide +kernel) (same := ?_)
+  intro statement values single
+  cases single
+  exact ⟨_, _, rfl, fun _ _ _ _ => rfl⟩
+
+#print axioms checkedWithDifferentBindings

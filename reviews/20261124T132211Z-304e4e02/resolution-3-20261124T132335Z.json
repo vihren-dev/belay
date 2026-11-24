@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:23:35+00:00",
+  "finding": "20261124T132211Z-304e4e02#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "KeptReadChecks proves preservation with distinct reference and actual binding lists and supplies the step agreement."
+}

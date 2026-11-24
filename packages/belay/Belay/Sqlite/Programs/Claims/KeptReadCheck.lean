@@ -30,7 +30,12 @@ def preservesCheck (name : Identifier) (schema : Database) (migration query : Sc
 /-- For every schema, migration and single read, a positive check on a reference
 script proves preservation of the read when its step agrees with the reference step
 on every connection, clock, index and parameter list. The reference can be the read
-itself. Proof sketch: the checker supplies the table frame and resolutions of the
+itself. On every database with the schema's catalog and every complete environment,
+a successful migration preserves both the actual and branch observations of the read.
+The claim imposes no obligation on a failed migration. The comparison uses the actual
+read's parameter values and ignores the reference script's bindings. For example,
+{lit}`preserves_of_check (name! "sessions") allSessions (by decide +kernel)` uses the
+sessions read as its own reference. Proof sketch: the checker supplies the table frame and resolutions of the
 reference. Use step agreement to transport its scans to the actual read and apply
 {name}`preserves`. -/
 theorem preserves_of_check (name : Identifier) {schema : Database} {migration query : Script}
