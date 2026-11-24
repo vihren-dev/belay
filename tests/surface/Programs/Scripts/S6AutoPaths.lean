@@ -119,6 +119,9 @@ example (post : List Output → ExecutionContext → Prop) (context : ExecutionC
   case notInsertSelect =>
     fail_if_success rfl
     sorry
+  case reached =>
+    intro output next step valid
+    sorry
   all_goals sorry
 
 /-- warning: declaration uses `sorry` -/
