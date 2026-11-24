@@ -152,39 +152,50 @@ def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
     let some (_, side, _) := (← whnfR (← instantiateMVars (← new.getType))).eq? | return false
     return side.isAppOf ``Model.resolveStatement
 
-/-- Apply the first kind rule whose resolution premise ({name}`resolutionPremise`) the hints or the hypotheses
-close, through {name}`Sql.check_send_of_rule`. The result is the goals that stay open, and the cases of the step
-that continue ({name}`ruleCases`). The goals that stay open are the premises of the bridge that the hints do not
-close, and each other premise and variable of the rule that is not assigned. The result is {lean}`none`, and the
-goal is unchanged, when no kind rule fits. -/
+/-- Apply the common send bridge once, then look for a registered rule whose resolution
+is witnessed. A resolution inferred without specifying a kind is tried first. If it
+does not select a rule, the hints can still elaborate against each rule's own premise.
+Successful applications return the unresolved premises and continuing cases. An
+unsuccessful search restores the original goal. -/
 def applyKindRule (hints : Hints) (goal : MVarId) : TacticM (Option (List MVarId × List MVarId)) := do
-  for rule in ← kindRuleNames do
-    let saved ← Tactic.saveState
-    try
-      let goals ← applyTagged goal ``Sql.check_send_of_rule
-      let tagged := taggedGoals goals
-      let some equation := (← tagged `rule).head? | throwError "sql_run: the bridge has no rule premise"
-      let ruleGoals ← applyTagged equation rule
-      let some found ← resolutionPremise ruleGoals
-        | throwError "sql_run: the kind rule {rule} has no resolution premise"
-      unless ← closeSide hints `found found do throwError "sql_run: no hint closes the resolution for {rule}"
-      let ruleProof ← instantiateMVars (mkMVar equation)
-      let foundProof ← instantiateMVars (mkMVar found)
-      let validPremises ← tagged `valid
-      let modeledPremises ← tagged `modeled
-      let reachedPremises ← tagged `reached
-      let mut open_ := []
-      for premise in validPremises do
-        unless ← closeSide hints `valid premise do open_ := open_ ++ [premise]
-      let validProof := (validPremises.head?.map mkMVar).getD (mkConst ``True.intro)
-      for premise in modeledPremises do
-        open_ := open_ ++ (← closeModeled hints ruleProof foundProof validProof premise)
-      let mut cases := []
-      for reached in reachedPremises do cases := cases ++ (← ruleCases hints reached)
-      let handled := [equation, found] ++ validPremises ++ modeledPremises ++ reachedPremises
-      let others ← (goals ++ ruleGoals).filterM fun new => return !handled.contains new && !(← new.isAssigned)
-      return some (others ++ open_, cases)
-    catch _ => saved.restore
+  let initial ← Tactic.saveState
+  let goals ← try applyTagged goal ``Sql.check_send_of_rule catch _ =>
+    initial.restore
+    return none
+  let tagged := taggedGoals goals
+  let some equation := (← tagged `rule).head? | initial.restore; return none
+  let known ← hintedResolution hints equation
+  let names ← kindRuleNames
+  for witness in (known.toList.map some ++ [none]) do
+    for rule in names do
+      let saved ← Tactic.saveState
+      try
+        let ruleGoals ← applyTagged equation rule
+        let some found ← resolutionPremise ruleGoals
+          | throwError "sql_run: the kind rule {rule} has no resolution premise"
+        if let some proof := witness then
+          unless ← isDefEq (← found.getType) (← inferType proof) do throwError "sql_run: the resolved statement differs"
+          found.assign proof
+        else
+          unless ← closeSide hints `found found do throwError "sql_run: no hint closes the resolution for {rule}"
+        let ruleProof ← instantiateMVars (mkMVar equation)
+        let foundProof ← instantiateMVars (mkMVar found)
+        let validPremises ← tagged `valid
+        let modeledPremises ← tagged `modeled
+        let reachedPremises ← tagged `reached
+        let mut open_ := []
+        for premise in validPremises do
+          unless ← closeSide hints `valid premise do open_ := open_ ++ [premise]
+        let validProof := (validPremises.head?.map mkMVar).getD (mkConst ``True.intro)
+        for premise in modeledPremises do
+          open_ := open_ ++ (← closeModeled hints ruleProof foundProof validProof premise)
+        let mut cases := []
+        for reached in reachedPremises do cases := cases ++ (← ruleCases hints reached)
+        let handled := [equation, found] ++ validPremises ++ modeledPremises ++ reachedPremises
+        let others ← (goals ++ ruleGoals).filterM fun new => return !handled.contains new && !(← new.isAssigned)
+        return some (others ++ open_, cases)
+      catch _ => saved.restore
+  initial.restore
   return none
 
 end Belay.Sqlite.Run

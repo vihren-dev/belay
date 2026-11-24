@@ -113,4 +113,28 @@ where
         try goal := (← substCore goal fvar (symm := false) (tryToSkip := true)).2 catch _ => pure ()
     return goal
 
+/-- Ask the hints for the resolution of this step with the resolved statement and
+post-resolution state left as variables. A proof lets rule selection compare the
+resolved data without elaborating all the hints again for each candidate. If a hint
+needs the expected kind to elaborate, selection still tries it on the individual rules. -/
+def hintedResolution (hints : Hints) (equation : MVarId) : TacticM (Option Expr) := equation.withContext do
+  let saved ← Tactic.saveState
+  try
+    let some (_, step, _) := (← whnfR (← equation.getType)).eq? | return none
+    let #[context, _, _, connection, statement, _] := step.getAppArgs | return none
+    unless step.isAppOf ``Model.runScriptStep do return none
+    let lhs ← mkAppM ``Model.resolveStatement #[context, ← mkAppM ``Model.Connection.resolveState #[connection], statement]
+    let resolved ← mkFreshExprMVar (mkConst ``Model.Resolved.Statement)
+    let after ← mkFreshExprMVar (mkConst ``Model.ResolveState)
+    let pair ← mkAppM ``Prod.mk #[resolved, after]
+    let result ← whnf (← inferType lhs)
+    let rhs ← mkAppOptM ``Except.ok #[some result.getAppArgs[0]!, none, some pair]
+    let proof ← mkFreshExprSyntheticOpaqueMVar (← mkEq lhs rhs)
+    if ← closeSide hints `found proof.mvarId! then
+      let proof ← instantiateMVars proof
+      unless proof.hasExprMVar do return some proof
+  catch _ => pure ()
+  saved.restore
+  return none
+
 end Belay.Sqlite.Run
