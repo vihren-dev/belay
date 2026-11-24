@@ -41,13 +41,13 @@ def derivedColumnSteps? (goal : MVarId) : TermElabM (Option (TSyntax `tactic)) :
     return step).join
 
 /-- Search the routes in order for a proof of the goal. The work limit of the call is shared by the routes
-left in the pass. The default SQL checker can use the work remaining after that pass to retry
-exhausted routes once, in order. An interactive search gives one share to each route. A route that fails, runs out of its share, or builds an incomplete proof leaves
+left in the pass. With {lit}`retryExhausted = true`, retry exhausted routes once with the work
+remaining after the first pass. The default {lit}`false` gives each route one share. A route that fails, runs out of its share, or builds an incomplete proof leaves
 the goal and the state as they were, and its reason goes into the error. -/
 def search (hints : Array (TSyntax `term)) (goal : MVarId) (retryExhausted : Bool := false) : TermElabM (Except String Found) := do
   let mut reasons : Array String := #[]
   let mut exhausted : List Route := []
-  for retry in (if retryExhausted then [false, true] else [false]) do
+  for retry in Check.searchPasses retryExhausted do
     let routes := if retry then exhausted.reverse else Route.all
     let mut left := routes.length
     for route in routes do
