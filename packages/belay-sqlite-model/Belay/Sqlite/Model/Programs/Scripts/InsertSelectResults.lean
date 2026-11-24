@@ -59,7 +59,7 @@ private theorem ranScriptStep_ofRun (index : Nat) (parameters : List Value) (con
   unfold ranScriptStep StatementExecution.ofRun
   cases Output.ofStep value parameters stmt connection.state run transition <;> rfl
 
-/-- A supported production that succeeds installs its database and returns either the number
+/-- When every alternative has a modeled effect, a successful main production installs its database and returns the number
 of changes or its RETURNING rows. An unmodeled main effect ends the step. Each other main
 failure continues with its primary code and conflict semantics. All further productions
 carry their own output and state. Proof sketch: project the executions, then distinguish
