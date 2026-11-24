@@ -74,6 +74,10 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, form B: second review fixes of the bridge laws (the module
   docstring names the resolution of each law; the two-state law says which
   argument of `resolvedStepOutput` is the initial database).
+- 2026-11-24, form B: the laws of the parts of a query claim (SELECT 1
+  WHERE, EXISTS and NOT EXISTS, a subquery of the statement, the read of
+  one table, the rows that a DELETE keeps, the logical values) and the new
+  proof of the effect claim with them.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -263,6 +267,80 @@ New module `packages/belay/Belay/Sqlite/Programs/Claims/ResolvedOutputBridge.lea
 
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local).
+
+### The laws of the parts (model package)
+
+- `resolvedStepOutput_calm_hasRows`
+  (`Tooling/Counterexamples/TwoStateQuerySteps.lean`): for a calm query
+  statement observed with an optional initial database, with its source
+  rows and its bound window, the output has rows exactly when the source
+  has no fault `may`, the run has no mismatch, no overflow and no fault,
+  and the one result of the bound query has a row. An iff. It replaces
+  `resolvedStepOutput_query_hasRows_of_clean_from`, which gave only the
+  sufficient direction for an initial database that is present.
+  `Connection.queryContextFrom` now takes an optional initial database.
+- `resolvedStepOutput_selectOneWhere_hasRows` (same module): for
+  `SELECT 1 WHERE c` with any list of subqueries and an optional initial
+  database, calm and with no fault of `c` over the empty row, the output
+  has rows exactly when `c` is true over the empty row in the context of the
+  statement. An iff. It leaves out a condition with a fault.
+- `Resolved.Expr.truthy_exists` and `Resolved.Expr.truthy_notExists`
+  (`Queries/Evaluation/ExprEvalLaws.lean`): EXISTS of a subquery is true
+  exactly when the run of the subquery has a row; NOT EXISTS exactly when it
+  has none. Equations, for each context, row and index.
+- `Resolved.subqueryContext_subqueries` and
+  `Resolved.statementContext_subqueries`
+  (`Schema/Dispatch/Subqueries.lean`): the subquery at an index of the
+  context of the statement (or of a depth) is the run of that query in the
+  context one depth lower. Equations.
+- `Resolved.Query.simple_subqueryRun`
+  (`Schema/Dispatch/SelectSubqueryRules.lean`): the read of a simple query
+  with a filter and scalar columns, as a subquery. With source rows that
+  have no fault and expressions with no fault and no fallible call, the run
+  has as rows the columns of the source rows that the filter keeps, no fault,
+  and the ending `done`. With `Query.source_first_from` it reads the table of
+  the current database, and with `Query.source_initialTable` the table of the
+  initial database. Equations under the premises; it leaves out a query with
+  a fallible call, a join or an ordering.
+- `Resolved.equalRowsIdentical_rowidFirst` (new module
+  `Schema/Columns/RowidOutputIdentity.lean`): for a table with distinct
+  rowids whose first column is the rowid alias, the outputs of column 0
+  followed by any columns, over any list of source rows of the table, are
+  identical where they compare equal. This is the premise `identical` of
+  `Resolved.Query.PlainExcept.subqueryRun`, the law of the EXCEPT compound
+  (an equation of its rows with `CompoundOperator.combine` of the rows of its
+  terms). It replaces `Resolved.notExistsExcept_identical`, which fixed the
+  term of the two-state form.
+- `LiteralData.mem_deleted` (`Schema/Columns/RowDelete.lean`): a row is in
+  the table that a DELETE leaves exactly when it is in the table and the
+  filter does not select it. An iff with no premise.
+- `Value.IsLogical`, `Comparison.apply_isLogical`, `Value.truthy_isNot_one`,
+  `Resolved.Expr.isLogical`, `Resolved.inValue_isLogical`,
+  `Resolved.Expr.eval_isLogical` and `Resolved.Expr.truthy_isNot_one`
+  (new module `Queries/Evaluation/LogicalValueLaws.lean`): a comparison,
+  AND, OR, NOT, IS NULL, EXISTS and IN give NULL, 0 or 1; for such an
+  expression `e IS NOT 1` is true exactly when `e` is not true. An equation.
+  It generalizes `Resolved.Expr.truthy_isNot_one_and` (AND only, one
+  direction). It leaves out a column, a literal and the other forms, whose
+  value can be 2: then `e` and `e IS NOT 1` are both true.
+
+### The effect claim (fixtures)
+
+- `purgeClears_iff` and `purge_clears` keep their statements. The proof of
+  `purgeClears_iff` uses `Holds.inContext_iff_hasRows`,
+  `resolvedStepOutput_selectOneWhere_hasRows`,
+  `Resolved.Expr.truthy_notExists`, `Resolved.statementContext_subqueries`
+  and `Resolved.Query.simple_subqueryRun` with `Query.source_first_from`. The
+  kernel decides the resolution of the claim on the catalog of `sessions`
+  and the calm check of the statement. `purge_clears` uses
+  `LiteralData.mem_deleted`. The proof uses no
+  `resolveStatement_selectOne_notExists`, `tableOne_run` or
+  `whereOne_claims`, and `PurgeEffectClaims` no longer imports
+  `SelectOneWhereSupport`.
+
+Checks run, local outcome only, not evidence: `just dev-build` passed
+(local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
+passed (local).
 
 ## Findings record
 
