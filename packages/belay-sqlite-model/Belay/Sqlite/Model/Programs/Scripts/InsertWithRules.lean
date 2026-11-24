@@ -6,7 +6,8 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Model
 
-/-- An absent clock or unknown counter ends the step with its reason. A missing target,
+/-- For any context, clock, index, connection and parameters, suppose the statement resolves to an INSERT
+of literal rows with write rules and no RETURNING columns. An absent clock or unknown counter ends the step with its reason. A missing target,
 unsupported input or unsupported write program ends it as unmodeled. When the write programs
 succeed, the step installs their database, applies their counts and reports their changes.
 An unmodeled program error ends the step. Every other error reports its primary code and

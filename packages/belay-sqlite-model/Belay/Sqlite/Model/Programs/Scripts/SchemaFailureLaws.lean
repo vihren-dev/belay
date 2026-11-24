@@ -1,5 +1,7 @@
 import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
-import Belay.Sqlite.Model.Programs.Scripts.DropTableStepLaws
+import Belay.Sqlite.Model.Schema.Ddl.DropTableResolution
+import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay.Sqlite.Model.Schema.Ddl.TableByName
 import Belay.Sqlite.Model.Programs.Scripts.ReadOnlyFrame
 import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections

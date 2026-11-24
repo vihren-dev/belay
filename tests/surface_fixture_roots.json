@@ -60,7 +60,7 @@
     "DerivedColumnOnSchema", "DerivedColumnSuccessBoundaries", "GlobalSignupInvariant",
     "InsertSelectExamples", "ItemInsertAnyClaims", "ItemInsertClaims", "ItemInsertOutcomes", "ItemInsertSite", "KeptReadChecks",
     "PlainInsertStepCases", "RebuildCopyChecks", "RebuildRefutation", "RebuildReplays", "RebuildTableFrames",
-    "ControlSendClaims", "InsertWithRulesClaim", "RowWriteSendClaims", "ReplacedControlSend",
+    "ControlSendClaims", "InsertWithRulesClaim", "ReplacedProgramDrop", "ReplacedProductionSuccess", "ReplacedWriteChoices", "ProgramWriteClaims", "ReturningWriteClaims", "SourceWriteClaims", "RowWriteSendClaims", "ReplacedControlSend",
     "ReplacedDeleteSendLaws", "ReplacedUpdateSendLaws",
     "ReplacedCatalogSend", "ReplacedColumnIfOk", "ReplacedConditionalCreation", "SchemaSendClaims",
     "ReplacedSendLaws", "ReplacedStepLaws", "S6AutoAddCustomer", "S6AutoAuto", "S6AutoCommute",

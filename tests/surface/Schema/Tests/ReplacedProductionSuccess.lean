@@ -1,24 +1,13 @@
-import Belay.Sqlite.Model.Schema.Writes.InsertSelectSuccess
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay
 
 set_option doc.verso true
 
-/-! The step law of INSERT from a query (ADR 0017, S6): the success direction at the level of
-{lit}`runScriptStep`. A run that the model describes, has no alternative execution and succeeds makes the
-step continue, without an error output and without further executions, with the database that the
-effect gives. {lit}`runStatement_insertSelect_none_ok` gives such a run for rows that fit the target. -/
+/-! ADR 0033 retention of the former write laws with their original premises. -/
 
-namespace Belay.Sqlite.Model
+namespace Belay.Sqlite.Model.ReplacedWriteModes
+open Resolved
 
-/-- For every context, clock, index, connection, statement and values that resolve to an INSERT from a
-query without rules, where the statement has a clock value and no unknown counter, and the run of the
-statement is ready, has no alternative execution and succeeds with a database: the step of the statement
-continues with an output that is no error, without further executions, and the next connection is the
-connection with that database and the counters after the counts of the run. In plain words, a successful
-INSERT from a query gives a step that continues and writes what the run writes. Proof sketch: with a
-modeled clock and counters the step reaches the transition of the run; a successful transition has a
-modeled output for this statement ({name}`statementOutput`); without alternatives the step has no further
-executions; {name}`runScriptStep_effect` then reads the next connection. -/
+/-- The former {lit}`runScriptStep_insertSelect_ok`. A ready single successful production at a known time and counters continues with the updated database and counts. Proof sketch: apply the ordinary single-write projection; a successful production has an output for every RETURNING list. -/
 theorem runScriptStep_insertSelect_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
     {target : Nat} {cells : List Resolved.SourceCell} {query : Resolved.Query} {clauses : List Resolved.ConflictClause}
@@ -42,48 +31,11 @@ theorem runScriptStep_insertSelect_ok {context : ResolveContext} {clock : Option
         database := database
         counters := connection.state.counters.apply (connection.state.statementRun value parameters
           (.insertSelect target cells query clauses returning algorithm subqueries none)).counts } } := by
-  have ordinary : (Resolved.Statement.insertSelect target cells query clauses returning algorithm subqueries none).isControl
-    = false := rfl
-  have continues : ∃ output next, runScriptStep context clock index connection statement parameters =
-      .continued output next [] := by
-    simp only [runScriptStep, runScriptStepWith, found, timed, known, ready, Bool.not_true, Bool.false_eq_true, ite_false,
-      ranScriptStep]
-    rw [advanceRun_ordinary index _ connection.state _ ordinary, effect]
-    simp only [SqlState.publish, SqlTransition.counted, haltError, Output.ofStep, statementOutput]
-    simp only [↓reduceIte, StatementExecution.ofAlternatives, single, List.mapM_nil, Except.map, pure, Except.pure]
-    split
-    · rename_i reason shape
-      split at shape <;> simp_all
-    all_goals exact ⟨_, _, rfl⟩
-  obtain ⟨output, next, step⟩ := continues
-  have noError : output.isError = false := by
-    obtain ⟨resolved', after', value', same, timed', -, -, ofStep, -⟩ := runScriptStep_continued_spec step
-    rw [found] at same
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Except.ok.inj same)
-    rw [timed] at timed'
-    obtain rfl := Option.some.inj timed'
-    rw [← ofStep, advanceRun_ordinary index _ connection.state _ ordinary, effect]
-    exact Output.ofStep_isError_of_noHalt _ _ _ _ _ _ _ (fun _ _ => nofun) (by
-      simp [SqlTransition.counted, SqlState.publish, haltError])
-  obtain ⟨value', database', timed', effect', nextEq⟩ := runScriptStep_effect found ordinary step noError
-  rw [timed] at timed'
-  obtain rfl := Option.some.inj timed'
-  rw [effect] at effect'
-  obtain rfl := Except.ok.inj effect'
-  exact ⟨output, next, step, noError, nextEq⟩
+  exact runScriptStep_ordinary_ok found rfl (fun _ _ eq => by cases eq) timed ready single effect rfl
 
-/-- For every step that resolves to an INSERT from a query without rules, with a clock value and no unknown counter,
-over a table at the target position, where the query has one certain production without failure, the rows it
-hands over fit the target ({name}`InsertFits`), and the statement is in the part that the model describes (the
-premises of {name}`runStatement_insertSelect_none_ok`): the step continues, with an output that is no error and no
-further executions, and the next database is the database with the target rows of the table with the rows
-appended, one after the other ({name}`LiteralData.inserted`). The rows that are appended are the full target rows
-that {name}`insertSelectRows` makes of the rows of the production: the cells that the statement selects from the
-source row, the fixed cells, and the affinity of each target column applied to each. In plain words, this is the
-success law of INSERT from a query: it never fails, whatever the clauses say, and it writes those full rows as an
-upsert of them does when no row meets a conflict. The premises are those of {name}`runStatement_insertSelect_none_ok`, with the context of the
-statement at the clock value and the counters that the connection knows. Proof sketch:
-{name}`runStatement_insertSelect_none_ok` gives the run, and {name}`runScriptStep_insertSelect_ok` the step. -/
+#print axioms runScriptStep_insertSelect_ok
+
+/-- The former {lit}`runScriptStep_insertSelect_success`. A single complete source production whose rows fit gives a successful INSERT and the appended rows. Proof sketch: obtain the run data for the fitted rows and apply the first retained implication. -/
 theorem runScriptStep_insertSelect_success {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
     {target : Nat} {cells : List Resolved.SourceCell} {query : Resolved.Query} {clauses : List Resolved.ConflictClause}
@@ -133,4 +85,6 @@ theorem runScriptStep_insertSelect_success {context : ResolveContext} {clock : O
   refine ⟨output, next, step, noError, ?_⟩
   rw [nextEq]
 
-end Belay.Sqlite.Model
+#print axioms runScriptStep_insertSelect_success
+
+end Belay.Sqlite.Model.ReplacedWriteModes
