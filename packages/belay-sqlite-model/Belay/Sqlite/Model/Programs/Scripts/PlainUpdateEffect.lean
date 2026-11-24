@@ -3,13 +3,9 @@ import Belay.Sqlite.Model.Schema.Writes.PlainWriteFrame
 
 set_option doc.verso true
 
-/-!
-The effect of one plain UPDATE of the model (ADR 0017, S6). A plain UPDATE is a resolved update
-without a RETURNING clause, subqueries or trigger and foreign-key rules. The module shows what the
-model's run of such a statement stores: the rows that {lit}`LiteralData.updated` computes, with the
-assignments, the generated columns and the stored-value coercions of the model. A universal claim about an
-UPDATE then needs only these rows, not the engine.
--/
+/-! A successful UPDATE without write rules stores the computed rows. The no-choice laws of UPDATE
+cover every RETURNING list and write-rule mode.
+The exact step without RETURNING or write rules is given in {lit}`PlainUpdateRule.lean`. -/
 
 namespace Belay.Sqlite.Model
 open Resolved

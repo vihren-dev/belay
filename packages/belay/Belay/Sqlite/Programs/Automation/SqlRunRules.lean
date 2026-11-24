@@ -53,9 +53,8 @@ def roleOf (kind : Name) (premise : Name) : Role :=
   if premise == `success then
     if schemaKinds.contains kind then .outcome [`output, `next, `noError, `ongoing, `nextIs, `valid] true
     else if controlKinds.contains kind then .outcome [`output, `next, `errorIs, `ongoing, `nextIs, `valid] true
-    else if kind == ``Model.Syntax.Statement.addColumn then
+    else
       .outcome [`output, `value, `default, `next, `noError, `ongoing, `timed, `clockNull, `clockRead, `nextIs, `valid] true
-    else .outcome [`output, `value, `next, `noError, `ongoing, `timed, `nextIs, `valid] true
   else if premise == `failure then .outcome [`output, `value, `next, `failed, `ongoing, `nextIs, `valid] true
   else if premise == `reached then
     if kind == ``Model.Syntax.Statement.select then .outcome [`selected, `choice] false

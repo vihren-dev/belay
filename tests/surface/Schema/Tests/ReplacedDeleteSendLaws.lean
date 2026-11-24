@@ -2,6 +2,9 @@ import ReplacedPlainWriteLaws
 
 set_option doc.verso true
 
+/-! A temporary retention test for ADR 0033, slice 2. It proves
+the two former DELETE send rules using the DELETE database-effect witness with the original premises. -/
+
 namespace Belay.Sqlite.ReplacedPlainWriteLaws
 open Belay.Sqlite Model Model.ReplacedPlainWriteLaws
 

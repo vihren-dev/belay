@@ -60,3 +60,9 @@ counts are 59,191 model lines, 14,749 surface lines and 20,543 test lines
 model lines, 14,575 surface lines and 20,745 test lines (98,309 total).
 Both counts include 1,945 SQL text, 1,042 conformance, 134 documentation
 tool and 572 other lines. The counts use the simplification goal's file set.
+
+Review of fee371de found six documentation and tactic issues. The module
+descriptions now state the resolution domain and distinguish the group
+laws from exact rules. The three retention modules describe their subjects.
+The tactic no longer assigns obsolete binder names to an outcome.
+This removes one further surface line (14,574 surface, 98,308 total).

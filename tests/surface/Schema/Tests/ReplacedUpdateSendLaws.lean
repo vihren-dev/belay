@@ -2,6 +2,9 @@ import ReplacedPlainWriteLaws
 
 set_option doc.verso true
 
+/-! A temporary retention test for ADR 0033, slice 2. It proves
+the two former UPDATE send rules using the UPDATE database-effect witness with the original premises. -/
+
 namespace Belay.Sqlite.ReplacedPlainWriteLaws
 open Belay.Sqlite Model Model.ReplacedPlainWriteLaws
 

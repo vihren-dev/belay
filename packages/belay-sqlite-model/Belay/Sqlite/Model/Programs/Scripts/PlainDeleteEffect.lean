@@ -5,12 +5,8 @@ import Belay.Sqlite.Model.Programs.Scripts.StepRuleProjections
 
 set_option doc.verso true
 
-/-!
-The effect of one plain DELETE of the model (ADR 0017, S6). A plain DELETE is a resolved delete
-without a RETURNING clause, subqueries or trigger and foreign-key rules. The module shows what the
-model's run of such a statement stores: the table without the rows that the filter selects. A
-universal claim about a DELETE then needs only the filter, not the engine.
--/
+/-! The no-choice laws of DELETE cover every RETURNING list and write-rule mode.
+The exact step without RETURNING or write rules is given in {lit}`PlainDeleteRule.lean`. -/
 
 namespace Belay.Sqlite.Model
 

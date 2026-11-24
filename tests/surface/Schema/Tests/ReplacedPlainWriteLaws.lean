@@ -2,6 +2,9 @@ import Belay
 
 set_option doc.verso true
 
+/-! A temporary retention test for ADR 0033, slice 2. It proves
+the two former database-effect laws from the exact UPDATE and DELETE rules with the original premises. -/
+
 namespace Belay.Sqlite.Model.ReplacedPlainWriteLaws
 
 /-- The deleted law {lit}`plainDelete_database`. For every plain DELETE without subqueries,
