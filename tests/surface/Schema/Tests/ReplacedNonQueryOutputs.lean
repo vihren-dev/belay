@@ -49,4 +49,7 @@ theorem runScriptStep_ne_oneOf_of_not_query {context : ResolveContext}
   rw [outputEq]
   exact Output.ofStep_ne_oneOf_of_not_query _ _ _ _ _ _ notQuery alternatives
 
+#print axioms Output.ofStep_ne_oneOf_of_not_query
+#print axioms runScriptStep_ne_oneOf_of_not_query
+
 end Belay.Sqlite.Model

@@ -43,3 +43,11 @@ checks the retention, and surface_derived_column_test checks the installed
 guide example and the derived-row claims.
 
 The group-frame test identifies the four laws used in ReplacedOrdinaryFrames.
+
+The nonquery choice projection only had callers in the former write and
+send witnesses. ReplacedNonQueryOutputs now supplies it to those fixtures
+and audits both original formulas. ReplacedBackfill checks the former
+backfill_step contract. Its sole package caller, derivedColumn_state in
+DerivedColumnScript.lean, now uses runScriptStep_plainUpdate_eq and
+Connection.afterWrite_backfill. That data fact identifies the stored rows
+and published counters for an assignment without referring to a script step.
