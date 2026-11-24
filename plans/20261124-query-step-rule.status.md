@@ -1,6 +1,6 @@
 # The exact step of a query
 
-Created 2026-11-24. Status OPEN.
+Created 2026-11-24. Status DONE.
 
 [Task](20261124-query-step-rule.task.md) ·
 [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md)
@@ -157,3 +157,5 @@ imported two internal model modules. SelectCatalogExecution and
 SqlSelectEval now use the model's public root for the same declarations.
 The affected checks are surface_layers_test, the catalog output cases and
 the checker replay of source and computed schemas.
+
+Nix accepted the completed slice through `588c24dd59b6` in `7xlh81vswfz2vdsq9cl11fr1sd6z8msf-belay-test-reports`. The conformance verdict `g924a0byhr9raapn4krb3kr525773vw4-belay-verdict` is byte-for-byte identical to the preceding slice’s `7x0wipxb4j14x4pm411k64cjbw2r3awx-belay-verdict`. No mutant table changed.

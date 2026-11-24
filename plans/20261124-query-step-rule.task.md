@@ -1,6 +1,6 @@
 # The exact step of a query
 
-Created 2026-11-24. Status OPEN. Audience is implementers and reviewers.
+Created 2026-11-24. Status DONE. Audience is implementers and reviewers.
 
 Slice 5 of [ADR 0033](../docs/adr/adr-0033-exact-step-rules.md) gives
 queries an exact equation. From resolution alone a client can read each
