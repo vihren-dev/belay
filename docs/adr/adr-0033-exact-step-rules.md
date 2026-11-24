@@ -302,8 +302,8 @@ The removal of the old laws is a part of each slice. It is not a step after the 
     `Sql.check_send_plainInsert` with `Sql.check_send_of_step`.
 - A text that names a deleted law changes in the same slice: a docstring, a diagnostic of
   `sql_run` together with the test that expects its message, the guide, the skill in
-  `skills/belay` and the READMEs. The docstring of a retention test names the deleted law that
-  the test proves; it does not change. At `11488c6e`, the guide and the skill name no step law
+  `skills/belay` and the READMEs. The docstring of a retention test keeps the name of the deleted
+  law that the test proves; its proof sketch changes when the proof changes. At `11488c6e`, the guide and the skill name no step law
   and no surface rule of a kind. The diagnostic "sql_run cannot start" names
   `Sql.check_send_of_step`, and `tests/surface/Queries/Tests/S6AutoShapes.lean` expects its
   message.
@@ -397,18 +397,22 @@ for it. At the end of the slice, these conditions hold:
   or `runScriptStepWith` is the proof of a kind rule or of a law for all kinds or for a group
   of kinds, or it is one of the proofs that D8 does not move.
 - **Retention tests, before the deletions.** Each retention test that is left uses only
-  declarations that stay after the slice. The slice proves a test again when its proof uses a
-  rule that the slice deletes, as the pilot's proof with `Sql.check_send_of_step` does.
+  declarations of the packages that stay after the slice, and retention tests that go at the
+  same time as the test. The slice proves a test again when its proof uses a rule that the
+  slice deletes, as the pilot's proof with `Sql.check_send_of_step` does.
 - **Surface.** No surface rule has the resolution to one kind as a premise, and `sendRule` has
   no branch for a kind with a rule. A `sendRule` without a branch is deleted, and so is each
   general rule for a send that has no caller (D6). `Sql.check_exec` stays. When slice 5 kept
   `Sql.check_send_select`, its branch stays, and the inventory gives the reason.
-- **Texts.** No docstring, diagnostic, guide, skill or README names a deleted law. The
-  docstring of a retention test that stays is the exception.
-- **Retention tests, the end.** The slice applies owner decision 3 to each retention test. The
-  revision with the conditions above is the last planned change to the contracts that the
-  tests use, and it holds the tests. The status file records its Nix acceptance. Then the
-  slice deletes each test, except a witness that is the only check of a premise, of a
+- **Texts.** No docstring, diagnostic, guide, skill or README names a deleted law. The name of
+  the law that a retention test proves, in the docstring of a test that stays, is the
+  exception.
+- **Retention tests, the end.** The slice applies owner decision 3 to each retention test. For
+  each test, the status file records the revision that Nix accepted and that holds the test
+  and the last change to the contracts that its proofs use. For a test that the slice proves
+  again, or whose proofs use a declaration that the slice changes, this is a revision of this
+  slice. For another test, it can be a revision of an earlier slice. After the record, the
+  slice deletes the test, except a witness that is the only check of a premise, of a
   distinction between cases or of a trust guarantee. Such a witness stays until a caller or a
   focused test covers it.
 - **Record.** The slice adds a milestone row to the simplification goal, with the code lines at
