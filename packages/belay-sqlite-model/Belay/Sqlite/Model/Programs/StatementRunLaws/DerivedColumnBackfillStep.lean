@@ -3,11 +3,17 @@ import Belay.Sqlite.Model.Programs.Scripts.PlainUpdateRule
 
 set_option doc.verso true
 
+/-! The rows stored by a backfill assignment and the counters published with them.
+The migration proof uses this data fact after selecting the successful UPDATE case. -/
+
 namespace Belay.Sqlite.Model
 open Resolved
 
-/-- Storing the result of a context-free assignment to a newly appended NULL column
-gives the rows of {name}`Table.addDerivedColumn` on the original wide, aliased table.
+/-- For every connection, position, counts and row-free evaluation context, applying
+{name}`Connection.afterWrite` to the database with the updated rows at that position
+gives the connection with the rows of {name}`Table.addDerivedColumn` at the position and
+some counters. The assignment to the newly appended NULL column must be context-free,
+and the original table must have wide, aliased rows.
 The old and new columns must have no generated expression, and the assignment reads
 only old columns. The write publishes its own counters. Proof sketch: substitute
 {name}`updated_derived_append` and move each evaluation to the canonical context. -/
