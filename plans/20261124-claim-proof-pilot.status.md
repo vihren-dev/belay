@@ -1,7 +1,7 @@
 # Status: pilot of the forms of proof for a claim in SQL
 
 Created 2026-11-24.
-Status: OPEN.
+Status: OPEN. The pilot is complete; the owner decision is open.
 Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 
 ## References
@@ -18,6 +18,7 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - Test: `tests/surface_assertion_examples_test.py`,
   `test_purge_frame_claim_over_every_database`.
 - Kind rule: `packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainDeleteRule.lean`.
+- Findings record: `docs/records/claim-proof-pilot-findings.md`.
 - Two-state assertions:
   `packages/belay/Belay/Sqlite/Programs/Claims/TwoStateAssertions.lean`.
 
@@ -62,10 +63,13 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, base form: `JsonReadyLaws` is listed in the core library of
   the model package (folded into the readiness commit). Final checks run;
   the base form is DONE.
+- 2026-11-25: forms A, B, C and D are DONE on their branches. The
+  findings record compares them and gives the recommendation. The owner
+  decision is open.
 
 ## Base form
 
-DONE on the branch `claim-proof-pilot`. Forms A to D are not started.
+DONE on the branch `claim-proof-pilot`.
 
 ### Readiness facts (model package)
 
@@ -201,18 +205,32 @@ Checks run on the last commit, local outcome only, not evidence:
 - `just verdict`: passed (local), with no change in the counts of the
   corpora.
 
-## Form A
+## Forms A to D
 
-Not started.
+Each form is DONE on its branch. The status file of that branch has the
+section of the form: its declarations, the general form of each new law,
+its measurements, its limits and its checks. A form branch does not have
+the commits of this branch that come after `ff882f8d`.
 
-## Form B
+| Form | Branch | Last code revision | Last revision |
+| --- | --- | --- | --- |
+| A | `claim-proof-pilot-logic` | `a1705c06` | `40986de1` |
+| B | `claim-proof-pilot-laws` | `0f070f76` | `364d10fb` |
+| C | `claim-proof-pilot-tactic` | `5bc3c323` | `2a2db889` |
+| D | `claim-proof-pilot-checker` | `8e136beb` | `1795538c` |
 
-Not started.
+Checks of each form at its last code revision, local outcome only, not
+evidence: `just dev-build`, `just test-full` and `just verdict` passed
+(local). For form C, `just test-full` ran one docstring commit before the
+last code revision.
 
-## Form C
+## Findings record
 
-Not started.
+`docs/records/claim-proof-pilot-findings.md` is written. The code-line
+counts in it come from `scc` 3.7.0 over the Lean files of each revision,
+without the three frozen experiments, as
+`docs/development/lean-simplification-goal.md` counts them.
 
-## Form D
-
-Not started.
+Open: the owner decision. After it, the task file records the decision,
+and the branch of the selected form becomes the pull request, with
+`just test-nix` and `just test-scheduled-checks` once before it.
