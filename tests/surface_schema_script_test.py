@@ -122,3 +122,9 @@ def test_row_write_send_observes_every_production(runtime_root: Path, tmp_path: 
     """Check the UPSERT and INSERT SELECT equations through sql_run on a variable connection,
     including each admitted source production's count or error and its entry in the trace."""
     check_module_chain(runtime_root, tmp_path, (("RowWriteSendClaims", 2),), timeout=90)
+
+
+def test_insert_with_rules_reports_its_count_or_error(runtime_root: Path, tmp_path: Path) -> None:
+    """Exercise runScriptStep_insertWithRules_eq through sql_run on a variable database
+    and check that the client proof uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("InsertWithRulesClaim", 1),), timeout=90)
