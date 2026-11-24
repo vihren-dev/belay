@@ -57,8 +57,7 @@ theorem runScriptStep_commit_active {context : ResolveContext}
 /-- The deleted law {lit}`runScriptStep_commit_idle`. For every connection and statement that resolves to COMMIT, and every step that continues outside a
 transaction: the step has an error output and no further execution, and the next connection is the
 connection. In plain words, COMMIT without a transaction fails and changes nothing (failure law). Proof
-sketch: the transition is the failure {name}`ExecutionError.noActiveTransaction`, which
-{name}`Connection.afterError` turns into the same database without a snapshot. -/
+sketch: the idle case of {name}`runScriptStep_commit_eq` gives the result. -/
 theorem runScriptStep_commit_idle {context : ResolveContext}
     {clock : Option Clock} {index : Nat} {connection next : Connection}
     {statement : Syntax.Statement} {parameters : List Value} {output : Output} {others : List StatementExecution}
