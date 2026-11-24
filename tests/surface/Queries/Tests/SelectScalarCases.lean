@@ -116,7 +116,7 @@ theorem scalar_amounts (db : Database) (env : Env) (schema : db.HasCatalog shop)
     rcases List.mem_cons.mp member with rfl | member
     · exact (amount_run db schema []).2.2 (by rw [List.countP_eq_zero.mpr fun order _ => by simp [witness_null]]; omega)
     · exact (amount_run db schema row).2.2 (by rw [cells row member]; exact atMostOne row member)
-  rw [Run.query_returnsResult_faultless head rfl db env resolved found (by simp)
+  rw [Run.query_returnsResult_faultless head rfl db env (runScriptStep_output_of_resolved resolved) found (by simp)
     (by unfold Resolved.Statement.Calm; decide +kernel) rfl
     (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row member expression inside => by

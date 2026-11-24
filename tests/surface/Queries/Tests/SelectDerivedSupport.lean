@@ -110,7 +110,7 @@ theorem derived_returns (catalog : Database) (innerQuery : Resolved.Query) (scri
     rw [catalog_state catalog db env schema]
     exact resolves
   have found := Resolved.Query.source_derived _ db.raw none derivedQuery 0 2 rfl clean ended certain
-  rw [Run.query_returnsResult_faultless head one db env resolved found (by simp) calm rfl
+  rw [Run.query_returnsResult_faultless head one db env (runScriptStep_output_of_resolved resolved) found (by simp) calm rfl
     (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row _ expression member => by
       simp [derivedQuery, Resolved.Query.expressions, Resolved.Query.keptExpressions,

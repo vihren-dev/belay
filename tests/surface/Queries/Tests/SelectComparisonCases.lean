@@ -54,7 +54,7 @@ theorem amounts_above (db : Database) (env : Env) (minimum : Value) {position am
     { table := name! "invoices", alias := none } _ position table _ (name! "amount") "amount" rfl rfl rfl found
     amountFound resolves
   rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := above minimum) rfl (above_one minimum) db env
-    resolved rfl (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
+    (runScriptStep_output_of_resolved resolved) rfl (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
   · intro result member row inResult
     obtain ⟨source, -, kept, rfl⟩ := Resolved.Query.mem_possibleResults_plain rfl rfl rfl member inResult
     have collation : comparisonCollation (tableScope db.raw.catalog { table := name! "invoices", alias := none } position

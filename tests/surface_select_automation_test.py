@@ -35,3 +35,10 @@ def test_select_execution_success_and_vacuity(runtime_root: Path, tmp_path: Path
     """Sql.check covers every output choice, rejects modeled errors as success and rejects
     unsupported stops; a false-precondition triple exposes the separate vacuity risk."""
     check_module_chain(runtime_root, tmp_path, (("SelectAutomationExecution", 8),), timeout=60)
+
+
+def test_replaced_run_contracts(runtime_root: Path, tmp_path: Path) -> None:
+    """The original success, empty, failure and unmodeled run laws follow under the original premises."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ReplacedSelectRuns", 2), ("ReplacedCalmRuns", 4), ("ReplacedOverflowRuns", 2), ("ReplacedFailedRuns", 3),
+    ), timeout=60)

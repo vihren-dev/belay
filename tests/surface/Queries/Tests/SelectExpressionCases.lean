@@ -118,7 +118,7 @@ theorem billing_rows (db : Database) (env : Env) (tag : Value) {position custome
     (by simp [starIssue, billingColumns]) columnsOk (FilterResolves.of_none _ _ _ _) noFeed
   rw [outputs] at resolvedStatement
   rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := billing tag) rfl (billing_one tag) db env
-    resolvedStatement rfl (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
+    (runScriptStep_output_of_resolved resolvedStatement) rfl (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
   · intro result member row inResult
     obtain ⟨source, inSource, -, rfl⟩ := Resolved.Query.mem_possibleResults_plain rfl rfl rfl member inResult
     obtain ⟨stored, storedIn, rfl⟩ := (mem_sourceRows_iff _ source).mp inSource

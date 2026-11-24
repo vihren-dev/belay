@@ -44,7 +44,7 @@ theorem zeroAmount_results (db : Database) {position index : Nat} {table : Catal
   have resolved := resolveStatement_select_one_from runContext (db.raw.connection Env.default.counters).resolveState
     { table := name! "invoices", alias := none } _ position table _ rfl rfl rfl found resolves
   rw [Run.send_returnsResult_iff_query (script := zeroAmount) zeroAmount_one]
-  exact Run.query_returnsResult_calmTable (script := zeroAmount) rfl zeroAmount_one db Env.default resolved rfl
+  exact Run.query_returnsResult_calmTable (script := zeroAmount) rfl zeroAmount_one db Env.default (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable _ _ _ _ found)
     (Resolved.Statement.Calm.selectOne position _ (by simp [zeroCondition, sql_simp])) rfl rfl rfl
     (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl property

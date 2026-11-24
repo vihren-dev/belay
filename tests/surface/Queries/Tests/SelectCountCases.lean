@@ -39,7 +39,7 @@ theorem count_rows (db : Database) (env : Env) (schema : db.HasCatalog orders) :
       .ok (.query (ungroupedQuery [.aggregate .countRows] ["count(*)"]) [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := countAll) rfl countAll_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := countAll) rfl countAll_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (by simp [Resolved.Query.fails, ungroupedQuery, Resolved.Aggregate.fails_countRows]) rfl]
   intro result member
@@ -93,7 +93,7 @@ theorem count_customers (db : Database) (env : Env) (schema : db.HasCatalog orde
     rw [orders_state db env schema]
     decide +kernel
   have present := Database.table_of_findTable db.raw _ _ _ (orders_found db schema)
-  rw [Run.query_returnsResult_calmTable (script := countCustomers) rfl countCustomers_one db env resolved rfl present
+  rw [Run.query_returnsResult_calmTable (script := countCustomers) rfl countCustomers_one db env (runScriptStep_output_of_resolved resolved) rfl present
     (by unfold Resolved.Statement.Calm; decide) rfl rfl rfl
     (by simp [Resolved.Query.fails, ungroupedQuery, Resolved.Aggregate.fails]) rfl]
   intro result member

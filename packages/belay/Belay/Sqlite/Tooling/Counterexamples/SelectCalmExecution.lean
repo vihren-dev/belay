@@ -16,7 +16,7 @@ open Belay.Sqlite.Model
 
 /-- Faultless rule: for every script of one statement with its values, proof that it has one
 statement, database, environment, source rows {lit}`source`, query {lit}`bound` and property
-{lit}`Q` of a result: when the statement resolves on the connection of the environment to a calm
+{lit}`Q` of a result: when the output of the statement on the connection of the environment equals the output of a calm
 query ({name}`Resolved.Statement.Calm`) with subqueries, the query's sources give {lit}`source` over
 the database in the statement context ({name}`Resolved.EvalContext.statement`), {lit}`source` has
 no possible fault, the query is no compound and its window binds to {lit}`bound` with the values
@@ -31,10 +31,10 @@ the counters of the environment do not matter. Proof sketch:
 equivalence. -/
 theorem Run.query_returnsResult_faultless {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query bound : Resolved.Query} {subqueries : List Resolved.Query} {after : ResolveState}
+    (env : Env) {query bound : Resolved.Query} {subqueries : List Resolved.Query}
     {source : Resolved.SourceRows}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (found : query.source (Resolved.EvalContext.statement parameters db.raw subqueries) db.raw = some source)
     (sourceCertain : source.fault ≠ .may)
     (calm : (Resolved.Statement.query query subqueries).Calm) (single : query.compound = none)
@@ -52,12 +52,12 @@ theorem Run.query_returnsResult_faultless {script : Script} {statement : Syntax.
   have context : (db.raw.connection env.counters).queryContextAt 0 parameters query subqueries =
       Resolved.EvalContext.statement parameters db.raw subqueries :=
     Connection.queryContext_calm _ parameters query subqueries calm
-  rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
+  rw [Run.query_returnsResult_select head one db env observed (by simp [statementClock, calm.readsClock]) ready
     property, context]
 
 /-- Compound rule: for every script of one statement with its values, proof that it has one
 statement, database, environment, source rows {lit}`source`, query {lit}`bound` and property
-{lit}`Q` of a result: when the statement resolves on the connection of the environment to a calm
+{lit}`Q` of a result: when the output of the statement on the connection of the environment equals the output of a calm
 query ({name}`Resolved.Statement.Calm`) that is the compound {lit}`compound`, with subqueries, the
 query's sources give {lit}`source` over the database in the statement context
 ({name}`Resolved.EvalContext.statement`), {lit}`source` has no possible fault, the window binds to
@@ -70,10 +70,10 @@ not matter. Proof sketch: {name}`Connection.SelectReady.of_compound` and
 {name}`Run.query_returnsResult_select`. -/
 theorem Run.query_returnsResult_compound {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query bound : Resolved.Query} {subqueries : List Resolved.Query} {after : ResolveState}
+    (env : Env) {query bound : Resolved.Query} {subqueries : List Resolved.Query}
     {source : Resolved.SourceRows} {compound : Resolved.Compound}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (calm : (Resolved.Statement.query query subqueries).Calm) (shape : query.compound = some compound)
     (found : query.source (Resolved.EvalContext.statement parameters db.raw subqueries) db.raw = some source)
     (sourceCertain : source.fault ≠ .may) (window : query.bindWindow parameters = some bound)
@@ -91,12 +91,12 @@ theorem Run.query_returnsResult_compound {script : Script} {statement : Syntax.S
   have context : (db.raw.connection env.counters).queryContextAt 0 parameters query subqueries =
       Resolved.EvalContext.statement parameters db.raw subqueries :=
     Connection.queryContext_calm _ parameters query subqueries calm
-  rw [Run.query_returnsResult_select head one db env resolved (by simp [statementClock, calm.readsClock]) ready
+  rw [Run.query_returnsResult_select head one db env observed (by simp [statementClock, calm.readsClock]) ready
     property, context]
 
 /-- Calm rule: for every script of one statement with its values, proof that it has one statement,
 database, environment, source rows {lit}`source` and property {lit}`Q` of a result: when the
-statement resolves on the connection of the environment to a calm query
+step output on the connection of the environment equals the output of a calm query
 ({name}`Resolved.Statement.Calm`) with no subqueries, the query's sources give {lit}`source` over the
 database with only the values as context, {lit}`source` has no possible fault, and the query is no
 compound and has no window parameter, no overflow ({lit}`Query.fails`) and a certain
@@ -108,9 +108,9 @@ and the counters of the environment do not matter. Proof sketch:
 values ({name}`Resolved.Statement.Calm.faultless_nil`). -/
 theorem Run.query_returnsResult_calm {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query : Resolved.Query} {after : ResolveState} {source : Resolved.SourceRows}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query [], after))
+    (env : Env) {query : Resolved.Query} {source : Resolved.SourceRows}
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query []))
     (found : query.source (Resolved.EvalContext.bound parameters) db.raw = some source)
     (sourceCertain : source.fault ≠ .may)
     (calm : (Resolved.Statement.query query []).Calm) (single : query.compound = none)
@@ -122,7 +122,7 @@ theorem Run.query_returnsResult_calm {script : Script} {statement : Syntax.State
       ∀ result ∈ query.possibleResults (Resolved.EvalContext.bound parameters) source.rows, property result := by
   have faultless := calm.faultless_nil (db.raw.connection env.counters) parameters (rows := source.rows)
   rw [Connection.queryContext_calm _ parameters query [] calm] at faultless
-  exact Run.query_returnsResult_faultless head one db env resolved found sourceCertain calm single
+  exact Run.query_returnsResult_faultless head one db env observed found sourceCertain calm single
     (Resolved.Query.bindWindow_literal parameters query limitParameter offsetParameter) faultless noOverflow distinct
     property
 
@@ -135,9 +135,9 @@ permits over the scan has {lit}`Q`. Proof sketch: {name}`Resolved.Query.source_f
 source rows. -/
 theorem Run.query_returnsResult_calmTable {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query : Resolved.Query} {after : ResolveState} {position : Nat} {table : Table}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query [], after))
+    (env : Env) {query : Resolved.Query} {position : Nat} {table : Table}
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query []))
     (sources : query.sources = [.first position]) (present : db.raw.table position = some table)
     (calm : (Resolved.Statement.query query []).Calm) (single : query.compound = none)
     (limitParameter : query.limitParameter = none) (offsetParameter : query.offsetParameter = none)
@@ -147,7 +147,7 @@ theorem Run.query_returnsResult_calmTable {script : Script} {statement : Syntax.
     (db.run (Belay.Sqlite.query script one) env).returnsResult property ↔
       ∀ result ∈ query.possibleResults (Resolved.EvalContext.bound parameters) (Resolved.sourceRows table),
         property result :=
-  Run.query_returnsResult_calm head one db env resolved
+  Run.query_returnsResult_calm head one db env observed
     (Resolved.Query.source_first _ query _ position table sources present) (by simp) calm single limitParameter
     offsetParameter noOverflow distinct property
 

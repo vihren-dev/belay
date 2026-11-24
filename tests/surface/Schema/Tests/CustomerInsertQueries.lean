@@ -92,7 +92,7 @@ theorem a_customer_has_the_id_and_name_iff (db : Database) (id : Int64) (name : 
   have resolved := resolveStatement_select_one_from runContext (db.raw.connection Env.default.counters).resolveState
     { table := name! "customers", alias := none } _ position table _ rfl rfl rfl found resolves
   rw [Holds, Run.send_returnsResult_iff_query (script := aCustomerHasTheIdAndName id name) rfl,
-    Run.query_returnsResult_calmTable (script := aCustomerHasTheIdAndName id name) rfl rfl db Env.default resolved rfl
+    Run.query_returnsResult_calmTable (script := aCustomerHasTheIdAndName id name) rfl rfl db Env.default (runScriptStep_output_of_resolved resolved) rfl
       (Database.table_of_findTable _ _ _ _ found)
       (Resolved.Statement.Calm.selectOne position _ (by simp [sql_simp, equalsParameter])) rfl rfl rfl
       (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,

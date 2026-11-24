@@ -66,7 +66,7 @@ theorem abs_where_unmodeled (db : Database) (env : Env) (position : Nat) (table 
       (Resolved.Query.simple [.first position] (some absCondition) [.scalar (.literal (.integer 1))] ["1"]) [] =
       Resolved.EvalContext.bound [] :=
     Connection.queryContext_of_quiet _ [] _ quiet
-  refine Run.send_unready rfl db env resolved (value := 0) (by simp [statementClock, quiet.readsClock])
+  refine Run.send_unready rfl db env (runScriptStep_output_of_resolved resolved) (value := 0) (by simp [statementClock, quiet.readsClock])
     (quiet.firstUnknown _)
     (Resolved.Query.source_first _ _ _ position _ rfl (Database.table_of_findTable db.raw _ position table found))
     (.inr (.inr ?_)) property code
@@ -126,7 +126,7 @@ theorem abs_exists_unmodeled (db : Database) (env : Env) (position : Nat) (table
     (Resolved.Expr.calm_literal _).quiet
   have resolved := resolveStatement_selectOne_exists runContext (db.raw.connection env.counters).resolveState
     { table := name! "t", alias := none } _ position table _ rfl rfl rfl found resolves
-  exact Run.send_unready rfl db env resolved (value := 0) (by simp [statementClock, quiet.readsClock])
+  exact Run.send_unready rfl db env (runScriptStep_output_of_resolved resolved) (value := 0) (by simp [statementClock, quiet.readsClock])
     (quiet.firstUnknown _)
     (Resolved.Query.source_none _ _ _ rfl)
     (.inl (by simp [Resolved.subqueriesPlain, Resolved.Query.nestedSubqueries, Resolved.Query.selectOneWhere,

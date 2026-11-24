@@ -67,7 +67,7 @@ theorem sumCents_results (db : Database) (env : Env) {position index : Nat} {tab
     (property : List (List Value) → Prop) :
     (db.run (query sumCents sumCents_one) env).returnsResult property ↔
       property [[(centsSum index).eval (Resolved.EvalContext.bound []) (scanOf db position table)]] := by
-  rw [Run.query_returnsResult_calmTable (script := sumCents) rfl sumCents_one db env (sumCents_resolved db env found column) rfl
+  rw [Run.query_returnsResult_calmTable (script := sumCents) rfl sumCents_one db env (runScriptStep_output_of_resolved (sumCents_resolved db env found column)) rfl
     (Database.table_of_findTable _ _ _ _ found) (sumQuery_calm position index) rfl rfl rfl
     (by rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf]), Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; simpa [Resolved.Query.aggregateOf, scanOf] using safe) rfl property]
   simp only [Resolved.Query.possibleResults_ungrouped _ (query := sumQuery position index) rfl rfl rfl rfl rfl rfl rfl rfl, Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl,
@@ -87,7 +87,7 @@ theorem sumCents_overflow (db : Database) (env : Env) {position index : Nat} {ta
     ¬ (db.run (query sumCents sumCents_one) env).returnsResult property ∧
       ((db.run (query sumCents sumCents_one) env).returnsError code ↔
         code ExecutionError.integerOverflow.primaryCode) := by
-  exact Run.query_overflow_calmTable (script := sumCents) rfl sumCents_one db env (sumCents_resolved db env found column) rfl
+  exact Run.query_overflow_calmTable (script := sumCents) rfl sumCents_one db env (runScriptStep_output_of_resolved (sumCents_resolved db env found column)) rfl
     (Database.table_of_findTable _ _ _ _ found) (sumQuery_calm position index) rfl rfl rfl
     (by rw [Resolved.Query.fails_ungrouped _ rfl rfl (by simp [Resolved.Query.aggregateOf]), Resolved.filtered_of_filter_none _ (query := sumQuery position index) rfl]; simpa [Resolved.Query.aggregateOf, scanOf] using overflow) rfl property code
 

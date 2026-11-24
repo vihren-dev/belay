@@ -52,7 +52,7 @@ theorem abs_one_returns (db : Database) (env : Env) :
       (absCall 1) none none (by decide +kernel) (by decide +kernel) (by decide +kernel) (FilterResolves.of_none _ _ _ _)
   have quiet := absQuery_quiet 1 none "abs(1)" (by simp)
   obtain ⟨clocked, context⟩ := abs_context db env quiet
-  rw [Run.send_returnsResult_select (script := sql r"SELECT abs(1)") rfl db env resolved clocked
+  rw [Run.send_returnsResult_select (script := sql r"SELECT abs(1)") rfl db env (runScriptStep_output_of_resolved resolved) clocked
     (Connection.SelectReady.of_phases rfl (quiet.firstUnknown _) (Resolved.Query.source_none _ _ _ rfl) rfl (by simp)
       (Resolved.Query.bindWindow_literal _ _ rfl rfl) (by rw [context]; decide +kernel) (by rw [context]; decide +kernel)
       (by rw [context]; decide +kernel) (by rw [context]; decide +kernel)), context]
@@ -76,7 +76,7 @@ theorem abs_least_fails (db : Database) (env : Env) (property : List (List Value
       (by decide +kernel) (by decide +kernel) (by decide +kernel) (FilterResolves.of_none _ _ _ _)
   have quiet := absQuery_quiet (-9223372036854775808) none "abs(-9223372036854775808)" (by simp)
   obtain ⟨clocked, context⟩ := abs_context db env quiet
-  exact Run.send_mustFail rfl db env resolved rfl clocked (quiet.firstUnknown _) (Resolved.Query.source_none _ _ _ rfl)
+  exact Run.send_mustFail rfl db env (runScriptStep_output_of_resolved resolved) rfl clocked (quiet.firstUnknown _) (Resolved.Query.source_none _ _ _ rfl)
     rfl (by simp) (Resolved.Query.bindWindow_literal _ _ rfl rfl) (by rw [context]; decide +kernel)
     (by rw [context]; decide +kernel) property code
 
@@ -98,7 +98,7 @@ theorem abs_least_skipped (db : Database) (env : Env) :
     (by simpa using (Resolved.Expr.calm_literal _).quiet)
   obtain ⟨clocked, context⟩ := abs_context db env quiet
   rw [Run.send_returnsResult_select
-    (script := sql r"SELECT abs(-9223372036854775808) WHERE 0") rfl db env resolved clocked
+    (script := sql r"SELECT abs(-9223372036854775808) WHERE 0") rfl db env (runScriptStep_output_of_resolved resolved) clocked
     (Connection.SelectReady.of_phases rfl (quiet.firstUnknown _) (Resolved.Query.source_none _ _ _ rfl) rfl (by simp)
       (Resolved.Query.bindWindow_literal _ _ rfl rfl) (by rw [context]; decide +kernel) (by rw [context]; decide +kernel)
       (by rw [context]; decide +kernel) (by rw [context]; decide +kernel)), context]

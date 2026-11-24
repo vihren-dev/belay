@@ -109,7 +109,7 @@ theorem compound_returns (operator : CompoundOperator) (script : Script) (one : 
   obtain ⟨firstRows, firstDone, secondRows, secondDone⟩ := terms_run db schema
   have shape : (compoundQuery operator).compound = some { first := 0, rest := [(operator, 1)], collations := [.binary] } :=
     rfl
-  rw [Run.query_returnsResult_compound head one db env resolved
+  rw [Run.query_returnsResult_compound head one db env (runScriptStep_output_of_resolved resolved)
     (by unfold Resolved.Statement.Calm; cases operator <;> decide +kernel) shape
     (Resolved.Query.source_none _ _ db.raw rfl) (by simp) rfl
     (by simp [Resolved.Compound.terms, firstDone, secondDone])

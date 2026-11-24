@@ -108,7 +108,7 @@ theorem customersWhere_returns (condition : Resolved.Expr) (subqueries : List Re
     exact resolves
   have found := Resolved.Query.source_first (whereContext db subqueries) (customersWhere condition) db.raw 0 _ rfl
     (Database.table_of_findTable db.raw _ _ _ (shop_found db schema).1)
-  rw [Run.query_returnsResult_faultless head one db env resolved found (by simp) calm rfl
+  rw [Run.query_returnsResult_faultless head one db env (runScriptStep_output_of_resolved resolved) found (by simp) calm rfl
     (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row _ expression member => by
       simp [customersWhere, Resolved.Query.expressions, Resolved.Query.keptExpressions,
