@@ -41,3 +41,15 @@ full source checks found two references to deleted control modules.
 
 The historical target rows link to the pilot revision and preserve the
 original lists alongside dated slice 3 migration notes.
+
+At the start revision the simplification-goal counter reports 59,296 model,
+14,574 surface and 20,745 test code lines, 98,308 lines total. At a3722017
+the corresponding counts are 59,132, 14,481 and 21,047, 98,353 total. Both
+counts include 1,945 SQL text, 1,042 conformance, 134 documentation tool
+and 572 other lines. ControlSendClaims is the only changed fixture whose
+sql_run proof text changes. It is new, and elaborated in 1.85 s at the end
+(faster of two runs). The Nix verdict at the start
+(ij7ch4wx5cbhrfw2bgqdqzka346kx288-belay-verdict) and end
+(88m86jvy8hk374zi93yjzb3a3animn5a-belay-verdict) compared byte for byte.
+No mutant table changed.
+After incorporating the checker allocation at 5ca0e596, the start has 14,583 surface lines and 98,317 total. The control changes have 14,490 surface lines and 98,362 total. The model and fixture counts above still apply.
