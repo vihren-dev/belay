@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T21:55:14+00:00",
+  "finding": "20261124T215018Z-c73fd5f9#6",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The pilot rules require the status to record the local checks of each form, labeled local and not evidence; the status cites no Nix result and claims no evidence."
+}

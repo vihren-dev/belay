@@ -124,8 +124,10 @@ Retain `Resolved.Expr.Rowwise`, `Resolved.Expr.Rowwise.fault_none` and
 distinct hypotheses. The same file's `Resolved.Value.and_cases`,
 `Resolved.truthy_isNot_one_of_cases` and `Resolved.Expr.truthy_isNot_one_and`
 are separate truth laws. Expression locality does not replace these facts.
-(2026-11-24: the claim-proof pilot, form B, replaces the three laws with
-`Resolved.Expr.truthy_isNot_one` in `LogicalValueLaws.lean` and deletes them.)
+(2026-11-24: the claim-proof pilot, form B, deletes the three laws. In
+`LogicalValueLaws.lean`, `Resolved.Expr.eval_isLogical` gives the range of
+`AND`, `Value.truthy_isNot_one` gives the truth law for each logical value, and
+`Resolved.Expr.truthy_isNot_one` gives it for each logical expression.)
 `evaluate_dropColumn` changes the expression and is outside the four required
 replacements; the fixed-expression prototype does not establish that stronger
 abstraction. Moving `RowFree` must still compile this consumer and its CHECK/key

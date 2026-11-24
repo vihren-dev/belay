@@ -71,40 +71,24 @@ theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite 
     simp only [LiteralData.selected, Option.all_some, Resolved.Expr.eval]
     rw [purgeFilter_rowwise.evaluate_congr deleteContext context row.values (by rw [parameters, bound])]
     exact keep
-  have compound : ∀ counters, ((purgeKeepsCompound site.names).subqueryRun
-      (Resolved.subqueryContext 0 counters [c, now] (db.raw.setRows site.position kept.rows)
-        [purgeKeepsCompound site.names, purgeKeepsInitialTerm site.position site.names,
-          purgeKeepsCurrentTerm site.position site.names] (some db.raw) 2)
-      (db.raw.setRows site.position kept.rows) [] (some db.raw)).rows = [] ∧
-      ((purgeKeepsCompound site.names).subqueryRun
-      (Resolved.subqueryContext 0 counters [c, now] (db.raw.setRows site.position kept.rows)
-        [purgeKeepsCompound site.names, purgeKeepsInitialTerm site.position site.names,
-          purgeKeepsCurrentTerm site.position site.names] (some db.raw) 2)
-      (db.raw.setRows site.position kept.rows) [] (some db.raw)).fault = .none := by
+  have compound : ∀ counters, (fun run : Resolved.SubqueryRun => run.rows = [] ∧ run.fault = .none)
+      ((purgeKeepsCompound site.names).subqueryRun (Resolved.subqueryContext 0 counters [c, now]
+        (db.raw.setRows site.position kept.rows) (purgeKeepsSubqueries site.position site.names) (some db.raw) 2)
+        (db.raw.setRows site.position kept.rows) [] (some db.raw)) := by
     intro counters
     have left := Resolved.subqueryContext_subqueries 0 counters [c, now] (db.raw.setRows site.position kept.rows)
-      [purgeKeepsCompound site.names, purgeKeepsInitialTerm site.position site.names,
-        purgeKeepsCurrentTerm site.position site.names] (some db.raw) 1 1 [] rfl
+      (purgeKeepsSubqueries site.position site.names) (some db.raw) 1 1 [] rfl
     have right := Resolved.subqueryContext_subqueries 0 counters [c, now] (db.raw.setRows site.position kept.rows)
-      [purgeKeepsCompound site.names, purgeKeepsInitialTerm site.position site.names,
-        purgeKeepsCurrentTerm site.position site.names] (some db.raw) 1 2 [] rfl
-    have leftRead := initialRead (Resolved.subqueryContext 0 counters [c, now]
-      (db.raw.setRows site.position kept.rows) [purgeKeepsCompound site.names,
-        purgeKeepsInitialTerm site.position site.names, purgeKeepsCurrentTerm site.position site.names]
-      (some db.raw) 1) (db.raw.setRows site.position kept.rows)
-    have rightRead := currentRead (Resolved.subqueryContext 0 counters [c, now]
-      (db.raw.setRows site.position kept.rows) [purgeKeepsCompound site.names,
-        purgeKeepsInitialTerm site.position site.names, purgeKeepsCurrentTerm site.position site.names]
-      (some db.raw) 1)
+      (purgeKeepsSubqueries site.position site.names) (some db.raw) 1 2 [] rfl
     have final := (purgeKeepsCompound_shape site.names).subqueryRun _ (db.raw.setRows site.position kept.rows)
-      (some db.raw) (by rw [left]; exact leftRead.2.2) (by rw [right]; exact rightRead.2.2) (by
+      (some db.raw) (by rw [left]; exact (initialRead _ _).2.2) (by rw [right]; exact (currentRead _).2.2) (by
         rw [left]
-        erw [leftRead.1]
+        erw [(initialRead _ _).1]
         exact Resolved.equalRowsIdentical_rowidFirst admitted.rowidsDistinct admitted.rowsAliased site.keyAlias
           .binary [.binary, .binary] _ [.column 1, .column 2] fun cells member => (List.mem_filter.1 member).1)
     refine ⟨?_, final.2⟩
     rw [final.1, left, right]
-    erw [leftRead.1, rightRead.1]
+    erw [(initialRead _ _).1, (currentRead _).1]
     exact CompoundOperator.except_combine_eq_nil _ _ _ (subset _ rfl)
   have resolves : resolveTwoState runContext db.raw.catalog
       (Database.Raw.observationContext (db.raw.setRows site.position kept.rows)).connection.state.database.catalog

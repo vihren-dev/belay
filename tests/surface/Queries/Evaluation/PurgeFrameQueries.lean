@@ -61,12 +61,16 @@ table of the current database. -/
 def purgeKeepsCurrentTerm (position : Nat) (names : List String) : Resolved.Query :=
   Resolved.Query.simple [.first position] none (sessionColumns.map .scalar) names
 
+/-- The subqueries of the claim as the model resolves them, for the table at a position: the compound (subquery 0)
+and its two terms (subqueries 1 and 2). -/
+def purgeKeepsSubqueries (position : Nat) (names : List String) : List Resolved.Query :=
+  [purgeKeepsCompound names, purgeKeepsInitialTerm position names, purgeKeepsCurrentTerm position names]
+
 /-- The statement of the claim as the model resolves it, for the table at a position: {lit}`SELECT 1 WHERE NOT
 EXISTS` of the compound (subquery 0), whose terms are the subqueries 1 and 2. It checks that no row of the table of
 the initial database with the condition is missing from the table of the current database. -/
 def purgeKeepsResolved (position : Nat) (names : List String) : Resolved.Statement :=
-  .query (Resolved.Query.selectOneWhere (.not (.exists 0)))
-    [purgeKeepsCompound names, purgeKeepsInitialTerm position names, purgeKeepsCurrentTerm position names]
+  .query (Resolved.Query.selectOneWhere (.not (.exists 0))) (purgeKeepsSubqueries position names)
 
 /-- For every position and names, the statement of the claim is calm. Proof sketch: its expressions are those of
 {lit}`SELECT 1 WHERE NOT EXISTS`, the condition of the claim and the columns, and the calm check computes. -/

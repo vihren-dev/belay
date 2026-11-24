@@ -23,11 +23,12 @@ abbrev Resolved.notExistsExcept (compound : Resolved.Query) (position : Nat) (co
   .query (Resolved.Query.selectOneWhere (.not (.exists 0)))
     (Resolved.notExistsExceptSubqueries compound position condition columns names)
 
-/-- For every statement {name}`Resolved.notExistsExcept` as in the base form, every connection, values and initial
-database such that the initial table and the current table are present, every row of the first term is a row of the
-second term (in the context of the values), and the rows of the first term are identical where they compare equal:
-the output of the step of the statement, observed with the initial database, has rows. The statement of the base
-form. Proof sketch: the statement is calm, because its terms are row-wise
+/-- For every statement {name}`Resolved.notExistsExcept` whose compound is a plain {lit}`EXCEPT` of the subqueries 1
+and 2 under the collations ({name}`Resolved.Query.PlainExcept`), every connection, values and initial database: if
+the condition and each column are row-wise, the initial table and the current table are present, every row of the
+first term is a row of the second term (in the context of the values), and the rows of the first term are identical
+where they compare equal, then the output of the step of the statement, observed with the initial database, has rows.
+The statement of the base form. Proof sketch: the statement is calm, because its terms are row-wise
 ({name}`Resolved.Query.simple_expressions_rowwise`). The laws of the parts then apply in turn: {lit}`SELECT 1 WHERE`
 ({name}`resolvedStepOutput_selectOneWhere_hasRows`), {lit}`NOT EXISTS` ({name}`Resolved.Expr.truthy_notExists`), the
 subqueries of the statement ({name}`Resolved.statementContext_subqueries`, {name}`Resolved.subqueryContext_subqueries`),

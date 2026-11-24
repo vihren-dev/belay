@@ -70,9 +70,10 @@ theorem Resolved.notExistsExcept_subset (position : Nat) (condition : Resolved.E
   rw [LiteralData.mem_deleted]
   simpa [LiteralData.selected] using And.intro inTable (complement row inTable kept)
 
-/-- For every table with distinct rowids whose rowid alias is the first column, every context, condition, and columns
-and collations that both start with the first column: no two results of the first term over the table compare equal
-unless they are the same list. The statement of the base form. Proof sketch: the results are the outputs of source
+/-- For every table whose rowids are distinct, whose rowid alias is column 0 and whose rows each store their rowid in
+that column, every context, condition, columns whose first column is column 0, and collations with an arbitrary first
+collation: no two results of the first term over the table compare equal unless they are the same list. The statement
+of the base form. Proof sketch: the results are the outputs of source
 rows of the table ({name}`simple_results`), which start with the rowid alias, so
 {name}`Resolved.equalRowsIdentical_rowidFirst` applies. -/
 theorem Resolved.notExistsExcept_identical (position : Nat) (condition : Resolved.Expr) (first : Resolved.Expr)

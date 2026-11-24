@@ -14,8 +14,8 @@ them with comparisons and logic. Its value does not depend on the subqueries of 
 subquery that runs in a context other than the statement's context still evaluates it in the same way.
 The module proves this independence, that such an expression is calm and has no fault, that no call
 of a list of such expressions may fail over rows ({lit}`anyMayFail`), that each expression of a simple
-query over such expressions is row-wise, and that such a simple query gives the same rows in two contexts with the
-same bound values. -/
+query over such expressions is row-wise, and that such a simple query gives the same results over one list of input
+rows in two contexts with the same bound values. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
@@ -112,10 +112,11 @@ theorem Query.simple_expressions_rowwise (sources : List QuerySource)
   · exact no.elim
   · simp at he
 
-/-- For every simple query whose condition and columns are row-wise, every rows and two contexts with the same bound
-values, the one result is the same in both contexts. In plain words: such a query gives the same rows in any two
-contexts with the same bound values, for example in the context of a subquery and in the plain context of the values.
-Proof sketch: the rows are the columns of the rows that
+/-- For every sources, optional filter, scalar columns and names of a simple query, every list of input rows, and two
+contexts with the same bound values: if the filter (when there is one) and each column are row-wise, then the results
+of the query over the same input rows are the same in the two contexts. The sources need no premise, because the
+input rows are given. For example, the results over one list of rows are the same in the context of a subquery and
+in the plain context of the values. Proof sketch: the rows are the columns of the rows that
 {lit}`WHERE` keeps ({name}`Query.results_plain_unordered`), and a row-wise expression evaluates in the same way in
 both contexts ({name}`Expr.Rowwise.evaluate_congr`). -/
 theorem Query.simple_results_congr (sources : List QuerySource) (filter : Option Expr)

@@ -90,6 +90,10 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-24, form B: the laws of the form `NOT EXISTS (… EXCEPT …)` and the
   truth law of `(a AND b) IS NOT 1` are deleted; retention fixtures prove
   their base statements from the laws of the parts.
+- 2026-11-24, form B: review fixes of the deletion commit (the plain words
+  of `Resolved.Query.simple_results_congr` and of the retention statements,
+  the record of the replaced truth laws, the note on `nix-build`), and a
+  shorter frame proof with `purgeKeepsSubqueries`.
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -380,8 +384,11 @@ passed (local).
   SELECT 1 WHERE, NOT EXISTS, the subqueries of the statement and the read
   of one table as the effect proof.
 - `PurgeFrameQueries` gives the two terms (`purgeKeepsInitialTerm`,
-  `purgeKeepsCurrentTerm`) and the resolved statement
-  (`purgeKeepsResolved`) of the claim, and `purgeKeepsResolved_calm`.
+  `purgeKeepsCurrentTerm`), the list of the three subqueries
+  (`purgeKeepsSubqueries`) and the resolved statement
+  (`purgeKeepsResolved`) of the claim, and `purgeKeepsResolved_calm`. The
+  proof states the run of the compound once for the context of the
+  statement, with `purgeKeepsSubqueries`.
   `Resolved.Query.simple_expressions_rowwise` moves to
   `Queries/Evaluation/RowwiseExpr.lean`.
 
@@ -429,9 +436,10 @@ passed (local).
 Checks run, local outcome only, not evidence: `just dev-build` passed
 (local); `python3 -m pytest tests/surface_assertion_examples_test.py -k purge`
 passed (local); `python3 -m pytest tests/test_lean_categories.py` passed
-(local). `tests/test_model_package.py` starts `nix-build`, which the rules of
-this form do not allow; it stopped at its timeout of 120 seconds and is not
-run again.
+(local). The brief of this form does not allow a direct `nix-build` between
+the gates. `tests/test_model_package.py` starts `nix-build` itself; the run
+stopped at its timeout of 120 seconds and is not run again. `just test-full`
+at the end of the form runs the package checks.
 
 ## Findings record
 
