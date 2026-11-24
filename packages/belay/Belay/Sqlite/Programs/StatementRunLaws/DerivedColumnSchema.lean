@@ -82,62 +82,72 @@ theorem isQuery_of_preservesCheck {schema : Database} {migration query : Script}
     exact checked.1.1
   · cases checked
 
-/-- For every schema, migration and read, if {name}`preservesCheck` holds for the statements of the
-read, the migration preserves the read on every database with the catalog of the schema
-({lit}`M preserves Q on schema`): on each such database and complete environment where the migration
-succeeds, the read gives the same actual value and trace and the same set of branch observations after the
-migration as before it. For example, with the schema {lit}`shop`, the migration {lit}`addEmailLower` and
-the read {lit}`namedCustomers` of the page for agents, the proof is
-{lit}`preserves_of_check (by decide +kernel)`. Use {lit}`preserves_of_check_forall` for a read with a
-value of a Lean variable. Proof sketch: the check gives the parts of the migration and the statement of the
-read; {name}`Site.ofCheck` and {name}`Site.ReadPreserved.ofCheck` give the facts for each database of the
-schema, whose catalog is the catalog of the schema; {name}`queryPreserves` gives the claim. -/
+/-- For every schema, migration and one-statement read, map its syntax to a
+reference statement. If the reference passes {name}`preservesCheck` and its output
+agrees with the actual statement at every connection, clock, index and parameter
+list, the migration preserves the actual read on every database with this catalog.
+For every complete environment where the migration succeeds this gives equal
+actual observations and sets of branch observations. For example, use {lean}`@id Syntax.Statement` as the mapping when checking the read itself.
+Proof sketch: {name}`Site.ofCheck` checks the migration. {name}`Site.ReadPreserved.ofCheck`
+transports the two scan results to the actual read, then {name}`queryPreserves` applies. -/
 theorem preserves_of_check {schema : Database} {migration query : Script}
-    (checked : preservesCheck schema migration (query.statements.map Prod.fst) = true) :
-    Migration.QueryPreserves (Runnable.toSql migration) query (fun db => db.HasCatalog schema)
-      (isQuery_of_preservesCheck checked) := by
+    (compare : Syntax.Statement → Syntax.Statement)
+    (checked : preservesCheck schema migration ((query.statements.map Prod.fst).map compare) = true)
+    (reads : query.isQuery = true := by check_query)
+    (agrees : ∀ statement ∈ query.statements.map Prod.fst, ∀ clock index conn params,
+      (runScriptStep runContext clock index conn statement params).output =
+        (runScriptStep runContext clock index conn (compare statement) params).output := by intros; rfl) :
+    Migration.QueryPreserves (Runnable.toSql migration) query (fun db => db.HasCatalog schema) reads := by
   obtain ⟨statements⟩ := query
+  rcases statements with _ | ⟨⟨actual, parameters⟩, _ | ⟨_, _⟩⟩ <;>
+    simp only [Script.isQuery] at reads <;> try contradiction
+  have actualSingle : actual.isInsertSelect = false := by
+    cases actual <;> first | rfl | contradiction
   unfold preservesCheck at checked
   split at checked
   · rename_i tableName definition value addValues updateValues statement parts listed
+    simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at listed
+    subst statement
     simp only [Bool.and_eq_true, Bool.not_eq_true'] at checked
-    obtain ⟨⟨reads, single⟩, rest⟩ := checked
+    obtain ⟨_, rest⟩ := checked
     obtain rfl := migrationParts_some parts
-    rcases statements with _ | ⟨⟨statement', parameters⟩, _ | ⟨_, _⟩⟩ <;>
-      simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true, reduceCtorEq, and_false] at listed
-    subst statement'
     split at rest
     · rename_i position shape derived affinity found
       simp only [Bool.and_eq_true] at rest
       have siteChecked : siteCheck schema.raw.catalog tableName definition value = true := by
         simp [siteCheck, found, rest.1]
-      refine queryPreserves tableName definition value addValues updateValues [] statement parameters reads single
+      refine queryPreserves tableName definition value addValues updateValues [] actual parameters reads actualSingle
         (fun db => db.HasCatalog schema) (fun db inside => Site.ofCheck inside siteChecked)
-        (fun db inside => Site.ReadPreserved.ofCheck _ ?_)
+        (fun db inside => Site.ReadPreserved.ofCheck _ (compare actual) ?_ (agrees actual (by simp)))
       have same := Site.ofCheck_parts (database := db.raw) inside siteChecked
       rw [found] at same
       simp only [Option.some.injEq, Prod.mk.injEq] at same
       obtain ⟨atPosition, atShape, -, -⟩ := same
       show readCheck db.raw.catalog _ _ (definedColumn (Site.ofCheck inside siteChecked).table.shape.strict definition)
-        statement = true
+        (compare actual) = true
       rw [← atPosition, ← atShape, show db.raw.catalog = schema.raw.catalog from inside]
       exact rest.2
     · cases rest
   · cases checked
 
-/-- For every schema, migration, family of reads with the same statements at every index, and sample
-index: if {name}`preservesCheck` holds for the statements of the read at the sample index, then at every
-index the migration preserves the read on every database with the catalog of the schema. The values bound
-to the read can depend on the index, for example a lookup for every email:
-{lit}`preserves_of_check_forall customerIdByEmail .null (fun _ => rfl) (by decide +kernel)`. The kernel
-evaluates the check at the sample, so the goal of {lit}`decide` has no free variable. Proof sketch:
-{name}`preserves_of_check` at each index, with the statements of the sample. -/
+/-- For a family of one-statement reads with the same syntax, check a reference
+at a sample index. If each actual read's output matches its mapped reference at
+every input, the migration preserves every family member on every database with
+the schema's catalog where the migration succeeds. The bindings can vary with the
+index. Use {lean}`@id Syntax.Statement` when the checker recognizes the read itself.
+Proof sketch: transfer the sample's check along the common syntax, then apply
+{name}`preserves_of_check` at each index. -/
 theorem preserves_of_check_forall {α : Type} {schema : Database} {migration : Script} (query : α → Script)
-    (sample : α)
+    (sample : α) (compare : Syntax.Statement → Syntax.Statement)
     (sameStatements : ∀ index, (query index).statements.map Prod.fst = (query sample).statements.map Prod.fst)
-    (checked : preservesCheck schema migration ((query sample).statements.map Prod.fst) = true) :
+    (checked : preservesCheck schema migration (((query sample).statements.map Prod.fst).map compare) = true)
+    (reads : ∀ index, (query index).isQuery = true := by intro index; check_query)
+    (agrees : ∀ statement ∈ (query sample).statements.map Prod.fst, ∀ clock index conn params,
+      (runScriptStep runContext clock index conn statement params).output =
+        (runScriptStep runContext clock index conn (compare statement) params).output := by intros; rfl) :
     ∀ index, Migration.QueryPreserves (Runnable.toSql migration) (query index)
-      (fun db => db.HasCatalog schema) (isQuery_of_preservesCheck (by rw [sameStatements index]; exact checked)) :=
-  fun index => preserves_of_check (by rw [sameStatements index]; exact checked)
+      (fun db => db.HasCatalog schema) (reads index) :=
+  fun index => preserves_of_check compare (by rw [sameStatements index]; exact checked) (reads index)
+    fun statement member => agrees statement (sameStatements index ▸ member)
 
 end Belay.Sqlite.DerivedColumnMigration

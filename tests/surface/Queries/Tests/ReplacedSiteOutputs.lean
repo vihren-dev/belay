@@ -7,6 +7,7 @@ set_option doc.verso true
 namespace Belay.Sqlite.Model
 open Resolved
 
+/-- Recover the original step output formula from equality of the two modeled scans. -/
 theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock : Option Clock)
     (before after : Nat) (connection expanded : Connection) (beforeStatement afterStatement : Syntax.Statement)
     (parameters : List Value) (beforePosition afterPosition : Nat) (table extended : Table)
@@ -36,6 +37,7 @@ theorem runScriptStep_simpleTable_output_agree (context : ResolveContext) (clock
     afterPosition table extended beforeFilter afterFilter columns beforeNames afterNames width extra presentBefore
     presentAfter calmBefore calmAfter scans wide columnsBelow agree
 
+/-- Recover the original step output formula from equality of the two modeled scans. -/
 theorem original_derivedColumn_lookup_outputs (context : ResolveContext) (clock : Option Clock) (before after : Nat)
     (connection migrated : Connection) (beforeStatement afterStatement : Syntax.Statement)
     (parameters : List Value) (position : Nat) (table : Table) (column : CatalogColumn) (derived : Resolved.Expr)
@@ -69,6 +71,7 @@ theorem original_derivedColumn_lookup_outputs (context : ResolveContext) (clock 
     beforeFilter afterFilter columns beforeNames afterNames present aligned reached wide aliased below keysInside plain newPlain
     calmBefore calmAfter columnsBelow agree
 
+/-- Recover the original step output formula from equality of the two modeled scans. -/
 theorem original_derivedColumn_preserved_outputs (context : ResolveContext) (clock : Option Clock) (before after : Nat)
     (connection migrated : Connection) (statement : Syntax.Statement) (parameters : List Value) (position : Nat)
     (table : Table) (column : CatalogColumn) (derived : Resolved.Expr) (triggers : List (Identifier × CatalogTrigger))

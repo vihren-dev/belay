@@ -32,12 +32,14 @@ structure Site.LookupMove {database : Database.Raw} {tableName : Identifier} {de
   columns : List Resolved.Output
   /-- The result columns read only old columns. -/
   columnsBelow : ∀ output ∈ columns, output.readsBelow site.table.shape.columns.length = true
-  /-- On this catalog the actual statement has the output of the comparison scan. -/
+  /-- For every connection with the original catalog, there are result names such that
+  at every clock and index, the original statement with the fixed parameters gives the output of the scan with the before filter. -/
   outputBefore : ∀ connection : Connection, connection.resolveState.catalog = database.catalog →
     ∃ names, ∀ clock index, (runScriptStep runContext clock index connection original parameters).output =
       resolvedStepOutput clock index connection parameters (.query
         (Resolved.Query.simple [Resolved.QuerySource.first site.position] beforeFilter columns names) [])
-  /-- On this catalog the actual statement has the output of the comparison scan. -/
+  /-- For every connection with the migrated catalog, there are result names such that
+  at every clock and index, the replacement statement with the fixed parameters gives the output of the scan with the after filter. -/
   outputAfter : ∀ connection : Connection, connection.resolveState.catalog = (site.reached triggers).catalog →
     ∃ names, ∀ clock index, (runScriptStep runContext clock index connection replacement parameters).output =
       resolvedStepOutput clock index connection parameters (.query
@@ -70,12 +72,14 @@ structure Site.ReadPreserved {database : Database.Raw} {tableName : Identifier}
   filterBelow : ∀ condition ∈ filter, condition.readsBelow site.table.shape.columns.length = true
   /-- The result columns read only old columns. -/
   columnsBelow : ∀ output ∈ columns, output.readsBelow site.table.shape.columns.length = true
-  /-- On this catalog the actual statement has the output of the comparison scan. -/
+  /-- For every connection with the original catalog, there are result names such that
+  at every clock and index, the actual statement for every parameter list gives the output of the scan with the specified filter. -/
   outputBefore : ∀ connection : Connection, connection.resolveState.catalog = database.catalog →
     ∃ names, ∀ clock index parameters, (runScriptStep runContext clock index connection statement parameters).output =
       resolvedStepOutput clock index connection parameters (.query
         (Resolved.Query.simple [Resolved.QuerySource.first site.position] filter columns names) [])
-  /-- On this catalog the actual statement has the output of the comparison scan. -/
+  /-- For every connection with the migrated catalog, there are result names such that
+  at every clock and index, the actual statement for every parameter list gives the output of the scan with the specified filter. -/
   outputAfter : ∀ connection : Connection, connection.resolveState.catalog = (site.reached triggers).catalog →
     ∃ names, ∀ clock index parameters, (runScriptStep runContext clock index connection statement parameters).output =
       resolvedStepOutput clock index connection parameters (.query

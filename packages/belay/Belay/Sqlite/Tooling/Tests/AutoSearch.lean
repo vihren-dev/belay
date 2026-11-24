@@ -28,9 +28,9 @@ def derivedColumnSteps? (goal : MVarId) : TermElabM (Option (TSyntax `tactic)) :
       if !body.getAppArgs[3]!.isLambda || !body.getAppArgs[3]!.bindingBody!.isAppOf ``Database.HasCatalog then
         return none
       if quantified then
-        `(tactic| exact DerivedColumnMigration.preserves_of_check_forall _ Value.null (fun _ => rfl) (by decide +kernel))
+        `(tactic| exact DerivedColumnMigration.preserves_of_check_forall _ Value.null id (fun _ => rfl) (by decide +kernel))
       else
-        `(tactic| exact DerivedColumnMigration.preserves_of_check (by decide +kernel))
+        `(tactic| exact DerivedColumnMigration.preserves_of_check id (by decide +kernel))
     else if !quantified && body.isAppOfArity ``Succeeds 5 then
       if !body.getAppArgs[4]!.isLambda || !body.getAppArgs[4]!.bindingBody!.isAppOf ``Database.HasCatalog then
         return none

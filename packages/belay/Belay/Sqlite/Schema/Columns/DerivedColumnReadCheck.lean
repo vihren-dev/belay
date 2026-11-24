@@ -34,19 +34,22 @@ theorem Site.reached_nil_catalog {database : Database.Raw} {tableName : Identifi
     (site.reached []).catalog = database.catalog.addColumn site.position site.column :=
   rfl
 
-/-- The {name}`Site.ReadPreserved` of a read at a site of the migration without triggers, when the read
-passes {name}`readCheck` on the catalog of the database. Proof sketch: {name}`readParts` gives the same
-filter and result columns on the catalog before the migration and on the catalog with the column added
-({name}`Site.reached_nil_catalog`); {name}`readParts_resolves` turns each into the resolution of the
-statement on every state with that catalog. The checks of {name}`readCheck` give the bounds of the filter
-and the columns, and {name}`Resolved.Expr.calm_of_calmCheck` gives the calm query. -/
+/-- A successful {name}`readCheck` on a reference statement gives a scan certificate
+for an actual statement whose output agrees with the reference on every connection,
+clock, index and list of bound values. Use the actual statement as the reference
+when the checker recognizes its syntax. Proof sketch: the check gives two calm
+resolutions on the corresponding catalogs. The general step output law computes
+the reference outputs, and the supplied equalities transfer them to the actual read. -/
 def Site.ReadPreserved.ofCheck {database : Database.Raw} {tableName : Identifier}
     {definition : Syntax.ColumnDefinition} {value : Syntax.Expr} (site : Site database tableName definition value)
     {statement : Syntax.Statement}
-    (checked : readCheck database.catalog site.position site.table.shape.columns.length site.column statement = true) :
+    (reference : Syntax.Statement)
+    (checked : readCheck database.catalog site.position site.table.shape.columns.length site.column reference = true)
+    (agrees : ∀ clock index conn params, (runScriptStep runContext clock index conn statement params).output =
+      (runScriptStep runContext clock index conn reference params).output := by intros; rfl) :
     site.ReadPreserved [] statement :=
-  match before : readParts runContext database.catalog statement,
-      after : readParts runContext (database.catalog.addColumn site.position site.column) statement, checked with
+  match before : readParts runContext database.catalog reference,
+      after : readParts runContext (database.catalog.addColumn site.position site.column) reference, checked with
   | some (beforePosition, filter, columns), some (afterPosition, filterAfter, columnsAfter), checked => by
     simp only [readCheck, before, after, Bool.and_eq_true, beq_iff_eq] at checked
     obtain ⟨⟨⟨⟨⟨⟨⟨atBefore, atAfter⟩, sameFilter⟩, sameColumns⟩, filterBelow⟩, columnsBelow⟩, filterCalm⟩,
@@ -60,12 +63,12 @@ def Site.ReadPreserved.ofCheck {database : Database.Raw} {tableName : Identifier
     · intro connection same
       let state := connection.resolveState
       obtain ⟨names, resolves⟩ := readParts_resolves (state := state) (same ▸ before)
-      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolves⟩
+      exact ⟨names, fun clock index params => (agrees clock index connection params).trans (runScriptStep_output_of_resolved resolves)⟩
     · intro connection same
       let state := connection.resolveState
       rw [Site.reached_nil_catalog] at same
       obtain ⟨names, resolves⟩ := readParts_resolves (state := state) (same ▸ after)
-      exact ⟨names, fun _ _ _ => runScriptStep_output_of_resolved resolves⟩
+      exact ⟨names, fun clock index params => (agrees clock index connection params).trans (runScriptStep_output_of_resolved resolves)⟩
     · exact fun names => Resolved.Statement.simpleTable_calm _ filter columns names
         (by
           intro expression member
