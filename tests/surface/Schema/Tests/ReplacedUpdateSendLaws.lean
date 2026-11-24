@@ -16,7 +16,7 @@ holds the rows that {name}`LiteralData.updated` computes, and that database is v
 prove a claim about the table after an UPDATE, it is enough to prove it for the rows that the assignments
 and the filter produce; a failed update, a refused statement and every other final database are outside the
 premise. The premise is about the database only, so the claim needs no engine reasoning. Proof sketch:
-{name}`check_send_single_of_step` with the step of the model; {name}`plainUpdate_database` gives the
+{name}`ReplacedGeneral.check_send_single_of_step` with the step of the model; {name}`plainUpdate_database` gives the
 database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
 theorem Sql.ifOk_send_plainUpdate {db : Database} {env : Env} {statement : Syntax.Statement}
@@ -38,7 +38,7 @@ theorem Sql.ifOk_send_plainUpdate {db : Database} {env : Env} {statement : Synta
       post outputs final) :
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
   obtain ⟨output, next, others, step⟩ := modeled
-  refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+  refine (ReplacedGeneral.check_send_single_of_step (state := ExecutionContext.initial db env) step
     (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl)

@@ -119,11 +119,11 @@ the goal and the messages stay as they were, and the step rule of the read appli
     let variables := goals.filter fun new => !premises.contains new
     for new in premises do
       let tag := (← new.getTag).eraseMacroScopes
-      if tag == `reached then
+      if let some names := roleOf tag then
         if blocked then
           open_ := open_ ++ [new]
         else
-          let (_, entered) ← new.introN 2 [`selected, `choice]
+          let (_, entered) ← new.introN names.length names
           open_ := open_ ++ (← runGoal hints false (fuel - 1) entered)
       else
         unless ← closeSide hints tag new do

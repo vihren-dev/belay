@@ -114,7 +114,7 @@ when these three conditions hold:
 The output list is independent of the outputs of the context.
 Under this premise, a program that sends the insert satisfies {lit}`Sql.ifOk` of the post at its fresh start. That
 is, every branch stays modeled, and only a branch whose outputs have no error must satisfy the post. Proof sketch:
-{name}`check_send_single_of_step` with the step of the model; {name}`ReplacedStepLaws.plainInsert_database` gives
+{name}`ReplacedGeneral.check_send_single_of_step` with the step of the model; {name}`ReplacedStepLaws.plainInsert_database` gives
 the database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
 theorem Sql.ifOk_send_plainInsert {db : Database} {env : Env} {statement : Syntax.Statement}
@@ -136,7 +136,7 @@ theorem Sql.ifOk_send_plainInsert {db : Database} {env : Env} {statement : Synta
       post outputs final) :
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
   obtain ⟨output, next, others, step⟩ := modeled
-  refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+  refine (ReplacedGeneral.check_send_single_of_step (state := ExecutionContext.initial db env) step
     (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl)

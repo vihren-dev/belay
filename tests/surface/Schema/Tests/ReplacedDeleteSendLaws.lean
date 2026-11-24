@@ -14,7 +14,7 @@ modeled, and post: a program that sends the delete checks the post at its fresh 
 holds for every error-free final context whose connection sees the database in which the target table
 keeps the rows that {name}`LiteralData.deleted` keeps, and that database is valid. The premise is about the database
 only, so a claim about the rows that the delete keeps needs no engine reasoning. Proof sketch:
-{name}`check_send_single_of_step` with the step of the model; {name}`plainDelete_database` gives the
+{name}`ReplacedGeneral.check_send_single_of_step` with the step of the model; {name}`plainDelete_database` gives the
 database, {name}`runScriptStep_valid` its validity, and {name}`runScriptStep_ne_oneOf_of_not_query` rules out a
 choice. -/
 theorem Sql.ifOk_send_plainDelete {db : Database} {env : Env} {statement : Syntax.Statement}
@@ -36,7 +36,7 @@ theorem Sql.ifOk_send_plainDelete {db : Database} {env : Env} {statement : Synta
       post outputs final) :
     (send ⟨[(statement, values)]⟩).ifOk post (ExecutionContext.initial db env) := by
   obtain ⟨output, next, others, step⟩ := modeled
-  refine (check_send_single_of_step (state := ExecutionContext.initial db env) step
+  refine (ReplacedGeneral.check_send_single_of_step (state := ExecutionContext.initial db env) step
     (fun _ _ resolved => by
       obtain rfl := (Prod.mk.inj (Except.ok.inj (resolved.symm.trans found))).1
       rfl)
