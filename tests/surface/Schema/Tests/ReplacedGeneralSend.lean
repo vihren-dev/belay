@@ -62,7 +62,7 @@ theorem Sql.check_send_of_step_notInsertSelect {ctx : ExecutionContext} {stateme
 /-- For every post, context, statement, values and continuing step whose output is not a choice and
 whose statement resolves to no INSERT from a query without rules: a program that sends the one statement
 checks the post exactly at the context after the step with the one output. Proof sketch:
-{name}`Sql.check_exec` with the step; the step has one execution ({name}`runScriptStep_executions`) and
+{name}`Sql.check_exec` with the step; the resolver witness and {name}`runScriptStep_others` rule out further executions and
 the output is not a choice, so only the raw continuation remains. -/
 theorem check_send_single_of_step {statement : Syntax.Statement} {values : List Value}
     {post : List Output → ExecutionContext → Prop} {state : ExecutionContext}
@@ -77,7 +77,9 @@ theorem check_send_single_of_step {statement : Syntax.Statement} {values : List 
   simp only [sendStatements]
   rw [Sql.check_exec, step]
   dsimp only
-  rw [runScriptStep_executions step single]
+  obtain ⟨resolved, after, _, found, _⟩ := runScriptStep_execution_runs step
+  obtain rfl := runScriptStep_others step found (single resolved after found)
+  simp only [RunStep.executions]
   simp only [List.mem_singleton, forall_eq]
   cases actual with
   | oneOf alternatives => exact absurd rfl (notChoice alternatives)
