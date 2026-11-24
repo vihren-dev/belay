@@ -1,9 +1,9 @@
 # ADR 0033: One exact step rule for each statement kind
 
-Date: 2026-11-23. Status: PROPOSED. The three owner decisions are decided: decision 1 on
+Date: 2026-11-23. Status: PROPOSED. The four owner decisions are decided: decision 1 on
 2026-11-23 ("I accepted your recommendation. So we will adopt this style for all kinds of sql
 statements."), decisions 2 and 3 on 2026-11-24 ("We do all kinds", "We handle the retention
-tests as you recommend").
+tests as you recommend"), and decision 4 on 2026-11-24 ("follow the Phase 8 rules as they are").
 Audience: designers and reviewers.
 Evidence: the [findings record of the pilot](../records/statement-rule-pilot-findings.md) and its
 [task file](../../plans/20261123-statement-rule-pilot.task.md).
@@ -527,7 +527,9 @@ decides.
    written. It covers public rules for checks, runs and observations with a premise that
    requires resolution to one kind, including a catalog lookup that establishes such a
    resolution. For example, replace `check_query_select_at` and
-   `check_query_select_faultless` and migrate the catalog and context proofs that use them.
+   `check_query_select_faultless` and the three catalog rules
+   `Sql.check_query_ofResolveState`, `Sql.check_query_ofCatalog` and
+   `Run.query_returnsResult_ofCatalog`. Migrate their callers and execution-rule registrations.
    Follow D8 for the original statements. Keep the A21 read-after-write and A22 counter
    claims and their trust checks. Their proofs may use resolution internally. The
    syntax-only rules for a SELECT continue to meet D12.
