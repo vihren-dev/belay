@@ -116,3 +116,9 @@ def test_exact_schema_rules_retain_the_deleted_laws(runtime_root: Path, tmp_path
         ("ReplacedPlainDrop", 3), ("ReplacedCatalogRewrite", 1), ("ReplacedCatalogContinuation", 6),
         ("ReplacedConditionalCreation", 3), ("ReplacedAddColumn", 2), ("ReplacedCatalogSend", 2),
         ("ReplacedColumnSend", 1), ("ReplacedColumnIfOk", 1), ("SchemaSendClaims", 8)))
+
+
+def test_row_write_send_observes_every_production(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the UPSERT and INSERT SELECT equations through sql_run on a variable connection,
+    including each admitted source production's count or error and its entry in the trace."""
+    check_module_chain(runtime_root, tmp_path, (("RowWriteSendClaims", 2),), timeout=90)
