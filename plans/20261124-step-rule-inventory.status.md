@@ -72,3 +72,5 @@ with RETURNING on an empty table with zero counters against a full scan
 certificate. CertificateAfterDrop, S6RulesQueryPattern, S6RulesNegativeReads
 and S6RulesNegativeCertificates check moved tables, a widened SELECT star
 and an unmodeled schema read. The sql_commute diagnostic describes the scan.
+
+KeptReadChecks uses distinct parameter bindings for the read and its reference. The checker contract documents this and its success domain. The scan obligations name the two table positions and the moved certificate.

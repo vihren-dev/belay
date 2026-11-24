@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:23:33+00:00",
+  "finding": "20261124T132211Z-304e4e02#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The theorem describes the catalog, complete environments, successful migration, comparison bindings and concrete invocation."
+}

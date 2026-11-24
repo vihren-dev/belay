@@ -134,9 +134,9 @@ def test_example_project_of_the_readme_builds_checks_and_proves_its_claims(runti
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:
     """KeptRead proves that the rebuild preserves the sessions read on the guide's schema.
     RebuildTableFrames checks the moving table. KeptReadChecks rejects the cascading rebuild
-    and a final read redirected to another table. The proof uses only logical axioms."""
+    and a final read redirected to another table. Its parameterized lookup certifies one binding using a different reference binding. The proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("KeptReadChecks", 0),
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("KeptReadChecks", 1),
         ("RebuildKeeps", 1)), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
