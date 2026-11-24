@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:54:41+00:00",
+  "finding": "20261124T115404Z-ab04fcfe#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Owner decision 4 states the scope across check, run and observation rules, names the two context rules and requires migration with D8 witnesses."
+}
