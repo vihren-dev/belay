@@ -4,7 +4,7 @@ import Belay.Sqlite.Programs.Reasoning.SqlRunTriples
 set_option doc.verso true
 
 /-! The goal operations of {lit}`sql_run` (ADR 0017, S6): closing a premise from the hints and hypotheses,
-bringing a triple to its check, and reporting where the tactic stopped.
+inspecting the resolution premise of a kind rule, bringing a triple to its check, and reporting where the tactic stopped.
 Each operation changes the goal only by applying a theorem or by introducing variables, so the proof term
 that the tactic builds is checked by the kernel. -/
 

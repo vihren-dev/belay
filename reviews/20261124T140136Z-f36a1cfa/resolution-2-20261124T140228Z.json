@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T14:02:28+00:00",
+  "finding": "20261124T140136Z-f36a1cfa#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Identify 78e27e58 as the rule-selection change, which uses the same checker budget."
+}
