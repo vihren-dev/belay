@@ -350,8 +350,9 @@ import or a module name. Time does not separate the forms.
 - C: the proof of a false claim stops at a goal about rows, after the
   tactic. For a claim outside its reach, the tactic names the part with
   no law, for example "`sql_holds` has no law for ORDER BY in the
-  query". The fixture `PurgeTacticCases.lean` holds eleven such
-  messages.
+  query". The fixture `PurgeTacticCases.lean` checks nine such
+  messages, and the messages for a missing hint and for a goal that is
+  not a claim.
 - D: `decide` reports that the check is false. It does not say which
   condition failed, and it does not separate a false claim from a claim
   outside the pattern. A diagnostic costs about 40 to 60 more lines.
@@ -370,13 +371,16 @@ form C shows them.
 - The data fact of A (`mem_deleted`) is a part of B and C. The helper
   of A states the rows that the purge leaves as an equivalence, with
   the filter over the bound values. Each proof of B and C derives one
-  direction of it for its goal, from `Model.Database.rows_getD_setRows`,
-  `LiteralData.mem_deleted` and `Resolved.Expr.Rowwise.evaluate_congr`.
-  The effect proof uses that a row that is left was not selected. The
-  frame proof uses that a row that is not selected is left. In form C
-  these are 6 of the 7 lines after `sql_holds` in the effect proof, and
-  about 8 lines in the frame proof. In form B the same steps are in the
-  hand composition (`purge_clears`, `purge_keeps_rows`).
+  direction of it for its goal. The shared steps are
+  `LiteralData.mem_deleted` and `Resolved.Expr.Rowwise.evaluate_congr`,
+  after a lemma for the table that the DELETE stores:
+  `Model.Database.rows_getD_setRows` in the proofs of form C and in
+  `purge_clears` of form B, and `Database.table_setRows` in
+  `purge_keeps_rows` of form B. The effect proof uses that a row that
+  is left was not selected. The frame proof uses that a row that is not
+  selected is left. In form C these are 6 of the 7 lines after
+  `sql_holds` in the effect proof, and about 8 lines in the frame
+  proof.
 - The analysis and the send theorem of D (`PlainDelete.analyze`,
   `PlainDelete.ifOk_send`) do not depend on the checks. They replace
   the 43 helper lines that run the purge, for each schema. As a public
@@ -457,17 +461,18 @@ Limits of the recommendation:
   tactic leaves this premise as a goal.
   `Resolved.equalRowsIdentical_rowidFirst` proves it for a valid table
   when column 0 of the table is the rowid alias and the first term
-  selects that column first. The claims of the pilot meet both
-  conditions with `SELECT *`. For another table or another list of
-  columns the client proves the premise directly.
+  selects that column first, with any expressions after it. The claims
+  of the pilot meet the two conditions with `SELECT *`, and a term
+  `SELECT id` meets them too. Only when the premises of this lemma do
+  not hold, the client needs another proof of the identity.
 
 ## Checks
 
 On each branch, at its last Lean change: `just dev-build`,
 `just test-full` and `just verdict` passed, local. One exception: on
 form C, `just test-full` ran at `3c505c1d`, and `just dev-build` and
-`just verdict` ran at `5bc3c323`, which changes one docstring line. `just test-full`
-failed on the base form and on form A at a high machine load, with a
+`just verdict` ran at `5bc3c323`, which changes one docstring line.
+`just test-full` failed on the base form and on form A at a high machine load, with a
 timeout of 120 s in `test_stateful_modes[True]` of
 `tests/conformance_generation_test.py`, and passed when the load was
 lower. `just test-nix` and `just test-scheduled-checks` run once on the

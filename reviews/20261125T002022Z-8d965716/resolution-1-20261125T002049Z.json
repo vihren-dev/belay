@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-25T00:20:49+00:00",
+  "finding": "20261125T002022Z-8d965716#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The line of a root module or a Lake file that names a new module has no elaboration cost of its own; its time is the time of its imports. The record states this omission."
+}
