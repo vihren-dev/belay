@@ -14,12 +14,14 @@ evidence of a check.
 - Recommended: claims stay SQL queries, the library has one law for each
   operator of a query (form B), and a tactic applies the laws (form C).
   Two parts of the other forms join them: the exact rows that a write
-  leaves, as a library fact (from form A), and a theorem that runs a
-  write on each database with a given catalog (from form D).
+  leaves, as a library fact (from form A), and the analysis that shows
+  that a write runs on each database with a given catalog (from form
+  D), as a step of `sql_run`.
 - Not recommended as the main form: claims as Lean propositions only
   (form A), because the claim is then outside SQL; and a checker for
-  each pattern of claim (form D), because each pattern costs more than
-  100 package lines and a refused claim gets no reason.
+  each pattern of claim (form D), because a pattern costs 76 package
+  lines (the effect check) or 163 (the frame check, with its model
+  laws), and a refused claim gets no reason.
 - The form of today, one law for one form of query, has no advantage
   that another form does not have. Form B proves its four laws from the
   laws of the parts.
@@ -29,16 +31,17 @@ steps.
 
 ## The forms
 
-| Form | What it is | Branch | Last code revision |
+| Form | What it is | Branch | Last Lean change |
 | --- | --- | --- | --- |
 | Start | `adr-0033-phase-8-inventory` | | `1e8dfd8d` |
-| Base | One law for one form of query, with no assumed premise | `claim-proof-pilot` | `ff882f8d` |
+| Base | One law for one form of query, with no assumed premise | `claim-proof-pilot` | `29676e82` |
 | A | The claim is a Lean proposition about rows | `claim-proof-pilot-logic` | `a1705c06` |
 | B | One law for each operator; the proof composes them | `claim-proof-pilot-laws` | `0f070f76` |
 | C | A tactic applies the laws of B | `claim-proof-pilot-tactic` | `5bc3c323` |
 | D | A check to `Bool` with a theorem of soundness | `claim-proof-pilot-checker` | `8e136beb` |
 
-Forms A, B and D start from the base form. Form C starts from form B.
+Forms A, B and D start from the revision `ff882f8d` of the base form,
+which has the Lean code of `29676e82`. Form C starts from form B.
 Each form is the usual answer of a field of verification practice:
 
 - A: the specification is written in the logic of the prover, as in
@@ -63,8 +66,11 @@ INTEGER NOT NULL, expires_at INTEGER NOT NULL)`.
 
 Each client statement holds for each pair of values, also NULL and text,
 for each valid database with the catalog of the schema, and for each
-complete environment. It has no other premise. It requires the claim
-after each run of the purge that has no error.
+complete environment. It has no other premise. It requires two things
+of the run of the purge from the fresh start. Each branch of the run
+stays in the model, also a branch that gives a SQL error. Each branch
+with no SQL error ends in a context in which the claim holds. A SQL
+error that the model gives waives only the claim.
 
 ### Statements with the claim in SQL (base form, B, C, D)
 
@@ -184,19 +190,25 @@ Net change of the maintained Lean code lines from the start revision
   each claim.
 - Base: the 20 package lines are the readiness facts of a DELETE with a
   row-wise filter. They serve each such DELETE. At the start, nine model
-  modules with 429 lines serve only the query form of the frame claim.
-- A: all 39 package lines are general: `LiteralData.mem_deleted_rows`
-  and `ExecutionContext.rows`.
+  modules with 429 lines hold the laws that the frame proof calls. One
+  of them, `RowwiseExpr` (53 lines at the base form), is shared:
+  `ClaimsExpressionCongruence.lean` uses `Resolved.Expr.Rowwise`. The
+  others serve only the query form of the frame claim.
+- A: 19 package lines more than the base form, 39 from the start. The
+  19 lines are general: `LiteralData.mem_deleted_rows` and
+  `ExecutionContext.rows`.
 - B: the new laws have 231 lines, and the deleted laws of the one query
   form have 292. No new law names a form of claim.
 - C: the tactic has 273 lines, the bridge laws over a catalog 50, and
   new model laws 73. None names the purge. The tactic knows the forms
   that the section "Reach" lists.
 - D: the analysis of a plain DELETE and its send theorem (92 lines) and
-  64 model lines serve each check of a claim about a plain DELETE. The
-  effect check (76 lines) and the frame check with its shape (130
-  lines) each serve one pattern of claim. 69 lines moved from a test
-  support file to the packages.
+  31 model lines (`isRowwise` with its soundness, a bound of a table
+  position) serve each check of a claim about a plain DELETE. The
+  effect check (76 lines) serves one pattern of claim. The frame check
+  with its shape (130 lines) and 33 model lines (`isTruthValued`,
+  `truthy_isNot_one`, `exceptSubqueries`) serve the other pattern. 69
+  lines moved from a test support file to the packages.
 
 ## Trust and premises
 
@@ -211,10 +223,11 @@ reader must read.
 | A | A Lean proposition with the resolved filter or with a predicate on the cells | None in the statement. In the proof: that the purge resolves and continues |
 | D | The SQL text of the claim, and the docstring of the check to know its limits | None. The kernel evaluates the check |
 
-- A claim in SQL has the meaning that SQLite gives the query, and the
-  conformance evidence checks the model for it. The same text runs on
-  native SQLite in a test.
-- A claim in Lean has no such second reader. The predicate on the cells
+- A claim in SQL has the meaning that SQLite gives the query. The
+  conformance corpora compare the model with native SQLite for the
+  operations of such a query. The pilot does not run the two claims on
+  native SQLite: the instance fixtures evaluate them in the model.
+- A claim in Lean has no native reading. The predicate on the cells
   must follow the rules of SQLite: a text `'1'` matches the integer 1
   in a column with INTEGER affinity, and NULL matches nothing. A plain
   `row[1] = c` is wrong. The resolved filter avoids the trap, but a
@@ -226,11 +239,14 @@ reader must read.
 
 ## Traps that the pilot found
 
-- `f IS NOT 1` means "the DELETE does not select the row" only when `f`
-  gives 0, 1 or NULL. For `DELETE … WHERE 2` or a filter that is one
-  column, the frame claim of the guide is false. Form B states the
-  general law (`Resolved.Expr.truthy_isNot_one`), and the frame check of
-  form D refuses such a filter.
+- When `f` gives 0, 1 or NULL, a row with `f IS NOT 1` is a row that
+  the DELETE does not select. This range is a sufficient condition.
+  Without it there is no guarantee: `DELETE … WHERE 2` deletes each
+  row, and `2 IS NOT 1` is true for each row, so the frame claim of the
+  guide is false. A filter that is one column can give 2. Form B states
+  the law for an expression with this range
+  (`Resolved.Expr.truthy_isNot_one`), and the frame check of form D
+  refuses a filter that does not establish it.
 - A filter with a subquery can select a row after the DELETE that it
   did not select before. The effect claim is then not a consequence of
   the DELETE.
@@ -249,13 +265,14 @@ reader must read.
 | A | Each proposition about the rows before and after a write whose data fact exists | A data fact for the write kind, and Lean functions for joins, aggregates and collations when the claim needs them |
 | B | Each claim whose operators have laws; the client composes them | A law for the operator, which then serves each claim |
 | C | `SELECT 1 WHERE [NOT] EXISTS (q)`, where `q` reads one table of the current or the initial database with row-wise expressions, or is an `EXCEPT` of two such reads | A law (form B) and a case of the tactic. The laws stay usable by hand |
-| D | The two patterns, for each schema and each row-wise filter | A check with its theorem of soundness for each new pattern |
+| D | A script of one DELETE with a WHERE whose filter is row-wise, on a table of the schema, with no RETURNING, trigger or foreign-key action. Effect check: the claim `SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)` with the resolved table and filter of the DELETE. Frame check: the claim of the guide's form, a filter whose top operator is a comparison, `AND`, `OR`, `NOT` or `IS NULL`, and a table whose first column is the rowid alias | A check with its theorem of soundness for each new pattern |
 
 Measured: the effect claim. The base form needed 43 client lines and
 no package law, because a law for its query form was in a test support
 file (72 lines). Form A needed 6 lines after the helper. Form B needed
-56 lines with the laws that the frame claim needs too. Form C needed 20
-lines. Form D needed 76 package lines and 4 client lines.
+56 theorem lines and 4 helper lines, with the laws that the frame claim
+needs too. Form C needed 20 lines. Form D needed 76 package lines and 4
+client lines.
 
 Measured: the third claim of form C, 27 client lines and no package
 change.
@@ -275,22 +292,42 @@ select (about 30 lines).
 
 ## Elaboration time
 
-Lower of two runs, local, at different machine loads.
+Local, lower of two runs, at different machine loads. The fixture times
+are from the compile of the purge test, as the status file of each
+branch records them.
+
+| Fixture | Time |
+| --- | --- |
+| Base: `PurgeFrameQueries`, `PurgeFrameSite`, `PurgeFrameClaims`, `PurgeFrameSchema` | 1.0 s, 1.0 s, 1.3 s, 1.3 s |
+| Base: `SelectOneWhereSupport`, `PurgeEffectClaims` | 1.0 s, 1.2 s |
+| Base: `PurgeFrameInstances`, `PurgeEffectInstances` | 3.1 s, 1.7 s |
+| A: `PurgeLogicClaims`, `PurgeLogicInstances` | 1.9 s, 2.4 s |
+| B: `PurgeFrameQueries`, `PurgeFrameClaims`, `PurgeFrameSchema`, `PurgeEffectClaims` | 1.2 s, 1.4 s, 1.4 s, 1.3 s |
+| B: `PurgeLawRetention`, `PurgeLawRetentionOutput` | 0.9 s, 1.1 s |
+| C: `PurgeEffectTactic`, `PurgeFrameTactic` (two claims), `PurgeTacticCases` | 1.6 s, 3.6 s, 4.4 s |
+| C: one call of `sql_holds`, with the profiler | 0.3 s to 0.8 s |
+| D: `PurgeCheckClaims`, at the revision `3a0d4fe8` with six limit examples | 3.7 s |
+| D: kernel evaluation of the frame check and of the effect check | 0.21 s, 0.12 s |
+
+New and changed library modules. The times with "Lake" are from
+`lake lean` at the last code revision and include about 0.3 s to 0.8 s
+of Lake. The other times are from `lake env lean` or from
+`just dev-build`.
 
 | Module | Time |
 | --- | --- |
-| Base: `PurgeFrameClaims`, `PurgeFrameSchema`, `PurgeEffectClaims` | 1.3 s, 1.3 s, 1.2 s |
-| A: `PurgeLogicClaims` | 1.9 s |
-| B: `PurgeFrameClaims`, `PurgeFrameSchema`, `PurgeEffectClaims` | 1.4 s, 1.4 s, 1.3 s |
-| B: retention fixtures | 0.9 s, 1.1 s |
-| C: `PurgeEffectTactic`, `PurgeFrameTactic` (two claims) | 1.7 s, 3.7 s |
-| C: one call of `sql_holds` | 0.3 s to 0.8 s |
-| D: `PurgeCheckClaims` (two claims, eight limit examples) | 3.7 s |
-| D: kernel evaluation of the frame check, the effect check | 0.21 s, 0.12 s |
+| Base, model: `QueryPlainLaws`, `RowwiseExpr`, `JsonReadyLaws` | 2.0 s, 0.5 s, 0.3 s |
+| A, model: `RowDeleteLaws` | 0.3 s |
+| A, surface: `ContextRows` | 1.9 s (Lake) |
+| B, model: `LogicalValueLaws`, `RowwiseExpr`, `ExprEvalLaws`, `RowidOutputIdentity` | 1.3 s, 0.5 s, 0.5 s, 0.4 s |
+| B, model: `RowDelete`, `SelectSubqueryRules`, `Subqueries`, `TwoStateQuerySteps` | 0.3 s, 0.4 s, 0.4 s, 1.6 s |
+| B, surface: `ResolvedOutputBridge` | 1.0 s |
+| C, model: `RowwiseCheck`, `RowwiseExpr`, `ExprFormChecks`, `DatabaseLookup` | 0.9 s, 0.7 s, 0.6 s, 0.4 s (Lake) |
+| C, surface: `CatalogClaimBridge`, `SqlHoldsFacts`, `SqlHoldsRuns`, `SqlHolds`, `SqlSelectEval` | 1.8 s, 2.1 s, 2.2 s, 2.4 s, 1.6 s (Lake) |
+| D, model: `RowwiseExpr`, `ExceptSubqueryRun`, `CorrelatedSubqueryRun`, `PlainInsertRows` | 1.3 s, 0.6 s, 0.6 s, 0.5 s (Lake) |
+| D, surface: `PlainDeleteAnalysis`, `DeleteEffectCheck`, `DeleteFrameShape`, `DeleteFrameCheck`, `SelectOneWhere` | 1.9 s, 1.9 s, 1.8 s, 1.9 s, 1.9 s (Lake) |
 
-Each new or changed library module elaborates in 0.3 s to 2.0 s. The
-status file of each branch lists them. Time does not separate the
-forms.
+Time does not separate the forms.
 
 ## A false claim, and a claim outside the reach
 
@@ -323,12 +360,19 @@ form C shows them.
 - C needs B. C makes the hand composition of B unnecessary for a claim
   in its reach, and the laws stay for a claim outside it.
 - The data fact of A (`mem_deleted`) is a part of B and C. The helper
-  of A, the exact rows that the purge leaves, is the fact that each
-  proof of B and C derives again after `sql_holds`: 6 lines in the
-  effect proof, about 8 in each frame proof.
+  of A states the exact rows that the purge leaves. Each proof of B
+  and C derives this fact again for its goal. In form C these are 6 of
+  the 7 lines after `sql_holds` in the effect proof, and about 8 lines
+  in each frame proof. In form B the same steps are in the hand
+  composition (`purge_clears`, `purge_keeps_rows`).
 - The analysis and the send theorem of D (`PlainDelete.analyze`,
   `PlainDelete.ifOk_send`) do not depend on the checks. They replace
-  the 43 helper lines that run the purge, for each schema.
+  the 43 helper lines that run the purge, for each schema. As a public
+  theorem, `PlainDelete.ifOk_send` is a send rule for one kind whose
+  premise gives the resolution to that kind. ADR 0033 (D6, D7) keeps no
+  such rule. The same content fits the ADR as a step of `sql_run`: the
+  tactic computes the resolution on the catalog of a hint and proves
+  that the step continues from the kind rule and the data facts.
 - A check of D can stand on the laws of B. The pilot built D on the
   base form, so this is not measured.
 
@@ -367,13 +411,18 @@ D.
    the context of the statement. `sql_run` or `sql_holds` rewrites with
    it. Estimate: the effect proof goes from 7 lines to about 3 after
    the tactic.
-5. Take from form D the analysis and the send theorem, as the way to
-   run a write on each database with a catalog. The site structure and
-   its 43 helper lines for each schema go away. Estimate: each proof of
-   form C loses its first 10 lines.
+5. Take from form D the analysis of a write, as a step of `sql_run`
+   with the catalog as a hint: the tactic computes the resolution on
+   the catalog, as `sql_holds` does for a claim, and proves that the
+   step continues from the kind rule and the data facts. The site
+   structure and its 43 helper lines for each schema go away. Estimate:
+   each proof of form C loses most of its first 10 lines. The theorem
+   `PlainDelete.ifOk_send` itself is not taken: it is a send rule for
+   one kind, which ADR 0033 (D6, D7) does not keep. To keep it as a
+   theorem needs an amendment of the ADR by the owner.
 6. Do not build checkers for patterns of claim now. A checker gives the
-   shortest client proof, 2 lines, but each pattern costs 76 to 130
-   package lines, a claim that differs in one token is refused, and the
+   shortest client proof, 2 lines, but a pattern costs 76 to 163
+   package lines, a claim outside the exact pattern is refused, and the
    refusal has no reason. A checker is right when many clients state
    one pattern. Then it is a thin layer over the laws of B.
 
@@ -391,14 +440,19 @@ Limits of the recommendation:
   rules (ADR 0027). A design for the full form decides whether
   `sql_holds` uses a registered rule set, so that a new law needs no
   change of the tactic.
-- The identity premise of `EXCEPT` needs the rowid alias in the first
-  column of the claim. A claim about a table with no alias needs
-  another law.
+- The law of `EXCEPT` needs that two rows of its first term that
+  compare equal are identical (`Resolved.equalRowsIdentical`). The
+  tactic leaves this premise as a goal. The rowid alias in the first
+  column is a sufficient condition
+  (`Resolved.equalRowsIdentical_rowidFirst`), and the pilot schema
+  meets it. For another table the client proves the premise directly.
 
 ## Checks
 
-On each branch, at the last code revision: `just dev-build`,
-`just test-full` and `just verdict` passed, local. `just test-full`
+On each branch, at its last Lean change: `just dev-build`,
+`just test-full` and `just verdict` passed, local. One exception: on
+form C, `just test-full` ran at `3c505c1d`, and `just dev-build` and
+`just verdict` ran at `5bc3c323`, which changes one docstring line. `just test-full`
 failed on the base form and on form A at a high machine load, with a
 timeout of 120 s in `test_stateful_modes[True]` of
 `tests/conformance_generation_test.py`, and passed when the load was

@@ -1,0 +1,174 @@
+{
+  "caller": "claude",
+  "commit": "87bbed0fb1e6f7653b46fd91273143c005356292",
+  "date": "2026-11-25T00:13:39+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/claim-proof-pilot-findings.md",
+    "plans/20261124-claim-proof-pilot.status.md",
+    "reviews/20261124T201511Z-ff882f8d/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261125T001339Z-87bbed0f#1",
+      "line": 21,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The recommendation says each checker pattern costs more than 100 package lines, but the measured effect checker costs 76. Fix: Give the separate marginal costs of 76 lines for the effect checker and 130 for the frame checker."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#2",
+      "line": 35,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The table labels `ff882f8d` as the last base code revision, but it changes only the task and review records. Fix: Identify `29676e82` as the last Lean change and `ff882f8d` as the branch point."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#3",
+      "line": 66,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The description omits the guarantee that every execution branch stays modeled, including a branch that returns a SQL error. Fix: State that every branch must stay modeled and that only a modeled SQL error waives the row postcondition."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#4",
+      "line": 187,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record attributes all 429 lines exclusively to the frame query, but `ClaimsExpressionCongruence` already used `Rowwise` and `Rowwise.localReads` at the start revision. Fix: Keep the nine-module total and identify `RowwiseExpr` as shared code."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#5",
+      "line": 188,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record attributes all 39 package lines to form A’s two additions, but 20 of those lines already exist in the base form. Fix: Report 19 additional package lines for form A and 39 cumulatively from the start."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#6",
+      "line": 196,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record counts all 64 model lines as shared by both checkers, but only the frame checker uses `isTruthValued`, `truthy_isNot_one` and `exceptSubqueries`. Fix: Separate the shared analysis and row-wise laws from the model laws used only by the frame checker."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#7",
+      "line": 215,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record claims native SQLite tests run the pilot claim text, but the purge tests compile Lean fixtures and the native two-state tests run different queries. Fix: Describe the native coverage of the component operations and identify the two purge claims as model-checked fixtures."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#8",
+      "line": 229,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record makes 0, 1 or NULL a necessary condition, but SQLite also treats the text `'x'` as false in `WHERE` and evaluates `'x' IS NOT 1` as true. Fix: Describe the three-value range as sufficient and use `WHERE 2` to show why an unrestricted column gives no guarantee."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#9",
+      "line": 252,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The reach table promises both form D patterns for every schema and row-wise filter, but `frameCheck` rejects `WHERE 2` and requires the table’s first column to be its rowid alias. Fix: Give separate reach descriptions for the two checks, including the restrictions of `PlainDelete.analyze` and the frame checker’s additional conditions."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#10",
+      "line": 257,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The reported 56 client lines for form B’s effect claim count the two theorem statements and proofs but omit four effect-specific helper lines listed in the client-cost table. Fix: Report 56 theorem lines plus four helper lines so the owner can compare the full cost."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#11",
+      "line": 286,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The form C timing row gives 1.7 and 3.7 seconds, but the cited branch status records 1.6 and 3.6 seconds for those fixtures. Fix: Use the recorded values or identify the separate runs that produced the displayed values."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#12",
+      "line": 288,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 3.7-second form D timing is attributed to eight limit examples, but the timed revision had six and the final revision has seven. Fix: Label the timing with the measured revision and its six examples."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#13",
+      "line": 291,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record claims a timing range for every changed library module, but the form D status gives fixture and kernel timings without per-module elaboration times. Fix: Report the per-fixture and per-module measurements required by the task and mark missing measurements explicitly."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#14",
+      "line": 327,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record places form B’s row reasoning after `sql_holds`, but form B composes the laws by hand and only form C invokes that tactic. Fix: Attribute the post-tactic line counts to form C and describe form B’s corresponding manual steps separately."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#15",
+      "line": 370,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The recommendation treats `PlainDelete.ifOk_send` as an available public send rule despite ADR 0033 D12 prohibiting a surface rule whose premise requires resolution to one kind, which `PlainDelete.analyze_sound` establishes here. Fix: Make adoption conditional on an explicit amendment to D12 or recommend using the existing general send rule with the analysis facts."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#16",
+      "line": 394,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record says the `EXCEPT` identity premise requires a rowid alias, but `PlainExcept.subqueryRun` requires only `equalRowsIdentical` for the left output rows. Fix: Identify the first-column alias as a sufficient condition used by `equalRowsIdentical_rowidFirst` and allow clients to prove the same premise directly."
+    },
+    {
+      "id": "20261125T001339Z-87bbed0f#17",
+      "line": 400,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record says `just test-full` passed on every form’s final code revision, but form C ran it at `3c505c1d` before the docstring change at `5bc3c323`. Fix: Record `3c505c1d` for form C’s full test and `5bc3c323` for its verdict."
+    }
+  ],
+  "id": "20261125T001339Z-87bbed0f",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

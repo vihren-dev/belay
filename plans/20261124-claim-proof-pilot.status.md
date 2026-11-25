@@ -221,8 +221,9 @@ the commits of this branch that come after `ff882f8d`.
 
 Checks of each form at its last code revision, local outcome only, not
 evidence: `just dev-build`, `just test-full` and `just verdict` passed
-(local). For form C, `just test-full` ran one docstring commit before the
-last code revision.
+(local). For form C, `just test-full` ran at `3c505c1d`, and
+`just dev-build` and `just verdict` ran at `5bc3c323`, which changes one
+docstring line.
 
 ## Findings record
 
