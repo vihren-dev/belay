@@ -11,7 +11,7 @@ INSERT with write rules and nonempty RETURNING columns. A missing clock or unkno
 the rows, expressions or write programs ends it as unmodeled. A successful program installs its database,
 applies its counts and returns its normalized RETURNING rows. An unmodeled error ends the step. Other errors return
 their primary code and update the connection according to the conflict algorithm. There are no further
-executions. Proof sketch: compute the single ordinary write from its support check and the key program's effect. -/
+executions. Proof sketch: apply {name}`runScriptStep_of_single_write` and evaluate the write program at the target table. -/
 @[step_rule] theorem runScriptStep_insertReturningWithRules_eq {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {rows : List (List Resolved.Cell)}
@@ -41,27 +41,8 @@ executions. Proof sketch: compute the single ordinary write from its support che
               | .error (reason, reached) => if reason = .unmodeled then .ended unmodeledHere
                 else .continued (.error reason.primaryCode) (connection.afterWriteError index reason reached result.counts) []
             else .ended unmodeledHere := by
-  let stmt := Resolved.Statement.insert target rows (head :: tail) subqueries (some rules)
-  have ordinary : stmt.isControl = false := rfl
-  have same := (resolveStatement_certificate context connection.resolveState after statement _ found).after
-  rw [ResolveState.after_of_isControl connection.resolveState ordinary] at same
-  apply runScriptStep_of_clock_counter found
-  intro value known
-  let run := connection.state.statementRun value parameters stmt
-  let eval := Resolved.statementContext value (connection.state.counters.view stmt.counterReads) parameters connection.state.database subqueries
-  let output := Output.rows (Resolved.normalForm (returnedRows eval (head :: tail) ((run.keyRows.getD []).map (·.values))))
-  have observed (db : Database) (effect : run.effect = .ok db) :
-      Output.ofStep value parameters stmt connection.state run (advanceRun index stmt connection.state run) = output := by
-    rw [advanceRun_ordinary _ _ _ _ ordinary, effect]
-    rfl
-  dsimp only
-  rw [ranScriptStep_write (output := output) ordinary same (connection.state.statementRun_alternatives value parameters stmt none rfl)
-    (by intro reason; simp [output]) observed]
-  simp only [run, stmt, eval, output, SqlState.statementRun, runStatement, known, Option.isNone_none, Bool.and_true]
-  cases located : connection.state.database.table target with
-  | none => rfl
-  | some table =>
-    simp only [Option.map_some, StatementRun.withKeys, Option.getD_some]
-    rfl
+  apply runScriptStep_of_single_write found rfl rfl (fun _ _ _ => rfl) (fun _ _ _ h => nomatch h)
+  intro value
+  cases located : connection.state.database.table target <;> simp only [runStatement, located] <;> rfl
 
 end Belay.Sqlite.Model

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.Scripts.InsertSelectResults
+import Belay.Sqlite.Model.Programs.Scripts.InsertSelectReady
 
 set_option doc.verso true
 
@@ -12,7 +12,7 @@ The first gives the main execution. A success reports its change count and insta
 and counters. An unmodeled main error ends the run. Each modeled error reports its primary code
 and applies its counts and conflict algorithm to the reached database. Each further production has
 its own output and connection in source order. Proof sketch: compute the main and further executions
-with {name}`ranScriptStep_insertSelect`, then expose the table, productions and support checks. -/
+with {name}`insertSelectReady_results`, then expose the table, productions and support checks. -/
 @[step_rule] theorem runScriptStep_plainInsertSelect_eq {context : ResolveContext} {clock : Option Clock} {index : Nat}
     {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
     {target : Nat} {cells : List Resolved.SourceCell} {query : Resolved.Query} {clauses : List Resolved.ConflictClause}
@@ -51,46 +51,22 @@ with {name}`ranScriptStep_insertSelect`, then expose the table, productions and 
               else .ended unmodeledHere := by
   let stmt := Resolved.Statement.insertSelect target cells query clauses [] algorithm subqueries none
   have same := (resolveStatement_certificate context connection.resolveState after statement _ found).after
-  simp only [runScriptStep, runScriptStepWith, found]
-  change (match statementClock clock index stmt with | none => _ | some _ => _) = _
-  cases timed : statementClock clock index stmt with
+  apply runScriptStep_of_clock_counter found
+  intro value known
+  dsimp only
+  rw [same, insertSelectReady_results]
+  simp only [SqlState.statementRun, known, Option.isNone_none, Bool.and_true, runStatement, insertSelectRun]
+  cases located : connection.state.database.table target with
   | none => rfl
-  | some value =>
+  | some table =>
     dsimp only
-    cases known : connection.state.counters.firstUnknown stmt.counterReads with
-    | some kind => rfl
-    | none =>
-      let run := connection.state.statementRun value parameters stmt
-      have computed : ranScriptStep index parameters connection stmt after value run
-          (advanceRun index stmt connection.state run) =
-          ranScriptStep index parameters connection stmt (connection.resolveState.after stmt) value run
-          (advanceRun index stmt connection.state run) := by rw [same]
-      rw [computed]
-      have normalized := @ranScriptStep_insertSelect index target value connection parameters cells query clauses [] algorithm subqueries none run
-      by_cases ready : run.ready = true
-      · have admitted := runStatement_insertSelect_none_alternatives value (connection.state.counters.view stmt.counterReads)
-          parameters target cells query clauses [] algorithm subqueries connection.state.database (Bool.and_eq_true_iff.1 ready).1
-        rw [normalized admitted]
-        simp only [run, SqlState.statementRun, stmt, runStatement, insertSelectRun] at ready ⊢
-        simp only [stmt] at known
-        simp only [known, Option.isNone_none, Bool.and_true, Bool.true_or, ite_true, insertSelectSuccessOutput,
-          List.isEmpty_nil, List.map_map, Function.comp_def] at ready ⊢
-        split at ready <;> rename_i tableEq <;> simp only [tableEq] at ready ⊢
-        · rfl
-        · split at ready <;> rename_i prodEq <;> simp only [prodEq] at ready ⊢ <;> try contradiction
-          simp only [List.map_map, Function.comp_def] at ready ⊢
-          simp only [ready, Bool.not_true, Bool.false_eq_true, ite_false]
-          rw [ite_eq_left (by exact ready)]
-          split <;> rename_i effect <;> rw [effect]
-      · have unsupported : run.ready = false := Bool.eq_false_iff.mpr ready
-        change (if !run.ready then _ else _) = _
-        rw [unsupported]
-        simp only [Bool.not_false, ite_true]
-        simp only [run, SqlState.statementRun, stmt, runStatement, insertSelectRun] at unsupported
-        simp only [stmt] at known
-        simp only [known, Option.isNone_none, Bool.and_true, Bool.true_or] at unsupported
-        split at unsupported <;> rename_i tableEq <;> simp only [tableEq] at unsupported ⊢ <;> try contradiction
-        split at unsupported <;> rename_i prodEq <;> simp only [prodEq] at unsupported ⊢ <;> try rfl
-        rw [ite_eq_right (by intro h; have : false = true := unsupported.symm.trans h; contradiction)]
+    cases prods : query.productions (Resolved.statementContext value (connection.state.counters.view stmt.counterReads) parameters connection.state.database subqueries) connection.state.database (!Resolved.Statement.collectsSource target query subqueries [] none) with
+    | none => rfl
+    | some list =>
+      cases list with
+      | nil => rfl
+      | cons first others =>
+        simp only [Bool.true_or, Bool.and_true, List.map_map, Function.comp_def, insertSelectSuccessOutput, List.isEmpty_nil, ite_true]
+        rfl
 
 end Belay.Sqlite.Model
