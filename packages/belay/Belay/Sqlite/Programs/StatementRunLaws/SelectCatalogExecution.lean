@@ -28,21 +28,4 @@ theorem Database.resolveState_of_catalog (db catalog : Database) (schema : db.Ha
   simp only [Connection.resolveState, Database.Raw.connection]
   rw [show db.raw.catalog = catalog.raw.catalog from schema]
 
-/-- For every database {lit}`db`, database {lit}`catalog` whose catalog {lit}`db` has, counters,
-statement, query and subqueries: when the statement resolves on {lit}`catalog` to the query with the
-subqueries ({name}`Database.selectQuery?`), it resolves to them on the connection of {lit}`db` with the
-counters, with some state after it. Proof sketch: the resolution reads only the catalog
-({name}`Database.resolveState_of_catalog`); the cases of {name}`Database.selectQuery?`. -/
-theorem Database.resolve_of_selectQuery {db catalog : Database} (schema : db.HasCatalog catalog)
-    (counters : Counters) {statement : Syntax.Statement} {query : Resolved.Query}
-    {subqueries : List Resolved.Query} (resolved : catalog.selectQuery? statement = some (query, subqueries)) :
-    ∃ after, resolveStatement runContext (db.raw.connection counters).resolveState statement =
-      .ok (.query query subqueries, after) := by
-  rw [Database.resolveState_of_catalog db catalog schema]
-  unfold Database.selectQuery? at resolved
-  split at resolved
-  · cases resolved
-    exact ⟨_, ‹_›⟩
-  all_goals cases resolved
-
 end Belay.Sqlite

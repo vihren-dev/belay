@@ -134,7 +134,7 @@ theorem joined_returns (kind : Resolved.JoinKind) (script : Script) (one : scrip
       .ok (.query (joined kind) [], (db.raw.connection env.counters).resolveState) := by
     rw [shop_state db env schema]
     exact resolves
-  rw [Run.query_returnsResult_calm head one db env resolved (joined_source kind db schema) (by simp)
+  rw [Run.query_returnsResult_calm head one db env (runScriptStep_output_of_resolved resolved) (joined_source kind db schema) (by simp)
     (by unfold Resolved.Statement.Calm; cases kind <;> decide +kernel) rfl rfl rfl
     (by simp [Resolved.Query.fails, joined]) (by simp [Resolved.Query.distinctCertain, joined])]
   exact fun result member => holds result (joined_perm member)

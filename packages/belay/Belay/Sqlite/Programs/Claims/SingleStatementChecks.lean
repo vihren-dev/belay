@@ -7,7 +7,7 @@ What a program that selects one value and then uses it checks in a fresh run (AD
 universal claim about such a program needs three facts: the check of the single-value query is a
 statement about its one step ({lit}`check_single_of_statement`), the value that the query returns
 is one of the values that the output offers ({lit}`selectedValues`), and a SELECT leaves the
-connection as it was ({name}`Belay.Sqlite.Model.runScriptStep_select_connection`).
+connection as it was ({name}`Belay.Sqlite.Model.runScriptStep_select_keeps`).
 -/
 
 namespace Belay.Sqlite

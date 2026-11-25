@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T15:01:01+00:00",
+  "finding": "20261124T150036Z-332f8a2a#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Identify the local D11 measurements in the status file and milestone row."
+}

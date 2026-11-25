@@ -18,7 +18,7 @@ def purge : Script := sql r"DELETE FROM items WHERE id = ?1" (Value.integer 1)
 
 /-- For every complete environment, every run of the delete that has no error ends with no rows in the items
 table. The claim holds for the one database {name}`sample`. Proof sketch: {lit}`sql_run` applies
-{name}`Sql.check_send_plainDelete`; the hints close the resolution and the model coverage, and evaluation gives
+the plain DELETE kind rule; the hints close the resolution and the model coverage, and evaluation gives
 the rows. -/
 theorem purge_empties_items :
     FreshEnsures (send purge) (fun db => db = sample)
@@ -33,22 +33,15 @@ def widen : Script := sql r"ALTER TABLE items ADD COLUMN note TEXT"
 
 /-- For every complete environment, every run of the ADD COLUMN that has no error ends with the one item row
 extended by a NULL cell. The claim holds for the one database {name}`sample`. Proof sketch: {lit}`sql_run`
-applies {name}`Sql.check_send_addColumn`; the premise that gives the default value is closed by the fact that a
-column without a default reads NULL, and evaluation gives the rows. -/
+splits the exact ADD COLUMN rule. The table hint supplies the stored rows, and the default of
+the unconstrained column gives NULL in the successful case. -/
 theorem widen_adds_null_cells :
     FreshEnsures (send widen) (fun db => db = sample)
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 5, .null]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  sql_run [rfl, ⟨_, _, _, rfl⟩]
-  case success =>
-    have stored := clockRead rfl
-    have plain : default = Value.null := by
-      have same := stored.symm.trans (by rfl)
-      exact Except.ok.inj same
-    subst plain
-    intro _
-    rfl
+  sql_run [rfl, ⟨_, _, _, rfl⟩, sample_items]
+  all_goals first | (intro _; rfl) | (exfalso; apply_assumption; rfl) | (exfalso; assumption)
 
 /-- The read of all quantities. -/
 def quantities : Script := sql r"SELECT qty FROM items"
@@ -71,7 +64,7 @@ theorem quantities_modeled (env : Env) :
 
 /-- For every complete environment, the program that reads the rows of the items table ends with the
 connection that it started with. Proof sketch: {lit}`sql_run` gives the check of the query to
-{lit}`sql_select`, which applies {name}`Sql.check_query_ofCatalog` with {name}`sample` as its own catalog;
+{lit}`sql_select`, which applies {name}`Sql.check_query_catalog_rows` with {name}`sample` as its own catalog;
 the rule keeps the connection. -/
 theorem query_keeps_connection (env : Env) :
     (query quantities).check (keepsConnection env) (ExecutionContext.initial sample env) := by
@@ -110,32 +103,22 @@ theorem second_goal_stays (env : Env) :
 #print axioms sent_select_keeps_connection
 #print axioms second_goal_stays
 
-/-- The INSERT from a query, a statement that the general send rule does not cover. -/
+/-- A send whose resolution depends on the caller's schema. -/
 def copyItems : Script := sql r"INSERT INTO items SELECT id, qty FROM items"
 
-/-- The creation of an index, a statement without a rule of its own. -/
+/-- Creating an index also needs the target table in the caller's schema. -/
 def indexItems : Script := sql r"CREATE INDEX items_qty ON items(qty)"
 
-/-- warning: declaration uses `sorry` -/
+/-- error: sql_run cannot start: no hint or hypothesis gives a resolved kind for this send. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec. -/
 #guard_msgs in
--- A sent INSERT from a query is sent with the general rule, and the premise that the statement is no INSERT
--- from a query stays open, because it is false. The example ends in sorry on purpose and only looks at the goals.
 example (post : List Output → ExecutionContext → Prop) (context : ExecutionContext) :
     (send copyItems).check post context := by
   sql_run
-  case notInsertSelect =>
-    fail_if_success rfl
-    sorry
-  all_goals sorry
 
-/-- warning: declaration uses `sorry` -/
+/-- error: sql_run cannot start: no hint or hypothesis gives a resolved kind for this send. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec. -/
 #guard_msgs in
--- A sent statement without a rule of its own is sent with the general rule, and the premise that the statement
--- is no INSERT from a query is closed by evaluation: no goal with that tag is left.
 example (post : List Output → ExecutionContext → Prop) (context : ExecutionContext) :
     (send indexItems).check post context := by
   sql_run
-  fail_if_success case notInsertSelect => skip
-  all_goals sorry
 
 end S6RulesEffects

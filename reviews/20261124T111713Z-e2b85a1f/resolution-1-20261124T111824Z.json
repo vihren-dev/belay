@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:18:24+00:00",
+  "finding": "20261124T111713Z-e2b85a1f#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Named the model equation, ruleCases and Sql.sendReached_each in the integration test."
+}

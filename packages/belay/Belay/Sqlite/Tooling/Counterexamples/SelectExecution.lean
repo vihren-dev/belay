@@ -2,8 +2,8 @@ import Belay.Sqlite.Programs.Scripts.RunResultSteps
 
 set_option doc.verso true
 
-/-! The execution rule of a SELECT for the run of a script (ADR 0027, D2 and D5): a script of one
-SELECT statement that resolves to a query that is ready
+/-! The execution rule of a SELECT for the run of a script (ADR 0027, D2 and D5): a single statement whose
+output equals that of a ready query
 ({lit}`Belay.Sqlite.Model.Connection.SelectReady`) returns a result with a property exactly when
 every result that the model permits for it has the property. The rule reads the clock and the
 counters of the environment, so it holds for every environment, not only the default one. A
@@ -15,20 +15,20 @@ namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
 /-- For every script of one statement with its values, database, environment and property
-{lit}`Q` of a result: when the statement resolves to a query statement on the new connection
-({name}`resolveStatement`), the step runs it at a clock value ({name}`statementClock`), and the
+{lit}`Q` of a result: when the output at the new connection equals the output of the query
+statement, the named query has a clock value at index zero ({name}`statementClock`), and the
 query is ready there ({name}`Connection.SelectReady`) with source rows {lit}`source` and bound
 query {lit}`bound`, the run of the script ({name}`send`) returns a result with {lit}`Q`
 ({name}`Run.returnsResult`) exactly when every result that the model permits for {lit}`bound` over
 the source rows ({name}`Resolved.Query.possibleResults`) has {lit}`Q`. Proof sketch:
 {name}`Run.send_returnsResult_iff` reads the step, and
-{name}`runScriptStep_select_returnsResult` its output. -/
+{name}`Resolved.Query.returnsResult_possible` its output. -/
 theorem Run.send_returnsResult_select {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (db : Database) (env : Env) {query : Resolved.Query}
-    {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
+    {subqueries : List Resolved.Query} {value : Int} {source : Resolved.SourceRows}
     {bound : Resolved.Query}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (clocked : statementClock env.clock 0 (.query query subqueries) = some value)
     (ready : (db.raw.connection env.counters).SelectReady value parameters query subqueries source bound)
     (property : List (List Value) → Prop) :
@@ -40,7 +40,9 @@ theorem Run.send_returnsResult_select {script : Script} {statement : Syntax.Stat
   rw [Run.send_returnsResult_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
   rw [same]
-  exact runScriptStep_select_returnsResult runContext env.clock 0 _ statement parameters resolved clocked ready property
+  simp only [observed]
+  rw [resolvedStepOutput_select env.clock 0 _ parameters clocked ready]
+  exact bound.returnsResult_possible _ _ property
 
 /-- For every script of one statement with its values, database, environment and property
 {lit}`Q` of a result, under the premises of {name}`Run.send_returnsResult_select`: the run of the
@@ -49,10 +51,10 @@ the model permits has {lit}`Q`. Proof sketch: {name}`Run.query_returnsResult_iff
 step as {name}`Run.send_returnsResult_select`. -/
 theorem Run.query_returnsResult_select {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {query : Resolved.Query} {subqueries : List Resolved.Query} {after : ResolveState} {value : Int}
+    (env : Env) {query : Resolved.Query} {subqueries : List Resolved.Query} {value : Int}
     {source : Resolved.SourceRows} {bound : Resolved.Query}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (clocked : statementClock env.clock 0 (.query query subqueries) = some value)
     (ready : (db.raw.connection env.counters).SelectReady value parameters query subqueries source bound)
     (property : List (List Value) → Prop) :
@@ -63,6 +65,8 @@ theorem Run.query_returnsResult_select {script : Script} {statement : Syntax.Sta
   rw [Run.query_returnsResult_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
   rw [same]
-  exact runScriptStep_select_returnsResult runContext env.clock 0 _ statement parameters resolved clocked ready property
+  simp only [observed]
+  rw [resolvedStepOutput_select env.clock 0 _ parameters clocked ready]
+  exact bound.returnsResult_possible _ _ property
 
 end Belay.Sqlite

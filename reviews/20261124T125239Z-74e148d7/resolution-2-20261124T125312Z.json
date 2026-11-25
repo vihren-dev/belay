@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:53:12+00:00",
+  "finding": "20261124T125239Z-74e148d7#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The module specifies equality of observed outputs."
+}

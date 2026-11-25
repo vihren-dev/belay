@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:35:33+00:00",
+  "finding": "20261124T133442Z-8b2543b6#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Quantify each preserved output over catalogs, connections and bound values."
+}

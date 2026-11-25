@@ -35,3 +35,9 @@ def test_select_execution_success_and_vacuity(runtime_root: Path, tmp_path: Path
     """Sql.check covers every output choice, rejects modeled errors as success and rejects
     unsupported stops; a false-precondition triple exposes the separate vacuity risk."""
     check_module_chain(runtime_root, tmp_path, (("SelectAutomationExecution", 8),), timeout=60)
+
+
+def test_positive_in_equivalence_allows_nullable_inner_values(runtime_root: Path, tmp_path: Path) -> None:
+    """ReplacedSubqueryEquivalence proves the original Sql.EquivAt.in_exists_of_rowidAlias
+    contract for positive IN, including when the inner column can contain NULL."""
+    check_module_chain(runtime_root, tmp_path, (("SelectSyntaxFrame", 0), ("ReplacedSubqueryEquivalence", 1)), timeout=60)

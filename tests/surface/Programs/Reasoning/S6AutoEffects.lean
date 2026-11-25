@@ -21,28 +21,40 @@ theorem bump_stores_new_quantity_by_sql_run :
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 6]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  sql_run [rfl, ⟨_, _, _, rfl⟩]
+  sql_run [rfl]
   all_goals (intro _; rfl)
 
-/-- The claim of {name}`bump_stores_new_quantity_by_sql_run`, proved with {name}`Sql.check_send_plainUpdate`. -/
+/-- The claim of {name}`bump_stores_new_quantity_by_sql_run`, proved with {name}`Sql.check_send_of_rule` and the plain UPDATE rule. -/
 theorem bump_stores_new_quantity_by_rules :
     FreshEnsures (send bump) (fun db => db = sample)
       (ifOk (fun final => ⌜tableValues 0 final.connection = [[.integer 1, .integer 6]]⌝ : ContextAssertion)) := by
   refine (FreshEnsures.ifOkWith_iff _ _ _).2 ?_
   rintro db rfl env _
-  obtain ⟨after, found⟩ : ∃ after, resolveStatement runContext (sample.raw.connection env.counters).resolveState
-      bumpStatement = .ok (bumpResolved, after) := ⟨_, rfl⟩
-  have modeled : RunStep.continues (runScriptStep runContext env.clock 0 (sample.raw.connection env.counters)
-      bumpStatement [.integer 1]) = true := rfl
-  refine Sql.check_send_plainUpdate (statement := bumpStatement) (values := [.integer 1])
-    (ExecutionContext.initial_holds_valid sample env) found sample_items (RunStep.continues_iff.1 modeled) ?_ ?_
-  · intro output value next noError ongoing timed same valid
-    subst same
-    intro _
-    rfl
-  · intro output value next failed ongoing same valid allOk
-    simp [List.allOk, ExecutionContext.next, failed] at allOk
+  refine Sql.check_send_of_rule (runScriptStep_plainUpdate_eq (statement := bumpStatement)
+    (target := 0) (subqueries := []) (assignments := _) (filter := _) (by rfl))
+    (ExecutionContext.initial_holds_valid sample env) rfl ?_
+  exact Sql.sendReached_single (fun _ same => by cases same) (fun _ _ => rfl)
 
+
+/-- For every valid starting context and modeled plain UPDATE, the send reports a change count
+or reports an error and keeps the starting database. This includes updates that read subqueries.
+Proof sketch: the resolution selects the exact UPDATE rule. The two continuing cases give the
+count and the unchanged database on failure. -/
+theorem update_count_or_failure (ctx : ExecutionContext) (statement : Syntax.Statement) (values : List Value)
+    (target : Nat) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr)
+    (subqueries : List Resolved.Query) (after : ResolveState)
+    (valid : ctx.connection.state.Holds (Model.Database.Valid Profile.pinned))
+    (found : resolveStatement runContext ctx.connection.resolveState statement =
+      .ok (.update target assignments filter [] subqueries none, after))
+    (modeled : (runScriptStep runContext ctx.clock ctx.index ctx.connection statement values).continues = true) :
+    (send ⟨[(statement, values)]⟩).check (fun outputs final =>
+      (∃ count, outputs = [.done count]) ∨
+      ((∃ code, outputs = [.error code]) ∧ final.connection.state.database = ctx.connection.state.database)) ctx := by
+  sql_run
+  case success => exact Or.inl ⟨_, rfl⟩
+  case failure => exact Or.inr ⟨⟨_, rfl⟩, rfl⟩
+
+#print axioms update_count_or_failure
 #print axioms bump_stores_new_quantity_by_sql_run
 #print axioms bump_stores_new_quantity_by_rules
 

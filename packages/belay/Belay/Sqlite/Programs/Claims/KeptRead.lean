@@ -35,27 +35,28 @@ namespace KeptRead
 
 /-- For every migration that resolves on a schema, suppose a named table has a certified
 read using its column count, the table check carries it to a final position found by the
-same name, and the read resolves there to the moved certificate. Then the migration
+same name, and both actual steps realize the respective certified scans. Then the migration
 preserves that read with any given parameter values on every database with the schema.
 The success domain of {name}`Migration.QueryPreserves` imposes no obligation when the
 migration fails. Proof sketch: the schema and table path laws apply to every successful
 branch. Equal table rows and the width of valid rows discharge the read certificate. -/
 theorem preserves {schema : Database} {migration : Script} {statement : Syntax.Statement} (values : List Value)
     {name : Identifier} {position destination : Nat} {shape finalShape : CatalogTable}
-    {path : List Resolved.Statement} {final readState afterState : ResolveState} {read : Resolved.Statement}
-    {certificate : ReadCertificate} {names : List String}
+    {path : List Resolved.Statement} {final : ResolveState}
+    {certificate : ReadCertificate}
     (readOnly : (⟨[(statement, values)]⟩ : Script).isQuery = true)
     (checked : resolveFrom runContext 0 schema.raw.connection.resolveState (migration.statements.map Prod.fst) =
       .ok (path, final))
     (lookup : schema.raw.catalog.findTable name = some (position, shape))
-    (resolved : resolveStatement runContext schema.raw.connection.resolveState statement = .ok (read, readState))
-    (certified : ReadAnalysis.analyze shape.columns.length read = .certified certificate)
+    (validRead : certificate.Valid) (width : certificate.width = shape.columns.length)
+    (originalScan : ∀ connection : Connection, connection.resolveState = schema.raw.connection.resolveState →
+      certificate.Scans runContext statement connection)
     (place : certificate.position = position)
     (frame : schema.raw.connection.resolveState.tablePosition path migration.statements.length position =
       some destination)
     (lookupAfter : final.catalog.findTable name = some (destination, finalShape))
-    (resolvedAfter : resolveStatement runContext final statement =
-      .ok ((certificate.moved destination).statement names, afterState)) :
+    (movedScan : ∀ connection : Connection, connection.resolveState = final →
+      (certificate.moved destination).Scans runContext statement connection) :
     Migration.QueryPreserves (send migration) ⟨[(statement, values)]⟩ (·.HasCatalog schema) readOnly := by
   intro db pre env complete
   obtain ⟨table, named, shapeEq⟩ := Database.tableNamed_of_hasCatalog pre lookup
@@ -63,7 +64,6 @@ theorem preserves {schema : Database} {migration : Script} {statement : Syntax.S
   have start : (db.raw.connection env.counters).resolveState = schema.raw.connection.resolveState := by
     simp [Database.Raw.connection, Connection.resolveState, Database.HasCatalog] at pre ⊢
     exact pre
-  obtain ⟨validRead, width, _⟩ := ReadAnalysis.analyze_sound certified
   exact ReadCertificate.preservesAt (send migration) validRead statement values (fun _ => True)
     (ExecutionContext.initial db env) fun domain branch ran => by
       have ok := (Sql.succeedsFrom_iff_branches _ _ _ _).mp domain.2 branch ran
@@ -73,11 +73,10 @@ theorem preserves {schema : Database} {migration : Script} {statement : Syntax.S
       have tableAt := sendStatements_branch_keepsTable checked frame start valid present ran ok.1 ok.2
       have catalog : branch.connection.state.database.catalog = final.catalog := congrArg ResolveState.catalog ended
       rw [← catalog] at lookupAfter
-      refine ⟨ReadAnalysis.resolvesOriginal (connection := db.raw.connection env.counters) (by rw [start]; exact resolved) certified,
-        name, destination, table, table, fun _ => [], ?_, ?_, ⟨names, afterState, ?_⟩, by simp, ?_⟩
+      refine ⟨originalScan _ start,
+        name, destination, table, table, fun _ => [], ?_, ?_, movedScan _ ended, by simp, ?_⟩
       · rw [place]; exact named
       · rw [Model.Database.tableNamed_of_findTable lookupAfter, tableAt]; rfl
-      · rw [ended]; exact resolvedAfter
       · intro row member
         simp only [width, ← shapeEq, db.sourceRow_width present member, Nat.le_refl]
 

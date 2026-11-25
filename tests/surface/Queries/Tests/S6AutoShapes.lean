@@ -10,14 +10,14 @@ namespace S6AutoShapes
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 
-/-- error: sql_run cannot start: the program is a raw execution step. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step. -/
+/-- error: sql_run cannot start: the program is a raw execution step. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec. -/
 #guard_msgs in
 example (statement : Syntax.Statement) (values : List Value) (post : Unit → ExecutionContext → Prop)
     (context : ExecutionContext) :
     (Sql.exec statement values (fun _ => Sql.pure ())).check post context := by
   sql_run
 
-/-- error: sql_run cannot start: the program is a variable or an unknown term. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step. -/
+/-- error: sql_run cannot start: the program is a variable or an unknown term. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec. -/
 #guard_msgs in
 example (program : Sql Nat) (post : Nat → ExecutionContext → Prop) (context : ExecutionContext) :
     program.check post context := by
@@ -38,7 +38,7 @@ theorem unreadable_continuation_stays_open (rest : Nat → Sql Nat) (post : Nat 
   sql_run
   exact given
 
-/-- error: sql_run cannot start: the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step. -/
+/-- error: sql_run cannot start: no hint or hypothesis gives a resolved kind for this send. Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec. -/
 #guard_msgs in
 example (statement : Syntax.Statement) (values : List Value) (post : List Output → ExecutionContext → Prop)
     (context : ExecutionContext) :
@@ -46,8 +46,7 @@ example (statement : Syntax.Statement) (values : List Value) (post : List Output
   sql_run
 
 /-- A statement that Lean cannot read, for example a field of a structure, takes the rule from the hypotheses:
-here the resolution is a plain DELETE, so the tactic applies {name}`Sql.check_send_plainDelete` and leaves its
-two outcome goals, which the trivial post closes. -/
+here the resolution is a plain DELETE, so the tactic finds {name}`runScriptStep_plainDelete_eq`. Its single continuing case satisfies the trivial post. -/
 theorem unreadable_statement_takes_the_rule_of_its_resolution (statement : Syntax.Statement)
     (values : List Value) (context : ExecutionContext) (target : Nat) (filter : Option Resolved.Expr)
     (after : ResolveState) (table : Table) (valid : context.connection.state.Holds (Database.Valid Profile.pinned))
@@ -57,7 +56,7 @@ theorem unreadable_statement_takes_the_rule_of_its_resolution (statement : Synta
     (modeled : ∃ output next others, runScriptStep runContext context.clock context.index context.connection
       statement values = .continued output next others) :
     (send ⟨[(statement, values)]⟩).check (fun _ _ => True) context := by
-  sql_run
-  all_goals (intros; trivial)
+  sql_run [RunStep.continues_iff.2 modeled]
+  all_goals trivial
 
 end S6AutoShapes

@@ -160,7 +160,7 @@ def test_procedure_core_set(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_run_delegation(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` (`Belay/Sqlite/Programs/Automation/SqlRun.lean`) gives the check of one query to `sql_select`, whose
-    execution rule `Sql.check_query_ofCatalog` (`Belay/Sqlite/Tooling/Counterexamples/SelectCatalogCheck.lean`) proves the check at
+    execution rule `Sql.check_query_catalog_rows` (`Belay/Sqlite/Tooling/Counterexamples/SelectCatalogCheck.lean`) proves the check at
     a context with the connection of the database. Both tactics prove A04 and A08 as a check at the initial
     context, and `sql_run` also as a Hoare triple, over every database with the catalog of the case. Every
     proof has only logical axioms."""
@@ -181,3 +181,7 @@ def test_rule_registry(runtime_root: Path, tmp_path: Path) -> None:
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectOrderCases", 4),
                        ("SelectRuleRegistry", 3)), timeout=90)
 
+
+def test_query_checks_cover_scan_outputs_and_choices(runtime_root: Path, tmp_path: Path) -> None:
+    """CatalogOutputCases tests catalog checks on a scan and a write with RETURNING. QuerySendClaims checks every selected output."""
+    check_module_chain(runtime_root, tmp_path, (("CatalogOutputCases", 3), ("QuerySendClaims", 1)), timeout=60)

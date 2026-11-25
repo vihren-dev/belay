@@ -42,4 +42,26 @@ theorem checkedWrite_error {database : Database} {target : Nat} {keys : List Uni
   · cases failed
   · cases failed; simp
 
+/-- For every successful {name}`updateOutcome`, the database after the write stores the result rows
+at the target. Proof sketch: success excludes the mismatch and constraint branches. -/
+theorem updateOutcome_ok {database written : Database} {target keys context table assignments filter result}
+    (success : updateOutcome database target keys context table assignments filter result = .ok written) :
+    written = database.setRows target result.rows := by
+  unfold updateOutcome checkedWrite at success
+  split at success
+  · cases success
+  · split at success <;> cases success; rfl
+
+/-- For every failed {name}`updateOutcome`, the reached database is the input and the reason is
+a datatype mismatch or a constraint violation. Proof sketch: split the mismatch check and use
+{name}`checkedWrite_error` for the remaining case. -/
+theorem updateOutcome_error {database reached : Database} {target keys context table assignments filter result reason}
+    (failed : updateOutcome database target keys context table assignments filter result = .error (reason, reached)) :
+    reached = database ∧ (reason = .datatypeMismatch ∨ reason = .constraintViolation) := by
+  unfold updateOutcome at failed
+  split at failed
+  · cases failed; simp
+  · obtain ⟨rfl, rfl⟩ := checkedWrite_error failed
+    exact ⟨rfl, Or.inr rfl⟩
+
 end Belay.Sqlite.Model

@@ -118,11 +118,41 @@ theorem a_customer_named_iff (db : Database) (name : String) (position : Nat) (t
   have resolved := resolveStatement_select_one_from runContext (db.raw.connection Env.default.counters).resolveState
     { table := name! "customers", alias := none } _ position table _ rfl rfl rfl found resolves
   rw [Holds, Run.send_returnsResult_iff_query (script := customerNamed name) rfl,
-    Run.query_returnsResult_calmTable (script := customerNamed name) rfl rfl db Env.default resolved rfl
+    Run.query_returnsResult_calmTable (script := customerNamed name) rfl rfl db Env.default (runScriptStep_output_of_resolved resolved) rfl
       (Database.table_of_findTable _ _ _ _ found)
       (Resolved.Statement.Calm.selectOne position _ (by simp [sql_simp, equalsParameter])) rfl rfl rfl
       (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
     Resolved.Query.forall_possibleResults_ne_nil_plain rfl rfl rfl rfl rfl]
   simp [Resolved.Query.simple]
+
+/-- For every database with an {name}`AddCustomerSite`, every id the query returned, and every connection
+whose database is the database of the start with the one row that the insert stores: a customer with the name
+exists in the context that has this connection. Proof sketch: the lookup of the name finds the stored row,
+whose name cell is the text because the column has TEXT affinity ({name}`a_customer_named_iff`). -/
+theorem customer_named_after_insert {db : Database} {name email : String} (site : AddCustomerSite db name email)
+    (next : Value) (value : Int) {view} {final : ExecutionContext}
+    (valid : final.connection.state.Holds (Database.Valid Profile.pinned))
+    (stored : final.connection.state.database = db.raw.setRows site.position
+      (LiteralData.inserted ⟨site.table, db.raw.rows.getD site.position []⟩
+        (Resolved.rowsAt (Resolved.statementContext value view
+          [next, .text name.toUTF8.toList, .text email.toUTF8.toList] db.raw [])
+          site.table.columns [[.expression (.parameter 1), .expression (.parameter 2),
+            .expression (.parameter 3)]])).rows) :
+    Holds.reached (customerNamed name) final := by
+  refine (Holds.reached_iff_holds_of_valid _ _ _ valid.1).2 ?_
+  refine (a_customer_named_iff ⟨_, valid.1⟩ name site.position site.table site.nameCell
+    (by show (final.connection.state.database).catalog.findTable _ = _; rw [stored]; exact site.found)
+    site.nameAt (by simp [site.columns])).2 ?_
+  show ∃ row ∈ Resolved.sourceRows { shape := site.table, rows := final.connection.state.database.rows.getD site.position [] }, _
+  rw [stored, Model.Database.rows_getD_setRows _ (Model.Database.position_lt_rows db.valid.admitted.rowsShaped site.found)]
+  rw [site.columns, rowsAt_three_parameters, LiteralData.inserted_single_rows]
+  refine ⟨_, (mem_sourceRows_iff _ _).2 ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩, ?_⟩
+  refine equalsParameter_true site.nameCell 1 1 [.text name.toUTF8.toList] _ (.text name.toUTF8.toList) ?_ rfl rfl
+    (comparisonOperands_text _ _ site.nameText)
+  have different : 1 ≠ 0 := by decide
+  have alias : (⟨site.table, db.raw.rows.getD site.position []⟩ : Table).shape.rowidAlias = none ∨
+      (⟨site.table, db.raw.rows.getD site.position []⟩ : Table).shape.rowidAlias = some 0 := site.alias
+  rw [LiteralData.newCells_getElem?_of_plain _ _ _ site.plainColumns alias different]
+  simp [Value.store, boundValue, site.nameText]
 
 end AssertionExamples

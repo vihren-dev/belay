@@ -22,17 +22,16 @@ theorem Script.outputOn_eq_step (script : Script) (db : Database) (statement : S
   rw [head, runScriptFrom_head_cons, runScriptStep_output]
   rfl
 
-/-- For every script that starts with a statement that resolution turns into the query
-{lit}`query` with the subqueries {lit}`subqueries`, the output of the script is the output of the step
-of that query. Proof sketch: {name}`Script.outputOn_eq_step` with the resolved statement. -/
-theorem Script.outputOn_query (script : Script) (db : Database) (statement : Syntax.Statement)
+/-- For a script beginning with a successfully resolved statement of any kind, its output on a database
+is the resolved statement's output on that database's connection with no clock at index zero. Proof sketch: take the first step output and substitute the resolution. -/
+theorem Script.outputOn_resolved (script : Script) (db : Database) (statement : Syntax.Statement)
     (parameters : List Value) (rest : List (Syntax.Statement × List Value))
-    (query : Resolved.Query) (subqueries : List Resolved.Query) (after : ResolveState)
+    (kind : Resolved.Statement) (after : ResolveState)
     (head : script.statements = (statement, parameters) :: rest)
     (resolved : resolveStatement runContext db.raw.connection.resolveState statement =
-      .ok (.query query subqueries, after)) :
+      .ok (kind, after)) :
     script.outputOn db =
-      some (resolvedStepOutput none 0 db.raw.connection parameters (.query query subqueries)) := by
+      some (resolvedStepOutput none 0 db.raw.connection parameters kind) := by
   rw [Script.outputOn_eq_step script db statement parameters rest head, resolved]
 
 end Belay.Sqlite

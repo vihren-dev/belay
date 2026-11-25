@@ -62,8 +62,12 @@ theorem translatesAt_of_outputs (tableName : Identifier) (definition : Syntax.Co
   obtain ⟨actual, branches⟩ := sendStatements_single_observations original replacement originalParameters
     replacementParameters env.clock env.clock 0 (0 + run.outputs.length) (db.raw.connection env.counters)
     run.connection
-    (fun _ after found => resolveStatement_single _ _ after original _ originalSingle found)
-    (fun _ after found => resolveStatement_single _ _ after replacement _ replacementSingle found)
+    (fun _ _ _ step => by
+      obtain ⟨resolved, after, _, found, _⟩ := runScriptStep_execution_runs step
+      exact runScriptStep_others step found (resolveStatement_single _ _ after original resolved originalSingle found))
+    (fun _ _ _ step => by
+      obtain ⟨resolved, after, _, found, _⟩ := runScriptStep_execution_runs step
+      exact runScriptStep_others step found (resolveStatement_single _ _ after replacement resolved replacementSingle found))
     (outputs wide aliased aligned run.connection (0 + run.outputs.length) database)
   have actualBranch := Sql.Branch.actual (send (migration tableName definition value addValues updateValues triggers))
     env.clock 0 (db.raw.connection env.counters)

@@ -27,7 +27,7 @@ def test_not_in_and_not_exists_differ_on_three_databases_and_agree_under_the_pre
     module `S6NotBlockedLaw` proves the equivalence for every database with the stated site, with the audit of
     its axioms (only `propext`, `Classical.choice` and `Quot.sound`), and shows that the site is satisfiable."""
     output = check_module_chain(runtime_root, tmp_path, (
-        ("S6CheckLabels", 0), ("S6NotBlocked", 1), ("S6NotBlockedLaw", 4)),
+        ("S6CheckLabels", 0), ("S6NotBlocked", 1), ("SelectSyntaxFrame", 0), ("S6NotBlockedLaw", 4)),
         timeout=CHAIN_TIMEOUT_SECONDS, output_of="S6NotBlocked")
     found = split_blocks(output)
     assert set(found) == set(NOT_BLOCKED), output

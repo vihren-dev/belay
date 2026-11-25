@@ -17,7 +17,8 @@ open Lean Meta Elab Term Tactic Belay.Sqlite.Run
 
 /-- Search for a proof of a claim that opens to the check of a program or to a claim about the run of a query,
 with the routes of {lit}`sql_auto`,
-using at most {name}`searchShare` of the budget that is left. The script of the result holds the opening and the explicit steps of the winning route, so it
+using at most {name}`searchShare` of the budget that is left. Within that share a route that
+exhausted its first allocation can use the work other routes left unused. The script of the result holds the opening and the explicit steps of the winning route, so it
 proves the claim again without a search. None when the claim has no such proof. -/
 def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
   let hints ← defaultSearchHints
@@ -33,7 +34,7 @@ def searchedProof (proposition : Expr) : TermElabM (Option Proven) := do
       return (← checkProgram? type).isSome || Select.isQueryRun (← whnfR type)
     unless searchable do
       throwError "the opened claim is no check of a program and no claim about the run of a query"
-    let .ok found ← search hints opened | throwError "no route closes the goal"
+    let .ok found ← search hints opened (retryExhausted := true) | throwError "no route closes the goal"
     let steps := found.steps
     let script ← `(tactic| ($opening:tactic; $[$steps:tactic];*))
     return (script, ← instantiateMVars goal)

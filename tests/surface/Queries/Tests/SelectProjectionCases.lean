@@ -52,7 +52,7 @@ theorem customer_present_of_columns (db : Database) (env : Env) {position idInde
   obtain ⟨names, resolved⟩ := resolveStatement_select_column runContext (db.raw.connection env.counters).resolveState
     { table := name! "invoices", alias := none } _ position table _ (name! "customer") "customer" rfl rfl rfl found
     customerFound resolves
-  rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := customerOfFirst) rfl customerOfFirst_one db env resolved rfl
+  rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := customerOfFirst) rfl customerOfFirst_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
   · intro result member row inResult
     obtain ⟨source, inSource, -, rfl⟩ := Resolved.Query.mem_possibleResults_plain rfl rfl rfl member inResult

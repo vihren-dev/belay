@@ -66,7 +66,7 @@ theorem min_amount (db : Database) (env : Env) (schema : db.HasCatalog orders) :
       .ok (.query minQuery [], (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := minAmount) rfl minAmount_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := minAmount) rfl minAmount_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (by simp [Resolved.Query.fails, minQuery, ungroupedQuery, Resolved.Aggregate.fails]) rfl]
   intro result member
@@ -123,7 +123,7 @@ theorem joined_customers (db : Database) (env : Env) (schema : db.HasCatalog ord
         (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := joinedCustomers) rfl joinedCustomers_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := joinedCustomers) rfl joinedCustomers_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (by simp [Resolved.Query.fails, ungroupedQuery, Resolved.Aggregate.fails]) rfl]
   intro result member

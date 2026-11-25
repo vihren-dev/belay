@@ -37,7 +37,7 @@ theorem customers_perm (db : Database) (env : Env) {position customerIndex : Nat
   obtain ⟨names, resolved⟩ := resolveStatement_select_column runContext (db.raw.connection env.counters).resolveState
     { table := name! "invoices", alias := none } none position table none (name! "customer") "customer" rfl rfl rfl
     found customerFound (FilterResolves.of_none _ _ _ _)
-  rw [Run.query_returnsResult_calmTable (script := customers) rfl customers_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := customers) rfl customers_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable _ _ _ _ found)
     (Resolved.Statement.simpleColumn_calm _ _ _ _ (by simp)) rfl rfl rfl (by simp [Resolved.Query.fails,
       Resolved.Query.simple]) rfl]
@@ -85,7 +85,7 @@ theorem paying_length_le (db : Database) (env : Env) {position customerIndex amo
   obtain ⟨names, resolved⟩ := resolveStatement_select_column runContext (db.raw.connection env.counters).resolveState
     { table := name! "invoices", alias := none } _ position table _ (name! "customer") "customer" rfl rfl rfl found
     customerFound resolves
-  rw [Run.query_returnsResult_calmTable (script := payingCustomers) rfl payingCustomers_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := payingCustomers) rfl payingCustomers_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
   · intro result member
     have bound := Resolved.Query.length_le_of_mem_possibleResults member

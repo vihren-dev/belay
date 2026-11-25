@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:16:28+00:00",
+  "finding": "20261124T111116Z-89464209#4",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Documented which query output laws the fixture retains."
+}

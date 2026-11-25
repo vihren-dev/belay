@@ -31,15 +31,14 @@ theorem Catalog.tableAt_createTable {catalog : Catalog} {position : Nat} {shape 
   simpa [Catalog.createTable, List.getElem?_append_left below] using present
 
 /-- For every database, name, table and position with a table in the view, the database
-after CREATE TABLE ({name}`Catalog.createTable` with an empty row list appended) has the
-same table at that position. Proof sketch: the catalog entry is kept
+after CREATE TABLE ({name}`Database.createTable`) has the same table at that position. Proof sketch: the catalog entry is kept
 ({name}`Catalog.tableAt_createTable`) and the appended empty row list does not change
 {lit}`getD` ({name}`rows_getD_append_nil`). -/
 theorem Database.table_createTable {database : Database} {position : Nat} {table : Table}
     (name : Identifier) (shape : CatalogTable) (present : database.table position = some table) :
-    ({ catalog := database.catalog.createTable name shape, rows := database.rows ++ [[]] } : Database).table
-      position = some table := by
-  unfold Database.table at present ⊢
+    (database.createTable name shape).table position = some table := by
+  unfold Database.table at present
+  unfold Database.table Database.createTable
   cases h : database.catalog.tableAt position with
   | none => simp [h] at present
   | some old =>

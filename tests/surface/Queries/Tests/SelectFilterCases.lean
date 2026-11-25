@@ -41,7 +41,7 @@ theorem present_notes (db : Database) (env : Env) {position noteIndex : Nat} {ta
   obtain ⟨names, resolved⟩ := resolveStatement_select_column runContext (db.raw.connection env.counters).resolveState
     { table := name! "notes", alias := none } _ position table _ (name! "note") "note" rfl rfl rfl found
     noteFound resolves
-  rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := presentNotes) rfl presentNotes_one db env resolved rfl
+  rw [Run.returnsRows, Run.query_returnsResult_calmTable (script := presentNotes) rfl presentNotes_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable _ _ _ _ found) ?calm rfl rfl rfl ?noOverflow rfl]
   · intro result member row inResult
     obtain ⟨source, -, kept, rfl⟩ := Resolved.Query.mem_possibleResults_plain rfl rfl rfl member inResult

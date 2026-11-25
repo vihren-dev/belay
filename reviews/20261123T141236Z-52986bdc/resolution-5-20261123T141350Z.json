@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-23T14:13:50+00:00",
+  "finding": "20261123T141236Z-52986bdc#5",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The owner approved the pilot with build time as one of its measures (session of 2026-11-23). The requirement now compares the deleted or rewritten modules with the modules that replace them, so each side has a timing."
+}

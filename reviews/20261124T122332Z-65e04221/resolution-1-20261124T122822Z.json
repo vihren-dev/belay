@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:28:22+00:00",
+  "finding": "20261124T122332Z-65e04221#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Moved the unused general single-execution send to the retention fixture and migrated its four test callers."
+}

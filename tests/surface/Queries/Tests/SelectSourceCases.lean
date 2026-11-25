@@ -34,7 +34,7 @@ theorem sum_returns (db : Database) (env : Env) :
       .ok (.query sumQuery [], (db.raw.connection env.counters).resolveState) :=
     resolveStatement_selectNoFrom runContext _ _ _ none _ none none rfl rfl (by decide +kernel) (by decide +kernel)
       (FilterResolves.of_none _ _ _ _)
-  rw [Run.query_returnsResult_faultless (script := sql r"SELECT 1 + 2") rfl rfl db env resolved (Resolved.Query.source_none _ _ _ rfl) (by simp)
+  rw [Run.query_returnsResult_faultless (script := sql r"SELECT 1 + 2") rfl rfl db env (runScriptStep_output_of_resolved resolved) (Resolved.Query.source_none _ _ _ rfl) (by simp)
     (by unfold Resolved.Statement.Calm; decide +kernel) rfl (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row _ expression member => by
       simp [sumQuery, Resolved.Query.expressions, Resolved.Query.keptExpressions,
@@ -84,7 +84,7 @@ theorem names_returns (db : Database) (env : Env) (schema : db.HasCatalog shop) 
     rw [catalog_state shop db env schema]
     decide +kernel
   rw [Run.query_returnsResult_faultless (script := sql r"SELECT name FROM pragma_table_info('customers')") rfl rfl
-    db env resolved (Resolved.Query.source_pragma _ db.raw none namesQuery _ customersInfo rfl rfl) (by simp)
+    db env (runScriptStep_output_of_resolved resolved) (Resolved.Query.source_pragma _ db.raw none namesQuery _ customersInfo rfl rfl) (by simp)
     (by unfold Resolved.Statement.Calm; decide +kernel) rfl (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row _ expression member => by
       simp [namesQuery, Resolved.Query.expressions, Resolved.Query.keptExpressions,
@@ -121,7 +121,7 @@ theorem values_returns (value : Value) (rows : List (List Value))
       .ok (.query valuesQuery [], (db.raw.connection env.counters).resolveState) := by
     rw [catalog_state shop db env schema]
     exact resolves
-  rw [Run.query_returnsResult_faultless head rfl db env resolved (Resolved.Query.source_each _ db.raw none valuesQuery _ _ rows rfl parsed) (by simp)
+  rw [Run.query_returnsResult_faultless head rfl db env (runScriptStep_output_of_resolved resolved) (Resolved.Query.source_each _ db.raw none valuesQuery _ _ rows rfl parsed) (by simp)
     (by unfold Resolved.Statement.Calm; decide +kernel) rfl (Resolved.Query.bindWindow_literal _ _ rfl rfl)
     (fun row _ expression member => by
       simp [valuesQuery, Resolved.Query.expressions, Resolved.Query.keptExpressions,
@@ -174,7 +174,7 @@ theorem malformed_unmodeled (db : Database) (env : Env) (schema : db.HasCatalog 
     Connection.queryContext_calm (db.raw.connection env.counters) [] keysQuery [] calm
   have found := Resolved.Query.source_each_fault (Resolved.EvalContext.statement [] db.raw []) db.raw none keysQuery
     _ _ .malformed rfl (by rw [Resolved.Expr.eval_literal]; exact malformed_rows)
-  exact Run.send_unready (script := sql r"SELECT key FROM json_each('[1')") rfl db env resolved (value := 0)
+  exact Run.send_unready (script := sql r"SELECT key FROM json_each('[1')") rfl db env (runScriptStep_output_of_resolved resolved) (value := 0)
     (by simp [statementClock, calm.readsClock]) (calm.firstUnknown _)
     (by rw [context]; exact found)
     (Or.inr (Or.inl rfl)) property code

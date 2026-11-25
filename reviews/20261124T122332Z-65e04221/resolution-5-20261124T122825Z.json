@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:28:25+00:00",
+  "finding": "20261124T122332Z-65e04221#5",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Named the affected modules, fixtures and test suites in the status file."
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:09:47+00:00",
+  "finding": "20261124T120404Z-ddf1cc2e#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Split A22 into a separately compiled fixture with its logical axiom audit."
+}

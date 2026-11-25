@@ -100,12 +100,14 @@ def ConcatSite.lookupMove {database : Database.Raw} {tableName idName firstName 
       cases List.mem_singleton.mp member
       simp [Output.readsBelow, Expr.readsBelow, Expr.any, Expr.isColumnFrom]
       exact idInside
-    resolvesBefore := fun state same => by
+    outputBefore := fun connection same => by
+      let state := connection.resolveState
       obtain ⟨names, resolved⟩ := resolve_pipes_lookup runContext state (tableReference tableName alias)
         site.position site.table.shape idName firstName secondName text number rfl rfl rfl
         (by rw [same]; exact site.found) site.idFound site.firstFound site.secondFound
-      exact ⟨names, state, resolved⟩
-    resolvesAfter := fun state same => by
+      exact ⟨names, fun _ _ => runScriptStep_output_of_resolved resolved⟩
+    outputAfter := fun connection same => by
+      let state := connection.resolveState
       have extended : state.catalog.findTable tableName = some (site.position,
           { site.table.shape with
             columns := site.table.shape.columns ++ [textColumn storedName site.table.shape.strict] }) := by
@@ -117,7 +119,7 @@ def ConcatSite.lookupMove {database : Database.Raw} {tableName idName firstName 
         site.position _ idName storedName text number rfl rfl rfl extended
         (columnPosition_append site.idFound _) (columnPosition_append_new site.fresh (by simp [textColumn]))
         (by simp [strict]) (by simp [textColumn])
-      exact ⟨names, state, resolved⟩
+      exact ⟨names, fun _ _ => runScriptStep_output_of_resolved resolved⟩
     calmBefore := fun names => simpleColumn_calm _ _ _ names (pipesFilter_calm _ _ _)
     calmAfter := fun names => simpleColumn_calm _ _ _ names (storedFilter_calm _ _)
     agree := fun wide => by

@@ -132,13 +132,16 @@ example : unsupportedParents.all (fun db =>
     !db.raw.parentSchemasCompatible db.raw.catalog.foreignKeyMapping &&
       db.raw.rowReferencesHold db.raw.catalog.foreignKeyMapping) = true := by decide +kernel
 
-/-- The exported full-statement theorem establishes the pragma output from both new facts. -/
+/-- Preparation and the row-reference criterion give an empty result for this pragma. -/
 theorem selectedPragmaEmpty :
     (Belay.Sqlite.Model.runScriptStep runContext none 0 (repeated.raw.connection {})
       (.pragma (.foreignKeyCheck none)) []).output = .rows [] := by
-  apply (Belay.Sqlite.Model.runScriptStep_keyCheck_empty _ _ _ _ _ (fun position _ =>
-    Belay.Sqlite.Model.Database.ParentSchemasCompatible.noMismatch
-      (by decide +kernel : repeated.raw.ParentSchemasCompatible repeated.raw.catalog.foreignKeyMapping) position)).mpr
+  have prepared := (Model.resolvePragma_keyCheck_iff (repeated.raw.connection {}).resolveState).mpr fun position _ =>
+    Model.Database.ParentSchemasCompatible.noMismatch
+      (by decide +kernel : repeated.raw.ParentSchemasCompatible repeated.raw.catalog.foreignKeyMapping) position
+  rw [Model.runScriptStep_output]
+  simp only [statement_arms, Model.resolveStatementPragma_foreignKeyCheck, prepared]
+  rw [Model.resolvedStepOutput_keyCheck_empty, Model.Database.keyCheck_nil_iff]
   decide +kernel
 
 /-- A caller may use one explicit comparison for every declaration of this database. -/
@@ -190,8 +193,7 @@ example : secondSelected.ParentSchemasCompatible secondSelected.catalog.foreignK
 #print axioms Belay.Sqlite.Model.Database.RowReferencesHold.drop
 #print axioms Belay.Sqlite.Model.resolvePragma_keyCheck_iff
 #print axioms Belay.Sqlite.Model.Database.ParentSchemasCompatible.noMismatch
-
 #print axioms dropPreservesRows
 #print axioms parentDeleteKeepsSchema
-#print axioms Belay.Sqlite.Model.runScriptStep_keyCheck_empty
-#print axioms Belay.Sqlite.Model.runScriptStep_tableKeyCheck_empty
+#print axioms Belay.Sqlite.Model.Database.keyCheck_nil_iff
+#print axioms Belay.Sqlite.Model.Database.tableKeyCheck_nil_iff

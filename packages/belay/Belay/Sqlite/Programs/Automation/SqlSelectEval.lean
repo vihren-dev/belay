@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model
 import Lean.Meta.AppBuilder
 import Lean.Util.Recognizers
 import Lean.Meta.Tactic.Util
@@ -75,31 +76,54 @@ def evaluateNatural? (term : Expr) : MetaM (Option Nat) := do
   if term.hasMVar || term.hasFVar || term.hasLooseBVars then return none
   try return naturalValue? (← kernelNormalize term) catch _ => return none
 
+/-- A catalog output term supplies all seven arguments of {name}`Model.statementOutputAt`. -/
+private def isCatalogOutput (term : Expr) : Bool := term.isAppOfArity ``Model.statementOutputAt 7
+
 /-- The proof of a closed equation that evaluation decides, as an auxiliary theorem that the kernel
-checks at once: a decision of the equation, which the kernel reduces to {lean}`true`, when the type has
-decidable equality, else reflexivity. The result is {lean}`(none : Option Nat)` when the kernel accepts
-neither, for example when its recursion is too deep. -/
+checks at once. For a catalog output equation, try reflexivity first because both sides can
+compute the same output with variable runtime rows. Other equations try a decision first. The result
+is {lit}`none` when the kernel accepts neither proof, for example when its recursion is too deep. -/
 def evaluationProof? (equation : Expr) : MetaM (Option Expr) := do
   let some (_, left, _) := equation.eq? | return none
   let decision : MetaM Expr := do
     let instance_ ← synthInstance (mkApp (mkConst ``Decidable) equation)
     return mkApp3 (mkConst ``of_decide_eq_true) equation instance_ (← mkEqRefl (mkConst ``Bool.true))
-  for proof in [decision, mkEqRefl left] do
+  let proofs := if isCatalogOutput left then
+    [mkEqRefl left, decision]
+  else [decision, mkEqRefl left]
+  for proof in proofs do
     try return some (← mkAuxTheorem equation (← proof)) catch _ => pure ()
   return none
 
-/-- Close an equation whose left side has no variable and no metavariable by evaluation: the kernel normalizes the
-left side, the right side is unified with the value, which assigns its metavariables, and the proof is
-{lit}`Eq.refl` of the left side. The result is {lean}`false`, with no change, when the goal is not such
-an equation or the value does not unify. -/
+/-- For a catalog output equation, normalize just the closed resolution and infer the resolved
+statement used by the right-hand output. The clock, index, connection and values can contain
+variables. A match proposes an instantiation; {name}`evaluationProof?` checks the entire equation. -/
+private def inferOutputStatement (left right : Expr) : MetaM Bool := do
+  let_expr Model.statementOutputAt context schema statement _ _ _ _ := left | return false
+  let_expr Model.resolvedStepOutput _ _ _ _ expected _ := right | return false
+  let resolution := mkApp3 (mkConst ``Model.resolveStatement) context schema statement
+  if resolution.hasMVar || resolution.hasFVar || resolution.hasLooseBVars then return false
+  let .ok result := Kernel.whnf (← getEnv) (← getLCtx) resolution | return false
+  let_expr Except.ok _ _ pair := result | return false
+  let .ok fields := Kernel.whnf (← getEnv) (← getLCtx) pair | return false
+  let_expr Prod.mk _ _ kind _ := fields | return false
+  isDefEq expected (← kernelNormalize kind)
+
+/-- Close a closed-data equation by kernel evaluation, or a catalog output equation by computing
+its closed resolution. Unification can fill metavariables on the right. The kernel checks the
+instantiated equation and a failed attempt restores the goal. -/
 def closeByEvaluation (goal : MVarId) : MetaM Bool := goal.withContext do
   let type ← whnfR (← instantiateMVars (← goal.getType))
   let some (_, left, right) := type.eq? | return false
-  if left.hasMVar || left.hasFVar || left.hasLooseBVars then return false
   let saved ← saveState
   try
-    let value ← kernelNormalize left
-    if ← isDefEq right value then
+    let unified ← if isCatalogOutput left && right.hasMVar then
+      inferOutputStatement left right
+    else if left.hasMVar || left.hasFVar || left.hasLooseBVars then
+      pure false
+    else
+      isDefEq right (← kernelNormalize left)
+    if unified then
       if let some proof ← evaluationProof? (← instantiateMVars type) then
         goal.assign proof
         return true

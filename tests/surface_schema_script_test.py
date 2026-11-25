@@ -7,6 +7,7 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
+from tests.s6_check_support import CHAIN_TEST_TIMEOUT_SECONDS
 from tests.surface_assertion_examples_test import check_module_chain, lines_after
 from tests.surface_replay_test import model_cell, native_replay, native_rows
 
@@ -65,3 +66,52 @@ def test_schema_laws_on_concrete_databases_agree_with_pinned_sqlite(runtime_root
         assert len(refusals) == len(modeled_errors) == len(EXPECTED_ERRORS[name]), (name, result.stderr)
         for line, expected in zip(refusals, EXPECTED_ERRORS[name], strict=True):
             assert expected in line, (name, line, expected)
+
+
+def test_single_send_equivalence_requires_no_validity_premise(runtime_root: Path, tmp_path: Path) -> None:
+    """ReplacedGeneralSend checks both directions of the singleton send iff on an arbitrary connection with only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ReplacedGeneralSend", 1),), timeout=60)
+
+
+@pytest.mark.timeout(CHAIN_TEST_TIMEOUT_SECONDS)
+def test_client_claims_on_items_follow_from_the_kind_rules(runtime_root: Path, tmp_path: Path) -> None:
+    """The fixtures ItemInsertSite, ItemInsertOutcomes, ItemInsertClaims and ItemInsertAnyClaims prove client
+    claims about a table with an INTEGER PRIMARY KEY alias. The proofs use the kind rules of CREATE TABLE and plain
+    INSERT through the bridge Sql.check_send_of_rule. On arbitrary valid rows, a new key inserts one row, and an
+    existing key fails with code 19 and keeps the database. CREATE TABLE on an empty catalog then INSERT gives a
+    table with exactly the new row. sql_run proves that the insert keeps the condition that every stored item has a
+    name that is not NULL. For each id, the insert has the output done 1 and the new row after the old rows, or one
+    error output and the database before. The chain compiles each module once. Every theorem uses only logical
+    axioms."""
+    check_module_chain(runtime_root, tmp_path, (("ItemInsertSite", 0), ("ItemInsertOutcomes", 0),
+                                                ("ItemInsertClaims", 4), ("ItemInsertAnyClaims", 1)))
+
+
+def test_control_rules_check_each_reached_connection(runtime_root: Path, tmp_path: Path) -> None:
+    """ControlSendClaims checks the observed results and next connections for BEGIN, COMMIT, ROLLBACK and setting pragmas."""
+    check_module_chain(runtime_root, tmp_path, (("ControlSendClaims", 4),), timeout=60)
+
+
+def test_schema_rules_check_each_ddl_outcome(runtime_root: Path, tmp_path: Path) -> None:
+    """SchemaSendClaims exercises all eight schema and prepare-error equations on variable connections."""
+    check_module_chain(runtime_root, tmp_path, (("SchemaSendClaims", 8),), timeout=90)
+
+
+def test_row_write_send_observes_every_production(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the UPSERT and INSERT SELECT equations through sql_run on a variable connection,
+    including each admitted source production's count or error and its entry in the trace."""
+    check_module_chain(runtime_root, tmp_path, (("RowWriteSendClaims", 2),), timeout=90)
+
+
+def test_insert_with_rules_reports_its_count_or_error(runtime_root: Path, tmp_path: Path) -> None:
+    """Exercise runScriptStep_insertWithRules_eq through sql_run on a variable database
+    and check that the client proof uses only logical axioms."""
+    check_module_chain(runtime_root, tmp_path, (("InsertWithRulesClaim", 1),), timeout=90)
+
+
+def test_all_returning_and_program_write_modes(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the remaining resolved write equations via sql_run, covering the trace of each
+    successful and refused write and each production of INSERT SELECT with RETURNING."""
+    check_module_chain(runtime_root, tmp_path, (
+        ("ProgramWriteClaims", 7), ("ReturningWriteClaims", 4), ("SourceWriteClaims", 4)
+    ), timeout=180)

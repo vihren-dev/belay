@@ -37,7 +37,7 @@ def customerByEmail (email : Value) : Script :=
 -- the column: the laws of `DerivedColumnMigration` take a check that the kernel evaluates.
 --
 -- theorem named_read_preserved : addEmailLower preserves namedCustomers on shop :=
---   DerivedColumnMigration.preserves_of_check (by decide +kernel)
+--   DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 --
 -- theorem email_lower_succeeds : addEmailLower succeeds on shop :=
 --   DerivedColumnMigration.succeeds_of_check (by decide +kernel)

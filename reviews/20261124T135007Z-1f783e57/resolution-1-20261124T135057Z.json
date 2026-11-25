@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:50:57+00:00",
+  "finding": "20261124T135007Z-1f783e57#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "State both continuing frames, both subquery shapes, shared bindings, table facts and equivalence at every context."
+}

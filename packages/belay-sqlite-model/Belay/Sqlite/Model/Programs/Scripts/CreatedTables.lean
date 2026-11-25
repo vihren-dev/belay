@@ -1,22 +1,10 @@
 import Belay.Sqlite.Model.Programs.Scripts.TablePath
-import Belay.Sqlite.Model.Programs.Scripts.CreateTableStepLaws
+import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Schema.Ddl.SchemaExtensionLaws
 
 set_option doc.verso true
 
 namespace Belay.Sqlite.Model
-
-/-- Whenever a resolved CREATE TABLE step continues, the new position holds the resolved table shape
-with no rows. Proof sketch: {name}`runScriptStep_createTable` gives the appended table and the aligned
-row stores. Looking up the append position selects the new table and the last, empty store. -/
-theorem runScriptStep_createTable_empty {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {c next : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {pos : Nat} {name : Identifier} {shape : CatalogTable} {out : Output} {others : List StatementExecution}
-    (resolved : resolveStatement context c.resolveState statement = .ok (.createTable pos name shape, after))
-    (step : runScriptStep context clock index c statement parameters = .continued out next others) :
-    next.state.database.table pos = some ⟨shape, []⟩ := by
-  obtain ⟨_, _, rfl, aligned, rfl⟩ := runScriptStep_createTable resolved step
-  simp [Database.table, Catalog.tableAt_createTable_end, List.getD_eq_getElem?_getD, aligned]
 
 /-- Locate the empty table created at statement {lit}`origin` after a prefix of length {lit}`count`.
 The result contains its position and shape. It is absent before creation, for a no-op, and once a
@@ -45,7 +33,9 @@ def ResolveState.CreatedTablesAt (initial : ResolveState) (path : List Resolved.
 /-- Suppose the statement resolves to the entry at position {lit}`n` of the path, the connection's
 resolution state equals the prefix state there, and its database satisfies {name}`ResolveState.CreatedTablesAt`
 for that prefix. If the step continues, the next database of every error-free execution satisfies
-{name}`ResolveState.CreatedTablesAt` at {lit}`n + 1`. Proof sketch: a fresh creation uses {name}`runScriptStep_createTable_empty`. For a previous creation,
+{name}`ResolveState.CreatedTablesAt` at {lit}`n + 1`. Proof sketch: for a fresh creation, the kind rule
+{name}`runScriptStep_createTable_eq` gives the next database and {name}`Database.table_createTable_end` the empty
+table at the end. For a previous creation,
 {name}`runScriptStep_keepsTable` supplies the new lookup whenever the frame check succeeds. -/
 theorem runScriptStep_createdTables {context : ResolveContext} {clock : Option Clock} {index n : Nat}
     {initial : ResolveState} {path : List Resolved.Statement} {resolved : Resolved.Statement} {after : ResolveState}
@@ -62,10 +52,15 @@ theorem runScriptStep_createdTables {context : ResolveContext} {clock : Option C
   split at found
   · cases resolved <;> try contradiction
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj found)
-    obtain ⟨_, rfl, _⟩ := runScriptStep_createTable resolution step
-    simp only [RunStep.executions, List.mem_singleton] at member
-    subst ex
-    exact runScriptStep_createTable_empty resolution step
+    rw [runScriptStep_createTable_eq resolution] at step
+    split at step
+    · rename_i guard
+      cases step
+      simp only [RunStep.executions, List.mem_singleton] at member
+      subst ex
+      obtain ⟨rfl, aligned⟩ := guard
+      exact Database.table_createTable_end _ _ aligned
+    · cases step
   · simp only [Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq, Prod.mk.injEq] at found
     obtain ⟨⟨old, priorShape⟩, previous, moved, kept, rfl, rfl⟩ := found
     rw [← same] at kept

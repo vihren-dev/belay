@@ -121,11 +121,11 @@ open Belay.Sqlite
 
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 theorem lookup_read_preserved : ∀ email : Value,
     addEmailLower preserves (customerIdByEmail email) on shop :=
-  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null
+  DerivedColumnMigration.preserves_of_check_forall customerIdByEmail .null id
     (fun _ => rfl) (by decide +kernel)
 
 theorem email_lower_succeeds :
@@ -136,8 +136,10 @@ theorem email_lower_succeeds :
 - `preserves_of_check` proves a read of the old columns of the table: one
   `SELECT` of the table, with no join, subquery, `*`, grouping, ordering or
   limit. `preserves_of_check_forall` does the same for a read with a value of
-  a Lean variable. The third argument proves that the read has the same
-  statements for every value; it is `fun _ => rfl` when the variable is only
+  a Lean variable. In both calls, `id` checks the read itself. You may map it to
+  another statement and prove that their outputs agree on every input. The fourth
+  argument of `preserves_of_check_forall` proves that the read has the same
+  statements for every value. It is `fun _ => rfl` when the variable is only
   a bound value.
 - `succeeds_of_check` proves `Succeeds`. Its check is false when the new
   column has a type in a `STRICT` table, or when the value can fail, for

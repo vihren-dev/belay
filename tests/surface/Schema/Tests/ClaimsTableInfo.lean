@@ -61,7 +61,7 @@ theorem tableInfo_results {script : Script} (db : Database) (argument bytes : Li
     _ _ rfl rfl rfl (by dsimp only; decide +kernel) notFunction notView info resolves
   have one : script.statements.length = 1 := by simp [head]
   rw [Run.send_returnsResult_iff_query one]
-  exact Run.query_returnsResult_calm head one db Env.default resolved
+  exact Run.query_returnsResult_calm head one db Env.default (runScriptStep_output_of_resolved resolved)
     (Resolved.Query.source_pragma _ _ none _ _ _ rfl rfl) (by simp)
     (Resolved.Statement.Calm.selectOne_pragma _ _ (by simp [nameCondition, sql_simp])) rfl rfl rfl
     (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl property

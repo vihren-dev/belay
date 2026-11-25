@@ -47,9 +47,9 @@ theorem missing_table_error (db : Database) (env : Env)
       source := some { table := name! "missing", alias := none }, joins := [], filter := none, groupBy := [],
       orderBy := [], limit := none, offset := none, parent := none, having := none, distinct := false,
       compound := none } _ rfl rfl rfl rfl rfl missing notView rfl rfl
-  exact ⟨fun property => (Run.query_prepareError (script := missingQuery) rfl missingQuery_one db env resolved
+  exact ⟨fun property => (Run.query_prepareError (script := missingQuery) rfl missingQuery_one db env (runScriptStep_output_of_resolved resolved)
       property (fun _ => True)).1,
-    fun code => (Run.query_prepareError (script := missingQuery) rfl missingQuery_one db env resolved
+    fun code => (Run.query_prepareError (script := missingQuery) rfl missingQuery_one db env (runScriptStep_output_of_resolved resolved)
       (fun _ => True) code).2⟩
 
 /-- B11 and B01 in the form of {name}`Sql.check`: under the premises of
@@ -117,8 +117,7 @@ theorem unmodeled_stop (db : Database) (env : Env) (noClock : env.clock = none) 
       (.select [.expression (.currentTime "CURRENT_TIMESTAMP") none "CURRENT_TIMESTAMP"] none [] none [] [] none none [] none
         false none) [] = .ended clockUnmodeled := by
     rw [noClock]
-    unfold runScriptStep runScriptStepWith
-    rw [resolved]
+    rw [runScriptStep_query_eq resolved]
     rfl
   have stopped (post : Except Nat (List (List Value)) → ExecutionContext → Prop) :
       ¬ (query clockQuery clockQuery_one).check post (ExecutionContext.initial db env) :=

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Programs.Automation.SqlRunGoals
+import Belay.Sqlite.Programs.Automation.SqlRunKindRules
 import Belay.Sqlite.Programs.Automation.SqlSelect
 
 set_option doc.verso true
@@ -6,7 +6,8 @@ set_option doc.verso true
 /-! The tactic {lit}`sql_run` (ADR 0017, S6). It reduces the check of a SQL program to the obligations
 that the public step rules leave: for each sent statement the resolution, the table, the model's
 coverage, and the goals for the success and the failure of the step, then the check of the rest of the
-program at the reached connection. The check of a query of one SELECT goes first to the procedure of
+program at the reached connection. A sent statement of a kind with a kind rule ({lit}`step_rule`) goes through
+{lit}`Sql.check_send_of_rule`, and its goals are the cases of the rule that continue. The check of a query of one SELECT goes first to the procedure of
 {lit}`sql_select`, which proves it from the catalog of the database; when that procedure does not close
 it, the step rule of the read applies. Every rule is a theorem; the tactic only applies them, so a proof it
 builds is checked by the kernel like any other proof. -/
@@ -66,7 +67,7 @@ where
       evalTactic (← `(tactic| refine Sql.check_single_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
     else
       evalTactic (← `(tactic| refine Sql.check_query_select (statement := $statement) (values := $values) rfl rfl ?modeled ?reached))
-    processPremises hints fuel ``Model.Syntax.Statement.select (← getGoals)
+    processPremises hints fuel (← getGoals)
   /-- Whether the procedure of {lit}`sql_select` closes the check of a query. When it does not, the state,
 the goal and the messages stay as they were, and the step rule of the read applies. -/
   closesBySelect (hints : Hints) (goal : MVarId) : TacticM Bool := do
@@ -77,7 +78,9 @@ the goal and the messages stay as they were, and the step rule of the read appli
     saved.restore
     return false
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
-  statement, so that each statement gets its own rule at the context that the earlier ones reach. -/
+  statement, so that each statement gets its own rule at the context that the earlier ones reach. A visible SELECT uses its syntax rule, which
+  requires only its syntax. For other sends {name}`applyKindRule` tries the exact equations using the supplied resolutions.
+  The cases of a kind rule that fail are closed when their trace is not error-free. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
       | stuck first goal "the script is not a list of statements that Lean can read."
@@ -90,17 +93,23 @@ the goal and the messages stay as they were, and the step rule of the read appli
       let mut open_ := []
       for new in ← getGoals do open_ := open_ ++ (← runGoal hints false (fuel - 1) new)
       return open_
-    let some kind ← (do match ← statementKind? statement with
-        | some kind => pure (some kind)
-        | none => kindFromHints hints goal)
-      | stuck first goal "the statement is not a constructor that Lean can read, and no hint closes the resolution of a statement that has a rule."
-    setGoals [goal]
-    evalTactic (← sendRule kind)
-    processPremises hints fuel kind (← getGoals)
+    let syntaxKind ← statementKind? statement
+    if syntaxKind == some ``Model.Syntax.Statement.select then
+      setGoals [goal]
+      evalTactic (← `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached))
+      return ← processPremises hints fuel (← getGoals)
+    if let some (open_, cases) ← applyKindRule hints goal then
+      let mut result := open_
+      for case_ in cases do
+        let failed := (← case_.getTag) == `failure
+        for rest in ← runGoal hints false (fuel - 1) case_ do
+          result := result ++ (← if failed then closeFailure rest else pure [rest])
+      return result
+    stuck first goal "no hint or hypothesis gives a resolved kind for this send."
   /-- Process the premises that a rule leaves. A premise about the context is closed from the hints or stays
   open. An outcome premise is entered, and the rest of the program runs inside it. The outcome premises stay
   open when a premise that they depend on is open. -/
-  processPremises (hints : Hints) (fuel : Nat) (kind : Name) (goals : List MVarId) : TacticM (List MVarId) := do
+  processPremises (hints : Hints) (fuel : Nat) (goals : List MVarId) : TacticM (List MVarId) := do
     let mut open_ := []
     let mut blocked := false
     -- A variable of the rule, such as the resolution state, takes the tag of the goal that the rule is applied to,
@@ -110,20 +119,16 @@ the goal and the messages stay as they were, and the step rule of the read appli
     let variables := goals.filter fun new => !premises.contains new
     for new in premises do
       let tag := (← new.getTag).eraseMacroScopes
-      match roleOf kind tag with
-      | .side =>
-        unless ← closeSide hints tag new do
-          open_ := open_ ++ [new]
-          blocked := blocked || blockingPremises.contains tag
-      | .outcome names replacesNext =>
+      if let some names := roleOf tag then
         if blocked then
           open_ := open_ ++ [new]
         else
-          let entered ← enterOutcome names replacesNext new
-          let rest ← runGoal hints false (fuel - 1) entered
-          if tag == `failure then
-            for goal in rest do open_ := open_ ++ (← closeFailure goal)
-          else open_ := open_ ++ rest
+          let (_, entered) ← new.introN names.length names
+          open_ := open_ ++ (← runGoal hints false (fuel - 1) entered)
+      else
+        unless ← closeSide hints tag new do
+          open_ := open_ ++ [new]
+          blocked := blocked || blockingPremises.contains tag
     return (← variables.filterM fun data => return !(← data.isAssigned)) ++ open_
 
 /-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not

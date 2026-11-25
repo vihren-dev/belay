@@ -60,16 +60,15 @@ theorem Database.tableNamed_drop_kept {database : Database} {positions : List Na
   rw [Database.tableNamed_of_findTable moved, same]
   rfl
 
-/-- For every database, name, table, definition of a new table and name of it: if the name finds a table
-in the database, the database after CREATE TABLE ({name}`Catalog.createTable` with an empty row list
-appended) finds the same table, with the same rows, at the same position. In plain words, creating a table
-does not disturb a table found by name. Proof sketch: {name}`Catalog.findTable_append_of_some` and
-{name}`Database.table_createTable`. -/
+/-- For every database, name, position, table, name of a new table and its definition: if the name finds the
+table at the position in the database, the database after CREATE TABLE ({name}`Database.createTable`) finds the
+same table, with the same rows, at the same position. In plain words, creating a table does not disturb a table
+found by name. The theorem requires nothing of the new name or definition, and it is not about a name that finds
+no table. Proof sketch: {name}`Catalog.findTable_append_of_some` and {name}`Database.table_createTable`. -/
 theorem Database.tableNamed_createTable {database : Database} {name : Identifier} {position : Nat}
     {table : Table} (found : database.tableNamed name = some (position, table))
     (created : Identifier) (definition : CatalogTable) :
-    ({ catalog := database.catalog.createTable created definition, rows := database.rows ++ [[]] } : Database).tableNamed
-      name = some (position, table) := by
+    (database.createTable created definition).tableNamed name = some (position, table) := by
   obtain ⟨lookup, present⟩ := Database.tableNamed_some found
   have moved := Catalog.findTable_append_of_some [{ name := created, entry := .table definition }] lookup
   rw [Database.tableNamed_of_findTable (by exact moved), Database.table_createTable created definition present]

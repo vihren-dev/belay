@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:09:46+00:00",
+  "finding": "20261124T120404Z-ddf1cc2e#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Documented the exact output and postcondition quantifiers, choices and errors."
+}

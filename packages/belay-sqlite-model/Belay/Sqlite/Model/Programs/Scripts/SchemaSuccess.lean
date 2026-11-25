@@ -1,4 +1,8 @@
-import Belay.Sqlite.Model.Programs.Scripts.StepContinuesOk
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
+import Belay.Sqlite.Model.Programs.Scripts.ControlRules
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
+import Belay.Sqlite.Model.Programs.Scripts.StepContinues
+import Belay.Sqlite.Model.Programs.Scripts.ResolvedStepGuards
 import Belay.Sqlite.Model.Programs.Scripts.CreateSchemaSuccess
 import Belay.Sqlite.Model.Programs.Scripts.SchemaKeyCheck
 
@@ -45,25 +49,40 @@ theorem runScriptStep_succeedsBySchema {context : ResolveContext} {clock : Optio
       output.isError = false := by
   unfold Resolved.Statement.succeedsBySchema at checked
   split at checked
-  · exact runScriptStep_setting_ok resolution
-  · exact runScriptStep_drop_ok resolution
-  · apply runScriptStep_begin_ok resolution
-    simpa [Connection.resolveState] using checked
+  · rw [runScriptStep_setting_eq resolution]
+    exact ⟨_, _, rfl, rfl⟩
+  · rw [runScriptStep_dropPlain_eq resolution]; exact ⟨_, _, rfl, rfl⟩
+  · rw [runScriptStep_begin_eq resolution]
+    cases snapshot : c.state.snapshot with
+    | none => exact ⟨_, _, rfl, rfl⟩
+    | some _ => simp [Connection.resolveState, snapshot] at checked
   · simp only [Bool.and_eq_true] at checked
     obtain ⟨open_, _⟩ := checked
     cases snapshot : c.state.snapshot with
     | none => simp [Connection.resolveState, snapshot] at open_
-    | some original => exact runScriptStep_commit_ok resolution snapshot
-  · exact runScriptStep_rewrite_ok resolution valid.1
-  · exact runScriptStep_dropColumn_ok resolution valid.1
+    | some original => rw [runScriptStep_commit_eq resolution, snapshot]; exact ⟨_, _, rfl, rfl⟩
+  · simp only [runScriptStep_rewrite_eq resolution, show _ = true from step_guards_hold resolution rfl valid.1, ite_true]
+    exact ⟨_, _, rfl, rfl⟩
+  · simp only [runScriptStep_dropColumn_eq resolution, show _ = true from step_guards_hold resolution rfl valid.1, ite_true]
+    exact ⟨_, _, rfl, rfl⟩
   · obtain ⟨table, _, accepts⟩ := List.any_eq_true.mp checked
     simp only [Bool.and_eq_true] at accepts
     obtain ⟨kind, ordered⟩ := accepts
     rw [eq_of_beq kind] at resolution
-    obtain ⟨_, rows⟩ := Database.keyCheckRows_modeled ordered
-    obtain ⟨output, step, ok⟩ := runScriptStep_keyCheck_resolved (clock := clock) (index := index)
-      (parameters := parameters) resolution rows
-    exact ⟨output, _, step, ok⟩
+    obtain ⟨actualRows, found⟩ := Database.keyCheckRows_modeled ordered
+    have out := runScriptStep_output context clock index c statement parameters
+    rw [resolution] at out
+    simp only [] at out
+    rw [resolvedStepOutput_keyCheck_clock] at out
+    obtain ⟨noError, modeled⟩ := resolvedStepOutput_keyCheck_rows index c parameters table actualRows found
+    cases step : runScriptStep context clock index c statement parameters with
+    | ended reason =>
+      rw [step] at out
+      exact absurd out.symm (modeled reason)
+    | continued output next others =>
+      rw [step] at out
+      obtain ⟨rfl, rfl⟩ := runScriptStep_readOnly_keeps resolution (.inl ⟨_, _, rfl⟩) step
+      exact ⟨output, _, rfl, by rw [show output = _ from out]; exact noError⟩
   all_goals first | exact runScriptStep_create_ok resolution checked valid.1 | contradiction
 
 end Belay.Sqlite.Model

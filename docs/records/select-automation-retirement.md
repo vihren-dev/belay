@@ -68,7 +68,7 @@ per-family characterization. The owners are named as they exist on main.
 | `QueryOutputFacts.lean` (98): `Query.described`, `resolvedStepOutput_query`, `resolvedStepOutput_query_source`, `Connection.runOn_of_found`, `normalForm_eq_nil` | Retained: the execution bridge of D5 uses them |
 | `QueryStatementOutput.lean`: `Fault.ne_must_iff_none`, `resolvedStepOutput_query_hasRows`, `_hasNoRows`, `_isError` | Retained: generic observation laws |
 | The resolver-only transports (`*Resolution.lean`) | Retained: see "Resolution-shape laws" |
-| The surface `Script.outputOn_<form>` equations in the files of the table above | Deleted, with the surface forms above. The generic `Script.outputOn_query`, `outputOn_eq_step`, `outputOn_isQuery` and `outputOn_eq_outputIn` stay |
+| The surface `Script.outputOn_<form>` equations in the files of the table above | Deleted, with the surface forms above. ADR 0033 generalizes `Script.outputOn_resolved` to every resolved kind. The projections `outputOn_eq_step`, `outputOn_isQuery` and `outputOn_eq_outputIn` stay |
 
 ## Model per-family output laws
 

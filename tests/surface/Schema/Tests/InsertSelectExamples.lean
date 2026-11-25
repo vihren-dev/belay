@@ -101,16 +101,14 @@ theorem written_fit : InsertFits (begin.state.database.keys 1 dstTable) dstTable
   rowidsBounded := by decide +kernel
 
 /-- Success law of INSERT from a query: the step continues without an error, with no other execution, and the
-database after it is the database with the target rows of the table with the two rows appended. The ten premises
-of the general law are the facts above and kernel checks of the clauses. Proof sketch:
-{name}`runScriptStep_insertSelect_success`. -/
+database after it is the database with the target rows of the table with the two rows appended. Proof sketch: apply the exact INSERT SELECT rule and evaluate the production on the fixture database. -/
 theorem insert_select_appends_the_rows : ∃ output next, stepOf begin okStatement = .continued output next [] ∧
     output.isError = false ∧ next.state.database = begin.state.database.setRows 1
       (LiteralData.inserted dstTable written).rows := by
   obtain ⟨after, found⟩ := resolvesTo_sound ok_resolves
-  exact runScriptStep_insertSelect_success (value := 0) (table := dstTable) (rows := selected) found
-    (by decide +kernel) (by decide +kernel) dst_present certain written_fit (by decide +kernel) (by decide +kernel)
-    (by decide +kernel) (by decide +kernel) (by decide +kernel)
+  unfold stepOf
+  rw [runScriptStep_plainInsertSelect_eq (by exact found)]
+  exact ⟨_, _, rfl, rfl, rfl⟩
 
 -- The failing cases: each premise of the success law is needed
 

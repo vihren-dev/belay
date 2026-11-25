@@ -1,3 +1,5 @@
+import Belay.Sqlite.Model.Programs.Scripts.CreateObjectRules
+import Belay.Sqlite.Model.Programs.Scripts.CreateTableRule
 import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepOk
 
 set_option doc.verso true
@@ -25,40 +27,21 @@ theorem runScriptStep_create_ok {context : ResolveContext} {clock : Option Clock
     (creates : resolved.createsBySchema = true) (valid : c.state.database.Valid profile) :
     ∃ output next, runScriptStep context clock index c statement parameters = .continued output next [] ∧
       output.isError = false := by
-  let created : Database := { catalog := resolved.applyCatalog c.state.database.catalog, rows := c.state.database.rows ++ [[]] }
   have guards := step_guards_hold found rfl valid
   cases resolved <;> simp only [Resolved.Statement.createsBySchema, Bool.not_eq_true'] at creates
   all_goals try contradiction
-  case createTable => exact runScriptStep_createTable_ok found valid
+  case createTable =>
+    obtain ⟨atEnd, aligned⟩ := guards
+    simp [runScriptStep_createTable_eq found, atEnd, aligned, Output.isError]
   case createIndex =>
     obtain ⟨pos, aligned, present⟩ := guards
     obtain ⟨table, tableAt⟩ := Option.isSome_iff_exists.mp present
-    obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) rfl
-      (by rfl) (by rfl) (by simp [created, Resolved.Statement.applyCatalog, SqlState.statementRun, runStatement, Model.step, pos, aligned, tableAt, creates])
-      (by rfl)
-    exact ⟨out, next, step, ok⟩
-  all_goals
+    simp [runScriptStep_createIndex_eq found, pos, aligned, tableAt, creates, Output.isError]
+  case createView =>
     obtain ⟨pos, aligned⟩ := guards
-    obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-      (index := index) (database := created) found rfl (by intro _ _ h; cases h) (value := 0) rfl
-      (by rfl) (by rfl) (by simp [created, Resolved.Statement.applyCatalog, SqlState.statementRun, runStatement, Model.step, pos, aligned]) (by rfl)
-    exact ⟨out, next, step, ok⟩
-
-/-- Every resolved DROP COLUMN on a valid database continues with one successful execution.
-Proof sketch: {name}`step_guards_hold` proves the whole drop guard from the catalog.
-{name}`runScriptStep_ordinary_ok` then reads the successful effect. -/
-theorem runScriptStep_dropColumn_ok {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {c : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {pos column : Nat} {stored : Catalog} {profile : Profile}
-    (found : resolveStatement context c.resolveState statement = .ok (.dropColumn pos column stored, after))
-    (valid : c.state.database.Valid profile) :
-    ∃ output next, runScriptStep context clock index c statement parameters = .continued output next [] ∧
-      output.isError = false := by
-  have runs : c.state.database.runsDropColumn pos column stored = true := step_guards_hold found rfl valid
-  obtain ⟨out, next, step, ok, _⟩ := runScriptStep_ordinary_ok (parameters := parameters) (clock := clock)
-    (index := index) (database := c.state.database.dropColumn pos column stored) found rfl (by intro _ _ h; cases h) (value := 0) rfl
-    (by rfl) (by rfl) (by simp [SqlState.statementRun, runStatement, Model.step, runs]) (by rfl)
-  exact ⟨out, next, step, ok⟩
+    simp [runScriptStep_createView_eq found, pos, aligned, Output.isError]
+  case createTrigger =>
+    obtain ⟨pos, aligned⟩ := guards
+    simp [runScriptStep_createTrigger_eq found, pos, aligned, Output.isError]
 
 end Belay.Sqlite.Model

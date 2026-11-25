@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T12:43:02+00:00",
+  "finding": "20261124T124106Z-a03b312b#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Remeasured the start and final fixture back to back; the comparable pair is 4.38 s versus 5.80 s. The status also records the earlier measurements."
+}

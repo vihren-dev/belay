@@ -7,17 +7,17 @@ namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
 /-- For every script of one statement with its values, database, environment, property {lit}`Q`
-of a result and property {lit}`E` of a result code: when the statement resolves to a query
-statement on the new connection, the step runs it at a clock value with known counters and source
+of a result and property {lit}`E` of a result code: when the output on the new connection equals the output of a query
+statement, the named query has a clock value at index zero with known counters and source
 rows {lit}`source`, and a nested subquery has a fallible call, the source possibly fails, or the
 run possibly fails, then the run of the script returns neither a result with {lit}`Q` nor an error
 with {lit}`E`. Proof sketch: {name}`resolvedStepOutput_select_unready` gives an unmodeled output,
 which returns neither. -/
 theorem Run.send_unready {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (db : Database) (env : Env) {query : Resolved.Query}
-    {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    {subqueries : List Resolved.Query} {value : Int} {source : Resolved.SourceRows}
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (clocked : statementClock env.clock 0 (.query query subqueries) = some value)
     (known : (db.raw.connection env.counters).state.counters.firstUnknown
       (Resolved.Statement.query query subqueries).counterReads = none)
@@ -31,15 +31,14 @@ theorem Run.send_unready {script : Script} {statement : Syntax.Statement} {param
   have one : script.statements.length = 1 := by rw [head]; rfl
   rw [Run.send_returnsResult_iff one, Run.send_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
-  rw [same, runScriptStep_output, resolved]
-  dsimp only
+  rw [same, observed]
   rw [resolvedStepOutput_select_unready env.clock 0 _ parameters clocked known found unready]
   simp [Output.returnsResult, Output.returnsError]
 
 /-- Failure rule of a run: for every script of one statement with its values, database,
 environment, property {lit}`Q` of a result and property {lit}`E` of a result code: when the
-statement resolves to a query statement that is no compound on the new connection, the step runs
-it at a clock value with known counters, source rows {lit}`source` and a window that binds to the
+step output equals the output of a query statement that is no compound on the new connection, the named query has
+a clock value at index zero with known counters, source rows {lit}`source` and a window that binds to the
 query {lit}`bound`, no nested subquery has a fallible call, the source does not possibly fail, and
 {lit}`bound` over the source rows has no failing aggregate and certainly fails
 ({name}`Resolved.Query.mustFail`), then
@@ -51,10 +50,10 @@ query {lit}`bound`, no nested subquery has a fallible call, the source does not 
 Proof sketch: {name}`resolvedStepOutput_select_mustFail` gives the error output. -/
 theorem Run.send_mustFail {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (db : Database) (env : Env) {query : Resolved.Query}
-    {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
+    {subqueries : List Resolved.Query} {value : Int} {source : Resolved.SourceRows}
     {bound : Resolved.Query}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.query query subqueries, after))
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.query query subqueries))
     (single : query.compound = none)
     (clocked : statementClock env.clock 0 (.query query subqueries) = some value)
     (known : (db.raw.connection env.counters).state.counters.firstUnknown
@@ -74,16 +73,14 @@ theorem Run.send_mustFail {script : Script} {statement : Syntax.Statement} {para
   have one : script.statements.length = 1 := by rw [head]; rfl
   rw [Run.send_returnsResult_iff one, Run.send_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
-  rw [same, runScriptStep_output, resolved]
-  dsimp only
+  rw [same, observed]
   rw [resolvedStepOutput_select_mustFail env.clock 0 _ parameters single clocked known found plain sourceCertain window
     noOverflow mustFail]
   simp [Output.returnsResult, Output.returnsError]
 
 /-- Prepare-error rule: for every script of one statement with its values, proof that it has one
 statement, database, environment, property {lit}`Q` of a result and property {lit}`E` of a result
-code: when the statement resolves on the connection of the environment to a prepare error
-({name}`resolveStatement`), then
+code: when the step output equals the output of a prepare error on the connection of the environment, then
 
 * the run of the program {name}`query` of the script returns no result with {lit}`Q`
   ({name}`Run.returnsResult`), and
@@ -91,21 +88,20 @@ code: when the statement resolves on the connection of the environment to a prep
   primary code of that prepare error ({name}`ExecutionError.primaryCode`).
 
 The rule holds for every environment: the statement reads no clock and no counter. Proof sketch:
-{name}`runScriptStep_output` reads the resolution, and {name}`resolvedStepOutput_prepareError`
+the assumed output equality and {name}`resolvedStepOutput_prepareError`
 gives the error output. -/
 theorem Run.query_prepareError {script : Script} {statement : Syntax.Statement} {parameters : List Value}
     (head : script.statements = [(statement, parameters)]) (one : script.statements.length = 1) (db : Database)
-    (env : Env) {error : PrepareError} {after : ResolveState}
-    (resolved : resolveStatement runContext (db.raw.connection env.counters).resolveState statement =
-      .ok (.prepareError error, after))
+    (env : Env) {error : PrepareError}
+    (observed : (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) statement parameters).output =
+      resolvedStepOutput env.clock 0 (db.raw.connection env.counters) parameters (.prepareError error))
     (property : List (List Value) → Prop) (code : Nat → Prop) :
     ¬ (db.run (Belay.Sqlite.query script one) env).returnsResult property ∧
       ((db.run (Belay.Sqlite.query script one) env).returnsError code ↔
         code (ExecutionError.prepare error).primaryCode) := by
   rw [Run.query_returnsResult_iff one, Run.query_returnsError_iff one]
   have same : script.statements[0]'(by rw [one]; exact Nat.one_pos) = (statement, parameters) := by simp [head]
-  rw [same, runScriptStep_output, resolved]
-  dsimp only
+  rw [same, observed]
   rw [resolvedStepOutput_prepareError]
   simp [Output.returnsResult, Output.returnsError]
 

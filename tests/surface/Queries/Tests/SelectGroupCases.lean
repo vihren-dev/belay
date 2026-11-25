@@ -95,7 +95,7 @@ theorem customer_counts (db : Database) (env : Env) (schema : db.HasCatalog orde
         (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := byCustomer) rfl byCustomer_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := byCustomer) rfl byCustomer_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (countQuery_fails _ _ _ _) rfl]
   exact fun result member => keyCounts_of_mem _ _ _ member
@@ -123,7 +123,7 @@ theorem large_counts (db : Database) (env : Env) (schema : db.HasCatalog orders)
         (db.raw.connection env.counters).resolveState) := by
     rw [orders_state db env schema]
     decide +kernel
-  rw [Run.query_returnsResult_calmTable (script := byLarge) rfl byLarge_one db env resolved rfl
+  rw [Run.query_returnsResult_calmTable (script := byLarge) rfl byLarge_one db env (runScriptStep_output_of_resolved resolved) rfl
     (Database.table_of_findTable db.raw _ _ _ (orders_found db schema)) (by unfold Resolved.Statement.Calm; decide)
     rfl rfl rfl (countQuery_fails _ _ _ _) rfl]
   exact fun result member => keyCounts_of_mem _ _ _ member

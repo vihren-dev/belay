@@ -4,7 +4,7 @@ import Belay.Sqlite.Programs.Reasoning.SqlRunTriples
 set_option doc.verso true
 
 /-! The goal operations of {lit}`sql_run` (ADR 0017, S6): closing a premise from the hints and hypotheses,
-entering the goal of an outcome, bringing a triple to its check, and reporting where the tactic stopped.
+inspecting the resolution premise of a kind rule, bringing a triple to its check, and reporting where the tactic stopped.
 Each operation changes the goal only by applying a theorem or by introducing variables, so the proof term
 that the tactic builds is checked by the kernel. -/
 
@@ -15,7 +15,7 @@ open Lean Meta Elab Tactic Term
 abbrev Hints := Array (TSyntax `term)
 
 /-- The premises that hold by {lit}`rfl` once the program is known: the shape of a script. -/
-def premisesByRfl : List Name := [`isStatement, `isSelect, `notInsertSelect]
+def premisesByRfl : List Name := [`isSelect]
 
 /-- Try to close a premise about the context. The attempts are, in order, the hints, each also with all definitions
 unfolded (a resolution of CREATE TABLE needs it), the hypotheses and the facts that follow from a fresh start. A premise that no attempt closes stays open. -/
@@ -38,54 +38,16 @@ def closeSide (hints : Hints) (tag : Name) (goal : MVarId) : TacticM Bool := goa
     catch _ => pure ()
   return false
 
-/-- The kinds of statement that have a rule of their own, in the order in which {lit}`kindFromHints` tries
-them. -/
-def hintedKinds : List Name :=
-  [``Model.Syntax.Statement.insert, ``Model.Syntax.Statement.update, ``Model.Syntax.Statement.delete,
-    ``Model.Syntax.Statement.addColumn, ``Model.Syntax.Statement.createTable, ``Model.Syntax.Statement.dropTable,
-    ``Model.Syntax.Statement.renameTable, ``Model.Syntax.Pragma.setting, ``Model.Syntax.Statement.begin,
-    ``Model.Syntax.Statement.commit]
-
-/-- Choose the rule of a sent statement that Lean cannot read, for example a statement that is a field of a
-structure. The kind is the first of {name}`hintedKinds` whose rule has all its blocking premises closed by the
-hints and the hypotheses. The attempt leaves the goal unchanged: the choice only picks the rule, and the real
-application checks every premise again. -/
-def kindFromHints (hints : Hints) (goal : MVarId) : TacticM (Option Name) := do
-  for kind in hintedKinds do
-    let saved ← Tactic.saveState
-    let mut closed := true
-    try
-      setGoals [goal]
-      evalTactic (← sendRule kind)
-      for new in ← getGoals do
-        let tag := (← new.getTag).eraseMacroScopes
-        if blockingPremises.contains tag then
-          closed := closed && (← closeSide hints tag new)
-    catch _ => closed := false
-    saved.restore
-    if closed then return some kind
-  return none
-
-/-- Introduce the variables and hypotheses of an outcome premise under the given names, and replace the
-variable {lit}`next` by the connection that the equation {lit}`nextIs` gives. -/
-def enterOutcome (names : List Name) (replacesNext : Bool) (goal : MVarId) : TacticM MVarId := do
-  let (fvars, goal) ← goal.introN names.length names
-  unless replacesNext do return goal
-  goal.withContext do
-    for fvar in fvars do
-      let type ← instantiateMVars (← fvar.getType)
-      if let some (_, .fvar local_, _) := type.eq? then
-        if (← local_.getUserName) == `next then
-          let (_, goal) ← substCore goal fvar (symm := false) (tryToSkip := true)
-          return goal
-    throwError "sql_run: the rule gave no equation for the next connection"
-
 /-- Close the goal of a failed step when its trace is not error-free: the final property of a conditional
-claim ({name}`Sql.ifOk`) then requires nothing. -/
+claim ({name}`Sql.ifOk`) then requires nothing. The error is a hypothesis of the step rule, or the output
+{lit}`.error` that a kind rule gives. -/
 def closeFailure (goal : MVarId) : TacticM (List MVarId) := goal.withContext do
   setGoals [goal]
   try
-    evalTactic (← `(tactic| (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk)))
+    evalTactic (← `(tactic| first
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk; done)
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, Model.Output.isError] at allOk; done)
+      | (intro allOk; simp [List.allOk, ExecutionContext.next, *] at allOk)))
     return (← getGoals)
   catch _ => return [goal]
 
@@ -103,7 +65,7 @@ that an alternative such as {lit}`first` can try another tactic from the unchang
 goal stays as an obligation and the reason is a warning. -/
 def stuck (first : Bool) (goal : MVarId) (reason : String) : TacticM (List MVarId) := do
   if first then
-    throwError "sql_run cannot start: {reason} Prove this goal with the public rules, for example Sql.check_bind and Sql.check_send_of_step."
+    throwError "sql_run cannot start: {reason} Prove this goal with the public rules, for example Sql.check_bind and Sql.check_exec."
   logWarning m!"sql_run stopped: {reason} The goal stays open."
   return [goal]
 
@@ -150,5 +112,37 @@ where
       if let some (_, .fvar _, _) := type.eq? then
         try goal := (← substCore goal fvar (symm := false) (tryToSkip := true)).2 catch _ => pure ()
     return goal
+
+/-- The premise of a kind rule that the resolution of the statement closes: the first new goal whose type is an
+equation for {name}`Model.resolveStatement`, after reducible definitions around it are unfolded. The name of the
+premise does not matter. -/
+def resolutionPremise (goals : List MVarId) : MetaM (Option MVarId) :=
+  goals.findM? fun new => do
+    let some (_, side, _) := (← whnfR (← instantiateMVars (← new.getType))).eq? | return false
+    return side.isAppOf ``Model.resolveStatement
+
+/-- Ask the hints for the resolution of this step with the resolved statement and
+post-resolution state left as variables. A proof lets rule selection compare the
+resolved data without elaborating all the hints again for each candidate. If a hint
+needs the expected kind to elaborate, selection still tries it on the individual rules. -/
+def hintedResolution (hints : Hints) (equation : MVarId) : TacticM (Option Expr) := equation.withContext do
+  let saved ← Tactic.saveState
+  try
+    let some (_, step, _) := (← whnfR (← equation.getType)).eq? | return none
+    let #[context, _, _, connection, statement, _] := step.getAppArgs | return none
+    unless step.isAppOf ``Model.runScriptStep do return none
+    let lhs ← mkAppM ``Model.resolveStatement #[context, ← mkAppM ``Model.Connection.resolveState #[connection], statement]
+    let resolved ← mkFreshExprMVar (mkConst ``Model.Resolved.Statement)
+    let after ← mkFreshExprMVar (mkConst ``Model.ResolveState)
+    let pair ← mkAppM ``Prod.mk #[resolved, after]
+    let result ← whnf (← inferType lhs)
+    let rhs ← mkAppOptM ``Except.ok #[some result.getAppArgs[0]!, none, some pair]
+    let proof ← mkFreshExprSyntheticOpaqueMVar (← mkEq lhs rhs)
+    if ← closeSide hints `found proof.mvarId! then
+      let proof ← instantiateMVars proof
+      unless proof.hasExprMVar do return some proof
+  catch _ => pure ()
+  saved.restore
+  return none
 
 end Belay.Sqlite.Run

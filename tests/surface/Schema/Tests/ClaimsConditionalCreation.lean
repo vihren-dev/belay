@@ -72,8 +72,10 @@ theorem kept_table {context : ResolveContext} {clock : Option Clock} {index : Na
     {constraints : List Syntax.TableConstraint} {options : Syntax.TableOptions} {parameters : List Value}
     (kept : createTableKept connection.state.database.catalog name = true) :
     runScriptStep context clock index connection (.createTable name columns constraints options true) parameters =
-      .continued (.done 0) connection [] :=
-  runScriptStep_createTable_noOp kept
+      .continued (.done 0) connection [] := by
+  apply Eq.trans (runScriptStep_dropPlain_eq (after := { connection.resolveState with catalog := connection.state.database.catalog.drop [] }) (positions := []) ?_)
+  · simp [Connection.withDatabase, Database.drop_nil]
+  · simp [statement_arms, resolveCreateTableIf, Connection.resolveState, kept, ResolveState.withCatalog, Except.map]
 
 /-- For every connection where an index has the name, one step of CREATE INDEX with the clause
 outputs done with zero changes and keeps the connection, whatever its terms. Proof sketch: the
@@ -83,8 +85,10 @@ theorem kept_index {context : ResolveContext} {clock : Option Clock} {index : Na
     {terms : List Syntax.OrderTerm} {filter : Option Syntax.Expr} {parameters : List Value}
     (kept : createIndexKept connection.state.database.catalog name tableName = true) :
     runScriptStep context clock index connection (.createIndex name unique tableName terms filter true) parameters =
-      .continued (.done 0) connection [] :=
-  runScriptStep_createIndex_noOp kept
+      .continued (.done 0) connection [] := by
+  apply Eq.trans (runScriptStep_dropPlain_eq (after := { connection.resolveState with catalog := connection.state.database.catalog.drop [] }) (positions := []) ?_)
+  · simp [Connection.withDatabase, Database.drop_nil]
+  · simp [statement_arms, resolveCreateIndexIf, Connection.resolveState, kept, ResolveState.withCatalog, Except.map]
 
 /-- For every connection where no table or view has the name, one step of CREATE TABLE with
 the clause is the step without it. Proof sketch: the model step law. -/
@@ -94,7 +98,7 @@ theorem free_table {context : ResolveContext} {clock : Option Clock} {index : Na
     (free : createTableKept connection.state.database.catalog name = false) :
     runScriptStep context clock index connection (.createTable name columns constraints options true) parameters =
       runScriptStep context clock index connection (.createTable name columns constraints options) parameters :=
-  runScriptStep_createTable_ifNotExists_free free
+  runScriptStep_congr_resolve (by simp [statement_arms, resolveCreateTableIf, Connection.resolveState, free])
 
 /-- For every database whose catalog has no index of the name, the public run of CREATE INDEX
 with the clause succeeds exactly when the index conditions hold. Proof sketch: the public

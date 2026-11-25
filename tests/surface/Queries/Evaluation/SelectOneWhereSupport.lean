@@ -76,7 +76,7 @@ theorem whereOne_claims {script : Script} {isQuery : script.isQuery = true} (sta
       ¬ Fails script db isQuery := by
   have one : script.statements.length = 1 := by simp [head]
   have rule := fun property => (Run.send_returnsResult_iff_query one db Env.default property).trans
-    (Run.query_returnsResult_faultless head one db Env.default resolved (Resolved.Query.source_none _ _ _ rfl) (by simp)
+    (Run.query_returnsResult_faultless head one db Env.default (runScriptStep_output_of_resolved resolved) (Resolved.Query.source_none _ _ _ rfl) (by simp)
       calm rfl (Resolved.Query.bindWindow_literal _ _ rfl rfl)
       (fun row member expression inside => by
         have empty : row = [] := by simpa using member

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Programs.Scripts.OrdinaryStepEffects
+import Belay.Sqlite.Model.Programs.Scripts.FailedStepFrame
 
 set_option doc.verso true
 
@@ -78,73 +78,5 @@ theorem runScriptStep_continues {context : ResolveContext} {clock : Option Clock
     simp only [StatementExecution.ofAlternatives, single, List.mapM_nil, Except.map, pure, Except.pure,
       List.map_nil, RunStep.withOthers]
     exact ⟨_, _, rfl⟩
-
-/-- For every connection, statement and values that resolve to a DROP TABLE without rules, which is the
-resolution while foreign-key enforcement is off: the step continues, with no further execution. In plain
-words, the model describes a drop that no foreign key can cascade from. Proof sketch:
-{name}`runScriptStep_continues`; the drop is an unconditional effect. -/
-theorem runScriptStep_drop_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {positions : List Nat}
-    (found : resolveStatement context connection.resolveState statement = .ok (.drop positions none, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, StatementRun.withKeys]
-
-/-- For every connection, statement and values that resolve to a rewrite of the catalog that keeps the
-outline of the catalog ({name}`Catalog.sameOutline`), as a rename does: the step continues, with no further
-execution. In plain words, the model describes a rename whose new catalog has the outline of the old one.
-Proof sketch: {name}`runScriptStep_continues`; the effect succeeds under the guard. -/
-theorem runScriptStep_rewrite_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {renamed : Catalog}
-    (found : resolveStatement context connection.resolveState statement = .ok (.rewrite renamed, after))
-    (outline : connection.state.database.catalog.sameOutline renamed = true) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step, outline]
-
-/-- For every connection, statement and values that resolve to a setting: the step continues, with no further
-execution. Proof sketch: {name}`runScriptStep_continues`; a setting keeps the database. -/
-theorem runScriptStep_setting_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    {setting : Syntax.PragmaSetting} {on : Bool}
-    (found : resolveStatement context connection.resolveState statement = .ok (.setting setting on, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.publish, haltError, SqlState.statementRun, runStatement,
-    Model.step]
-
-/-- For every connection, statement and values that resolve to BEGIN, inside a transaction or outside one: the
-step continues, with no further execution. In plain words, the model describes BEGIN in both cases: it opens a
-transaction, or fails because one is open. Proof sketch: {name}`runScriptStep_continues`; the transition
-continues or halts with an error that is no stop of the model. -/
-theorem runScriptStep_begin_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    (found : resolveStatement context connection.resolveState statement = .ok (.begin, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  cases snapshot : connection.state.snapshot <;>
-    simp [advanceRun, advanceWith, SqlTransition.counted, SqlState.finish, haltError, SqlState.statementRun,
-      runStatement, snapshot]
-
-/-- For every connection, statement and values that resolve to COMMIT, inside a transaction or outside one: the
-step continues, with no further execution. In plain words, the model describes COMMIT in both cases: it closes
-the transaction, or fails because none is open. Proof sketch: as {name}`runScriptStep_begin_continues`. -/
-theorem runScriptStep_commit_continues {context : ResolveContext} {clock : Option Clock} {index : Nat}
-    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value} {after : ResolveState}
-    (found : resolveStatement context connection.resolveState statement = .ok (.commit, after)) :
-    ∃ output next, runScriptStep context clock index connection statement parameters = .continued output next [] := by
-  refine runScriptStep_continues found rfl rfl rfl fun reason => ?_
-  apply Output.ofStep_ne_unmodeled _ _ _ _ _ _ _ (by intro _ _ same; cases same) ?_ (by simp [statementOutput]) reason
-  cases snapshot : connection.state.snapshot <;>
-    simp [advanceRun, advanceWith, SqlTransition.counted, haltError, SqlState.statementRun,
-      runStatement, snapshot]
 
 end Belay.Sqlite.Model

@@ -37,12 +37,22 @@ theorem ReadCertificate.preservesAt {μ : Type} (migration : Sql μ) {certificat
         certificate.Obligations runContext statement state.connection branch.connection) :
     Migration.PreservesAt migration admitted (send ⟨[(statement, values)]⟩) state := by
   intro domain
-  have same := fun (branch : SqlRun μ) (ran : migration.Branch state.clock state.index state.connection branch) =>
-    sendStatements_single_observations statement statement values values state.clock
-        state.clock state.index (state.index + branch.outputs.length) state.connection branch.connection
-        (obligations domain branch ran).single_original (obligations domain branch ran).single_other
-        (ReadCertificate.output_eq valid (obligations domain branch ran) state.clock state.index
-          (state.index + branch.outputs.length) values)
+  let read := sendStatements [(statement, values)]
+  have same (branch : SqlRun μ) (ran : migration.Branch state.clock state.index state.connection branch) :
+      (read.runFrom state.clock state.index state.connection).observation =
+        (read.runFrom state.clock (state.index + branch.outputs.length) branch.connection).observation ∧
+      ∀ observation, (∃ result, read.Branch state.clock state.index state.connection result ∧ result.observation = observation) ↔
+        ∃ result, read.Branch state.clock (state.index + branch.outputs.length) branch.connection result ∧
+          result.observation = observation := by
+    have cert := obligations domain branch ran
+    obtain ⟨_, _, _, _, _, found, moved, scan, _⟩ := cert.appended
+    obtain ⟨_, before⟩ := ReadCertificate.step_keeps cert.originalScan (Database.tableNamed_some found).2 state.clock state.index values
+    obtain ⟨_, after⟩ := ReadCertificate.step_keeps scan (Database.tableNamed_some moved).2 state.clock (state.index + branch.outputs.length) values
+    exact sendStatements_single_observations statement statement values values state.clock
+      state.clock state.index (state.index + branch.outputs.length) state.connection branch.connection
+      (fun _ _ _ step => (RunStep.continued.inj (step.symm.trans before)).2.2)
+      (fun _ _ _ step => (RunStep.continued.inj (step.symm.trans after)).2.2)
+      (ReadCertificate.output_eq valid cert state.clock state.index (state.index + branch.outputs.length) values)
   have actualBranch := Sql.Branch.actual migration state.clock state.index state.connection
   refine Migration.translatesAt_of_observations migration _ _ state domain.2
     (same _ actualBranch).1 fun observation => ⟨fun seen => ⟨_, actualBranch, ((same _ actualBranch).2 observation).mp seen⟩, ?_⟩

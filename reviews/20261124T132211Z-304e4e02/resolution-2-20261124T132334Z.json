@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T13:23:34+00:00",
+  "finding": "20261124T132211Z-304e4e02#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The structure describes the named positions, moved scan and appended rows."
+}

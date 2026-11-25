@@ -1,3 +1,4 @@
+import SelectSyntaxFrame
 import S6NotBlocked
 
 /-! A fixture module of `tests/surface_s6_not_blocked_test.py`: the guide's query equivalence of {lit}`NOT IN` and
@@ -100,11 +101,11 @@ theorem notBlocked_equivalent {db : Database} (site : NotBlockedSite db) (noNull
     Sql.EquivAt (send notBlockedIn) (send notBlockedExists) (ExecutionContext.initial db env) := by
   have presentCustomers := Database.table_of_findTable db.raw _ _ _ site.foundCustomers
   have presentBlocked := Database.table_of_findTable db.raw _ _ _ site.foundBlocked
-  refine Sql.EquivAt.notIn_notExists_of_rowidAlias (parameters := []) site.inSelect site.existsSelect
+  refine Sql.EquivAt.notIn_notExists_of_rowidAlias (parameters := []) (selectFrame site.inSelect) (selectFrame site.existsSelect)
     site.customersPosition site.blockedPosition site.customers.columns.length 0 0 _ _ [0] ["id"] ["customer_id"]
     ["1"] site.affinity site.inCollation site.equalsCollation ?_ presentCustomers presentBlocked site.idAlias
     (db.valid.admitted.rowsAliased _ _ presentCustomers) ?_ ?_ site.inScript site.existsScript
-    site.resolvesIn site.resolvesExists
+    (runScriptStep_output_of_resolved site.resolvesIn) (runScriptStep_output_of_resolved site.resolvesExists)
   · exact (List.getElem?_eq_some_iff.1 site.idFirst).1
   · rw [site.affinityIs, site.idInteger]
     exact comparisonAffinity_integer_ne_text _

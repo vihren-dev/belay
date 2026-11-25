@@ -18,7 +18,7 @@ is either a database that holds the same tables except for the rows at the targe
 is neither {name}`ExecutionError.constraintFail` nor {name}`ExecutionError.constraintRollback`. The
 error reasons are the three that a plain write gives: an unmodeled table position, a constraint violation
 and a datatype mismatch. Proof sketch: case analysis on the three statement forms and on the table at the
-target; {name}`insertOutcome_ok`, {name}`insertOutcome_error` and {name}`checkedWrite_error` read the
+target; {name}`insertOutcome_ok`, {name}`insertOutcome_error` and the corresponding facts for UPDATE read the
 effect of the checked write. -/
 theorem runStatement_plainWrite_effect {statement : Resolved.Statement} {target : Nat}
     (plain : statement.plainWriteTarget = some target) (clock : Int) (counters : Counters)
@@ -47,15 +47,8 @@ theorem runStatement_plainWrite_effect {statement : Resolved.Statement} {target 
     | none => simp
     | some table =>
       simp only [StatementRun.withKeys, Option.map_none]
-      split
-      · simp
-      · refine ⟨fun after ok => ?_, fun reason reached failed => ?_⟩
-        · unfold checkedWrite at ok
-          split at ok
-          · cases ok; exact ⟨_, rfl⟩
-          · cases ok
-        · obtain ⟨-, rfl⟩ := checkedWrite_error failed
-          simp
+      refine ⟨fun after ok => ⟨_, updateOutcome_ok ok⟩, fun reason reached failed => ?_⟩
+      obtain ⟨-, rfl | rfl⟩ := updateOutcome_error failed <;> simp
   case delete targetAt filter returning subqueries rules =>
     cases rules <;> simp only [Option.some.injEq, reduceCtorEq] at plain
     subst plain

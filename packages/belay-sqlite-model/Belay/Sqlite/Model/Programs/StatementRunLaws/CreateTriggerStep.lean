@@ -1,3 +1,5 @@
+import Belay.Sqlite.Model.Programs.Scripts.CatalogChangeRules
+import Belay.Sqlite.Model.Programs.Scripts.CreateObjectRules
 import Belay.Sqlite.Model.Programs.Scripts.SuccessfulScriptEffects
 import Belay.Sqlite.Model.Programs.Scripts.ScriptLaws
 import Belay.Sqlite.Model.Schema.Triggers.CreateTriggerStep
@@ -36,13 +38,14 @@ theorem createTrigger_step {context : ResolveContext} {clock : Option Clock} {in
     obtain ⟨resolvedBody, catalog⟩ := pair
     cases body
     rcases createTrigger_resolution_cases bodyOk with ⟨error, rfl, rfl⟩ | ⟨rfl, rfl⟩
-    · obtain ⟨value, database, _, effect, _⟩ := runScriptStep_effect resolution rfl step noError
-      simp [SqlState.statementRun, runStatement, Belay.Sqlite.Model.step] at effect
-    · obtain ⟨value, database, _, effect, advanced⟩ := runScriptStep_effect resolution rfl step noError
-      simp only [SqlState.statementRun, runStatement, Belay.Sqlite.Model.step] at effect
-      split at effect
-      · cases effect
-        exact ⟨_, advanced⟩
-      · cases effect
+    · rw [runScriptStep_prepareError_eq resolution] at step
+      cases step
+      cases noError
+    · rw [runScriptStep_createTrigger_eq resolution] at step
+      dsimp only at step
+      split at step
+      · cases step
+        exact ⟨_, rfl⟩
+      · cases step
 
 end Belay.Sqlite.Model

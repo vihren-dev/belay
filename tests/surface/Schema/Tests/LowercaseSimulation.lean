@@ -17,7 +17,7 @@ first connection gives some rows and keeps the connection, and the stored lookup
 gives the same rows and keeps its connection. The indices and the other parts of the connections are
 arbitrary. Proof sketch: {name}`LowercaseSite.lookupMove` and the general
 {lit}`DerivedColumnMigration.Site.LookupMove.rows`; a select step with rows as output keeps the
-connection ({name}`Belay.Sqlite.Model.runScriptStep_select_rows`). -/
+connection ({name}`Belay.Sqlite.Model.runScriptStep_select_keeps`). -/
 theorem Plan.lookup_steps (plan : Plan) (clock : Option Clock) (before after : Nat)
     (connection expanded : Connection) (source : plan.Source connection)
     (reached : expanded.state.database = source.expanded) (value : Value) :
@@ -29,7 +29,7 @@ theorem Plan.lookup_steps (plan : Plan) (clock : Option Clock) (before after : N
           plan.number) [value] = .continued (.rows rows) expanded [] := by
   obtain ⟨rows, original, stored⟩ := (source.site.lookupMove plan.alias plan.text plan.number value
     [plan.first, plan.second]).rows clock before after rfl source.aligned reached source.wide source.aliased
-  exact ⟨rows, runScriptStep_select_rows rfl original, runScriptStep_select_rows rfl stored⟩
+  exact ⟨rows, RunStep.eq_of_rows (fun _ _ _ => runScriptStep_select_keeps) original, RunStep.eq_of_rows (fun _ _ _ => runScriptStep_select_keeps) stored⟩
 
 /-- The signature with one call, the lookup of an id by a value. The call gives the outputs of its
 statement. -/

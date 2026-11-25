@@ -83,21 +83,4 @@ theorem resolvedStepOutput_select_unready (clock : Option Clock) (index : Nat) (
     rcases unready with reason | reason | reason <;> simp [reason]
   simp [described]
 
-/-- Execution rule of a step: for every resolution context, clock, index, connection, statement
-and values, when resolution gives a query statement ({name}`resolveStatement`) that the step runs
-at a clock value and that is ready there ({name}`Connection.SelectReady`), the output of the step
-({name}`runScriptStep`) is {name}`Output.ofResults` of every result that the model permits. Proof
-sketch: {name}`runScriptStep_output` and {name}`resolvedStepOutput_select`. -/
-theorem runScriptStep_select (context : ResolveContext) (clock : Option Clock) (index : Nat)
-    (connection : Connection) (statement : Syntax.Statement) (parameters : List Value) {query : Resolved.Query}
-    {subqueries : List Resolved.Query} {after : ResolveState} {value : Int} {source : Resolved.SourceRows}
-    {bound : Resolved.Query}
-    (resolved : resolveStatement context connection.resolveState statement = .ok (.query query subqueries, after))
-    (clocked : statementClock clock index (.query query subqueries) = some value)
-    (ready : connection.SelectReady value parameters query subqueries source bound) :
-    (runScriptStep context clock index connection statement parameters).output =
-      Output.ofResults (bound.possibleResults (connection.queryContextAt value parameters query subqueries) source.rows) := by
-  rw [runScriptStep_output, resolved]
-  exact resolvedStepOutput_select clock index connection parameters clocked ready
-
 end Belay.Sqlite.Model

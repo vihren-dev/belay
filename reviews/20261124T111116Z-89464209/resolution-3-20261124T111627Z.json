@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T11:16:27+00:00",
+  "finding": "20261124T111116Z-89464209#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Kept the fixture below 200 lines by removing the extra connection alias."
+}

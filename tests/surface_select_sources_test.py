@@ -88,18 +88,18 @@ def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
-    """Acceptance cases A21 and A22 through the context rules of a SELECT (`check_query_select_at`,
-    `check_query_select_faultless`) and the delete rule (`Sql.check_send_plainDelete`,
+    """Acceptance cases A21 and A22 through the step-output rule for a SELECT (`Sql.check_query_of_step_rows`) and the delete rule (`runScriptStep_plainDelete_eq`,
     `Connection.resolveState_afterWrite`): at every context with the catalog of `shop`, the big-orders
     query returns the rows of the database of that context; after any program, `sql_select` proves the same
-    read at each reached context through `Sql.check_query_ofResolveState` and the leaf's `assumption`, also
+    read at each reached context through `Sql.check_query_catalog_rows_at` and the leaf's `assumption`, also
     after a delete; at every context whose
     counters know `changes()`, `SELECT changes()` returns that value and keeps the connection. The
     instances show a result from the start that does not hold after a delete, and `changes()`, which has
     no result in the default environment but the count of the delete after it. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
-                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 4)),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 3),
+                       ("SelectCounterContextCases", 1)),
                        timeout=120)
 
 

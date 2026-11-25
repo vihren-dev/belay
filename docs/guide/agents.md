@@ -161,7 +161,7 @@ which Lake prints again in each run
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
 | The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: `#sql_check` and `sql_auto` apply these laws with a kernel check on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
-| A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
+| A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name and the reference read. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
 | `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. For a script certified from its schema, apply `Script.succeeds_of_schema`. A mixed script supplies proofs for its remaining statements, as in [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
 
 You can give `#sql_check` a claim by name. For example, if `selectClaim`
@@ -251,7 +251,7 @@ def namedCustomers : Script := sql r"SELECT id, name, email FROM customers"
 
 #sql_check addEmailLower preserves namedCustomers on shop
 -- SQL check: proved.
--- Checked proof: by exact DerivedColumnMigration.preserves_of_check (by decide +kernel)
+-- Checked proof: by exact DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 def found : Database := db! r"
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL);
@@ -278,7 +278,7 @@ evaluates on the catalog of `shop`. You can also apply the laws directly:
 ```lean
 theorem named_read_preserved :
     addEmailLower preserves namedCustomers on shop :=
-  DerivedColumnMigration.preserves_of_check (by decide +kernel)
+  DerivedColumnMigration.preserves_of_check id (by decide +kernel)
 
 theorem email_lower_succeeds :
     addEmailLower succeeds on shop :=

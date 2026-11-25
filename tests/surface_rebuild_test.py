@@ -45,7 +45,7 @@ PROOF_MODULES = ("RebuildGuide", "RebuildKeepsInvariant", "RebuildCopyFacts", "R
 
 def test_sql_run_rules_for_schema_and_transaction_statements(runtime_root: Path, tmp_path: Path) -> None:
     """`sql_run` applies its rules for CREATE TABLE, DROP TABLE, a rename, a pragma setting, BEGIN and COMMIT
-    (the modules SchemaStepRules and ControlStepRules) to one program on a database with the schema of the
+    (the schema and transaction rules) to one program on a database with the schema of the
     guide, for every complete environment. The fixture SchemaRuleExamples closes every premise except the final
     claim, which says that the program leaves no open transaction and foreign keys on, and uses only logical
     axioms."""
@@ -134,9 +134,9 @@ def test_example_project_of_the_readme_builds_checks_and_proves_its_claims(runti
 def test_rebuild_preserves_all_sessions_on_every_database_of_the_schema(runtime_root: Path, tmp_path: Path) -> None:
     """KeptRead proves that the rebuild preserves the sessions read on the guide's schema.
     RebuildTableFrames checks the moving table. KeptReadChecks rejects the cascading rebuild
-    and a final read redirected to another table. The proof uses only logical axioms."""
+    and a final read redirected to another table. Its parameterized lookup certifies one binding using a different reference binding. The proof uses only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (
-        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("KeptReadChecks", 0),
+        ("RebuildGuide", 0), ("RebuildKeepsInvariant", 0), ("RebuildTableFrames", 0), ("KeptReadChecks", 1),
         ("RebuildKeeps", 1)), timeout=CHAIN_TIMEOUT_SECONDS)
 
 
