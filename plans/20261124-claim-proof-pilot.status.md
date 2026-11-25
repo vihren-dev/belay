@@ -2,8 +2,9 @@
 
 Created 2026-11-24.
 Status: OPEN. The pilot is complete. The owner selected the branch
-`claim-proof-pilot-tactic` on 2026-11-25; the pull request and its checks
-are pending.
+`claim-proof-pilot-tactic` on 2026-11-25. The branch
+`claim-proof-sql-holds` has it for the pull request; the checks of the
+pull request are pending.
 Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 
 ## References
@@ -1035,9 +1036,20 @@ owners were in the lists.
 
 The fifth review (`reviews/20261125T123839Z-1c050a90`) had 6 "must"
 findings: three about the record and three about the decision text in
-this file and in the task file. The record now refers to the docstring
-of the law of `NOT IN` for its premises and does not restate them, and
-it states the two forms of a hint of `sql_holds`.
+this file and in the task file. The record now states the two NULL
+premises of the law of `NOT IN` and refers to the docstring of the law
+for the others.
+
+The sixth review (`reviews/20261125T124229Z-2dd24dc4`) had 1 "must"
+finding, about the form of a hint of `sql_holds`. The owner decided on
+2026-11-25 to correct it and review again. The record now refers to the
+docstring of the tactic for the form of a hint.
+
+The seventh review (`reviews/20261125T130010Z-6255b60f`) had 1 "must"
+finding on the same sentence: the docstring of the tactic does not say
+that the schema of a hint has no variable. The record now states this
+and refers to `ClaimTactic.catalogFact` for the accepted forms. The
+eighth review (`reviews/20261125T130158Z-fa16823d`) had no findings.
 
 ## Owner decision
 
