@@ -34,7 +34,7 @@ declarations in three groups:
 | Status | Meaning | Effect of the recommendation | Declarations |
 | --- | --- | --- | --- |
 | R | Resolution law of the form. | Decision 1. | 38 |
-| F | `Calm` law of the form: the statement is calm when each expression that the law takes as a variable is calm. The variables are the conditions and, for some laws, the result expression or the operands of the aggregate. | Decision 1. The calm check of the branch proves `Calm` by computation when the kernel can reduce the check. An expression that is a variable stops the reduction. A retention test must keep each premise of the law. | 5 |
+| F | `Calm` law of the form: the statement is calm when each expression that the law takes as a variable is calm. The variables are the conditions and, for some laws, the result expression or the operands of the aggregate. | Decision 1. The law `Statement.calm_of_calmCheck` of the branch proves `Calm` when the kernel reduces the calm check to `true`. An expression that is a variable stops the reduction, and a call that can fail, such as `abs`, gives `false`. A retention test must keep each premise of the law. | 5 |
 | G | Case of a general law that stays. The proof of today derives the case from that law, with the premises of the case. | Can go with no decision. The work is a retention test and the change of each user to the general law. Each law that the derivation uses keeps its own status. | 4 |
 | Q | `Quiet` law of the form, or a law that it needs. A quiet statement reads no clock and no counter; it can have a call that fails. | Stays. The branch has no check for `Quiet`. The law does not state that the evaluation has no fault: a user that needs a result with no fault gives separate evidence for it. | 3 |
 | V | Law about a definition of the form. | Goes, or gets a statement without the definition, after a retention test proves the statement of today. The text of the family gives the steps that the new statement must keep. | 5 |
@@ -53,7 +53,7 @@ one moved definition is among those with a new statement. 63 more test
 declarations name a declaration of group 2, and 3 name a law of group 3.
 Each changes when the declaration that it names changes. 2 anonymous
 examples, 1 `#print axioms` check and 3 Python tests also use a declaration
-of group 2. 8 docstrings of declarations and modules that are not in these
+of group 2. 6 docstrings of declarations and modules that are not in these
 lists have a checked reference (`{name}`) to a declaration of group 2; the
 reference stops the build when the declaration goes. The families list all
 of them.
@@ -93,7 +93,7 @@ Three sources give the list:
   2), law of a script pattern (36, 11), or none of these. The author of this
   record read the statement and the users of each law of one query form
   again.
-- A search by name for the users of each declaration, in two parts. The
+- A search by name for the users of each declaration, in three parts. The
   first part reads the text of each declaration of today. The second part
   reads all Lean and Python files of today under `packages`, `tests` and
   `tools`; in a Lean file it skips comments and docstrings. The second part
@@ -158,16 +158,21 @@ each checked reference to the law in a docstring must change.
    query is a variable. An example is `tableOne_run`: its condition is a
    variable, with the premise that each expression of the condition is calm.
    In `countOne_run` and `tableOne_run`, the name of the table is a variable
-   too. The resolution laws of a statement, such as
+   too. Some resolution laws of a statement, such as
    `resolveStatement_selectOne_count`, take the resolution of the written
-   filter as a premise, and the laws with status F take calm expressions as
-   premises. Some laws with status R have no filter and no catalog in their
-   statement: `resolveColumns_one` resolves the result column `1` in each
-   scope. The tactic `sql_holds` works in a different way: its hint is a
-   proof that the database has one full catalog (`Database.HasCatalog`), and
-   the kernel computes the resolution and the calm check on that catalog,
-   for a statement with no variable. Such a proof uses no law with status R
-   or F.
+   filter as a premise; `resolveStatement_selectFrom_inQuery` takes premises
+   about the probe and the result column of the subquery in its place. The
+   laws with status F take calm expressions as premises. Some laws with
+   status R have no filter and no catalog in their statement:
+   `resolveColumns_one` resolves the result column `1` in each scope. The
+   tactic `sql_holds` works in a different way: each hint is a proof that a
+   database has a full catalog (`Database.HasCatalog`). The tactic needs the
+   catalog of each database that the claim reads: the database that the
+   program reaches and, for a claim `holdsSince` whose query names a schema,
+   the initial database too (law `Holds.reachedSince_iff_of_catalog` of the
+   branch). The kernel computes the resolution and the calm check on these
+   catalogs, for a statement with no variable. Such a proof uses no law with
+   status R or F.
 
    If each claim takes the full catalog as premise, the lookup of a table
    with a known name becomes a computation. A law whose table name is a
@@ -221,16 +226,21 @@ each checked reference to the law in a docstring must change.
    because an `IN` with no match and a NULL among the inner values is NULL,
    and the `EXISTS` is 0. For `NOT IN`,
    `Resolved.Expr.evaluate_notIn_eq_notExists` gives equal evaluations, with
-   the premise that the inner values of the kept rows are not NULL. The
-   output laws give equal rows of the two queries. The two laws of the
-   client library conclude more: `Sql.EquivAt` states that the two programs
-   have the same run and the same complete outcomes of each branch, with the
-   return values, the errors, the reasons to stop, the traces and each field
-   of the connection. The laws can stay as they are. As an alternative, the
-   library keeps the operator laws, and the equivalences become client
-   theorems in the fixtures. That is a deletion from the packages, with the
-   rule above: the client theorems must prove the complete equivalence of
-   `Sql.EquivAt` with the premises of today, not only the equal rows.
+   these premises: the value of the probe is not NULL, the inner values of
+   the kept rows are not NULL, the `IN` test and the comparison `=` match
+   each inner value equally, the correlated condition keeps a row exactly
+   when the condition of the `IN` subquery keeps it and its value equals the
+   probe, and no expression of the two subqueries has a call that can fail
+   or a fault. The output laws give equal rows of the two queries. The two
+   laws of the client library conclude more: `Sql.EquivAt` states that the
+   two programs have the same run and the same complete outcomes of each
+   branch, with the return values, the errors, the reasons to stop, the
+   traces and each field of the connection. The laws can stay as they are.
+   As an alternative, the library keeps the operator laws, and the
+   equivalences become client theorems in the fixtures. That is a deletion
+   from the packages, with the rule above: the client theorems must prove
+   the complete equivalence of `Sql.EquivAt` with the premises of today, not
+   only the equal rows.
 4. **Facts about unique keys.** The three laws with status K state "at most
    one row matches" as a bound on `Resolved.countMatching`. If the
    definition goes, the statement becomes a bound on the rows that the
@@ -464,10 +474,6 @@ resolution laws of the families below use them.
 Test declarations that name these declarations (2):
 
 `BalanceExample.main_body`, `BalanceExample.one_body`.
-
-- Docstring with a checked reference to `resolveSelect_noFrom_one_subquery`,
-  of a declaration that is not in the lists above:
-  `resolveSelect_from_one_subquery`.
 
 ### `EXISTS` claim on one table
 
@@ -704,10 +710,6 @@ Test declarations that name these declarations (6):
 `SelectSumCases.sumCents_resolved`, `SelectSumCases.sumCents_results`,
 `SelectSumCases.sumQuery`, `SelectSumCases.sumQuery_calm`.
 
-- Docstring with a checked reference to `resolveStatement_select_aggregate`,
-  of a declaration that is not in the lists above:
-  `SelectSumCases.sumCents_results`.
-
 ### Duplicate keys
 
 Form: `SELECT 1 WHERE NOT EXISTS (SELECT e FROM t WHERE w GROUP BY k HAVING count(*) > 1)`.
@@ -796,10 +798,11 @@ Form: `SELECT p FROM t WHERE x [NOT] IN (SELECT c FROM u)`, and the same with `E
 
 These laws compare a query with `IN` and a query with `EXISTS` (decision 3).
 The laws of the model give, for the positive `IN`, equal truth of the two
-conditions as filters, and for `NOT IN`, equal evaluations when the inner
-values of the kept rows are not NULL; the output laws give equal rows of the
-two queries. The two laws of the client library,
-`Sql.EquivAt.in_exists_of_rowidAlias` and
+conditions as filters, and for `NOT IN`, equal evaluations when the value of
+the probe is not NULL and the inner values of the kept rows are not NULL,
+with more premises about the comparison, the correlated condition and
+faults; the output laws give equal rows of the two queries. The two laws of
+the client library, `Sql.EquivAt.in_exists_of_rowidAlias` and
 `Sql.EquivAt.notIn_notExists_of_rowidAlias`, conclude `Sql.EquivAt`: the two
 programs have the same run and the same complete outcomes of each branch,
 with the errors, the traces and the state of the connection. The

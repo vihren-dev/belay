@@ -398,6 +398,29 @@ and `Lean.Meta.Tactic.Simp.RegisterCommand`, and no other module of
 Guide examples stay in `tests/surface`: a law in a package names no
 table, column or value of the purge.
 
+## Owner decision
+
+On 2026-11-25 the owner accepted the recommendation of the findings
+record, with its six points:
+
+1. Claims stay SQL queries.
+2. The library has one law for each operator (form B).
+3. The tactic `sql_holds` applies the laws (form C).
+4. The library gets the exact rows that a write leaves, as a fact for
+   each write kind (from form A).
+5. `sql_run` gets the analysis of a write with the catalog as a hint
+   (from form D). The theorem `PlainDelete.ifOk_send` is not taken.
+6. No checkers for patterns of claim now.
+
+The branch `claim-proof-pilot-tactic` has forms B and C and becomes the
+pull request, on top of `adr-0033-phase-8-inventory`. Points 4 and 5
+are not built on a branch of the pilot. Each needs its own task. The
+deletion of the laws of one query form that the branch does not delete
+is also a separate task:
+`docs/records/claim-proof-pilot-affected-laws.md` lists these laws and
+the four decisions that the deletion depends on. The owner has not made
+these four decisions.
+
 ## Not in this task
 
 The use of the selected form for other claims and other statement kinds,

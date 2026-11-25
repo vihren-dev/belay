@@ -275,3 +275,23 @@ corrected record gives the premises of the `Calm` laws and of the laws of
 `IN` and `EXISTS` as the code has them, limits the conditions of decision 1
 to the laws that they apply to, and lists the docstrings that have a
 checked reference to a listed declaration.
+
+The fourth review (`reviews/20261125T084306Z-ba07cb92`) had 4 "must"
+findings and 3 "should" findings. Four reviews in a row had "must"
+findings, so the work stopped, and the owner decided on 2026-11-25 to
+correct the record and review it again. The corrected record gives each
+premise of the law of `NOT IN`, states that the calm check proves `Calm`
+only when it reduces to `true`, names the resolution law that takes the
+resolution of the filter as a premise and one that does not, and states
+that `sql_holds` needs the catalog of each database that the claim
+reads. It counts 6 docstrings outside the lists, not 8: two of the
+owners were in the lists. Two findings of the third review were about
+omissions and not about a summary that said too much: the references in
+docstrings, and the claim law `BalanceExample.count_run`.
+
+## Owner decision
+
+On 2026-11-25 the owner accepted the recommendation of the findings
+record. The task file records the decision. Next: the pull request from
+`claim-proof-pilot-tactic` on top of `adr-0033-phase-8-inventory`, with
+`just test-nix` and `just test-scheduled-checks` before it.
