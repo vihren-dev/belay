@@ -1079,7 +1079,11 @@ record. The task file records the decision. The first plan was a pull
 request from `claim-proof-pilot-tactic`. The pull request comes from the
 branch `claim-proof-sql-holds`, which has the commits of that branch and
 the removal of the proofs that served only the comparison; the progress
-log gives the details. `just test-nix` (99 passed) and
-`just test-scheduled-checks` (53 passed) ran once on the final code of the
-branch, and both passed. The pull request is on top of
-`adr-0033-phase-8-inventory`.
+log gives the details. The stack of ADR 0033 was merged into `main` on
+2026-11-25, so the branch is rebased on `main`, and the pull request has
+the base `main`. On the rebased code, `just test-full`, `just verdict`,
+`just test-nix` (99 passed) and `just test-scheduled-checks` passed. The
+first run of `just test-full` on that code had one failure:
+`tests/conformance_generation_test.py::test_stateful_modes[True]` reached
+its limit of 120 seconds while the machine had a load average above 11.
+The second run passed; the test took 76 seconds.
