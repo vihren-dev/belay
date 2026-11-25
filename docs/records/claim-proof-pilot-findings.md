@@ -461,9 +461,10 @@ Limits of the recommendation:
   tactic leaves this premise as a goal.
   `Resolved.equalRowsIdentical_rowidFirst` proves it for a valid table
   when column 0 of the table is the rowid alias and the first term
-  selects that column first, with any expressions after it. The claims
-  of the pilot meet the two conditions with `SELECT *`, and a term
-  `SELECT id` meets them too. Only when the premises of this lemma do
+  selects that column first, with any expressions after it. The frame
+  claim and the claim "the purge adds no session" of form C meet the
+  two conditions with `SELECT *`, and a term `SELECT id` meets them
+  too. The effect claim has no `EXCEPT`. Only when the premises of this lemma do
   not hold, the client needs another proof of the identity.
 
 ## Checks
