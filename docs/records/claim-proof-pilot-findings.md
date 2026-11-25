@@ -191,7 +191,7 @@ Net change of the maintained Lean code lines from the start revision
 - Base: the 20 package lines are the readiness facts of a DELETE with a
   row-wise filter. They serve each such DELETE. At the start, nine model
   modules with 429 lines hold the laws that the frame proof calls. One
-  of them, `RowwiseExpr` (53 lines at the base form), is shared:
+  of them, `RowwiseExpr` (61 lines at `29676e82`), is shared:
   `ClaimsExpressionCongruence.lean` uses `Resolved.Expr.Rowwise`. The
   others serve only the query form of the frame claim.
 - A: 19 package lines more than the base form, 39 from the start. The
@@ -244,9 +244,14 @@ reader must read.
   Without it there is no guarantee: `DELETE … WHERE 2` deletes each
   row, and `2 IS NOT 1` is true for each row, so the frame claim of the
   guide is false. A filter that is one column can give 2. Form B states
-  the law for an expression with this range
-  (`Resolved.Expr.truthy_isNot_one`), and the frame check of form D
-  refuses a filter that does not establish it.
+  the law for a value: for a value that is NULL, 0 or 1, `IS NOT 1` is
+  true exactly when the value is not true (`Value.truthy_isNot_one`).
+  Its law for an expression (`Resolved.Expr.truthy_isNot_one`) has
+  narrower premises: the top operator of the expression is a
+  comparison, `AND`, `OR`, `NOT`, `IS NULL`, `EXISTS` or `IN`
+  (`Resolved.Expr.isLogical`), and the comparison `IS NOT 1` has no
+  affinity. It does not cover a literal 1. The frame check of form D
+  refuses a filter whose top operator does not establish the range.
 - A filter with a subquery can select a row after the DELETE that it
   did not select before. The effect claim is then not a consequence of
   the DELETE.
@@ -265,7 +270,7 @@ reader must read.
 | A | Each proposition about the rows before and after a write whose data fact exists | A data fact for the write kind, and Lean functions for joins, aggregates and collations when the claim needs them |
 | B | Each claim whose operators have laws; the client composes them | A law for the operator, which then serves each claim |
 | C | `SELECT 1 WHERE [NOT] EXISTS (q)`, where `q` reads one table of the current or the initial database with row-wise expressions, or is an `EXCEPT` of two such reads | A law (form B) and a case of the tactic. The laws stay usable by hand |
-| D | A script of one DELETE with a WHERE whose filter is row-wise, on a table of the schema, with no RETURNING, trigger or foreign-key action. Effect check: the claim `SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)` with the resolved table and filter of the DELETE. Frame check: the claim of the guide's form, a filter whose top operator is a comparison, `AND`, `OR`, `NOT` or `IS NULL`, and a table whose first column is the rowid alias | A check with its theorem of soundness for each new pattern |
+| D | A script of one DELETE with a WHERE whose filter is row-wise, on a table of the schema, with no RETURNING, trigger or foreign-key action. Effect check: the claim `SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE f)` with the resolved table and filter of the DELETE. Frame check: the claim of the guide's form, a filter whose top operator is a comparison, `AND`, `OR`, `NOT` or `IS NULL`, and a table whose first column is the rowid alias. Both checks ignore the values that the two scripts carry: the guarantee is for the DELETE and the claim with one shared list of values | A check with its theorem of soundness for each new pattern |
 
 Measured: the effect claim. The base form needed 43 client lines and
 no package law, because a law for its query form was in a test support
@@ -302,7 +307,8 @@ branch records them.
 | Base: `SelectOneWhereSupport`, `PurgeEffectClaims` | 1.0 s, 1.2 s |
 | Base: `PurgeFrameInstances`, `PurgeEffectInstances` | 3.1 s, 1.7 s |
 | A: `PurgeLogicClaims`, `PurgeLogicInstances` | 1.9 s, 2.4 s |
-| B: `PurgeFrameQueries`, `PurgeFrameClaims`, `PurgeFrameSchema`, `PurgeEffectClaims` | 1.2 s, 1.4 s, 1.4 s, 1.3 s |
+| B: `PurgeFrameQueries`, `PurgeFrameSite`, `PurgeFrameClaims`, `PurgeFrameSchema`, `PurgeEffectClaims` | 1.2 s, 1.0 s, 1.4 s, 1.4 s, 1.3 s |
+| B: `PurgeFrameInstances`, `PurgeEffectInstances` | 3.3 s, 1.7 s |
 | B: `PurgeLawRetention`, `PurgeLawRetentionOutput` | 0.9 s, 1.1 s |
 | C: `PurgeEffectTactic`, `PurgeFrameTactic` (two claims), `PurgeTacticCases` | 1.6 s, 3.6 s, 4.4 s |
 | C: one call of `sql_holds`, with the profiler | 0.3 s to 0.8 s |
@@ -320,14 +326,16 @@ of Lake. The other times are from `lake env lean` or from
 | A, model: `RowDeleteLaws` | 0.3 s |
 | A, surface: `ContextRows` | 1.9 s (Lake) |
 | B, model: `LogicalValueLaws`, `RowwiseExpr`, `ExprEvalLaws`, `RowidOutputIdentity` | 1.3 s, 0.5 s, 0.5 s, 0.4 s |
-| B, model: `RowDelete`, `SelectSubqueryRules`, `Subqueries`, `TwoStateQuerySteps` | 0.3 s, 0.4 s, 0.4 s, 1.6 s |
+| B, model: `RowDelete`, `SelectSubqueryRules`, `Subqueries`, `Tooling/Counterexamples/TwoStateQuerySteps` | 0.3 s, 0.4 s, 0.4 s, 1.6 s |
+| B, model: `Schema/Dispatch/TwoStateQuerySteps` | 0.5 s (Lake) |
 | B, surface: `ResolvedOutputBridge` | 1.0 s |
 | C, model: `RowwiseCheck`, `RowwiseExpr`, `ExprFormChecks`, `DatabaseLookup` | 0.9 s, 0.7 s, 0.6 s, 0.4 s (Lake) |
 | C, surface: `CatalogClaimBridge`, `SqlHoldsFacts`, `SqlHoldsRuns`, `SqlHolds`, `SqlSelectEval` | 1.8 s, 2.1 s, 2.2 s, 2.4 s, 1.6 s (Lake) |
 | D, model: `RowwiseExpr`, `ExceptSubqueryRun`, `CorrelatedSubqueryRun`, `PlainInsertRows` | 1.3 s, 0.6 s, 0.6 s, 0.5 s (Lake) |
 | D, surface: `PlainDeleteAnalysis`, `DeleteEffectCheck`, `DeleteFrameShape`, `DeleteFrameCheck`, `SelectOneWhere` | 1.9 s, 1.9 s, 1.8 s, 1.9 s, 1.9 s (Lake) |
 
-Time does not separate the forms.
+The tables leave out a root module or a Lake file that only gets an
+import or a module name. Time does not separate the forms.
 
 ## A false claim, and a claim outside the reach
 
@@ -360,11 +368,15 @@ form C shows them.
 - C needs B. C makes the hand composition of B unnecessary for a claim
   in its reach, and the laws stay for a claim outside it.
 - The data fact of A (`mem_deleted`) is a part of B and C. The helper
-  of A states the exact rows that the purge leaves. Each proof of B
-  and C derives this fact again for its goal. In form C these are 6 of
-  the 7 lines after `sql_holds` in the effect proof, and about 8 lines
-  in each frame proof. In form B the same steps are in the hand
-  composition (`purge_clears`, `purge_keeps_rows`).
+  of A states the rows that the purge leaves as an equivalence, with
+  the filter over the bound values. Each proof of B and C derives one
+  direction of it for its goal, from `Model.Database.rows_getD_setRows`,
+  `LiteralData.mem_deleted` and `Resolved.Expr.Rowwise.evaluate_congr`.
+  The effect proof uses that a row that is left was not selected. The
+  frame proof uses that a row that is not selected is left. In form C
+  these are 6 of the 7 lines after `sql_holds` in the effect proof, and
+  about 8 lines in the frame proof. In form B the same steps are in the
+  hand composition (`purge_clears`, `purge_keeps_rows`).
 - The analysis and the send theorem of D (`PlainDelete.analyze`,
   `PlainDelete.ifOk_send`) do not depend on the checks. They replace
   the 43 helper lines that run the purge, for each schema. As a public
@@ -442,10 +454,12 @@ Limits of the recommendation:
   change of the tactic.
 - The law of `EXCEPT` needs that two rows of its first term that
   compare equal are identical (`Resolved.equalRowsIdentical`). The
-  tactic leaves this premise as a goal. The rowid alias in the first
-  column is a sufficient condition
-  (`Resolved.equalRowsIdentical_rowidFirst`), and the pilot schema
-  meets it. For another table the client proves the premise directly.
+  tactic leaves this premise as a goal.
+  `Resolved.equalRowsIdentical_rowidFirst` proves it for a valid table
+  when column 0 of the table is the rowid alias and the first term
+  selects that column first. The claims of the pilot meet both
+  conditions with `SELECT *`. For another table or another list of
+  columns the client proves the premise directly.
 
 ## Checks
 
