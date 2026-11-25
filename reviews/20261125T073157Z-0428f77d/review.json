@@ -1,0 +1,181 @@
+{
+  "caller": "claude",
+  "commit": "0428f77d7704dc63166ba3e39ccd11dda68cd7ce",
+  "date": "2026-11-25T07:31:57+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/claim-proof-pilot-affected-laws.md",
+    "plans/20261124-claim-proof-pilot.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261125T073157Z-0428f77d#1",
+      "line": 43,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The surface package registers `resolveOperand_tableInfo_name`, `tableInfoScope_collation_name`, and `Resolved.countMatching_none` in `sql_simp`, so deleting them also affects automation and clients that invoke it without naming those laws. Fix: Include the registrations and their clients in the impact list and identify how their rewrites will be preserved."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#2",
+      "line": 96,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Resolution can change when an unrelated table precedes the named table because `resolveStatement_select_one_from` embeds the catalog position returned by `findTable` in the resolved query. Fix: Require agreement on the relevant lookup positions or state the proposed result modulo a mapping between positions."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#3",
+      "line": 186,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Both `simple_expressions_rowwise` and `simple_results_congr` have identical premises and conclusions at the two cited revisions. Fix: Classify both as moves with unchanged statements."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#4",
+      "line": 204,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "At `5bc3c323`, `PurgeFrameSite` still has `claimAfter` and `claimResolves`, while the branch removes `purgeModeled` and the `c` and `now` structure parameters. Fix: Record those removals and identify claim resolution as a premise the site still carries."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#5",
+      "line": 302,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`Statement.calm_of_calmCheck` cannot replace `Statement.Quiet.selectOne` at its existing premises because `abs_where_unmodeled` uses it with a quiet `abs` condition that fails the calm check. Fix: Keep the quiet law until a replacement handles fallible expressions under the same quietness premise."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#6",
+      "line": 331,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`equalsParameter` and `equalsParameter_true` describe a column comparison independently of `count(*)`, and `customer_named_after_insert` uses them for a query with no aggregate. Fix: Remove them from the count-form deletion list and update the affected totals."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#7",
+      "line": 396,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`Expr.eval_subquery` already gives the first cell or NULL, and both listed invoice claims use `IN`, which can match a value in a later row. Fix: Identify the scalar law as existing and list the separate membership and fault obligations for the `IN` clients."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#8",
+      "line": 450,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`SelectAutomation.collection_count` checks projection cardinality over arbitrary source rows using `Query.results_plain_unordered`, and its axiom report is required by `test_select_collection_rules`. Fix: Keep this test obligation and its axiom report when removing the one-table resolution laws."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#9",
+      "line": 516,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`SelectGroupCases.result_ungrouped` places no restriction on the sources or the number of aggregate columns, and `joined_customers` uses it for a join. Fix: Classify it as a general ungrouped-aggregate law and retain its contract for those callers."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#10",
+      "line": 668,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The calm check establishes a syntactic property, while `fault_inQuery_of_columns` and `fault_exists_of_columns` establish the actual evaluation fault from table and subquery-run evidence. Fix: Keep those two laws until operator laws derive their `.none` conclusions from the original premises."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#11",
+      "line": 697,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The ADR 0033 retention inventory requires `ReplacedSubqueryEquivalence.Sql_EquivAt_in_exists_of_rowidAlias` until another client checks positive `IN` with nullable inner values. Fix: Mark the witness for retention or reproof until equivalent coverage exists."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#12",
+      "line": 768,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`rowsAt_two_parameters` and `rowsAt_three_parameters` specify affinity conversion of input cells before insertion, so a theorem about the rows left after a write does not by itself replace them. Fix: Make deletion conditional on a general `Resolved.rowsAt` law that derives both existing equations."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#13",
+      "line": 778,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Form A’s `LiteralData.mem_deleted_rows` takes the same arbitrary evaluation context as `LiteralData.mem_deleted`, so it does not supply the claimed bound-values rewrite. Fix: Mark the rewrite as outstanding and state the filter assumptions needed to replace the statement context with bound values."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#14",
+      "line": 16,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "Revision `1e8dfd8d` contains 2,756 authored package `theorem` declarations after Lean comments are excluded, while the record reports 2,759. Fix: Reconcile the classification with the declarations and update the totals derived from it."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#15",
+      "line": 17,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 112 package declarations occupy groups 1 through 3, while the fourth summary item counts test fixtures separately. Fix: Describe three package groups followed by their fixture impact."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#16",
+      "line": 34,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 71 listed users include data definitions such as `BalanceExample.guardQueries` and `BalanceExample.pragmaScope`, whose bodies construct values. Fix: Describe the 71 as affected fixture declarations."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#17",
+      "line": 80,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The simplification goal awards credit to each complete baseline capability group, while the record describes credit per deleted law. Fix: Describe derivability of the original statement as evidence toward retaining its capability group."
+    },
+    {
+      "id": "20261125T073157Z-0428f77d#18",
+      "line": 213,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The two `PurgeLawRetention` modules contain nine named declarations comprising four abbreviations, one helper theorem, and four retention theorems. Fix: Change the retention declaration count from ten to nine."
+    }
+  ],
+  "id": "20261125T073157Z-0428f77d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -240,10 +240,19 @@ and the branch of the selected form becomes the pull request, with
 
 Owner question of 2026-11-25: which laws of today change if the project
 adopts the recommendation. `docs/records/claim-proof-pilot-affected-laws.md`
-lists them by name, in three groups: changed on the pilot branch, laws of
-one query form, and laws of writes. Sources: the comparison of the
-declarations of `1e8dfd8d` with `5bc3c323`, a classification of each
-theorem of the packages and of `tests/surface` by twelve readers, and a
-search by name for the users of each law. The record names four decisions
-that the list depends on. Test of the commit: `python3 -m pytest
-tests/docs_test.py`.
+lists them by name, in three groups: changed on the pilot branch,
+declarations of one query form, and laws of writes. Each declaration of one
+query form has a status that names the decision or the missing law that it
+depends on. The record also lists the test declarations that name a listed
+declaration, and the listed laws that are in the set `sql_simp`. Sources:
+the comparison of the declarations of `1e8dfd8d` with `5bc3c323`, a
+classification of each theorem of the packages and of `tests/surface` by
+twelve readers, and a search by name for the users of each law. The record
+names four decisions that the list depends on. Test of the commit:
+`python3 -m pytest tests/docs_test.py`.
+
+The first review of the record (`reviews/20261125T073157Z-0428f77d`) had 13
+"must" findings. Their common cause: the record gave "replaced by" as a
+result where the pilot had no proof. The corrected record gives, for each
+law outside the pilot branch, the condition under which it can go, and says
+where the pilot did not examine a point.
