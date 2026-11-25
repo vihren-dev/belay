@@ -34,9 +34,9 @@ declarations in three groups:
 | Status | Meaning | Effect of the recommendation | Declarations |
 | --- | --- | --- | --- |
 | R | Resolution law of the form. | Decision 1. | 38 |
-| F | `Calm` law of the form: the statement is calm when the expressions of its condition are calm. | Decision 1. The calm check of the branch proves `Calm` by computation only for a statement with no variable. | 5 |
+| F | `Calm` law of the form: the statement is calm when each expression that the law takes as a variable is calm. The variables are the conditions and, for some laws, the result expression or the operands of the aggregate. | Decision 1. The calm check of the branch proves `Calm` by computation when the kernel can reduce the check. An expression that is a variable stops the reduction. A retention test must keep each premise of the law. | 5 |
 | G | Case of a general law that stays. The proof of today derives the case from that law, with the premises of the case. | Can go with no decision. The work is a retention test and the change of each user to the general law. Each law that the derivation uses keeps its own status. | 4 |
-| Q | `Quiet` law of the form, or a law that it needs. A quiet statement reads no clock and no counter; it can have a call that fails. | Stays. The branch has no check for `Quiet`. That the evaluation has no fault is a separate obligation of the user of the law. | 3 |
+| Q | `Quiet` law of the form, or a law that it needs. A quiet statement reads no clock and no counter; it can have a call that fails. | Stays. The branch has no check for `Quiet`. The law does not state that the evaluation has no fault: a user that needs a result with no fault gives separate evidence for it. | 3 |
 | V | Law about a definition of the form. | Goes, or gets a statement without the definition, after a retention test proves the statement of today. The text of the family gives the steps that the new statement must keep. | 5 |
 | K | Fact about unique keys that is stated with the count of the form. | Decision 4. | 3 |
 | E | Equivalence law of `IN` and `EXISTS`, or a declaration that only these laws use. | Decision 3. | 17 |
@@ -53,15 +53,22 @@ one moved definition is among those with a new statement. 63 more test
 declarations name a declaration of group 2, and 3 name a law of group 3.
 Each changes when the declaration that it names changes. 2 anonymous
 examples, 1 `#print axioms` check and 3 Python tests also use a declaration
-of group 2; the families list them.
+of group 2. 8 docstrings of declarations and modules that are not in these
+lists have a checked reference (`{name}`) to a declaration of group 2; the
+reference stops the build when the declaration goes. The families list all
+of them.
 
 Three findings matter for the decision:
 
-- No package declaration outside group 2 names a declaration of group 2.
-  Outside the group, its users are the test fixtures, the set `sql_simp` and
-  Python tests. One Python test, `tests/query_claims_theorems_test.py`,
-  compiles a consumer of a law of group 2 outside `tests/surface`. A change
-  of group 2 changes no other law of the model.
+- No package declaration outside group 2 names a declaration of group 2 in
+  its statement or its body. Outside the group, its users are the test
+  fixtures, the set `sql_simp` and Python tests. One Python test,
+  `tests/query_claims_theorems_test.py`, compiles a consumer of a law of
+  group 2 outside `tests/surface`. A change of group 2 thus changes the
+  statement and the proof of no other law of the model. It changes
+  docstrings: in the packages outside the group, the docstring of
+  `resolvePendingSources_pragma` and 3 module docstrings have a checked
+  reference to a declaration of the group.
 - 43 of the 86 declarations of group 2 are resolution laws and `Calm` laws
   (status R and F). They serve claims that are general in two ways: the
   database has a named table among other tables, and the condition of the
@@ -93,7 +100,8 @@ Three sources give the list:
   finds anonymous examples, `#print axioms` checks, Lean code in Python
   tests, and uses through dot notation. The column "Users" of each table
   gives three numbers: package declarations, test declarations, and other
-  users.
+  users. A third part reads the comments and docstrings of the Lean files
+  for checked references (`{name}`) to a declaration of the list.
 
 Limits:
 
@@ -110,6 +118,8 @@ Limits:
 - A Python test is a user when its text names the law, also in a
   description. A Python test that builds a fixture and does not name the law
   is not in the lists.
+- The search for references in docstrings finds only checked references. It
+  does not find a name in plain code format or in the text of a comment.
 - The search cannot show which proof needs a law of the set `sql_simp`. Only
   a build can show that.
 - Only group 1 is built. For groups 2 and 3, the record gives the condition
@@ -134,7 +144,8 @@ group 2 or group 3. A retention test for each law is thus part of the work
 of each deletion in these groups, and its result is evidence for the
 capability group of the law. The other users of a law are part of the same
 work: an anonymous example, a `#print axioms` check or a Python test that
-uses the law must pass with the retention theorem or with the new law.
+uses the law must pass with the retention theorem or with the new law, and
+each checked reference to the law in a docstring must change.
 
 ## Decisions that the list depends on
 
@@ -146,29 +157,38 @@ uses the law must pass with the retention theorem or with the new law.
    the position of the table is a variable. Second, the condition of the
    query is a variable. An example is `tableOne_run`: its condition is a
    variable, with the premise that each expression of the condition is calm.
-   The resolution laws of a statement (status R) take the resolution of the
-   written filter as a premise, and the laws with status F take the calm
-   expressions of the condition as a premise. The tactic `sql_holds` works
-   in a different way: its hint is a proof that the database has one full
-   catalog (`Database.HasCatalog`), and the kernel computes the resolution
-   and the calm check on that catalog, for a statement with no variable.
-   Such a proof uses no law with status R or F.
+   In `countOne_run` and `tableOne_run`, the name of the table is a variable
+   too. The resolution laws of a statement, such as
+   `resolveStatement_selectOne_count`, take the resolution of the written
+   filter as a premise, and the laws with status F take calm expressions as
+   premises. Some laws with status R have no filter and no catalog in their
+   statement: `resolveColumns_one` resolves the result column `1` in each
+   scope. The tactic `sql_holds` works in a different way: its hint is a
+   proof that the database has one full catalog (`Database.HasCatalog`), and
+   the kernel computes the resolution and the calm check on that catalog,
+   for a statement with no variable. Such a proof uses no law with status R
+   or F.
 
-   If each claim takes the full catalog as premise, the lookups of the
-   tables become computations. The claim is then about fewer databases: its
-   assumption is stronger. By the rule above, that gives zero for each
-   capability group that it touches. Group S04, "claims over every
+   If each claim takes the full catalog as premise, the lookup of a table
+   with a known name becomes a computation. A law whose table name is a
+   variable keeps the lookup as a premise. The claim is then about fewer
+   databases: its assumption is stronger. By the rule above, that gives zero
+   for each capability group that it touches. Group S04, "claims over every
    database", is one of the essential groups. Its inventory row names the
    claim laws of the count form and of the `pragma_table_info` form by their
    old names (`Holds.iff_selectOne_count`, `Holds.iff_selectOne_tableInfo`).
 
-   The full catalog does not make the condition a constant. The kernel
-   cannot compute the resolution or the calm check of a statement whose
-   condition is a variable. The laws with status R and F thus go only when
-   one more condition holds: a general law gives their statements for a
-   variable condition with the premises of today, or the owner decides that
-   claim laws with a variable condition go too. The second is also a weaker
-   capability.
+   The full catalog does not make a filter or a condition a constant. The
+   kernel cannot reduce the resolution or the calm check through an
+   expression that is a variable. A variable inside a known constructor,
+   such as the position of a column, does not always stop the reduction.
+   This matters only for the laws with status R and F whose statement has a
+   filter, a condition or a different expression as a variable. Such a law
+   goes only when one more condition holds: a general law gives its
+   statement with the premises of today, or the owner decides that claim
+   laws with such a variable go too. The second is also a weaker capability.
+   A law with status R whose statement has no such variable and no catalog
+   goes when no law that stays uses it.
 
    If claims over a part of the catalog stay, the laws with status R and F
    stay, or a general law replaces them. For the forms with one `SELECT` and
@@ -195,10 +215,16 @@ uses the law must pass with the retention theorem or with the new law.
 3. **Equivalence of two queries.** The laws with status E compare a query
    with `IN` and a query with `EXISTS`. Capability group S10 ("query laws")
    has the laws of `NOT IN` and of the correlated `NOT EXISTS` in its
-   inventory row. The laws of the model give equal values of the two
-   conditions and equal rows of the two outputs. The two laws of the client
-   library conclude more: `Sql.EquivAt` states that the two programs have
-   the same run and the same complete outcomes of each branch, with the
+   inventory row. The laws of the model are of two kinds. For the positive
+   `IN`, `Resolved.Expr.evaluate_in_truthy_eq_exists` gives equal truth of
+   the two conditions as filters, and no fault; the values can differ,
+   because an `IN` with no match and a NULL among the inner values is NULL,
+   and the `EXISTS` is 0. For `NOT IN`,
+   `Resolved.Expr.evaluate_notIn_eq_notExists` gives equal evaluations, with
+   the premise that the inner values of the kept rows are not NULL. The
+   output laws give equal rows of the two queries. The two laws of the
+   client library conclude more: `Sql.EquivAt` states that the two programs
+   have the same run and the same complete outcomes of each branch, with the
    return values, the errors, the reasons to stop, the traces and each field
    of the connection. The laws can stay as they are. As an alternative, the
    library keeps the operator laws, and the equivalences become client
@@ -439,6 +465,10 @@ Test declarations that name these declarations (2):
 
 `BalanceExample.main_body`, `BalanceExample.one_body`.
 
+- Docstring with a checked reference to `resolveSelect_noFrom_one_subquery`,
+  of a declaration that is not in the lists above:
+  `resolveSelect_from_one_subquery`.
+
 ### `EXISTS` claim on one table
 
 Form: `SELECT 1 WHERE [NOT] EXISTS (SELECT 1 FROM t WHERE p)`.
@@ -531,8 +561,12 @@ The operator laws of `COUNT(*)` exist and stay: `Resolved.countRows_eval`
 (the count of a group is its length) and `Resolved.records_ungrouped` (an
 aggregate query with no `GROUP BY` and no `HAVING` has one record). A
 package law for the run of a `count(*)` subquery does not exist. Only a
-proof that evaluates the subquery needs it: `countOne_run` and
-`whereCount_claims` in the fixtures. The pilot did not write that law.
+proof that evaluates the subquery needs it. In the fixtures, these are
+`countOne_run` and `whereCount_claims`, for an evaluation context with bound
+parameters, and `BalanceExample.count_run`, which gives the run of the count
+query with no condition for each evaluation context. A new law must keep
+both: the bound context and the arbitrary context. The pilot did not write
+that law.
 
 | Declaration | File | Status | Users |
 | --- | --- | --- | --- |
@@ -577,6 +611,11 @@ Test declarations that name these declarations (18):
   test `tests/surface_s6_automation_test.py`: its test
   `test_sql_run_proves_the_partial_index_invariant_of_a_signup` builds the
   fixtures that apply the law and names it in its description.
+- Docstring with a checked reference to `Resolved.Query.countOf`, of a
+  declaration that is not in the lists above: the module docstring of
+  `M/Queries/Preparation/CountSelectResolution.lean`.
+- Docstring with a checked reference to `Resolved.SubqueryRun.count`, of a
+  declaration that is not in the lists above: `withRows_quiet`.
 
 ### One-column subquery in the condition
 
@@ -636,6 +675,10 @@ Test declarations that name these declarations (10):
 `SelectComparisonCases.amounts_above`, `SelectFilterCases.present_notes`,
 `SelectProjectionCases.customer_present_of_columns`.
 
+- Docstring with a checked reference to `resolveStatement_select_column`, of
+  a declaration that is not in the lists above: the module docstring of
+  `T/Queries/Tests/LowercaseLookups.lean`.
+
 ### One aggregate of one table
 
 Form: `SELECT agg(x) FROM t WHERE p`.
@@ -660,6 +703,10 @@ Test declarations that name these declarations (6):
 `BalanceExample.balance_of_bounds`, `SelectSumCases.sumCents_overflow`,
 `SelectSumCases.sumCents_resolved`, `SelectSumCases.sumCents_results`,
 `SelectSumCases.sumQuery`, `SelectSumCases.sumQuery_calm`.
+
+- Docstring with a checked reference to `resolveStatement_select_aggregate`,
+  of a declaration that is not in the lists above:
+  `SelectSumCases.sumCents_results`.
 
 ### Duplicate keys
 
@@ -691,6 +738,10 @@ Test declarations that name these declarations (7):
 `AssertionExamples.one_live_iff`, `duplicateKeysOne_run`,
 `duplicateKeys_calm`, `email_claims`, `group_nocase`,
 `noDuplicateKeys_claims`, `uniqueEmail_ok`.
+
+- Docstring with a checked reference to `Resolved.Query.duplicateKeys`, of a
+  declaration that is not in the lists above: the module docstring of
+  `M/Schema/Dispatch/DuplicateKeyResolution.lean`.
 
 ### Claim on the columns of a table
 
@@ -735,14 +786,19 @@ Test declarations that name these declarations (6):
   example at `T/Queries/Evaluation/ClaimsDerived.lean:52`.
 - Other user of `tableInfoScope`, `resolveSources_tableInfo`: the anonymous
   example at `T/Queries/Evaluation/SuccessSumBound.lean:92`.
+- Docstring with a checked reference to `resolveSources_tableInfo`, of a
+  declaration that is not in the lists above:
+  `resolvePendingSources_pragma`.
 
 ### `IN` and `EXISTS` on a second table
 
 Form: `SELECT p FROM t WHERE x [NOT] IN (SELECT c FROM u)`, and the same with `EXISTS`.
 
 These laws compare a query with `IN` and a query with `EXISTS` (decision 3).
-The laws of the model give equal values of the two conditions and equal rows
-of the two outputs. The two laws of the client library,
+The laws of the model give, for the positive `IN`, equal truth of the two
+conditions as filters, and for `NOT IN`, equal evaluations when the inner
+values of the kept rows are not NULL; the output laws give equal rows of the
+two queries. The two laws of the client library,
 `Sql.EquivAt.in_exists_of_rowidAlias` and
 `Sql.EquivAt.notIn_notExists_of_rowidAlias`, conclude `Sql.EquivAt`: the two
 programs have the same run and the same complete outcomes of each branch,
@@ -799,6 +855,10 @@ Test declarations that name these declarations (2):
   `tests/surface_select_automation_test.py`: its test
   `test_positive_in_equivalence_allows_nullable_inner_values` builds the
   witness that proves the former statement of the law.
+- Docstring with a checked reference to
+  `resolvedStepOutput_notIn_eq_notExists`, of a declaration that is not in
+  the lists above: the module docstring of
+  `M/Programs/StatementRunLaws/InSubqueryQueryInLaw.lean`.
 
 ### Laws that the readers put in the class and that are not in group 2
 
