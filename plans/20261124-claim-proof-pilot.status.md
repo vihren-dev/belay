@@ -143,6 +143,11 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   database with a site, stays. Tests: `python3 -m pytest
   tests/surface_assertion_examples_test.py -k purge`, and `python3 -m
   pytest tests/docs_test.py`.
+- 2026-11-25, pull request: one test compiles each purge fixture once.
+  `test_purge_frame_claim_over_every_database` has the modules of the
+  former test `test_purge_claims_by_the_claim_tactic`, which is removed.
+  Tests: `python3 -m pytest tests/surface_assertion_examples_test.py -k
+  purge`.
 
 ## Base form
 
@@ -1065,8 +1070,8 @@ and refers to `ClaimTactic.catalogFact` for the accepted forms. The
 eighth review (`reviews/20261125T130158Z-fa16823d`) had no findings. A
 review on the pull request branch (`reviews/20261125T130959Z-6ef7b1e6`)
 found that the sentence did not say which catalogs the tactic needs. The
-record now says that the tactic always needs the reached catalog, and the
-initial catalog when a source names a schema.
+record now names the two bridge laws of the branch, whose premises give
+the catalogs that the tactic needs.
 
 ## Owner decision
 

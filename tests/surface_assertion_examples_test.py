@@ -180,20 +180,13 @@ def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Pat
     with NOT instead of IS NOT 1 is NULL on each row. Thus that claim requires nothing of a row, and it is still
     true after a statement deletes every session. An aborted purge rolls back to the start, and the effect claim is false there.
     The retention modules prove the statements of the four laws that the base proofs of the purge claims used, from the
-    laws of the parts that replace them."""
+    laws of the parts that replace them.
+    The tactic `sql_holds` of the surface package proves the statements with the catalog premise, and a third
+    claim that the purge adds no session, after `sql_run`. After the tactic, the proofs only reason about rows of
+    tables. The module `PurgeTacticCases` proves EXISTS claims (the tactic keeps the other goals, and a two-state
+    claim without `before` needs no initial catalog) and checks the messages for claims that the tactic has no law
+    for."""
     check_module_chain(runtime_root, tmp_path, (
         ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 2),
-        ("PurgeEffectClaims", 1), ("PurgeFrameTactic", 2), ("PurgeFrameInstances", 11), ("PurgeEffectInstances", 5),
-        ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)
-
-
-def test_purge_claims_by_the_claim_tactic(runtime_root: Path, tmp_path: Path) -> None:
-    """The tactic `sql_holds` of the surface package proves the client statements of the effect claim and of the
-    frame claim of the guide's purge, and a third claim that the purge adds no session, after `sql_run`. Each
-    statement has only the catalog premise. After the tactic, the proofs only reason about rows of tables. The
-    module `PurgeTacticCases` proves EXISTS claims (the tactic keeps the other goals, and a two-state claim without
-    `before` needs no initial catalog) and checks the messages for claims that the tactic has no law for."""
-    check_module_chain(runtime_root, tmp_path, (
-        ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 2),
-        ("PurgeEffectClaims", 1), ("PurgeFrameTactic", 2), ("PurgeTacticCases", 2)),
-        timeout=300)
+        ("PurgeEffectClaims", 1), ("PurgeFrameTactic", 2), ("PurgeTacticCases", 2), ("PurgeFrameInstances", 11),
+        ("PurgeEffectInstances", 5), ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)
