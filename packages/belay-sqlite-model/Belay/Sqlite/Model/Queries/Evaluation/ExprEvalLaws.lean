@@ -94,6 +94,20 @@ Proof sketch: the definition computes. -/
 theorem Expr.eval_exists (context : EvalContext) (row : List Value) (index : Nat) :
     (Expr.exists index).eval context row = truth !(context.subqueries index row).rows.isEmpty := rfl
 
+/-- For every context, row and index, {lit}`EXISTS (q)` is true on the row exactly when the run of the subquery for the
+row has a row. Proof sketch: the value is 1 or 0 ({name}`Expr.eval_exists`). -/
+theorem Expr.truthy_exists (context : EvalContext) (row : List Value) (index : Nat) :
+    truthy ((Expr.exists index).eval context row) = !(context.subqueries index row).rows.isEmpty := by
+  rw [Expr.eval_exists]
+  cases (context.subqueries index row).rows.isEmpty <;> rfl
+
+/-- For every context, row and index, {lit}`NOT EXISTS (q)` is true on the row exactly when the run of the subquery
+for the row has no row. Proof sketch: {lit}`NOT` of 1 is 0 and {lit}`NOT` of 0 is 1. -/
+theorem Expr.truthy_notExists (context : EvalContext) (row : List Value) (index : Nat) :
+    truthy ((Expr.not (.exists index)).eval context row) = (context.subqueries index row).rows.isEmpty := by
+  rw [Expr.eval_not, Expr.eval_exists]
+  cases (context.subqueries index row).rows.isEmpty <;> rfl
+
 /-- The fault of {lit}`EXISTS (q)` on a row is the fault of the subquery for the row. Proof
 sketch: the definition computes. -/
 theorem Expr.fault_exists (context : EvalContext) (row : List Value) (index : Nat) :

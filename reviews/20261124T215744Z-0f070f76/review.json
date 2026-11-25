@@ -1,0 +1,39 @@
+{
+  "caller": "claude",
+  "commit": "0f070f76b52e4e739dfb715adc07dc4f9330c2d8",
+  "date": "2026-11-24T21:57:44+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261124-claim-proof-pilot.status.md",
+    "reviews/20261124T215621Z-416b1267/resolution-1-20261124T215658Z.json",
+    "reviews/20261124T215621Z-416b1267/resolution-2-20261124T215659Z.json",
+    "reviews/20261124T215621Z-416b1267/review.json",
+    "tests/surface/Queries/Evaluation/PurgeLawRetentionOutput.lean"
+  ],
+  "findings": [],
+  "id": "20261124T215744Z-0f070f76",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

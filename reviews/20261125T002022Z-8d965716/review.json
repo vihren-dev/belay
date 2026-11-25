@@ -1,0 +1,68 @@
+{
+  "caller": "claude",
+  "commit": "8d965716280e5eb45cc406a8b326c8ea151cf16e",
+  "date": "2026-11-25T00:20:22+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/claim-proof-pilot-findings.md",
+    "reviews/20261125T001826Z-60359972/resolution-1-20261125T001903Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-2-20261125T001903Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-3-20261125T001904Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-4-20261125T001904Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-5-20261125T001905Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-6-20261125T001905Z.json",
+    "reviews/20261125T001826Z-60359972/resolution-7-20261125T001906Z.json",
+    "reviews/20261125T001826Z-60359972/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261125T002022Z-8d965716#1",
+      "line": 337,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The timing table excludes changed root modules such as `Belay.Sqlite.Model` and `Belay.Sqlite`, although the task requires a timing for every changed library module. Fix: Include the root-module timings for each affected form and identify any missing measurements."
+    },
+    {
+      "id": "20261125T002022Z-8d965716#2",
+      "line": 373,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record attributes `Model.Database.rows_getD_setRows` to every frame and effect proof, but form B’s `purge_keeps_rows` obtains the reached table with `Database.table_setRows`. Fix: Name `LiteralData.mem_deleted` and `Resolved.Expr.Rowwise.evaluate_congr` as the shared steps and distinguish the two table lookup lemmas."
+    },
+    {
+      "id": "20261125T002022Z-8d965716#3",
+      "line": 461,
+      "path": "docs/records/claim-proof-pilot-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record directs clients to prove row identity separately for any other projection, although `equalRowsIdentical_rowidFirst` also covers `SELECT id` on the pilot table and permits arbitrary expressions after the rowid alias. Fix: Apply the lemma whenever the left term projects the table’s column-zero rowid alias first, and require a separate identity argument only when its premises are unavailable."
+    }
+  ],
+  "id": "20261125T002022Z-8d965716",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

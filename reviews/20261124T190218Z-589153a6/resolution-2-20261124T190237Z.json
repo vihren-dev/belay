@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T19:02:37+00:00",
+  "finding": "20261124T190218Z-589153a6#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "The task file belongs to the coordinator of the pilot; this agent edits only its status section. The move of the schema to PurgeFrameSchema.lean is in the report to the coordinator, who updates the task file."
+}

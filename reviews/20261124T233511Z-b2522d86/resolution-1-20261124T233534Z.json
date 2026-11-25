@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T23:35:34+00:00",
+  "finding": "20261124T233511Z-b2522d86#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "No claim reaches the fallback: the tactic calls restlessPart only on the resolved statement, which is closed data that the kernel reduces, so the check of each clock expression reduces to true or false. A test cannot write a claim with a check that does not reduce. The fallback stays as the message for a kernel failure, such as a recursion limit."
+}

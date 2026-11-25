@@ -166,15 +166,27 @@ def test_added_customer_claim_over_every_database(runtime_root: Path, tmp_path: 
 
 
 def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Path) -> None:
-    """The guide's purge frame claim is proved for every admitted database with the stated site (the
-    schema with a rowid alias, the resolution of the purge as a plain delete and of the claim as a compound
-    EXCEPT against `before`, and a modeled purge), for every pair of values, NULL and text included: a purge
-    that succeeds leaves every session that is not an expired session of the customer. The condition is
-    the NULL-aware `IS NOT 1`. The fixture shows the site and the actual run for NULL parameters, for a text
-    time that deletes every session of the customer, and for an integer time; it keeps the counterexamples
-    that the claim and its form exclude: the variant of the purge with OR for AND, the claim with NOT
-    instead of IS NOT 1 that requires nothing for a NULL parameter, and an aborted purge whose rollback
-    leaves the start."""
+    """The guide's purge frame claim and the effect claim of the purge are proved for every pair of values, NULL
+    and text included. They hold for every admitted database with the catalog of the pilot schema, with no other
+    premise. The frame claim says that a purge that succeeds leaves every session that its filter does not select.
+    Its condition is the NULL-aware `IS NOT 1`. The frame claim also holds for every database with the site of the
+    purge: the schema with a rowid alias and the resolution of the purge and of the claim. The effect claim says
+    that no session is left that the filter selects. The step of the purge continues by the kind rule of the plain
+    DELETE and the readiness fact of a row-wise filter. No premise assumes it. The fixture shows the actual run for
+    NULL parameters, for a text time that deletes every session of the customer, and for an integer time. For
+    customer 1 with the integer time and with the text time, the effect claim is false before the purge and true
+    after it. The fixture keeps three counterexamples. The variant of the purge with OR for AND breaks the frame
+    claim. The second counterexample has only expired sessions. With a NULL customer, the condition of the claim
+    with NOT instead of IS NOT 1 is NULL on each row. Thus that claim requires nothing of a row, and it is still
+    true after a statement deletes every session. An aborted purge rolls back to the start, and the effect claim is false there.
+    The retention modules prove the statements of the four laws that the base proofs of the purge claims used, from the
+    laws of the parts that replace them.
+    The tactic `sql_holds` of the surface package proves the statements with the catalog premise, and a third
+    claim that the purge adds no session, after `sql_run`. After the tactic, the proofs only reason about rows of
+    tables. The module `PurgeTacticCases` proves EXISTS claims (the tactic keeps the other goals, and a two-state
+    claim without `before` needs no initial catalog) and checks the messages for claims that the tactic has no law
+    for."""
     check_module_chain(runtime_root, tmp_path, (
-        ("PurgeFrameQueries", 4), ("PurgeFrameSite", 0), ("PurgeFrameClaims", 2), ("PurgeFrameInstances", 12)),
-        timeout=300)
+        ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 2),
+        ("PurgeEffectClaims", 1), ("PurgeFrameTactic", 2), ("PurgeTacticCases", 2), ("PurgeFrameInstances", 11),
+        ("PurgeEffectInstances", 5), ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)

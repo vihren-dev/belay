@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T19:02:38+00:00",
+  "finding": "20261124T190218Z-589153a6#4",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The pilot rules (build/agent-logs/pilot-agent-rules.md) require the status file to name the checks run with their local outcome marked as local; the text says that the outcome is local and not evidence, and cites nothing as proof."
+}

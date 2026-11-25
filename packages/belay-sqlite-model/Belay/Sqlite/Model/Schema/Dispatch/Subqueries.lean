@@ -85,4 +85,34 @@ definition. -/
     statementContext clock counters parameters database [] initial =
       { EvalContext.plain clock with parameters, counters } := rfl
 
+/-- For every clock value, counters, values, database, list of subqueries, optional initial database, depth, index,
+outer row and query at that index of the list: the run of that subquery in the context at the next depth is the run
+of the query ({name}`Query.subqueryRun`) in the context at the depth, over the database, the outer row and the initial
+database. In plain words: each subquery runs one depth below the context that holds it. Proof sketch: the definition
+of {name}`subqueryContext` computes. -/
+theorem subqueryContext_subqueries (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
+    (subqueries : List Query) (initial : Option Database) (depth index : Nat) (outer : List Value) {query : Query}
+    (found : subqueries[index]? = some query) :
+    (subqueryContext clock counters parameters database subqueries initial (depth + 1)).subqueries index outer =
+      query.subqueryRun (subqueryContext clock counters parameters database subqueries initial depth) database outer
+        initial := by
+  simp [subqueryContext, found]
+
+/-- For every clock value, counters, values, database, list of subqueries, optional initial database, index, outer
+row and query at that index of the list: the run of that subquery in the context of the statement is the run of the
+query in the context at the depth one less than the number of subqueries. Proof sketch: the list is not empty, so the
+depth of the statement is a successor ({name}`subqueryContext_subqueries`). -/
+theorem statementContext_subqueries (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
+    (subqueries : List Query) (initial : Option Database) (index : Nat) (outer : List Value) {query : Query}
+    (found : subqueries[index]? = some query) :
+    (statementContext clock counters parameters database subqueries initial).subqueries index outer =
+      query.subqueryRun (subqueryContext clock counters parameters database subqueries initial (subqueries.length - 1))
+        database outer initial := by
+  have nonempty : subqueries.length = subqueries.length - 1 + 1 := by
+    have := (List.getElem?_eq_some_iff.mp found).1
+    omega
+  unfold statementContext
+  rw [nonempty, subqueryContext_subqueries _ _ _ _ _ _ _ _ _ found]
+  simp
+
 end Belay.Sqlite.Model.Resolved

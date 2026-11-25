@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Schema.Dispatch.SelectCalmRule
 import Belay.Sqlite.Model.Queries.Evaluation.SelectProjectionRules
 import Belay.Sqlite.Model.Queries.Evaluation.ExprContextLaws
+import Belay.Sqlite.Model.Queries.Evaluation.SelectSubqueryRules
 
 set_option doc.verso true
 
@@ -122,6 +123,45 @@ theorem Query.subqueryRun_of_faultless (context : EvalContext) (database : Datab
     (Query.bindWindow_literal context.parameters query limitParameter offsetParameter) noOverflow
     (Query.mustFail_of_faultless context query source.rows faultless)
     (Query.mayFail_of_faultless context query source.rows plain faultless) distinct
+
+/-- Read rule of a simple query ({name}`Query.simple`) with scalar columns, as a subquery. Take a context, a database,
+an outer row, an optional initial database, the sources, an optional filter, the columns and their names. Let the
+source rows {lit}`source` of the query have no fault, let no expression of the query have a fallible call, and let
+each expression have no fault over the empty row and over each source row. Then the run of the query for the outer
+row:
+
+* has as rows the values of the columns over each source row for which the filter is true, in the order of the
+  source rows;
+* has no fault;
+* ends done.
+
+The query reads no cell of the outer row, so the outer row does not change the run. Proof sketch:
+{name}`Query.subqueryRun_of_faultless` gives the results of the query, and the results of a plain query without
+ordering are the outputs of the rows that {lit}`WHERE` keeps ({name}`Query.results_plain_unordered`). -/
+theorem Query.simple_subqueryRun (context : EvalContext) (database : Database) (outer : List Value)
+    (initial : Option Database) (sources : List QuerySource) (filter : Option Expr) (columns : List Expr)
+    (names : List String) {source : SourceRows}
+    (found : (Query.simple sources filter (columns.map .scalar) names).source context database initial = some source)
+    (clean : source.fault = .none)
+    (plain : (Query.simple sources filter (columns.map .scalar) names).expressions.all
+      (!·.any Expr.isFallibleCall) = true)
+    (faultless : ∀ row ∈ [] :: source.rows,
+      ∀ expression ∈ (Query.simple sources filter (columns.map .scalar) names).expressions,
+        (expression.evaluate context row).2 = .none) :
+    ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).rows =
+        (source.rows.filter fun row => filter.all fun condition => truthy (condition.eval context row)).map
+          (fun row => columns.map (·.eval context row)) ∧
+      ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).fault =
+        .none ∧
+      ((Query.simple sources filter (columns.map .scalar) names).subqueryRun context database outer initial).ending =
+        .done := by
+  have after : (Query.simple sources filter (columns.map .scalar) names).sourceAfter context outer database initial =
+      some source := by
+    rw [← found]
+    simp [Query.sourceAfter, Query.source, Query.simple]
+  rw [Query.subqueryRun_of_faultless context database outer initial rfl rfl rfl after clean plain faultless rfl rfl,
+    Query.results_plain_unordered context rfl rfl rfl rfl rfl rfl]
+  simp [filtered, Query.rowOutput, Query.simple, Function.comp_def]
 
 end Resolved
 

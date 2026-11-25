@@ -48,4 +48,11 @@ theorem Expr.calm_of_calmCheck {expression : Expr} (checked : expression.calmChe
     rw [checked.2] at counter
     cases counter
 
+/-- For every statement whose clock expressions all pass {name}`Expr.calmCheck`, the statement is calm
+({name}`Statement.Calm`). A computation decides the premise for a statement without variables. Proof sketch:
+{name}`Expr.calm_of_calmCheck` for each clock expression. -/
+theorem Statement.calm_of_calmCheck {statement : Statement}
+    (checked : statement.clockExpressions.all Expr.calmCheck = true) : statement.Calm :=
+  fun expression member => Expr.calm_of_calmCheck (List.all_eq_true.mp checked expression member)
+
 end Belay.Sqlite.Model.Resolved

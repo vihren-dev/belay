@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-24T21:01:59+00:00",
+  "finding": "20261124T210150Z-eadfec30#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Repeats 20261124T203833Z-d7e51d87#5: the brief lets each pilot form edit only its own section and the progress log; the coordinator updates the base summary when it merges the forms."
+}
