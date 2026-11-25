@@ -256,3 +256,14 @@ The first review of the record (`reviews/20261125T073157Z-0428f77d`) had 13
 result where the pilot had no proof. The corrected record gives, for each
 law outside the pilot branch, the condition under which it can go, and says
 where the pilot did not examine a point.
+
+The second review (`reviews/20261125T080617Z-19912b7f`) had 12 "must"
+findings. Their common causes: the search for users read only the text of
+named declarations, so it did not find anonymous examples, `#print axioms`
+checks, Lean code in Python tests and one use through dot notation; and
+some statements were more general than the code. The corrected record
+searches all Lean and Python files of `1e8dfd8d`, has the status G for the
+four cases of a general law that stays, moves the comparison of a column
+with a parameter out of the list, and states decision 1 for the two ways in
+which the claims of today are general: a part of the catalog, and a
+variable condition.

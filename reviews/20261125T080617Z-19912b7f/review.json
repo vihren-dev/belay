@@ -1,0 +1,158 @@
+{
+  "caller": "claude",
+  "commit": "19912b7f97bbb0f32112534c2128ccde716f4c01",
+  "date": "2026-11-25T08:06:17+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/claim-proof-pilot-affected-laws.md",
+    "plans/20261124-claim-proof-pilot.status.md",
+    "reviews/20261125T073157Z-0428f77d/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261125T080617Z-19912b7f#1",
+      "line": 26,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record says every group 2 declaration needs an owner decision or a missing law, but `Resolved.Statement.simpleColumn_calm` already follows from `simpleTable_calm` at its original premises without any catalog assumption. Fix: Identify the declarations whose existing proofs already provide the required derivation and list only the remaining retention and caller work for them."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#2",
+      "line": 36,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The Q status calls `Quiet` a no-fault guarantee, although `Statement.Quiet` excludes clock and counter reads and permits a fallible `abs` call. Fix: Describe Q as a quietness guarantee and keep evaluation faults as a separate obligation."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#3",
+      "line": 54,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`tests/query_claims_theorems_test.py` embeds a Lean consumer of `Table.KeysUnique.countMatching_le_one` and checks its axiom report, so the impact extends beyond `tests/surface` and `sql_simp`. Fix: Include this executable contract and its axiom check among the callers that a replacement must preserve."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#4",
+      "line": 131,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "A full catalog fixes table lookups but leaves the filter in `tableOne_run` variable, so the kernel still cannot compute its calmness from the catalog alone. Fix: Make deletion conditional on a derivation for variable filters at the original premises or an explicit decision to drop that generality."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#5",
+      "line": 158,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The two surface laws conclude `Sql.EquivAt`, which equates the actual run and every complete branch outcome, including errors, traces and connection state. Fix: Distinguish the model’s row-equality results from the complete execution equivalence that the replacement client theorems must prove."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#6",
+      "line": 189,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The list of `sql_simp` users omits three anonymous proofs in `ClaimsExpressionLaws.lean` that invoke the set directly. Fix: Include those examples by file and distinguish the count of named theorems from the total number of proofs using the set."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#7",
+      "line": 224,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`Resolved.keptRows_none` leaves the length of `Resolved.sourceRows table`, while `customer_count_is_iff` needs the length of `table.rows`. Fix: Preserve the full rewrite to stored-row length using `sourceRows_perm` and `List.length_map`."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#8",
+      "line": 301,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "`Select.evaluationProof?` has the same type at both revisions, and the old asynchronous check reported a false equation’s failure after the tactic used the proposed proof. Fix: Classify this as an implementation change and correct the summary count of changed signatures."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#9",
+      "line": 333,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "`sessionsSite` also changes its contract from a site for fixed `sessions` with a modeled-run premise to a site for any database with the pilot catalog. Fix: List it as both moved and generalized and update the changed-statement count."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#10",
+      "line": 435,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The deletion table still classifies `equalsParameter` and `equalsParameter_true` as specific to one query form, although `customer_named_after_insert` uses that column-to-parameter comparison independently of the query form. Fix: Remove both declarations from the query-form deletion totals and retain their independent callers in the record."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#11",
+      "line": 461,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "A law for running a `count(*)` subquery is unnecessary to restate `countMatching_eq` or `countMatching_none` because `countMatching` already computes the length of `keptRows` over `sourceRows`. Fix: Assign the missing subquery-run law only to the proofs that evaluate a subquery."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#12",
+      "line": 486,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The table gives `Database.Valid.countMatching_partial_le_one` zero test users, but `AccountSignupSite.keeps_of_valid` applies it directly to prove the signup invariant. Fix: Add that proof to the count-family callers and update the affected-fixture total."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#13",
+      "line": 629,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The table lists one test user of `resolveSources_tableInfo`, but anonymous examples in both `ClaimsDerived.lean` and `SuccessSumBound.lean` also apply it with an arbitrary callback and a nested-query prefix. Fix: Include both examples and the axiom check in `SuccessSumBound.lean` among the obligations for replacing the law."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#14",
+      "line": 832,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record makes `Expr.Rowwise` a requirement for exchanging evaluation contexts, although `Expr.evaluate_rowAndParameters` also covers row-local arithmetic, casts and scalar calls when the contexts have equal parameters. Fix: State the weaker local-read and equal-parameter premises and identify `Rowwise` as one sufficient way to establish local reads."
+    },
+    {
+      "id": "20261125T080617Z-19912b7f#15",
+      "line": 888,
+      "path": "docs/records/claim-proof-pilot-affected-laws.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "Only 12 of the 15 `items_*` helper theorems are in `ItemInsertSite.lean`. Fix: Also list `ItemInsertOutcomes.lean`, which defines `items_ready`, `items_fits` and `items_taken_outcome`."
+    }
+  ],
+  "id": "20261125T080617Z-19912b7f",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
