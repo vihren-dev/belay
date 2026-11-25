@@ -183,7 +183,7 @@ def test_purge_frame_claim_over_every_database(runtime_root: Path, tmp_path: Pat
     laws of the parts that replace them."""
     check_module_chain(runtime_root, tmp_path, (
         ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
-        ("PurgeEffectClaims", 2), ("PurgeFrameInstances", 11), ("PurgeEffectInstances", 5),
+        ("PurgeEffectClaims", 1), ("PurgeFrameInstances", 11), ("PurgeEffectInstances", 5),
         ("PurgeLawRetention", 3), ("PurgeLawRetentionOutput", 1)), timeout=300)
 
 
@@ -195,5 +195,5 @@ def test_purge_claims_by_the_claim_tactic(runtime_root: Path, tmp_path: Path) ->
     `before` needs no initial catalog) and checks the messages for claims that the tactic has no law for."""
     check_module_chain(runtime_root, tmp_path, (
         ("PurgeFrameQueries", 5), ("PurgeFrameSite", 1), ("PurgeFrameClaims", 2), ("PurgeFrameSchema", 3),
-        ("PurgeEffectClaims", 2), ("PurgeEffectTactic", 1), ("PurgeFrameTactic", 2), ("PurgeTacticCases", 2)),
+        ("PurgeEffectClaims", 1), ("PurgeFrameTactic", 2), ("PurgeTacticCases", 2)),
         timeout=300)

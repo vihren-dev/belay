@@ -116,6 +116,19 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
+- 2026-11-25, pull request: the branch `claim-proof-sql-holds` has the
+  commits of `claim-proof-pilot` and of `claim-proof-pilot-tactic` on top of
+  `adr-0033-phase-8-inventory`. The proof of the effect claim that composes
+  the laws by hand is removed, with its helpers: `purge_clears` (form B),
+  `purgeClears_iff`, `purgeClearsStatement` and `purgeClearsSubquery`. The
+  proof with `sql_holds` moves from the deleted module `PurgeEffectTactic`
+  to `PurgeEffectClaims` and gets the name `purge_clears`. The frame proof
+  of form B (`purge_frame`, `purge_keeps_rows`) stays, because it proves the
+  claim for each database with a site, which is more general than the
+  catalog premise of `purge_frame_by_tactic`; `purge_frame_on_sessions`
+  follows from it and stays for the instances. The retention fixtures stay.
+  Tests: `python3 -m pytest tests/docs_test.py
+  tests/surface_assertion_examples_test.py -k purge`.
 
 ## Base form
 
@@ -277,7 +290,7 @@ docstring line.
 
 ## Form B
 
-In progress on the branch `claim-proof-pilot-laws`.
+Done on the branch `claim-proof-pilot-laws`.
 
 ### The bridge laws (surface package)
 

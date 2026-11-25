@@ -37,7 +37,7 @@
     "GuideParameters", "GuidePrograms", "InsertLookupClaims", "InvalidUtf8", "LowercaseExpansion",
     "LowercaseFilters", "LowercaseLookups", "LowercasePlan", "LowercaseQueries", "LowercaseSimulation",
     "NameTokenPaths", "NameTraceSpans", "ParameterErrors", "ProgramErrors", "ProgramExamples",
-    "PurgeEffectClaims", "PurgeEffectInstances", "PurgeEffectTactic", "PurgeFrameClaims", "PurgeFrameInstances",
+    "PurgeEffectClaims", "PurgeEffectInstances", "PurgeFrameClaims", "PurgeFrameInstances",
     "PurgeFrameQueries", "PurgeFrameSchema", "PurgeFrameSite", "PurgeFrameTactic", "PurgeLawRetention",
     "PurgeLawRetentionOutput",
     "PurgeTacticCases", "PurgeTriggerCounterexample", "RebuildAffinity", "RebuildRuns", "Rejected",
