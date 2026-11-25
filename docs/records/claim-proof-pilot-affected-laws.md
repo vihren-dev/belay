@@ -165,10 +165,11 @@ each checked reference to the law in a docstring must change.
    laws with status F take calm expressions as premises. Some laws with
    status R have no filter and no catalog in their statement:
    `resolveColumns_one` resolves the result column `1` in each scope. The
-   tactic `sql_holds` works in a different way: its hints give the full
-   catalog of each database that the claim reads, and that includes the
-   initial database when the claim reads it. The schema of a hint must have
-   no free variable and no metavariable. The definition
+   tactic `sql_holds` works in a different way: its hints give full
+   catalogs. The tactic always needs the catalog of the database that the
+   program reaches. It needs the catalog of the initial database too when a
+   source of the claim names a schema. The schema of a hint must have no
+   free variable and no metavariable. The definition
    `ClaimTactic.catalogFact` of the branch has the forms of a hint that the
    tactic accepts; this record does not restate them. The kernel computes
    the resolution and the calm check on these catalogs, for a statement with

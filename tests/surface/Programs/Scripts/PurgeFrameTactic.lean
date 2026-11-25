@@ -4,14 +4,13 @@ set_option doc.verso true
 
 /-! A fixture module of {lit}`tests/surface_assertion_examples_test.py`: two-state claims of the guide's purge for
 each database with the catalog of the pilot schema, proved with the tactics {lit}`sql_run` and {lit}`sql_holds`.
-The first is the frame claim, which {name}`AssertionExamples.purge_frame_on_sessions` proves with the laws of the
-parts. The second says that the purge adds no session. -/
+The first is the frame claim. The second says that the purge adds no session. -/
 
 namespace AssertionExamples
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model hiding Database
 
-/-- The client statement of the guide's frame claim of the purge, the same as {name}`purge_frame_on_sessions`. Take
+/-- The client statement of the guide's frame claim of the purge. Take
 two values, NULL and text included. Take an admitted database with the catalog of {name}`sessions` and a complete
 environment. Run the purge from the fresh start. After a run with no error, the reached database has each session of
 the start that the filter did not select ({name}`purgeKeeps`, with the start as its initial database). A run with an
@@ -21,7 +20,7 @@ when each row of its first term is a row of the second ({name}`CompoundOperator.
 condition is not 1 is not selected ({name}`Resolved.Expr.truthy_isNot_one`), so the delete keeps it
 ({name}`LiteralData.mem_deleted`). Two rows of the start that compare equal are identical, because their first cells
 are distinct rowids ({name}`Resolved.equalRowsIdentical_rowidFirst`). -/
-theorem purge_frame_by_tactic (c now : Value) :
+theorem purge_frame_on_sessions (c now : Value) :
     FreshEnsuresFrom (send (purge c now)) (·.HasCatalog sessions)
       (fun start => ifOk (holdsSince start (purgeKeeps c now))) := by
   refine (FreshEnsuresFrom.ifOk_iff _ _ _).2 ?_
@@ -61,7 +60,7 @@ def purgeAddsNone : Script :=
 /-- Take two values, NULL and text included. Take an admitted database with the catalog of {name}`sessions` and a
 complete environment. Run the purge from the fresh start. After a run with no error, each row of the reached table
 {lit}`sessions` is a row of that table at the start ({name}`purgeAddsNone`). A run with an error requires nothing.
-The statement has no premise other than the catalog. Proof sketch: as for {name}`purge_frame_by_tactic`, with the two
+The statement has no premise other than the catalog. Proof sketch: as for {name}`purge_frame_on_sessions`, with the two
 terms of the {lit}`EXCEPT` in the other order. Each row that the delete keeps is a row of the start
 ({name}`LiteralData.mem_deleted`). The reached database is valid, so its rows have distinct rowids. -/
 theorem purge_adds_none (c now : Value) :
@@ -92,7 +91,7 @@ theorem purge_adds_none (c now : Value) :
       (by dsimp only; decide +kernel) .binary [.binary, .binary] _ [.column 1, .column 2]
       fun cells member => (List.mem_filter.1 member).1
 
-#print axioms purge_frame_by_tactic
+#print axioms purge_frame_on_sessions
 #print axioms purge_adds_none
 
 end AssertionExamples

@@ -46,23 +46,10 @@ def sessionsSite (db : Database) (schema : db.HasCatalog sessions) : PurgeFrameS
     rw [show db.raw.catalog = sessions.raw.catalog from schema]
     decide +kernel
 
-/-- The client statement of the guide's frame claim of the purge. Take two values, NULL and text included. Take an
-admitted database with the catalog of {name}`sessions` and a complete environment. Run the purge from the fresh
-start. After a run with no error, the reached database has each session of the start that the filter did not select.
-The claim {name}`purgeKeeps` says this, with the start as its initial database. A run with an error requires
-nothing. The statement has no premise other than the catalog. Proof sketch: {name}`purge_frame`
-with the site {name}`sessionsSite`. -/
-theorem purge_frame_on_sessions (c now : Value) :
-    FreshEnsuresFrom (send (purge c now)) (·.HasCatalog sessions)
-      (fun start => ifOk (holdsSince start (purgeKeeps c now))) :=
-  fun db schema => purge_frame c now db ⟨sessionsSite db schema⟩
-
 #print axioms sessions_found
 #print axioms sessionsSite
-#print axioms purge_frame_on_sessions
 
-/-! Each database with the catalog of {name}`sessions` has the site of the purge ({name}`sessionsSite`). The client
-statement {name}`purge_frame_on_sessions` follows from {name}`purge_frame`. It has no premise other than the
-catalog. -/
+/-! Each database with the catalog of {name}`sessions` has the site of the purge ({name}`sessionsSite`). Thus
+{name}`purge_frame` applies to each such database. -/
 
 end AssertionExamples

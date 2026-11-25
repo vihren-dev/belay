@@ -1,4 +1,4 @@
-import PurgeFrameSchema
+import PurgeFrameTactic
 
 /-! A fixture module of `tests/surface_assertion_examples_test.py`: instances of the purge frame claim (ADR 0017, S6).
 The client statement `purge_frame_on_sessions` applies to the database `sessions`. The kernel runs the purge from the

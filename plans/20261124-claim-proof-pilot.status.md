@@ -117,19 +117,32 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
-- 2026-11-25, pull request: the branch `claim-proof-sql-holds` has the
-  commits of `claim-proof-pilot` and of `claim-proof-pilot-tactic` on top of
-  `adr-0033-phase-8-inventory`. The proof of the effect claim that composes
+- 2026-11-25, pull request: the branch `claim-proof-sql-holds` has, on top
+  of `adr-0033-phase-8-inventory` (`6a6de020`), copies of the commits of
+  `claim-proof-pilot` up to `2dd24dc4` and of the commits of
+  `claim-proof-pilot-tactic` after `ff882f8d` up to `2a2db889`. The later
+  commits of `claim-proof-pilot` (`6d060eb3` to `c314ed38`: the last
+  corrections of the affected-laws record and their review records) are
+  not copied one by one; the commit "docs: the last review fixes of the
+  affected-laws record on the pull request branch" has their content. The proof of the effect claim that composes
   the laws by hand is removed, with its helpers: `purge_clears` (form B),
   `purgeClears_iff`, `purgeClearsStatement` and `purgeClearsSubquery`. The
   proof with `sql_holds` moves from the deleted module `PurgeEffectTactic`
   to `PurgeEffectClaims` and gets the name `purge_clears`. The frame proof
   of form B (`purge_frame`, `purge_keeps_rows`) stays, because it proves the
   claim for each database with a site, which is more general than the
-  catalog premise of `purge_frame_by_tactic`; `purge_frame_on_sessions`
-  follows from it and stays for the instances. The retention fixtures stay.
-  Tests: `python3 -m pytest tests/docs_test.py
-  tests/surface_assertion_examples_test.py -k purge`.
+  catalog premise of the proof with the tactic. The retention fixtures stay.
+  Tests: `python3 -m pytest tests/surface_assertion_examples_test.py -k
+  purge`, and `python3 -m pytest tests/docs_test.py`.
+- 2026-11-25, pull request: the statement of the frame claim with the
+  catalog premise keeps one proof, the proof with `sql_holds`. The
+  corollary `purge_frame_on_sessions` of `purge_frame` in
+  `PurgeFrameSchema` is removed, and the proof `purge_frame_by_tactic` in
+  `PurgeFrameTactic` gets its name. The instances in `PurgeFrameInstances`
+  use this proof. The more general theorem `purge_frame`, for each
+  database with a site, stays. Tests: `python3 -m pytest
+  tests/surface_assertion_examples_test.py -k purge`, and `python3 -m
+  pytest tests/docs_test.py`.
 
 ## Base form
 
@@ -1049,14 +1062,19 @@ The seventh review (`reviews/20261125T130010Z-6255b60f`) had 1 "must"
 finding on the same sentence: the docstring of the tactic does not say
 that the schema of a hint has no variable. The record now states this
 and refers to `ClaimTactic.catalogFact` for the accepted forms. The
-eighth review (`reviews/20261125T130158Z-fa16823d`) had no findings.
+eighth review (`reviews/20261125T130158Z-fa16823d`) had no findings. A
+review on the pull request branch (`reviews/20261125T130959Z-6ef7b1e6`)
+found that the sentence did not say which catalogs the tactic needs. The
+record now says that the tactic always needs the reached catalog, and the
+initial catalog when a source names a schema.
 
 ## Owner decision
 
 On 2026-11-25 the owner accepted the recommendation of the findings
-record. The task file records the decision. Next: the pull request from
-`claim-proof-pilot-tactic` on top of `adr-0033-phase-8-inventory`. Before
-the final checks, the proofs of form B that the branch keeps only for the
-comparison are removed, so that each claim has one proof; the retention
-fixtures stay. Then `just test-nix` and `just test-scheduled-checks` run
-once.
+record. The task file records the decision. The first plan was a pull
+request from `claim-proof-pilot-tactic`. The pull request comes from the
+branch `claim-proof-sql-holds`, which has the commits of that branch and
+the removal of the proofs that served only the comparison; the progress
+log gives the details. Pending: `just test-nix` and
+`just test-scheduled-checks`, once, and then the pull request on top of
+`adr-0033-phase-8-inventory`.
