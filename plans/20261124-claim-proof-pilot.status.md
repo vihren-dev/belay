@@ -111,6 +111,8 @@ Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
   schema name needs no catalog of the start, the message when the kernel
   does not decide the calm check, a checked docstring example, plain words
   of `Model.Database.table_of_sameCatalog`).
+- 2026-11-25, form C: the module text of `sql_holds` names the one-state
+  step; `just test-full` and `just verdict` passed (see "## Form C").
 - 2026-11-25: forms A, B, C and D are DONE on their branches. The
   findings record compares them and gives the recommendation. The owner
   decision is open.
@@ -549,7 +551,8 @@ Elaboration time (lower of two runs, local):
 
 ## Form C
 
-In progress on the branch `claim-proof-pilot-tactic`, on top of form B.
+Done on the branch `claim-proof-pilot-tactic`, on top of form B. The
+comparison with the other forms is for the owner.
 
 ### The tactic (surface package)
 
@@ -946,8 +949,11 @@ The tests of this form: `just dev-build`; `python3 -m pytest
 tests/surface_assertion_examples_test.py -k "claim_tactic or
 purge_frame_claim_over"`; `tests/surface_select_sources_test.py`,
 `surface_select_rules_test.py` and `surface_select_procedure_test.py` (for
-`evaluationProof?`); `tests/test_lean_categories.py`. The results of the Nix
-checks follow in the progress log.
+`evaluationProof?`); `tests/test_lean_categories.py`.
+
+Nix checks: `just test-full` passed at `3c505c1d` (the later commit
+`5bc3c323` changes one docstring line); `just verdict` passed at
+`5bc3c323` (each corpus case AGREE or MODEL_UNSUPPORTED, no DISAGREE).
 
 ## Findings record
 
