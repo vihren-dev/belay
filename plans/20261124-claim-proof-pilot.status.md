@@ -1,10 +1,8 @@
 # Status: pilot of the forms of proof for a claim in SQL
 
 Created 2026-11-24.
-Status: OPEN. The pilot is complete. The owner selected the branch
-`claim-proof-pilot-tactic` on 2026-11-25. The branch
-`claim-proof-sql-holds` has it for the pull request; the checks of the
-pull request are pending.
+Status: DONE. The owner accepted the recommendation on 2026-11-25. The
+branch `claim-proof-sql-holds` is the pull request.
 Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 
 ## References
@@ -1081,6 +1079,7 @@ record. The task file records the decision. The first plan was a pull
 request from `claim-proof-pilot-tactic`. The pull request comes from the
 branch `claim-proof-sql-holds`, which has the commits of that branch and
 the removal of the proofs that served only the comparison; the progress
-log gives the details. Pending: `just test-nix` and
-`just test-scheduled-checks`, once, and then the pull request on top of
+log gives the details. `just test-nix` (99 passed) and
+`just test-scheduled-checks` (53 passed) ran once on the final code of the
+branch, and both passed. The pull request is on top of
 `adr-0033-phase-8-inventory`.

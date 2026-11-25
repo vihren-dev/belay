@@ -1,7 +1,8 @@
 # Pilot: forms of proof for a claim that is stated in SQL
 
 Created 2026-11-24.
-Status: OPEN.
+Status: DONE. The section "Owner decision" gives the decision of
+2026-11-25.
 Status: [20261124-claim-proof-pilot.status.md](20261124-claim-proof-pilot.status.md).
 Owner request of 2026-11-24: "Run a pilot with the different reasonable
 approaches used by professionals in such situations. Then compare and
