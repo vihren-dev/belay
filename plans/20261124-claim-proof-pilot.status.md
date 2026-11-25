@@ -1,7 +1,9 @@
 # Status: pilot of the forms of proof for a claim in SQL
 
 Created 2026-11-24.
-Status: OPEN. The pilot is complete; the owner decision is open.
+Status: OPEN. The pilot is complete. The owner selected the branch
+`claim-proof-pilot-tactic` on 2026-11-25; the pull request and its checks
+are pending.
 Task: [20261124-claim-proof-pilot.task.md](20261124-claim-proof-pilot.task.md).
 
 ## References
@@ -232,7 +234,8 @@ counts in it come from `scc` 3.7.0 over the Lean files of each revision,
 without the three frozen experiments, as
 `docs/development/lean-simplification-goal.md` counts them.
 
-Open: the owner decision. After it, the task file records the decision,
+At the time of the record, the owner decision was open; the section
+"Owner decision" gives it. After it, the task file records the decision,
 and the branch of the selected form becomes the pull request, with
 `just test-nix` and `just test-scheduled-checks` once before it.
 
@@ -270,7 +273,9 @@ which the claims of today are general: a part of the catalog, and a
 variable condition.
 
 The third review (`reviews/20261125T083446Z-ae782c44`) had 8 "must"
-findings, each about a summary that said more than the laws state. The
+findings: six about a summary that said more than the laws state, and two
+about omissions (the references in docstrings, and the claim law
+`BalanceExample.count_run`). The
 corrected record gives the premises of the `Calm` laws and of the laws of
 `IN` and `EXISTS` as the code has them, limits the conditions of decision 1
 to the laws that they apply to, and lists the docstrings that have a
@@ -279,19 +284,26 @@ checked reference to a listed declaration.
 The fourth review (`reviews/20261125T084306Z-ba07cb92`) had 4 "must"
 findings and 3 "should" findings. Four reviews in a row had "must"
 findings, so the work stopped, and the owner decided on 2026-11-25 to
-correct the record and review it again. The corrected record gives each
-premise of the law of `NOT IN`, states that the calm check proves `Calm`
+correct the record and review it again. The corrected record names the
+two NULL premises of the law of `NOT IN`, states that the calm check proves `Calm`
 only when it reduces to `true`, names the resolution law that takes the
 resolution of the filter as a premise and one that does not, and states
 that `sql_holds` needs the catalog of each database that the claim
 reads. It counts 6 docstrings outside the lists, not 8: two of the
-owners were in the lists. Two findings of the third review were about
-omissions and not about a summary that said too much: the references in
-docstrings, and the claim law `BalanceExample.count_run`.
+owners were in the lists.
+
+The fifth review (`reviews/20261125T123839Z-1c050a90`) had 6 "must"
+findings: three about the record and three about the decision text in
+this file and in the task file. The record now refers to the docstring
+of the law of `NOT IN` for its premises and does not restate them, and
+it states the two forms of a hint of `sql_holds`.
 
 ## Owner decision
 
 On 2026-11-25 the owner accepted the recommendation of the findings
 record. The task file records the decision. Next: the pull request from
-`claim-proof-pilot-tactic` on top of `adr-0033-phase-8-inventory`, with
-`just test-nix` and `just test-scheduled-checks` before it.
+`claim-proof-pilot-tactic` on top of `adr-0033-phase-8-inventory`. Before
+the final checks, the proofs of form B that the branch keeps only for the
+comparison are removed, so that each claim has one proof; the retention
+fixtures stay. Then `just test-nix` and `just test-scheduled-checks` run
+once.

@@ -165,14 +165,15 @@ each checked reference to the law in a docstring must change.
    laws with status F take calm expressions as premises. Some laws with
    status R have no filter and no catalog in their statement:
    `resolveColumns_one` resolves the result column `1` in each scope. The
-   tactic `sql_holds` works in a different way: each hint is a proof that a
-   database has a full catalog (`Database.HasCatalog`). The tactic needs the
-   catalog of each database that the claim reads: the database that the
-   program reaches and, for a claim `holdsSince` whose query names a schema,
-   the initial database too (law `Holds.reachedSince_iff_of_catalog` of the
-   branch). The kernel computes the resolution and the calm check on these
-   catalogs, for a statement with no variable. Such a proof uses no law with
-   status R or F.
+   tactic `sql_holds` works in a different way: each hint gives the full
+   catalog of a database, as a proof of `Database.HasCatalog` or as an
+   equation of two catalogs, for a schema that has no variable. The tactic
+   needs a hint that fits each database that the claim reads: the database
+   that the program reaches and, for a claim `holdsSince` whose query names
+   a schema, the initial database too (law
+   `Holds.reachedSince_iff_of_catalog` of the branch). The kernel computes
+   the resolution and the calm check on these catalogs, for a statement with
+   no variable. Such a proof uses no law with status R or F.
 
    If each claim takes the full catalog as premise, the lookup of a table
    with a known name becomes a computation. A law whose table name is a
@@ -225,16 +226,15 @@ each checked reference to the law in a docstring must change.
    the two conditions as filters, and no fault; the values can differ,
    because an `IN` with no match and a NULL among the inner values is NULL,
    and the `EXISTS` is 0. For `NOT IN`,
-   `Resolved.Expr.evaluate_notIn_eq_notExists` gives equal evaluations, with
-   these premises: the value of the probe is not NULL, the inner values of
-   the kept rows are not NULL, the `IN` test and the comparison `=` match
-   each inner value equally, the correlated condition keeps a row exactly
-   when the condition of the `IN` subquery keeps it and its value equals the
-   probe, and no expression of the two subqueries has a call that can fail
-   or a fault. The output laws give equal rows of the two queries. The two
-   laws of the client library conclude more: `Sql.EquivAt` states that the
-   two programs have the same run and the same complete outcomes of each
-   branch, with the return values, the errors, the reasons to stop, the
+   `Resolved.Expr.evaluate_notIn_eq_notExists` gives equal evaluations under
+   the premises that its docstring lists. Two of them have no equivalent in
+   the positive law: the value of the probe is not NULL, and the inner value
+   of each joined row that the condition keeps is not NULL. This record does
+   not restate the other premises; a retention test must keep each premise
+   as the law states it. The output laws give equal rows of the two queries.
+   The two laws of the client library conclude more: `Sql.EquivAt` states
+   that the two programs have the same run and the same complete outcomes of
+   each branch, with the return values, the errors, the reasons to stop, the
    traces and each field of the connection. The laws can stay as they are.
    As an alternative, the library keeps the operator laws, and the
    equivalences become client theorems in the fixtures. That is a deletion
@@ -798,11 +798,11 @@ Form: `SELECT p FROM t WHERE x [NOT] IN (SELECT c FROM u)`, and the same with `E
 
 These laws compare a query with `IN` and a query with `EXISTS` (decision 3).
 The laws of the model give, for the positive `IN`, equal truth of the two
-conditions as filters, and for `NOT IN`, equal evaluations when the value of
-the probe is not NULL and the inner values of the kept rows are not NULL,
-with more premises about the comparison, the correlated condition and
-faults; the output laws give equal rows of the two queries. The two laws of
-the client library, `Sql.EquivAt.in_exists_of_rowidAlias` and
+conditions as filters, and for `NOT IN`, equal evaluations under the
+premises of the law, among them that the value of the probe and the inner
+values of the kept rows are not NULL; the output laws give equal rows of the
+two queries. The two laws of the client library,
+`Sql.EquivAt.in_exists_of_rowidAlias` and
 `Sql.EquivAt.notIn_notExists_of_rowidAlias`, conclude `Sql.EquivAt`: the two
 programs have the same run and the same complete outcomes of each branch,
 with the errors, the traces and the state of the connection. The
