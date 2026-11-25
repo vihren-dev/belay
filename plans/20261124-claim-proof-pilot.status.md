@@ -235,3 +235,15 @@ without the three frozen experiments, as
 Open: the owner decision. After it, the task file records the decision,
 and the branch of the selected form becomes the pull request, with
 `just test-nix` and `just test-scheduled-checks` once before it.
+
+## Affected laws
+
+Owner question of 2026-11-25: which laws of today change if the project
+adopts the recommendation. `docs/records/claim-proof-pilot-affected-laws.md`
+lists them by name, in three groups: changed on the pilot branch, laws of
+one query form, and laws of writes. Sources: the comparison of the
+declarations of `1e8dfd8d` with `5bc3c323`, a classification of each
+theorem of the packages and of `tests/surface` by twelve readers, and a
+search by name for the users of each law. The record names four decisions
+that the list depends on. Test of the commit: `python3 -m pytest
+tests/docs_test.py`.
