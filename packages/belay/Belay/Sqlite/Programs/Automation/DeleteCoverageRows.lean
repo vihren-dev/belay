@@ -1,7 +1,5 @@
 import Lean.LabelAttribute
-import Belay.Sqlite.Model.Queries.Evaluation.ScalarCallSafety
-import Belay.Sqlite.Model.Queries.Evaluation.JsonCallSafety
-import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteCoverage
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
