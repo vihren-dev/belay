@@ -90,8 +90,8 @@ def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
 def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance cases A21 and A22. At any context with the catalog of shop, sql_select uses
     Sql.check_query_catalog_rows_at to prove the big-orders query reads the qualifying rows.
-    The same claim applies after a delete that preserves ExecutionContext.HasCatalog.
-    At every context whose
+    From a catalog hint, sql_run proves that DELETE preserves name resolution and composes it with the query.
+    A DELETE that reads changes() also requires a known counter. At every context whose
     counters know `changes()`, `SELECT changes()` returns that value and keeps the connection. The
     instances show a result from the start that does not hold after a delete, and `changes()`, which has
     no result in the default environment but the count of the delete after it. The DELETE coverage
@@ -100,7 +100,7 @@ def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     extractInputs_iff directly in the model. The execution fixtures compare the two programs on every shop database. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
-                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 3),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 5),
                        ("SelectCounterContextCases", 1), ("FunctionCallSafetyCases", 8), ("DeleteCoverageCases", 14),
                        ("DeleteReadComparison", 1)),
                        timeout=120)

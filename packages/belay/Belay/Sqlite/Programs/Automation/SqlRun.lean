@@ -1,5 +1,4 @@
-import Belay.Sqlite.Programs.Automation.DeleteCoverage
-import Belay.Sqlite.Programs.Automation.SqlRunKindRules
+import Belay.Sqlite.Programs.Automation.SqlRunDelete
 import Belay.Sqlite.Programs.Automation.SqlSelect
 
 set_option doc.verso true
@@ -99,11 +98,15 @@ the goal and the messages stay as they were, and the step rule of the read appli
       setGoals [goal]
       evalTactic (← `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached))
       return ← processPremises hints fuel (← getGoals)
-    if let some (open_, cases) ← applyKindRule hints goal then
+    let explicit ← applyKindRule hints goal
+    let inferred ← if explicit.isNone && syntaxKind == some ``Model.Syntax.Statement.delete then
+      catalogDelete? hints goal script else pure none
+    if let some (open_, cases) := explicit.orElse (fun _ => inferred) then
       let mut result := open_
       for case_ in cases do
         let failed := (← case_.getTag) == `failure
         for rest in ← runGoal hints false (fuel - 1) case_ do
+          if inferred.isSome && (← rest.withContext <| rest.assumptionCore) then continue
           result := result ++ (← if failed then closeFailure rest else pure [rest])
       return result
     stuck first goal "no hint or hypothesis gives a resolved kind for this send."
@@ -134,7 +137,8 @@ the goal and the messages stay as they were, and the step rule of the read appli
 
 /-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not
 discharge. The optional terms are hints: each is tried against each premise about the context, for
-example the resolution of a statement. -/
+example the resolution of a statement. For a plain DELETE on a fresh connection, a
+catalog hint supplies the resolution and target table. The tactic also tries the DELETE coverage rule. -/
 syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
 
 /-- Run {lit}`sql_run`: process the main goal and put the open obligations in place of it. -/

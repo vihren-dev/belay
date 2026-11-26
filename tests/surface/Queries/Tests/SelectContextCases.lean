@@ -11,7 +11,7 @@ namespace SelectContextCases
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 open SelectGroupCases (cell)
-open SelectJoinCases (shop ordersShape shop_found shop_state partial_)
+open SelectJoinCases (shop ordersShape partial_)
 open SelectDerivedCases (bigCondition bigQuery Big)
 
 /-- The A21 query, which resolves to {name}`bigQuery`. -/
@@ -52,32 +52,31 @@ theorem big_after {α : Type} (first : Sql α) (state : ExecutionContext)
 /-- The A21 write, which deletes the orders without a customer. -/
 def deleteScript : Script := sql r"DELETE FROM orders WHERE customer_id IS NULL"
 
-/-- A21, a write and a following SELECT: for every database with the catalog of {name}`shop`
-and environment, if the model runs the statement of {name}`deleteScript` on the connection of
-the environment to a step that continues, then the program that sends {name}`deleteScript` and
-then runs {name}`bigScript` checks {name}`ReadsBig` from the new connection of the environment:
-the SELECT returns the rows of the database after the delete, also when the delete fails. Proof
-sketch: {name}`runScriptStep_plainDelete_eq`; a write keeps the catalog, so each reached context
-has the catalog of {name}`shop`, and {name}`big_after` applies. -/
-theorem big_after_delete (db : Database) (env : Env) (schema : db.HasCatalog shop)
-    (modeled : ∀ entry ∈ deleteScript.statements, ∃ output next others,
-      runScriptStep runContext env.clock 0 (db.raw.connection env.counters) entry.1 entry.2 =
-        .continued output next others) :
-    (do let _ ← send deleteScript; query bigScript rfl).check ReadsBig (ExecutionContext.initial db env) := by
-  obtain ⟨statement, head, resolves⟩ : ∃ statement, deleteScript.statements = [(statement, [])] ∧
-      resolveStatement runContext (shop.raw.connection {}).resolveState statement =
-        .ok (.delete 1 (some (.compare .is (some .integer) (.column 1) (.literal .null) .binary)) [] [] none,
-          (shop.raw.connection {}).resolveState) := ⟨_, rfl, by decide +kernel⟩
-  have script : deleteScript = ⟨[(statement, [])]⟩ := by rw [← head]
-  refine big_after _ _ ?_
-  rw [script]
-  have found := resolves
-  rw [← shop_state db env schema] at found
-  have present := Database.table_of_findTable db.raw _ 1 ordersShape (shop_found db schema).2
-  have covered := RunStep.continues_iff.2 (modeled (statement, []) (by rw [head]; exact List.mem_singleton_self _))
-  sql_run [found, covered, present]
-  exact schema
+/-- For every database with the catalog of {name}`shop` and every environment, sending
+{name}`deleteScript` preserves the resolution state of a fresh shop connection. -/
+theorem delete_keeps_names (db : Database) (env : Env) (schema : db.HasCatalog shop) :
+    (send deleteScript).check (fun _ final => final.connection.resolveState = (shop.raw.connection {}).resolveState)
+      (ExecutionContext.initial db env) := by
+  sql_run [schema]
 
+/-- From every fresh connection with the catalog of {name}`shop`, sending {name}`deleteScript`
+and then querying {name}`bigScript` returns the qualifying rows of the reached database.
+Proof sketch: resolve the DELETE using the catalog and apply {name}`big_at` at the reached context. -/
+theorem big_after_delete (db : Database) (env : Env) (schema : db.HasCatalog shop) :
+    (do let _ ← send deleteScript; query bigScript rfl).check ReadsBig (ExecutionContext.initial db env) := by
+  sql_run [schema, big_at]
+
+/-- A DELETE from the first table that reads the change counter. -/
+private def deleteCustomers := sql r"DELETE FROM customers WHERE changes() > 0"
+
+/-- On every fresh shop connection with a known change count, {lit}`sql_run` proves that
+sending {name}`deleteCustomers` preserves name resolution. The catalog alone leaves coverage open. -/
+private theorem delete_with_counter (db : Database) (env : Env) (schema : db.HasCatalog shop)
+    (count : Nat) (known : env.counters.changes = some count) :
+    (send deleteCustomers).check (fun _ final => final.connection.resolveState = (shop.raw.connection {}).resolveState)
+      (ExecutionContext.initial db env) := by
+  fail_if_success (clear known; solve | sql_run [schema])
+  sql_run [schema]
 
 /-- A21 contrast on {name}`partial_`, with the rows of native SQLite 3.51.0: from the start,
 {name}`bigScript` returns the orders 1 and 3; after {name}`deleteScript`, which deletes order 3,
@@ -90,6 +89,8 @@ example : (partial_.run (query bigScript rfl)).returnsResult
 
 #print axioms big_at
 #print axioms big_after
+#print axioms delete_with_counter
+#print axioms delete_keeps_names
 #print axioms big_after_delete
 
 end SelectContextCases
