@@ -7,10 +7,9 @@ set_option maxRecDepth 8192
 namespace DeleteReadComparison
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
-open scoped Belay.Sqlite.Run.DeleteCoverage
 open SelectContextCases (bigScript deleteScript bigAt big_eq)
 open SelectGroupCases (cell)
-open SelectJoinCases (shop ordersShape shop_found shop_state)
+open SelectJoinCases (shop ordersShape shop_found)
 open SelectDerivedCases (Big bigCondition)
 
 /-- The equivalent read on the starting database. -/
@@ -70,22 +69,12 @@ private theorem after_delete_rows (db : Database) (schema : db.HasCatalog shop)
     Resolved.sourceRows, Bool.and_comm] using ((table.scan_filterRows keep).map Row.values).filter Big
 
 /-- The DELETE preserves the catalog and leaves exactly the expected big orders. -/
-private theorem delete_effect (db : Database) (env : Env) (schema : db.HasCatalog shop) :
+theorem delete_effect (db : Database) (env : Env) (schema : db.HasCatalog shop) :
     (send deleteScript).check (fun _ final =>
       final.HasCatalog shop ∧ (bigAt final.connection.state.database).Perm (expected db.raw))
       (ExecutionContext.initial db env) := by
-  obtain ⟨statement, head, resolves⟩ : ∃ statement, deleteScript.statements = [(statement, [])] ∧
-      resolveStatement runContext (shop.raw.connection {}).resolveState statement =
-        .ok (.delete 1 nullFilter [] [] none,
-          (shop.raw.connection {}).resolveState) := ⟨_, rfl, by decide +kernel⟩
-  have script : deleteScript = ⟨[(statement, [])]⟩ := by rw [← head]
-  rw [← shop_state db env schema] at resolves
-  have present := Database.table_of_findTable db.raw _ 1 ordersShape (shop_found db schema).2
-  rw [script]
-  sql_run [resolves, present]
-  case modeled =>
-    cover_delete rule, present
-  all_goals exact ⟨schema, after_delete_rows db schema _⟩
+  sql_run [schema]
+  exact ⟨schema, after_delete_rows db schema _⟩
 
 /-- Both programs succeed and return the same rows up to permutation for every database with the shop catalog. Proof sketch: the write preserves the catalog and the surviving big orders match the reference filter. -/
 theorem delete_then_select_eq_filtered_select (db : Database) (env : Env)

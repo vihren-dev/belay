@@ -174,6 +174,23 @@ claim is false: on a database where `customers` has a trigger that deletes the
 rows after an update, the migration empties the table. No proof of it exists,
 so its answer stays `unknown`.
 
+To compare the last output of two SQL scripts, open the notation scope and write the scripts in execution order.
+
+```lean
+open scoped Belay.Sqlite.LastOutput
+
+-- Delete orders with a NULL customer, then read the big orders.
+-- The reference SELECT filters for both conditions on the original database.
+#check (deleteScript; bigScript ~ referenceScript on shop)
+```
+
+Both sides start from the same database with the shop catalog and the same complete
+environment. Their actual last outputs must match, including row order and duplicates.
+Each last output permitted on either side must also be permitted on the other.
+An earlier SQL error can be followed by a successful query. For example, if an
+overflowing `abs` reports an error and the next statement runs `SELECT 7`,
+the last output is the row containing 7.
+
 ## Three checks of the agent's work
 
 ```sh
