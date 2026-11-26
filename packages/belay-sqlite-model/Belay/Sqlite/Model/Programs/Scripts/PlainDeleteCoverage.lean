@@ -1,4 +1,3 @@
-import Belay.Sqlite.Model.Queries.Evaluation.CallSafety
 import Belay.Sqlite.Model.Schema.Dispatch.SelectSubqueryRules
 import Belay.Sqlite.Model.Schema.Dispatch.CorrelatedSubquerySource
 import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteRule
@@ -34,23 +33,6 @@ theorem timed_with_clock {s : Resolved.Statement} (h : s.readsClock = true)
 theorem changes_known {s : Resolved.Statement} {c : Counters}
     (reads : s.counterReads = [.changes]) (known : c.changes = some n) :
     c.firstUnknown s.counterReads = none := by simp [reads, Counters.firstUnknown, Counters.read, known]
-
-open Resolved.CallSafety
-
-/-- ABS can return a value when its argument differs from the smallest signed integer.
-Proof sketch: inspect the storage class and exclude the overflowing integer. -/
-theorem absSucceeds (v : Value) (safe : v ≠ .integer (-(2^63))) :
-    Succeeds Resolved.ScalarFunction.abs.apply [v] := by
-  cases v <;> try exact ⟨_, rfl⟩
-  rename_i n
-  have bound : n ≠ -9223372036854775808 := fun eq => safe (congrArg Value.integer eq)
-  simp [Succeeds, Resolved.ScalarFunction.apply, bound]
-
-/-- If {name}`Json.extract` returns a value for one text path, {name}`Json.apply` succeeds for
-{name}`Resolved.JsonFunction.extract` on the value and the path with both JSON subtype flags false.
-The evaluator reduces this call to the same extraction. -/
-theorem extractSucceeds {value path} (ok : ∃ v, Json.extract value [.text path] = .ok v) :
-    Succeeds (Json.apply .extract) [(value, false), (.text path, false)] := ok
 
 /-- The inner SELECT of an IN test reads one column from one table. -/
 private def projection (source column outer : Nat) (name : String) : Resolved.Query :=

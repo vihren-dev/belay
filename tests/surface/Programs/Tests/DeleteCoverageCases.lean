@@ -133,17 +133,10 @@ private theorem reversedAbs_covered (db : Database) (env : Env) (schema : db.Has
     (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) reversedAbs []).continues = true := by
   check_shop_delete reversedAbs, db, env, schema
 
-/-- A caller can register a success rule for a partial function. The evaluator checks the
-nonnegative size against its limit before constructing the blob. -/
-@[local delete_row_fact] private theorem zeroblobSucceeds (v : Value)
-    (fits : ¬ Resolved.zeroblobLimit < (if v.toInt64 < 0 then 0 else v.toInt64)) :
-    Resolved.CallSafety.Succeeds Resolved.ScalarFunction.zeroblob.apply [v] := by
-  simp [Resolved.CallSafety.Succeeds, Resolved.ScalarFunction.apply, fits]
-
-/-- Use the caller's contract inside another function. -/
+/-- Apply the model's size condition for zeroblob inside another function. -/
 private def nestedBlob := first (sql r"DELETE FROM orders WHERE length(zeroblob(amount)) > 0")
 
-/-- The local contract covers each stored amount within the model's size limit. -/
+/-- The built-in contract covers each stored amount within the model's size limit. -/
 private theorem nestedBlob_covered (db : Database) (env : Env) (schema : db.HasCatalog shop)
     (fits : ∀ r ∈ db.raw.rows.getD 1 [], let n := (r.values.getD 2 .null).toInt64
       ¬ Resolved.zeroblobLimit < (if n < 0 then 0 else n)) :

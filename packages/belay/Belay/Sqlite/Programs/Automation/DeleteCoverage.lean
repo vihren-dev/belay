@@ -11,7 +11,7 @@ open Belay.Sqlite.Model
 open PlainDeleteCoverage Resolved.CallSafety
 open Lean Meta Elab Tactic
 
-attribute [delete_row_fact] absSucceeds extractSucceeds inProjection
+attribute [delete_row_fact] inProjection
 
 /-- Decompose a filter into argument and call checks. Apply user facts at each call. -/
 private def solveDeleteCalls : TacticM (TSyntax `tactic) := `(tactic|
@@ -27,7 +27,8 @@ private def solveDeleteCalls : TacticM (TSyntax `tactic) := `(tactic|
      | apply scalarFault
      | apply jsonFault
      | apply dateFault
-     | solve_by_elim (maxDepth := 5) using $(Lean.mkIdent `delete_row_fact):ident
+     | solve_by_elim (maxDepth := 5)
+         [scalarSucceeds, jsonSucceeds, (extractInputs_iff _ _).mpr, True.intro] using $(Lean.mkIdent `delete_row_fact):ident
    done))
 
 /-- Close the coverage goal for a plain DELETE with its step equation and target table lookup.
