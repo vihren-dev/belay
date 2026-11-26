@@ -8,10 +8,27 @@ check using the step equation, the target table, and facts about the filter. -/
 
 namespace Belay.Sqlite.Run.DeleteCoverage
 open Belay.Sqlite.Model
-open PlainDeleteCoverage
+open PlainDeleteCoverage Resolved.CallSafety
 open Lean Meta Elab Tactic
 
-attribute [delete_row_fact] absComparison jsonComparison inProjection
+attribute [delete_row_fact] absSucceeds extractSucceeds inProjection
+
+/-- Decompose a filter into argument and call checks. Apply user facts at each call. -/
+private def solveDeleteCalls : TacticM (TSyntax `tactic) := `(tactic|
+  (apply filterSafe
+   repeat' first
+     | assumption
+     | exact succeedsOk _
+     | rfl
+     | exact of_decide_eq_true rfl
+     | apply compareFault
+     | apply consFault
+     | apply iifFault
+     | apply scalarFault
+     | apply jsonFault
+     | apply dateFault
+     | solve_by_elim (maxDepth := 5) using $(Lean.mkIdent `delete_row_fact):ident
+   done))
 
 /-- Close the coverage goal for a plain DELETE with its step equation and target table lookup.
 Use after {lit}`sql_run` in the modeled case. Clock and counter facts come from the local context.
@@ -29,11 +46,21 @@ scoped elab "cover_delete " rule:term ", " present:term : tactic => do
     let some guard := target.find? (fun e => e.isAppOfArity ``deleteJsonReady 4)
       | throwError "Expected the filter check for a plain DELETE. Check the step equation and target table."
     let test ← Term.exprToSyntax guard
+    let calls ← solveDeleteCalls
     evalTactic (← `(tactic|
       (have ready : $test = true := by
          apply ready_of_rows
          intro row member
-         first | rfl | solve_by_elim (maxDepth := 4) using $(Lean.mkIdent `delete_row_fact):ident
+         first
+         | rfl
+         | solve_by_elim (maxDepth := 4) using $(Lean.mkIdent `delete_row_fact):ident
+         | $calls:tactic
+         | rcases List.mem_cons.mp member with empty | stored
+           · subst row
+             first | rfl | $calls:tactic
+           · obtain ⟨r, mem, eq⟩ := List.mem_map.mp stored
+             subst row
+             $calls:tactic
        simp only [ready]
        rfl)))
 

@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Queries.Evaluation.CallSafety
 import Belay.Sqlite.Model.Schema.Dispatch.SelectSubqueryRules
 import Belay.Sqlite.Model.Schema.Dispatch.CorrelatedSubquerySource
 import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteRule
@@ -34,44 +35,22 @@ theorem changes_known {s : Resolved.Statement} {c : Counters}
     (reads : s.counterReads = [.changes]) (known : c.changes = some n) :
     c.firstUnknown s.counterReads = none := by simp [reads, Counters.firstUnknown, Counters.read, known]
 
-/-- A comparison of ABS on a stored column with a literal is safe on each input row if
-no stored value in that column is the minimum signed integer. Proof sketch: the empty row reads NULL. For a stored row, split on the value type
-and use the bound in the integer case. -/
-theorem absComparison (rows : List Row) (column : Nat) (op : Comparison) (affinity : Option Affinity)
-    (rhs : Value) (collation : Collation) (ctx : Resolved.EvalContext)
-    (bounded : ∀ r ∈ rows, r.values.getD column .null ≠ .integer (-(2^63)))
-    (row : List Value) (member : row ∈ [] :: rows.map Row.values) :
-    (some (Resolved.Expr.compare op affinity (.scalar .abs (.cons (.column column) .nil)) (.literal rhs) collation)).toList.any
-      (·.mayFailOn ctx row) = false := by
-  rcases List.mem_cons.mp member with empty | stored
-  · subst row; cases column <;> rfl
-  obtain ⟨r, mem, rfl⟩ := List.mem_map.mp stored
-  have ok := bounded r mem
-  change ((Resolved.Fault.none.join (Resolved.Fault.ofFunction
-    (Resolved.ScalarFunction.apply .abs [r.values.getD column .null]))).join .none != .none || false) = false
-  generalize e : r.values.getD column .null = v at *
-  cases v <;> try rfl
-  rename_i i
-  have ne : i ≠ -9223372036854775808 := fun h => ok (congrArg Value.integer h)
-  simp [Resolved.ScalarFunction.apply, ne, Resolved.Fault.ofFunction, Resolved.Fault.join]
+open Resolved.CallSafety
 
-/-- A comparison of {lit}`json_extract` on a stored column at a literal path with a literal is safe
-on every input row if the extraction returns a value for every stored row. Proof sketch: the empty row reads NULL. For each stored row, substitute
-the successful extraction into the filter fault check. -/
-theorem jsonComparison (rows : List Row) (column : Nat) (op : Comparison) (affinity : Option Affinity)
-    (rhs : Value) (collation : Collation) (path : List UInt8) (ctx : Resolved.EvalContext)
-    (extracts : ∀ r ∈ rows, ∃ v, Json.extract (r.values.getD column .null) [.text path] = .ok v)
-    (row : List Value) (member : row ∈ [] :: rows.map Row.values) :
-    (some (Resolved.Expr.compare op affinity
-      (.json .extract (.cons (.column column) (.cons (.literal (.text path)) .nil))) (.literal rhs) collation)).toList.any
-      (·.mayFailOn ctx row) = false := by
-  rcases List.mem_cons.mp member with empty | stored
-  · subst row; cases column <;> rfl
-  obtain ⟨r, mem, rfl⟩ := List.mem_map.mp stored
-  obtain ⟨v, ok⟩ := extracts r mem
-  change ((Resolved.Fault.none.join (Resolved.Fault.ofJson
-    (Json.extract (r.values.getD column .null) [.text path]))).join .none != .none || false) = false
-  rw [ok]; rfl
+/-- ABS can return a value when its argument differs from the smallest signed integer.
+Proof sketch: inspect the storage class and exclude the overflowing integer. -/
+theorem absSucceeds (v : Value) (safe : v ≠ .integer (-(2^63))) :
+    Succeeds Resolved.ScalarFunction.abs.apply [v] := by
+  cases v <;> try exact ⟨_, rfl⟩
+  rename_i n
+  have bound : n ≠ -9223372036854775808 := fun eq => safe (congrArg Value.integer eq)
+  simp [Succeeds, Resolved.ScalarFunction.apply, bound]
+
+/-- If {name}`Json.extract` returns a value for one text path, {name}`Json.apply` succeeds for
+{name}`Resolved.JsonFunction.extract` on the value and the path with both JSON subtype flags false.
+The evaluator reduces this call to the same extraction. -/
+theorem extractSucceeds {value path} (ok : ∃ v, Json.extract value [.text path] = .ok v) :
+    Succeeds (Json.apply .extract) [(value, false), (.text path, false)] := ok
 
 /-- The inner SELECT of an IN test reads one column from one table. -/
 private def projection (source column outer : Nat) (name : String) : Resolved.Query :=

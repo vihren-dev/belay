@@ -116,6 +116,54 @@ private theorem notInNames_covered (db : Database) (env : Env) (schema : db.HasC
     (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) notInNames []).continues = true := by
   check_shop_delete notInNames, db, env, schema
 
+/-- Nested calls compose without a premise on the stored values. -/
+private def nested := first (sql r"DELETE FROM orders WHERE 3 < length(trim(amount))")
+
+/-- Resolve and cover a comparison with two nested ordinary functions. -/
+private theorem nested_covered (db : Database) (env : Env) (schema : db.HasCatalog shop) :
+    (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) nested []).continues = true := by
+  check_shop_delete nested, db, env, schema
+
+/-- Place the partial call on the right of the comparison. -/
+private def reversedAbs := first (sql r"DELETE FROM orders WHERE 5 < abs(amount)")
+
+/-- The same column bound proves the reversed comparison. -/
+private theorem reversedAbs_covered (db : Database) (env : Env) (schema : db.HasCatalog shop)
+    (bounded : ∀ r ∈ db.raw.rows.getD 1 [], r.values.getD 2 .null ≠ .integer (-(2^63))) :
+    (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) reversedAbs []).continues = true := by
+  check_shop_delete reversedAbs, db, env, schema
+
+/-- A caller can register a success rule for a partial function. The evaluator checks the
+nonnegative size against its limit before constructing the blob. -/
+@[local delete_row_fact] private theorem zeroblobSucceeds (v : Value)
+    (fits : ¬ Resolved.zeroblobLimit < (if v.toInt64 < 0 then 0 else v.toInt64)) :
+    Resolved.CallSafety.Succeeds Resolved.ScalarFunction.zeroblob.apply [v] := by
+  simp [Resolved.CallSafety.Succeeds, Resolved.ScalarFunction.apply, fits]
+
+/-- Use the caller's contract inside another function. -/
+private def nestedBlob := first (sql r"DELETE FROM orders WHERE length(zeroblob(amount)) > 0")
+
+/-- The local contract covers each stored amount within the model's size limit. -/
+private theorem nestedBlob_covered (db : Database) (env : Env) (schema : db.HasCatalog shop)
+    (fits : ∀ r ∈ db.raw.rows.getD 1 [], let n := (r.values.getD 2 .null).toInt64
+      ¬ Resolved.zeroblobLimit < (if n < 0 then 0 else n)) :
+    (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) nestedBlob []).continues = true := by
+  check_shop_delete nestedBlob, db, env, schema
+
+/-- The date argument is a conditional with a partial function in its tail. -/
+private def conditionalDate := first (sql r"DELETE FROM orders WHERE date(iif(customer_id, abs(amount), 0)) > '2000-01-01'")
+
+/-- Cover the date and IIF branches with the clock supplied and the ABS inputs bounded. -/
+private theorem conditionalDate_covered (db : Database) (env : Env) (schema : db.HasCatalog shop)
+    (tick : Clock) (known : env.clock = some tick)
+    (bounded : ∀ r ∈ db.raw.rows.getD 1 [], r.values.getD 2 .null ≠ .integer (-(2^63))) :
+    (runScriptStep runContext env.clock 0 (db.raw.connection env.counters) conditionalDate []).continues = true := by
+  check_shop_delete conditionalDate, db, env, schema
+
+#print axioms conditionalDate_covered
+#print axioms nestedBlob_covered
+#print axioms nested_covered
+#print axioms reversedAbs_covered
 #print axioms absoluteAmount_covered
 #print axioms jsonCustomer_covered
 #print axioms customerLookup_covered
