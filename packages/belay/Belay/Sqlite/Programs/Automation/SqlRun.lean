@@ -80,6 +80,8 @@ the goal and the messages stay as they were, and the step rule of the read appli
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
   statement, so that each statement gets its own rule at the context that the earlier ones reach. A visible SELECT uses its syntax rule, which
   requires only its syntax. For other sends {name}`applyKindRule` tries the exact equations using the supplied resolutions.
+  If no supplied resolution selects a rule for a DELETE, {name}`catalogDelete?` tries a catalog hint on a fresh
+  connection. A local hypothesis can then close a remaining goal.
   The cases of a kind rule that fail are closed when their trace is not error-free. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
