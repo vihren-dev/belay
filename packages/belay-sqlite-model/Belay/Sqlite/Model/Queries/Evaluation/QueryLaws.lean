@@ -85,6 +85,13 @@ theorem _root_.Belay.Sqlite.Model.Table.scanRows_perm (table : Table) : table.sc
   unfold Table.scanRows
   split <;> exact stableSort_perm _ _
 
+open scoped _root_.List in
+/-- For every table and row predicate, scanning the filtered table returns a permutation of
+the rows kept by filtering the scan. Proof sketch: apply {name}`Table.scanRows_perm` to both tables. -/
+theorem _root_.Belay.Sqlite.Model.Table.scan_filterRows (table : Table) (keep : Row → Bool) :
+    (table.filterRows keep).scanRows ~ table.scanRows.filter keep :=
+  (table.filterRows keep).scanRows_perm.trans (table.scanRows_perm.filter keep).symm
+
 /-- For every relation {lit}`le` that is transitive and total (for all {lit}`a` and
 {lit}`b`, {lit}`le a b` or {lit}`le b a`), every item and every list that is in order
 by {lit}`le`: the result of {name}`insertStable` is in order by {lit}`le`. Proof
