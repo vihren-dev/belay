@@ -64,6 +64,12 @@ theorem extractInputs_iff (v : Value) (paths : List Value) :
     | error => simp
     | ok n => cases n <;> simp
 
+/-- If text extraction returns any SQL value, the document and paths satisfy
+{name}`ExtractInputs`. Use the reverse direction of {name}`extractInputs_iff` so a proof
+search can apply this implication directly. -/
+theorem pathsOfExtraction {v paths} (ok : Returns (Json.extract v paths)) : ExtractInputs v paths :=
+  (extractInputs_iff v paths).mpr ok
+
 /-- Binary extraction returns a value on the same safe inputs as text extraction.
 For one path only the rendering of a found container differs. For several paths the
 binary function maps the text result to JSONB. -/

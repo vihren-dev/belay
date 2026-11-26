@@ -11,10 +11,6 @@ open Belay.Sqlite.Model
 open PlainDeleteCoverage Resolved.CallSafety
 open Lean Meta Elab Tactic
 
-/-- Let row proof search reuse an existing successful text extraction as path evidence. -/
-private theorem pathsOfExtraction {v paths} (ok : Returns (Json.extract v paths)) : ExtractInputs v paths :=
-  (extractInputs_iff v paths).mpr ok
-
 -- Default row facts for table projections and function calls. Callers can add local facts.
 attribute [delete_row_fact] inProjection scalarSucceeds jsonSucceeds pathsOfExtraction
 
