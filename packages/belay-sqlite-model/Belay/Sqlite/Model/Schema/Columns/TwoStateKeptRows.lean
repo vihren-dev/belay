@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
 import Belay.Sqlite.Model.Schema.Dispatch.TwoStateNotExistsExcept
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertRows
 import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyLookupRemoval
@@ -12,6 +13,18 @@ the delete does not select the row, the second term has every row of the first. 
 alias, the rows of the first term are identical where they compare equal. -/
 
 namespace Belay.Sqlite.Model
+
+/-- For every table, evaluation context and optional DELETE predicate, scanning the table
+produced by {name}`LiteralData.deleted` gives a permutation of the original rows for which
+{name}`Resolved.conditionKeeps` is false. A false or NULL predicate keeps that row in the table.
+Omitting the predicate deletes every row. Proof sketch: project the row values in
+{name}`Table.scan_filterRows` and move the filter through that projection. -/
+theorem Resolved.sourceRows_deleted (table : Table) (ctx : Resolved.EvalContext) (p : Option Resolved.Expr) :
+    (sourceRows (LiteralData.deleted ctx table p)).Perm
+      ((sourceRows table).filter fun row => !(conditionKeeps p ctx row)) := by
+  simpa only [sourceRows, List.filter_map, Function.comp_def, conditionKeeps,
+    LiteralData.selected, LiteralData.deleted, Table.filterRows] using
+    (table.scan_filterRows (fun r => !LiteralData.selected ctx p r)).map Row.values
 
 /-- For every table, delete filter and context of the delete, condition and columns of the first term, and context of
 the values: when the condition is true for a row only if the filter is not true for it, every result of the first term
