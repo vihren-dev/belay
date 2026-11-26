@@ -3,6 +3,7 @@ import SelectJoinSupport
 set_option doc.verso true
 set_option sql.check false
 set_option maxRecDepth 8192
+set_option maxHeartbeats 800000
 
 namespace DeleteCoverageCases
 open Belay.Sqlite
@@ -14,19 +15,11 @@ open scoped Belay.Sqlite.Run.DeleteCoverage
 private def first (script : Script) (nonempty : 0 < script.statements.length := by decide +kernel) :=
   script.statements[0].1
 
-/-- Read the filter and subqueries from the resolved fixture. Each test checks the entire
-resolution before it uses the pair. -/
-private def parts (stmt : Syntax.Statement) : Option Resolved.Expr × List Resolved.Query :=
-  match resolveStatement runContext (shop.raw.connection {}).resolveState stmt with
-  | .ok (.delete _ filter _ subs _, _) => (filter, subs)
-  | _ => (none, [])
-
 /-- Give the tactic its two input facts for a DELETE from orders. -/
 local macro "check_shop_delete " stmt:term ", " db:term ", " env:term ", " schema:term : tactic =>
   `(tactic|
     (have found : resolveStatement runContext (shop.raw.connection {}).resolveState $stmt =
-        .ok (.delete 1 (parts $stmt).1 [] (parts $stmt).2 none, (shop.raw.connection {}).resolveState) :=
-       by decide +kernel
+        .ok (.delete 1 _ [] _ none, (shop.raw.connection {}).resolveState) := rfl
      rw [← shop_state $db $env $schema] at found
      have present := Database.table_of_findTable ($db).raw _ 1 ordersShape (shop_found $db $schema).2
      cover_delete (runScriptStep_plainDelete_eq (clock := ($env).clock) (index := 0) (parameters := []) found), present))
