@@ -10,9 +10,17 @@ namespace Belay.Sqlite.Model.Resolved.CallSafety
 def ValidEscape (v : Value) : Prop :=
   ∀ bytes, cText? v = some bytes → (bytes.filter fun byte => byte &&& 0xC0 != 0x80).length = 1
 
-/-- Conditions on the evaluated arguments for each scalar call that can fail. Total functions
-accept every list. At an arity handled by the evaluator's NULL default there is no obligation.
-For printf the format interpreter must finish for the actual format bytes and remaining arguments. -/
+/-- Input conditions for calls of {name}`ScalarFunction.apply`:
+* ABS with one argument excludes the integer −9223372036854775808.
+* Zeroblob with one argument converts it to an integer, replaces a negative size with
+  zero, and requires the size to be at most {name}`zeroblobLimit`.
+* LIKE and GLOB with two arguments require the pattern's text bytes to fit
+  {name}`likePatternLimit`. Three-argument LIKE also requires {name}`ValidEscape` on its escape.
+* UNISTR with one argument requires the escape decoder to return a value.
+* For a nonempty printf call, whenever the format has text bytes, the format interpreter
+  must return output bytes for that format and the remaining arguments.
+* All other function and arity combinations require no evidence. This includes total
+  functions and the evaluator's NULL defaults for arities the resolver would reject. -/
 def ScalarInputs : ScalarFunction → List Value → Prop
   | .abs, [v] => v ≠ .integer (-(2^63))
   | .zeroblob, [v] => ¬ zeroblobLimit < (if v.toInt64 < 0 then 0 else v.toInt64)

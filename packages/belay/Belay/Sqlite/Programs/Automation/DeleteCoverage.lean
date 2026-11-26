@@ -11,7 +11,12 @@ open Belay.Sqlite.Model
 open PlainDeleteCoverage Resolved.CallSafety
 open Lean Meta Elab Tactic
 
-attribute [delete_row_fact] inProjection
+/-- Let row proof search reuse an existing successful text extraction as path evidence. -/
+private theorem pathsOfExtraction {v paths} (ok : Returns (Json.extract v paths)) : ExtractInputs v paths :=
+  (extractInputs_iff v paths).mpr ok
+
+-- Default row facts for table projections and function calls. Callers can add local facts.
+attribute [delete_row_fact] inProjection scalarSucceeds jsonSucceeds pathsOfExtraction
 
 /-- Decompose a filter into argument and call checks. Apply user facts at each call. -/
 private def solveDeleteCalls : TacticM (TSyntax `tactic) := `(tactic|
@@ -27,8 +32,7 @@ private def solveDeleteCalls : TacticM (TSyntax `tactic) := `(tactic|
      | apply scalarFault
      | apply jsonFault
      | apply dateFault
-     | solve_by_elim (maxDepth := 5)
-         [scalarSucceeds, jsonSucceeds, (extractInputs_iff _ _).mpr, True.intro] using $(Lean.mkIdent `delete_row_fact):ident
+     | solve_by_elim (maxDepth := 5) [True.intro] using $(Lean.mkIdent `delete_row_fact):ident
    done))
 
 /-- Close the coverage goal for a plain DELETE with its step equation and target table lookup.

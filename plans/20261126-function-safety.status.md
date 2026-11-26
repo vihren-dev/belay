@@ -8,7 +8,6 @@ ADR 0015 defines scalar and JSON functions. The function dispatchers are in
 extraction share `ExtractInputs`. The DELETE tactic uses the catalog laws and its existing
 extension attribute. The zeroblob fixture needs only a size bound.
 
-`just dev-build` passed. The function-law fixtures check eight independent model proofs,
-three failure boundaries, 14 DELETE proofs and the DELETE/SELECT comparison through
-`tests/surface_select_sources_test.py::test_context_cases`. The five tests in
-`tests/test_test_ownership.py` and `tests/test_model_ownership.py` passed.
+Local development checks passed for the build, the eight model proof fixtures, the three
+failure boundaries, the fourteen DELETE proofs, the DELETE/SELECT comparison, and the five
+ownership checks. Release evidence comes from the Nix checks.

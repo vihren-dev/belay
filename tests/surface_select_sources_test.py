@@ -96,7 +96,8 @@ def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     instances show a result from the start that does not hold after a delete, and `changes()`, which has
     no result in the default environment but the count of the delete after it. The DELETE coverage
     fixtures check cover_delete with the model laws scalarSucceeds and jsonSucceeds and the
-    inProjection subquery rule. They compare the two programs on every shop database. Every proof has only
+    inProjection subquery rule. FunctionCallSafetyCases checks scalarSucceeds, jsonSucceeds and
+    extractInputs_iff directly in the model. The execution fixtures compare the two programs on every shop database. Every proof has only
     logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
                        ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 3),

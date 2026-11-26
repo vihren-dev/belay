@@ -7,10 +7,21 @@ set_option doc.verso true
 namespace Belay.Sqlite.Model.Resolved.CallSafety
 open Json
 
-/-- Required evidence for each JSON function on the supplied values and subtype flags.
-Selection and extraction use the path operation, validation checks the flags, constructors
-check the members, and edits check the parsed root. Binary outputs share the text input
-conditions where only the final encoding differs. -/
+/-- Input conditions for {name}`Json.apply`, on values paired with their JSON subtype flags:
+* JSON and JSONB extraction require {name}`ExtractInputs` on the document and path list.
+* Both arrows require a successful lookup. The SQL-value arrow also requires conversion
+  of each found node to an SQL value.
+* Type and array length require successful selection with their optional path. JSON and
+  JSONB conversion require selection of the document root.
+* One-argument validation accepts every value. With two arguments the flags must be accepted.
+* Quote requires conversion to JSON text with the original subtype flag. Array constructors
+  require all elements to convert. Object constructors require an even argument count and
+  successful construction of the members. Both encodings use the same checks.
+* Set, insert and replace require {name}`EditInputs` for the corresponding mode. Remove
+  requires {name}`RemoveInputs`. Patch requires both input documents to parse.
+* Pretty with either arity and error position require the document to parse.
+* Extraction with no arguments and the remaining default arities require no evidence.
+  These arity defaults describe the evaluator after the separate resolution check. -/
 def JsonInputs (f : JsonFunction) (args : List (Value × Bool)) : Prop :=
   match f, args.map (·.1) with
   | .extract, v :: paths | .jsonbExtract, v :: paths => ExtractInputs v paths
