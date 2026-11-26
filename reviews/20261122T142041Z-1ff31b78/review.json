@@ -1,0 +1,84 @@
+{
+  "caller": "claude",
+  "commit": "1ff31b78fb8dfa3616c157aa5fe22ddf76db43e1",
+  "date": "2026-11-22T14:20:41+00:00",
+  "exit": 1,
+  "files": [
+    "docs/records/lean-code-store-prototype-findings.md",
+    "plans/20261122-lean-code-store-prototype.status.md",
+    "reviews/20261122T141524Z-a6dafcac/resolution-1-20261122T141658Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-10-20261122T141702Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-11-20261122T141703Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-12-20261122T141703Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-13-20261122T141704Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-14-20261122T141704Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-2-20261122T141658Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-3-20261122T141659Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-4-20261122T141659Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-5-20261122T141700Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-6-20261122T141700Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-7-20261122T141701Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-8-20261122T141701Z.json",
+    "reviews/20261122T141524Z-a6dafcac/resolution-9-20261122T141702Z.json",
+    "reviews/20261122T141524Z-a6dafcac/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261122T142041Z-1ff31b78#1",
+      "line": 68,
+      "path": "docs/records/lean-code-store-prototype-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The 115 private names each have a component after the module prefix, such as `match_7` or `_sparseCasesOn_41`. Fix: Say that the helper name immediately follows `_private.<module>.0`, with no intervening declaration name."
+    },
+    {
+      "id": "20261122T142041Z-1ff31b78#2",
+      "line": 75,
+      "path": "docs/records/lean-code-store-prototype-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The record attributes all ten `match_on_same_ctor` helpers to `DecidableEq`, but the stored bodies show that the helpers for `Syntax.Expr` and `Syntax.Statement` serve derived `BEq` instances. Fix: Report eight `DecidableEq` helpers and two `BEq` helpers here and in owner question 2."
+    },
+    {
+      "id": "20261122T142041Z-1ff31b78#3",
+      "line": 151,
+      "path": "docs/records/lean-code-store-prototype-findings.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The record lists a name in a tactic quotation as leaving no trace in the text, although the name appears in the quotation and Lean can omit its usage from the build products. Fix: Distinguish what the build products record from what the source search can find."
+    },
+    {
+      "id": "20261122T142041Z-1ff31b78#4",
+      "line": 237,
+      "path": "docs/records/lean-code-store-prototype-findings.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The proposed fold assumes a written parent for the four `SqlSelectRule` helpers, but `initialize registerBuiltinAttribute` is anonymous and its generated `initFn` is itself reported because no unscoped constant shares its range. Fix: State that the scoped `initFn` connects the helpers to the command and leave their final written parent unresolved."
+    }
+  ],
+  "id": "20261122T142041Z-1ff31b78",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

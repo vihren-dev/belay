@@ -1,0 +1,10 @@
+name = "lean-code-store-extractor"
+defaultTargets = ["lean-code-store-facts"]
+
+[[lean_lib]]
+name = "LeanCodeStore"
+
+[[lean_exe]]
+name = "lean-code-store-facts"
+root = "Main"
+supportInterpreter = true
