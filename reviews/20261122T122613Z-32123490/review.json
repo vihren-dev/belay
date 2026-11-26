@@ -1,0 +1,95 @@
+{
+  "caller": "claude",
+  "commit": "321234905d316320780cb18b5a8eb03be0da5242",
+  "date": "2026-11-22T12:26:13+00:00",
+  "exit": 1,
+  "files": [
+    "docs/adr/adr-0032-lean-code-store.md",
+    "docs/records/lean-relationship-extraction-findings.md",
+    "docs/records/spec-lean-code-store.md",
+    "reviews/20261122T122129Z-b5935f21/resolution-1-20261122T122246Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-2-20261122T122246Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-3-20261122T122247Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-4-20261122T122247Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-5-20261122T122248Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-6-20261122T122248Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-7-20261122T122249Z.json",
+    "reviews/20261122T122129Z-b5935f21/resolution-8-20261122T122249Z.json",
+    "reviews/20261122T122129Z-b5935f21/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261122T122613Z-32123490#1",
+      "line": 275,
+      "path": "docs/adr/adr-0032-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Qualifying targets in the schema does not let the current exporter load the recommended test selection, because it imports all selected modules into one environment and both `SqlFileForms` and `SqlFileErrors` define `shop`. Fix: require extraction in each module’s own import environment before combining the rows."
+    },
+    {
+      "id": "20261122T122613Z-32123490#2",
+      "line": 117,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The smallest containing range does not identify one user for the containerless `DecidableEq` mention in `deriving instance DecidableEq for ConflictAction, ConflictClause`, because both instances have that exact range. Fix: use the range fallback only for a unique innermost declaration and record an empty user on a tie so the query cannot count an arbitrary sole user."
+    },
+    {
+      "id": "20261122T122613Z-32123490#3",
+      "line": 177,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Comparing the compiled SQL source record with disk cannot establish the promised file identity, because `sqlTextHash` gives CRLF and LF text the same hash. Fix: define SQL freshness using the existing line-ending normalization in both the specification and ADR D2, or require a byte-preserving freshness check."
+    },
+    {
+      "id": "20261122T122613Z-32123490#4",
+      "line": 224,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Rule 3 says every instance of a command shares one range, but `deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator` gives the `FromJson` and `ToJson` instances distinct class-token ranges. Fix: group instances and helpers by the range of each class within the command and use the whole command only for stored text."
+    },
+    {
+      "id": "20261122T122613Z-32123490#5",
+      "line": 226,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The prefix and reference rules select different parents for `instToExprExpr_1.toExpr_2`, whose name has the `instToExprExpr_1` prefix but whose direct caller is `instToExprArguments`. Fix: fold a helper only when the rules identify one parent and report conflicting candidates."
+    },
+    {
+      "id": "20261122T122613Z-32123490#6",
+      "line": 252,
+      "path": "docs/records/spec-lean-code-store.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "Dropping outgoing relationships from cross-module helpers contradicts ADR D6’s requirement to fold both ends and loses recorded edges such as the `type` reference from `Database.run.eq_1` to `Sql.run`. Fix: retain the file that contributed the edge and identify the folded user by its parent’s module and name."
+    }
+  ],
+  "id": "20261122T122613Z-32123490",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
