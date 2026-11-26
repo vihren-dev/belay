@@ -14,3 +14,10 @@ public root to follow the package boundary.
 Local development checks passed for the build, the eight model proof fixtures, the three
 failure boundaries, the fourteen DELETE proofs, the DELETE/SELECT comparison, and the five
 ownership checks. Release evidence comes from the Nix checks.
+
+Nix verification passed on the final source. The full test reports are
+`gxlki1kjdr2rq0qzl5iw54syymnmbqjy-belay-test-reports`, including the 34 surfaceSelect
+tests. The public documentation inventory and the frozen-corpus verdict
+(`yp87jlilchv1ahpc0mbaqgjivyngi5pa-belay-verdict`) passed. The separate source suite passed
+all 581 selected tests. The model suite passed on retry after one concurrent run exceeded
+the generated conformance test's time limit.
