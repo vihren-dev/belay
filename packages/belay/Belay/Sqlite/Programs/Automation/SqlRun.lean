@@ -1,3 +1,4 @@
+import Belay.Sqlite.Programs.Automation.DeleteCoverage
 import Belay.Sqlite.Programs.Automation.SqlRunKindRules
 import Belay.Sqlite.Programs.Automation.SqlSelect
 
