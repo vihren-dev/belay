@@ -50,8 +50,9 @@ def LastOutputPlan.Correct (plan : LastOutputPlan) (script : Script) (catalog : 
   ∀ db : Database, db.HasCatalog catalog → ∀ env : Env, env.Complete →
     script.lastOutputProfile (.initial db env) = plan db env
 
-/-- Given correct plans for both scripts on one catalog, the scripts have the same last
-outputs exactly when their plans agree on every admitted start. Proof sketch: substitute
+/-- If both plans satisfy {name}`LastOutputPlan.Correct` on one catalog, {name}`Script.SameLastOn`
+holds exactly when the plans agree for every database with that catalog and every complete
+environment. Proof sketch: substitute
 the two certificates at the same database and environment in each direction. -/
 theorem LastOutputPlan.sameLastOn_iff {p q : LastOutputPlan} {a b : Script} {catalog : Database}
     (left : p.Correct a catalog) (right : q.Correct b catalog) :

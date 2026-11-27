@@ -126,6 +126,7 @@ def test_row_filter_algebra(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_compiled_select_profiles(runtime_root: Path, tmp_path: Path) -> None:
-    """Compile singleton reads on the same starting database, compare their residual bags,
-    retain populated bindings and duplicates, and decline unsupported SQL shapes."""
+    """Check Script.compileLastOutput? on bound singleton SELECTs and unsupported SQL shapes.
+    LastOutputPlan.sameLastOn_iff and LastOutputPlan.rowBag_eq_iff reduce the comparison to
+    equality of the projected bags, including duplicates."""
     check_module_chain(runtime_root, tmp_path, (("CompiledSelectCases", 3),), timeout=60)
